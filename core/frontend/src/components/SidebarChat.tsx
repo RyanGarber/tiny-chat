@@ -88,7 +88,6 @@ export default function SidebarChat({
             />
             <Modal
                 title="Rename Chat"
-                centered
                 opened={isEditOpen}
                 onClose={closeEdit}
             >
@@ -106,7 +105,6 @@ export default function SidebarChat({
             </Modal>
             <Modal
                 title="Delete Chat"
-                centered
                 opened={isDeleteOpen}
                 onClose={closeDelete}
             >

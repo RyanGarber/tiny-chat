@@ -73,7 +73,6 @@ export class GoogleAiStudioService implements Service {
 
         const params: SendMessageParameters = {message: boxMessage(context[context.length - 1]).parts!};
 
-        console.log("Final temperature:", config.args.temperature as number);
         params.config = {
             temperature: config.args.temperature as number,
             tools: [{googleSearch: {}, codeExecution: {}}] // TODO - file_search
@@ -108,9 +107,12 @@ export class GoogleAiStudioService implements Service {
             history: context.slice(0, context.length - 1).map(boxMessage)
         }).sendMessageStream(params);
 
-        console.log("Response:", response);
-
         const parts: Part[] = [];
+
+        // Gate a setTimeout(0) every ~16ms so the browser gets a macrotask boundary
+        // to repaint even during burst-delivery phases of the Google stream.
+        let lastYield = performance.now();
+
         for await (const chunk of response) {
             if (!chunk.candidates?.length || !chunk.candidates[0].content?.parts) continue;
             for (const part of chunk.candidates[0].content.parts) {
@@ -123,6 +125,12 @@ export class GoogleAiStudioService implements Service {
                     }
                 }
                 parts.push(part);
+            }
+
+            const now = performance.now();
+            if (now - lastYield > 16) {
+                await new Promise<void>(r => setTimeout(r, 0));
+                lastYield = performance.now();
             }
         }
 

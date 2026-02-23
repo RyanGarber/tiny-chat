@@ -49,7 +49,7 @@ export default function Attachments({list, size}: {
                     </Tooltip>
                 ))}
             </Avatar.Group>
-            <Modal opened={isOpen} onClose={close} withCloseButton={false} centered>
+            <Modal opened={isOpen} onClose={close} withCloseButton={false}>
                 <Carousel slideSize="100%" initialSlide={slide}>
                     {list.map((a) => (
                         <Carousel.Slide key={a.name}>

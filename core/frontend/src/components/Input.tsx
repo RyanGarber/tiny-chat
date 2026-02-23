@@ -86,6 +86,10 @@ export default function Input({...props}: InputWrapperProps) {
         onChangedConfig(JSON.stringify(config));
     };
 
+    const resetMultiline = useCallback(() => {
+        if (!serialize().length) setMultiline(false);
+    }, [setMultiline, serialize, editor])
+
     const leftActionContent = (
         <Menu
             position="top-start"
@@ -197,8 +201,6 @@ export default function Input({...props}: InputWrapperProps) {
         </>
     );
 
-    // Side-section wrappers: always in the DOM (for ref-based width measurement),
-    // fade out when multiline so they don't overlap the content.
     const leftActions = (
         <div
             ref={leftSectionRef}
@@ -247,14 +249,13 @@ export default function Input({...props}: InputWrapperProps) {
                     styles={{
                         input: {
                             padding: 0,
-                            display: "flex",
-                            flexDirection: "column",
                             wordBreak: "break-word",
                         },
                         section: {
                             display: "flex",
                             alignItems: "center",
                             margin: "5px",
+                            pointerEvents: "none"
                         },
                     }}
                 >
@@ -268,6 +269,7 @@ export default function Input({...props}: InputWrapperProps) {
                             paddingRight: (!isMultiline ? sectionWidths.right : 0) + 10,
                             paddingTop: 5,
                             paddingBottom: 5,
+                            minHeight: "var(--input-height)",
                             cursor: isMessagingDisabled ? "not-allowed" : "text",
                             transition: "padding-left 200ms ease, padding-right 200ms ease",
                         }}
@@ -276,12 +278,9 @@ export default function Input({...props}: InputWrapperProps) {
                         <Slate
                             editor={editor!}
                             initialValue={[{type: "paragraph", children: [{text: ""}]}]}
-                            onValueChange={() => {
-                                if (!serialize().length) setMultiline(false);
-                            }}
+                            onValueChange={resetMultiline}
                         >
                             <Editable
-                                style={{minHeight: 30}}
                                 renderElement={useCallback(renderElement, [])}
                                 renderLeaf={useCallback(renderLeaf, [])}
                                 decorate={useCallback(decorate, [])}
@@ -294,12 +293,12 @@ export default function Input({...props}: InputWrapperProps) {
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
-                        padding: "0 5px 5px 5px",
+                        padding: isMultiline ? "0 5px 5px 5px" : "0 5px 0 5px",
                         maxHeight: isMultiline ? 50 : 0,
                         opacity: isMultiline ? 1 : 0,
                         overflow: "hidden",
                         pointerEvents: isMultiline ? "auto" : "none",
-                        transition: "max-height 200ms ease, opacity 200ms ease",
+                        transition: "max-height 200ms ease, opacity 200ms ease, padding-bottom 200ms ease",
                     }}>
                         <div style={{display: "flex", alignItems: "center"}}>{leftActionContent}</div>
                         <div style={{display: "flex", alignItems: "center", gap: "5px"}}>{rightActionContent}</div>

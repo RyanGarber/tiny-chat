@@ -175,7 +175,6 @@ export default function Message({
                 opened={isConfirmingDelete}
                 onClose={onCancelDelete}
                 title="Delete Message"
-                centered
             >
                 <Modal.Body>
                     <Button

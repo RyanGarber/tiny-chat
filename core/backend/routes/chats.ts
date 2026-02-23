@@ -2,7 +2,8 @@ import {z} from "zod";
 import {procedure, router} from "../index.ts";
 import {createId} from "@paralleldrive/cuid2";
 import {reorder} from "./messages.ts";
-import {zConfig, zData, zMetadata} from "../types.ts";
+import {zConfig, zData, type zDataType, zMetadata} from "../types.ts";
+import minisearch, {type SearchResult} from "minisearch";
 
 export default router({
     find: procedure
@@ -99,4 +100,40 @@ export default router({
             if (chat.folder.chats.length === 1) await ctx.prisma.folder.delete({where: {id: chat.folderId}});
             else await ctx.prisma.chat.delete({where: {id: input.id}});
         }),
+
+    search: procedure
+        .input(z.object({query: z.string().min(1)}))
+        .query(async ({ctx, input}) => {
+            const messages = await ctx.prisma.message.findMany({
+                where: {userId: ctx.session.user.id, chat: {temporary: {equals: false}}},
+                include: {chat: {select: {title: true}}, folder: {select: {title: true}}},
+            });
+            const search = new minisearch({
+                fields: ["folderTitle", "chatTitle", "text"],
+                storeFields: ["id", "chatId", "data", "folderTitle", "chatTitle"],
+                searchOptions: {
+                    boost: {
+                        chatTitle: 2
+                    },
+                    fuzzy: 0.2,
+                    prefix: true
+                }
+            });
+            search.addAll(messages.map((message) => ({
+                id: message.id,
+                chatId: message.chatId,
+                data: zData.parse(message.data),
+                folderTitle: message.folder.title,
+                chatTitle: message.chat.title,
+                // TODO - adding && !p.hidden makes typescript think it's no longer text????????
+                text: zData.parse(message.data).filter(p => p.type === "text").map(t => t.value).join("\n"),
+            })))
+            return search.search(input.query) as (SearchResult & {
+                id: string,
+                chatId: string,
+                data: zDataType,
+                folderTitle: string,
+                chatTitle: string,
+            })[];
+        })
 });

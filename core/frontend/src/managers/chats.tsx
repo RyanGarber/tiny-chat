@@ -66,8 +66,9 @@ export const useChats = create(
             set({currentChat: chat});
             if (showProgress) nprogress.set(50);
             await get().fetchMessages(false);
+            useMessaging.getState().requestScrollToBottom();
             if (showProgress) nprogress.complete();
-            reloadConfig();
+            if (pushState) reloadConfig();
         },
         renameChat: async (id, name) => {
             const {fetchFolders} = get();

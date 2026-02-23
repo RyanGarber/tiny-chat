@@ -46,6 +46,7 @@ jobs:
           cache: npm
 
       - name: Create environment
+        shell: bash
         run: |
           cat << EOF > .env
           PG_HOST=${{ secrets.PG_HOST }}
@@ -69,6 +70,7 @@ jobs:
         run: npm ci
 
       - name: Generate tag name
+        shell: bash
         id: tag_name
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
@@ -83,6 +85,5 @@ jobs:
           projectPath: ./apps/tauri
           releaseName: ${{ steps.tag_name.outputs.sha_short }}
           releaseBody: macOS, Linux, and Windows builds are available to download. Mobile must be built from source.
-          prerelease: true
-          includeUpdaterJson: 'true'
+          includeUpdaterJson: true
           args: ${{ matrix.args }}

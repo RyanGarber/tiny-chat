@@ -25,6 +25,7 @@ export function serializeElement(element: BaseElement): string | null {
 
 export function serialize(): string {
     const {editor} = useMessaging.getState();
+    if (!editor) console.log("No editor state available for serialization")
     if (!editor) return "";
     return editor.children
         .map((node) => serializeElement(node as BaseElement))

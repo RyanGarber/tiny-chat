@@ -145,7 +145,7 @@ export default function Drawers(
                             <Button variant="outline" color="red" fullWidth mt={10} onClick={openDelete}>
                                 Delete Account
                             </Button>
-                            <Modal opened={isDeleteOpen} onClose={closeDelete} title="Delete Account" centered>
+                            <Modal opened={isDeleteOpen} onClose={closeDelete} title="Delete Account">
                                 <Button color="red" fullWidth onClick={async () => {
                                     await deleteUser();
                                     window.location.reload();

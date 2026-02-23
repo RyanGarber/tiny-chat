@@ -33,8 +33,8 @@ export class MicrosoftFoundryService implements Service {
                 {
                     name: "reasoning",
                     type: "list",
-                    values: ["none", "minimal", "low", "medium", "high", "maximal"],
-                    default: "none"
+                    values: ["low", "medium", "high"],
+                    default: "medium"
                 } as ModelArg,
             ] : []
         ];
@@ -56,7 +56,7 @@ export class MicrosoftFoundryService implements Service {
                 stream: true,
                 temperature: config.args.temperature as number,
                 tools: [
-                    //{type: "web_search"}, TODO - causes freeze
+                    //{type: "web_search"},
                     {type: "code_interpreter", container: {type: "auto"}}
                 ], // TODO - file_search, image_generation
                 input: [
@@ -96,9 +96,8 @@ export class MicrosoftFoundryService implements Service {
                     })
                 ]
             };
-            if (["gpt-5", "reasoning", "thinking"].some(m => config.model.includes(m))) {
-                console.log("Enabling reasoning (medium effort)");
-                params.reasoning = {effort: "medium", summary: "detailed"};
+            if (["gpt-5", "o3", "o4"].some(m => config.model.includes(m))) {
+                params.reasoning = {effort: config.args.reasoning, summary: "detailed"};
                 params.include = ["reasoning.encrypted_content"];
             }
 
@@ -108,8 +107,13 @@ export class MicrosoftFoundryService implements Service {
             let currentThought = "";
             let currentThoughtIndex = -1;
 
+            // The OpenAI SDK resolves stream events as microtasks, never naturally hitting a
+            // macrotask boundary that would let the browser paint.  We gate a setTimeout(0)
+            // here — inside the generator — so the browser gets a render opportunity ~every
+            // frame regardless of how many lifecycle events arrive before the next text delta.
+            let lastYield = performance.now();
+
             for await (const chunk of response) {
-                console.log("Received response event:", chunk.type);
                 // Incoming Thoughts
                 if (chunk.type.startsWith("response.reasoning_summary_text")) {
                     if (chunk.type === "response.reasoning_summary_text.delta") {
@@ -129,7 +133,14 @@ export class MicrosoftFoundryService implements Service {
                 else if (chunk.type === "response.output_text.delta") {
                     yield {type: "text", value: chunk.delta};
                 }
+                // else: lifecycle events (created, in_progress, done, etc.) – no action needed
                 events.push(chunk);
+
+                const now = performance.now();
+                if (now - lastYield > 16) {
+                    await new Promise<void>(r => setTimeout(r, 0));
+                    lastYield = performance.now();
+                }
             }
 
             yield {metadata: zMetadata.parse(events.filter(e => e.type !== "response.output_text.delta" && e.type !== "response.reasoning_summary_text.delta"))}
@@ -155,13 +166,19 @@ export class MicrosoftFoundryService implements Service {
             });
 
             const chunks = [];
+            let lastYield = performance.now();
 
             for await (const chunk of response) {
-                console.log("Received completion chunk:", chunk);
                 if (!chunk.choices?.[0]?.delta?.content) continue;
                 const content = chunk.choices[0].delta.content;
                 yield {type: "text", value: content};
                 chunks.push(chunk);
+
+                const now = performance.now();
+                if (now - lastYield > 16) {
+                    await new Promise<void>(r => setTimeout(r, 0));
+                    lastYield = performance.now();
+                }
             }
 
             yield {metadata: zMetadata.parse(chunks)};

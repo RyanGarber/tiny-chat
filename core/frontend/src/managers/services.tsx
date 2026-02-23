@@ -67,19 +67,13 @@ export const useServices = create(
                 if (isPostTarget) {
                     const replyValue = await prepare(messages[i].id, config);
                     messages = useChats.getState().messages;
-                    let lastRender = Date.now();
-                    const update = (set: ((reply: MessageUnomitted) => void)) => {
-                        const replyRef = messages.find(m => m.id === replyValue.id)!;
-                        set(replyValue); // TODO - not happy with this setup
-                        replyRef.state = replyValue.state;
-                        replyRef.data = replyValue.data;
-                        if (Date.now() - lastRender > 100) {
-                            useChats.setState({messages: [...messages]});
-                            lastRender = Date.now();
-                        }
-                    }
+                    // Hoist replyRef – avoids an O(n) messages.find() on every stream chunk.
+                    const replyRef = messages.find(m => m.id === replyValue.id)!;
 
-                    update(reply => reply.state.working = true);
+                    // Show the working indicator immediately (don't wait for the first chunk).
+                    replyValue.state.working = true;
+                    replyRef.state = replyValue.state;
+                    useChats.setState({messages: [...messages]});
                     console.log(
                         `Replying to message ${messages[i].id} using ${isTarget ? "config" : "its existing settings"}`,
                         replyValue.config
@@ -144,6 +138,19 @@ export const useServices = create(
                     const stream = service.callModel(instructions, context, preparedConfig);
                     const data: zDataPartType[] = [];
                     const state = replyValue.state;
+                    let hasText = false;
+                    let lastFlush = 0; // 0 ensures the very first content chunk flushes immediately
+
+                    // Atomically commit pending data to React state and yield a macrotask
+                    // so the browser can paint before the next batch of stream events arrives.
+                    const flush = async () => {
+                        replyValue.data = data;
+                        replyRef.state = state;
+                        replyRef.data = data;
+                        useChats.setState({messages: [...messages]});
+                        await new Promise<void>(r => setTimeout(r, 0));
+                        lastFlush = performance.now();
+                    };
 
                     for await (const part of stream) {
                         try {
@@ -154,16 +161,14 @@ export const useServices = create(
                             } else if (dataPart.type === "text") {
                                 state.thinking = false;
                                 state.generating = true;
-                                if (!data.filter(d => d.type === "text").length)
+                                if (!hasText) {
                                     dataPart.value = dataPart.value.trimStart(); // fix preceding whitespace in some model output
+                                    hasText = true;
+                                }
                                 const last = data[data.length - 1];
                                 if (last?.type === "text") last.value += dataPart.value;
                                 else data.push(dataPart);
                             }
-                            update(r => {
-                                r.state = state;
-                                r.data = data;
-                            });
                         } catch (e) {
                             console.warn("Stream part isn't zDataPart, but this is probably normal");
                         }
@@ -171,13 +176,19 @@ export const useServices = create(
                         try {
                             const streamEnd = StreamEnd.parse(part);
                             if (streamEnd.metadata) {
-                                console.log("Saving metadata:", streamEnd)
-                                update(r => r.metadata = streamEnd.metadata);
+                                replyValue.metadata = streamEnd.metadata;
                             }
                         } catch {
-                            // Ignore non-metadata parts failing
+                            // Not a metadata part – ignore
+                        }
+
+                        if (performance.now() - lastFlush >= 33) {
+                            await flush();
                         }
                     }
+
+                    // Final flush ensures the last batch of chunks is always rendered.
+                    await flush();
 
                     replyValue.state.working = false;
                     replyValue.state.thinking = false;

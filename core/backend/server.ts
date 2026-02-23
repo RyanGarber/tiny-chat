@@ -67,6 +67,7 @@ const trpcHandler = createHTTPHandler({
     router: trpc,
     basePath: `${process.env.VITE_DATA_PATH_TRPC}/`,
     createContext: trpcContext,
+    maxBodySize: 50 * 1024 * 1024
 });
 
 export const auth = betterAuth({

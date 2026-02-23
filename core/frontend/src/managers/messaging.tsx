@@ -189,11 +189,13 @@ export const useMessaging = create(
             else await fetchMessages(false);
             nprogress.complete();
 
+            reloadConfig();
             currentChat = useChats.getState().currentChat!;
 
             if (!currentChat.title) {
                 console.log("Chat has no title; setting one");
                 await trpc.chats.edit.mutate({id: currentChat.id, title: scrubText(extractText(data), 100)});
+                await fetchFolders(false);
             }
 
             try {
@@ -231,12 +233,13 @@ function setInputDisabled(disabled: boolean) {
 export function reloadConfig() {
     const {setConfig} = useMessaging.getState();
     let {messages} = useChats.getState();
-    messages = messages.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-    if (messages.length) {
-        setConfig(messages[messages.length - 1].config);
+    let sorted = [...messages].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    if (sorted.length) {
+        console.log("Found messages in chat; loading last message's config:", sorted[0].config);
+        setConfig(sorted[0].config);
         return;
     }
-    // TODO - figure out why config is being saved to storage as string
+    console.log("No messages in chat; trying fallback configs");
     let lastConfigString = readLocalStorageValue<string>({key: "config", sync: true});
     const lastConfig = lastConfigString ? zConfig.parse(JSON.parse(lastConfigString)) : null;
     const fallbackService = useServices.getState().services.find(s => s.models.length > 0);
@@ -245,7 +248,7 @@ export function reloadConfig() {
             service: fallbackService!.name,
             model: fallbackService!.models[0]
         });
-        console.log("No messages in chat; falling back to config:", lastConfig, fallbackService);
+        console.log("Loaded config:", lastConfig, "(last config:", lastConfig, ", fallback service:", fallbackService, ")");
     } catch {
         console.warn("Failed to load config or fall back to default service");
     }

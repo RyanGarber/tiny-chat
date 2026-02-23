@@ -1,12 +1,12 @@
+import {useEffect, useState} from "react";
 import {ActionIcon, Avatar, Burger, Divider, Group, NavLink, ScrollArea, Space, Stack, Tooltip} from "@mantine/core";
-import {Spotlight, spotlight} from "@mantine/spotlight";
+import {Spotlight, spotlight, SpotlightActionData} from "@mantine/spotlight";
 import {useLayout} from "@/managers/layout.tsx";
 import {IconEyeOff, IconHexagonPlus, IconSearch, IconSettings2, IconUserHexagon} from "@tabler/icons-react";
 import SidebarChat from "@/components/SidebarChat.tsx";
 import {useChats} from "@/managers/chats.tsx";
 import {useLocation} from "wouter";
-import {useEffect} from "react";
-import {auth} from "@/utils.ts";
+import {auth, extractText, scrubText, snippetText, trpc} from "@/utils.ts";
 import Drawers from "@/components/Drawers.tsx";
 import {useMessaging} from "@/managers/messaging.tsx";
 
@@ -22,12 +22,45 @@ export default function Sidebar() {
         if (isSessionPending || !session?.user) return;
         if (window.location.hash.length < 2) window.location.hash = "#/";
         if (!window.location.hash.startsWith("#/app/")) void setCurrentChat(location.slice(1) || null, false);
-    }, [location, isSessionPending, session?.user]);
+    }, [location, isSessionPending, session?.user?.id]);
 
     const setChatAndClose = (id: string | null) => {
         void setCurrentChat(id);
         if (isMobile) setSidebarOpen(false);
     };
+
+    const isTempActive = temporary || currentChat?.temporary;
+
+    const [searchQuery, setSearchQuery] = useState('');
+    const [spotlightActions, setSpotlightActions] = useState<SpotlightActionData[]>([]); // TODO - SpotlightActionGroup
+
+    useEffect(() => {
+        if (!(searchQuery.trim()?.length >= 3)) {
+            setSpotlightActions([]);
+            return;
+        }
+        // TODO - use useDebouncedState?
+        const timeout = setTimeout(async () => {
+            const results = await trpc.chats.search.query({query: searchQuery});
+            console.log("Results for", searchQuery, results);
+            const seen = new Set<string>();
+            setSpotlightActions(
+                results
+                    .filter((r) => {
+                        if (seen.has(r.chatId)) return false;
+                        seen.add(r.chatId);
+                        return true;
+                    })
+                    .map((r) => ({
+                        id: r.id,
+                        label: scrubText(r.chatTitle, 50),
+                        description: snippetText(scrubText(extractText(r.data)), searchQuery),
+                        onClick: () => setChatAndClose(r.chatId), // TODO - scroll to chat
+                    }))
+            );
+        }, 300);
+        return () => clearTimeout(timeout);
+    }, [searchQuery]);
 
     const expanded = (
         <>
@@ -35,8 +68,13 @@ export default function Sidebar() {
                 <ActionIcon variant="transparent" onClick={spotlight.open}>
                     <IconSearch size={18} color="lightgray"/>
                 </ActionIcon>
-                <Spotlight actions={[{id: "test", label: "Test", description: "Test search result"}]}
-                           highlightQuery></Spotlight>
+                <Spotlight
+                    actions={spotlightActions}
+                    query={searchQuery}
+                    onQueryChange={setSearchQuery}
+                    highlightQuery
+                    scrollAreaProps={{mah: 400}}
+                />
                 <Burger opened={isSidebarOpen} onClick={() => setSidebarOpen(!isSidebarOpen)} size={16}/>
             </Group>
             <Group align="center" mt={5} gap={5}>
@@ -44,7 +82,7 @@ export default function Sidebar() {
                          onClick={() => setChatAndClose(null)} active={!currentChat} variant="subtle"
                          flex={1} bdrs="md"/>
                 <ActionIcon size={40} variant="subtle" c="dimmed" bdrs="md" className="nav-link-like filled"
-                            onClick={() => void setTemporary(!temporary)} data-active={temporary}>
+                            onClick={() => void setTemporary(!isTempActive)} data-active={isTempActive}>
                     <IconEyeOff size={20}/>
                 </ActionIcon>
             </Group>

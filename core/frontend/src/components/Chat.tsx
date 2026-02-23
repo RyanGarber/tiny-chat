@@ -102,11 +102,11 @@ export default function Chat() {
     }, [messages, messages[messages.length - 1]?.data, scrollToBottom]);
 
     useEffect(() => {
-        if (scrollRequested > 0) {
+        if (scrollRequested > 0 && !isInitializing) {
             isAtBottomRef.current = true;
             scrollToBottom('smooth');
         }
-    }, [scrollRequested, scrollToBottom]);
+    }, [scrollRequested, scrollToBottom, isInitializing]);
 
     const containerMaxWidth = 860;
     const containerRef = useRef<HTMLDivElement>(null);

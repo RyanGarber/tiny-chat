@@ -1,0 +1,36 @@
+{
+  "name": "tiny-chat",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev:tauri": "dotenv -- concurrently -k \"npm -w @tiny-chat/core-backend run dev\" \"node tools/wait-for-backend.js && npm -w @tiny-chat/apps-tauri run tauri dev\"",
+    "dev:tauri:ios": "dotenv -- concurrently -k \"npm -w @tiny-chat/core-backend run dev -- --host\" \"node tools/wait-for-backend.js && npm -w @tiny-chat/apps-tauri run tauri ios dev -- --host\"",
+    "dev:tauri:android": "dotenv -- concurrently -k \"npm -w @tiny-chat/core-backend run dev -- --host\" \"node tools/wait-for-backend.js && npm -w @tiny-chat/apps-tauri run tauri android dev -- --host\"",
+    "dev:web": "dotenv -- concurrently -k \"npm -w @tiny-chat/core-backend run dev\" \"node tools/wait-for-backend.js && npm -w @tiny-chat/apps-web run dev\"",
+    "build:tauri": "dotenv -- npm -w @tiny-chat/apps-tauri run tauri build",
+    "build:tauri:ios": "dotenv -- npm -w @tiny-chat/apps-tauri run tauri ios build",
+    "build:tauri:android": "dotenv -- npm -w @tiny-chat/apps-tauri run tauri android build",
+    "build:web": "dotenv -- npm -w @tiny-chat/core-frontend run build"
+  },
+  "workspaces": [
+    "apps/tauri",
+    "apps/web",
+    "core/backend",
+    "core/frontend"
+  ],
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "dotenv-cli": "^11.0.0",
+    "env-cmd": "^11.0.0",
+    "wait-on": "^9.0.3"
+  },
+  "overrides": {
+    "hono": "^4.11.10",
+    "lodash": "^4.17.23",
+    "ajv": "^8.18.0",
+    "eslint": "^10.0.1",
+    "minimatch": "^10.2.1",
+    "typescript": "^5.9.3"
+  }
+}

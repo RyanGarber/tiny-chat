@@ -1,0 +1,141 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,100..900;1,100..900&display=swap');
+
+html,
+body {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: auto;
+}
+
+.mantine-AppShell-root,
+.mantine-AppShell-main {
+    min-height: 0 !important;
+    max-height: 100% !important;
+}
+
+.mantine-NavLink-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nav-link-like:is(:hover, [data-active="true"]) {
+    background-color: var(--mantine-color-gray-1);
+}
+
+[data-mantine-color-scheme="dark"] .nav-link-like:is(:hover, [data-active="true"]) {
+    background-color: var(--mantine-color-dark-6);
+}
+
+.nav-link-like.filled[data-active="true"] {
+    background-color: var(--mantine-color-blue-filled);
+}
+
+.nav-link-like.filled[data-active="true"]:hover {
+    background-color: var(--mantine-color-blue-filled-hover);
+}
+
+.nav-link-like.filled[data-active="true"] * {
+    color: var(--mantine-color-white);
+}
+
+.new-chat {
+    color: revert;
+}
+
+.new-chat:is(:hover, [data-active="true"]) {
+    background-color: var(--mantine-color-gray-1);
+}
+
+[data-mantine-color-scheme="dark"] .new-chat:is(:hover, [data-active="true"]) {
+    background-color: var(--mantine-color-dark-6);
+}
+
+[data-slate-editor] {
+    align-content: center;
+}
+
+[data-slate-editor] p {
+    margin: 0;
+}
+
+[contenteditable] {
+    font-size: 16px; /* prevents iOS zoom I guess */
+}
+
+[contenteditable]:focus {
+    outline: 0 solid transparent !important;
+}
+
+[data-use-hljs-bg="true"] [class*="mantine-CodeHighlight"] {
+    --ch-background: var(--hljs-bg)
+}
+
+[data-use-hljs-bg="true"] .mantine-CodeHighlight-pre {
+    background: var(--hljs-bg);
+}
+
+[data-use-hljs-bg="true"] .mantine-Typography-root *:has(pre) {
+    background: var(--hljs-bg);
+}
+
+[data-use-hljs-bg="false"] .hljs {
+    background: transparent;
+}
+
+.mantine-Typography-root .ignore-typography {
+    all: revert;
+}
+
+.mantine-Typography-root :not(pre) > code {
+    font-size: inherit;
+    background: var(--mantine-color-gray-1);
+}
+
+[data-mantine-color-scheme="dark"] .mantine-Typography-root :not(pre) > code {
+    background: var(--mantine-color-dark-5);
+}
+
+.mantine-Typography-root .ignore-typography.mantine-Blockquote-root {
+    position: relative;
+    margin: 0;
+    border-inline-start: 3px solid var(--mantine-color-blue-filled);
+    border-start-end-radius: var(--mantine-radius-default);
+    border-end-end-radius: var(--mantine-radius-default);
+    background: rgba(25, 113, 194, 0.06);
+    padding: calc(var(--mantine-spacing-xl) / 4) calc(2.375rem * var(--mantine-scale) / 2);
+}
+
+.user-message {
+    background: var(--mantine-color-gray-1);
+}
+
+[data-mantine-color-scheme="dark"] .user-message {
+    background: var(--mantine-color-dark-6);
+}
+
+.code-fade-in {
+    animation: codeFadeIn 0.3s ease;
+}
+
+@keyframes codeFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.input-effect {
+    background: var(--mantine-color-gray-1);
+}
+
+[data-mantine-color-scheme="dark"] .input-effect {
+    background: var(--mantine-color-dark-6);
+}

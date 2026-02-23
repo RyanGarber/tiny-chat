@@ -1,0 +1,13 @@
+{
+  "name": "@tiny-chat/apps-web",
+  "type": "module",
+  "scripts": {
+    "dev": "npm -w @tiny-chat/core-frontend run dev",
+    "build": "npm -w @tiny-chat/core-frontend run build",
+    "start": "node index.ts"
+  },
+  "dependencies": {
+    "fastify": "^5.7.4",
+    "@fastify/static": "^9.0.0"
+  }
+}

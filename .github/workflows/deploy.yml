@@ -1,0 +1,108 @@
+name: deploy
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Create environment
+        run: |
+          cat << EOF > .env
+          PG_HOST=${{ secrets.PG_HOST }}
+          PG_PORT=${{ secrets.PG_PORT }}
+          PG_USER=${{ secrets.PG_USER }}
+          PG_PASSWORD=${{ secrets.PG_PASSWORD }}
+          PG_DATABASE=${{ secrets.PG_DATABASE }}
+          VITE_DATA_URL=${{ secrets.VITE_DATA_URL }}
+          VITE_DATA_PORT=${{ secrets.VITE_DATA_PORT }}
+          VITE_DATA_PATH_TRPC=${{ secrets.VITE_DATA_PATH_TRPC }}
+          VITE_DATA_PATH_AUTH=${{ secrets.VITE_DATA_PATH_AUTH }}
+          VITE_WEB_URL=${{ secrets.VITE_WEB_URL }}
+          VITE_WEB_PORT=${{ secrets.VITE_WEB_PORT }}
+          AUTH_GITHUB_CLIENT=${{ secrets.AUTH_GITHUB_CLIENT }}
+          AUTH_GITHUB_SECRET=${{ secrets.AUTH_GITHUB_SECRET }}
+          AUTH_GOOGLE_CLIENT=${{ secrets.AUTH_GOOGLE_CLIENT }}
+          AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}
+          EOF
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build backend and web
+        run: |
+          npm run build:web
+          cp -r core/frontend/dist apps/web/dist
+
+      - name: Create deploy artifact
+        run: |
+          mkdir deploy
+          cp package.json deploy/
+          cp package-lock.json deploy/
+          mkdir deploy/core
+          cp -r core/backend deploy/core/backend
+          mkdir deploy/apps
+          cp -r apps/web deploy/apps/web
+          tar -czf deploy.tar.gz deploy
+
+      - name: Upload deploy artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: deploy
+          path: deploy.tar.gz
+
+  deploy:
+    runs-on: self-hosted
+    needs: build
+    environment: production
+
+    steps:
+      - name: Download deploy artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: deploy
+          path: artifact
+
+      - name: Extract deploy artifact
+        run: |
+          rm -rf ~/deploy
+          tar -xzf artifact/deploy.tar.gz -C ~
+
+      - name: Create environment
+        run: |
+          cat << EOF > ~/deploy/.env
+          PG_HOST=${{ secrets.PG_HOST }}
+          PG_PORT=${{ secrets.PG_PORT }}
+          PG_USER=${{ secrets.PG_USER }}
+          PG_PASSWORD=${{ secrets.PG_PASSWORD }}
+          PG_DATABASE=${{ secrets.PG_DATABASE }}
+          VITE_DATA_URL=${{ secrets.VITE_DATA_URL }}
+          VITE_DATA_PORT=${{ secrets.VITE_DATA_PORT }}
+          VITE_DATA_PATH_TRPC=${{ secrets.VITE_DATA_PATH_TRPC }}
+          VITE_DATA_PATH_AUTH=${{ secrets.VITE_DATA_PATH_AUTH }}
+          VITE_WEB_URL=${{ secrets.VITE_WEB_URL }}
+          VITE_WEB_PORT=${{ secrets.VITE_WEB_PORT }}
+          AUTH_GITHUB_CLIENT=${{ secrets.AUTH_GITHUB_CLIENT }}
+          AUTH_GITHUB_SECRET=${{ secrets.AUTH_GITHUB_SECRET }}
+          AUTH_GOOGLE_CLIENT=${{ secrets.AUTH_GOOGLE_CLIENT }}
+          AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}
+          EOF
+
+      - name: Install dependencies
+        run: |
+          cd ~/deploy
+          npm ci
+
+      - name: Deploy
+        run: pm2 restart all

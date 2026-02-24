@@ -72,12 +72,9 @@ export const useMessaging = create(
 
         files: [],
         addFiles: (...files) => {
-            console.log("Adding files:", files);
             set({files: [...get().files, ...files]});
-            console.log("Now:", get().files.map(f => f.name));
         },
         removeFile: (file) => {
-            console.log("Removing file:", file);
             set({files: get().files.filter(f => f !== file)});
         },
         addQuote: (content) => {
@@ -94,19 +91,14 @@ export const useMessaging = create(
             const {setConfig, setInsertingAfter, editor, clearEditor} = get();
             if (!editor) return;
 
-            clearEditor();
-
-            const files: File[] = [];
             if (value) {
                 setInsertingAfter(null);
-                for (const file of value.data.filter(p => p.type === "file")) {
-                    files.push(new File([await (await fetch(file.url)).blob()], file.name, {type: file.mime}));
-                }
-                Transforms.insertNodes(editor, deserialize(extractText(value.data)));
-                Transforms.removeNodes(editor, {at: [0]});
+                await setInputData(value.data);
+            } else {
+                clearEditor();
             }
 
-            set({files, editing: value, truncating: value !== null});
+            set({editing: value, truncating: value !== null});
             if (value) setConfig(value.config);
             else reloadConfig();
         },
@@ -202,8 +194,9 @@ export const useMessaging = create(
                 console.log(`Running model ${get().config!.model} on message ${message.id}`);
                 await useServices.getState().onMessage(message.id);
             } catch (e) {
-                alert("error", "Failed to run model (see console)")
+                alert("error", "Failed to run model")
                 await get().deleteMessagePair(message.id);
+                await setInputData(data);
                 throw e;
             } finally {
                 setInputDisabled(false);
@@ -223,6 +216,21 @@ export const useMessaging = create(
         },
     })),
 );
+
+async function setInputData(data: zDataType) {
+    const {editor, clearEditor, addFiles} = useMessaging.getState();
+    if (!editor) return;
+
+    clearEditor();
+    Transforms.insertNodes(editor, deserialize(extractText(data)));
+    Transforms.removeNodes(editor, {at: [0]});
+
+    const files: File[] = [];
+    for (const file of data.filter(p => p.type === "file")) {
+        files.push(new File([await (await fetch(file.url)).blob()], file.name, {type: file.mime}));
+    }
+    addFiles(...files);
+}
 
 function setInputDisabled(disabled: boolean) {
     const {isMessagingDisabled, setMessagingDisabled} = useLayout.getState();

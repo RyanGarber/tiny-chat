@@ -34,7 +34,7 @@ export default router({
         }),
 
     clone: procedure
-        .input(z.object({id: z.cuid2(), untilMessageId: z.cuid2()}))
+        .input(z.object({id: z.cuid2(), untilMessageId: z.cuid2(), title: z.string()}))
         .mutation(async ({ctx, input}) => {
             const chat = await ctx.prisma.chat.findUniqueOrThrow({
                 where: {id: input.id, userId: ctx.session.user.id},
@@ -63,7 +63,7 @@ export default router({
             });
 
             if (chat.folder.chats.length === 1) {
-                await ctx.prisma.chat.update({
+                await ctx.prisma.folder.update({
                     where: {id: chat.folderId},
                     data: {
                         title: chat.title,
@@ -76,6 +76,7 @@ export default router({
                     id: createId(),
                     user: {connect: {id: chat.userId}},
                     folder: {connect: {id: chat.folderId}},
+                    title: input.title,
                     messages: {
                         createMany: {
                             data: messages.map((message) => ({

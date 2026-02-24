@@ -24,6 +24,14 @@ body {
     text-overflow: ellipsis;
 }
 
+.section-on-hover .mantine-NavLink-section {
+    display: none;
+}
+
+.section-on-hover:hover .mantine-NavLink-section {
+    display: flex;
+}
+
 .nav-link-like:is(:hover, [data-active="true"]) {
     background-color: var(--mantine-color-gray-1);
 }

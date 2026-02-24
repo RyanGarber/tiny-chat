@@ -16,6 +16,9 @@ interface Layout {
     isInitializing: boolean;
     setInitializing: (value: boolean) => void;
 
+    isMessaging: boolean;
+    setIsMessaging: (value: boolean) => void;
+
     isMessagingDisabled: boolean;
     setMessagingDisabled: (value: boolean) => void;
 
@@ -50,6 +53,9 @@ export const useLayout = create(
 
             isInitializing: true,
             setInitializing: (value: boolean) => set({isInitializing: value}),
+
+            isMessaging: false,
+            setIsMessaging: (value: boolean) => set({isMessaging: value}),
 
             isMessagingDisabled: false,
             setMessagingDisabled: (value: boolean) => set({isMessagingDisabled: value}),

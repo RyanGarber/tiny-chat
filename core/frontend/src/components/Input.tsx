@@ -21,7 +21,7 @@ import {
     Stack,
     Text,
 } from "@mantine/core";
-import {IconFile, IconPlus, IconSend,} from "@tabler/icons-react";
+import {IconFile, IconPlayerStop, IconPlus, IconSend,} from "@tabler/icons-react";
 import {useCallback, useLayoutEffect, useRef, useState,} from "react";
 import {Editable, ReactEditor, Slate} from "slate-react";
 import {serialize} from "@/slate/serializer.tsx";
@@ -35,8 +35,8 @@ import {consumeLabel} from "@/utils.ts";
 
 export default function Input({...props}: InputWrapperProps) {
     const {setEditor, config, setConfig, addFiles} = useMessaging();
-    const {services, findService} = useServices();
-    const {shadow, isMessagingDisabled} = useLayout();
+    const {services, findService, abortController} = useServices();
+    const {shadow, setIsMessaging, isMessagingDisabled} = useLayout();
     const {getTheme} = useSettings();
 
     const [isMultiline, setMultiline] = useState(false);
@@ -104,7 +104,7 @@ export default function Input({...props}: InputWrapperProps) {
                 >
                     <IconPlus size={24}/> {/* ALL TODO */}
                     <DropzoneFullScreen
-                        onDrop={(files) => addFiles(...files)}/> {/* TODO - not working */}
+                        onDrop={(files) => addFiles(...files)}/> {/* TODO - not any */}
                 </ActionIcon>
             </Menu.Target>
             <Menu.Dropdown style={{boxShadow: shadow}}>
@@ -193,10 +193,10 @@ export default function Input({...props}: InputWrapperProps) {
             <ActionIcon
                 variant="subtle"
                 size={32}
-                onClick={onSend}
-                disabled={isMessagingDisabled}
+                onClick={abortController !== null ? () => abortController.abort() : onSend}
+                disabled={isMessagingDisabled && (abortController === null || abortController.signal.aborted)}
             >
-                <IconSend size={24}/>
+                {abortController !== null ? <IconPlayerStop size={24}/> : <IconSend size={24}/>}
             </ActionIcon>
         </>
     );
@@ -246,6 +246,7 @@ export default function Input({...props}: InputWrapperProps) {
                         "--input-left-section-width": "auto",
                         "--input-right-section-width": "auto",
                     }}
+                    radius={10}
                     styles={{
                         input: {
                             padding: 0,
@@ -285,6 +286,8 @@ export default function Input({...props}: InputWrapperProps) {
                                 renderLeaf={useCallback(renderLeaf, [])}
                                 decorate={useCallback(decorate, [])}
                                 onKeyDown={onKeyDown}
+                                onFocus={() => setIsMessaging(true)}
+                                onBlur={() => setIsMessaging(false)}
                                 readOnly={isMessagingDisabled}
                             ></Editable>
                         </Slate>

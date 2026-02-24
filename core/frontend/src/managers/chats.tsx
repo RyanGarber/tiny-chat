@@ -84,7 +84,8 @@ export const useChats = create(
             nprogress.start();
             const chat = await trpc.chats.clone.mutate({
                 id: currentChat!.id,
-                untilMessageId
+                untilMessageId,
+                title: `Fork of ${currentChat!.title}`
             });
             nprogress.set(33);
             await fetchFolders(false);

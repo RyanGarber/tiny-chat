@@ -31,12 +31,13 @@ export default function Chat() {
         scrollRequested,
     } = useMessaging();
 
-    const {isMobile, shadow, isInitializing, getSidebarWidth} = useLayout();
+    const {isMobile, shadow, isInitializing, isMessaging, getSidebarWidth} = useLayout();
 
     const messagesViewportRef = useRef<HTMLDivElement>(null);
     const isAtBottomRef = useRef(true);
     const smoothScrollVersionRef = useRef(0);
     const isSmoothScrollingRef = useRef(false);
+
     const hasBeenNewChat = useRef(false);
 
     const checkIsAtBottom = useCallback(() => {
@@ -67,7 +68,6 @@ export default function Chat() {
     }, [checkIsAtBottom]);
 
     const handleScroll = useCallback(() => {
-        if (isSmoothScrollingRef.current) return;
         isAtBottomRef.current = checkIsAtBottom();
     }, [checkIsAtBottom]);
 
@@ -108,23 +108,24 @@ export default function Chat() {
         }
     }, [scrollRequested, scrollToBottom, isInitializing]);
 
-    const containerMaxWidth = 860;
-    const containerRef = useRef<HTMLDivElement>(null);
-    const [isWidescreen, setIsWidescreen] = useState(
+    const inputMaxWidth = 860;
+    const inputRef = useRef<HTMLDivElement>(null);
+    const [isInputMaxWidth, setIsInputMaxWidth] = useState(
         window.innerWidth > 860 + getSidebarWidth(),
     );
+
     useLayoutEffect(() => {
         const handleResize = () => {
-            setIsWidescreen(
-                (containerRef.current?.clientWidth ?? window.innerWidth - getSidebarWidth()) >=
-                containerMaxWidth,
+            setIsInputMaxWidth(
+                (inputRef.current?.clientWidth ?? window.innerWidth - getSidebarWidth()) >=
+                inputMaxWidth,
             );
         };
         const observer = new ResizeObserver(() => handleResize());
-        if (containerRef.current) observer.observe(containerRef.current);
+        if (inputRef.current) observer.observe(inputRef.current);
         handleResize();
         return () => observer.disconnect();
-    }, [containerRef.current]);
+    }, [inputRef.current]);
 
     let hasHitEdit = false;
     const getMessageOpacity = (message: { id: string }) => {
@@ -142,93 +143,22 @@ export default function Chat() {
         if (isNewChat) hasBeenNewChat.current = true;
     }, [isNewChat]);
 
-    const inputEffects = (
-        <Group gap={3} pb={3}>
-            {editing && (
-                <InputEffect
-                    content={
-                        <>
-                            Editing{" "}
-                            <span style={{color: "#aaa"}}>
-                                {scrubText(extractText(editing.data), 20)}
-                            </span>
-                        </>
-                    }
-                    onDelete={() => setEditing(null)}
-                />
-            )}
-            {truncating && (
-                <InputEffect
-                    content={"Overwriting newer"}
-                    onDelete={() => setTruncating(false)}
-                />
-            )}
-            {insertingAfter && (
-                <InputEffect
-                    content={
-                        <>
-                            Inserting after{" "}
-                            <span style={{color: "#aaa"}}>
-                                {scrubText(extractText(insertingAfter.data), 20)}
-                            </span>
-                        </>
-                    }
-                    onDelete={() => setInsertingAfter(null)}
-                />
-            )}
-            {files.map(file => (
-                <InputEffect content={<Attachments
-                    list={[{name: file.name, mime: file.type, url: URL.createObjectURL(file)}]}/>}
-                             onDelete={() => removeFile(file)} key={file.name}/>
-            ))}
-        </Group>
-    );
-
-    const inputBox = (
-        <Box
-            w="100%"
-            maw={containerMaxWidth}
-            m="0 auto"
-            bg="rgba(255, 255, 255, 0.01)"
-            bdrs="10px 10px 0 0"
-            p={3}
-            style={{
-                boxShadow: shadow,
-                overflow: "hidden",
-            }}
-            ref={containerRef}
-        >
-            {inputEffects}
-            <Input/>
-        </Box>
-    );
-
     return (
-        <div
-            style={{
-                display: "flex",
-                flexDirection: "column",
-                height: "100%",
-                position: "relative",
-            }}
-        >
+        <Stack h="100%" gap={0} px={!isInputMaxWidth && !currentChat ? 20 : 0}>
             {/* Main content area */}
-            <div style={{flex: 1, minHeight: 0, position: "relative", overflow: "hidden"}}>
+            <Box flex={1} pos="relative" mih={0} style={{overflow: "hidden"}}>
                 {/* New chat hero overlay */}
-                <div
+                <Stack
+                    pos="absolute"
+                    inset={0}
+                    justify="flex-end"
+                    align="center"
+                    pb={24}
+                    gap={0}
+                    opacity={isNewChat ? 1 : 0}
                     style={{
-                        position: "absolute",
-                        inset: 0,
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "flex-end",
-                        alignItems: "center",
-                        paddingBottom: 24,
-                        opacity: isNewChat ? 1 : 0,
-                        backgroundColor: "var(--mantine-color-body)",
                         transition: "opacity 300ms ease",
                         pointerEvents: isNewChat ? "auto" : "none",
-                        zIndex: 1,
                     }}
                 >
                     <div style={{display: "grid", placeItems: "center"}}>
@@ -262,7 +192,7 @@ export default function Chat() {
                         </Stack>
                     </div>
                     <Text size="sm" c="dimmed" mt={6}>What's on your mind?</Text>
-                </div>
+                </Stack>
 
                 {/* Messages scroll area */}
                 {!isNewChat && (
@@ -270,7 +200,7 @@ export default function Chat() {
                         viewportRef={messagesViewportRef}
                         onScrollPositionChange={handleScroll}
                         h="100%"
-                        pt={isWidescreen ? 20 : 0}
+                        style={{maskImage: `linear-gradient(to bottom, transparent 0%, black 25px, black calc(100% - 25px), transparent 100%)`}}
                         styles={{
                             scrollbar: {
                                 zIndex: "calc(var(--mantine-z-index-app) + 1)",
@@ -304,24 +234,88 @@ export default function Chat() {
                         </Stack>
                     </ScrollArea>
                 )}
-            </div>
+
+                {/* InputEffects overlay — sits at the bottom of the scroll area */}
+                <Group
+                    pos="absolute"
+                    bottom={0}
+                    left={0}
+                    right={0}
+                    justify="center"
+                    p={isInputMaxWidth ? 0 : "0 10px"}
+                    style={{
+                        pointerEvents: "none",
+                    }}
+                >
+                    <div style={{width: "100%", maxWidth: inputMaxWidth}}>
+                        <Group gap={3} pb={3}>
+                            {editing && (
+                                <InputEffect
+                                    content={
+                                        <>
+                                            Editing{" "}
+                                            <span style={{color: "#aaa"}}>
+                                                {scrubText(extractText(editing.data), 20)}
+                                            </span>
+                                        </>
+                                    }
+                                    onDelete={() => setEditing(null)}
+                                />
+                            )}
+                            {truncating && (
+                                <InputEffect
+                                    content={"Overwriting newer"}
+                                    onDelete={() => setTruncating(false)}
+                                />
+                            )}
+                            {insertingAfter && (
+                                <InputEffect
+                                    content={
+                                        <>
+                                            Inserting after{" "}
+                                            <span style={{color: "#aaa"}}>
+                                                {scrubText(extractText(insertingAfter.data), 20)}
+                                            </span>
+                                        </>
+                                    }
+                                    onDelete={() => setInsertingAfter(null)}
+                                />
+                            )}
+                            {files.map(file => (
+                                <InputEffect
+                                    content={<Attachments
+                                        list={[{name: file.name, mime: file.type, url: URL.createObjectURL(file)}]}/>}
+                                    onDelete={() => removeFile(file)}
+                                    key={file.name}
+                                />
+                            ))}
+                        </Group>
+                    </div>
+                </Group>
+            </Box>
 
             {/* Input area */}
-            <Box mb={!isNewChat && isWidescreen ? 20 : 0}>
-                {inputBox}
+            <Box
+                w="100%"
+                maw={inputMaxWidth}
+                m={`0 auto ${!isNewChat && isInputMaxWidth ? 20 : 0} auto`}
+                p={isInputMaxWidth ? 0 : "0 10px 10px 10px"}
+                ref={inputRef}
+            >
+                <Input style={{boxShadow: shadow}}/>
             </Box>
 
             {/* Bottom spacer for vertical centering in new chat mode */}
             <div
-                style={{
-                    flexGrow: isNewChat ? 1 : 0,
+                style={{ // TODO - isMessaging makes iOS look better, but how does it work on Android?
+                    flexGrow: isNewChat && !(isMobile && isMessaging) ? 1 : 0,
                     flexShrink: 0,
-                    flexBasis: isNewChat ? 60 : 0,
+                    flexBasis: isNewChat && !(isMobile && isMessaging) ? 60 : 0,
                     transition: hasBeenNewChat.current
                         ? "flex-grow 400ms ease, flex-basis 400ms ease"
                         : "none",
                 }}
             />
-        </div>
+        </Stack>
     );
 }

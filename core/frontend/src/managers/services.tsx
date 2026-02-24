@@ -20,6 +20,8 @@ interface Services {
     fetchServices: () => Promise<void>;
 
     onMessage: (messageId: string) => Promise<void>;
+    isStopRequested: boolean;
+    setStopRequested: () => void;
 }
 
 export const useServices = create(
@@ -54,9 +56,10 @@ export const useServices = create(
             if (!currentChat) return;
 
             const config = messages.find(m => m.id === messageId)!.config;
-
             console.log("Running model with config:", config);
+
             const omissions = await trpc.messages.listOmissions.query({ids: messages.map(m => m.id)});
+
             let isPostTarget = false;
             for (let i = 0; i < messages.length; i++) {
                 if (messages[i].author !== Author.USER) continue;
@@ -65,18 +68,13 @@ export const useServices = create(
                 if (isTarget) isPostTarget = true;
 
                 if (isPostTarget) {
-                    const replyValue = await prepare(messages[i].id, config);
-                    messages = useChats.getState().messages;
-                    // Hoist replyRef – avoids an O(n) messages.find() on every stream chunk.
-                    const replyRef = messages.find(m => m.id === replyValue.id)!;
+                    const reply = await prepare(messages[i].id, config);
 
-                    // Show the working indicator immediately (don't wait for the first chunk).
-                    replyValue.state.working = true;
-                    replyRef.state = replyValue.state;
+                    reply.state.working = true;
                     useChats.setState({messages: [...messages]});
                     console.log(
                         `Replying to message ${messages[i].id} using ${isTarget ? "config" : "its existing settings"}`,
-                        replyValue.config
+                        reply.config
                     );
 
                     const context: MessageUnomitted[] = messages.slice(0, i + 1).map(m => {
@@ -107,24 +105,23 @@ export const useServices = create(
                         }
                     });
 
-                    // TODO - prefix/explanation before user instructions?
                     const userInstructions = useSettings.getState().getInstructions();
-                    const instructions = `You are the AI model "${replyValue.config.model}."\n\n`
+                    const instructions = `You are the AI model "${reply.config.model}."\n\n`
                         + `This conversation may include responses from multiple AI models.\n\n`
                         + `Previous user messages are labeled in the format:\n\n`
                         + `[user]\n\n`
                         + `Previous assistant messages are labeled in the format:\n\n`
                         + `[assistant:model=<model-name>]\n\n`
                         + `These labels indicate which model generated each response and are NOT part of the message content.\n`
-                        + `You are "${replyValue.config.model}." You should speak only as "${replyValue.config.model}."\n\n`
+                        + `You are "${reply.config.model}." You should speak only as "${reply.config.model}."\n\n`
                         + `IMPORTANT: Do NOT include your own label in your response – the system will add it automatically.`
                         + (userInstructions.length
                             ? `\n\n`
                             + `Additionally, the user provided the following instructions:\n`
                             + `${userInstructions.join("\n")}` : "");
 
-                    const service = useServices.getState().findService(replyValue.config.service)!;
-                    const preparedConfig = replyValue.config;
+                    const service = useServices.getState().findService(reply.config.service)!;
+                    const preparedConfig = reply.config;
                     for (const arg of service.getArgs(config.model)!) {
                         if (preparedConfig.args?.[arg.name] === undefined) {
                             console.log(`Using default value for arg ${arg.name}:`, arg.default)
@@ -136,38 +133,33 @@ export const useServices = create(
                     console.log("Using instructions:", instructions, "context:", context, "and args:", preparedConfig.args);
 
                     const stream = service.callModel(instructions, context, preparedConfig);
-                    const data: zDataPartType[] = [];
-                    const state = replyValue.state;
-                    let hasText = false;
-                    let lastFlush = 0; // 0 ensures the very first content chunk flushes immediately
 
-                    // Atomically commit pending data to React state and yield a macrotask
-                    // so the browser can paint before the next batch of stream events arrives.
+                    let lastFlush = 0;
                     const flush = async () => {
-                        replyValue.data = data;
-                        replyRef.state = state;
-                        replyRef.data = data;
                         useChats.setState({messages: [...messages]});
                         await new Promise<void>(r => setTimeout(r, 0));
                         lastFlush = performance.now();
                     };
 
+                    let hasText = false;
                     for await (const part of stream) {
+                        if (get().isStopRequested) break;
+
                         try {
                             const dataPart = zDataPart.parse(part);
                             if (dataPart.type === "thought") {
-                                state.thinking = true;
-                                data.push(dataPart);
+                                reply.state.thinking = true;
+                                reply.data.push(dataPart);
                             } else if (dataPart.type === "text") {
-                                state.thinking = false;
-                                state.generating = true;
+                                reply.state.thinking = false;
+                                reply.state.generating = true;
                                 if (!hasText) {
                                     dataPart.value = dataPart.value.trimStart(); // fix preceding whitespace in some model output
                                     hasText = true;
                                 }
-                                const last = data[data.length - 1];
+                                const last = reply.data[reply.data.length - 1];
                                 if (last?.type === "text") last.value += dataPart.value;
-                                else data.push(dataPart);
+                                else reply.data.push(dataPart);
                             }
                         } catch (e) {
                             console.warn("Stream part isn't zDataPart, but this is probably normal");
@@ -176,7 +168,7 @@ export const useServices = create(
                         try {
                             const streamEnd = StreamEnd.parse(part);
                             if (streamEnd.metadata) {
-                                replyValue.metadata = streamEnd.metadata;
+                                reply.metadata = streamEnd.metadata;
                             }
                         } catch {
                             // Not a metadata part – ignore
@@ -187,18 +179,17 @@ export const useServices = create(
                         }
                     }
 
-                    // Final flush ensures the last batch of chunks is always rendered.
                     await flush();
 
-                    replyValue.state.working = false;
-                    replyValue.state.thinking = false;
-                    replyValue.state.generating = false;
-
-                    await publish(replyValue);
-                    console.log("Published reply:", replyValue);
+                    await publish(reply);
+                    console.log("Published reply:", reply);
                 }
             }
         },
+        isStopRequested: false,
+        setStopRequested: () => {
+            set({isStopRequested: true});
+        }
     })),
 );
 
@@ -223,7 +214,9 @@ async function prepare(previousId: string, config: zConfigType): Promise<Message
             truncate: false,
         });
     await useChats.getState().fetchMessages(false);
-    return {...useChats.getState().messages.find((m) => m.id === reply.id)!, metadata: {}};
+    const replyRef = useChats.getState().messages.find((m) => m.id === reply.id) as MessageUnomitted;
+    replyRef.metadata = {};
+    return replyRef;
 }
 
 async function publish(prepared: MessageUnomitted) {

@@ -7,6 +7,7 @@ import MessageBody from "@/components/MessageBody.tsx";
 import {MessageOmitted as MessageData} from "@tiny-chat/core-backend/types.ts";
 import {extractText} from "@/utils.ts";
 import {Author} from "@tiny-chat/core-backend/generated/prisma/enums.ts";
+import {JSX} from "react";
 
 export default function Message({
                                     message,
@@ -46,6 +47,38 @@ export default function Message({
             ></div>
         );
     };
+
+    const actions: JSX.Element[] = [];
+    if (messages.length > messages.indexOf(message) + 1) {
+        actions.push(
+            <Tooltip label="Insert" position="bottom" color="gray" key="insert">
+                <ActionIcon
+                    variant="subtle"
+                    size={30}
+                    onClick={() => setInsertingAfter(insertingAfter?.id !== message.id ? message : null)}
+                >
+                    {insertingAfter?.id === message.id ? (
+                        <IconX size={20}/>
+                    ) : (
+                        <IconIndentIncrease size={20}/>
+                    )}
+                </ActionIcon>
+            </Tooltip>
+        );
+    }
+    if (!currentChat!.temporary) {
+        actions.push(
+            <Tooltip label="Fork" position="bottom" color="gray" key="fork">
+                <ActionIcon
+                    variant="subtle"
+                    size={30}
+                    onClick={() => cloneChat(message.id)}
+                >
+                    <IconArrowsSplit size={20}/>
+                </ActionIcon>
+            </Tooltip>
+        );
+    }
 
     return (
         <div>
@@ -126,7 +159,7 @@ export default function Message({
                     </Box>
                 </Stack>
             </div>
-            {message.author === Author.MODEL && (
+            {message.author === Author.MODEL && actions.length !== 0 && (
                 <div
                     onMouseEnter={onNodeHover}
                     onMouseLeave={onNodeLeave}
@@ -142,32 +175,7 @@ export default function Message({
                     }}
                 >
                     <Divider messageId={message.id}></Divider>
-                    <div>
-                        {messages.length > messages.indexOf(message) + 1 && (
-                            <Tooltip label="Insert" position="bottom" color="gray">
-                                <ActionIcon
-                                    variant="subtle"
-                                    size={30}
-                                    onClick={() => setInsertingAfter(insertingAfter?.id !== message.id ? message : null)}
-                                >
-                                    {insertingAfter?.id === message.id ? (
-                                        <IconX size={20}/>
-                                    ) : (
-                                        <IconIndentIncrease size={20}/>
-                                    )}
-                                </ActionIcon>
-                            </Tooltip>
-                        )}
-                        {!currentChat!.temporary && <Tooltip label="Fork" position="bottom" color="gray">
-                            <ActionIcon
-                                variant="subtle"
-                                size={30}
-                                onClick={() => cloneChat(message.id)}
-                            >
-                                <IconArrowsSplit size={20}/>
-                            </ActionIcon>
-                        </Tooltip>}
-                    </div>
+                    <Box>{actions}</Box>
                     <Divider messageId={message.id}></Divider>
                 </div>
             )}

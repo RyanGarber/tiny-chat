@@ -15,7 +15,7 @@ export default function SidebarChat({
     props: NavLinkProps
 }) {
     const {currentChat, renameChat, deleteChat} = useChats();
-    const {setGestureBlock} = useLayout();
+    const {isMobile, setGestureBlock} = useLayout();
 
     const [title, setTitle] = useState<string | null>(null);
     const [isEditOpen, {open: openEdit, close: closeEdit}] =
@@ -49,7 +49,8 @@ export default function SidebarChat({
                 label={chat.title || "Generating..."}
                 variant="filled"
                 active={currentChat?.id === chat.id}
-                {...props} // TODO - inherit props instead
+                className={isMobile ? undefined : "section-on-hover"}
+                {...props}
                 rightSection={
                     <Menu shadow="md" width={200}>
                         <Menu.Target>

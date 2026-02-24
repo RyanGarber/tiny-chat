@@ -1,4 +1,4 @@
-import {Box, Button, Group, Loader, Popover, ScrollAreaAutosize, Skeleton, Stack, Text,} from "@mantine/core";
+import {Box, Button, Divider, Group, Loader, Popover, ScrollAreaAutosize, Skeleton, Stack, Text,} from "@mantine/core";
 import {useElementSize} from "@mantine/hooks";
 import {MessageOmitted} from "@tiny-chat/core-backend/types";
 import {useEffect, useLayoutEffect, useRef, useState} from "react";
@@ -55,7 +55,7 @@ export default function MessageBody({message}: { message: MessageOmitted }) {
     const [isThinkingOpen, setThinkingOpen] = useState(false);
     useEffect(() => {
         setThinkingOpen(message.state.thinking || false);
-    }, [message.state.thinking]); // metadata.working, metadata.generating
+    }, [message.state.thinking]); // state.anything, state.generating
 
     useEffect(() => {
         const updatePosition = () => {
@@ -91,7 +91,7 @@ export default function MessageBody({message}: { message: MessageOmitted }) {
             w="100%"
             ref={containerRef}
             style={
-                message.state.working && !message.state.generating
+                message.state.any && !message.state.generating
                     ? {display: "flex", gap: 10, justifyContent: "center"}
                     : {}
             }
@@ -158,7 +158,7 @@ export default function MessageBody({message}: { message: MessageOmitted }) {
                     </Popover>
                 </>
             )}
-            {!message.state.working || message.state.generating ? (
+            {!message.state.any || message.state.generating ? (
                 <>
                     <MessageBodyContent message={message}/>
                     {message.state.generating && (
@@ -175,6 +175,9 @@ export default function MessageBody({message}: { message: MessageOmitted }) {
                     <Skeleton height={10} radius="md"/>
                     <Skeleton height={10} width="70%" mt={10} mb={20} radius="md"/>
                 </div>
+            )}
+            {message.data.some(p => p.type === "abort") && (
+                <Divider label="Stopped" size="md" styles={{label: {fontSize: 14}}}/>
             )}
         </Box>
     );

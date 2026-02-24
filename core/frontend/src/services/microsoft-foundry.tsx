@@ -3,7 +3,7 @@ import {MessageUnomitted, zConfigType, zMetadata} from "@tiny-chat/core-backend/
 import {useSettings} from "@/managers/settings.tsx";
 import {alert} from "@/utils.ts";
 
-import OpenAI from "openai";
+import OpenAI, {APIUserAbortError} from "openai";
 import {
     ResponseCreateParamsStreaming,
     ResponseInputContent,
@@ -40,7 +40,7 @@ export class MicrosoftFoundryService implements Service {
         ];
     }
 
-    async* callModel(instruction: string, context: MessageUnomitted[], config: zConfigType): AsyncGenerator<any> {
+    async* callModel(instruction: string, context: MessageUnomitted[], config: zConfigType, abortSignal: AbortSignal): AsyncGenerator<any> {
         const {resource, apiKey} = this.getKeys();
         const azure = new OpenAI({
             baseURL: `https://${resource}.openai.azure.com/openai/v1/`,
@@ -57,7 +57,7 @@ export class MicrosoftFoundryService implements Service {
                 temperature: config.args.temperature as number,
                 tools: [
                     //{type: "web_search"},
-                    {type: "code_interpreter", container: {type: "auto"}}
+                    //{type: "code_interpreter", container: {type: "auto"}}
                 ], // TODO - file_search, image_generation
                 input: [
                     {
@@ -101,46 +101,43 @@ export class MicrosoftFoundryService implements Service {
                 params.include = ["reasoning.encrypted_content"];
             }
 
-            const response = await azure.responses.create(params);
+            const response = await azure.responses.create(params, {signal: abortSignal});
 
             const events: ResponseStreamEvent[] = [];
             let currentThought = "";
             let currentThoughtIndex = -1;
 
-            // The OpenAI SDK resolves stream events as microtasks, never naturally hitting a
-            // macrotask boundary that would let the browser paint.  We gate a setTimeout(0)
-            // here — inside the generator — so the browser gets a render opportunity ~every
-            // frame regardless of how many lifecycle events arrive before the next text delta.
             let lastYield = performance.now();
 
-            for await (const chunk of response) {
-                // Incoming Thoughts
-                if (chunk.type.startsWith("response.reasoning_summary_text")) {
-                    if (chunk.type === "response.reasoning_summary_text.delta") {
-                        if (chunk.summary_index !== currentThoughtIndex && currentThoughtIndex !== -1) {
+            try {
+                for await (const chunk of response) {
+                    if (chunk.type.startsWith("response.reasoning_summary_text")) {
+                        if (chunk.type === "response.reasoning_summary_text.delta") {
+                            if (chunk.summary_index !== currentThoughtIndex && currentThoughtIndex !== -1) {
+                                yield {type: "thought", value: currentThought};
+                                currentThought = "";
+                            }
+                            currentThought += chunk.delta;
+                            currentThoughtIndex = chunk.summary_index;
+                        } else if (chunk.type === "response.reasoning_summary_text.done") {
                             yield {type: "thought", value: currentThought};
                             currentThought = "";
+                            currentThoughtIndex = -1;
                         }
-                        currentThought += chunk.delta;
-                        currentThoughtIndex = chunk.summary_index;
-                    } else if (chunk.type === "response.reasoning_summary_text.done") {
-                        yield {type: "thought", value: currentThought};
-                        currentThought = "";
-                        currentThoughtIndex = -1;
+                    } else if (chunk.type === "response.output_text.delta") {
+                        yield {type: "text", value: chunk.delta};
+                    }
+                    events.push(chunk);
+
+                    const now = performance.now();
+                    if (now - lastYield > 16) {
+                        await new Promise<void>(r => setTimeout(r, 0));
+                        lastYield = performance.now();
                     }
                 }
-                // Incoming Text
-                else if (chunk.type === "response.output_text.delta") {
-                    yield {type: "text", value: chunk.delta};
-                }
-                // else: lifecycle events (created, in_progress, done, etc.) – no action needed
-                events.push(chunk);
-
-                const now = performance.now();
-                if (now - lastYield > 16) {
-                    await new Promise<void>(r => setTimeout(r, 0));
-                    lastYield = performance.now();
-                }
+            } catch (e: any) {
+                if (e instanceof APIUserAbortError) return;
+                throw e;
             }
 
             yield {metadata: zMetadata.parse(events.filter(e => e.type !== "response.output_text.delta" && e.type !== "response.reasoning_summary_text.delta"))}
@@ -162,23 +159,28 @@ export class MicrosoftFoundryService implements Service {
                         return {role: m.author === Author.USER ? "user" : "assistant", content: parts} as any;
                     })
                 ],
-                stream: true
-            });
+                stream: true,
+            }, {signal: abortSignal});
 
             const chunks = [];
             let lastYield = performance.now();
 
-            for await (const chunk of response) {
-                if (!chunk.choices?.[0]?.delta?.content) continue;
-                const content = chunk.choices[0].delta.content;
-                yield {type: "text", value: content};
-                chunks.push(chunk);
+            try {
+                for await (const chunk of response) {
+                    if (!chunk.choices?.[0]?.delta?.content) continue;
+                    const content = chunk.choices[0].delta.content;
+                    yield {type: "text", value: content};
+                    chunks.push(chunk);
 
-                const now = performance.now();
-                if (now - lastYield > 16) {
-                    await new Promise<void>(r => setTimeout(r, 0));
-                    lastYield = performance.now();
+                    const now = performance.now();
+                    if (now - lastYield > 16) {
+                        await new Promise<void>(r => setTimeout(r, 0));
+                        lastYield = performance.now();
+                    }
                 }
+            } catch (e: any) {
+                if (e instanceof APIUserAbortError) return;
+                throw e;
             }
 
             yield {metadata: zMetadata.parse(chunks)};

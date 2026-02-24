@@ -24,10 +24,10 @@ export default function Sidebar() {
         if (!window.location.hash.startsWith("#/app/")) void setCurrentChat(location.slice(1) || null, false);
     }, [location, isSessionPending, session?.user?.id]);
 
-    const setChatAndClose = (id: string | null) => {
-        void setCurrentChat(id);
+    const closeAfter = (action?: () => void) => {
+        action?.();
         if (isMobile) setSidebarOpen(false);
-    };
+    }
 
     const isTempActive = temporary || currentChat?.temporary;
 
@@ -55,7 +55,7 @@ export default function Sidebar() {
                         id: r.id,
                         label: scrubText(r.chatTitle, 50),
                         description: snippetText(scrubText(extractText(r.data)), searchQuery),
-                        onClick: () => setChatAndClose(r.chatId), // TODO - scroll to chat
+                        onClick: () => closeAfter(() => void setCurrentChat(r.chatId)), // TODO - scroll to chat
                     }))
             );
         }, 300);
@@ -79,10 +79,12 @@ export default function Sidebar() {
             </Group>
             <Group align="center" mt={5} gap={5}>
                 <NavLink label="New Chat" leftSection={<IconHexagonPlus size={20}/>} className="new-chat"
-                         onClick={() => setChatAndClose(null)} active={!currentChat} variant="subtle"
+                         onClick={() => closeAfter(() => void setCurrentChat(null))} active={!currentChat}
+                         variant="subtle"
                          flex={1} bdrs="md"/>
                 <ActionIcon size={40} variant="subtle" c="dimmed" bdrs="md" className="nav-link-like filled"
-                            onClick={() => void setTemporary(!isTempActive)} data-active={isTempActive}>
+                            onClick={() => closeAfter(() => void setTemporary(!isTempActive))}
+                            data-active={isTempActive}>
                     <IconEyeOff size={20}/>
                 </ActionIcon>
             </Group>
@@ -94,7 +96,10 @@ export default function Sidebar() {
                             <SidebarChat
                                 key={folder.chats[0].id}
                                 chat={folder.chats[0]}
-                                props={{onClick: () => setChatAndClose(folder.chats[0].id), bdrs: 'md'}}
+                                props={{
+                                    onClick: () => closeAfter(() => void setCurrentChat(folder.chats[0].id)),
+                                    bdrs: 'md'
+                                }}
                             />
                         ) : (
                             <NavLink
@@ -107,7 +112,10 @@ export default function Sidebar() {
                                     <SidebarChat
                                         key={chat.id}
                                         chat={chat}
-                                        props={{onClick: () => setChatAndClose(chat.id), bdrs: 'md'}}
+                                        props={{
+                                            onClick: () => closeAfter(() => void setCurrentChat(chat.id)),
+                                            bdrs: 'md'
+                                        }}
                                     />
                                 ))}
                             </NavLink>
@@ -138,7 +146,7 @@ export default function Sidebar() {
                 <Tooltip label="New Chat" position="right" color="gray">
                     <ActionIcon variant="subtle" size={36} className="new-chat nav-link-like"
                                 data-active={!currentChat}
-                                onClick={() => setChatAndClose(null)}>
+                                onClick={() => closeAfter(() => void setCurrentChat(null))}>
                         <IconHexagonPlus size={20} color="lightgray"/>
                     </ActionIcon>
                 </Tooltip>

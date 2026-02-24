@@ -19,9 +19,8 @@ interface Services {
 
     fetchServices: () => Promise<void>;
 
+    abortController: AbortController | null;
     onMessage: (messageId: string) => Promise<void>;
-    isStopRequested: boolean;
-    setStopRequested: () => void;
 }
 
 export const useServices = create(
@@ -51,6 +50,7 @@ export const useServices = create(
             reloadConfig();
         },
 
+        abortController: null,
         onMessage: async (messageId: string) => {
             let {currentChat, messages} = useChats.getState();
             if (!currentChat) return;
@@ -68,10 +68,10 @@ export const useServices = create(
                 if (isTarget) isPostTarget = true;
 
                 if (isPostTarget) {
-                    const reply = await prepare(messages[i].id, config);
+                    let reply = await prepare(messages[i].id, config);
 
-                    reply.state.working = true;
-                    useChats.setState({messages: [...messages]});
+                    reply.state.any = true;
+                    useChats.setState({messages: useChats.getState().messages});
                     console.log(
                         `Replying to message ${messages[i].id} using ${isTarget ? "config" : "its existing settings"}`,
                         reply.config
@@ -132,22 +132,28 @@ export const useServices = create(
 
                     console.log("Using instructions:", instructions, "context:", context, "and args:", preparedConfig.args);
 
-                    const stream = service.callModel(instructions, context, preparedConfig);
+                    const abortController = new AbortController();
+                    abortController.signal.addEventListener("abort", () => reply.data.push({type: "abort"}));
+                    set({abortController});
+
+                    const stream = service.callModel(instructions, context, preparedConfig, abortController.signal);
 
                     let lastFlush = 0;
                     const flush = async () => {
-                        useChats.setState({messages: [...messages]});
+                        useChats.setState({messages: [...useChats.getState().messages]});
+                        reply = useChats.getState().messages.find(m => m.id === reply.id) as MessageUnomitted;
                         await new Promise<void>(r => setTimeout(r, 0));
                         lastFlush = performance.now();
                     };
 
                     let hasText = false;
                     for await (const part of stream) {
-                        if (get().isStopRequested) break;
-
                         try {
                             const dataPart = zDataPart.parse(part);
-                            if (dataPart.type === "thought") {
+                            if (dataPart.type === "abort") {
+                                console.log("Received abort");
+                                reply.data.push(dataPart);
+                            } else if (dataPart.type === "thought") {
                                 reply.state.thinking = true;
                                 reply.data.push(dataPart);
                             } else if (dataPart.type === "text") {
@@ -179,17 +185,14 @@ export const useServices = create(
                         }
                     }
 
-                    await flush();
+                    set({abortController: null});
 
+                    await flush();
                     await publish(reply);
                     console.log("Published reply:", reply);
                 }
             }
         },
-        isStopRequested: false,
-        setStopRequested: () => {
-            set({isStopRequested: true});
-        }
     })),
 );
 

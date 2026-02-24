@@ -29,6 +29,7 @@ export const zDataPart =
             name: z.string(),
             mime: z.string(),
             url: z.string(),
+            inline: z.boolean().optional(),
         }),
         z.object({
             type: z.literal("toolCall"),
@@ -41,6 +42,9 @@ export const zDataPart =
             id: z.string(),
             result: z.enum(["success", "failure"]),
             value: z.any()
+        }),
+        z.object({
+            type: z.literal("abort"),
         }),
         z.object({
             type: z.literal("other"),
@@ -63,7 +67,7 @@ export type MessageUnomitted = PrismaMessage & {
     data: zDataType;
     metadata: zMetadataType;
     state: {
-        working: boolean;
+        any: boolean;
         thinking: boolean;
         generating: boolean;
     }
@@ -81,7 +85,7 @@ export function wrapMessage(message: PrismaMessage): MessageOmitted {
         config: zConfig.parse(message.config),
         data: zData.parse(message.data),
         state: {
-            working: false,
+            any: false,
             thinking: false,
             generating: false,
         }

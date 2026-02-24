@@ -42,7 +42,7 @@ export class GoogleAiStudioService implements Service {
         ]
     }
 
-    async* callModel(instruction: string, context: MessageUnomitted[], config: zConfigType): Stream {
+    async* callModel(instruction: string, context: MessageUnomitted[], config: zConfigType, abortSignal: AbortSignal): Stream {
         const apiKey = useSettings.getState().getApiKey(this.name);
         if (!apiKey) return;
 
@@ -74,6 +74,7 @@ export class GoogleAiStudioService implements Service {
         const params: SendMessageParameters = {message: boxMessage(context[context.length - 1]).parts!};
 
         params.config = {
+            abortSignal,
             temperature: config.args.temperature as number,
             tools: [{googleSearch: {}, codeExecution: {}}] // TODO - file_search
         };
@@ -104,34 +105,36 @@ export class GoogleAiStudioService implements Service {
 
         const response = await client.chats.create({
             model: config.model,
-            history: context.slice(0, context.length - 1).map(boxMessage)
+            history: context.slice(0, context.length - 1).map(boxMessage),
         }).sendMessageStream(params);
 
         const parts: Part[] = [];
 
-        // Gate a setTimeout(0) every ~16ms so the browser gets a macrotask boundary
-        // to repaint even during burst-delivery phases of the Google stream.
         let lastYield = performance.now();
 
-        for await (const chunk of response) {
-            if (!chunk.candidates?.length || !chunk.candidates[0].content?.parts) continue;
-            for (const part of chunk.candidates[0].content.parts) {
-                // Gemini Part[] -> zDataPart[]
-                if (part.text) {
-                    if (part.thought) {
-                        yield {type: "thought", value: part.text}
-                    } else {
-                        yield {type: "text", value: part.text}
+        try {
+            for await (const chunk of response) {
+                if (!chunk.candidates?.length || !chunk.candidates[0].content?.parts) continue;
+                for (const part of chunk.candidates[0].content.parts) {
+                    if (part.text) {
+                        if (part.thought) {
+                            yield {type: "thought", value: part.text}
+                        } else {
+                            yield {type: "text", value: part.text}
+                        }
                     }
+                    parts.push(part);
                 }
-                parts.push(part);
-            }
 
-            const now = performance.now();
-            if (now - lastYield > 16) {
-                await new Promise<void>(r => setTimeout(r, 0));
-                lastYield = performance.now();
+                const now = performance.now();
+                if (now - lastYield > 16) {
+                    await new Promise<void>(r => setTimeout(r, 0));
+                    lastYield = performance.now();
+                }
             }
+        } catch (e: any) {
+            if (e?.name?.includes("AbortError")) return;
+            throw e;
         }
 
         // TODO - combine deltas for efficiency (less needed than foundry but still)

@@ -13,6 +13,7 @@ export interface Service {
         instruction: string,
         context: MessageUnomitted[],
         config: zConfigType,
+        abortSignal: AbortSignal
     ) => Stream;
 }
 

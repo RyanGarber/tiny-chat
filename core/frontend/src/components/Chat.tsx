@@ -302,7 +302,7 @@ export default function Chat() {
                 p={isInputMaxWidth ? 0 : "0 10px 10px 10px"}
                 ref={inputRef}
             >
-                <Input style={{boxShadow: shadow}}/>
+                <Input style={{boxShadow: shadow, borderRadius: 10}}/>
             </Box>
 
             {/* Bottom spacer for vertical centering in new chat mode */}

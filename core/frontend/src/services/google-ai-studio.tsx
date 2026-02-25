@@ -38,11 +38,15 @@ export class GoogleAiStudioService implements Service {
                     values: ["minimal", "low", "medium", "high", "auto"],
                     default: "auto"
                 } as ModelArg
-            ] : []
+            ] : [],
         ]
     }
 
-    async* callModel(instruction: string, context: MessageUnomitted[], config: zConfigType, abortSignal: AbortSignal): Stream {
+    getFeatures(_model: string): string[] {
+        return ["schema"];
+    }
+
+    async* generate(instruction: string, context: MessageUnomitted[], config: zConfigType, abortSignal: AbortSignal): Stream {
         const apiKey = useSettings.getState().getApiKey(this.name);
         if (!apiKey) return;
 
@@ -78,6 +82,12 @@ export class GoogleAiStudioService implements Service {
             temperature: config.args.temperature as number,
             tools: [{googleSearch: {}, codeExecution: {}}] // TODO - file_search
         };
+
+        if (config.args.schema) {
+            params.config.responseMimeType = "application/json";
+            params.config.responseJsonSchema = config.args.schema;
+        }
+
         if (config.model.startsWith("gemini-")) {
             params.config.systemInstruction = instruction;
             params.config.thinkingConfig = {includeThoughts: true};
@@ -139,5 +149,19 @@ export class GoogleAiStudioService implements Service {
 
         // TODO - combine deltas for efficiency (less needed than foundry but still)
         yield {metadata: zMetadata.parse(parts)};
+    }
+
+    async embed(texts: string[], config: zConfigType): Promise<number[][]> {
+        const apiKey = useSettings.getState().getApiKey(this.name);
+        if (!apiKey) return [];
+
+        const client = new GoogleGenAI({apiKey});
+
+        const response = await client.models.embedContent({
+            model: config.model,
+            contents: texts
+        });
+
+        return response.embeddings?.map(e => e.values ?? []) ?? [];
     }
 }

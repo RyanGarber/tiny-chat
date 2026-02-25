@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {useLayout} from "@/managers/layout.tsx";
 import {ActionIcon, Button, Menu, Modal, NavLink, NavLinkProps, TextInput,} from "@mantine/core";
 import {IconDots, IconEdit, IconTrash} from "@tabler/icons-react";
@@ -42,22 +42,27 @@ export default function SidebarChat({
 
     // TODO use @mantine/modals
 
+    const navLinkRef = useRef<HTMLAnchorElement>(null);
+    const [isOpen, setOpen] = useState(false);
+    const active = currentChat?.id === chat.id;
+
     return (
         <>
             <NavLink
                 key={chat.id}
                 label={chat.title || "Generating..."}
                 variant="filled"
-                active={currentChat?.id === chat.id}
-                className={isMobile ? undefined : "section-on-hover"}
+                active={active}
+                ref={navLinkRef}
+                className={"section-on-hover" + (active || isMobile || isOpen ? " hover" : "")}
                 {...props}
                 rightSection={
-                    <Menu shadow="md" width={200}>
+                    <Menu shadow="md" width={200} onChange={setOpen}>
                         <Menu.Target>
                             <ActionIcon
                                 size={24}
                                 radius="xl"
-                                variant="subtle"
+                                variant={active ? "white" : (isOpen ? "filled" : "light")}
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <IconDots size={16}/>

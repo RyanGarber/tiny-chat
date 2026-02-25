@@ -9,12 +9,14 @@ export interface Service {
     apiKeyFormat: string;
     getModels: () => Promise<string[]>;
     getArgs: (model: string) => ModelArg[] | null;
-    callModel: (
+    getFeatures: (model: string) => string[] | null;
+    generate: (
         instruction: string,
         context: MessageUnomitted[],
         config: zConfigType,
         abortSignal: AbortSignal
     ) => Stream;
+    embed: (texts: string[], config: zConfigType) => Promise<number[][]>;
 }
 
 export const services: Service[] = [

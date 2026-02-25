@@ -40,7 +40,11 @@ export class MicrosoftFoundryService implements Service {
         ];
     }
 
-    async* callModel(instruction: string, context: MessageUnomitted[], config: zConfigType, abortSignal: AbortSignal): AsyncGenerator<any> {
+    getFeatures(_model: string): string[] | null {
+        return null;
+    }
+
+    async* generate(instruction: string, context: MessageUnomitted[], config: zConfigType, abortSignal: AbortSignal): AsyncGenerator<any> {
         const {resource, apiKey} = this.getKeys();
         const azure = new OpenAI({
             baseURL: `https://${resource}.openai.azure.com/openai/v1/`,
@@ -185,6 +189,10 @@ export class MicrosoftFoundryService implements Service {
 
             yield {metadata: zMetadata.parse(chunks)};
         }
+    }
+
+    async embed(_texts: string[], _config: zConfigType): Promise<number[][]> {
+        return [];
     }
 
     getKeys() {

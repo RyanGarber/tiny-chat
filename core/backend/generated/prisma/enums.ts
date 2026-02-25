@@ -15,3 +15,23 @@ export const Author = {
 } as const
 
 export type Author = (typeof Author)[keyof typeof Author]
+
+
+export const MemoryCategory = {
+  IDENTITY: 'IDENTITY',
+  PREFERENCES: 'PREFERENCES',
+  PROJECTS: 'PROJECTS',
+  SKILLS: 'SKILLS',
+  CONSTRAINTS: 'CONSTRAINTS'
+} as const
+
+export type MemoryCategory = (typeof MemoryCategory)[keyof typeof MemoryCategory]
+
+
+export const MemoryStability = {
+  SHORT_TERM: 'SHORT_TERM',
+  MEDIUM_TERM: 'MEDIUM_TERM',
+  LONG_TERM: 'LONG_TERM'
+} as const
+
+export type MemoryStability = (typeof MemoryStability)[keyof typeof MemoryStability]

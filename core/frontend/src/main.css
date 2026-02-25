@@ -28,7 +28,8 @@ body {
     display: none;
 }
 
-.section-on-hover:hover .mantine-NavLink-section {
+.section-on-hover:hover .mantine-NavLink-section,
+.section-on-hover.hover .mantine-NavLink-section {
     display: flex;
 }
 
@@ -145,5 +146,13 @@ body {
 }
 
 [data-mantine-color-scheme="dark"] .input-effect {
+    background: var(--mantine-color-dark-6);
+}
+
+.dialog {
+    background: var(--mantine-color-gray-1);
+}
+
+[data-mantine-color-scheme="dark"] .dialog {
     background: var(--mantine-color-dark-6);
 }

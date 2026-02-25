@@ -390,7 +390,9 @@ export const ModelName = {
   Verification: 'Verification',
   Folder: 'Folder',
   Chat: 'Chat',
-  Message: 'Message'
+  Message: 'Message',
+  Summary: 'Summary',
+  Memory: 'Memory'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -406,7 +408,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "session" | "account" | "verification" | "folder" | "chat" | "message"
+    modelProps: "user" | "session" | "account" | "verification" | "folder" | "chat" | "message" | "summary" | "memory"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -928,6 +930,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    Summary: {
+      payload: Prisma.$SummaryPayload<ExtArgs>
+      fields: Prisma.SummaryFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SummaryFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummaryPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SummaryFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummaryPayload>
+        }
+        findFirst: {
+          args: Prisma.SummaryFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummaryPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SummaryFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummaryPayload>
+        }
+        findMany: {
+          args: Prisma.SummaryFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummaryPayload>[]
+        }
+        create: {
+          args: Prisma.SummaryCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummaryPayload>
+        }
+        createMany: {
+          args: Prisma.SummaryCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SummaryCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummaryPayload>[]
+        }
+        delete: {
+          args: Prisma.SummaryDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummaryPayload>
+        }
+        update: {
+          args: Prisma.SummaryUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummaryPayload>
+        }
+        deleteMany: {
+          args: Prisma.SummaryDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SummaryUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SummaryUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummaryPayload>[]
+        }
+        upsert: {
+          args: Prisma.SummaryUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummaryPayload>
+        }
+        aggregate: {
+          args: Prisma.SummaryAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSummary>
+        }
+        groupBy: {
+          args: Prisma.SummaryGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SummaryGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SummaryCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SummaryCountAggregateOutputType> | number
+        }
+      }
+    }
+    Memory: {
+      payload: Prisma.$MemoryPayload<ExtArgs>
+      fields: Prisma.MemoryFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.MemoryFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoryPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.MemoryFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoryPayload>
+        }
+        findFirst: {
+          args: Prisma.MemoryFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoryPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.MemoryFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoryPayload>
+        }
+        findMany: {
+          args: Prisma.MemoryFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoryPayload>[]
+        }
+        create: {
+          args: Prisma.MemoryCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoryPayload>
+        }
+        createMany: {
+          args: Prisma.MemoryCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.MemoryCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoryPayload>[]
+        }
+        delete: {
+          args: Prisma.MemoryDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoryPayload>
+        }
+        update: {
+          args: Prisma.MemoryUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoryPayload>
+        }
+        deleteMany: {
+          args: Prisma.MemoryDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.MemoryUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.MemoryUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoryPayload>[]
+        }
+        upsert: {
+          args: Prisma.MemoryUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoryPayload>
+        }
+        aggregate: {
+          args: Prisma.MemoryAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateMemory>
+        }
+        groupBy: {
+          args: Prisma.MemoryGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MemoryGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.MemoryCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MemoryCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1065,6 +1215,37 @@ export const MessageScalarFieldEnum = {
 export type MessageScalarFieldEnum = (typeof MessageScalarFieldEnum)[keyof typeof MessageScalarFieldEnum]
 
 
+export const SummaryScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  folderId: 'folderId',
+  chatId: 'chatId',
+  config: 'config',
+  content: 'content',
+  createdAt: 'createdAt'
+} as const
+
+export type SummaryScalarFieldEnum = (typeof SummaryScalarFieldEnum)[keyof typeof SummaryScalarFieldEnum]
+
+
+export const MemoryScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  folderId: 'folderId',
+  chatId: 'chatId',
+  config: 'config',
+  fact: 'fact',
+  category: 'category',
+  stability: 'stability',
+  evidence: 'evidence',
+  confidence: 'confidence',
+  createdAt: 'createdAt',
+  latest: 'latest'
+} as const
+
+export type MemoryScalarFieldEnum = (typeof MemoryScalarFieldEnum)[keyof typeof MemoryScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1171,6 +1352,48 @@ export type EnumAuthorFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaMod
  * Reference to a field of type 'Author[]'
  */
 export type ListEnumAuthorFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Author[]'>
+    
+
+
+/**
+ * Reference to a field of type 'MemoryCategory'
+ */
+export type EnumMemoryCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MemoryCategory'>
+    
+
+
+/**
+ * Reference to a field of type 'MemoryCategory[]'
+ */
+export type ListEnumMemoryCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MemoryCategory[]'>
+    
+
+
+/**
+ * Reference to a field of type 'MemoryStability'
+ */
+export type EnumMemoryStabilityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MemoryStability'>
+    
+
+
+/**
+ * Reference to a field of type 'MemoryStability[]'
+ */
+export type ListEnumMemoryStabilityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MemoryStability[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Float'
+ */
+export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+    
+
+
+/**
+ * Reference to a field of type 'Float[]'
+ */
+export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
     
 
 
@@ -1289,6 +1512,8 @@ export type GlobalOmitConfig = {
   folder?: Prisma.FolderOmit
   chat?: Prisma.ChatOmit
   message?: Prisma.MessageOmit
+  summary?: Prisma.SummaryOmit
+  memory?: Prisma.MemoryOmit
 }
 
 /* Types for Logging */

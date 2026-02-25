@@ -4,14 +4,14 @@ import {procedure, router} from "../index.ts";
 import {createForChat} from "./folders.ts";
 import {Author, type Message as PrismaMessage} from "../generated/prisma/client.ts";
 import {type MessageCreateInput} from "../generated/prisma/models.ts";
-import {type MessageOmission, wrapMessage, zAuthor, zConfig, zData, zMetadata} from "../types.ts";
+import {type MessageOmission, wrapMessage, zConfig, zData, zMetadata} from "../types.ts";
 
 export default router({
     create: procedure
         .input(
             z.object({
                 chatId: z.cuid2().optional(),
-                author: zAuthor,
+                author: z.enum(Author),
                 config: zConfig,
                 data: zData,
                 metadata: zMetadata,
@@ -80,7 +80,7 @@ export default router({
         .input(
             z.object({
                 id: z.cuid2(),
-                author: zAuthor,
+                author: z.enum(Author),
                 config: zConfig,
                 data: zData,
                 metadata: zMetadata,

@@ -14,6 +14,7 @@ import {resolve} from "path";
 import {fileURLToPath} from "url";
 import folders from "./routes/folders.ts";
 import chats from "./routes/chats.ts";
+import memories from "./routes/memories.ts";
 import messages from "./routes/messages.ts";
 import sessions from "./routes/sessions.ts";
 
@@ -32,6 +33,7 @@ export const prisma = new PrismaClient({
 const trpc = router({
     folders,
     chats,
+    memories,
     messages,
     sessions,
 });

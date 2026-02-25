@@ -4,9 +4,10 @@ import {services, StreamEnd} from "@/services";
 import {create} from "zustand";
 import {subscribeWithSelector} from "zustand/middleware";
 import {MessageUnomitted, zConfigType, zDataPart, zDataPartType} from "@tiny-chat/core-backend/types.ts";
-import {alert, trpc} from "@/utils.ts";
+import {alert, extractText, scrubText, trpc} from "@/utils.ts";
 import {useSettings} from "@/managers/settings.tsx";
 import {Author} from "@tiny-chat/core-backend/generated/prisma/enums.ts";
+import {useMemories} from "@/managers/memories.tsx";
 
 interface Services {
     init: () => Promise<void>;
@@ -15,11 +16,13 @@ interface Services {
         name: string;
         models: string[];
     }[];
-    findService: (query: string) => ReturnType<typeof services.find>;
+    findService: (name: string) => ReturnType<typeof services.find>;
+    findServiceWithModel: (name: string) => Promise<ReturnType<typeof services.find>>;
 
     fetchServices: () => Promise<void>;
 
     abortController: AbortController | null;
+    prepareConfig: (config: zConfigType) => zConfigType;
     onMessage: (messageId: string) => Promise<void>;
 }
 
@@ -30,7 +33,14 @@ export const useServices = create(
         },
 
         services: [],
-        findService: (query) => services.find((s) => s.name === query.split("/")[0]),
+        findService: (name) => services.find((s) => s.name === name),
+        findServiceWithModel: async (name: string) => {
+            for (const service of get().services) {
+                if (service.models.includes(name)) {
+                    return get().findService(service.name);
+                }
+            }
+        },
 
         fetchServices: async () => {
             const available = [];
@@ -51,6 +61,17 @@ export const useServices = create(
         },
 
         abortController: null,
+        prepareConfig: (config: zConfigType) => {
+            const prepared = config;
+            for (const arg of get().findService(config.service)!.getArgs(config.model)!) {
+                if (prepared.args?.[arg.name] === undefined) {
+                    console.log(`Using default value for arg ${arg.name}:`, arg.default)
+                    if (prepared.args === undefined) prepared.args = {};
+                    prepared.args[arg.name] = arg.default;
+                }
+            }
+            return prepared;
+        },
         onMessage: async (messageId: string) => {
             let {currentChat, messages} = useChats.getState();
             if (!currentChat) return;
@@ -77,58 +98,70 @@ export const useServices = create(
                         reply.config
                     );
 
-                    const context: MessageUnomitted[] = messages.slice(0, i + 1).map(m => {
-                        let isFirstText = true;
-                        let fileNumber = 1;
-                        return {
-                            ...m,
-                            metadata: omissions.get(m.id)?.metadata,
-                            data: m.data.flatMap((d): zDataPartType[] => {
-                                if (d.type === "file") {
-                                    return [
-                                        {type: "text", value: `Attached file #${fileNumber++} (${d.name}):`},
-                                        d
-                                    ];
-                                }
-                                if (d.type === "text") {
-                                    // TODO - embed model name in ::>:: tag and prepend "Earlier, [model] said:"
-                                    let value = d.value.replace("::>::", ">");
-                                    if (isFirstText) {
-                                        if (m.author === Author.USER) value = `[user]\n${value}`;
-                                        else value = `[assistant:model=${m.author.slice(m.author.indexOf("/") + 1)}]\n${value}`;
-                                        isFirstText = false;
+                    const memories = await useMemories.getState().remember(scrubText(extractText(messages[i].data)));
+                    const context: MessageUnomitted[] = [
+                        ({
+                            author: Author.USER, data: [{
+                                type: "text",
+                                value: memories.length
+                                    ? "Relevant long-term user context:\n"
+                                    + memories.map(m => `* ${m}`).join("\n") + "\n\n"
+                                    + "Use this only when relevant to the request."
+                                    : ""
+                            }]
+                        } satisfies Partial<MessageUnomitted>) as MessageUnomitted,
+                        ...messages.slice(0, i + 1).map(m => {
+                            let isFirstText = true;
+                            let fileNumber = 1;
+                            return {
+                                ...m,
+                                metadata: omissions.get(m.id)?.metadata,
+                                data: m.data.flatMap((d): zDataPartType[] => {
+                                    if (d.type === "file") {
+                                        return [
+                                            {type: "text", value: `Attached file #${fileNumber++} (${d.name}):`},
+                                            d
+                                        ];
                                     }
-                                    return [{...d, value}];
-                                }
-                                return [d];
-                            })
-                        }
-                    });
+                                    if (d.type === "text") {
+                                        // TODO - embed model name in ::>:: tag and prepend "Earlier, [model] said:"
+                                        let value = d.value.replace("::>::", ">");
+                                        if (isFirstText) {
+                                            if (m.author === Author.USER) value = `[user]\n${value}`;
+                                            else value = `[assistant:model=${m.author.slice(m.author.indexOf("/") + 1)}]\n${value}`;
+                                            isFirstText = false;
+                                        }
+                                        return [{...d, value}];
+                                    }
+                                    return [d];
+                                })
+                            }
+                        })
+                    ];
 
                     const userInstructions = useSettings.getState().getInstructions();
-                    const instructions = `You are the AI model "${reply.config.model}."\n\n`
-                        + `This conversation may include responses from multiple AI models.\n\n`
-                        + `Previous user messages are labeled in the format:\n\n`
-                        + `[user]\n\n`
-                        + `Previous assistant messages are labeled in the format:\n\n`
-                        + `[assistant:model=<model-name>]\n\n`
-                        + `These labels indicate which model generated each response and are NOT part of the message content.\n`
-                        + `You are "${reply.config.model}." You should speak only as "${reply.config.model}."\n\n`
-                        + `IMPORTANT: Do NOT include your own label in your response – the system will add it automatically.`
+                    const instructions = `
+This conversation may include responses from multiple AI models.
+
+Previous user messages are labeled in the format:
+
+[user]
+
+Previous assistant messages are labeled in the format:
+
+[assistant:model=<model-name>]
+
+You are the AI model "${reply.config.model}." You should speak only as "${reply.config.model}."
+
+IMPORTANT: These labels indicate which model generated each response and are NOT part of the message content.
+Do NOT include your own label in your response – the system will add it automatically.`
                         + (userInstructions.length
                             ? `\n\n`
                             + `Additionally, the user provided the following instructions:\n`
                             + `${userInstructions.join("\n")}` : "");
 
                     const service = useServices.getState().findService(reply.config.service)!;
-                    const preparedConfig = reply.config;
-                    for (const arg of service.getArgs(config.model)!) {
-                        if (preparedConfig.args?.[arg.name] === undefined) {
-                            console.log(`Using default value for arg ${arg.name}:`, arg.default)
-                            if (preparedConfig.args === undefined) preparedConfig.args = {};
-                            preparedConfig.args[arg.name] = arg.default;
-                        }
-                    }
+                    const preparedConfig = await get().prepareConfig(reply.config);
 
                     console.log("Using instructions:", instructions, "context:", context, "and args:", preparedConfig.args);
 
@@ -136,7 +169,7 @@ export const useServices = create(
                     abortController.signal.addEventListener("abort", () => reply.data.push({type: "abort"}));
                     set({abortController});
 
-                    const stream = service.callModel(instructions, context, preparedConfig, abortController.signal);
+                    const stream = service.generate(instructions, context, preparedConfig, abortController.signal);
 
                     let lastFlush = 0;
                     const flush = async () => {

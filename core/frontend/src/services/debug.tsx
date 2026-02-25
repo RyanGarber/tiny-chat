@@ -17,7 +17,11 @@ export class DebugService implements Service {
         ];
     }
 
-    async* callModel(_instruction: string, _context: MessageUnomitted[], config: zConfigType): Stream {
+    getFeatures(_model: string): string[] | null {
+        return null;
+    }
+
+    async* generate(_instruction: string, _context: MessageUnomitted[], config: zConfigType): Stream {
         await new Promise((resolve) => setTimeout(resolve, 500));
 
         yield {type: "thought", value: "Thinking"};
@@ -65,5 +69,9 @@ legitness converted to realness: ${({
 
         // Simulate raw Gemini Part[]
         yield {metadata: zMetadata.parse(words.map((word) => ({text: word})))};
+    }
+
+    async embed(_texts: string[], _config: zConfigType): Promise<number[][]> {
+        return [];
     }
 }

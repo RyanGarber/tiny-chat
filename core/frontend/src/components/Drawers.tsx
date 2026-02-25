@@ -21,6 +21,7 @@ import {codeThemes, themes, useSettings} from "@/managers/settings.tsx";
 import {alert, auth, consumeLabel, hashText, openExternal, trpc, webUrl} from "@/utils.ts";
 import {useDisclosure, UseDisclosureReturnValue} from "@mantine/hooks";
 import {useLayout} from "@/managers/layout.tsx";
+import {zConfig} from "@tiny-chat/core-backend/types.ts";
 
 export default function Drawers(
     {buttons}:
@@ -39,6 +40,10 @@ export default function Drawers(
         addInstruction,
         editInstruction,
         removeInstruction,
+        getMemoryConfig,
+        setMemoryConfig,
+        getEmbeddingConfig,
+        setEmbeddingConfig,
         getTheme,
         setTheme,
         getCodeTheme,
@@ -205,14 +210,59 @@ export default function Drawers(
                                           alert("info", "Instruction added");
                                       }}
                                       disabled={addingInstruction}/>
+                            <Select label="Memory Model"
+                                    styles={consumeLabel}
+                                    data={services.map((s) => ({
+                                        group: s.name,
+                                        items: s.models.sort().map((m) => ({
+                                            label: m,
+                                            value: JSON.stringify({service: s.name, model: m}),
+                                        })),
+                                    }))}
+                                    allowDeselect
+                                    value={JSON.stringify({
+                                        service: getMemoryConfig()?.service,
+                                        model: getMemoryConfig()?.model
+                                    })}
+                                    onChange={async (value) => {
+                                        console.log(JSON.stringify({
+                                            service: getMemoryConfig()?.service,
+                                            model: getMemoryConfig()?.model
+                                        }))
+                                        await setMemoryConfig(value ? zConfig.parse(JSON.parse(value)) : undefined);
+                                        alert("info", "Memory model saved");
+                                    }}/>
+                            <Select label="Embedding Model"
+                                    styles={consumeLabel}
+                                    data={services.map((s) => ({
+                                        group: s.name,
+                                        items: s.models.sort().map((m) => ({
+                                            label: m,
+                                            value: JSON.stringify({service: s.name, model: m}),
+                                        })),
+                                    }))}
+                                    allowDeselect
+                                    value={JSON.stringify({
+                                        service: getEmbeddingConfig()?.service,
+                                        model: getEmbeddingConfig()?.model
+                                    })}
+                                    onChange={async (value) => {
+                                        console.log(JSON.stringify({
+                                            service: getEmbeddingConfig()?.service,
+                                            model: getEmbeddingConfig()?.model
+                                        }))
+                                        await setEmbeddingConfig(value ? zConfig.parse(JSON.parse(value)) : undefined);
+                                        alert("info", "Embedding model saved");
+                                    }}/>
                         </Stack>
                     </Tabs.Panel>
                     <Tabs.Panel value="appearance">
                         <Stack>
                             <Select label="Theme"
                                     styles={consumeLabel}
-                                    data={themes}
+                                    required
                                     allowDeselect={false}
+                                    data={themes}
                                     value={getTheme()}
                                     onChange={async (value) => {
                                         if (!value) return;
@@ -222,8 +272,9 @@ export default function Drawers(
                             </Select>
                             <Select label="Code Theme"
                                     styles={consumeLabel}
-                                    data={codeThemes(getTheme())}
+                                    required
                                     allowDeselect={false}
+                                    data={codeThemes(getTheme())}
                                     value={getCodeTheme()}
                                     onChange={async (value) => {
                                         if (!value) return;

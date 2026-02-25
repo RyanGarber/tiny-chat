@@ -9,7 +9,6 @@ import {zDataType} from "@tiny-chat/core-backend/types.ts";
 import {notifications} from "@mantine/notifications";
 import {CodeHighlightAdapter} from "@mantine/code-highlight";
 import hljs from "highlight.js";
-import {nprogress} from "@mantine/nprogress";
 
 declare global {
     interface Window {
@@ -245,40 +244,6 @@ export async function openExternal(url: string) {
 
     // Normal browser
     window.open(url, "_blank", "noopener,noreferrer");
-}
-
-export async function checkForUpdates() {
-    if ("__TAURI__" in window) {
-        const {type} = await import("@tauri-apps/plugin-os");
-        if (!["linux", "macos", "windows"].includes(type())) return;
-
-        console.log("Checking for updates...");
-        const {check} = await import("@tauri-apps/plugin-updater");
-        const update = await check();
-        if (update) {
-            console.log("Update available:", update);
-            let downloaded = 0;
-            let total: number | undefined;
-            await update.downloadAndInstall((event) => {
-                console.log("Update event:", event);
-                if (event.event === "Started") {
-                    alert("info", "Downloading update");
-                    total = event.data.contentLength;
-                    nprogress.start();
-                }
-                if (event.event === "Progress") {
-                    downloaded += event.data.chunkLength;
-                    if (total !== undefined) nprogress.set(downloaded / total);
-                }
-                if (event.event === "Finished") {
-                    alert("info", "Restarting to update")
-                    nprogress.complete();
-                }
-            });
-            console.log("Restarting");
-            await (await import("@tauri-apps/plugin-process")).relaunch();
-        }
-    }
 }
 
 export function useViewport() {

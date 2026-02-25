@@ -1,10 +1,6 @@
 import {z} from "zod";
 import {type Message as PrismaMessage} from "./generated/prisma/client.ts";
 
-export const zAuthor = z.enum(["USER", "MODEL"]);
-
-export type zAuthorType = z.infer<typeof zAuthor>;
-
 export const zConfig = z.object({
     service: z.string(),
     model: z.string(),

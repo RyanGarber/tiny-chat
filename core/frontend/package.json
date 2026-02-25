@@ -38,6 +38,7 @@
     "slate-history": "^0.113.1",
     "slate-react": "^0.123.0",
     "superjson": "^2.2.6",
+    "timeago.js": "^4.0.2",
     "wouter": "^3.9.0",
     "zustand": "^5.0.10"
   },

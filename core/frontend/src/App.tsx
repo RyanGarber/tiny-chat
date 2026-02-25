@@ -11,6 +11,9 @@ import {auth, hljsAdapter, trpc, useViewport} from "@/utils.ts";
 import {Notifications} from "@mantine/notifications";
 import {useSettings} from "@/managers/settings.tsx";
 import {CodeHighlightAdapterProvider} from "@mantine/code-highlight";
+import {useUpdates} from "@/managers/updates.tsx";
+import Update from "@/components/Update.tsx";
+import {useMemories} from "./managers/memories";
 
 export default function App() {
     const {
@@ -30,6 +33,8 @@ export default function App() {
     const {init: initSettings} = useSettings();
     const {init: initServices} = useServices();
     const {init: initChats} = useChats();
+    const {init: initUpdates} = useUpdates();
+    const {init: initMemories} = useMemories();
 
     useEffect(() => {
         if (isInitializing) {
@@ -54,13 +59,18 @@ export default function App() {
                 })();
             }
 
+            const uninit: (() => void)[] = [];
             (async () => {
                 await initSettings();
                 await initServices();
                 await initChats();
 
+                uninit.push(initMemories());
+                uninit.push(initUpdates());
+
                 setInitializing(false);
             })();
+            return () => uninit.forEach(d => d());
         }
     }, [isInitializing, setInitializing, initChats, initServices, session.data, session.isPending]);
 
@@ -96,6 +106,7 @@ export default function App() {
             <CodeHighlightAdapterProvider adapter={hljsAdapter}>
                 <NavigationProgress/>
                 <Notifications position="top-center"/>
+                <Update/>
                 <Box pos="relative" h={viewport.height} ref={viewport.containerRef}>
                     <LoadingOverlay
                         visible={isInitializing}

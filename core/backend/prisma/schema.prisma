@@ -23,7 +23,9 @@ model User {
 
   isAnonymous Boolean? @default(false)
 
-  settings Json @default("{}")
+  settings  Json      @default("{}")
+  memories  Memory[]
+  summaries Summary[]
 
   @@unique([email])
   @@map("user")
@@ -85,6 +87,8 @@ model Folder {
   createdAt DateTime  @default(now())
   chats     Chat[]
   messages  Message[]
+  memories  Memory[]
+  summaries Summary[]
 
   @@index([userId])
   @@map("folder")
@@ -100,6 +104,8 @@ model Chat {
   temporary Boolean   @default(false)
   createdAt DateTime  @default(now())
   messages  Message[]
+  memories  Memory[]
+  summaries Summary[]
 
   @@index([userId])
   @@index([folderId])
@@ -112,24 +118,83 @@ enum Author {
 }
 
 model Message {
-  id         String   @id
+  id         String    @id
   userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   folderId   String
-  folder     Folder   @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  folder     Folder    @relation(fields: [folderId], references: [id], onDelete: Cascade)
   chatId     String
-  chat       Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  previousId String?  @unique
-  previous   Message? @relation("Chat", fields: [previousId], references: [id], onDelete: Cascade)
+  chat       Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  previousId String?   @unique
+  previous   Message?  @relation("Chat", fields: [previousId], references: [id], onDelete: Cascade)
   author     Author
-  config     Json     @default("{}")
+  config     Json
   data       Json
-  metadata   Json     @default("{}")
-  createdAt  DateTime @default(now())
-  next       Message? @relation("Chat")
+  metadata   Json
+  createdAt  DateTime  @default(now())
+  next       Message?  @relation("Chat")
+  summaries  Summary[]
+  memories   Memory[]
 
   @@index([userId])
   @@index([folderId])
   @@index([chatId])
   @@map("message")
+}
+
+model Summary {
+  id        String    @id
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folderId  String
+  folder    Folder    @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  chatId    String
+  chat      Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  config    Json
+  messages  Message[]
+  content   String
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([folderId])
+  @@index([chatId])
+  @@map("summary")
+}
+
+enum MemoryCategory {
+  IDENTITY
+  PREFERENCES
+  PROJECTS
+  SKILLS
+  CONSTRAINTS
+}
+
+enum MemoryStability {
+  SHORT_TERM
+  MEDIUM_TERM
+  LONG_TERM
+}
+
+model Memory {
+  id         String          @id
+  userId     String
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folderId   String
+  folder     Folder          @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  chatId     String
+  chat       Chat            @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  config     Json
+  messages   Message[]
+  fact       String
+  category   MemoryCategory
+  stability  MemoryStability
+  evidence   String[]
+  confidence Float
+  createdAt  DateTime        @default(now())
+  latest     Boolean         @default(true)
+
+  @@index([userId])
+  @@index([folderId])
+  @@index([chatId])
+  @@map("memory")
 }

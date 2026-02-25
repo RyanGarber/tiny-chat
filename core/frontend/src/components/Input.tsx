@@ -21,8 +21,8 @@ import {
     Stack,
     Text,
 } from "@mantine/core";
-import {IconFile, IconPlayerStop, IconPlus, IconSend,} from "@tabler/icons-react";
-import {useCallback, useLayoutEffect, useRef, useState,} from "react";
+import {IconArrowUp, IconFile, IconPlayerStop, IconPlus,} from "@tabler/icons-react";
+import {CSSProperties, useCallback, useLayoutEffect, useRef, useState,} from "react";
 import {Editable, ReactEditor, Slate} from "slate-react";
 import {serialize} from "@/slate/serializer.tsx";
 import {useServices} from "@/managers/services.tsx";
@@ -33,7 +33,7 @@ import {DropzoneFullScreen} from "@mantine/dropzone";
 import {zConfig} from "@tiny-chat/core-backend/types.ts";
 import {consumeLabel} from "@/utils.ts";
 
-export default function Input({...props}: InputWrapperProps) {
+export default function Input(props: InputWrapperProps) {
     const {setEditor, config, setConfig, addFiles} = useMessaging();
     const {services, findService, abortController} = useServices();
     const {shadow, setIsMessaging, isMessagingDisabled} = useLayout();
@@ -133,10 +133,9 @@ export default function Input({...props}: InputWrapperProps) {
                 <PopoverDropdown maw={250}>
                     <Select
                         variant="filled"
-                        searchable
                         required
-                        maxDropdownHeight={250}
                         allowDeselect={false}
+                        maxDropdownHeight={250}
                         comboboxProps={{
                             withinPortal: false,
                             transitionProps: {transition: "fade-up"},
@@ -196,7 +195,7 @@ export default function Input({...props}: InputWrapperProps) {
                 onClick={abortController !== null ? () => abortController.abort() : onSend}
                 disabled={isMessagingDisabled && (abortController === null || abortController.signal.aborted)}
             >
-                {abortController !== null ? <IconPlayerStop size={24}/> : <IconSend size={24}/>}
+                {abortController !== null ? <IconPlayerStop size={24}/> : <IconArrowUp size={24}/>}
             </ActionIcon>
         </>
     );
@@ -246,7 +245,7 @@ export default function Input({...props}: InputWrapperProps) {
                         "--input-left-section-width": "auto",
                         "--input-right-section-width": "auto",
                     }}
-                    radius={10}
+                    radius={(props.style as CSSProperties)?.borderRadius ?? 0}
                     styles={{
                         input: {
                             padding: 0,

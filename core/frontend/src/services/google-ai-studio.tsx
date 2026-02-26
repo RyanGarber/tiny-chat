@@ -1,5 +1,13 @@
 import {ModelArg, Service, Stream} from "@/services/index.ts";
-import {Content, GoogleGenAI, Part, SendMessageParameters, ThinkingLevel} from "@google/genai";
+import {
+    Content,
+    GoogleGenAI,
+    HarmBlockThreshold,
+    HarmCategory,
+    Part,
+    SendMessageParameters,
+    ThinkingLevel
+} from "@google/genai";
 import {MessageUnomitted, zConfigType, zDataType, zMetadata} from "@tiny-chat/core-backend/types.ts";
 import {useSettings} from "@/managers/settings.tsx";
 import {Author} from "@tiny-chat/core-backend/generated/prisma/enums.ts";
@@ -80,6 +88,11 @@ export class GoogleAiStudioService implements Service {
         params.config = {
             abortSignal,
             temperature: config.args.temperature as number,
+            safetySettings: Object.entries(HarmCategory).map(([_, value]) => ({
+                category: value,
+                threshold: HarmBlockThreshold.BLOCK_NONE
+            })),
+            enableEnhancedCivicAnswers: true,
             tools: [{googleSearch: {}, codeExecution: {}}] // TODO - file_search
         };
 

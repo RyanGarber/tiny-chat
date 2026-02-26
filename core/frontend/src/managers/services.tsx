@@ -2,6 +2,7 @@ import {useChats} from "@/managers/chats.tsx";
 import {reloadConfig} from "@/managers/messaging.tsx";
 import {services, StreamEnd} from "@/services";
 import {create} from "zustand";
+import {format} from "timeago.js";
 import {subscribeWithSelector} from "zustand/middleware";
 import {MessageUnomitted, zConfigType, zDataPart, zDataPartType} from "@tiny-chat/core-backend/types.ts";
 import {alert, extractText, scrubText, trpc} from "@/utils.ts";
@@ -110,7 +111,7 @@ export const useServices = create(
                                     : ""
                             }]
                         } satisfies Partial<MessageUnomitted>) as MessageUnomitted,
-                        ...messages.slice(0, i + 1).map(m => {
+                        ...messages.slice(0, i + 1).map((m, i) => {
                             let isFirstText = true;
                             let fileNumber = 1;
                             return {
@@ -127,8 +128,17 @@ export const useServices = create(
                                         // TODO - embed model name in ::>:: tag and prepend "Earlier, [model] said:"
                                         let value = d.value.replace("::>::", ">");
                                         if (isFirstText) {
-                                            if (m.author === Author.USER) value = `[user]\n${value}`;
-                                            else value = `[assistant:model=${m.author.slice(m.author.indexOf("/") + 1)}]\n${value}`;
+                                            let heading;
+                                            if (m.author === Author.USER) {
+                                                heading = `[user]\n`;
+                                                if (i !== 0) {
+                                                    const delay = format(messages[i - 1].createdAt, undefined, {relativeDate: m.createdAt}).replace(" ago", "");
+                                                    if (delay !== "just now") heading += `[Conversation timing: ${delay} ${delay.endsWith("s") ? "have" : "has"} passed since the last message.]\n`;
+                                                }
+                                            } else {
+                                                heading = `[assistant:model=${m.author.slice(m.author.indexOf("/") + 1)}]\n`;
+                                            }
+                                            value = heading + value;
                                             isFirstText = false;
                                         }
                                         return [{...d, value}];
@@ -141,13 +151,11 @@ export const useServices = create(
 
                     const userInstructions = useSettings.getState().getInstructions();
                     const instructions = `
-This conversation may include responses from multiple AI models.
+Today's date is ${new Date().toLocaleDateString()}.
+Assume knowledge must reflect current information. Prefer search results over training knowledge.
+For news, software, and other time-sensitive topics, always search. If uncertainty exists, search.
 
-Previous user messages are labeled in the format:
-
-[user]
-
-Previous assistant messages are labeled in the format:
+This conversation may include responses from multiple AI models. Previous assistant messages are labeled in the format:
 
 [assistant:model=<model-name>]
 

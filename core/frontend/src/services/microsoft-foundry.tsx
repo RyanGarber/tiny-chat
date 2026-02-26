@@ -49,7 +49,7 @@ export class MicrosoftFoundryService implements Service {
         const azure = new OpenAI({
             baseURL: `https://${resource}.openai.azure.com/openai/v1/`,
             apiKey,
-            dangerouslyAllowBrowser: true,
+            dangerouslyAllowBrowser: true
         });
 
         /************************* RESPONSES API **************************/

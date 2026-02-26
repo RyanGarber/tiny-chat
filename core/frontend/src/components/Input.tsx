@@ -28,7 +28,6 @@ import {serialize} from "@/slate/serializer.tsx";
 import {useServices} from "@/managers/services.tsx";
 import {useLayout} from "@/managers/layout.tsx";
 import {useLocalStorage} from "@mantine/hooks";
-import {useSettings} from "@/managers/settings.tsx";
 import {DropzoneFullScreen} from "@mantine/dropzone";
 import {zConfig} from "@tiny-chat/core-backend/types.ts";
 import {consumeLabel} from "@/utils.ts";
@@ -37,7 +36,6 @@ export default function Input(props: InputWrapperProps) {
     const {setEditor, config, setConfig, addFiles} = useMessaging();
     const {services, findService, abortController} = useServices();
     const {shadow, setIsMessaging, isMessagingDisabled} = useLayout();
-    const {getTheme} = useSettings();
 
     const [isMultiline, setMultiline] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -126,7 +124,7 @@ export default function Input(props: InputWrapperProps) {
             <Popover position="top" transitionProps={{transition: "fade-up"}} offset={0}>
                 <PopoverTarget>
                     <Button fw="normal"
-                            bg={getTheme() === "dark" ? "var(--mantine-color-dark-5)" : "var(--mantine-color-gray-1)"}
+                            bg="var(--tc-surface)"
                             c="var(--mantine-color-text)"
                             maw="25vw">{config?.model}</Button>
                 </PopoverTarget>

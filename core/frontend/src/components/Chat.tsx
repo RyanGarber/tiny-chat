@@ -218,7 +218,7 @@ export default function Chat() {
                                     zIndex: "var(--mantine-z-index-app)",
                                     backgroundColor: "color-mix(in srgb, var(--mantine-color-body), transparent 15%)",
                                     backdropFilter: "blur(5px)",
-                                    borderBottom: "1px solid var(--mantine-color-dark-5)",
+                                    borderBottom: "1px solid var(--mantine-color-default-border)",
                                 }}
                             />
                         )}

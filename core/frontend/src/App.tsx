@@ -14,6 +14,7 @@ import {CodeHighlightAdapterProvider} from "@mantine/code-highlight";
 import {useUpdates} from "@/managers/updates.tsx";
 import Update from "@/components/Update.tsx";
 import {useMemories} from "./managers/memories";
+import {cssResolver, theme} from "@/theme.tsx";
 
 export default function App() {
     const {
@@ -102,7 +103,8 @@ export default function App() {
     const viewport = useViewport();
     return (
         <MantineProvider forceColorScheme={useSettings.getState().getTheme() as any}
-                         theme={{fontFamily: "Archivo, sans-serif"}}>
+                         theme={theme}
+                         cssVariablesResolver={cssResolver}>
             <CodeHighlightAdapterProvider adapter={hljsAdapter}>
                 <NavigationProgress/>
                 <Notifications position="top-center"/>
@@ -114,6 +116,7 @@ export default function App() {
                         overlayProps={{blur: 2}}
                     />
                     <AppShell
+                        withBorder={false}
                         navbar={{
                             width: isMobile ? 300 : getSidebarWidth(),
                             breakpoint: mobile,
@@ -129,6 +132,7 @@ export default function App() {
                             navbar: {
                                 zIndex: "calc(var(--mantine-z-index-app) + 2)",
                                 transition: "width 250ms ease, min-width 250ms ease, transform 300ms ease",
+                                backgroundColor: 'var(--tc-sidebar-bg)',
                             },
                             main: {
                                 transition: "padding-inline-start 250ms ease",

@@ -26,7 +26,7 @@ export default function MessageBody({message}: { message: MessageOmitted }) {
             <Box
                 px={20}
                 py={10}
-                bdrs="sm"
+                bdrs="lg"
                 maw="100%"
                 className="user-message"
                 style={{boxShadow: shadow}}
@@ -146,7 +146,7 @@ export default function MessageBody({message}: { message: MessageOmitted }) {
                                             key={index}
                                             style={{
                                                 padding: "10px 0 10px 20px",
-                                                borderLeft: "2px solid #555",
+                                                borderLeft: "2px solid var(--mantine-color-default-border)",
                                             }}
                                         >
                                             <Markdown source={thought}/>
@@ -166,7 +166,7 @@ export default function MessageBody({message}: { message: MessageOmitted }) {
                             size="sm"
                             type="dots"
                             style={{margin: "0 auto"}}
-                            color="#ccc"
+                            color="dimmed"
                         />
                     )}
                 </>

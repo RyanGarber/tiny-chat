@@ -41,8 +41,8 @@ export default function Message({
                     border: "none",
                     borderTop:
                         insertingAfter?.id === messageId
-                            ? "2px solid #888888"
-                            : "1px solid #444444",
+                            ? "2px solid var(--mantine-color-dimmed)"
+                            : "1px solid var(--mantine-color-default-border)",
                 }}
             ></div>
         );

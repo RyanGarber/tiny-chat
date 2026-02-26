@@ -66,7 +66,7 @@ export default function Sidebar() {
         <>
             <Group justify="space-between" px={5} pb={5}>
                 <ActionIcon variant="transparent" onClick={spotlight.open}>
-                    <IconSearch size={18} color="lightgray"/>
+                    <IconSearch size={18} color="var(--mantine-color-dimmed)"/>
                 </ActionIcon>
                 <Spotlight
                     actions={spotlightActions}
@@ -147,7 +147,7 @@ export default function Sidebar() {
                     <ActionIcon variant="subtle" size={36} className="new-chat nav-link-like"
                                 data-active={!currentChat}
                                 onClick={() => closeAfter(() => void setCurrentChat(null))}>
-                        <IconHexagonPlus size={20} color="lightgray"/>
+                        <IconHexagonPlus size={20} color="var(--mantine-color-dimmed)"/>
                     </ActionIcon>
                 </Tooltip>
             </Stack>
@@ -164,7 +164,7 @@ export default function Sidebar() {
                     </Tooltip>
                     <Tooltip label="Settings" position="right" color="gray">
                         <ActionIcon variant="subtle" onClick={settings[1].open} size={36} className="nav-link-like">
-                            <IconSettings2 size={20} color="lightgray"/>
+                            <IconSettings2 size={20} color="var(--mantine-color-dimmed)"/>
                         </ActionIcon>
                     </Tooltip>
                 </Stack>

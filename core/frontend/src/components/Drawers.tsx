@@ -210,6 +210,7 @@ export default function Drawers(
                                           alert("info", "Instruction added");
                                       }}
                                       disabled={addingInstruction}/>
+                            <Divider/>
                             <Select label="Memory Model"
                                     styles={consumeLabel}
                                     data={services.map((s) => ({

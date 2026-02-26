@@ -34,11 +34,7 @@ body {
 }
 
 .nav-link-like:is(:hover, [data-active="true"]) {
-    background-color: var(--mantine-color-gray-1);
-}
-
-[data-mantine-color-scheme="dark"] .nav-link-like:is(:hover, [data-active="true"]) {
-    background-color: var(--mantine-color-dark-6);
+    background-color: var(--tc-surface);
 }
 
 .nav-link-like.filled[data-active="true"] {
@@ -58,11 +54,7 @@ body {
 }
 
 .new-chat:is(:hover, [data-active="true"]) {
-    background-color: var(--mantine-color-gray-1);
-}
-
-[data-mantine-color-scheme="dark"] .new-chat:is(:hover, [data-active="true"]) {
-    background-color: var(--mantine-color-dark-6);
+    background-color: var(--tc-surface);
 }
 
 [data-slate-editor] {
@@ -103,11 +95,7 @@ body {
 
 .mantine-Typography-root :not(pre) > code {
     font-size: inherit;
-    background: var(--mantine-color-gray-1);
-}
-
-[data-mantine-color-scheme="dark"] .mantine-Typography-root :not(pre) > code {
-    background: var(--mantine-color-dark-5);
+    background: var(--tc-surface);
 }
 
 .mantine-Typography-root .ignore-typography.mantine-Blockquote-root {
@@ -121,11 +109,7 @@ body {
 }
 
 .user-message {
-    background: var(--mantine-color-gray-1);
-}
-
-[data-mantine-color-scheme="dark"] .user-message {
-    background: var(--mantine-color-dark-6);
+    background: var(--tc-surface);
 }
 
 .code-fade-in {
@@ -142,17 +126,9 @@ body {
 }
 
 .input-effect {
-    background: var(--mantine-color-gray-1);
-}
-
-[data-mantine-color-scheme="dark"] .input-effect {
-    background: var(--mantine-color-dark-6);
+    background: var(--tc-surface);
 }
 
 .dialog {
-    background: var(--mantine-color-gray-1);
-}
-
-[data-mantine-color-scheme="dark"] .dialog {
-    background: var(--mantine-color-dark-6);
+    background: var(--tc-surface);
 }

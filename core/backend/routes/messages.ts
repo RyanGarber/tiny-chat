@@ -95,6 +95,10 @@ export default router({
                     where: {previousId: input.id, userId: ctx.session.user.id},
                 });
             }
+            await ctx.prisma.$executeRaw`UPDATE message
+                                         SET embedding = NULL
+                                         WHERE id = ${input.id}
+                                           AND "userId" = ${ctx.session.user.id}`;
             return wrapMessage(await ctx.prisma.message.update({
                 where: {id: input.id, userId: ctx.session.user.id},
                 data: {

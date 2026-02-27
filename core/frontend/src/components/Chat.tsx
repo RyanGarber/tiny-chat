@@ -127,6 +127,19 @@ export default function Chat() {
         return () => observer.disconnect();
     }, [inputRef.current]);
 
+    const inputEffectsRef = useRef<HTMLDivElement>(null);
+    const [inputEffectsHeight, setInputEffectsHeight] = useState(0);
+
+    useLayoutEffect(() => {
+        const handleResize = () => {
+            setInputEffectsHeight(inputEffectsRef.current?.clientHeight ?? 0);
+        }
+        const observer = new ResizeObserver(() => handleResize());
+        if (inputEffectsRef.current) observer.observe(inputEffectsRef.current);
+        handleResize();
+        return () => observer.disconnect();
+    }, [inputEffectsRef.current]);
+
     let hasHitEdit = false;
     const getMessageOpacity = (message: { id: string }) => {
         if (!editing && !insertingAfter) return 1;
@@ -196,43 +209,53 @@ export default function Chat() {
 
                 {/* Messages scroll area */}
                 {!isNewChat && (
-                    <ScrollArea
-                        viewportRef={messagesViewportRef}
-                        onScrollPositionChange={handleScroll}
-                        h="100%"
-                        style={{maskImage: `linear-gradient(to bottom, transparent 0%, black 25px, black calc(100% - 25px), transparent 100%)`}}
-                        styles={{
-                            scrollbar: {
-                                zIndex: "calc(var(--mantine-z-index-app) + 1)",
-                            },
-                        }}
-                    >
-                        {isMobile && (
-                            <Box
-                                style={{
-                                    position: "sticky",
-                                    top: 0,
-                                    left: 0,
-                                    right: 0,
-                                    height: 50,
-                                    zIndex: "var(--mantine-z-index-app)",
-                                    backgroundColor: "color-mix(in srgb, var(--mantine-color-body), transparent 15%)",
-                                    backdropFilter: "blur(5px)",
-                                    borderBottom: "1px solid var(--mantine-color-default-border)",
-                                }}
-                            />
-                        )}
-                        <Stack pt={10} px={20} m="0 auto" maw={860} gap={10}>
-                            {!isInitializing &&
-                                messages.map((message) => (
-                                    <Message
-                                        key={message.id}
-                                        message={message}
-                                        opacity={getMessageOpacity(message)}
-                                    />
-                                ))}
-                        </Stack>
-                    </ScrollArea>
+                    <>
+                        <ScrollArea
+                            viewportRef={messagesViewportRef}
+                            onScrollPositionChange={handleScroll}
+                            h="100%"
+                            styles={{
+                                scrollbar: {
+                                    zIndex: "calc(var(--mantine-z-index-app) + 1)",
+                                },
+                            }}
+                        >
+                            {isMobile && (
+                                <Box
+                                    style={{
+                                        position: "sticky",
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        height: 50,
+                                        zIndex: "var(--mantine-z-index-app)",
+                                        backgroundColor: "color-mix(in srgb, var(--mantine-color-body), transparent 15%)",
+                                        backdropFilter: "blur(5px)",
+                                        borderBottom: "1px solid var(--mantine-color-default-border)",
+                                    }}
+                                />
+                            )}
+                            <Stack pt={10} px={20} m="0 auto" maw={860} gap={10}>
+                                {!isInitializing &&
+                                    messages.map((message) => (
+                                        <Message
+                                            key={message.id}
+                                            message={message}
+                                            opacity={getMessageOpacity(message)}
+                                        />
+                                    ))}
+                            </Stack>
+                        </ScrollArea>
+                        <div
+                            style={{
+                                position: "absolute",
+                                inset: 0,
+                                pointerEvents: "none",
+                                maskImage: `linear-gradient(black 0%, transparent 25px, transparent calc(100% - ${25 + inputEffectsHeight}px), black 100%)`,
+                                background: "var(--mantine-color-body)",
+                            }}
+                        />
+                    </>
                 )}
 
                 {/* InputEffects overlay — sits at the bottom of the scroll area */}
@@ -248,7 +271,7 @@ export default function Chat() {
                     }}
                 >
                     <div style={{width: "100%", maxWidth: inputMaxWidth}}>
-                        <Group gap={3} pb={3}>
+                        <Group gap={3} pb={3} ref={inputEffectsRef}>
                             {editing && (
                                 <InputEffect
                                     content={

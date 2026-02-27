@@ -32,7 +32,7 @@ export default function Update() {
                 </Group>
             ) : (
                 <Group>
-                    <RingProgress sections={[{value: updateProgress ?? 35, color: color}]} size={30} thickness={3}/>
+                    <RingProgress sections={[{value: updateProgress ?? 0, color: color}]} size={30} thickness={3}/>
                     <Stack gap={0}>
                         <Text size="sm">Downloading v{pendingUpdate?.version}</Text>
                         <Text size="xs" c="dimmed">App will update and restart</Text>

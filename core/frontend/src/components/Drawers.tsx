@@ -88,6 +88,9 @@ export default function Drawers(
     const [cloneInterval, setCloneInterval] = useState<NodeJS.Timeout>();
     const [addingInstruction, setAddingInstruction] = useState(false);
 
+    const [embedChange, setEmbedChange] = useState<string | null>(null);
+    const [isEmbedConfirmOpen, {open: openEmbedConfirm, close: closeEmbedding}] = useDisclosure();
+
     return (
         <>
             {buttons(accountDrawer, settingsDrawer)}
@@ -247,14 +250,22 @@ export default function Drawers(
                                         service: getEmbeddingConfig()?.service,
                                         model: getEmbeddingConfig()?.model
                                     })}
-                                    onChange={async (value) => {
-                                        console.log(JSON.stringify({
-                                            service: getEmbeddingConfig()?.service,
-                                            model: getEmbeddingConfig()?.model
-                                        }))
-                                        await setEmbeddingConfig(value ? zConfig.parse(JSON.parse(value)) : undefined);
-                                        alert("info", "Embedding model saved");
+                                    onChange={(value) => {
+                                        setEmbedChange(value);
+                                        openEmbedConfirm();
                                     }}/>
+                            <Modal title="Change Embedding Model" opened={isEmbedConfirmOpen} onClose={closeEmbedding}>
+                                {embedChange
+                                    ? <Text>Are you sure? All embeddings will be regenerated using the
+                                        model <strong>{zConfig.parse(JSON.parse(embedChange)).model}</strong>.</Text>
+                                    : <Text>Are you sure? Features like memory and smart search will not be
+                                        available.</Text>}
+                                <Button variant="gradient" fullWidth onClick={async () => {
+                                    await setEmbeddingConfig(embedChange ? zConfig.parse(JSON.parse(embedChange)) : undefined);
+                                    alert("info", "Embedding model saved");
+                                    closeEmbedding();
+                                }} mt="lg">Confirm</Button>
+                            </Modal>
                         </Stack>
                     </Tabs.Panel>
                     <Tabs.Panel value="appearance">

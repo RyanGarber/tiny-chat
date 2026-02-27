@@ -194,9 +194,9 @@ export type SummaryWhereInput = {
   config?: Prisma.JsonFilter<"Summary">
   content?: Prisma.StringFilter<"Summary"> | string
   createdAt?: Prisma.DateTimeFilter<"Summary"> | Date | string
-  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  folder?: Prisma.XOR<Prisma.FolderScalarRelationFilter, Prisma.FolderWhereInput>
   chat?: Prisma.XOR<Prisma.ChatScalarRelationFilter, Prisma.ChatWhereInput>
+  folder?: Prisma.XOR<Prisma.FolderScalarRelationFilter, Prisma.FolderWhereInput>
+  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   messages?: Prisma.MessageListRelationFilter
 }
 
@@ -208,9 +208,9 @@ export type SummaryOrderByWithRelationInput = {
   config?: Prisma.SortOrder
   content?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  user?: Prisma.UserOrderByWithRelationInput
-  folder?: Prisma.FolderOrderByWithRelationInput
   chat?: Prisma.ChatOrderByWithRelationInput
+  folder?: Prisma.FolderOrderByWithRelationInput
+  user?: Prisma.UserOrderByWithRelationInput
   messages?: Prisma.MessageOrderByRelationAggregateInput
 }
 
@@ -225,9 +225,9 @@ export type SummaryWhereUniqueInput = Prisma.AtLeast<{
   config?: Prisma.JsonFilter<"Summary">
   content?: Prisma.StringFilter<"Summary"> | string
   createdAt?: Prisma.DateTimeFilter<"Summary"> | Date | string
-  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  folder?: Prisma.XOR<Prisma.FolderScalarRelationFilter, Prisma.FolderWhereInput>
   chat?: Prisma.XOR<Prisma.ChatScalarRelationFilter, Prisma.ChatWhereInput>
+  folder?: Prisma.XOR<Prisma.FolderScalarRelationFilter, Prisma.FolderWhereInput>
+  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   messages?: Prisma.MessageListRelationFilter
 }, "id">
 
@@ -262,9 +262,9 @@ export type SummaryCreateInput = {
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   content: string
   createdAt?: Date | string
-  user: Prisma.UserCreateNestedOneWithoutSummariesInput
-  folder: Prisma.FolderCreateNestedOneWithoutSummariesInput
   chat: Prisma.ChatCreateNestedOneWithoutSummariesInput
+  folder: Prisma.FolderCreateNestedOneWithoutSummariesInput
+  user: Prisma.UserCreateNestedOneWithoutSummariesInput
   messages?: Prisma.MessageCreateNestedManyWithoutSummariesInput
 }
 
@@ -284,9 +284,9 @@ export type SummaryUpdateInput = {
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   content?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneRequiredWithoutSummariesNestedInput
-  folder?: Prisma.FolderUpdateOneRequiredWithoutSummariesNestedInput
   chat?: Prisma.ChatUpdateOneRequiredWithoutSummariesNestedInput
+  folder?: Prisma.FolderUpdateOneRequiredWithoutSummariesNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutSummariesNestedInput
   messages?: Prisma.MessageUpdateManyWithoutSummariesNestedInput
 }
 
@@ -535,8 +535,8 @@ export type SummaryCreateWithoutUserInput = {
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   content: string
   createdAt?: Date | string
-  folder: Prisma.FolderCreateNestedOneWithoutSummariesInput
   chat: Prisma.ChatCreateNestedOneWithoutSummariesInput
+  folder: Prisma.FolderCreateNestedOneWithoutSummariesInput
   messages?: Prisma.MessageCreateNestedManyWithoutSummariesInput
 }
 
@@ -594,8 +594,8 @@ export type SummaryCreateWithoutFolderInput = {
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   content: string
   createdAt?: Date | string
-  user: Prisma.UserCreateNestedOneWithoutSummariesInput
   chat: Prisma.ChatCreateNestedOneWithoutSummariesInput
+  user: Prisma.UserCreateNestedOneWithoutSummariesInput
   messages?: Prisma.MessageCreateNestedManyWithoutSummariesInput
 }
 
@@ -640,8 +640,8 @@ export type SummaryCreateWithoutChatInput = {
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   content: string
   createdAt?: Date | string
-  user: Prisma.UserCreateNestedOneWithoutSummariesInput
   folder: Prisma.FolderCreateNestedOneWithoutSummariesInput
+  user: Prisma.UserCreateNestedOneWithoutSummariesInput
   messages?: Prisma.MessageCreateNestedManyWithoutSummariesInput
 }
 
@@ -686,9 +686,9 @@ export type SummaryCreateWithoutMessagesInput = {
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   content: string
   createdAt?: Date | string
-  user: Prisma.UserCreateNestedOneWithoutSummariesInput
-  folder: Prisma.FolderCreateNestedOneWithoutSummariesInput
   chat: Prisma.ChatCreateNestedOneWithoutSummariesInput
+  folder: Prisma.FolderCreateNestedOneWithoutSummariesInput
+  user: Prisma.UserCreateNestedOneWithoutSummariesInput
 }
 
 export type SummaryUncheckedCreateWithoutMessagesInput = {
@@ -736,8 +736,8 @@ export type SummaryUpdateWithoutUserInput = {
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   content?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  folder?: Prisma.FolderUpdateOneRequiredWithoutSummariesNestedInput
   chat?: Prisma.ChatUpdateOneRequiredWithoutSummariesNestedInput
+  folder?: Prisma.FolderUpdateOneRequiredWithoutSummariesNestedInput
   messages?: Prisma.MessageUpdateManyWithoutSummariesNestedInput
 }
 
@@ -774,8 +774,8 @@ export type SummaryUpdateWithoutFolderInput = {
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   content?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneRequiredWithoutSummariesNestedInput
   chat?: Prisma.ChatUpdateOneRequiredWithoutSummariesNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutSummariesNestedInput
   messages?: Prisma.MessageUpdateManyWithoutSummariesNestedInput
 }
 
@@ -812,8 +812,8 @@ export type SummaryUpdateWithoutChatInput = {
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   content?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneRequiredWithoutSummariesNestedInput
   folder?: Prisma.FolderUpdateOneRequiredWithoutSummariesNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutSummariesNestedInput
   messages?: Prisma.MessageUpdateManyWithoutSummariesNestedInput
 }
 
@@ -841,9 +841,9 @@ export type SummaryUpdateWithoutMessagesInput = {
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   content?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneRequiredWithoutSummariesNestedInput
-  folder?: Prisma.FolderUpdateOneRequiredWithoutSummariesNestedInput
   chat?: Prisma.ChatUpdateOneRequiredWithoutSummariesNestedInput
+  folder?: Prisma.FolderUpdateOneRequiredWithoutSummariesNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutSummariesNestedInput
 }
 
 export type SummaryUncheckedUpdateWithoutMessagesInput = {
@@ -905,9 +905,9 @@ export type SummarySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   config?: boolean
   content?: boolean
   createdAt?: boolean
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
+  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   messages?: boolean | Prisma.Summary$messagesArgs<ExtArgs>
   _count?: boolean | Prisma.SummaryCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["summary"]>
@@ -920,9 +920,9 @@ export type SummarySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   config?: boolean
   content?: boolean
   createdAt?: boolean
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
+  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["summary"]>
 
 export type SummarySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -933,9 +933,9 @@ export type SummarySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   config?: boolean
   content?: boolean
   createdAt?: boolean
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
+  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["summary"]>
 
 export type SummarySelectScalar = {
@@ -950,29 +950,29 @@ export type SummarySelectScalar = {
 
 export type SummaryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "folderId" | "chatId" | "config" | "content" | "createdAt", ExtArgs["result"]["summary"]>
 export type SummaryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
+  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   messages?: boolean | Prisma.Summary$messagesArgs<ExtArgs>
   _count?: boolean | Prisma.SummaryCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type SummaryIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
+  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type SummaryIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
+  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 
 export type $SummaryPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Summary"
   objects: {
-    user: Prisma.$UserPayload<ExtArgs>
-    folder: Prisma.$FolderPayload<ExtArgs>
     chat: Prisma.$ChatPayload<ExtArgs>
+    folder: Prisma.$FolderPayload<ExtArgs>
+    user: Prisma.$UserPayload<ExtArgs>
     messages: Prisma.$MessagePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -1377,9 +1377,9 @@ readonly fields: SummaryFieldRefs;
  */
 export interface Prisma__SummaryClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  folder<T extends Prisma.FolderDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FolderDefaultArgs<ExtArgs>>): Prisma.Prisma__FolderClient<runtime.Types.Result.GetResult<Prisma.$FolderPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   chat<T extends Prisma.ChatDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ChatDefaultArgs<ExtArgs>>): Prisma.Prisma__ChatClient<runtime.Types.Result.GetResult<Prisma.$ChatPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  folder<T extends Prisma.FolderDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FolderDefaultArgs<ExtArgs>>): Prisma.Prisma__FolderClient<runtime.Types.Result.GetResult<Prisma.$FolderPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   messages<T extends Prisma.Summary$messagesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Summary$messagesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.

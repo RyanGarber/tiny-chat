@@ -264,9 +264,9 @@ export type MemoryWhereInput = {
   confidence?: Prisma.FloatFilter<"Memory"> | number
   createdAt?: Prisma.DateTimeFilter<"Memory"> | Date | string
   latest?: Prisma.BoolFilter<"Memory"> | boolean
-  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  folder?: Prisma.XOR<Prisma.FolderScalarRelationFilter, Prisma.FolderWhereInput>
   chat?: Prisma.XOR<Prisma.ChatScalarRelationFilter, Prisma.ChatWhereInput>
+  folder?: Prisma.XOR<Prisma.FolderScalarRelationFilter, Prisma.FolderWhereInput>
+  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   messages?: Prisma.MessageListRelationFilter
 }
 
@@ -283,9 +283,9 @@ export type MemoryOrderByWithRelationInput = {
   confidence?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   latest?: Prisma.SortOrder
-  user?: Prisma.UserOrderByWithRelationInput
-  folder?: Prisma.FolderOrderByWithRelationInput
   chat?: Prisma.ChatOrderByWithRelationInput
+  folder?: Prisma.FolderOrderByWithRelationInput
+  user?: Prisma.UserOrderByWithRelationInput
   messages?: Prisma.MessageOrderByRelationAggregateInput
 }
 
@@ -305,9 +305,9 @@ export type MemoryWhereUniqueInput = Prisma.AtLeast<{
   confidence?: Prisma.FloatFilter<"Memory"> | number
   createdAt?: Prisma.DateTimeFilter<"Memory"> | Date | string
   latest?: Prisma.BoolFilter<"Memory"> | boolean
-  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  folder?: Prisma.XOR<Prisma.FolderScalarRelationFilter, Prisma.FolderWhereInput>
   chat?: Prisma.XOR<Prisma.ChatScalarRelationFilter, Prisma.ChatWhereInput>
+  folder?: Prisma.XOR<Prisma.FolderScalarRelationFilter, Prisma.FolderWhereInput>
+  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   messages?: Prisma.MessageListRelationFilter
 }, "id">
 
@@ -359,9 +359,9 @@ export type MemoryCreateInput = {
   confidence: number
   createdAt?: Date | string
   latest?: boolean
-  user: Prisma.UserCreateNestedOneWithoutMemoriesInput
-  folder: Prisma.FolderCreateNestedOneWithoutMemoriesInput
   chat: Prisma.ChatCreateNestedOneWithoutMemoriesInput
+  folder: Prisma.FolderCreateNestedOneWithoutMemoriesInput
+  user: Prisma.UserCreateNestedOneWithoutMemoriesInput
   messages?: Prisma.MessageCreateNestedManyWithoutMemoriesInput
 }
 
@@ -391,9 +391,9 @@ export type MemoryUpdateInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   latest?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  user?: Prisma.UserUpdateOneRequiredWithoutMemoriesNestedInput
-  folder?: Prisma.FolderUpdateOneRequiredWithoutMemoriesNestedInput
   chat?: Prisma.ChatUpdateOneRequiredWithoutMemoriesNestedInput
+  folder?: Prisma.FolderUpdateOneRequiredWithoutMemoriesNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutMemoriesNestedInput
   messages?: Prisma.MessageUpdateManyWithoutMemoriesNestedInput
 }
 
@@ -721,8 +721,8 @@ export type MemoryCreateWithoutUserInput = {
   confidence: number
   createdAt?: Date | string
   latest?: boolean
-  folder: Prisma.FolderCreateNestedOneWithoutMemoriesInput
   chat: Prisma.ChatCreateNestedOneWithoutMemoriesInput
+  folder: Prisma.FolderCreateNestedOneWithoutMemoriesInput
   messages?: Prisma.MessageCreateNestedManyWithoutMemoriesInput
 }
 
@@ -795,8 +795,8 @@ export type MemoryCreateWithoutFolderInput = {
   confidence: number
   createdAt?: Date | string
   latest?: boolean
-  user: Prisma.UserCreateNestedOneWithoutMemoriesInput
   chat: Prisma.ChatCreateNestedOneWithoutMemoriesInput
+  user: Prisma.UserCreateNestedOneWithoutMemoriesInput
   messages?: Prisma.MessageCreateNestedManyWithoutMemoriesInput
 }
 
@@ -851,8 +851,8 @@ export type MemoryCreateWithoutChatInput = {
   confidence: number
   createdAt?: Date | string
   latest?: boolean
-  user: Prisma.UserCreateNestedOneWithoutMemoriesInput
   folder: Prisma.FolderCreateNestedOneWithoutMemoriesInput
+  user: Prisma.UserCreateNestedOneWithoutMemoriesInput
   messages?: Prisma.MessageCreateNestedManyWithoutMemoriesInput
 }
 
@@ -907,9 +907,9 @@ export type MemoryCreateWithoutMessagesInput = {
   confidence: number
   createdAt?: Date | string
   latest?: boolean
-  user: Prisma.UserCreateNestedOneWithoutMemoriesInput
-  folder: Prisma.FolderCreateNestedOneWithoutMemoriesInput
   chat: Prisma.ChatCreateNestedOneWithoutMemoriesInput
+  folder: Prisma.FolderCreateNestedOneWithoutMemoriesInput
+  user: Prisma.UserCreateNestedOneWithoutMemoriesInput
 }
 
 export type MemoryUncheckedCreateWithoutMessagesInput = {
@@ -972,8 +972,8 @@ export type MemoryUpdateWithoutUserInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   latest?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  folder?: Prisma.FolderUpdateOneRequiredWithoutMemoriesNestedInput
   chat?: Prisma.ChatUpdateOneRequiredWithoutMemoriesNestedInput
+  folder?: Prisma.FolderUpdateOneRequiredWithoutMemoriesNestedInput
   messages?: Prisma.MessageUpdateManyWithoutMemoriesNestedInput
 }
 
@@ -1030,8 +1030,8 @@ export type MemoryUpdateWithoutFolderInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   latest?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  user?: Prisma.UserUpdateOneRequiredWithoutMemoriesNestedInput
   chat?: Prisma.ChatUpdateOneRequiredWithoutMemoriesNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutMemoriesNestedInput
   messages?: Prisma.MessageUpdateManyWithoutMemoriesNestedInput
 }
 
@@ -1088,8 +1088,8 @@ export type MemoryUpdateWithoutChatInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   latest?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  user?: Prisma.UserUpdateOneRequiredWithoutMemoriesNestedInput
   folder?: Prisma.FolderUpdateOneRequiredWithoutMemoriesNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutMemoriesNestedInput
   messages?: Prisma.MessageUpdateManyWithoutMemoriesNestedInput
 }
 
@@ -1132,9 +1132,9 @@ export type MemoryUpdateWithoutMessagesInput = {
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   latest?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  user?: Prisma.UserUpdateOneRequiredWithoutMemoriesNestedInput
-  folder?: Prisma.FolderUpdateOneRequiredWithoutMemoriesNestedInput
   chat?: Prisma.ChatUpdateOneRequiredWithoutMemoriesNestedInput
+  folder?: Prisma.FolderUpdateOneRequiredWithoutMemoriesNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutMemoriesNestedInput
 }
 
 export type MemoryUncheckedUpdateWithoutMessagesInput = {
@@ -1211,9 +1211,9 @@ export type MemorySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   confidence?: boolean
   createdAt?: boolean
   latest?: boolean
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
+  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   messages?: boolean | Prisma.Memory$messagesArgs<ExtArgs>
   _count?: boolean | Prisma.MemoryCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["memory"]>
@@ -1231,9 +1231,9 @@ export type MemorySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   confidence?: boolean
   createdAt?: boolean
   latest?: boolean
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
+  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["memory"]>
 
 export type MemorySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1249,9 +1249,9 @@ export type MemorySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   confidence?: boolean
   createdAt?: boolean
   latest?: boolean
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
+  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["memory"]>
 
 export type MemorySelectScalar = {
@@ -1271,29 +1271,29 @@ export type MemorySelectScalar = {
 
 export type MemoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "folderId" | "chatId" | "config" | "fact" | "category" | "stability" | "evidence" | "confidence" | "createdAt" | "latest", ExtArgs["result"]["memory"]>
 export type MemoryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
+  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   messages?: boolean | Prisma.Memory$messagesArgs<ExtArgs>
   _count?: boolean | Prisma.MemoryCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type MemoryIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
+  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type MemoryIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
+  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 
 export type $MemoryPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Memory"
   objects: {
-    user: Prisma.$UserPayload<ExtArgs>
-    folder: Prisma.$FolderPayload<ExtArgs>
     chat: Prisma.$ChatPayload<ExtArgs>
+    folder: Prisma.$FolderPayload<ExtArgs>
+    user: Prisma.$UserPayload<ExtArgs>
     messages: Prisma.$MessagePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -1703,9 +1703,9 @@ readonly fields: MemoryFieldRefs;
  */
 export interface Prisma__MemoryClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  folder<T extends Prisma.FolderDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FolderDefaultArgs<ExtArgs>>): Prisma.Prisma__FolderClient<runtime.Types.Result.GetResult<Prisma.$FolderPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   chat<T extends Prisma.ChatDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ChatDefaultArgs<ExtArgs>>): Prisma.Prisma__ChatClient<runtime.Types.Result.GetResult<Prisma.$ChatPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  folder<T extends Prisma.FolderDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FolderDefaultArgs<ExtArgs>>): Prisma.Prisma__FolderClient<runtime.Types.Result.GetResult<Prisma.$FolderPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   messages<T extends Prisma.Memory$messagesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Memory$messagesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.

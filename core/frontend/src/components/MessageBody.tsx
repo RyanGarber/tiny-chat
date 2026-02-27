@@ -1,4 +1,4 @@
-import {Box, Button, Divider, Group, Loader, Popover, ScrollAreaAutosize, Skeleton, Stack, Text,} from "@mantine/core";
+import {Box, Button, Divider, Group, Popover, ScrollAreaAutosize, Skeleton, Stack, Text,} from "@mantine/core";
 import {useElementSize} from "@mantine/hooks";
 import {MessageOmitted} from "@tiny-chat/core-backend/types";
 import {useEffect, useLayoutEffect, useRef, useState} from "react";
@@ -17,7 +17,7 @@ export default function MessageBody({message}: { message: MessageOmitted }) {
     if (message.author === Author.USER) {
         const config = messages[messages.findIndex(m => m.id === message.id) + 1]?.config;
         const files = message.data.filter(p => p.type === "file");
-        return <Stack gap={5}>
+        return <Stack gap={5} maw="100%">
             {config && <Group gap={5} c="dimmed">
                 <IconArrowForwardUp size={14}/>
                 <Text size="xs">{config.model}</Text>
@@ -27,7 +27,6 @@ export default function MessageBody({message}: { message: MessageOmitted }) {
                 px={20}
                 py={10}
                 bdrs="lg"
-                maw="100%"
                 className="user-message"
                 style={{boxShadow: shadow}}
             >
@@ -161,14 +160,6 @@ export default function MessageBody({message}: { message: MessageOmitted }) {
             {!message.state.any || message.state.generating ? (
                 <>
                     <MessageBodyContent message={message}/>
-                    {message.state.generating && (
-                        <Loader
-                            size="sm"
-                            type="dots"
-                            style={{margin: "0 auto"}}
-                            color="dimmed"
-                        />
-                    )}
                 </>
             ) : (
                 <div style={{flex: 1}}>

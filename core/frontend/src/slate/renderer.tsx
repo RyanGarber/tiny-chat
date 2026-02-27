@@ -60,20 +60,25 @@ export function renderLeaf(props: any) {
     if (leaf.bold) {
         children = <strong>{children}</strong>;
     }
+
     if (leaf.italic) {
         children = <em>{children}</em>;
     }
+
     if (leaf.code) {
         children = <code>{children}</code>;
     }
+
     if (leaf.strikethrough) {
         children = <s>{children}</s>;
     }
+
     if (leaf.heading) {
         const sizes: Record<number, string> = {1: "2em", 2: "1.5em", 3: "1.25em", 4: "1em", 5: "0.875em", 6: "0.75em"};
         children = <span
             style={{fontSize: sizes[leaf.heading] ?? "1em", fontWeight: "bold", lineHeight: 1.2}}>{children}</span>;
     }
+
     if (leaf.link) {
         children = <span style={{color: "var(--mantine-color-blue-5)", textDecoration: "underline"}}>{children}</span>;
     }
@@ -101,7 +106,8 @@ export function decorate([node, path]: [Node, number[]]) {
             case "italic":
             case "code":
             case "strikethrough": {
-                const mLen = (token.type === "bold" || token.type === "strikethrough") ? 2 : 1;
+                let mLen = 1;
+                if (token.type === "bold" || token.type === "strikethrough") mLen = 2;
                 ranges.push({
                     anchor: {path, offset: token.start},
                     focus: {path, offset: token.start + mLen},
@@ -173,6 +179,10 @@ export function decorate([node, path]: [Node, number[]]) {
             }
             case "quoteMarker": {
                 // Dim the entire line
+                ranges.push({anchor: {path, offset: 0}, focus: {path, offset: token.end}, syntax: true});
+                break;
+            }
+            case "codeMarker": {
                 ranges.push({anchor: {path, offset: 0}, focus: {path, offset: token.end}, syntax: true});
                 break;
             }

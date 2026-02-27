@@ -12,6 +12,8 @@ import {useLayout} from "@/managers/layout.tsx";
 import {type MessageOmitted, zConfig, zConfigType, type zDataType} from "@tiny-chat/core-backend/types";
 import {Author} from "@tiny-chat/core-backend/generated/prisma/enums.ts";
 import {readLocalStorageValue} from "@mantine/hooks";
+import {useEmbeddings} from "@/managers/embeddings.tsx";
+import {useTasks} from "./tasks";
 
 type CustomEditor = BaseEditor & ReactEditor & HistoryEditor;
 
@@ -144,8 +146,8 @@ export const useMessaging = create(
             let currentChat = useChats.getState().currentChat;
             if (!config) return;
 
+            useTasks.getState().setTask("sending", "Preparing message");
             setInputDisabled(true);
-            nprogress.start();
             reset();
 
             let message: MessageOmitted;
@@ -174,21 +176,22 @@ export const useMessaging = create(
                     temporary
                 });
             }
-            nprogress.set(33);
             await fetchFolders(false);
-            nprogress.set(66);
             if (!currentChat) await setCurrentChat(message.chatId, true, false);
             else await fetchMessages(false);
-            nprogress.complete();
 
             reloadConfig();
             currentChat = useChats.getState().currentChat!;
 
             if (!currentChat.title) {
                 console.log("Chat has no title; setting one");
-                await trpc.chats.edit.mutate({id: currentChat.id, title: scrubText(extractText(data), 100)});
-                await fetchFolders(false);
+                void (async () => {
+                    await trpc.chats.edit.mutate({id: currentChat.id, title: scrubText(extractText(data), 100)});
+                    await fetchFolders(false);
+                })();
             }
+
+            useTasks.getState().removeTask("sending");
 
             try {
                 console.log(`Running model ${get().config!.model} on message ${message.id}`);
@@ -200,7 +203,10 @@ export const useMessaging = create(
                 throw e;
             } finally {
                 setInputDisabled(false);
+                useTasks.getState().removeTask("sending");
             }
+
+            void useEmbeddings.getState().updateEmbeddings();
         },
 
         deleteMessagePair: async (messageId) => {

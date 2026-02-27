@@ -50,6 +50,7 @@ export const useChats = create(
                 ? await trpc.messages.list.query({chatId: currentChat.id})
                 : [];
             set({messages});
+            console.log("Messages:", messages);
             if (showProgress) nprogress.complete();
         },
 

@@ -3,6 +3,8 @@ import {createId} from "@paralleldrive/cuid2";
 import {procedure, router} from "../index.ts";
 import {MemoryCategory, MemoryStability} from "../generated/prisma/enums.ts";
 import {zConfig} from "../types.ts";
+import {getMostRelevant, SearchOptions} from "./embeddings.ts";
+import {type Memory} from "../generated/prisma/client.ts";
 
 export default router({
     createMemories: procedure.input(z.object({
@@ -42,13 +44,6 @@ export default router({
         });
     }),
 
-    listMemories: procedure.query(async ({ctx}) => {
-        return ctx.prisma.memory.findMany({
-            where: {user: {id: ctx.session.user.id}, latest: true},
-            select: {fact: true, category: true}
-        });
-    }),
-
     createSummary: procedure.input(z.object({
         chatId: z.cuid2(),
         config: zConfig,
@@ -71,7 +66,7 @@ export default router({
         });
     }),
 
-    listPendingChats: procedure.query(async ({ctx}) => {
+    listUpdatedChats: procedure.query(async ({ctx}) => {
         const chats = await ctx.prisma.chat.findMany({
             where: {user: {id: ctx.session.user.id}, temporary: false},
             select: {
@@ -81,5 +76,19 @@ export default router({
             },
         });
         return chats.filter(c => c.messages[0]?.createdAt > (c.memories[0]?.createdAt ?? new Date(0)))
+    }),
+
+    listRelevantMemories: procedure.input(z.object({
+        embedding: z.array(z.number()),
+        options: SearchOptions.optional()
+    })).mutation(async ({ctx, input}) => {
+        return getMostRelevant(input.embedding, (await ctx.prisma.$queryRaw<(Memory & {
+            embedding: string
+        })[]>`SELECT *
+              FROM memory
+              WHERE "userId" = ${ctx.session.user.id}`).map(m => ({
+            value: m as Memory,
+            embedding: JSON.parse(m.embedding)
+        })), input.options).map(m => m.value as Memory);
     })
 })

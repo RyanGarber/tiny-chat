@@ -14,9 +14,10 @@ import {resolve} from "path";
 import {fileURLToPath} from "url";
 import folders from "./routes/folders.ts";
 import chats from "./routes/chats.ts";
-import memories from "./routes/memories.ts";
+import context from "./routes/context.ts";
 import messages from "./routes/messages.ts";
 import sessions from "./routes/sessions.ts";
+import embeddings from "./routes/embeddings.ts";
 
 config({path: resolve(fileURLToPath(import.meta.url), "../../../.env")});
 
@@ -33,9 +34,10 @@ export const prisma = new PrismaClient({
 const trpc = router({
     folders,
     chats,
-    memories,
+    context,
     messages,
     sessions,
+    embeddings
 });
 export type tRPC = typeof trpc;
 
@@ -119,6 +121,8 @@ export const auth = betterAuth({
             await prisma.folder.updateMany({where: {userId: anonymousUser.user.id}, data: {userId: newUser.user.id}});
             await prisma.chat.updateMany({where: {userId: anonymousUser.user.id}, data: {userId: newUser.user.id}});
             await prisma.message.updateMany({where: {userId: anonymousUser.user.id}, data: {userId: newUser.user.id}});
+            await prisma.memory.updateMany({where: {userId: anonymousUser.user.id}, data: {userId: newUser.user.id}});
+            await prisma.summary.updateMany({where: {userId: anonymousUser.user.id}, data: {userId: newUser.user.id}});
             console.log("Transferred:", await prisma.user.findFirst({where: {id: newUser.user.id}}));
         }
     }), bearer()],

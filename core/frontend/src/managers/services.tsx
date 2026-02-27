@@ -5,10 +5,11 @@ import {create} from "zustand";
 import {format} from "timeago.js";
 import {subscribeWithSelector} from "zustand/middleware";
 import {MessageUnomitted, zConfigType, zDataPart, zDataPartType} from "@tiny-chat/core-backend/types.ts";
-import {alert, extractText, scrubText, trpc} from "@/utils.ts";
+import {alert, trpc} from "@/utils.ts";
 import {useSettings} from "@/managers/settings.tsx";
 import {Author} from "@tiny-chat/core-backend/generated/prisma/enums.ts";
-import {useMemories} from "@/managers/memories.tsx";
+import {useMemories} from "@/managers/context.tsx";
+import {useTasks} from "@/managers/tasks.tsx";
 
 interface Services {
     init: () => Promise<void>;
@@ -44,21 +45,29 @@ export const useServices = create(
         },
 
         fetchServices: async () => {
+            useTasks.getState().setTask("models", "Finding models");
+
             const available = [];
 
-            for (const service of services) {
+            for (let i = 0; i < services.length; i++) {
                 try {
-                    const models = await service.getModels();
-                    available.push({name: service.name, models});
+                    const availableModels = available.reduce((acc, s) => acc + s.models.length, 0);
+                    useTasks.getState().updateTask("models", i / services.length * 100, `Found ${availableModels} model${availableModels === 1 ? "" : "s"}`, `Finding models (${services[i].name})`);
+                    const models = await services[i].getModels();
+                    available.push({name: services[i].name, models});
                 } catch (e) {
-                    alert("error", `Failed to fetch models from ${service.name} (see console)`);
+                    alert("error", `Failed to fetch models from ${services[i].name}`);
                     throw e;
                 }
             }
 
+            useTasks.getState().updateTask("models", 100, undefined, "Finding models");
+
             console.log("Fetched services:", available);
             set({services: available});
             reloadConfig();
+
+            useTasks.getState().removeTask("models");
         },
 
         abortController: null,
@@ -99,7 +108,7 @@ export const useServices = create(
                         reply.config
                     );
 
-                    const memories = await useMemories.getState().remember(scrubText(extractText(messages[i].data)));
+                    const memories = await useMemories.getState().getRelevantMemories(messages[i]);
                     const context: MessageUnomitted[] = [
                         ({
                             author: Author.USER, data: [{
@@ -154,6 +163,10 @@ export const useServices = create(
 Today's date is ${new Date().toLocaleDateString()}.
 Assume knowledge must reflect current information. Prefer search results over training knowledge.
 For news, software, and other time-sensitive topics, always search. If uncertainty exists, search.
+
+Stay scoped to the current topic. Do not introduce or revisit previous topics unless:
+* The user explicitly asks, or
+* a brief, optional follow-up question would feel natural to a human in this moment.
 
 This conversation may include responses from multiple AI models. Previous assistant messages are labeled in the format:
 

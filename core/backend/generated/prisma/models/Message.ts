@@ -210,13 +210,13 @@ export type MessageWhereInput = {
   data?: Prisma.JsonFilter<"Message">
   metadata?: Prisma.JsonFilter<"Message">
   createdAt?: Prisma.DateTimeFilter<"Message"> | Date | string
-  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  folder?: Prisma.XOR<Prisma.FolderScalarRelationFilter, Prisma.FolderWhereInput>
   chat?: Prisma.XOR<Prisma.ChatScalarRelationFilter, Prisma.ChatWhereInput>
+  folder?: Prisma.XOR<Prisma.FolderScalarRelationFilter, Prisma.FolderWhereInput>
   previous?: Prisma.XOR<Prisma.MessageNullableScalarRelationFilter, Prisma.MessageWhereInput> | null
   next?: Prisma.XOR<Prisma.MessageNullableScalarRelationFilter, Prisma.MessageWhereInput> | null
-  summaries?: Prisma.SummaryListRelationFilter
+  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   memories?: Prisma.MemoryListRelationFilter
+  summaries?: Prisma.SummaryListRelationFilter
 }
 
 export type MessageOrderByWithRelationInput = {
@@ -230,13 +230,13 @@ export type MessageOrderByWithRelationInput = {
   data?: Prisma.SortOrder
   metadata?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  user?: Prisma.UserOrderByWithRelationInput
-  folder?: Prisma.FolderOrderByWithRelationInput
   chat?: Prisma.ChatOrderByWithRelationInput
+  folder?: Prisma.FolderOrderByWithRelationInput
   previous?: Prisma.MessageOrderByWithRelationInput
   next?: Prisma.MessageOrderByWithRelationInput
-  summaries?: Prisma.SummaryOrderByRelationAggregateInput
+  user?: Prisma.UserOrderByWithRelationInput
   memories?: Prisma.MemoryOrderByRelationAggregateInput
+  summaries?: Prisma.SummaryOrderByRelationAggregateInput
 }
 
 export type MessageWhereUniqueInput = Prisma.AtLeast<{
@@ -253,13 +253,13 @@ export type MessageWhereUniqueInput = Prisma.AtLeast<{
   data?: Prisma.JsonFilter<"Message">
   metadata?: Prisma.JsonFilter<"Message">
   createdAt?: Prisma.DateTimeFilter<"Message"> | Date | string
-  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  folder?: Prisma.XOR<Prisma.FolderScalarRelationFilter, Prisma.FolderWhereInput>
   chat?: Prisma.XOR<Prisma.ChatScalarRelationFilter, Prisma.ChatWhereInput>
+  folder?: Prisma.XOR<Prisma.FolderScalarRelationFilter, Prisma.FolderWhereInput>
   previous?: Prisma.XOR<Prisma.MessageNullableScalarRelationFilter, Prisma.MessageWhereInput> | null
   next?: Prisma.XOR<Prisma.MessageNullableScalarRelationFilter, Prisma.MessageWhereInput> | null
-  summaries?: Prisma.SummaryListRelationFilter
+  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   memories?: Prisma.MemoryListRelationFilter
+  summaries?: Prisma.SummaryListRelationFilter
 }, "id" | "previousId">
 
 export type MessageOrderByWithAggregationInput = {
@@ -301,13 +301,13 @@ export type MessageCreateInput = {
   data: Prisma.JsonNullValueInput | runtime.InputJsonValue
   metadata: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  user: Prisma.UserCreateNestedOneWithoutMessagesInput
-  folder: Prisma.FolderCreateNestedOneWithoutMessagesInput
   chat: Prisma.ChatCreateNestedOneWithoutMessagesInput
+  folder: Prisma.FolderCreateNestedOneWithoutMessagesInput
   previous?: Prisma.MessageCreateNestedOneWithoutNextInput
   next?: Prisma.MessageCreateNestedOneWithoutPreviousInput
-  summaries?: Prisma.SummaryCreateNestedManyWithoutMessagesInput
+  user: Prisma.UserCreateNestedOneWithoutMessagesInput
   memories?: Prisma.MemoryCreateNestedManyWithoutMessagesInput
+  summaries?: Prisma.SummaryCreateNestedManyWithoutMessagesInput
 }
 
 export type MessageUncheckedCreateInput = {
@@ -322,8 +322,8 @@ export type MessageUncheckedCreateInput = {
   metadata: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   next?: Prisma.MessageUncheckedCreateNestedOneWithoutPreviousInput
-  summaries?: Prisma.SummaryUncheckedCreateNestedManyWithoutMessagesInput
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutMessagesInput
+  summaries?: Prisma.SummaryUncheckedCreateNestedManyWithoutMessagesInput
 }
 
 export type MessageUpdateInput = {
@@ -333,13 +333,13 @@ export type MessageUpdateInput = {
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneRequiredWithoutMessagesNestedInput
-  folder?: Prisma.FolderUpdateOneRequiredWithoutMessagesNestedInput
   chat?: Prisma.ChatUpdateOneRequiredWithoutMessagesNestedInput
+  folder?: Prisma.FolderUpdateOneRequiredWithoutMessagesNestedInput
   previous?: Prisma.MessageUpdateOneWithoutNextNestedInput
   next?: Prisma.MessageUpdateOneWithoutPreviousNestedInput
-  summaries?: Prisma.SummaryUpdateManyWithoutMessagesNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutMessagesNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutMessagesNestedInput
+  summaries?: Prisma.SummaryUpdateManyWithoutMessagesNestedInput
 }
 
 export type MessageUncheckedUpdateInput = {
@@ -354,8 +354,8 @@ export type MessageUncheckedUpdateInput = {
   metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   next?: Prisma.MessageUncheckedUpdateOneWithoutPreviousNestedInput
-  summaries?: Prisma.SummaryUncheckedUpdateManyWithoutMessagesNestedInput
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutMessagesNestedInput
+  summaries?: Prisma.SummaryUncheckedUpdateManyWithoutMessagesNestedInput
 }
 
 export type MessageCreateManyInput = {
@@ -702,12 +702,12 @@ export type MessageCreateWithoutUserInput = {
   data: Prisma.JsonNullValueInput | runtime.InputJsonValue
   metadata: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  folder: Prisma.FolderCreateNestedOneWithoutMessagesInput
   chat: Prisma.ChatCreateNestedOneWithoutMessagesInput
+  folder: Prisma.FolderCreateNestedOneWithoutMessagesInput
   previous?: Prisma.MessageCreateNestedOneWithoutNextInput
   next?: Prisma.MessageCreateNestedOneWithoutPreviousInput
-  summaries?: Prisma.SummaryCreateNestedManyWithoutMessagesInput
   memories?: Prisma.MemoryCreateNestedManyWithoutMessagesInput
+  summaries?: Prisma.SummaryCreateNestedManyWithoutMessagesInput
 }
 
 export type MessageUncheckedCreateWithoutUserInput = {
@@ -721,8 +721,8 @@ export type MessageUncheckedCreateWithoutUserInput = {
   metadata: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   next?: Prisma.MessageUncheckedCreateNestedOneWithoutPreviousInput
-  summaries?: Prisma.SummaryUncheckedCreateNestedManyWithoutMessagesInput
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutMessagesInput
+  summaries?: Prisma.SummaryUncheckedCreateNestedManyWithoutMessagesInput
 }
 
 export type MessageCreateOrConnectWithoutUserInput = {
@@ -774,12 +774,12 @@ export type MessageCreateWithoutFolderInput = {
   data: Prisma.JsonNullValueInput | runtime.InputJsonValue
   metadata: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  user: Prisma.UserCreateNestedOneWithoutMessagesInput
   chat: Prisma.ChatCreateNestedOneWithoutMessagesInput
   previous?: Prisma.MessageCreateNestedOneWithoutNextInput
   next?: Prisma.MessageCreateNestedOneWithoutPreviousInput
-  summaries?: Prisma.SummaryCreateNestedManyWithoutMessagesInput
+  user: Prisma.UserCreateNestedOneWithoutMessagesInput
   memories?: Prisma.MemoryCreateNestedManyWithoutMessagesInput
+  summaries?: Prisma.SummaryCreateNestedManyWithoutMessagesInput
 }
 
 export type MessageUncheckedCreateWithoutFolderInput = {
@@ -793,8 +793,8 @@ export type MessageUncheckedCreateWithoutFolderInput = {
   metadata: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   next?: Prisma.MessageUncheckedCreateNestedOneWithoutPreviousInput
-  summaries?: Prisma.SummaryUncheckedCreateNestedManyWithoutMessagesInput
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutMessagesInput
+  summaries?: Prisma.SummaryUncheckedCreateNestedManyWithoutMessagesInput
 }
 
 export type MessageCreateOrConnectWithoutFolderInput = {
@@ -830,12 +830,12 @@ export type MessageCreateWithoutChatInput = {
   data: Prisma.JsonNullValueInput | runtime.InputJsonValue
   metadata: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  user: Prisma.UserCreateNestedOneWithoutMessagesInput
   folder: Prisma.FolderCreateNestedOneWithoutMessagesInput
   previous?: Prisma.MessageCreateNestedOneWithoutNextInput
   next?: Prisma.MessageCreateNestedOneWithoutPreviousInput
-  summaries?: Prisma.SummaryCreateNestedManyWithoutMessagesInput
+  user: Prisma.UserCreateNestedOneWithoutMessagesInput
   memories?: Prisma.MemoryCreateNestedManyWithoutMessagesInput
+  summaries?: Prisma.SummaryCreateNestedManyWithoutMessagesInput
 }
 
 export type MessageUncheckedCreateWithoutChatInput = {
@@ -849,8 +849,8 @@ export type MessageUncheckedCreateWithoutChatInput = {
   metadata: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   next?: Prisma.MessageUncheckedCreateNestedOneWithoutPreviousInput
-  summaries?: Prisma.SummaryUncheckedCreateNestedManyWithoutMessagesInput
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutMessagesInput
+  summaries?: Prisma.SummaryUncheckedCreateNestedManyWithoutMessagesInput
 }
 
 export type MessageCreateOrConnectWithoutChatInput = {
@@ -886,12 +886,12 @@ export type MessageCreateWithoutNextInput = {
   data: Prisma.JsonNullValueInput | runtime.InputJsonValue
   metadata: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  user: Prisma.UserCreateNestedOneWithoutMessagesInput
-  folder: Prisma.FolderCreateNestedOneWithoutMessagesInput
   chat: Prisma.ChatCreateNestedOneWithoutMessagesInput
+  folder: Prisma.FolderCreateNestedOneWithoutMessagesInput
   previous?: Prisma.MessageCreateNestedOneWithoutNextInput
-  summaries?: Prisma.SummaryCreateNestedManyWithoutMessagesInput
+  user: Prisma.UserCreateNestedOneWithoutMessagesInput
   memories?: Prisma.MemoryCreateNestedManyWithoutMessagesInput
+  summaries?: Prisma.SummaryCreateNestedManyWithoutMessagesInput
 }
 
 export type MessageUncheckedCreateWithoutNextInput = {
@@ -905,8 +905,8 @@ export type MessageUncheckedCreateWithoutNextInput = {
   data: Prisma.JsonNullValueInput | runtime.InputJsonValue
   metadata: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  summaries?: Prisma.SummaryUncheckedCreateNestedManyWithoutMessagesInput
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutMessagesInput
+  summaries?: Prisma.SummaryUncheckedCreateNestedManyWithoutMessagesInput
 }
 
 export type MessageCreateOrConnectWithoutNextInput = {
@@ -921,12 +921,12 @@ export type MessageCreateWithoutPreviousInput = {
   data: Prisma.JsonNullValueInput | runtime.InputJsonValue
   metadata: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  user: Prisma.UserCreateNestedOneWithoutMessagesInput
-  folder: Prisma.FolderCreateNestedOneWithoutMessagesInput
   chat: Prisma.ChatCreateNestedOneWithoutMessagesInput
+  folder: Prisma.FolderCreateNestedOneWithoutMessagesInput
   next?: Prisma.MessageCreateNestedOneWithoutPreviousInput
-  summaries?: Prisma.SummaryCreateNestedManyWithoutMessagesInput
+  user: Prisma.UserCreateNestedOneWithoutMessagesInput
   memories?: Prisma.MemoryCreateNestedManyWithoutMessagesInput
+  summaries?: Prisma.SummaryCreateNestedManyWithoutMessagesInput
 }
 
 export type MessageUncheckedCreateWithoutPreviousInput = {
@@ -940,8 +940,8 @@ export type MessageUncheckedCreateWithoutPreviousInput = {
   metadata: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   next?: Prisma.MessageUncheckedCreateNestedOneWithoutPreviousInput
-  summaries?: Prisma.SummaryUncheckedCreateNestedManyWithoutMessagesInput
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutMessagesInput
+  summaries?: Prisma.SummaryUncheckedCreateNestedManyWithoutMessagesInput
 }
 
 export type MessageCreateOrConnectWithoutPreviousInput = {
@@ -967,12 +967,12 @@ export type MessageUpdateWithoutNextInput = {
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneRequiredWithoutMessagesNestedInput
-  folder?: Prisma.FolderUpdateOneRequiredWithoutMessagesNestedInput
   chat?: Prisma.ChatUpdateOneRequiredWithoutMessagesNestedInput
+  folder?: Prisma.FolderUpdateOneRequiredWithoutMessagesNestedInput
   previous?: Prisma.MessageUpdateOneWithoutNextNestedInput
-  summaries?: Prisma.SummaryUpdateManyWithoutMessagesNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutMessagesNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutMessagesNestedInput
+  summaries?: Prisma.SummaryUpdateManyWithoutMessagesNestedInput
 }
 
 export type MessageUncheckedUpdateWithoutNextInput = {
@@ -986,8 +986,8 @@ export type MessageUncheckedUpdateWithoutNextInput = {
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  summaries?: Prisma.SummaryUncheckedUpdateManyWithoutMessagesNestedInput
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutMessagesNestedInput
+  summaries?: Prisma.SummaryUncheckedUpdateManyWithoutMessagesNestedInput
 }
 
 export type MessageUpsertWithoutPreviousInput = {
@@ -1008,12 +1008,12 @@ export type MessageUpdateWithoutPreviousInput = {
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneRequiredWithoutMessagesNestedInput
-  folder?: Prisma.FolderUpdateOneRequiredWithoutMessagesNestedInput
   chat?: Prisma.ChatUpdateOneRequiredWithoutMessagesNestedInput
+  folder?: Prisma.FolderUpdateOneRequiredWithoutMessagesNestedInput
   next?: Prisma.MessageUpdateOneWithoutPreviousNestedInput
-  summaries?: Prisma.SummaryUpdateManyWithoutMessagesNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutMessagesNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutMessagesNestedInput
+  summaries?: Prisma.SummaryUpdateManyWithoutMessagesNestedInput
 }
 
 export type MessageUncheckedUpdateWithoutPreviousInput = {
@@ -1027,8 +1027,8 @@ export type MessageUncheckedUpdateWithoutPreviousInput = {
   metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   next?: Prisma.MessageUncheckedUpdateOneWithoutPreviousNestedInput
-  summaries?: Prisma.SummaryUncheckedUpdateManyWithoutMessagesNestedInput
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutMessagesNestedInput
+  summaries?: Prisma.SummaryUncheckedUpdateManyWithoutMessagesNestedInput
 }
 
 export type MessageCreateWithoutSummariesInput = {
@@ -1038,11 +1038,11 @@ export type MessageCreateWithoutSummariesInput = {
   data: Prisma.JsonNullValueInput | runtime.InputJsonValue
   metadata: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  user: Prisma.UserCreateNestedOneWithoutMessagesInput
-  folder: Prisma.FolderCreateNestedOneWithoutMessagesInput
   chat: Prisma.ChatCreateNestedOneWithoutMessagesInput
+  folder: Prisma.FolderCreateNestedOneWithoutMessagesInput
   previous?: Prisma.MessageCreateNestedOneWithoutNextInput
   next?: Prisma.MessageCreateNestedOneWithoutPreviousInput
+  user: Prisma.UserCreateNestedOneWithoutMessagesInput
   memories?: Prisma.MemoryCreateNestedManyWithoutMessagesInput
 }
 
@@ -1089,11 +1089,11 @@ export type MessageCreateWithoutMemoriesInput = {
   data: Prisma.JsonNullValueInput | runtime.InputJsonValue
   metadata: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  user: Prisma.UserCreateNestedOneWithoutMessagesInput
-  folder: Prisma.FolderCreateNestedOneWithoutMessagesInput
   chat: Prisma.ChatCreateNestedOneWithoutMessagesInput
+  folder: Prisma.FolderCreateNestedOneWithoutMessagesInput
   previous?: Prisma.MessageCreateNestedOneWithoutNextInput
   next?: Prisma.MessageCreateNestedOneWithoutPreviousInput
+  user: Prisma.UserCreateNestedOneWithoutMessagesInput
   summaries?: Prisma.SummaryCreateNestedManyWithoutMessagesInput
 }
 
@@ -1152,12 +1152,12 @@ export type MessageUpdateWithoutUserInput = {
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  folder?: Prisma.FolderUpdateOneRequiredWithoutMessagesNestedInput
   chat?: Prisma.ChatUpdateOneRequiredWithoutMessagesNestedInput
+  folder?: Prisma.FolderUpdateOneRequiredWithoutMessagesNestedInput
   previous?: Prisma.MessageUpdateOneWithoutNextNestedInput
   next?: Prisma.MessageUpdateOneWithoutPreviousNestedInput
-  summaries?: Prisma.SummaryUpdateManyWithoutMessagesNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutMessagesNestedInput
+  summaries?: Prisma.SummaryUpdateManyWithoutMessagesNestedInput
 }
 
 export type MessageUncheckedUpdateWithoutUserInput = {
@@ -1171,8 +1171,8 @@ export type MessageUncheckedUpdateWithoutUserInput = {
   metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   next?: Prisma.MessageUncheckedUpdateOneWithoutPreviousNestedInput
-  summaries?: Prisma.SummaryUncheckedUpdateManyWithoutMessagesNestedInput
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutMessagesNestedInput
+  summaries?: Prisma.SummaryUncheckedUpdateManyWithoutMessagesNestedInput
 }
 
 export type MessageUncheckedUpdateManyWithoutUserInput = {
@@ -1206,12 +1206,12 @@ export type MessageUpdateWithoutFolderInput = {
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneRequiredWithoutMessagesNestedInput
   chat?: Prisma.ChatUpdateOneRequiredWithoutMessagesNestedInput
   previous?: Prisma.MessageUpdateOneWithoutNextNestedInput
   next?: Prisma.MessageUpdateOneWithoutPreviousNestedInput
-  summaries?: Prisma.SummaryUpdateManyWithoutMessagesNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutMessagesNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutMessagesNestedInput
+  summaries?: Prisma.SummaryUpdateManyWithoutMessagesNestedInput
 }
 
 export type MessageUncheckedUpdateWithoutFolderInput = {
@@ -1225,8 +1225,8 @@ export type MessageUncheckedUpdateWithoutFolderInput = {
   metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   next?: Prisma.MessageUncheckedUpdateOneWithoutPreviousNestedInput
-  summaries?: Prisma.SummaryUncheckedUpdateManyWithoutMessagesNestedInput
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutMessagesNestedInput
+  summaries?: Prisma.SummaryUncheckedUpdateManyWithoutMessagesNestedInput
 }
 
 export type MessageUncheckedUpdateManyWithoutFolderInput = {
@@ -1260,12 +1260,12 @@ export type MessageUpdateWithoutChatInput = {
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneRequiredWithoutMessagesNestedInput
   folder?: Prisma.FolderUpdateOneRequiredWithoutMessagesNestedInput
   previous?: Prisma.MessageUpdateOneWithoutNextNestedInput
   next?: Prisma.MessageUpdateOneWithoutPreviousNestedInput
-  summaries?: Prisma.SummaryUpdateManyWithoutMessagesNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutMessagesNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutMessagesNestedInput
+  summaries?: Prisma.SummaryUpdateManyWithoutMessagesNestedInput
 }
 
 export type MessageUncheckedUpdateWithoutChatInput = {
@@ -1279,8 +1279,8 @@ export type MessageUncheckedUpdateWithoutChatInput = {
   metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   next?: Prisma.MessageUncheckedUpdateOneWithoutPreviousNestedInput
-  summaries?: Prisma.SummaryUncheckedUpdateManyWithoutMessagesNestedInput
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutMessagesNestedInput
+  summaries?: Prisma.SummaryUncheckedUpdateManyWithoutMessagesNestedInput
 }
 
 export type MessageUncheckedUpdateManyWithoutChatInput = {
@@ -1302,11 +1302,11 @@ export type MessageUpdateWithoutSummariesInput = {
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneRequiredWithoutMessagesNestedInput
-  folder?: Prisma.FolderUpdateOneRequiredWithoutMessagesNestedInput
   chat?: Prisma.ChatUpdateOneRequiredWithoutMessagesNestedInput
+  folder?: Prisma.FolderUpdateOneRequiredWithoutMessagesNestedInput
   previous?: Prisma.MessageUpdateOneWithoutNextNestedInput
   next?: Prisma.MessageUpdateOneWithoutPreviousNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutMessagesNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutMessagesNestedInput
 }
 
@@ -1345,11 +1345,11 @@ export type MessageUpdateWithoutMemoriesInput = {
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneRequiredWithoutMessagesNestedInput
-  folder?: Prisma.FolderUpdateOneRequiredWithoutMessagesNestedInput
   chat?: Prisma.ChatUpdateOneRequiredWithoutMessagesNestedInput
+  folder?: Prisma.FolderUpdateOneRequiredWithoutMessagesNestedInput
   previous?: Prisma.MessageUpdateOneWithoutNextNestedInput
   next?: Prisma.MessageUpdateOneWithoutPreviousNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutMessagesNestedInput
   summaries?: Prisma.SummaryUpdateManyWithoutMessagesNestedInput
 }
 
@@ -1387,13 +1387,13 @@ export type MessageUncheckedUpdateManyWithoutMemoriesInput = {
  */
 
 export type MessageCountOutputType = {
-  summaries: number
   memories: number
+  summaries: number
 }
 
 export type MessageCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  summaries?: boolean | MessageCountOutputTypeCountSummariesArgs
   memories?: boolean | MessageCountOutputTypeCountMemoriesArgs
+  summaries?: boolean | MessageCountOutputTypeCountSummariesArgs
 }
 
 /**
@@ -1409,15 +1409,15 @@ export type MessageCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Exte
 /**
  * MessageCountOutputType without action
  */
-export type MessageCountOutputTypeCountSummariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.SummaryWhereInput
+export type MessageCountOutputTypeCountMemoriesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.MemoryWhereInput
 }
 
 /**
  * MessageCountOutputType without action
  */
-export type MessageCountOutputTypeCountMemoriesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.MemoryWhereInput
+export type MessageCountOutputTypeCountSummariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SummaryWhereInput
 }
 
 
@@ -1432,13 +1432,13 @@ export type MessageSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   data?: boolean
   metadata?: boolean
   createdAt?: boolean
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
+  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   previous?: boolean | Prisma.Message$previousArgs<ExtArgs>
   next?: boolean | Prisma.Message$nextArgs<ExtArgs>
-  summaries?: boolean | Prisma.Message$summariesArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   memories?: boolean | Prisma.Message$memoriesArgs<ExtArgs>
+  summaries?: boolean | Prisma.Message$summariesArgs<ExtArgs>
   _count?: boolean | Prisma.MessageCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["message"]>
 
@@ -1453,10 +1453,10 @@ export type MessageSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   data?: boolean
   metadata?: boolean
   createdAt?: boolean
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
+  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   previous?: boolean | Prisma.Message$previousArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["message"]>
 
 export type MessageSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1470,10 +1470,10 @@ export type MessageSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   data?: boolean
   metadata?: boolean
   createdAt?: boolean
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
+  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   previous?: boolean | Prisma.Message$previousArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["message"]>
 
 export type MessageSelectScalar = {
@@ -1491,38 +1491,38 @@ export type MessageSelectScalar = {
 
 export type MessageOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "folderId" | "chatId" | "previousId" | "author" | "config" | "data" | "metadata" | "createdAt", ExtArgs["result"]["message"]>
 export type MessageInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
+  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   previous?: boolean | Prisma.Message$previousArgs<ExtArgs>
   next?: boolean | Prisma.Message$nextArgs<ExtArgs>
-  summaries?: boolean | Prisma.Message$summariesArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   memories?: boolean | Prisma.Message$memoriesArgs<ExtArgs>
+  summaries?: boolean | Prisma.Message$summariesArgs<ExtArgs>
   _count?: boolean | Prisma.MessageCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type MessageIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
+  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   previous?: boolean | Prisma.Message$previousArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type MessageIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
+  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   previous?: boolean | Prisma.Message$previousArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 
 export type $MessagePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Message"
   objects: {
-    user: Prisma.$UserPayload<ExtArgs>
-    folder: Prisma.$FolderPayload<ExtArgs>
     chat: Prisma.$ChatPayload<ExtArgs>
+    folder: Prisma.$FolderPayload<ExtArgs>
     previous: Prisma.$MessagePayload<ExtArgs> | null
     next: Prisma.$MessagePayload<ExtArgs> | null
-    summaries: Prisma.$SummaryPayload<ExtArgs>[]
+    user: Prisma.$UserPayload<ExtArgs>
     memories: Prisma.$MemoryPayload<ExtArgs>[]
+    summaries: Prisma.$SummaryPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1929,13 +1929,13 @@ readonly fields: MessageFieldRefs;
  */
 export interface Prisma__MessageClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  folder<T extends Prisma.FolderDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FolderDefaultArgs<ExtArgs>>): Prisma.Prisma__FolderClient<runtime.Types.Result.GetResult<Prisma.$FolderPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   chat<T extends Prisma.ChatDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ChatDefaultArgs<ExtArgs>>): Prisma.Prisma__ChatClient<runtime.Types.Result.GetResult<Prisma.$ChatPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  folder<T extends Prisma.FolderDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FolderDefaultArgs<ExtArgs>>): Prisma.Prisma__FolderClient<runtime.Types.Result.GetResult<Prisma.$FolderPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   previous<T extends Prisma.Message$previousArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Message$previousArgs<ExtArgs>>): Prisma.Prisma__MessageClient<runtime.Types.Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   next<T extends Prisma.Message$nextArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Message$nextArgs<ExtArgs>>): Prisma.Prisma__MessageClient<runtime.Types.Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-  summaries<T extends Prisma.Message$summariesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Message$summariesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SummaryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   memories<T extends Prisma.Message$memoriesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Message$memoriesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MemoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  summaries<T extends Prisma.Message$summariesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Message$summariesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SummaryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2409,30 +2409,6 @@ export type Message$nextArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
 }
 
 /**
- * Message.summaries
- */
-export type Message$summariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Summary
-   */
-  select?: Prisma.SummarySelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Summary
-   */
-  omit?: Prisma.SummaryOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SummaryInclude<ExtArgs> | null
-  where?: Prisma.SummaryWhereInput
-  orderBy?: Prisma.SummaryOrderByWithRelationInput | Prisma.SummaryOrderByWithRelationInput[]
-  cursor?: Prisma.SummaryWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.SummaryScalarFieldEnum | Prisma.SummaryScalarFieldEnum[]
-}
-
-/**
  * Message.memories
  */
 export type Message$memoriesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2454,6 +2430,30 @@ export type Message$memoriesArgs<ExtArgs extends runtime.Types.Extensions.Intern
   take?: number
   skip?: number
   distinct?: Prisma.MemoryScalarFieldEnum | Prisma.MemoryScalarFieldEnum[]
+}
+
+/**
+ * Message.summaries
+ */
+export type Message$summariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Summary
+   */
+  select?: Prisma.SummarySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Summary
+   */
+  omit?: Prisma.SummaryOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SummaryInclude<ExtArgs> | null
+  where?: Prisma.SummaryWhereInput
+  orderBy?: Prisma.SummaryOrderByWithRelationInput | Prisma.SummaryOrderByWithRelationInput[]
+  cursor?: Prisma.SummaryWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SummaryScalarFieldEnum | Prisma.SummaryScalarFieldEnum[]
 }
 
 /**

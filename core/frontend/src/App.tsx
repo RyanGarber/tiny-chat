@@ -13,8 +13,11 @@ import {useSettings} from "@/managers/settings.tsx";
 import {CodeHighlightAdapterProvider} from "@mantine/code-highlight";
 import {useUpdates} from "@/managers/updates.tsx";
 import Update from "@/components/Update.tsx";
-import {useMemories} from "./managers/memories";
+import {useMemories} from "./managers/context.tsx";
 import {cssResolver, theme} from "@/theme.tsx";
+import {useEmbeddings} from "@/managers/embeddings.tsx";
+import {ModalsProvider} from "@mantine/modals";
+import Tasks from "@/components/Tasks.tsx";
 
 export default function App() {
     const {
@@ -30,12 +33,6 @@ export default function App() {
     } = useLayout();
 
     const session = auth.useSession();
-
-    const {init: initSettings} = useSettings();
-    const {init: initServices} = useServices();
-    const {init: initChats} = useChats();
-    const {init: initUpdates} = useUpdates();
-    const {init: initMemories} = useMemories();
 
     useEffect(() => {
         if (isInitializing) {
@@ -62,18 +59,19 @@ export default function App() {
 
             const uninit: (() => void)[] = [];
             (async () => {
-                await initSettings();
-                await initServices();
-                await initChats();
+                await useSettings.getState().init();
+                await useServices.getState().init();
+                await useChats.getState().init();
+                await useEmbeddings.getState().init();
 
-                uninit.push(initMemories());
-                uninit.push(initUpdates());
+                uninit.push(useMemories.getState().init());
+                uninit.push(useUpdates.getState().init());
 
                 setInitializing(false);
             })();
             return () => uninit.forEach(d => d());
         }
-    }, [isInitializing, setInitializing, initChats, initServices, session.data, session.isPending]);
+    }, [isInitializing, setInitializing, session.data, session.isPending]);
 
     useEffect(() => {
         setSidebarOpen(!isMobile);
@@ -105,94 +103,97 @@ export default function App() {
         <MantineProvider forceColorScheme={useSettings.getState().getTheme() as any}
                          theme={theme}
                          cssVariablesResolver={cssResolver}>
-            <CodeHighlightAdapterProvider adapter={hljsAdapter}>
-                <NavigationProgress/>
-                <Notifications position="top-center"/>
-                <Update/>
-                <Box pos="relative" h={viewport.height} ref={viewport.containerRef}>
-                    <LoadingOverlay
-                        visible={isInitializing}
-                        zIndex={1000}
-                        overlayProps={{blur: 2}}
-                    />
-                    <AppShell
-                        withBorder={false}
-                        navbar={{
-                            width: isMobile ? 300 : getSidebarWidth(),
-                            breakpoint: mobile,
-                            collapsed: {desktop: false, mobile: !isSidebarOpen},
-                        }}
-                        style={{
-                            height: `${viewport.height}px`,
-                            maxHeight: `${viewport.height}px`,
-                            overflow: "hidden",
-                            //*REVERT?* transform: `translateY(${viewport.offsetTop}px)`,
-                        }}
-                        styles={{
-                            navbar: {
-                                zIndex: "calc(var(--mantine-z-index-app) + 2)",
-                                transition: "width 250ms ease, min-width 250ms ease, transform 300ms ease",
-                                backgroundColor: 'var(--tc-sidebar-bg)',
-                            },
-                            main: {
-                                transition: "padding-inline-start 250ms ease",
-                            },
-                        }}
-                    >
-                        <div
-                            {...navbarDragOpen()}
-                            style={{
-                                position: "absolute",
-                                top: 0,
-                                left: 0,
-                                bottom: 0,
-                                width: 20,
-                                zIndex: "var(--mantine-z-index-max)",
-                                touchAction: "none",
+            <ModalsProvider>
+                <CodeHighlightAdapterProvider adapter={hljsAdapter}>
+                    <NavigationProgress/>
+                    <Notifications position="top-center"/>
+                    <Update/>
+                    <Tasks/>
+                    <Box pos="relative" h={viewport.height} ref={viewport.containerRef}>
+                        <LoadingOverlay
+                            visible={isInitializing}
+                            zIndex={1000}
+                            overlayProps={{blur: 2}}
+                        />
+                        <AppShell
+                            withBorder={false}
+                            navbar={{
+                                width: isMobile ? 300 : getSidebarWidth(),
+                                breakpoint: mobile,
+                                collapsed: {desktop: false, mobile: !isSidebarOpen},
                             }}
-                        ></div>
-                        {isSidebarOpen && isMobile && (
-                            <Overlay
-                                opacity={1}
-                                color="#000"
-                                zIndex="calc(var(--mantine-z-index-app) + 1)"
-                                onClick={() => setSidebarOpen(false)}
-                                {...navbarDragClose()}
-                                style={{touchAction: "none"}}
-                            />
-                        )}
-                        <AppShell.Navbar
-                            {...navbarDragClose()}
-                            p={10}
-                            style={{
-                                boxShadow: isSidebarOpen ? shadow : "",
-                                touchAction: "pan-y",
-                            }}
-                        ><Sidebar/></AppShell.Navbar>
-                        <AppShell.Main
                             style={{
                                 height: `${viewport.height}px`,
                                 maxHeight: `${viewport.height}px`,
-                                minHeight: 0,
                                 overflow: "hidden",
+                                //*REVERT?* transform: `translateY(${viewport.offsetTop}px)`,
+                            }}
+                            styles={{
+                                navbar: {
+                                    zIndex: "calc(var(--mantine-z-index-app) + 2)",
+                                    transition: "width 250ms ease, min-width 250ms ease, transform 300ms ease",
+                                    backgroundColor: 'var(--tc-sidebar-bg)',
+                                },
+                                main: {
+                                    transition: "padding-inline-start 250ms ease",
+                                },
                             }}
                         >
-                            <Burger
+                            <div
+                                {...navbarDragOpen()}
                                 style={{
-                                    position: "fixed",
-                                    zIndex: "calc(var(--mantine-z-index-app) + 1)",
+                                    position: "absolute",
+                                    top: 0,
+                                    left: 0,
+                                    bottom: 0,
+                                    width: 20,
+                                    zIndex: "var(--mantine-z-index-max)",
+                                    touchAction: "none",
                                 }}
-                                m={10}
-                                opened={isSidebarOpen}
-                                onClick={() => setSidebarOpen(!isSidebarOpen)}
-                                display={!isMobile || isSidebarOpen ? "none" : "block"}
-                                size="sm"
-                            />
-                            <Chat/>
-                        </AppShell.Main>
-                    </AppShell>
-                </Box>
-            </CodeHighlightAdapterProvider>
+                            ></div>
+                            {isSidebarOpen && isMobile && (
+                                <Overlay
+                                    opacity={1}
+                                    color="#000"
+                                    zIndex="calc(var(--mantine-z-index-app) + 1)"
+                                    onClick={() => setSidebarOpen(false)}
+                                    {...navbarDragClose()}
+                                    style={{touchAction: "none"}}
+                                />
+                            )}
+                            <AppShell.Navbar
+                                {...navbarDragClose()}
+                                p={10}
+                                style={{
+                                    boxShadow: isSidebarOpen || !isMobile ? shadow : "",
+                                    touchAction: "pan-y",
+                                }}
+                            ><Sidebar/></AppShell.Navbar>
+                            <AppShell.Main
+                                style={{
+                                    height: `${viewport.height}px`,
+                                    maxHeight: `${viewport.height}px`,
+                                    minHeight: 0,
+                                    overflow: "hidden",
+                                }}
+                            >
+                                <Burger
+                                    style={{
+                                        position: "fixed",
+                                        zIndex: "calc(var(--mantine-z-index-app) + 1)",
+                                    }}
+                                    m={10}
+                                    opened={isSidebarOpen}
+                                    onClick={() => setSidebarOpen(!isSidebarOpen)}
+                                    display={!isMobile || isSidebarOpen ? "none" : "block"}
+                                    size="sm"
+                                />
+                                <Chat/>
+                            </AppShell.Main>
+                        </AppShell>
+                    </Box>
+                </CodeHighlightAdapterProvider>
+            </ModalsProvider>
         </MantineProvider>
     );
 }

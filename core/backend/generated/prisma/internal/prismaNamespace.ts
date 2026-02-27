@@ -1192,8 +1192,8 @@ export const ChatScalarFieldEnum = {
   userId: 'userId',
   folderId: 'folderId',
   title: 'title',
-  temporary: 'temporary',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  temporary: 'temporary'
 } as const
 
 export type ChatScalarFieldEnum = (typeof ChatScalarFieldEnum)[keyof typeof ChatScalarFieldEnum]

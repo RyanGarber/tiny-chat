@@ -10,31 +10,28 @@ datasource db {
 model User {
   id            String    @id
   name          String
-  email         String
+  email         String    @unique
   emailVerified Boolean   @default(false)
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  sessions      Session[]
+  isAnonymous   Boolean?  @default(false)
+  settings      Json      @default("{}")
   accounts      Account[]
-  folders       Folder[]
   chats         Chat[]
+  folders       Folder[]
+  memories      Memory[]
   messages      Message[]
+  sessions      Session[]
+  summaries     Summary[]
 
-  isAnonymous Boolean? @default(false)
-
-  settings  Json      @default("{}")
-  memories  Memory[]
-  summaries Summary[]
-
-  @@unique([email])
   @@map("user")
 }
 
 model Session {
   id        String   @id
   expiresAt DateTime
-  token     String
+  token     String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   ipAddress String?
@@ -42,7 +39,6 @@ model Session {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([token])
   @@index([userId])
   @@map("session")
 }
@@ -52,7 +48,6 @@ model Account {
   accountId             String
   providerId            String
   userId                String
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   accessToken           String?
   refreshToken          String?
   idToken               String?
@@ -62,6 +57,7 @@ model Account {
   password              String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("account")
@@ -82,12 +78,12 @@ model Verification {
 model Folder {
   id        String    @id
   userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   title     String?
   createdAt DateTime  @default(now())
   chats     Chat[]
-  messages  Message[]
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   memories  Memory[]
+  messages  Message[]
   summaries Summary[]
 
   @@index([userId])
@@ -97,14 +93,14 @@ model Folder {
 model Chat {
   id        String    @id
   userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   folderId  String
-  folder    Folder    @relation(fields: [folderId], references: [id], onDelete: Cascade)
   title     String?
-  temporary Boolean   @default(false)
   createdAt DateTime  @default(now())
-  messages  Message[]
+  temporary Boolean   @default(false)
+  folder    Folder    @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   memories  Memory[]
+  messages  Message[]
   summaries Summary[]
 
   @@index([userId])
@@ -112,29 +108,25 @@ model Chat {
   @@map("chat")
 }
 
-enum Author {
-  USER
-  MODEL
-}
-
 model Message {
-  id         String    @id
+  id         String                 @id
   userId     String
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   folderId   String
-  folder     Folder    @relation(fields: [folderId], references: [id], onDelete: Cascade)
   chatId     String
-  chat       Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  previousId String?   @unique
-  previous   Message?  @relation("Chat", fields: [previousId], references: [id], onDelete: Cascade)
+  previousId String?                @unique
   author     Author
   config     Json
   data       Json
   metadata   Json
-  createdAt  DateTime  @default(now())
-  next       Message?  @relation("Chat")
-  summaries  Summary[]
-  memories   Memory[]
+  createdAt  DateTime               @default(now())
+  embedding  Unsupported("vector")?
+  chat       Chat                   @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  folder     Folder                 @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  previous   Message?               @relation("Chat", fields: [previousId], references: [id], onDelete: Cascade)
+  next       Message?               @relation("Chat")
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memories   Memory[]               @relation("MemoryToMessage")
+  summaries  Summary[]              @relation("MessageToSummary")
 
   @@index([userId])
   @@index([folderId])
@@ -143,22 +135,53 @@ model Message {
 }
 
 model Summary {
-  id        String    @id
+  id        String                 @id
   userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   folderId  String
-  folder    Folder    @relation(fields: [folderId], references: [id], onDelete: Cascade)
   chatId    String
-  chat      Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
   config    Json
-  messages  Message[]
   content   String
-  createdAt DateTime  @default(now())
+  createdAt DateTime               @default(now())
+  embedding Unsupported("vector")?
+  chat      Chat                   @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  folder    Folder                 @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]              @relation("MessageToSummary")
 
   @@index([userId])
   @@index([folderId])
   @@index([chatId])
   @@map("summary")
+}
+
+model Memory {
+  id         String                 @id
+  userId     String
+  folderId   String
+  chatId     String
+  config     Json
+  fact       String
+  category   MemoryCategory
+  stability  MemoryStability
+  evidence   String[]
+  confidence Float
+  createdAt  DateTime               @default(now())
+  latest     Boolean                @default(true)
+  embedding  Unsupported("vector")?
+  chat       Chat                   @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  folder     Folder                 @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages   Message[]              @relation("MemoryToMessage")
+
+  @@index([userId])
+  @@index([folderId])
+  @@index([chatId])
+  @@map("memory")
+}
+
+enum Author {
+  USER
+  MODEL
 }
 
 enum MemoryCategory {
@@ -173,28 +196,4 @@ enum MemoryStability {
   SHORT_TERM
   MEDIUM_TERM
   LONG_TERM
-}
-
-model Memory {
-  id         String          @id
-  userId     String
-  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  folderId   String
-  folder     Folder          @relation(fields: [folderId], references: [id], onDelete: Cascade)
-  chatId     String
-  chat       Chat            @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  config     Json
-  messages   Message[]
-  fact       String
-  category   MemoryCategory
-  stability  MemoryStability
-  evidence   String[]
-  confidence Float
-  createdAt  DateTime        @default(now())
-  latest     Boolean         @default(true)
-
-  @@index([userId])
-  @@index([folderId])
-  @@index([chatId])
-  @@map("memory")
 }

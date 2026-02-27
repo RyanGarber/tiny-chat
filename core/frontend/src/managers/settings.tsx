@@ -1,7 +1,7 @@
 import {z} from "zod";
 import {create} from "zustand";
 import {subscribeWithSelector} from "zustand/middleware";
-import {auth, hljsThemeNames} from "@/utils.ts";
+import {auth, hljsThemeNames, trpc} from "@/utils.ts";
 import {useServices} from "@/managers/services.tsx";
 import {nprogress} from "@mantine/nprogress";
 import {zConfig, zConfigType} from "@tiny-chat/core-backend/types.ts";
@@ -122,6 +122,8 @@ export const useSettings = create(subscribeWithSelector<Settings>((set, get) => 
     },
     setEmbeddingConfig: async (value) => {
         await get().setSettings({embeddingConfig: value});
+        console.log("Resetting all embeddings due to changed model");
+        void trpc.embeddings.resetAll.mutate();
     },
 
     getTheme: () => {

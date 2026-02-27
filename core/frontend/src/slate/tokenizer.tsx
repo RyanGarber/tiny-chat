@@ -2,6 +2,7 @@ type Token =
     | { type: "bold"; start: number; end: number }
     | { type: "italic"; start: number; end: number }
     | { type: "code"; start: number; end: number }
+    | { type: "codeMarker"; start: number; end: number }
     | { type: "strikethrough"; start: number; end: number }
     | { type: "heading"; level: number; start: number; end: number }
     | { type: "link"; start: number; end: number; textStart: number; textEnd: number; urlStart: number; urlEnd: number }
@@ -29,10 +30,15 @@ export function tokenize(md: string): Token[] {
             tokens.push({type: "quoteMarker", start: 0, end: md.length});
             i = quoteMatch[0].length;
         }
+        const codeMatch = md.match(/^```/);
+        if (codeMatch) {
+            tokens.push({type: "codeMarker", start: i, end: codeMatch[0].length});
+            i = codeMatch[0].length;
+        }
     }
 
     while (i < md.length) {
-        if (md[i] === "`") {
+        if (md[i] === "`" && (md[i - 1] !== "`" || md[i + 1] !== "`")) {
             const end = md.indexOf("`", i + 1);
             if (end !== -1) {
                 tokens.push({type: "code", start: i, end: end + 1});

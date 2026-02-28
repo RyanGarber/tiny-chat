@@ -6,7 +6,7 @@ import {wrapMessage} from "../types.ts";
 const TX_TIMEOUT = 10000; // might not be needed
 
 export default router({
-    listNeeded: procedure.query(async ({ctx}) => {
+    listMissingEmbeddings: procedure.query(async ({ctx}) => {
         return {
             messages: (await ctx.prisma.$queryRaw<Message[]>`SELECT *
                                                              FROM message

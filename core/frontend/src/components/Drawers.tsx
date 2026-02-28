@@ -1,6 +1,8 @@
 import {
     ActionIcon,
     Button,
+    CheckboxCard,
+    CheckboxIndicator,
     Divider,
     Drawer,
     Group,
@@ -44,6 +46,8 @@ export default function Drawers(
         setMemoryConfig,
         getEmbeddingConfig,
         setEmbeddingConfig,
+        getUseEmbeddingSearch,
+        setUseEmbeddingSearch,
         getTheme,
         setTheme,
         getCodeTheme,
@@ -266,6 +270,15 @@ export default function Drawers(
                                     closeEmbedding();
                                 }} mt="lg">Confirm</Button>
                             </Modal>
+                            <CheckboxCard p="xs" checked={getUseEmbeddingSearch()} onChange={async (value) => {
+                                await setUseEmbeddingSearch(value);
+                                alert("info", "Search settings saved");
+                            }}>
+                                <Group>
+                                    <CheckboxIndicator size="xs"/>
+                                    <Text size="sm">Use embeddings for search</Text>
+                                </Group>
+                            </CheckboxCard>
                         </Stack>
                     </Tabs.Panel>
                     <Tabs.Panel value="appearance">

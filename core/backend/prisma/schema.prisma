@@ -97,6 +97,7 @@ model Chat {
   title     String?
   createdAt DateTime  @default(now())
   temporary Boolean   @default(false)
+  incognito Boolean?  @default(false)
   folder    Folder    @relation(fields: [folderId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   memories  Memory[]
@@ -140,7 +141,7 @@ model Summary {
   folderId  String
   chatId    String
   config    Json
-  content   String
+  text      String
   createdAt DateTime               @default(now())
   embedding Unsupported("vector")?
   chat      Chat                   @relation(fields: [chatId], references: [id], onDelete: Cascade)

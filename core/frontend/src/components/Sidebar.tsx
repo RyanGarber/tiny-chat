@@ -1,19 +1,27 @@
 import {useEffect, useState} from "react";
+import {useDebouncedValue} from "@mantine/hooks";
 import {ActionIcon, Avatar, Burger, Divider, Group, NavLink, ScrollArea, Space, Stack, Tooltip} from "@mantine/core";
 import {Spotlight, spotlight, SpotlightActionData} from "@mantine/spotlight";
 import {useLayout} from "@/managers/layout.tsx";
-import {IconEyeOff, IconHexagonPlus, IconSearch, IconSettings2, IconUserHexagon} from "@tabler/icons-react";
+import {
+    IconEyeOff,
+    IconHexagonPlus,
+    IconSearch,
+    IconSettings2,
+    IconUserHexagon,
+    IconUserOff,
+} from "@tabler/icons-react";
 import SidebarChat from "@/components/SidebarChat.tsx";
 import {useChats} from "@/managers/chats.tsx";
 import {useLocation} from "wouter";
 import {auth, extractText, scrubText, snippetText, trpc} from "@/utils.ts";
 import Drawers from "@/components/Drawers.tsx";
-import {useMessaging} from "@/managers/messaging.tsx";
+import {embed} from "@/managers/embeddings";
+import {useSettings} from "@/managers/settings.tsx";
 
 export default function Sidebar() {
-    const {folders, currentChat, setCurrentChat} = useChats();
+    const {folders, currentChat, setCurrentChat, temporary, setTemporary, incognito, setIncognito} = useChats();
     const {isMobile, isSidebarOpen, setSidebarOpen} = useLayout();
-    const {temporary, setTemporary} = useMessaging();
 
     const {data: session, isPending: isSessionPending} = auth.useSession();
 
@@ -30,19 +38,27 @@ export default function Sidebar() {
     }
 
     const isTempActive = temporary || currentChat?.temporary;
+    const isIncogActive = incognito || currentChat?.incognito;
 
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedQuery] = useDebouncedValue(searchQuery, 400);
     const [spotlightActions, setSpotlightActions] = useState<SpotlightActionData[]>([]); // TODO - SpotlightActionGroup
 
+    const {getUseEmbeddingSearch} = useSettings();
+
     useEffect(() => {
-        if (!(searchQuery.trim()?.length >= 3)) {
+        if (!(debouncedQuery.trim()?.length >= 3)) {
             setSpotlightActions([]);
             return;
         }
-        // TODO - use useDebouncedState?
-        const timeout = setTimeout(async () => {
-            const results = await trpc.chats.search.query({query: searchQuery});
-            console.log("Results for", searchQuery, results);
+
+        let cancelled = false;
+        (async () => {
+            const embedding = getUseEmbeddingSearch() ? (await embed(debouncedQuery))?.[0] : undefined;
+            if (cancelled) return;
+            const results = await trpc.chats.search.mutate({text: debouncedQuery, embedding});
+            if (cancelled) return;
+            console.log("Results for", debouncedQuery, results);
             const seen = new Set<string>();
             setSpotlightActions(
                 results
@@ -54,13 +70,15 @@ export default function Sidebar() {
                     .map((r) => ({
                         id: r.id,
                         label: scrubText(r.chatTitle, 50),
-                        description: snippetText(scrubText(extractText(r.data)), searchQuery),
+                        description: snippetText(scrubText(extractText(r.data)), debouncedQuery),
                         onClick: () => closeAfter(() => void setCurrentChat(r.chatId)), // TODO - scroll to chat
                     }))
             );
-        }, 300);
-        return () => clearTimeout(timeout);
-    }, [searchQuery]);
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [debouncedQuery]);
 
     const expanded = (
         <>
@@ -74,19 +92,30 @@ export default function Sidebar() {
                     onQueryChange={setSearchQuery}
                     highlightQuery
                     scrollAreaProps={{mah: 400}}
+                    nothingFound={searchQuery.trim().length >= 3 ? "No results" : "Type to search…"}
+                    filter={(_, actions) => actions}
                 />
                 <Burger opened={isSidebarOpen} onClick={() => setSidebarOpen(!isSidebarOpen)} size={16}/>
             </Group>
-            <Group align="center" mt={5} gap={5}>
+            <Group align="center" mt={5} gap={2}>
                 <NavLink label="New Chat" leftSection={<IconHexagonPlus size={20}/>} className="new-chat"
                          onClick={() => closeAfter(() => void setCurrentChat(null))} active={!currentChat}
                          variant="subtle"
                          flex={1} bdrs="md"/>
-                <ActionIcon size={40} variant="subtle" c="dimmed" bdrs="md" className="nav-link-like filled"
-                            onClick={() => closeAfter(() => void setTemporary(!isTempActive))}
-                            data-active={isTempActive}>
-                    <IconEyeOff size={20}/>
-                </ActionIcon>
+                <Tooltip label="Temporary" color="gray" position="right">
+                    <ActionIcon size={32} variant="subtle" c="dimmed" bdrs="md" className="nav-link-like filled"
+                                onClick={() => closeAfter(() => void setTemporary(!isTempActive))}
+                                data-active={isTempActive}>
+                        <IconEyeOff size={22}/>
+                    </ActionIcon>
+                </Tooltip>
+                <Tooltip label="Incognito" color="gray" position="right">
+                    <ActionIcon size={32} variant="subtle" c="dimmed" bdrs="md" className="nav-link-like filled"
+                                onClick={() => closeAfter(() => void setIncognito(!isIncogActive))}
+                                data-active={isIncogActive}>
+                        <IconUserOff size={22}/>
+                    </ActionIcon>
+                </Tooltip>
             </Group>
             <Divider my="sm"/>
             <ScrollArea flex={1}>

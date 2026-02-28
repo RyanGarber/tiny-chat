@@ -11,13 +11,12 @@ import {auth, hljsAdapter, trpc, useViewport} from "@/utils.ts";
 import {Notifications} from "@mantine/notifications";
 import {useSettings} from "@/managers/settings.tsx";
 import {CodeHighlightAdapterProvider} from "@mantine/code-highlight";
-import {useUpdates} from "@/managers/updates.tsx";
-import Update from "@/components/Update.tsx";
 import {useMemories} from "./managers/context.tsx";
 import {cssResolver, theme} from "@/theme.tsx";
 import {useEmbeddings} from "@/managers/embeddings.tsx";
 import {ModalsProvider} from "@mantine/modals";
 import Tasks from "@/components/Tasks.tsx";
+import {useTasks} from "@/managers/tasks.tsx";
 
 export default function App() {
     const {
@@ -65,7 +64,7 @@ export default function App() {
                 await useEmbeddings.getState().init();
 
                 uninit.push(useMemories.getState().init());
-                uninit.push(useUpdates.getState().init());
+                uninit.push(useTasks.getState().init());
 
                 setInitializing(false);
             })();
@@ -105,10 +104,9 @@ export default function App() {
                          cssVariablesResolver={cssResolver}>
             <ModalsProvider>
                 <CodeHighlightAdapterProvider adapter={hljsAdapter}>
+                    <Tasks/>
                     <NavigationProgress/>
                     <Notifications position="top-center"/>
-                    <Update/>
-                    <Tasks/>
                     <Box pos="relative" h={viewport.height} ref={viewport.containerRef}>
                         <LoadingOverlay
                             visible={isInitializing}

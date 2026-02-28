@@ -8,13 +8,14 @@ import {zConfig, zConfigType} from "@tiny-chat/core-backend/types.ts";
 
 export const zServices = z.record(z.string(), z.object({apiKey: z.string()})).optional();
 export const zSettings = z.object({
-    instructions: z.array(z.string()).optional(),
-    memoryConfig: zConfig.optional(),
-    embeddingConfig: zConfig.optional(),
-    theme: z.string().optional(),
-    codeTheme: z.string().optional(),
-    services: zServices.optional(),
-});
+    instructions: z.array(z.string()),
+    memoryConfig: zConfig,
+    embeddingConfig: zConfig,
+    useEmbeddingSearch: z.boolean(),
+    theme: z.string(),
+    codeTheme: z.string(),
+    services: zServices,
+}).partial();
 export type zSettingsType = z.infer<typeof zSettings>;
 
 export const themes = ["dark", "light"];
@@ -43,6 +44,8 @@ interface Settings {
     setMemoryConfig: (value: zConfigType | undefined) => Promise<void>;
     getEmbeddingConfig: () => zConfigType | undefined;
     setEmbeddingConfig: (value: zConfigType | undefined) => Promise<void>;
+    getUseEmbeddingSearch: () => boolean;
+    setUseEmbeddingSearch: (value: boolean) => Promise<void>;
 
     getTheme: () => string;
     setTheme: (value: string) => Promise<void>;
@@ -125,6 +128,13 @@ export const useSettings = create(subscribeWithSelector<Settings>((set, get) => 
         console.log("Resetting all embeddings due to changed model");
         void trpc.embeddings.resetAll.mutate();
     },
+    getUseEmbeddingSearch: () => {
+        return get().settings.useEmbeddingSearch ?? true;
+    },
+    setUseEmbeddingSearch: async (value) => {
+        await get().setSettings({useEmbeddingSearch: value});
+    },
+
 
     getTheme: () => {
         const selected = get().settings.theme;

@@ -21,7 +21,7 @@ import {
     Stack,
     Text,
 } from "@mantine/core";
-import {IconArrowUp, IconFile, IconPlayerStop, IconPlus,} from "@tabler/icons-react";
+import {IconArrowUp, IconFile, IconPlayerStop, IconPlus} from "@tabler/icons-react";
 import {CSSProperties, useCallback, useLayoutEffect, useRef, useState,} from "react";
 import {Editable, ReactEditor, Slate} from "slate-react";
 import {serialize} from "@/slate/serializer.tsx";
@@ -30,9 +30,8 @@ import {useLayout} from "@/managers/layout.tsx";
 import {useLocalStorage} from "@mantine/hooks";
 import {DropzoneFullScreen} from "@mantine/dropzone";
 import {zConfig} from "@tiny-chat/core-backend/types.ts";
-import {consumeLabel} from "@/utils.ts";
 
-export default function Input(props: InputWrapperProps) {
+export function Input(props: InputWrapperProps) {
     const {setEditor, config, setConfig, addFiles} = useMessaging();
     const {services, findService, abortController} = useServices();
     const {shadow, setIsMessaging, isMessagingDisabled} = useLayout();
@@ -74,14 +73,14 @@ export default function Input(props: InputWrapperProps) {
         return () => observer.disconnect();
     }, []);
 
-    const [_, onChangedConfig] = useLocalStorage<string>({key: "config"});
+    const [_, updateSavedConfig] = useLocalStorage<string>({key: "config"});
 
     const args = findService(config?.service ?? "")?.getArgs(config!.model) ?? null;
     const setArg = (name: string, value: any) => {
-        if (!config) return config;
+        if (!config) return;
         config.args = {...config.args, [name]: value};
         setConfig(config);
-        onChangedConfig(JSON.stringify(config));
+        updateSavedConfig(JSON.stringify(config));
     };
 
     const resetMultiline = useCallback(() => {
@@ -91,7 +90,6 @@ export default function Input(props: InputWrapperProps) {
     const leftActionContent = (
         <Menu
             position="top-start"
-            offset={5}
             transitionProps={{transition: "fade-up"}}
         >
             <Menu.Target>
@@ -121,7 +119,7 @@ export default function Input(props: InputWrapperProps) {
 
     const rightActionContent = (
         <>
-            <Popover position="top" transitionProps={{transition: "fade-up"}} offset={0}>
+            <Popover position="top" transitionProps={{transition: "fade-up"}}>
                 <PopoverTarget>
                     <Button fw="normal"
                             bg="var(--tc-surface)"
@@ -130,6 +128,7 @@ export default function Input(props: InputWrapperProps) {
                 </PopoverTarget>
                 <PopoverDropdown maw={250}>
                     <Select
+                        flex={1}
                         variant="filled"
                         required
                         allowDeselect={false}
@@ -159,23 +158,28 @@ export default function Input(props: InputWrapperProps) {
                                 model: parsed.model
                             });
                             setConfig(config);
-                            onChangedConfig(JSON.stringify(config));
+                            updateSavedConfig(JSON.stringify(config));
                         }}
                     />
+                    {/*<Checkbox label="memory" size="xs" mt="xs" checked={!config?.incognito}/>*/}
                     {!!args?.length && <Divider my="xs"/>}
                     <Stack gap="xs">
                         {args?.map((arg) => (
                             <Box key={arg.name}>
                                 {arg.type === "list" && (
-                                    <Select key={arg.name} label={arg.name} styles={consumeLabel}
-                                            comboboxProps={{withinPortal: false, offset: 0}}
-                                            data={arg.values}
-                                            value={config?.args?.[arg.name] ?? arg.default}
-                                            onChange={value => setArg(arg.name, value)}/>
+                                    <>
+                                        <Text size="xs" mb={2}>{arg.name}</Text>
+                                        <Select key={arg.name}
+                                                comboboxProps={{withinPortal: false, offset: 0}}
+                                                data={arg.values}
+                                                size="xs"
+                                                value={config?.args?.[arg.name] ?? arg.default}
+                                                onChange={value => setArg(arg.name, value)}/>
+                                    </>
                                 )}
                                 {arg.type === "range" && (
                                     <>
-                                        <Text size="xs">{arg.name}</Text>
+                                        <Text size="xs" mb={2}>{arg.name}</Text>
                                         <Slider min={arg.min} max={arg.max}
                                                 step={arg.step}
                                                 value={config?.args?.[arg.name] ?? arg.default}

@@ -1193,7 +1193,8 @@ export const ChatScalarFieldEnum = {
   folderId: 'folderId',
   title: 'title',
   createdAt: 'createdAt',
-  temporary: 'temporary'
+  temporary: 'temporary',
+  incognito: 'incognito'
 } as const
 
 export type ChatScalarFieldEnum = (typeof ChatScalarFieldEnum)[keyof typeof ChatScalarFieldEnum]
@@ -1221,7 +1222,7 @@ export const SummaryScalarFieldEnum = {
   folderId: 'folderId',
   chatId: 'chatId',
   config: 'config',
-  content: 'content',
+  text: 'text',
   createdAt: 'createdAt'
 } as const
 

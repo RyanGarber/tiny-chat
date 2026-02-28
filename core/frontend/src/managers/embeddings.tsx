@@ -17,16 +17,18 @@ export const useEmbeddings = create(subscribeWithSelector<Embeddings>((_, get) =
     },
 
     updateEmbeddings: async () => {
-        const needed = await trpc.embeddings.listNeeded.query();
-        const {setTask, updateTask, removeTask} = useTasks.getState();
+        const needed = await trpc.embeddings.listMissingEmbeddings.query();
+        const {addTask, updateTask, removeTask} = useTasks.getState();
+
+        needed.messages = needed.messages.filter(m => scrubText(extractText(m.data)).length > 0);
 
         if (needed.messages.length || needed.summaries.length || needed.memories.length) {
-            setTask("embeddings", "Generating embeddings");
+            addTask("embeddings", "Generating embeddings");
         }
 
         if (needed.messages.length) {
             console.log(`Generating embeddings for ${needed.messages.length} ${needed.summaries.length === 1 ? "message" : "messages"}`);
-            updateTask("embeddings", 0, `${needed.messages.length} message${needed.messages.length === 1 ? "" : "s"}`);
+            updateTask("embeddings", 0, `For ${needed.messages.length} new ${needed.messages.length === 1 ? "message" : "messages"}`);
             for (let i = 0; i < needed.messages.length; i += 100) {
                 const messages = needed.messages.slice(i, i + 100);
                 const embeddings = await embed(...messages.map(m => scrubText(extractText(m.data))));
@@ -38,10 +40,10 @@ export const useEmbeddings = create(subscribeWithSelector<Embeddings>((_, get) =
 
         if (needed.summaries.length) {
             console.log(`Generating embeddings for ${needed.summaries.length} ${needed.summaries.length === 1 ? "summary" : "summaries"}`);
-            updateTask("embeddings", 0, `${needed.summaries.length} summaries`);
+            updateTask("embeddings", 0, `For ${needed.summaries.length} new ${needed.summaries.length === 1 ? "summary" : "summaries"}`);
             for (let i = 0; i < needed.summaries.length; i += 100) {
                 const summaries = needed.summaries.slice(i, i + 100);
-                const embeddings = await embed(...summaries.map(s => s.content));
+                const embeddings = await embed(...summaries.map(s => s.text));
                 await trpc.embeddings.saveSummaries.mutate(new Map(embeddings?.map((e, i) => ([summaries[i].id, e]))));
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 updateTask("embeddings", i / needed.summaries.length);
@@ -50,7 +52,7 @@ export const useEmbeddings = create(subscribeWithSelector<Embeddings>((_, get) =
 
         if (needed.memories.length) {
             console.log(`Generating embeddings for ${needed.memories.length} ${needed.memories.length === 1 ? "memory" : "memories"}`);
-            updateTask("embeddings", 0, `${needed.memories.length} memories`);
+            updateTask("embeddings", 0, `For ${needed.memories.length} new ${needed.memories.length === 1 ? "memory" : "memories"}`);
             for (let i = 0; i < needed.memories.length; i += 100) {
                 const memories = needed.memories.slice(i, i + 100);
                 const embeddings = await embed(...memories.map(m => `${m.category}: ${m.fact}`));
@@ -61,11 +63,11 @@ export const useEmbeddings = create(subscribeWithSelector<Embeddings>((_, get) =
         }
 
         console.log(`All embeddings saved`);
-        removeTask("embeddings");
+        await removeTask("embeddings");
     },
 })));
 
-async function embed(...texts: string[]) {
+export async function embed(...texts: string[]) {
     const config = useSettings.getState().getEmbeddingConfig();
     if (!config) return null;
 

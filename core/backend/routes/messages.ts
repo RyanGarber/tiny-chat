@@ -17,6 +17,7 @@ export default router({
                 metadata: zMetadata,
                 previousId: z.cuid2().optional(),
                 temporary: z.boolean().optional(),
+                incognito: z.boolean().optional()
             }),
         )
         .mutation(async ({ctx, input}) => {
@@ -39,6 +40,7 @@ export default router({
                     });
 
                     if (input.temporary && !chat.temporary) throw new Error("Chat cannot be made temporary");
+                    if (input.incognito && !chat.incognito) throw new Error("Chat cannot be made incognito");
 
                     if (input.previousId) {
                         await tx.message.updateMany({
@@ -70,7 +72,7 @@ export default router({
 
                     return message;
                 } else {
-                    return (await createForChat(ctx.prisma, ctx.session.user.id, input.temporary ?? false, self as MessageCreateInput))
+                    return (await createForChat(ctx.prisma, ctx.session.user.id, input.temporary ?? false, input.incognito ?? false, self as MessageCreateInput))
                         .chats[0].messages[0];
                 }
             }));

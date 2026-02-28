@@ -133,7 +133,7 @@ export const useMessaging = create(
 
         sendMessage: async (data) => {
             const {config, truncating, reset, editing} = get();
-            const {setCurrentChat, fetchFolders, fetchMessages} = useChats.getState();
+            const {setCurrentChat, fetchFolders, fetchMessages, temporary, incognito} = useChats.getState();
             let currentChat = useChats.getState().currentChat;
             if (!config) return;
 
@@ -156,7 +156,6 @@ export const useMessaging = create(
                     truncate: truncating,
                 });
             } else {
-                const {temporary, incognito} = useChats.getState();
                 console.log(`Sending message in ${currentChat?.id ?? "new chat"}:`, data, "temporary:", temporary);
                 message = await trpc.messages.create.mutate({
                     chatId: currentChat?.id,

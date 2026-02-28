@@ -112,7 +112,7 @@ export default router({
             const messages = (await ctx.prisma.message.findMany({
                 where: {userId: ctx.session.user.id, chat: {temporary: {equals: false}}},
                 include: {chat: {select: {title: true}}, folder: {select: {title: true}}},
-            })).map(m => ({...m, embedding: null as number[]}));
+            })).map(m => ({...m, embedding: null as number[] | null}));
 
             const embeddings = await ctx.prisma.$queryRaw<{
                 id: string,

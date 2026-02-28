@@ -1,30 +1,30 @@
 import {useLayout} from "@/managers/layout.tsx";
 import {useMessaging} from "@/managers/messaging.tsx";
-import {ActionIcon, Box, Portal, Transition,} from "@mantine/core";
+import {ActionIcon, Box, Image, Portal, Transition,} from "@mantine/core";
 import {useTextSelection} from "@mantine/hooks";
 import {IconQuoteFilled} from "@tabler/icons-react";
-import {CSSProperties, useEffect, useLayoutEffect, useRef, useState} from "react";
+import React, {CSSProperties, useEffect, useLayoutEffect, useRef, useState} from "react";
 import {applyHljsTheme, extractText,} from "@/utils.ts";
 import {MessageOmitted} from "@tiny-chat/core-backend/types.ts";
 import {useSettings} from "@/managers/settings.tsx";
 import Markdown from "@/components/Markdown.tsx";
 import {Author} from "@tiny-chat/core-backend/generated/prisma/enums.ts";
 
-function useStreamedText(fullText: string, isGenerating: boolean): string {
-    const [displayedLength, setDisplayedLength] = useState(fullText.length);
+function useStreamedLength(fullLength: number, isGenerating: boolean): number {
+    const [displayedLength, setDisplayedLength] = useState(fullLength);
 
-    const fullTextRef = useRef(fullText);
-    const displayedLengthRef = useRef(fullText.length);
+    const fullLengthRef = useRef(fullLength);
+    const displayedLengthRef = useRef(fullLength);
     const frameRef = useRef<number | null>(null);
     const isGeneratingRef = useRef(isGenerating);
     const tickRef = useRef<(() => void) | null>(null);
 
     useEffect(() => {
-        fullTextRef.current = fullText;
+        fullLengthRef.current = fullLength;
         if (isGeneratingRef.current && frameRef.current === null && tickRef.current) {
             frameRef.current = requestAnimationFrame(tickRef.current);
         }
-    }, [fullText]);
+    }, [fullLength]);
 
     useEffect(() => {
         isGeneratingRef.current = isGenerating;
@@ -34,8 +34,8 @@ function useStreamedText(fullText: string, isGenerating: boolean): string {
                 cancelAnimationFrame(frameRef.current);
                 frameRef.current = null;
             }
-            setDisplayedLength(fullTextRef.current.length);
-            displayedLengthRef.current = fullTextRef.current.length;
+            setDisplayedLength(fullLengthRef.current);
+            displayedLengthRef.current = fullLengthRef.current;
             tickRef.current = null;
             return;
         }
@@ -44,14 +44,14 @@ function useStreamedText(fullText: string, isGenerating: boolean): string {
         const CATCHUP_THRESHOLD = 30;
 
         const tick = () => {
-            const pending = fullTextRef.current.length - displayedLengthRef.current;
+            const pending = fullLengthRef.current - displayedLengthRef.current;
             if (pending > 0) {
                 const charsToAdd = pending > CATCHUP_THRESHOLD
                     ? Math.ceil(pending / 2)
                     : Math.min(CHARS_PER_FRAME, pending);
                 displayedLengthRef.current = Math.min(
                     displayedLengthRef.current + charsToAdd,
-                    fullTextRef.current.length,
+                    fullLengthRef.current,
                 );
                 setDisplayedLength(displayedLengthRef.current);
                 frameRef.current = requestAnimationFrame(tick);
@@ -71,17 +71,21 @@ function useStreamedText(fullText: string, isGenerating: boolean): string {
         };
     }, [isGenerating]);
 
-    return isGenerating ? fullText.slice(0, displayedLength) : fullText;
+    return isGenerating ? displayedLength : fullLength;
 }
 
 export default function MessageBodyContent({message, style}: {
     message: MessageOmitted;
     style?: CSSProperties;
 }) {
-    const fullSource = extractText(message.data);
     const isGenerating = message.state.generating;
 
-    const source = useStreamedText(fullSource, isGenerating);
+    // Build ordered segments (text blocks + inline images)
+    const fullTextLength = message.data
+        .filter(p => p.type === "text")
+        .reduce((acc, s) => acc + s.value.length, 0);
+
+    const streamedLength = useStreamedLength(fullTextLength, isGenerating);
 
     const {shadow} = useLayout();
     const {addQuote} = useMessaging();
@@ -115,9 +119,9 @@ export default function MessageBodyContent({message, style}: {
         if (shouldFollowRef.current && scrollElRef.current) {
             scrollElRef.current.scrollTop = scrollElRef.current.scrollHeight;
         }
-    }, [source, isGenerating]);
+    }, [streamedLength, isGenerating]);
 
-    if (message.author === Author.USER) return <Markdown source={source} style={style}/>;
+    if (message.author === Author.USER) return <Markdown source={extractText(message.data)} style={style}/>;
 
     const selection = useTextSelection();
 
@@ -141,12 +145,35 @@ export default function MessageBodyContent({message, style}: {
     let rect = {top: 0, left: 0, width: 0, height: 0};
     if (isSelected) rect = selection.getRangeAt(0).getBoundingClientRect();
 
+    // Render parts
+    let textOffset = 0;
+    const renderedParts: React.ReactNode[] = [];
+    for (let i = 0; i < message.data.length; i++) {
+        const part = message.data[i];
+        if (part.type === "text") {
+            if (streamedLength <= textOffset) break;
+            const visibleText = part.value.slice(0, streamedLength - textOffset);
+            renderedParts.push(<Markdown key={i} source={visibleText} style={style}/>);
+            textOffset += part.value.length;
+            if (streamedLength < textOffset) break; // still streaming this segment
+        } else if (part.type === "file" && part.mime?.startsWith("image/") && part.inline) {
+            // Show the image as soon as all text before it has been revealed
+            if (streamedLength >= textOffset) {
+                renderedParts.push(
+                    <Image key={i} src={part.url} alt={part.name} radius="md" maw="100%" w="auto" my={4}/>
+                );
+            } else {
+                break;
+            }
+        }
+    }
+
     return (
         <>
             <Box ref={container} className={isGenerating ? "is-streaming" : ""}>
-                <Markdown source={source} style={style}/>
+                {renderedParts}
                 {/* Standalone cursor shown before the first characters arrive */}
-                {isGenerating && !source && <span className="streaming-cursor-standalone">▋</span>}
+                {isGenerating && renderedParts.length === 0 && <span className="streaming-cursor-standalone">▋</span>}
             </Box>
             <Portal target={document.body}>
                 <Transition
@@ -171,7 +198,7 @@ export default function MessageBodyContent({message, style}: {
                             }}
                             onClick={() => selection && addQuote(selection.toString())}
                         >
-                            <IconQuoteFilled size={18}></IconQuoteFilled>
+                            <IconQuoteFilled size={18}/>
                         </ActionIcon>
                     )}
                 </Transition>

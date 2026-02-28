@@ -22,8 +22,8 @@ export const zDataPart =
         }),
         z.object({
             type: z.literal("file"),
-            name: z.string(),
-            mime: z.string(),
+            name: z.string().optional(),
+            mime: z.string().optional(),
             url: z.string(),
             inline: z.boolean().optional(),
         }),

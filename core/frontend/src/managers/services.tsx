@@ -45,7 +45,7 @@ export const useServices = create(
         },
 
         fetchServices: async () => {
-            useTasks.getState().setTask("models", "Finding models");
+            useTasks.getState().addTask("models", "Finding models");
 
             const available = [];
 
@@ -67,7 +67,7 @@ export const useServices = create(
             set({services: available});
             reloadConfig();
 
-            useTasks.getState().removeTask("models");
+            void useTasks.getState().removeTask("models");
         },
 
         abortController: null,
@@ -108,7 +108,7 @@ export const useServices = create(
                         reply.config
                     );
 
-                    const memories = await useMemories.getState().getRelevantMemories(messages[i]);
+                    const memories = currentChat.incognito ? [] : await useMemories.getState().getRelevantMemories(messages[i]);
                     const context: MessageUnomitted[] = [
                         ({
                             author: Author.USER, data: [{
@@ -158,7 +158,7 @@ export const useServices = create(
                         })
                     ];
 
-                    const userInstructions = useSettings.getState().getInstructions();
+                    const userInstructions = currentChat.incognito ? [] : useSettings.getState().getInstructions();
                     const instructions = `
 Today's date is ${new Date().toLocaleDateString()}.
 Assume knowledge must reflect current information. Prefer search results over training knowledge.
@@ -220,6 +220,8 @@ Do NOT include your own label in your response – the system will add it automa
                                 const last = reply.data[reply.data.length - 1];
                                 if (last?.type === "text") last.value += dataPart.value;
                                 else reply.data.push(dataPart);
+                            } else if (dataPart.type === "file") {
+                                reply.data.push(dataPart);
                             }
                         } catch (e) {
                             console.warn("Stream part isn't zDataPart, but this is probably normal");

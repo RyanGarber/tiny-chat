@@ -63,6 +63,7 @@ export async function createForChat(
     prisma: PrismaClient,
     userId: string,
     temporary: boolean,
+    incognito: boolean,
     message: MessageCreateInput,
 ) {
     const id = createId();
@@ -75,6 +76,7 @@ export async function createForChat(
                     id: createId(),
                     user: {connect: {id: userId}},
                     temporary,
+                    incognito,
                     messages: {
                         create: {
                             ...message,

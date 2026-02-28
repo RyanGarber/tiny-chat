@@ -22,9 +22,16 @@ interface Chats {
         pushState?: boolean,
         showProgress?: boolean,
     ) => Promise<void>;
+
     renameChat: (id: string, title: string) => Promise<void>;
     cloneChat: (messageId: string) => Promise<void>;
     deleteChat: (id: string) => Promise<void>;
+
+    temporary: boolean;
+    setTemporary: (temporary: boolean) => void;
+
+    incognito: boolean;
+    setIncognito: (incognito: boolean) => void;
 }
 
 export const useChats = create(
@@ -71,6 +78,7 @@ export const useChats = create(
             if (showProgress) nprogress.complete();
             if (pushState) reloadConfig();
         },
+
         renameChat: async (id, name) => {
             const {fetchFolders} = get();
             nprogress.start();
@@ -104,6 +112,20 @@ export const useChats = create(
             nprogress.set(66);
             if (currentChat?.id === id) await setCurrentChat(null, true, false);
             nprogress.complete();
+        },
+
+        temporary: false,
+        setTemporary: async (temporary) => {
+            const {currentChat, setCurrentChat} = useChats.getState();
+            if (currentChat) await setCurrentChat(null, false, false);
+            set({temporary});
+        },
+
+        incognito: false,
+        setIncognito: async (incognito) => {
+            const {currentChat, setCurrentChat} = useChats.getState();
+            if (currentChat) await setCurrentChat(null, false, false);
+            set({incognito});
         },
     })),
 );

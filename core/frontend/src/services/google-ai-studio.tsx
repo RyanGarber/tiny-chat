@@ -55,6 +55,9 @@ export class GoogleAiStudioService implements Service {
         const boxMessage = (m: MessageUnomitted): Content => {
             const parts: Part[] = [];
             for (const dataPart of m.data) {
+                if (dataPart.type === "text") {
+                    parts.push({text: dataPart.value});
+                }
                 if (dataPart.type === "file") {
                     if (dataPart.url.startsWith("data:image/")) {
                         parts.push({
@@ -64,9 +67,6 @@ export class GoogleAiStudioService implements Service {
                             }
                         });
                     }
-                }
-                if (dataPart.type === "text") {
-                    parts.push({text: dataPart.value});
                 }
             }
             return {
@@ -80,8 +80,7 @@ export class GoogleAiStudioService implements Service {
         params.config = {
             abortSignal,
             temperature: config.args.temperature as number,
-            enableEnhancedCivicAnswers: true,
-            tools: [{googleSearch: {}, codeExecution: {}}] // TODO - file_search
+            enableEnhancedCivicAnswers: true
         };
 
         if (config.args.schema) {
@@ -89,10 +88,16 @@ export class GoogleAiStudioService implements Service {
             params.config.responseJsonSchema = config.args.schema;
         }
 
-        if (config.model.startsWith("gemini-")) {
+        if (config.model.includes("-image") || config.model.includes("gemini-3")) {
+            params.config.responseModalities = ["TEXT", "IMAGE"];
+        }
+
+        if (config.model.startsWith("gemini-") && !config.model.includes("-image")) {
             params.config.systemInstruction = instruction;
             params.config.thinkingConfig = {includeThoughts: true};
-            if (config.model.includes("2.5")) {
+            params.config.tools = [{googleSearch: {}, codeExecution: {}}]; // TODO - file_search
+
+            if (config.model.includes("-2.5")) {
                 params.config.thinkingConfig.thinkingBudget = ({
                     off: 0,
                     low: 5000,
@@ -100,7 +105,7 @@ export class GoogleAiStudioService implements Service {
                     high: 15000,
                     auto: -1
                 })[(config.args.thinking ?? "auto") as string];
-            } else if (config.model.includes("3")) {
+            } else if (config.model.includes("-3")) {
                 params.config.thinkingConfig.thinkingLevel = ({
                     minimal: ThinkingLevel.MINIMAL,
                     low: ThinkingLevel.LOW,
@@ -132,6 +137,15 @@ export class GoogleAiStudioService implements Service {
                             yield {type: "thought", value: part.text}
                         } else {
                             yield {type: "text", value: part.text}
+                        }
+                    }
+                    if (part.inlineData) {
+                        yield {
+                            type: "file",
+                            name: part.inlineData.displayName,
+                            mime: part.inlineData.mimeType,
+                            url: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`!,
+                            inline: true
                         }
                     }
                     parts.push(part);

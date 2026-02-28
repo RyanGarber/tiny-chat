@@ -6,7 +6,7 @@ import {useMessaging} from "@/managers/messaging.tsx";
 import {useLayout} from "@/managers/layout.tsx";
 import InputEffect from "@/components/InputEffect.tsx";
 import {useChats} from "@/managers/chats.tsx";
-import Input from "@/components/Input.tsx";
+import {Input} from "@/components/Input.tsx";
 import {extractText, scrubText} from "@/utils.ts";
 import Attachments from "@/components/Attachments.tsx";
 
@@ -16,6 +16,8 @@ export default function Chat() {
     const {
         currentChat,
         messages,
+        temporary,
+        incognito
     } = useChats();
 
     const {
@@ -27,11 +29,11 @@ export default function Chat() {
         setTruncating,
         insertingAfter,
         setInsertingAfter,
-        temporary,
         scrollRequested,
     } = useMessaging();
 
     const {isMobile, shadow, isInitializing, isMessaging, getSidebarWidth} = useLayout();
+    const isiPhone = navigator.userAgent.includes("iPhone");
 
     const messagesViewportRef = useRef<HTMLDivElement>(null);
     const isAtBottomRef = useRef(true);
@@ -204,7 +206,10 @@ export default function Chat() {
                             <Text size="xl" fw={600} mt={4}>New Temporary Chat</Text>
                         </Stack>
                     </div>
-                    <Text size="sm" c="dimmed" mt={6}>What's on your mind?</Text>
+                    {!incognito
+                        ? <Text size="sm" c="dimmed" mt={6}>What's on your mind?</Text>
+                        : <Text size="sm" c="dimmed" mt={6}>No memories will be available to the model</Text>
+                    }
                 </Stack>
 
                 {/* Messages scroll area */}
@@ -330,10 +335,10 @@ export default function Chat() {
 
             {/* Bottom spacer for vertical centering in new chat mode */}
             <div
-                style={{ // TODO - isMessaging makes iOS look better, but how does it work on Android?
-                    flexGrow: isNewChat && !(isMobile && isMessaging) ? 1 : 0,
+                style={{
+                    flexGrow: isNewChat && !(isiPhone && isMessaging) ? 1 : 0,
                     flexShrink: 0,
-                    flexBasis: isNewChat && !(isMobile && isMessaging) ? 60 : 0,
+                    flexBasis: isNewChat && !(isiPhone && isMessaging) ? 60 : 0,
                     transition: hasBeenNewChat.current
                         ? "flex-grow 400ms ease, flex-basis 400ms ease"
                         : "none",

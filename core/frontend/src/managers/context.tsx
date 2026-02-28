@@ -42,20 +42,24 @@ export const useMemories = create(subscribeWithSelector<Context>((_, get) => {
             const chats = await trpc.context.listUpdatedChats.query();
             console.log(`Found ${chats.length} pending chats to memorize`);
 
+            const {tasks, addTask, updateTask, removeTask} = useTasks.getState();
+
+            let totalMemories = 0;
             for (let i = 0; i < chats.length; i++) {
                 const now = new Date();
                 const lastMessage = chats[i].messages[0].createdAt;
                 const hours = (now.getTime() - lastMessage.getTime()) / (1000 * 60 * 60);
                 if (hours > UPDATE_AFTER_HR) {
-                    if (!useTasks.getState().tasks["memories"]) useTasks.getState().setTask("memories", "Saving new memories");
+                    if (!tasks["memories"]) addTask("memories", "Saving new memories");
                     console.log(`Chat ${chats[i].id} is stale (${hours}h), memorizing...`);
                     const result = await memorizeChat(chats[i].id);
-                    useTasks.getState().updateTask("memories", i / chats.length * 100, `Learned ${result?.memories.length} new thing${result?.memories.length !== -1 ? "s" : ""}`);
+                    totalMemories += result?.memories.length ?? 0;
+                    updateTask("memories", i / chats.length * 100, `Learned ${totalMemories} new thing${totalMemories !== -1 ? "s" : ""}`);
                     await new Promise(resolve => setTimeout(resolve, 1000));
                 }
             }
 
-            useTasks.getState().removeTask("memories");
+            await removeTask("memories");
 
             void useEmbeddings.getState().updateEmbeddings();
         },
@@ -152,7 +156,7 @@ Output valid JSON only.`;
     console.log("Parsed response:", parsed);
 
     delete config.args.schema;
-    await trpc.context.createSummary.mutate({chatId, config, content: parsed.summary});
+    await trpc.context.createSummary.mutate({chatId, config, text: parsed.summary});
     await trpc.context.createMemories.mutate({chatId, config, memories: parsed.memories});
 
     console.log(`${parsed.memories.length} memories saved`)

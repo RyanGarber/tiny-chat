@@ -3,7 +3,7 @@ import {createId} from "@paralleldrive/cuid2";
 import {procedure, router} from "../index.ts";
 import {MemoryCategory, MemoryStability} from "../generated/prisma/enums.ts";
 import {zConfig} from "../types.ts";
-import {getMostRelevant, SearchOptions} from "./embeddings.ts";
+import {getMostRelevant} from "./embeddings.ts";
 import {type Memory} from "../generated/prisma/client.ts";
 
 export default router({
@@ -47,7 +47,7 @@ export default router({
     createSummary: procedure.input(z.object({
         chatId: z.cuid2(),
         config: zConfig,
-        content: z.string()
+        text: z.string()
     })).mutation(async ({ctx, input}) => {
         const chat = await ctx.prisma.chat.findUniqueOrThrow({
             where: {id: input.chatId, userId: ctx.session.user.id},
@@ -61,14 +61,14 @@ export default router({
                 chat: {connect: {id: chat.id}},
                 config: input.config,
                 messages: {connect: chat.messages.map(m => ({id: m.id}))},
-                content: input.content,
+                text: input.text,
             }
         });
     }),
 
     listUpdatedChats: procedure.query(async ({ctx}) => {
         const chats = await ctx.prisma.chat.findMany({
-            where: {user: {id: ctx.session.user.id}, temporary: false},
+            where: {user: {id: ctx.session.user.id}, temporary: false, incognito: false},
             select: {
                 id: true,
                 messages: {select: {createdAt: true}, orderBy: {createdAt: "desc"}, take: 1},
@@ -80,7 +80,6 @@ export default router({
 
     listRelevantMemories: procedure.input(z.object({
         embedding: z.array(z.number()),
-        options: SearchOptions.optional()
     })).mutation(async ({ctx, input}) => {
         return getMostRelevant(input.embedding, (await ctx.prisma.$queryRaw<(Memory & {
             embedding: string
@@ -89,6 +88,6 @@ export default router({
               WHERE "userId" = ${ctx.session.user.id}`).map(m => ({
             value: m as Memory,
             embedding: JSON.parse(m.embedding)
-        })), input.options).map(m => m.value as Memory);
+        }))).map(m => m.value as Memory);
     })
 })

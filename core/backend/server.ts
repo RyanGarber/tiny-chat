@@ -21,15 +21,20 @@ import embeddings from "./routes/embeddings.ts";
 
 config({path: resolve(fileURLToPath(import.meta.url), "../../../.env")});
 
-export const prisma = new PrismaClient({
-    adapter: new PrismaPg({
-        host: process.env.PG_HOST,
-        port: Number(process.env.PG_PORT),
-        user: process.env.PG_USER,
-        password: process.env.PG_PASSWORD,
-        database: process.env.PG_DATABASE
-    })
-});
+declare namespace globalThis {
+    let prisma: PrismaClient;
+}
+
+if (import.meta.main && !globalThis.prisma) {
+    globalThis.prisma = new PrismaClient({
+        adapter: new PrismaPg({
+            connectionString: `postgres://${process.env.PG_USER}:${process.env.PG_PASSWORD}@${process.env.PG_HOST}:${process.env.PG_PORT}/${process.env.PG_DATABASE}?schema=public&connection_limit=5&pool_timeout=0&socket_timeout=0`,
+            idleTimeoutMillis: 2147483647,
+            connectionTimeoutMillis: 10000,
+            min: 1,
+        })
+    });
+}
 
 const trpc = router({
     folders,
@@ -37,7 +42,7 @@ const trpc = router({
     context,
     messages,
     sessions,
-    embeddings
+    embeddings,
 });
 export type tRPC = typeof trpc;
 
@@ -63,7 +68,7 @@ const trpcContext = async ({
             message: `Not authenticated. Headers: ${JSON.stringify(Object.fromEntries(headers.entries()))}`,
         });
     }
-    return {req, res, session, prisma};
+    return {req, res, session, prisma: globalThis.prisma};
 };
 export type tRPCContext = Awaited<ReturnType<typeof trpcContext>>;
 
@@ -79,7 +84,7 @@ export const auth = betterAuth({
         ? `http://${process.argv.includes('--host') ? await internalIpV4() : 'localhost'}:${process.env.VITE_DATA_PORT}`
         : process.env.VITE_DATA_URL,
     basePath: process.env.VITE_DATA_PATH_AUTH,
-    database: prismaAdapter(prisma, {
+    database: prismaAdapter(globalThis.prisma, {
         provider: "postgresql",
     }),
     user: {
@@ -114,16 +119,32 @@ export const auth = betterAuth({
     plugins: [anonymous({
         onLinkAccount: async ({anonymousUser, newUser}) => {
             console.log(`Transferring data from anonymous user ${anonymousUser.user.id} to new user ${newUser.user.id}`)
-            await prisma.user.update({
+            await globalThis.prisma
+            await globalThis.prisma.user.update({
                 where: {id: newUser.user.id},
                 data: {settings: {...anonymousUser.user.settings, ...newUser.user.settings}}
             });
-            await prisma.folder.updateMany({where: {userId: anonymousUser.user.id}, data: {userId: newUser.user.id}});
-            await prisma.chat.updateMany({where: {userId: anonymousUser.user.id}, data: {userId: newUser.user.id}});
-            await prisma.message.updateMany({where: {userId: anonymousUser.user.id}, data: {userId: newUser.user.id}});
-            await prisma.memory.updateMany({where: {userId: anonymousUser.user.id}, data: {userId: newUser.user.id}});
-            await prisma.summary.updateMany({where: {userId: anonymousUser.user.id}, data: {userId: newUser.user.id}});
-            console.log("Transferred:", await prisma.user.findFirst({where: {id: newUser.user.id}}));
+            await globalThis.prisma.folder.updateMany({
+                where: {userId: anonymousUser.user.id},
+                data: {userId: newUser.user.id}
+            });
+            await globalThis.prisma.chat.updateMany({
+                where: {userId: anonymousUser.user.id},
+                data: {userId: newUser.user.id}
+            });
+            await globalThis.prisma.message.updateMany({
+                where: {userId: anonymousUser.user.id},
+                data: {userId: newUser.user.id}
+            });
+            await globalThis.prisma.memory.updateMany({
+                where: {userId: anonymousUser.user.id},
+                data: {userId: newUser.user.id}
+            });
+            await globalThis.prisma.summary.updateMany({
+                where: {userId: anonymousUser.user.id},
+                data: {userId: newUser.user.id}
+            });
+            console.log("Transferred:", await globalThis.prisma.user.findFirst({where: {id: newUser.user.id}}));
         }
     }), bearer()],
 });

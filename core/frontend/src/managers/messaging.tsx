@@ -37,9 +37,6 @@ interface Messaging {
     insertingAfter: MessageOmitted | null;
     setInsertingAfter: (insertingAfter: MessageOmitted | null) => void;
 
-    temporary: boolean;
-    setTemporary: (temporary: boolean) => void;
-
     reset: () => void;
 
     config: zConfigType | null;
@@ -117,17 +114,11 @@ export const useMessaging = create(
             set({files: [], insertingAfter: value});
         },
 
-        temporary: false,
-        setTemporary: async (temporary) => {
-            console.log(`Setting temporary to ${temporary}`);
-            await useChats.getState().setCurrentChat(null, false, false);
-            set({temporary});
-        },
-
         reset: () => {
             console.trace("Resetting messaging state");
             const {setEditing, setInsertingAfter} = get();
-            set({files: [], temporary: false});
+            set({files: []});
+            useChats.setState({temporary: false, incognito: false});
             setEditing(null);
             setInsertingAfter(null);
         },
@@ -141,12 +132,12 @@ export const useMessaging = create(
         },
 
         sendMessage: async (data) => {
-            const {config, truncating, temporary, reset, editing} = get();
+            const {config, truncating, reset, editing} = get();
             const {setCurrentChat, fetchFolders, fetchMessages} = useChats.getState();
             let currentChat = useChats.getState().currentChat;
             if (!config) return;
 
-            useTasks.getState().setTask("sending", "Preparing message");
+            useTasks.getState().addTask("sending", "Preparing message");
             setInputDisabled(true);
             reset();
 
@@ -165,6 +156,7 @@ export const useMessaging = create(
                     truncate: truncating,
                 });
             } else {
+                const {temporary, incognito} = useChats.getState();
                 console.log(`Sending message in ${currentChat?.id ?? "new chat"}:`, data, "temporary:", temporary);
                 message = await trpc.messages.create.mutate({
                     chatId: currentChat?.id,
@@ -173,7 +165,8 @@ export const useMessaging = create(
                     data,
                     metadata: {},
                     previousId: get().insertingAfter?.id,
-                    temporary
+                    temporary,
+                    incognito
                 });
             }
             await fetchFolders(false);
@@ -191,7 +184,7 @@ export const useMessaging = create(
                 })();
             }
 
-            useTasks.getState().removeTask("sending");
+            void useTasks.getState().removeTask("sending");
 
             try {
                 console.log(`Running model ${get().config!.model} on message ${message.id}`);
@@ -203,7 +196,7 @@ export const useMessaging = create(
                 throw e;
             } finally {
                 setInputDisabled(false);
-                useTasks.getState().removeTask("sending");
+                useServices.setState({abortController: null});
             }
 
             void useEmbeddings.getState().updateEmbeddings();
@@ -233,7 +226,7 @@ async function setInputData(data: zDataType) {
 
     const files: File[] = [];
     for (const file of data.filter(p => p.type === "file")) {
-        files.push(new File([await (await fetch(file.url)).blob()], file.name, {type: file.mime}));
+        files.push(new File([await (await fetch(file.url)).blob()], file.name!, {type: file.mime}));
     }
     addFiles(...files);
 }

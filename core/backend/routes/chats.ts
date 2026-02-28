@@ -4,6 +4,7 @@ import {createId} from "@paralleldrive/cuid2";
 import {reorder} from "./messages.ts";
 import {zConfig, zData, type zDataType, zMetadata} from "../types.ts";
 import minisearch, {type SearchResult} from "minisearch";
+import {getMostRelevant} from "./embeddings.ts";
 
 export default router({
     find: procedure
@@ -103,38 +104,103 @@ export default router({
         }),
 
     search: procedure
-        .input(z.object({query: z.string().min(1)}))
-        .query(async ({ctx, input}) => {
-            const messages = await ctx.prisma.message.findMany({
+        .input(z.object({
+            text: z.string().min(1),
+            embedding: z.array(z.number()).optional(),
+        }))
+        .mutation(async ({ctx, input}) => {
+            const messages = (await ctx.prisma.message.findMany({
                 where: {userId: ctx.session.user.id, chat: {temporary: {equals: false}}},
                 include: {chat: {select: {title: true}}, folder: {select: {title: true}}},
-            });
-            const search = new minisearch({
-                fields: ["folderTitle", "chatTitle", "text"],
-                storeFields: ["id", "chatId", "data", "folderTitle", "chatTitle"],
-                searchOptions: {
-                    boost: {
-                        chatTitle: 2
-                    },
-                    fuzzy: 0.2,
-                    prefix: true
-                }
-            });
-            search.addAll(messages.map((message) => ({
+            })).map(m => ({...m, embedding: null as number[]}));
+
+            const embeddings = await ctx.prisma.$queryRaw<{
+                id: string,
+                embedding: string
+            }[]>`SELECT id, embedding
+                 FROM message
+                 WHERE "userId" = ${ctx.session.user.id}`;
+            for (const message of messages) {
+                const raw = embeddings.find((e) => e.id === message.id)?.embedding;
+                if (raw) message.embedding = JSON.parse(raw);
+            }
+
+            const mappedMessages = messages.map((message) => ({
                 id: message.id,
                 chatId: message.chatId,
                 data: zData.parse(message.data),
                 folderTitle: message.folder.title,
                 chatTitle: message.chat.title,
-                // TODO - adding && !p.hidden makes typescript think it's no longer text????????
                 text: zData.parse(message.data).filter(p => p.type === "text").map(t => t.value).join("\n"),
-            })))
-            return search.search(input.query) as (SearchResult & {
+                embedding: message.embedding,
+            }));
+
+            // --- Text search (minisearch) ---
+            const textIndex = new minisearch({
+                fields: ["folderTitle", "chatTitle", "text"],
+                storeFields: ["id", "chatId", "data", "folderTitle", "chatTitle"],
+                searchOptions: {
+                    boost: {chatTitle: 2},
+                    fuzzy: 0.2,
+                    prefix: true,
+                },
+            });
+            textIndex.addAll(mappedMessages);
+            const textResults = textIndex.search(input.text) as (SearchResult & {
                 id: string,
                 chatId: string,
                 data: zDataType,
                 folderTitle: string,
                 chatTitle: string,
             })[];
+
+            // --- Vector search (if query embedding is available) ---
+            const messagesWithEmbeddings = mappedMessages.filter(m => m.embedding && m.embedding.length > 0);
+            const useVectorSearch = !!input.embedding?.length && messagesWithEmbeddings.length > 0;
+
+            if (!useVectorSearch) {
+                return textResults;
+            }
+
+            const vectorResults = getMostRelevant(
+                input.embedding!,
+                messagesWithEmbeddings.map(m => ({value: m, embedding: m.embedding!})),
+                {maxCount: 50},
+            );
+
+            // --- Merge and normalize scores ---
+            const maxTextScore = textResults.reduce((m, r) => Math.max(m, r.score), 0) || 1;
+            const maxVectorScore = vectorResults.reduce((m, r) => Math.max(m, r.score), 0) || 1;
+
+            const textScoreMap = new Map(textResults.map(r => [r.id, r.score / maxTextScore]));
+            const vectorScoreMap = new Map(vectorResults.map(r => [r.value.id, r.score / maxVectorScore]));
+
+            const allIds = new Set([...textScoreMap.keys(), ...vectorScoreMap.keys()]);
+
+            return Array.from(allIds)
+                .map(id => {
+                    const textScore = textScoreMap.get(id) ?? 0;
+                    const vectorScore = vectorScoreMap.get(id) ?? 0;
+                    const combinedScore = (textScore + vectorScore) / 2;
+                    const message = mappedMessages.find(m => m.id === id)!;
+                    const textResult = textResults.find(r => r.id === id);
+                    return {
+                        id,
+                        chatId: message.chatId,
+                        data: message.data,
+                        folderTitle: message.folderTitle,
+                        chatTitle: message.chatTitle,
+                        score: combinedScore,
+                        match: textResult?.match ?? {},
+                        terms: textResult?.terms ?? [],
+                    } as SearchResult & {
+                        id: string,
+                        chatId: string,
+                        data: zDataType,
+                        folderTitle: string,
+                        chatTitle: string,
+                    };
+                })
+                .sort((a, b) => b.score - a.score);
         })
 });

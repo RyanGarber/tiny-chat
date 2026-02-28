@@ -34,7 +34,7 @@ export default function Attachments({list, size}: {
         <>
             <Avatar.Group>
                 {list.map((a, i) => (
-                    <Tooltip label={a.name} key={a.name} color="gray">
+                    <Tooltip label={a.name} key={a.name} color="gray" position="bottom">
                         <Avatar
                             radius="xl"
                             size={size}

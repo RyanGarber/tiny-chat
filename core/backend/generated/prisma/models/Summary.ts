@@ -29,7 +29,7 @@ export type SummaryMinAggregateOutputType = {
   userId: string | null
   folderId: string | null
   chatId: string | null
-  content: string | null
+  text: string | null
   createdAt: Date | null
 }
 
@@ -38,7 +38,7 @@ export type SummaryMaxAggregateOutputType = {
   userId: string | null
   folderId: string | null
   chatId: string | null
-  content: string | null
+  text: string | null
   createdAt: Date | null
 }
 
@@ -48,7 +48,7 @@ export type SummaryCountAggregateOutputType = {
   folderId: number
   chatId: number
   config: number
-  content: number
+  text: number
   createdAt: number
   _all: number
 }
@@ -59,7 +59,7 @@ export type SummaryMinAggregateInputType = {
   userId?: true
   folderId?: true
   chatId?: true
-  content?: true
+  text?: true
   createdAt?: true
 }
 
@@ -68,7 +68,7 @@ export type SummaryMaxAggregateInputType = {
   userId?: true
   folderId?: true
   chatId?: true
-  content?: true
+  text?: true
   createdAt?: true
 }
 
@@ -78,7 +78,7 @@ export type SummaryCountAggregateInputType = {
   folderId?: true
   chatId?: true
   config?: true
-  content?: true
+  text?: true
   createdAt?: true
   _all?: true
 }
@@ -161,7 +161,7 @@ export type SummaryGroupByOutputType = {
   folderId: string
   chatId: string
   config: runtime.JsonValue
-  content: string
+  text: string
   createdAt: Date
   _count: SummaryCountAggregateOutputType | null
   _min: SummaryMinAggregateOutputType | null
@@ -192,7 +192,7 @@ export type SummaryWhereInput = {
   folderId?: Prisma.StringFilter<"Summary"> | string
   chatId?: Prisma.StringFilter<"Summary"> | string
   config?: Prisma.JsonFilter<"Summary">
-  content?: Prisma.StringFilter<"Summary"> | string
+  text?: Prisma.StringFilter<"Summary"> | string
   createdAt?: Prisma.DateTimeFilter<"Summary"> | Date | string
   chat?: Prisma.XOR<Prisma.ChatScalarRelationFilter, Prisma.ChatWhereInput>
   folder?: Prisma.XOR<Prisma.FolderScalarRelationFilter, Prisma.FolderWhereInput>
@@ -206,7 +206,7 @@ export type SummaryOrderByWithRelationInput = {
   folderId?: Prisma.SortOrder
   chatId?: Prisma.SortOrder
   config?: Prisma.SortOrder
-  content?: Prisma.SortOrder
+  text?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   chat?: Prisma.ChatOrderByWithRelationInput
   folder?: Prisma.FolderOrderByWithRelationInput
@@ -223,7 +223,7 @@ export type SummaryWhereUniqueInput = Prisma.AtLeast<{
   folderId?: Prisma.StringFilter<"Summary"> | string
   chatId?: Prisma.StringFilter<"Summary"> | string
   config?: Prisma.JsonFilter<"Summary">
-  content?: Prisma.StringFilter<"Summary"> | string
+  text?: Prisma.StringFilter<"Summary"> | string
   createdAt?: Prisma.DateTimeFilter<"Summary"> | Date | string
   chat?: Prisma.XOR<Prisma.ChatScalarRelationFilter, Prisma.ChatWhereInput>
   folder?: Prisma.XOR<Prisma.FolderScalarRelationFilter, Prisma.FolderWhereInput>
@@ -237,7 +237,7 @@ export type SummaryOrderByWithAggregationInput = {
   folderId?: Prisma.SortOrder
   chatId?: Prisma.SortOrder
   config?: Prisma.SortOrder
-  content?: Prisma.SortOrder
+  text?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.SummaryCountOrderByAggregateInput
   _max?: Prisma.SummaryMaxOrderByAggregateInput
@@ -253,14 +253,14 @@ export type SummaryScalarWhereWithAggregatesInput = {
   folderId?: Prisma.StringWithAggregatesFilter<"Summary"> | string
   chatId?: Prisma.StringWithAggregatesFilter<"Summary"> | string
   config?: Prisma.JsonWithAggregatesFilter<"Summary">
-  content?: Prisma.StringWithAggregatesFilter<"Summary"> | string
+  text?: Prisma.StringWithAggregatesFilter<"Summary"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Summary"> | Date | string
 }
 
 export type SummaryCreateInput = {
   id: string
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content: string
+  text: string
   createdAt?: Date | string
   chat: Prisma.ChatCreateNestedOneWithoutSummariesInput
   folder: Prisma.FolderCreateNestedOneWithoutSummariesInput
@@ -274,7 +274,7 @@ export type SummaryUncheckedCreateInput = {
   folderId: string
   chatId: string
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content: string
+  text: string
   createdAt?: Date | string
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutSummariesInput
 }
@@ -282,7 +282,7 @@ export type SummaryUncheckedCreateInput = {
 export type SummaryUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content?: Prisma.StringFieldUpdateOperationsInput | string
+  text?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   chat?: Prisma.ChatUpdateOneRequiredWithoutSummariesNestedInput
   folder?: Prisma.FolderUpdateOneRequiredWithoutSummariesNestedInput
@@ -296,7 +296,7 @@ export type SummaryUncheckedUpdateInput = {
   folderId?: Prisma.StringFieldUpdateOperationsInput | string
   chatId?: Prisma.StringFieldUpdateOperationsInput | string
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content?: Prisma.StringFieldUpdateOperationsInput | string
+  text?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   messages?: Prisma.MessageUncheckedUpdateManyWithoutSummariesNestedInput
 }
@@ -307,14 +307,14 @@ export type SummaryCreateManyInput = {
   folderId: string
   chatId: string
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content: string
+  text: string
   createdAt?: Date | string
 }
 
 export type SummaryUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content?: Prisma.StringFieldUpdateOperationsInput | string
+  text?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -324,7 +324,7 @@ export type SummaryUncheckedUpdateManyInput = {
   folderId?: Prisma.StringFieldUpdateOperationsInput | string
   chatId?: Prisma.StringFieldUpdateOperationsInput | string
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content?: Prisma.StringFieldUpdateOperationsInput | string
+  text?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -344,7 +344,7 @@ export type SummaryCountOrderByAggregateInput = {
   folderId?: Prisma.SortOrder
   chatId?: Prisma.SortOrder
   config?: Prisma.SortOrder
-  content?: Prisma.SortOrder
+  text?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -353,7 +353,7 @@ export type SummaryMaxOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   folderId?: Prisma.SortOrder
   chatId?: Prisma.SortOrder
-  content?: Prisma.SortOrder
+  text?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -362,7 +362,7 @@ export type SummaryMinOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   folderId?: Prisma.SortOrder
   chatId?: Prisma.SortOrder
-  content?: Prisma.SortOrder
+  text?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -533,7 +533,7 @@ export type SummaryUncheckedUpdateManyWithoutMessagesNestedInput = {
 export type SummaryCreateWithoutUserInput = {
   id: string
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content: string
+  text: string
   createdAt?: Date | string
   chat: Prisma.ChatCreateNestedOneWithoutSummariesInput
   folder: Prisma.FolderCreateNestedOneWithoutSummariesInput
@@ -545,7 +545,7 @@ export type SummaryUncheckedCreateWithoutUserInput = {
   folderId: string
   chatId: string
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content: string
+  text: string
   createdAt?: Date | string
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutSummariesInput
 }
@@ -585,14 +585,14 @@ export type SummaryScalarWhereInput = {
   folderId?: Prisma.StringFilter<"Summary"> | string
   chatId?: Prisma.StringFilter<"Summary"> | string
   config?: Prisma.JsonFilter<"Summary">
-  content?: Prisma.StringFilter<"Summary"> | string
+  text?: Prisma.StringFilter<"Summary"> | string
   createdAt?: Prisma.DateTimeFilter<"Summary"> | Date | string
 }
 
 export type SummaryCreateWithoutFolderInput = {
   id: string
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content: string
+  text: string
   createdAt?: Date | string
   chat: Prisma.ChatCreateNestedOneWithoutSummariesInput
   user: Prisma.UserCreateNestedOneWithoutSummariesInput
@@ -604,7 +604,7 @@ export type SummaryUncheckedCreateWithoutFolderInput = {
   userId: string
   chatId: string
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content: string
+  text: string
   createdAt?: Date | string
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutSummariesInput
 }
@@ -638,7 +638,7 @@ export type SummaryUpdateManyWithWhereWithoutFolderInput = {
 export type SummaryCreateWithoutChatInput = {
   id: string
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content: string
+  text: string
   createdAt?: Date | string
   folder: Prisma.FolderCreateNestedOneWithoutSummariesInput
   user: Prisma.UserCreateNestedOneWithoutSummariesInput
@@ -650,7 +650,7 @@ export type SummaryUncheckedCreateWithoutChatInput = {
   userId: string
   folderId: string
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content: string
+  text: string
   createdAt?: Date | string
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutSummariesInput
 }
@@ -684,7 +684,7 @@ export type SummaryUpdateManyWithWhereWithoutChatInput = {
 export type SummaryCreateWithoutMessagesInput = {
   id: string
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content: string
+  text: string
   createdAt?: Date | string
   chat: Prisma.ChatCreateNestedOneWithoutSummariesInput
   folder: Prisma.FolderCreateNestedOneWithoutSummariesInput
@@ -697,7 +697,7 @@ export type SummaryUncheckedCreateWithoutMessagesInput = {
   folderId: string
   chatId: string
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content: string
+  text: string
   createdAt?: Date | string
 }
 
@@ -727,14 +727,14 @@ export type SummaryCreateManyUserInput = {
   folderId: string
   chatId: string
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content: string
+  text: string
   createdAt?: Date | string
 }
 
 export type SummaryUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content?: Prisma.StringFieldUpdateOperationsInput | string
+  text?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   chat?: Prisma.ChatUpdateOneRequiredWithoutSummariesNestedInput
   folder?: Prisma.FolderUpdateOneRequiredWithoutSummariesNestedInput
@@ -746,7 +746,7 @@ export type SummaryUncheckedUpdateWithoutUserInput = {
   folderId?: Prisma.StringFieldUpdateOperationsInput | string
   chatId?: Prisma.StringFieldUpdateOperationsInput | string
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content?: Prisma.StringFieldUpdateOperationsInput | string
+  text?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   messages?: Prisma.MessageUncheckedUpdateManyWithoutSummariesNestedInput
 }
@@ -756,7 +756,7 @@ export type SummaryUncheckedUpdateManyWithoutUserInput = {
   folderId?: Prisma.StringFieldUpdateOperationsInput | string
   chatId?: Prisma.StringFieldUpdateOperationsInput | string
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content?: Prisma.StringFieldUpdateOperationsInput | string
+  text?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -765,14 +765,14 @@ export type SummaryCreateManyFolderInput = {
   userId: string
   chatId: string
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content: string
+  text: string
   createdAt?: Date | string
 }
 
 export type SummaryUpdateWithoutFolderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content?: Prisma.StringFieldUpdateOperationsInput | string
+  text?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   chat?: Prisma.ChatUpdateOneRequiredWithoutSummariesNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutSummariesNestedInput
@@ -784,7 +784,7 @@ export type SummaryUncheckedUpdateWithoutFolderInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   chatId?: Prisma.StringFieldUpdateOperationsInput | string
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content?: Prisma.StringFieldUpdateOperationsInput | string
+  text?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   messages?: Prisma.MessageUncheckedUpdateManyWithoutSummariesNestedInput
 }
@@ -794,7 +794,7 @@ export type SummaryUncheckedUpdateManyWithoutFolderInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   chatId?: Prisma.StringFieldUpdateOperationsInput | string
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content?: Prisma.StringFieldUpdateOperationsInput | string
+  text?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -803,14 +803,14 @@ export type SummaryCreateManyChatInput = {
   userId: string
   folderId: string
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content: string
+  text: string
   createdAt?: Date | string
 }
 
 export type SummaryUpdateWithoutChatInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content?: Prisma.StringFieldUpdateOperationsInput | string
+  text?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   folder?: Prisma.FolderUpdateOneRequiredWithoutSummariesNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutSummariesNestedInput
@@ -822,7 +822,7 @@ export type SummaryUncheckedUpdateWithoutChatInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   folderId?: Prisma.StringFieldUpdateOperationsInput | string
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content?: Prisma.StringFieldUpdateOperationsInput | string
+  text?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   messages?: Prisma.MessageUncheckedUpdateManyWithoutSummariesNestedInput
 }
@@ -832,14 +832,14 @@ export type SummaryUncheckedUpdateManyWithoutChatInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   folderId?: Prisma.StringFieldUpdateOperationsInput | string
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content?: Prisma.StringFieldUpdateOperationsInput | string
+  text?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type SummaryUpdateWithoutMessagesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content?: Prisma.StringFieldUpdateOperationsInput | string
+  text?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   chat?: Prisma.ChatUpdateOneRequiredWithoutSummariesNestedInput
   folder?: Prisma.FolderUpdateOneRequiredWithoutSummariesNestedInput
@@ -852,7 +852,7 @@ export type SummaryUncheckedUpdateWithoutMessagesInput = {
   folderId?: Prisma.StringFieldUpdateOperationsInput | string
   chatId?: Prisma.StringFieldUpdateOperationsInput | string
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content?: Prisma.StringFieldUpdateOperationsInput | string
+  text?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -862,7 +862,7 @@ export type SummaryUncheckedUpdateManyWithoutMessagesInput = {
   folderId?: Prisma.StringFieldUpdateOperationsInput | string
   chatId?: Prisma.StringFieldUpdateOperationsInput | string
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  content?: Prisma.StringFieldUpdateOperationsInput | string
+  text?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -903,7 +903,7 @@ export type SummarySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   folderId?: boolean
   chatId?: boolean
   config?: boolean
-  content?: boolean
+  text?: boolean
   createdAt?: boolean
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
   folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
@@ -918,7 +918,7 @@ export type SummarySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   folderId?: boolean
   chatId?: boolean
   config?: boolean
-  content?: boolean
+  text?: boolean
   createdAt?: boolean
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
   folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
@@ -931,7 +931,7 @@ export type SummarySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   folderId?: boolean
   chatId?: boolean
   config?: boolean
-  content?: boolean
+  text?: boolean
   createdAt?: boolean
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
   folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
@@ -944,11 +944,11 @@ export type SummarySelectScalar = {
   folderId?: boolean
   chatId?: boolean
   config?: boolean
-  content?: boolean
+  text?: boolean
   createdAt?: boolean
 }
 
-export type SummaryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "folderId" | "chatId" | "config" | "content" | "createdAt", ExtArgs["result"]["summary"]>
+export type SummaryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "folderId" | "chatId" | "config" | "text" | "createdAt", ExtArgs["result"]["summary"]>
 export type SummaryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
   folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
@@ -981,7 +981,7 @@ export type $SummaryPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     folderId: string
     chatId: string
     config: runtime.JsonValue
-    content: string
+    text: string
     createdAt: Date
   }, ExtArgs["result"]["summary"]>
   composites: {}
@@ -1415,7 +1415,7 @@ export interface SummaryFieldRefs {
   readonly folderId: Prisma.FieldRef<"Summary", 'String'>
   readonly chatId: Prisma.FieldRef<"Summary", 'String'>
   readonly config: Prisma.FieldRef<"Summary", 'Json'>
-  readonly content: Prisma.FieldRef<"Summary", 'String'>
+  readonly text: Prisma.FieldRef<"Summary", 'String'>
   readonly createdAt: Prisma.FieldRef<"Summary", 'DateTime'>
 }
     

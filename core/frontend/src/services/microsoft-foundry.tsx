@@ -100,7 +100,7 @@ export class MicrosoftFoundryService implements Service {
                     })
                 ]
             };
-            if (["gpt-5", "o3", "o4"].some(m => config.model.includes(m))) {
+            if (config.model.includes("gpt-5")) {
                 params.reasoning = {effort: config.args.reasoning, summary: "detailed"};
                 params.include = ["reasoning.encrypted_content"];
             }

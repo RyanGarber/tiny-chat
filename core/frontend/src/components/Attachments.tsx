@@ -13,7 +13,7 @@ import {Carousel} from "@mantine/carousel";
 import {useDisclosure} from "@mantine/hooks";
 
 export default function Attachments({list, size}: {
-    list: { name: string, mime: string, url: string }[],
+    list: { name?: string, mime?: string, url: string }[],
     size?: number
 }) {
     size = size ?? 24;
@@ -38,13 +38,13 @@ export default function Attachments({list, size}: {
                         <Avatar
                             radius="xl"
                             size={size}
-                            src={a.mime.startsWith("image/") ? a.url : null}
+                            src={a.mime?.startsWith("image/") ? a.url : null}
                             onClick={() => {
                                 setSlide(i);
                                 open();
                             }}
                         >
-                            {icons.find(i => i.mimeTest.test(a.mime))?.icon ?? <IconFile size={size}/>}
+                            {icons.find(i => i.mimeTest.test(a.mime ?? ""))?.icon ?? <IconFile size={size}/>}
                         </Avatar>
                     </Tooltip>
                 ))}
@@ -56,7 +56,7 @@ export default function Attachments({list, size}: {
                             <Card>
                                 <CardSection>
                                     <Image
-                                        src={a.mime.startsWith("image/") ? a.url : null}
+                                        src={a.mime?.startsWith("image/") ? a.url : null}
                                     />
                                 </CardSection>
                                 <CardSection>

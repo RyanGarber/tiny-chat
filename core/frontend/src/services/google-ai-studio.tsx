@@ -15,8 +15,8 @@ export class GoogleAiStudioService implements Service {
         const models = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
         );
-        return (await models.json()).models.map((model: any) =>
-            model.name.split("/").pop(),
+        return (await models.json()).models.filter((m: any) => m.supportedGenerationMethods.includes("generateContent")).map((m: any) =>
+            m.name.split("/").pop(),
         );
     }
 

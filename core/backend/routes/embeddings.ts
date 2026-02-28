@@ -11,7 +11,8 @@ export default router({
             messages: (await ctx.prisma.$queryRaw<Message[]>`SELECT *
                                                              FROM message
                                                              WHERE "userId" = ${ctx.session.user.id}
-                                                               AND embedding IS NULL`).map(wrapMessage)
+                                                               AND embedding IS NULL
+                                                               AND NOT EXISTS (SELECT 1 FROM chat WHERE chat.id = "chatId" AND chat.temporary = true)`).map(wrapMessage)
             , summaries: (await ctx.prisma.$queryRaw<Summary[]>`SELECT *
                                                                 FROM summary
                                                                 WHERE "userId" = ${ctx.session.user.id}

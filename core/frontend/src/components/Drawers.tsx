@@ -23,7 +23,8 @@ import {codeThemes, themes, useSettings} from "@/managers/settings.tsx";
 import {alert, auth, consumeLabel, hashText, openExternal, trpc, webUrl} from "@/utils.ts";
 import {useDisclosure, UseDisclosureReturnValue} from "@mantine/hooks";
 import {useLayout} from "@/managers/layout.tsx";
-import {zConfig} from "@tiny-chat/core-backend/types.ts";
+import {zConfigType} from "@tiny-chat/core-backend/types.ts";
+import ModelSelect from "@/components/ModelSelect.tsx";
 
 export default function Drawers(
     {buttons}:
@@ -92,7 +93,7 @@ export default function Drawers(
     const [cloneInterval, setCloneInterval] = useState<NodeJS.Timeout>();
     const [addingInstruction, setAddingInstruction] = useState(false);
 
-    const [embedChange, setEmbedChange] = useState<string | null>(null);
+    const [embedChange, setEmbedChange] = useState<zConfigType | null>(null);
     const [isEmbedConfirmOpen, {open: openEmbedConfirm, close: closeEmbedding}] = useDisclosure();
 
     return (
@@ -218,54 +219,32 @@ export default function Drawers(
                                       }}
                                       disabled={addingInstruction}/>
                             <Divider/>
-                            <Select label="Memory Model"
-                                    styles={consumeLabel}
-                                    data={services.map((s) => ({
-                                        group: s.name,
-                                        items: s.models.sort().map((m) => ({
-                                            label: m,
-                                            value: JSON.stringify({service: s.name, model: m}),
-                                        })),
-                                    }))}
-                                    allowDeselect
-                                    value={JSON.stringify({
-                                        service: getMemoryConfig()?.service,
-                                        model: getMemoryConfig()?.model
-                                    })}
-                                    onChange={async (value) => {
-                                        console.log(JSON.stringify({
-                                            service: getMemoryConfig()?.service,
-                                            model: getMemoryConfig()?.model
-                                        }))
-                                        await setMemoryConfig(value ? zConfig.parse(JSON.parse(value)) : undefined);
-                                        alert("info", "Memory model saved");
-                                    }}/>
-                            <Select label="Embedding Model"
-                                    styles={consumeLabel}
-                                    data={services.map((s) => ({
-                                        group: s.name,
-                                        items: s.models.sort().map((m) => ({
-                                            label: m,
-                                            value: JSON.stringify({service: s.name, model: m}),
-                                        })),
-                                    }))}
-                                    allowDeselect
-                                    value={JSON.stringify({
-                                        service: getEmbeddingConfig()?.service,
-                                        model: getEmbeddingConfig()?.model
-                                    })}
-                                    onChange={(value) => {
-                                        setEmbedChange(value);
-                                        openEmbedConfirm();
-                                    }}/>
+                            <ModelSelect label="Memory Model"
+                                         styles={consumeLabel}
+                                         optional
+                                         configValue={getMemoryConfig()}
+                                         onConfigChange={async (value) => {
+                                             await setMemoryConfig(value ?? undefined);
+                                             alert("info", "Memory model saved");
+                                         }}
+                                         feature={"generate"}/>
+                            <ModelSelect label="Embedding Model"
+                                         styles={consumeLabel}
+                                         optional
+                                         configValue={getEmbeddingConfig()}
+                                         onConfigChange={(value) => {
+                                             setEmbedChange(value ?? null);
+                                             openEmbedConfirm();
+                                         }}
+                                         feature={"embed"}/>
                             <Modal title="Change Embedding Model" opened={isEmbedConfirmOpen} onClose={closeEmbedding}>
                                 {embedChange
                                     ? <Text>Are you sure? All embeddings will be regenerated using the
-                                        model <strong>{zConfig.parse(JSON.parse(embedChange)).model}</strong>.</Text>
+                                        model <strong>{embedChange.model}</strong>.</Text>
                                     : <Text>Are you sure? Features like memory and smart search will not be
                                         available.</Text>}
                                 <Button variant="gradient" fullWidth onClick={async () => {
-                                    await setEmbeddingConfig(embedChange ? zConfig.parse(JSON.parse(embedChange)) : undefined);
+                                    await setEmbeddingConfig(embedChange ?? undefined);
                                     alert("info", "Embedding model saved");
                                     closeEmbedding();
                                 }} mt="lg">Confirm</Button>

@@ -42,7 +42,7 @@ export const useMemories = create(subscribeWithSelector<Context>((_, get) => {
             const chats = await trpc.context.listUpdatedChats.query();
             console.log(`Found ${chats.length} pending chats to memorize`);
 
-            const {tasks, addTask, updateTask, removeTask} = useTasks.getState();
+            const {addTask, updateTask, removeTask} = useTasks.getState();
 
             let totalMemories = 0;
             for (let i = 0; i < chats.length; i++) {
@@ -50,7 +50,7 @@ export const useMemories = create(subscribeWithSelector<Context>((_, get) => {
                 const lastMessage = chats[i].messages[0].createdAt;
                 const hours = (now.getTime() - lastMessage.getTime()) / (1000 * 60 * 60);
                 if (hours > UPDATE_AFTER_HR) {
-                    if (!tasks["memories"]) addTask("memories", "Saving new memories");
+                    addTask("memories", "Saving new memories");
                     console.log(`Chat ${chats[i].id} is stale (${hours}h), memorizing...`);
                     const result = await memorizeChat(chats[i].id);
                     totalMemories += result?.memories.length ?? 0;
@@ -127,8 +127,7 @@ Output valid JSON only.`;
 4. Return JSON in the specified schema.`
     }];
 
-    if (service.getFeatures(config.model)?.includes("schema")) config.args.schema = zSchema.toJSONSchema();
-    else data.push({type: "text", value: `Schema: ${JSON.stringify(zSchema.toJSONSchema())}`});
+    config.schema = zSchema.toJSONSchema();
 
     const messages: MessageUnomitted[] = [
         ...(await trpc.messages.list.query({chatId})) as MessageUnomitted[],

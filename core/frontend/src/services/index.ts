@@ -4,12 +4,18 @@ import {MessageUnomitted, zConfigType, zDataPartType, zMetadata} from "@tiny-cha
 import {z} from "zod";
 import {MicrosoftFoundryService} from "@/services/microsoft-foundry";
 
+export type ModelFeature = "generate" | "embed";
+
+export interface Model {
+    name: string;
+    features: ModelFeature[];
+}
+
 export interface Service {
     name: string;
     apiKeyFormat: string;
-    getModels: () => Promise<string[]>;
+    getModels: () => Promise<Model[]>;
     getArgs: (model: string) => ModelArg[] | null;
-    getFeatures: (model: string) => string[] | null;
     generate: (
         instruction: string,
         context: MessageUnomitted[],
@@ -39,7 +45,17 @@ export type ModelArg = {
     default: number;
 };
 
-export const StreamEnd = z.object({metadata: zMetadata});
-export type StreamEndType = z.infer<typeof StreamEnd>;
+export const zSpecialPart = z.discriminatedUnion("type", [
+    z.object({
+        type: z.literal("fileUpdate"),
+        name: z.string(),
+        url: z.string()
+    }),
+    z.object({
+        type: z.literal("metadata"),
+        value: zMetadata
+    }),
+]);
+export type zSpecialPartType = z.infer<typeof zSpecialPart>;
 
-export type Stream = AsyncGenerator<zDataPartType | StreamEndType>;
+export type Stream = AsyncGenerator<zDataPartType | zSpecialPartType>;

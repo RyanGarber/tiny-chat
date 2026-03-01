@@ -208,7 +208,7 @@ export default function Chat() {
                     </div>
                     {!incognito
                         ? <Text size="sm" c="dimmed" mt={6}>What's on your mind?</Text>
-                        : <Text size="sm" c="dimmed" mt={6}>No memories will be available to the model</Text>
+                        : <Text size="sm" c="dimmed" mt={6}>No memories will be available in this chat</Text>
                     }
                 </Stack>
 

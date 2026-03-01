@@ -1,4 +1,4 @@
-import {ModelArg, Service, Stream} from "@/services/index.ts";
+import {Model, ModelArg, Service, Stream} from "@/services/index.ts";
 import {Content, GoogleGenAI, Part, SendMessageParameters, ThinkingLevel} from "@google/genai";
 import {MessageUnomitted, zConfigType, zDataType, zMetadata} from "@tiny-chat/core-backend/types.ts";
 import {useSettings} from "@/managers/settings.tsx";
@@ -8,16 +8,18 @@ export class GoogleAiStudioService implements Service {
     name = "google-ai-studio";
     apiKeyFormat = "api-key";
 
-    async getModels(): Promise<string[]> {
+    async getModels(): Promise<Model[]> {
         const apiKey = useSettings.getState().getApiKey(this.name);
         if (!apiKey) return [];
 
         const models = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
         );
-        return (await models.json()).models.filter((m: any) => m.supportedGenerationMethods.includes("generateContent")).map((m: any) =>
-            m.name.split("/").pop(),
-        );
+
+        return (await models.json()).models.map((m: any) => ({
+            name: m.name.split("/").pop(),
+            features: [...(m.supportedGenerationMethods.includes("generateContent") ? ["generate" as const] : []), ...(m.supportedGenerationMethods.includes("embedContent") ? ["embed" as const] : [])],
+        } satisfies Model));
     }
 
     getArgs(model: string): ModelArg[] {
@@ -83,9 +85,9 @@ export class GoogleAiStudioService implements Service {
             enableEnhancedCivicAnswers: true
         };
 
-        if (config.args.schema) {
+        if (config.schema) {
             params.config.responseMimeType = "application/json";
-            params.config.responseJsonSchema = config.args.schema;
+            params.config.responseJsonSchema = config.schema;
         }
 
         if (config.model.includes("-image") || config.model.includes("gemini-3")) {
@@ -163,7 +165,7 @@ export class GoogleAiStudioService implements Service {
         }
 
         // TODO - combine deltas for efficiency (less needed than foundry but still)
-        yield {metadata: zMetadata.parse(parts)};
+        yield {type: "metadata", value: zMetadata.parse(parts)};
     }
 
     async embed(texts: string[], config: zConfigType): Promise<number[][]> {

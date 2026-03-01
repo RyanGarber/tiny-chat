@@ -1,4 +1,4 @@
-import {ModelArg, Service, Stream} from "./index.ts";
+import {Model, ModelArg, Service, Stream} from "./index.ts";
 import {MessageUnomitted, zConfigType} from "@tiny-chat/core-backend/types.ts";
 
 export class DebugService implements Service {
@@ -6,7 +6,7 @@ export class DebugService implements Service {
     apiKeyFormat = "[unused]";
 
     async getModels() {
-        return ["image-sim"];
+        return [{name: "image-sim", features: ["generate" as const]} satisfies Model];
     }
 
     getArgs(_model: string): ModelArg[] {

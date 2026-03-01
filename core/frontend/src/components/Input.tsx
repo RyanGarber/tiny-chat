@@ -29,11 +29,11 @@ import {useServices} from "@/managers/services.tsx";
 import {useLayout} from "@/managers/layout.tsx";
 import {useLocalStorage} from "@mantine/hooks";
 import {DropzoneFullScreen} from "@mantine/dropzone";
-import {zConfig} from "@tiny-chat/core-backend/types.ts";
+import ModelSelect from "@/components/ModelSelect.tsx";
 
 export function Input(props: InputWrapperProps) {
     const {setEditor, config, setConfig, addFiles} = useMessaging();
-    const {services, findService, abortController} = useServices();
+    const {findService, abortController} = useServices();
     const {shadow, setIsMessaging, isMessagingDisabled} = useLayout();
 
     const [isMultiline, setMultiline] = useState(false);
@@ -127,12 +127,9 @@ export function Input(props: InputWrapperProps) {
                             maw="25vw">{config?.model}</Button>
                 </PopoverTarget>
                 <PopoverDropdown maw={250}>
-                    <Select
+                    <ModelSelect
                         flex={1}
                         variant="filled"
-                        required
-                        allowDeselect={false}
-                        maxDropdownHeight={250}
                         comboboxProps={{
                             withinPortal: false,
                             transitionProps: {transition: "fade-up"},
@@ -143,23 +140,12 @@ export function Input(props: InputWrapperProps) {
                                 boxShadow: shadow,
                             },
                         }}
-                        data={services.map((s) => ({
-                            group: s.name,
-                            items: s.models.sort().map((m) => ({
-                                label: m,
-                                value: JSON.stringify({service: s.name, model: m}),
-                            })),
-                        }))}
-                        value={JSON.stringify({service: config?.service, model: config?.model})}
-                        onChange={(value) => {
-                            const parsed = JSON.parse(value!);
-                            const config = zConfig.parse({
-                                service: parsed.service,
-                                model: parsed.model
-                            });
-                            setConfig(config);
-                            updateSavedConfig(JSON.stringify(config));
+                        configValue={config}
+                        onConfigChange={(value) => {
+                            setConfig(value!);
+                            updateSavedConfig(JSON.stringify(value));
                         }}
+                        feature={"generate"}
                     />
                     {/*<Checkbox label="memory" size="xs" mt="xs" checked={!config?.incognito}/>*/}
                     {!!args?.length && <Divider my="xs"/>}

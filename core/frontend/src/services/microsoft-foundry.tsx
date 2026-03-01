@@ -1,4 +1,4 @@
-import {ModelArg, Service} from "@/services/index.ts";
+import {Model, ModelArg, Service, Stream} from "@/services/index.ts";
 import {MessageUnomitted, zConfigType, zMetadata} from "@tiny-chat/core-backend/types.ts";
 import {useSettings} from "@/managers/settings.tsx";
 import {alert} from "@/utils.ts";
@@ -17,13 +17,17 @@ export class MicrosoftFoundryService implements Service {
     name = "microsoft-foundry";
     apiKeyFormat = "resource;project;api-key";
 
-    async getModels(): Promise<string[]> {
+    async getModels(): Promise<Model[]> {
         const {resource, project, apiKey} = this.getKeys();
         if (!resource || !project || !apiKey) return [];
         const deployments = await fetch(`https://${resource}.services.ai.azure.com/api/projects/${project}/deployments?api-version=v1`,
             {headers: {"Authorization": `Bearer ${apiKey}`}});
-        console.log("Deployments:", deployments);
-        return (await deployments.json()).value.map((d: any) => d.name);
+        const json = await deployments.json();
+        console.log("Deployments:", json);
+        return json.value.map((d: any) => ({
+            name: d.name,
+            features: [...(d.capabilities.chat_completion ? ["generate" as const] : [])]
+        } satisfies Model));
     }
 
     getArgs(model: string): ModelArg[] {
@@ -40,17 +44,15 @@ export class MicrosoftFoundryService implements Service {
         ];
     }
 
-    getFeatures(_model: string): string[] | null {
-        return null;
-    }
-
-    async* generate(instruction: string, context: MessageUnomitted[], config: zConfigType, abortSignal: AbortSignal): AsyncGenerator<any> {
+    async* generate(instruction: string, context: MessageUnomitted[], config: zConfigType, abortSignal: AbortSignal): Stream {
         const {resource, apiKey} = this.getKeys();
         const azure = new OpenAI({
             baseURL: `https://${resource}.openai.azure.com/openai/v1/`,
             apiKey,
             dangerouslyAllowBrowser: true
         });
+
+        if (config.schema) instruction += "\n\nSchema: " + JSON.stringify(config.schema);
 
         /************************* RESPONSES API **************************/
 
@@ -59,10 +61,7 @@ export class MicrosoftFoundryService implements Service {
                 model: config.model,
                 stream: true,
                 temperature: config.args.temperature as number,
-                tools: [
-                    //{type: "web_search"},
-                    //{type: "code_interpreter", container: {type: "auto"}}
-                ], // TODO - file_search, image_generation
+                // TODO - would enable tools:image_generation, but it's unavailable on standard foundry accounts and causes 400 on all models
                 input: [
                     {
                         type: "message",
@@ -130,6 +129,20 @@ export class MicrosoftFoundryService implements Service {
                         }
                     } else if (chunk.type === "response.output_text.delta") {
                         yield {type: "text", value: chunk.delta};
+                    } else if (chunk.type === "response.image_generation_call.in_progress") {
+                        yield {type: "file", name: chunk.item_id, url: "/placeholder.png", inline: true};
+                    } else if (chunk.type === "response.image_generation_call.partial_image") {
+                        yield {
+                            type: "fileUpdate",
+                            name: chunk.item_id,
+                            url: `data:image/png;base64,${chunk.partial_image_b64}`
+                        }
+                    } else if (chunk.type === "response.output_item.done" && chunk.item.type === "image_generation_call") {
+                        yield {
+                            type: "fileUpdate",
+                            name: chunk.item.id,
+                            url: `data:image/png;base64,${chunk.item.result}`
+                        }
                     }
                     events.push(chunk);
 
@@ -144,7 +157,10 @@ export class MicrosoftFoundryService implements Service {
                 throw e;
             }
 
-            yield {metadata: zMetadata.parse(events.filter(e => e.type !== "response.output_text.delta" && e.type !== "response.reasoning_summary_text.delta"))}
+            yield {
+                type: "metadata",
+                value: zMetadata.parse(events.filter(e => e.type !== "response.output_text.delta" && e.type !== "response.reasoning_summary_text.delta"))
+            }
         }
 
         /************************* COMPLETIONS API **************************/
@@ -187,7 +203,7 @@ export class MicrosoftFoundryService implements Service {
                 throw e;
             }
 
-            yield {metadata: zMetadata.parse(chunks)};
+            yield {type: "metadata", value: zMetadata.parse(chunks)};
         }
     }
 

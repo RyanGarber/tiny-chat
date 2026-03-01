@@ -5,6 +5,7 @@ export const zConfig = z.object({
     service: z.string(),
     model: z.string(),
     args: z.any().optional(),
+    schema: z.any().optional(),
 })
 
 export type zConfigType = z.infer<typeof zConfig>;

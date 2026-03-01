@@ -252,7 +252,7 @@ export function reloadConfig() {
     try {
         setConfig(lastConfig ?? {
             service: fallbackService!.name,
-            model: fallbackService!.models[0]
+            model: fallbackService!.models[0].name
         });
         console.log("Loaded config:", lastConfig, "(last config:", lastConfig, ", fallback service:", fallbackService, ")");
     } catch {

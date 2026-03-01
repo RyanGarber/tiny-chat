@@ -1,6 +1,6 @@
 import {useChats} from "@/managers/chats.tsx";
 import {reloadConfig} from "@/managers/messaging.tsx";
-import {services, StreamEnd} from "@/services";
+import {Model, services, zSpecialPart} from "@/services";
 import {create} from "zustand";
 import {format} from "timeago.js";
 import {subscribeWithSelector} from "zustand/middleware";
@@ -16,7 +16,7 @@ interface Services {
 
     services: {
         name: string;
-        models: string[];
+        models: Model[];
     }[];
     findService: (name: string) => ReturnType<typeof services.find>;
     findServiceWithModel: (name: string) => Promise<ReturnType<typeof services.find>>;
@@ -38,7 +38,7 @@ export const useServices = create(
         findService: (name) => services.find((s) => s.name === name),
         findServiceWithModel: async (name: string) => {
             for (const service of get().services) {
-                if (service.models.includes(name)) {
+                if (service.models.find((m) => m.name === name)) {
                     return get().findService(service.name);
                 }
             }
@@ -228,9 +228,16 @@ Do NOT include your own label in your response – the system will add it automa
                         }
 
                         try {
-                            const streamEnd = StreamEnd.parse(part);
-                            if (streamEnd.metadata) {
-                                reply.metadata = streamEnd.metadata;
+                            const specialPart = zSpecialPart.parse(part);
+                            if (specialPart.type === "metadata") {
+                                reply.metadata = specialPart.value;
+                            } else if (specialPart.type === "fileUpdate") {
+                                const file = reply.data.filter(p => p.type === "file").find(p => p.name === specialPart.name);
+                                if (file) {
+                                    console.log("Updating URL of file:", file.name, "from URL:", file.url, "to:", specialPart.url);
+                                    file.url = specialPart.url;
+                                    console.log("Updated file (local):", file.url, "(global):", reply.data.filter(p => p.type === "file").find(p => p.name === specialPart.name)?.url);
+                                }
                             }
                         } catch {
                             // Not a metadata part – ignore

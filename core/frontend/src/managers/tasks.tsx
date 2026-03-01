@@ -37,6 +37,7 @@ export const useTasks = create<Tasks>((set, get) => ({
 
     tasks: {},
     addTask: (id, name, details, progress = 0) => {
+        if (get().tasks[id]) return;
         set({tasks: {...get().tasks, [id]: {id, name, details, progress}}})
     },
     updateTask: (id, progress, details, name) => {

@@ -29,7 +29,11 @@ export default function Sidebar() {
     useEffect(() => {
         if (isSessionPending || !session?.user) return;
         if (window.location.hash.length < 2) window.location.hash = "#/";
-        if (!window.location.hash.startsWith("#/app/")) void setCurrentChat(location.slice(1) || null, false);
+        if (!window.location.hash.startsWith("#/app/")) {
+            if (currentChat?.id ?? "" !== location.slice(1)) {
+                void setCurrentChat(location.slice(1) || null, false);
+            }
+        }
     }, [location, isSessionPending, session?.user?.id]);
 
     const closeAfter = (action?: () => void) => {
@@ -37,8 +41,8 @@ export default function Sidebar() {
         if (isMobile) setSidebarOpen(false);
     }
 
-    const isTempActive = temporary || currentChat?.temporary;
-    const isIncogActive = incognito || currentChat?.incognito;
+    const isTemporary = temporary || currentChat?.temporary;
+    const isIncognito = incognito || currentChat?.incognito;
 
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedQuery] = useDebouncedValue(searchQuery, 400);
@@ -104,15 +108,15 @@ export default function Sidebar() {
                          flex={1} bdrs="md"/>
                 <Tooltip label="Temporary" color="gray" position="right">
                     <ActionIcon size={32} variant="subtle" c="dimmed" bdrs="md" className="nav-link-like filled"
-                                onClick={() => closeAfter(() => void setTemporary(!isTempActive))}
-                                data-active={isTempActive}>
+                                onClick={() => closeAfter(() => void setTemporary(!isTemporary))}
+                                data-active={isTemporary}>
                         <IconEyeOff size={22}/>
                     </ActionIcon>
                 </Tooltip>
                 <Tooltip label="Incognito" color="gray" position="right">
                     <ActionIcon size={32} variant="subtle" c="dimmed" bdrs="md" className="nav-link-like filled"
-                                onClick={() => closeAfter(() => void setIncognito(!isIncogActive))}
-                                data-active={isIncogActive}>
+                                onClick={() => closeAfter(() => void setIncognito(!isIncognito))}
+                                data-active={isIncognito}>
                         <IconUserOff size={22}/>
                     </ActionIcon>
                 </Tooltip>

@@ -93,7 +93,7 @@ const components: Components = {
 const LATEX_CHAR_RE = /[\\^_{}]/;
 
 const filter = (text: string) => {
-    if (text.split("\n")[0].startsWith("[assistant")) text = text.slice(text.indexOf("\n") + 1);
+    if (text.split("\n")[0].match(/^\[(user|assistant)/)) text = text.slice(text.indexOf("\n") + 1);
 
     text = text.replace(/^::>:: (.*)$/gm, "> ::>:: $1");
 

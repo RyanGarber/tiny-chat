@@ -159,6 +159,7 @@ export function snippetText(text: string, query: string, window: number = 160): 
 }
 
 export function scrubText(text: string, maxLength: number = -1): string {
+    if (text.split("\n")[0].match(/^\[(user|assistant)/)) text = text.slice(text.indexOf("\n") + 1);
     text = text
         .replace(/::>::\s?(.*)/g, "$1") // Remove quote markers
         .replace(/!\[.*?]\(.*?\)/g, "") // Remove images

@@ -117,14 +117,14 @@ export const useChats = create(
         temporary: false,
         setTemporary: async (temporary) => {
             const {currentChat, setCurrentChat} = useChats.getState();
-            if (currentChat) await setCurrentChat(null, false, false);
+            if (currentChat) await setCurrentChat(null);
             set({temporary});
         },
 
         incognito: false,
         setIncognito: async (incognito) => {
             const {currentChat, setCurrentChat} = useChats.getState();
-            if (currentChat) await setCurrentChat(null, false, false);
+            if (currentChat) await setCurrentChat(null);
             set({incognito});
         },
     })),

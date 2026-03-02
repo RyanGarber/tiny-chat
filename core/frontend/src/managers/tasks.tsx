@@ -88,7 +88,6 @@ export const useTasks = create<Tasks>((set, get) => ({
         const update = get().tauriUpdate as typeof Update | null;
         set({tauriUpdate: {...get().tauriUpdate!, started: true}});
 
-        let downloaded = false;
         let current = 0;
         let total: number | undefined;
 
@@ -102,17 +101,10 @@ export const useTasks = create<Tasks>((set, get) => ({
                 current += event.data.chunkLength;
                 if (total) updateTask("update", current / total * 100);
             }
-            if (event.event === "Finished") {
-                (async () => {
-                    await removeTask("update");
-                    downloaded = true; // let animation play out
-                })();
-            }
         });
 
-        while (!downloaded) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
+        await removeTask("update");
+
         await (await import("@tauri-apps/plugin-process")).relaunch();
     },
     updateProgress: null

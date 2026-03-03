@@ -1,6 +1,5 @@
 import {create} from "zustand";
 import {subscribeWithSelector} from "zustand/middleware";
-import {useServices} from "@/managers/services.tsx";
 import {useSettings} from "@/managers/settings.tsx";
 import {extractText, scrubText, trpc} from "@/utils.ts";
 import {useTasks} from "@/managers/tasks.tsx";
@@ -27,7 +26,7 @@ export const useEmbeddings = create(subscribeWithSelector<Embeddings>((_, get) =
         }
 
         if (needed.messages.length) {
-            console.log(`Generating embeddings for ${needed.messages.length} ${needed.summaries.length === 1 ? "message" : "messages"}`);
+            console.log(`Generating embeddings for ${needed.messages.length} ${needed.messages.length === 1 ? "message" : "messages"}`);
             updateTask("embeddings", 0, `For ${needed.messages.length} new ${needed.messages.length === 1 ? "message" : "messages"}`);
             for (let i = 0; i < needed.messages.length; i += 100) {
                 const messages = needed.messages.slice(i, i + 100);
@@ -71,9 +70,6 @@ export async function embed(...texts: string[]) {
     const config = useSettings.getState().getEmbeddingConfig();
     if (!config) return null;
 
-    const service = useServices.getState().findService(config.service);
-    if (!service) return null;
-
-    console.log("Calling embedding model: ", config);
-    return await service.embed(texts, config);
+    console.log("Calling embedding model via backend:", config);
+    return await trpc.services.embed.mutate({texts, config});
 }

@@ -18,6 +18,7 @@ import context from "./routes/context.ts";
 import messages from "./routes/messages.ts";
 import sessions from "./routes/sessions.ts";
 import embeddings from "./routes/embeddings.ts";
+import services from "./routes/services.ts";
 
 config({path: resolve(fileURLToPath(import.meta.url), "../../../.env")});
 
@@ -43,6 +44,7 @@ const trpc = router({
     messages,
     sessions,
     embeddings,
+    services,
 });
 export type tRPC = typeof trpc;
 
@@ -119,7 +121,6 @@ export const auth = betterAuth({
     plugins: [anonymous({
         onLinkAccount: async ({anonymousUser, newUser}) => {
             console.log(`Transferring data from anonymous user ${anonymousUser.user.id} to new user ${newUser.user.id}`)
-            await globalThis.prisma
             await globalThis.prisma.user.update({
                 where: {id: newUser.user.id},
                 data: {settings: {...anonymousUser.user.settings, ...newUser.user.settings}}
@@ -159,7 +160,7 @@ const server = createServer((req, res) => {
     );
     res.setHeader(
         "Access-Control-Allow-Headers",
-        "Content-Type, Authorization, X-Requested-With, Accept",
+        "Content-Type, Authorization, X-Requested-With, Accept, tRPC-Accept",
     );
     res.setHeader("Access-Control-Allow-Credentials", "true");
 

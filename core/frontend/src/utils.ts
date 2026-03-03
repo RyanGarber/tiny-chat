@@ -1,11 +1,11 @@
 import {type tRPC} from "@tiny-chat/core-backend/server";
-import {createTRPCClient, httpBatchLink} from "@trpc/client";
+import {createTRPCClient, httpBatchStreamLink} from "@trpc/client";
 import {Children, isValidElement, ReactNode, useEffect, useRef, useState} from "react";
 import {createAuthClient} from "better-auth/react";
 import {anonymousClient, inferAdditionalFields} from "better-auth/client/plugins";
 import superjson from "superjson";
 import {auth as serverAuth} from "@tiny-chat/core-backend/server.ts";
-import {zDataType} from "@tiny-chat/core-backend/types.ts";
+import {zData} from "@tiny-chat/core-backend/types.ts";
 import {notifications} from "@mantine/notifications";
 import {CodeHighlightAdapter} from "@mantine/code-highlight";
 import hljs from "highlight.js";
@@ -22,7 +22,7 @@ export const webUrl = import.meta.env.DEV ? `http://${__TAURI_DEV_HOST__ ?? "loc
 
 export const trpc = createTRPCClient<tRPC>({
     links: [
-        httpBatchLink({
+        httpBatchStreamLink({
             url: import.meta.env.DEV
                 ? `http://${__TAURI_DEV_HOST__ ?? "localhost"}:${import.meta.env.VITE_DATA_PORT}${import.meta.env.VITE_DATA_PATH_TRPC}`
                 : `${import.meta.env.VITE_DATA_URL}${import.meta.env.VITE_DATA_PATH_TRPC}`,
@@ -84,12 +84,12 @@ export function alert(type: "info" | "warning" | "error", message: string) {
     notifications.show({message, color});
 }
 
-export function extractThoughts(data: zDataType) {
+export function extractThoughts(data: zData) {
     return data.filter((part) => part.type === "thought").map(t => t.value);
 }
 
 // TODO - added 'hidden' field for file heading; moved to onSend... will we want to keep it?
-export function extractText(data: zDataType, includeHidden = false) {
+export function extractText(data: zData, includeHidden = false) {
     let textParts: string[] = [];
     for (const part of data) {
         if (part.type === "text" && (includeHidden || !part.hidden)) {

@@ -1,58 +1,52 @@
-import {Model, ModelArg, Service, Stream} from "@/services/index.ts";
-import {Content, GoogleGenAI, Part, SendMessageParameters, ThinkingLevel} from "@google/genai";
-import {MessageUnomitted, zConfigType, zDataType, zMetadata} from "@tiny-chat/core-backend/types.ts";
-import {useSettings} from "@/managers/settings.tsx";
-import {Author} from "@tiny-chat/core-backend/generated/prisma/enums.ts";
+import type {MessageUnomitted, Model, ModelArg, Stream, zConfig, zData} from "../types.ts";
+import {zMetadata} from "../types.ts";
+import {type Content, GoogleGenAI, type Part, type SendMessageParameters, ThinkingLevel} from "@google/genai";
+import {Author} from "../generated/prisma/enums.ts";
+import {type ServiceRunner, SettingsError} from "./index.ts";
 
-export class GoogleAiStudioService implements Service {
+export class GoogleAiStudio implements ServiceRunner {
     name = "google-ai-studio";
-    apiKeyFormat = "api-key";
+    settings = ["apiKey"];
 
-    async getModels(): Promise<Model[]> {
-        const apiKey = useSettings.getState().getApiKey(this.name);
-        if (!apiKey) return [];
+    async getModels(settings: any): Promise<Model[]> {
+        if (!settings.apiKey) return [];
 
         const models = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models?key=${settings.apiKey}`,
         );
 
-        return (await models.json()).models.map((m: any) => ({
-            name: m.name.split("/").pop(),
-            features: [...(m.supportedGenerationMethods.includes("generateContent") ? ["generate" as const] : []), ...(m.supportedGenerationMethods.includes("embedContent") ? ["embed" as const] : [])],
-        } satisfies Model));
+        return (await models.json()).models.map((m: any) => {
+            const args: ModelArg[] = [
+                {name: "temperature", type: "range", min: 0, max: 2, step: 0.05, default: 1},
+                ...(m.name.includes("gemini-2.5") ? [
+                    {
+                        name: "thinking",
+                        type: "list",
+                        values: ["off", "low", "medium", "high", "auto"],
+                        default: "auto"
+                    } as ModelArg
+                ] : []),
+                ...(m.name.includes("gemini-3") ? [
+                    {
+                        name: "thinking",
+                        type: "list",
+                        values: ["minimal", "low", "medium", "high", "auto"],
+                        default: "auto"
+                    } as ModelArg
+                ] : []),
+            ];
+            return {
+                name: m.name.split("/").pop(),
+                features: [...(m.supportedGenerationMethods.includes("generateContent") ? ["generate" as const] : []), ...(m.supportedGenerationMethods.includes("embedContent") ? ["embed" as const] : [])],
+                args
+            } satisfies Model;
+        });
     }
 
-    getArgs(model: string): ModelArg[] {
-        return [
-            {name: "temperature", type: "range", min: 0, max: 2, step: 0.05, default: 1},
-            ...(model.includes("gemini-2.5")) ? [
-                {
-                    name: "thinking",
-                    type: "list",
-                    values: ["off", "low", "medium", "high", "auto"],
-                    default: "auto"
-                } as ModelArg
-            ] : [],
-            ...(model.includes("gemini-3")) ? [
-                {
-                    name: "thinking",
-                    type: "list",
-                    values: ["minimal", "low", "medium", "high", "auto"],
-                    default: "auto"
-                } as ModelArg
-            ] : [],
-        ]
-    }
+    async* generate(settings: any, instruction: string, context: MessageUnomitted[], config: zConfig, abortSignal: AbortSignal): Stream {
+        if (!settings.apiKey) throw new SettingsError();
 
-    getFeatures(_model: string): string[] {
-        return ["schema"];
-    }
-
-    async* generate(instruction: string, context: MessageUnomitted[], config: zConfigType, abortSignal: AbortSignal): Stream {
-        const apiKey = useSettings.getState().getApiKey(this.name);
-        if (!apiKey) return;
-
-        const client = new GoogleGenAI({apiKey});
+        const client = new GoogleGenAI({apiKey: settings.apiKey});
 
         const boxMessage = (m: MessageUnomitted): Content => {
             const parts: Part[] = [];
@@ -97,7 +91,7 @@ export class GoogleAiStudioService implements Service {
         if (config.model.startsWith("gemini-") && !config.model.includes("-image")) {
             params.config.systemInstruction = instruction;
             params.config.thinkingConfig = {includeThoughts: true};
-            params.config.tools = [{googleSearch: {}, codeExecution: {}}]; // TODO - file_search
+            params.config.tools = [{googleSearch: {}, codeExecution: {}}];
 
             if (config.model.includes("-2.5")) {
                 params.config.thinkingConfig.thinkingBudget = ({
@@ -118,7 +112,7 @@ export class GoogleAiStudioService implements Service {
             }
         } else {
             console.log("Model doesn't support system instructions; injecting into history...");
-            (context[0].data as zDataType).unshift({type: "text", value: instruction});
+            (context[0].data as zData).unshift({type: "text", value: instruction});
         }
 
         const response = await client.chats.create({
@@ -127,8 +121,6 @@ export class GoogleAiStudioService implements Service {
         }).sendMessageStream(params);
 
         const parts: Part[] = [];
-
-        let lastYield = performance.now();
 
         try {
             for await (const chunk of response) {
@@ -152,27 +144,19 @@ export class GoogleAiStudioService implements Service {
                     }
                     parts.push(part);
                 }
-
-                const now = performance.now();
-                if (now - lastYield > 16) {
-                    await new Promise<void>(r => setTimeout(r, 0));
-                    lastYield = performance.now();
-                }
             }
         } catch (e: any) {
             if (e?.name?.includes("AbortError")) return;
             throw e;
         }
 
-        // TODO - combine deltas for efficiency (less needed than foundry but still)
         yield {type: "metadata", value: zMetadata.parse(parts)};
     }
 
-    async embed(texts: string[], config: zConfigType): Promise<number[][]> {
-        const apiKey = useSettings.getState().getApiKey(this.name);
-        if (!apiKey) return [];
+    async embed(settings: any, texts: string[], config: zConfig): Promise<number[][]> {
+        if (!settings.apiKey) return [];
 
-        const client = new GoogleGenAI({apiKey});
+        const client = new GoogleGenAI({apiKey: settings.apiKey});
 
         const response = await client.models.embedContent({
             model: config.model,

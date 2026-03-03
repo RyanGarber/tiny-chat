@@ -1,55 +1,55 @@
-import {Model, ModelArg, Service, Stream} from "@/services/index.ts";
-import {MessageUnomitted, zConfigType, zMetadata} from "@tiny-chat/core-backend/types.ts";
-import {useSettings} from "@/managers/settings.tsx";
-import {alert} from "@/utils.ts";
-
+import type {MessageUnomitted, Model, ModelArg, Stream, zConfig} from "../types.ts";
+import {zMetadata} from "../types.ts";
 import OpenAI, {APIUserAbortError} from "openai";
-import {
+import type {
     ResponseCreateParamsStreaming,
     ResponseInputContent,
     ResponseInputItem,
     ResponseStreamEvent
 } from "openai/resources/responses/responses";
-import {ChatCompletionContentPart} from "openai/resources/chat/completions";
-import {Author} from "@tiny-chat/core-backend/generated/prisma/enums.ts";
+import {type ChatCompletionContentPart} from "openai/resources/chat/completions";
+import {Author} from "../generated/prisma/enums.ts";
+import {type ServiceRunner, SettingsError} from "./index.ts";
 
-export class MicrosoftFoundryService implements Service {
+export class MicrosoftFoundry implements ServiceRunner {
     name = "microsoft-foundry";
-    apiKeyFormat = "resource;project;api-key";
+    settings = ["resourceId", "projectId", "apiKey"];
 
-    async getModels(): Promise<Model[]> {
-        const {resource, project, apiKey} = this.getKeys();
-        if (!resource || !project || !apiKey) return [];
-        const deployments = await fetch(`https://${resource}.services.ai.azure.com/api/projects/${project}/deployments?api-version=v1`,
-            {headers: {"Authorization": `Bearer ${apiKey}`}});
+    async getModels(settings: any): Promise<Model[]> {
+        if (!settings.resourceId || !settings.projectId || !settings.apiKey) return [];
+
+        const deployments = await fetch(`https://${settings.resourceId}.services.ai.azure.com/api/projects/${settings.projectId}/deployments?api-version=v1`,
+            {headers: {"Authorization": `Bearer ${settings.apiKey}`}});
+
         const json = await deployments.json();
         console.log("Deployments:", json);
-        return json.value.map((d: any) => ({
-            name: d.name,
-            features: [...(d.capabilities.chat_completion ? ["generate" as const] : [])]
-        } satisfies Model));
+
+        return json.value.map((d: any) => {
+            const args: ModelArg[] = [
+                {name: "temperature", type: "range", min: 0, max: 2, step: 0.05, default: 1},
+                ...(d.name.includes("gpt-5") || d.name.includes("reasoning")) ? [
+                    {
+                        name: "reasoning",
+                        type: "list" as const,
+                        values: ["low", "medium", "high"],
+                        default: "medium"
+                    },
+                ] : []
+            ];
+            return {
+                name: d.name,
+                features: [...(d.capabilities.chat_completion ? ["generate" as const] : [])],
+                args
+            } satisfies Model;
+        });
     }
 
-    getArgs(model: string): ModelArg[] {
-        return [
-            {name: "temperature", type: "range", min: 0, max: 2, step: 0.05, default: 1},
-            ...(model.includes("gpt-5") || model.includes("reasoning")) ? [
-                {
-                    name: "reasoning",
-                    type: "list",
-                    values: ["low", "medium", "high"],
-                    default: "medium"
-                } as ModelArg,
-            ] : []
-        ];
-    }
+    async* generate(settings: any, instruction: string, context: MessageUnomitted[], config: zConfig, abortSignal: AbortSignal): Stream {
+        if (!settings.resourceId || !settings.projectId || !settings.apiKey) throw new SettingsError();
 
-    async* generate(instruction: string, context: MessageUnomitted[], config: zConfigType, abortSignal: AbortSignal): Stream {
-        const {resource, apiKey} = this.getKeys();
         const azure = new OpenAI({
-            baseURL: `https://${resource}.openai.azure.com/openai/v1/`,
-            apiKey,
-            dangerouslyAllowBrowser: true
+            baseURL: `https://${settings.resourceId}.openai.azure.com/openai/v1/`,
+            apiKey: settings.apiKey,
         });
 
         if (config.schema) instruction += "\n\nSchema: " + JSON.stringify(config.schema);
@@ -61,7 +61,6 @@ export class MicrosoftFoundryService implements Service {
                 model: config.model,
                 stream: true,
                 temperature: config.args.temperature as number,
-                // TODO - would enable tools:image_generation, but it's unavailable on standard foundry accounts and causes 400 on all models
                 input: [
                     {
                         type: "message",
@@ -110,8 +109,6 @@ export class MicrosoftFoundryService implements Service {
             let currentThought = "";
             let currentThoughtIndex = -1;
 
-            let lastYield = performance.now();
-
             try {
                 for await (const chunk of response) {
                     if (chunk.type.startsWith("response.reasoning_summary_text")) {
@@ -145,12 +142,6 @@ export class MicrosoftFoundryService implements Service {
                         }
                     }
                     events.push(chunk);
-
-                    const now = performance.now();
-                    if (now - lastYield > 16) {
-                        await new Promise<void>(r => setTimeout(r, 0));
-                        lastYield = performance.now();
-                    }
                 }
             } catch (e: any) {
                 if (e instanceof APIUserAbortError) return;
@@ -183,7 +174,6 @@ export class MicrosoftFoundryService implements Service {
             }, {signal: abortSignal});
 
             const chunks = [];
-            let lastYield = performance.now();
 
             try {
                 for await (const chunk of response) {
@@ -191,12 +181,6 @@ export class MicrosoftFoundryService implements Service {
                     const content = chunk.choices[0].delta.content;
                     yield {type: "text", value: content};
                     chunks.push(chunk);
-
-                    const now = performance.now();
-                    if (now - lastYield > 16) {
-                        await new Promise<void>(r => setTimeout(r, 0));
-                        lastYield = performance.now();
-                    }
                 }
             } catch (e: any) {
                 if (e instanceof APIUserAbortError) return;
@@ -207,14 +191,12 @@ export class MicrosoftFoundryService implements Service {
         }
     }
 
-    async embed(_texts: string[], _config: zConfigType): Promise<number[][]> {
+    async embed(_settings: any, _texts: string[], _config: zConfig): Promise<number[][]> {
         return [];
     }
 
-    getKeys() {
-        const apiKeyRaw = useSettings.getState().getApiKey(this.name);
-        const [resource, project, apiKey] = apiKeyRaw?.split(';') || [];
-        if (apiKeyRaw && (!resource || !project || !apiKey)) alert("warning", "Invalid Microsoft Foundry API key format");
+    parseKeys(keys: string | undefined) {
+        const [resource, project, apiKey] = keys?.split(';') || [];
         return {resource, project, apiKey};
     }
 }

@@ -1,13 +1,12 @@
 import {Select, SelectProps} from "@mantine/core";
-import {zConfig, zConfigType} from "@tiny-chat/core-backend/types.ts";
+import {ModelFeature, zConfig} from "@tiny-chat/core-backend/types.ts";
 import {useServices} from "@/managers/services.tsx";
-import {ModelFeature} from "@/services";
 
 interface ModelSelectProps extends SelectProps {
     feature: ModelFeature;
     optional?: boolean;
-    configValue: zConfigType | null | undefined;
-    onConfigChange: (value: zConfigType | null | undefined) => void;
+    configValue: zConfig | null | undefined;
+    onConfigChange: (value: zConfig | null | undefined) => void;
 }
 
 export default function ModelSelect({
@@ -27,7 +26,7 @@ export default function ModelSelect({
                 group: s.name,
                 items: s.models.filter(m => m.features.includes(feature)).sort((a, b) => a.name.localeCompare(b.name)).map((m) => ({
                     label: m.name,
-                    value: JSON.stringify({service: s.name, model: m.name} satisfies zConfigType),
+                    value: JSON.stringify({service: s.name, model: m.name} satisfies zConfig),
                 })),
             }))}
             value={configValue ? JSON.stringify({service: configValue.service, model: configValue.model}) : null}

@@ -33,7 +33,7 @@ import ModelSelect from "@/components/ModelSelect.tsx";
 
 export function Input(props: InputWrapperProps) {
     const {setEditor, config, setConfig, addFiles} = useMessaging();
-    const {findService, abortController} = useServices();
+    const {services, abortController} = useServices();
     const {shadow, setIsMessaging, isMessagingDisabled} = useLayout();
 
     const [isMultiline, setMultiline] = useState(false);
@@ -75,7 +75,8 @@ export function Input(props: InputWrapperProps) {
 
     const [_, updateSavedConfig] = useLocalStorage<string>({key: "config"});
 
-    const args = findService(config?.service ?? "")?.getArgs(config!.model) ?? null;
+    const args = services.find(s => s.name === config?.service)?.models.find(m => m.name === config?.model)?.args ?? [];
+
     const setArg = (name: string, value: any) => {
         if (!config) return;
         config.args = {...config.args, [name]: value};

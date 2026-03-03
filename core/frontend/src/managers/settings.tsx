@@ -4,9 +4,9 @@ import {subscribeWithSelector} from "zustand/middleware";
 import {auth, hljsThemeNames, trpc} from "@/utils.ts";
 import {useServices} from "@/managers/services.tsx";
 import {nprogress} from "@mantine/nprogress";
-import {zConfig, zConfigType} from "@tiny-chat/core-backend/types.ts";
+import {zConfig} from "@tiny-chat/core-backend/types.ts";
 
-export const zServices = z.record(z.string(), z.object({apiKey: z.string()})).optional();
+export const zServices = z.record(z.string(), z.any()).optional();
 export const zSettings = z.object({
     instructions: z.array(z.string()),
     memoryConfig: zConfig,
@@ -40,10 +40,10 @@ interface Settings {
     editInstruction: (index: number, value: string) => Promise<void>;
     removeInstruction: (index: number) => Promise<void>;
 
-    getMemoryConfig: () => zConfigType | undefined;
-    setMemoryConfig: (value: zConfigType | undefined) => Promise<void>;
-    getEmbeddingConfig: () => zConfigType | undefined;
-    setEmbeddingConfig: (value: zConfigType | undefined) => Promise<void>;
+    getMemoryConfig: () => zConfig | undefined;
+    setMemoryConfig: (value: zConfig | undefined) => Promise<void>;
+    getEmbeddingConfig: () => zConfig | undefined;
+    setEmbeddingConfig: (value: zConfig | undefined) => Promise<void>;
     getUseEmbeddingSearch: () => boolean;
     setUseEmbeddingSearch: (value: boolean) => Promise<void>;
 
@@ -52,8 +52,8 @@ interface Settings {
     getCodeTheme: () => string;
     setCodeTheme: (value: string) => Promise<void>;
 
-    getApiKey: (service: string) => string | undefined;
-    setApiKey: (service: string, value: string | undefined) => Promise<void>;
+    getServiceSetting: (service: string, key: string) => string | undefined;
+    setServiceSetting: (service: string, key: string, value: string | undefined) => Promise<void>;
 }
 
 export const useSettings = create(subscribeWithSelector<Settings>((set, get) => ({
@@ -153,14 +153,14 @@ export const useSettings = create(subscribeWithSelector<Settings>((set, get) => 
         await get().setSettings({codeTheme: value});
     },
 
-    getApiKey: (service) => {
-        return get().settings.services?.[service]?.apiKey;
+    getServiceSetting: (service, key) => {
+        return get().settings.services?.[service]?.[key];
     },
-    setApiKey: async (service, value) => {
+    setServiceSetting: async (service, key, value) => {
         nprogress.start();
         const services = get().settings.services ?? {};
-        if (value) services[service] = {apiKey: value};
-        else delete services[service];
+        if (value) services[service] = {...services[service], [key]: value};
+        else delete services[service]?.[key];
         await get().setSettings({services}, false);
         nprogress.set(50);
         await useServices.getState().fetchServices();

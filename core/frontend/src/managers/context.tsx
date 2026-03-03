@@ -5,7 +5,7 @@ import {useServices} from "@/managers/services.tsx";
 import {extractText, scrubText, trpc} from "@/utils.ts";
 import {z} from "zod";
 import {Author, MemoryCategory, MemoryStability} from "@tiny-chat/core-backend/generated/prisma/enums.ts";
-import {MessageOmitted, MessageUnomitted, zDataPart, zDataType} from "@tiny-chat/core-backend/types.ts";
+import {MessageOmitted, MessageUnomitted, zData, zDataPart} from "@tiny-chat/core-backend/types.ts";
 import {useEmbeddings} from "@/managers/embeddings.tsx";
 import {useTasks} from "@/managers/tasks.tsx";
 
@@ -71,10 +71,12 @@ export const useMemories = create(subscribeWithSelector<Context>((_, get) => {
             const config = getEmbeddingConfig();
             if (!config) return [];
 
-            const service = useServices.getState().findService(config.service);
-            if (!service) return [];
-
-            const embedding = (await service.embed([scrubText(extractText(message.data))], config))[0];
+            const embeddings = await trpc.services.embed.mutate({
+                texts: [scrubText(extractText(message.data))],
+                config
+            });
+            if (!embeddings?.length) return [];
+            const embedding = embeddings[0];
             const relevantMemories = await trpc.context.listRelevantMemories.mutate({embedding});
 
             console.log(`Using relevant facts:`, relevantMemories);
@@ -90,9 +92,6 @@ async function memorizeChat(chatId: string) {
     console.log("Memory config:", config);
     if (!config) return;
     config = useServices.getState().prepareConfig(config);
-
-    const service = useServices.getState().findService(config.service);
-    if (!service) return;
 
     const instructions =
         `You analyze conversations to produce long-term memory candidates.
@@ -118,7 +117,7 @@ Do NOT extract:
 
 Output valid JSON only.`;
 
-    const data: zDataType = [{
+    const data: zData = [{
         type: "text", value:
             `Task:
 1. Write a concise summary (max 5 sentences).
@@ -129,23 +128,25 @@ Output valid JSON only.`;
 
     config.schema = zSchema.toJSONSchema();
 
-    const messages: MessageUnomitted[] = [
-        ...(await trpc.messages.list.query({chatId})) as MessageUnomitted[],
-        ({author: Author.USER, data} satisfies Partial<MessageUnomitted>) as MessageUnomitted
-    ];
+    console.log(`Finding memories in chat ${chatId}`);
 
-    console.log(`Finding memories from ${messages.length} messages in chat ${chatId}`);
-
-    const abortController = new AbortController();
-    const stream = service.generate(instructions, messages, config, abortController.signal);
+    const stream = await trpc.services.generate.mutate({
+        instruction: instructions,
+        context: [
+            ...(await trpc.messages.list.query({chatId})),
+            ({author: Author.USER, data} satisfies Partial<MessageUnomitted>)
+        ],
+        config
+    });
 
     let response = "";
-    for await (const chunk of stream) {
-        console.log("Received chunk:", chunk);
+    for await (const event of stream) {
+        console.log("Received event:", event);
         try {
-            const dataPart = zDataPart.parse(chunk);
+            const dataPart = zDataPart.parse(event);
             if (dataPart.type === "text") response += dataPart.value;
-        } catch {
+        } catch (e) {
+            console.warn("Stream part is not zDataPart, this may be due to invalid model output", e);
             // Ignore metadata
         }
     }

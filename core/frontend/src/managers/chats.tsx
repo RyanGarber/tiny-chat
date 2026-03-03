@@ -2,7 +2,7 @@ import {create} from "zustand";
 import {reloadConfig, useMessaging} from "@/managers/messaging.tsx";
 import {subscribeWithSelector} from "zustand/middleware";
 import {trpc} from "@/utils.ts";
-import {Chat} from "@tiny-chat/core-backend/generated/prisma/client";
+import {Chat} from "@tiny-chat/core-backend/generated/prisma/client.ts";
 import {MessageOmitted} from "@tiny-chat/core-backend/types.ts";
 import {FolderListData} from "@tiny-chat/core-backend/routes/folders.ts";
 import {navigate} from "wouter/use-hash-location";

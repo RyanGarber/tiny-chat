@@ -1,11 +1,10 @@
 import {useChats} from "@/managers/chats.tsx";
 import {reloadConfig} from "@/managers/messaging.tsx";
-import {Model, services, zSpecialPart} from "@/services";
 import {create} from "zustand";
 import {format} from "timeago.js";
 import {subscribeWithSelector} from "zustand/middleware";
-import {MessageUnomitted, zConfigType, zDataPart, zDataPartType} from "@tiny-chat/core-backend/types.ts";
-import {alert, trpc} from "@/utils.ts";
+import {MessageUnomitted, Service, zConfig, zDataPart, zSpecialPart} from "@tiny-chat/core-backend/types.ts";
+import {trpc} from "@/utils.ts";
 import {useSettings} from "@/managers/settings.tsx";
 import {Author} from "@tiny-chat/core-backend/generated/prisma/enums.ts";
 import {useMemories} from "@/managers/context.tsx";
@@ -14,17 +13,12 @@ import {useTasks} from "@/managers/tasks.tsx";
 interface Services {
     init: () => Promise<void>;
 
-    services: {
-        name: string;
-        models: Model[];
-    }[];
-    findService: (name: string) => ReturnType<typeof services.find>;
-    findServiceWithModel: (name: string) => Promise<ReturnType<typeof services.find>>;
+    services: Service[];
 
     fetchServices: () => Promise<void>;
 
     abortController: AbortController | null;
-    prepareConfig: (config: zConfigType) => zConfigType;
+    prepareConfig: (config: zConfig) => zConfig;
     onMessage: (messageId: string) => Promise<void>;
 }
 
@@ -35,33 +29,14 @@ export const useServices = create(
         },
 
         services: [],
-        findService: (name) => services.find((s) => s.name === name),
-        findServiceWithModel: async (name: string) => {
-            for (const service of get().services) {
-                if (service.models.find((m) => m.name === name)) {
-                    return get().findService(service.name);
-                }
-            }
-        },
 
         fetchServices: async () => {
             useTasks.getState().addTask("models", "Finding models");
 
-            const available = [];
+            let available = await trpc.services.listServices.query();
 
-            for (let i = 0; i < services.length; i++) {
-                try {
-                    const availableModels = available.reduce((acc, s) => acc + s.models.length, 0);
-                    useTasks.getState().updateTask("models", i / services.length * 100, `Found ${availableModels} model${availableModels === 1 ? "" : "s"}`, `Finding models (${services[i].name})`);
-                    const models = await services[i].getModels();
-                    available.push({name: services[i].name, models});
-                } catch (e) {
-                    alert("error", `Failed to fetch models from ${services[i].name}`);
-                    throw e;
-                }
-            }
-
-            useTasks.getState().updateTask("models", 100, undefined, "Finding models");
+            const availableModels = available.reduce((acc, s) => acc + s.models.length, 0);
+            useTasks.getState().updateTask("models", 100, `Found ${availableModels} model${availableModels === 1 ? "" : "s"}`, "Finding models");
 
             console.log("Fetched services:", available);
             set({services: available});
@@ -71,9 +46,10 @@ export const useServices = create(
         },
 
         abortController: null,
-        prepareConfig: (config: zConfigType) => {
+        prepareConfig: (config: zConfig) => {
             const prepared = config;
-            for (const arg of get().findService(config.service)!.getArgs(config.model)!) {
+            const args = get().services.find(s => s.name === config.service)?.models.find(m => m.name === config.model)?.args ?? [];
+            for (const arg of args) {
                 if (prepared.args?.[arg.name] === undefined) {
                     console.log(`Using default value for arg ${arg.name}:`, arg.default)
                     if (prepared.args === undefined) prepared.args = {};
@@ -126,7 +102,7 @@ export const useServices = create(
                             return {
                                 ...m,
                                 metadata: omissions.get(m.id)?.metadata,
-                                data: m.data.flatMap((d): zDataPartType[] => {
+                                data: m.data.flatMap((d): zDataPart[] => {
                                     if (d.type === "file") {
                                         return [
                                             {type: "text", value: `Attached file #${fileNumber++} (${d.name}):`},
@@ -134,7 +110,6 @@ export const useServices = create(
                                         ];
                                     }
                                     if (d.type === "text") {
-                                        // TODO - embed model name in ::>:: tag and prepend "Earlier, [model] said:"
                                         let value = d.value.replace("::>::", ">");
                                         if (isFirstText) {
                                             let heading;
@@ -166,7 +141,7 @@ For news, software, and other time-sensitive topics, always search. If uncertain
 
 Stay scoped to the current topic. Do not introduce or revisit previous topics unless:
 * The user explicitly asks, or
-* a brief, optional follow-up question would feel natural to a human in this moment.
+* a brief, optional follow-up question would feel natural to a human in that moment.
 
 This conversation may include responses from multiple AI models. Previous assistant messages are labeled in the format:
 
@@ -181,8 +156,7 @@ Do NOT include your own label in your response – the system will add it automa
                             + `Additionally, the user provided the following instructions:\n`
                             + `${userInstructions.join("\n")}` : "");
 
-                    const service = useServices.getState().findService(reply.config.service)!;
-                    const preparedConfig = await get().prepareConfig(reply.config);
+                    const preparedConfig = get().prepareConfig(reply.config);
 
                     console.log("Using instructions:", instructions, "context:", context, "and args:", preparedConfig.args);
 
@@ -190,7 +164,14 @@ Do NOT include your own label in your response – the system will add it automa
                     abortController.signal.addEventListener("abort", () => reply.data.push({type: "abort"}));
                     set({abortController});
 
-                    const stream = service.generate(instructions, context, preparedConfig, abortController.signal);
+                    const stream = await trpc.services.generate.mutate(
+                        {
+                            instruction: instructions,
+                            context: context.map(m => ({author: m.author, data: m.data})),
+                            config: preparedConfig,
+                        },
+                        {signal: abortController.signal},
+                    );
 
                     let lastFlush = 0;
                     const flush = async () => {
@@ -201,9 +182,11 @@ Do NOT include your own label in your response – the system will add it automa
                     };
 
                     let hasText = false;
-                    for await (const part of stream) {
+                    for await (const event of stream) {
+                        console.log("Received event:", event);
+
                         try {
-                            const dataPart = zDataPart.parse(part);
+                            const dataPart = zDataPart.parse(event);
                             if (dataPart.type === "abort") {
                                 console.log("Received abort");
                                 reply.data.push(dataPart);
@@ -214,7 +197,7 @@ Do NOT include your own label in your response – the system will add it automa
                                 reply.state.thinking = false;
                                 reply.state.generating = true;
                                 if (!hasText) {
-                                    dataPart.value = dataPart.value.trimStart(); // fix preceding whitespace in some model output
+                                    dataPart.value = dataPart.value.trimStart();
                                     hasText = true;
                                 }
                                 const last = reply.data[reply.data.length - 1];
@@ -228,7 +211,7 @@ Do NOT include your own label in your response – the system will add it automa
                         }
 
                         try {
-                            const specialPart = zSpecialPart.parse(part);
+                            const specialPart = zSpecialPart.parse(event);
                             if (specialPart.type === "metadata") {
                                 reply.metadata = specialPart.value;
                             } else if (specialPart.type === "fileUpdate") {
@@ -259,7 +242,7 @@ Do NOT include your own label in your response – the system will add it automa
     })),
 );
 
-async function prepare(previousId: string, config: zConfigType): Promise<MessageUnomitted> {
+async function prepare(previousId: string, config: zConfig): Promise<MessageUnomitted> {
     const messages = useChats.getState().messages;
     const existing = messages.find((m) => m.previousId === previousId);
     let reply = !existing

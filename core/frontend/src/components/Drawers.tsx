@@ -1,5 +1,6 @@
 import {
     ActionIcon,
+    Box,
     Button,
     CheckboxCard,
     CheckboxIndicator,
@@ -23,7 +24,7 @@ import {codeThemes, themes, useSettings} from "@/managers/settings.tsx";
 import {alert, auth, consumeLabel, hashText, openExternal, trpc, webUrl} from "@/utils.ts";
 import {useDisclosure, UseDisclosureReturnValue} from "@mantine/hooks";
 import {useLayout} from "@/managers/layout.tsx";
-import {zConfigType} from "@tiny-chat/core-backend/types.ts";
+import {zConfig} from "@tiny-chat/core-backend/types.ts";
 import ModelSelect from "@/components/ModelSelect.tsx";
 
 export default function Drawers(
@@ -53,8 +54,8 @@ export default function Drawers(
         setTheme,
         getCodeTheme,
         setCodeTheme,
-        getApiKey,
-        setApiKey
+        getServiceSetting,
+        setServiceSetting
     } = useSettings();
     const {services} = useServices();
     const {setGestureBlock} = useLayout();
@@ -93,7 +94,7 @@ export default function Drawers(
     const [cloneInterval, setCloneInterval] = useState<NodeJS.Timeout>();
     const [addingInstruction, setAddingInstruction] = useState(false);
 
-    const [embedChange, setEmbedChange] = useState<zConfigType | null>(null);
+    const [embedChange, setEmbedChange] = useState<zConfig | null>(null);
     const [isEmbedConfirmOpen, {open: openEmbedConfirm, close: closeEmbedding}] = useDisclosure();
 
     return (
@@ -291,17 +292,24 @@ export default function Drawers(
                     </Tabs.Panel>
                     <Tabs.Panel value="apiKeys">
                         <Stack>
-                            {services.map((service) => (
-                                <TextInput key={service.name}
-                                           label={service.name}
-                                           styles={consumeLabel}
-                                           defaultValue={getApiKey(service.name) || ""}
-                                           onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-                                           onBlur={async (e) => {
-                                               if (e.target.value === (getApiKey(service.name) || "")) return;
-                                               await setApiKey(service.name, e.target.value);
-                                               alert("info", "API key saved");
-                                           }}/>
+                            {services.filter(s => s.settings.length).map((service) => (
+                                <Box key={service.name}>
+                                    <Text size="sm">{service.name}</Text>
+                                    <Stack mt={5}>
+                                        {service.settings.map(s => (
+                                            <TextInput key={service.name + s}
+                                                       label={s}
+                                                       styles={consumeLabel}
+                                                       defaultValue={getServiceSetting(service.name, s) || ""}
+                                                       onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+                                                       onBlur={async (e) => {
+                                                           if (e.target.value === (getServiceSetting(service.name, s) || "")) return;
+                                                           await setServiceSetting(service.name, s, e.target.value);
+                                                           alert("info", "Service saved");
+                                                       }}/>
+                                        ))}
+                                    </Stack>
+                                </Box>
                             ))}
                         </Stack>
                     </Tabs.Panel>

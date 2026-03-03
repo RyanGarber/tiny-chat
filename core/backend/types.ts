@@ -1,6 +1,34 @@
 import {z} from "zod";
 import {type Message as PrismaMessage} from "./generated/prisma/client.ts";
 
+export type ModelFeature = "generate" | "embed";
+
+export type ModelArg = {
+    type: "list";
+    name: string;
+    values: string[];
+    default: string;
+} | {
+    type: "range";
+    name: string;
+    min: number;
+    max: number;
+    step: number;
+    default: number;
+};
+
+export interface Model {
+    name: string;
+    features: ModelFeature[];
+    args: ModelArg[];
+}
+
+export interface Service {
+    name: string;
+    settings: string[];
+    models: Model[];
+}
+
 export const zConfig = z.object({
     service: z.string(),
     model: z.string(),
@@ -8,7 +36,7 @@ export const zConfig = z.object({
     schema: z.any().optional(),
 })
 
-export type zConfigType = z.infer<typeof zConfig>;
+export type zConfig = z.infer<typeof zConfig>;
 
 export const zDataPart =
     z.discriminatedUnion("type", [
@@ -49,20 +77,38 @@ export const zDataPart =
         })
     ]);
 
-export type zDataPartType = z.infer<typeof zDataPart>;
+export type zDataPart = z.infer<typeof zDataPart>;
 
 export const zData = z.array(zDataPart);
 
-export type zDataType = z.infer<typeof zData>;
+export type zData = z.infer<typeof zData>;
 
 export const zMetadata = z.any();
 
-export type zMetadataType = z.infer<typeof zMetadata>;
+export type zMetadata = z.infer<typeof zMetadata>;
+
+// ── Stream / special part types ───────────────────────────────────
+
+export const zSpecialPart = z.discriminatedUnion("type", [
+    z.object({
+        type: z.literal("fileUpdate"),
+        name: z.string(),
+        url: z.string()
+    }),
+    z.object({
+        type: z.literal("metadata"),
+        value: zMetadata
+    }),
+]);
+export type zSpecialPart = z.infer<typeof zSpecialPart>;
+
+export type StreamPart = zDataPart | zSpecialPart;
+export type Stream = AsyncGenerator<StreamPart>;
 
 export type MessageUnomitted = PrismaMessage & {
-    config: zConfigType;
-    data: zDataType;
-    metadata: zMetadataType;
+    config: zConfig;
+    data: zData;
+    metadata: zMetadata;
     state: {
         any: boolean;
         thinking: boolean;
@@ -71,7 +117,7 @@ export type MessageUnomitted = PrismaMessage & {
 }
 
 export type MessageOmission = {
-    metadata: zMetadataType
+    metadata: zMetadata
 }
 
 export type MessageOmitted = Omit<MessageUnomitted, "metadata">

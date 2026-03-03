@@ -87,9 +87,6 @@ const components: Components = {
     }
 };
 
-// \(...\) is only treated as math when the content contains at least one
-// unambiguous LaTeX character (\  ^  _  {  }), so prose like \(see Appendix A\)
-// or \(n + 1\) is left alone while \(\frac{x}{2}\) and \(x^2\) are converted.
 const LATEX_CHAR_RE = /[\\^_{}]/;
 
 const filter = (text: string) => {
@@ -97,48 +94,18 @@ const filter = (text: string) => {
 
     text = text.replace(/^::>:: (.*)$/gm, "> ::>:: $1");
 
-    // Single ordered alternation — alternatives are tried left-to-right at every
-    // position, so code is consumed first and never examined for math delimiters.
-    //
-    // Group 1 — verbatim code (returned unchanged):
-    //   `{3,}…`{3,}   fenced code blocks (triple+ backticks)
-    //   ``…``          double-backtick inline code  e.g. ``$HOME``
-    //   `…`            single-backtick inline code  e.g. `$x`
-    //
-    // Group 2 — display math  $$…$$
-    //   Opening $$ must be at the START of a line (^ with multiline flag).
-    //   This prevents mid-line pairs like { left: '$$', right: '$$' } matching.
-    //
-    // Group 3 — display math  \[…\]
-    //   Same line-anchor rule; \[ never appears for any other purpose in prose.
-    //
-    // Group 4 — inline math  $…$
-    //   Opening $:  (?<![$\\])   not preceded by $ (avoids $$) or \ (avoids \$)
-    //               (?![\s\d])   not followed by space or digit (currency: $300)
-    //   Content:    [^$\n]+?     lazy; no $ or newline
-    //   Closing $:  (?<!\s)      not preceded by whitespace
-    //               (?![$a-zA-Z_\d])  not followed by $, letter, _, or digit
-    //                                 (shell vars: $HOME/$PROJECT close on wrong $)
-    //
-    // Group 5 — inline math  \(…\)
-    //   Heuristic: content must contain a LaTeX-specific character (\^_{})
-    //   so that editorial parentheses like \(see below\) are left untouched.
     text = text.replace(
         /(`{3,}[\s\S]*?`{3,}|``[^`\n]*``|`[^`\n]+`)|^[ \t]*\$\$([\s\S]*?)\$\$[ \t]*$|^[ \t]*\\\[([\s\S]*?)\\\][ \t]*$|(?<![$\\])\$(?![\s\d])([^$\n]+?)(?<!\s)\$(?![$a-zA-Z_\d])|(?<!\\)\\\(([^\n]*?)\\\)/gm,
         (match, code, displayDollar, displayBracket, inlineDollar, inlineParen) => {
-            // Group 1 — return code spans/fences verbatim
             if (code !== undefined) return match;
 
-            // Groups 2 & 3 — display math
             const displayMath = displayDollar ?? displayBracket;
             if (displayMath !== undefined)
                 return "```math\n" + displayMath.trim() + "\n```";
 
-            // Group 4 — inline $…$ math
             if (inlineDollar !== undefined)
                 return "`" + MATH_MARKER + inlineDollar + "`";
 
-            // Group 5 — inline \(…\) math, guarded by heuristic
             if (inlineParen !== undefined && LATEX_CHAR_RE.test(inlineParen))
                 return "`" + MATH_MARKER + inlineParen + "`";
 

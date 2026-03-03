@@ -9,7 +9,7 @@ import {alert, extractText, scrubText, trpc} from "@/utils.ts";
 import {useServices} from "@/managers/services.tsx";
 import {nprogress} from "@mantine/nprogress";
 import {useLayout} from "@/managers/layout.tsx";
-import {type MessageOmitted, zConfig, zConfigType, type zDataType} from "@tiny-chat/core-backend/types";
+import {type MessageOmitted, zConfig, type zData} from "@tiny-chat/core-backend/types";
 import {Author} from "@tiny-chat/core-backend/generated/prisma/enums.ts";
 import {readLocalStorageValue} from "@mantine/hooks";
 import {useEmbeddings} from "@/managers/embeddings.tsx";
@@ -39,13 +39,13 @@ interface Messaging {
 
     reset: () => void;
 
-    config: zConfigType | null;
-    setConfig: (value: zConfigType) => void;
+    config: zConfig | null;
+    setConfig: (value: zConfig) => void;
 
     scrollRequested: number;
     requestScrollToBottom: () => void;
 
-    sendMessage: (data: zDataType) => Promise<void>;
+    sendMessage: (data: zData) => Promise<void>;
     deleteMessagePair: (messageId: string) => Promise<void>;
 }
 
@@ -215,7 +215,7 @@ export const useMessaging = create(
     })),
 );
 
-async function setInputData(data: zDataType) {
+async function setInputData(data: zData) {
     const {editor, clearEditor, addFiles} = useMessaging.getState();
     if (!editor) return;
 

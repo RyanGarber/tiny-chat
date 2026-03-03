@@ -2,7 +2,7 @@ import {z} from "zod";
 import {procedure, router} from "../index.ts";
 import {createId} from "@paralleldrive/cuid2";
 import {reorder} from "./messages.ts";
-import {zConfig, zData, type zDataType, zMetadata} from "../types.ts";
+import {zConfig, zData, zMetadata} from "../types.ts";
 import minisearch, {type SearchResult} from "minisearch";
 import {getMostRelevant} from "./embeddings.ts";
 
@@ -149,7 +149,7 @@ export default router({
             const textResults = textIndex.search(input.text) as (SearchResult & {
                 id: string,
                 chatId: string,
-                data: zDataType,
+                data: zData,
                 folderTitle: string,
                 chatTitle: string,
             })[];
@@ -196,7 +196,7 @@ export default router({
                     } as SearchResult & {
                         id: string,
                         chatId: string,
-                        data: zDataType,
+                        data: zData,
                         folderTitle: string,
                         chatTitle: string,
                     };

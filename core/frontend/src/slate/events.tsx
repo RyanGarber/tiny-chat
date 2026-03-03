@@ -2,7 +2,7 @@ import {KeyboardEvent} from "react";
 import {useLayout} from "@/managers/layout.tsx";
 import {useMessaging} from "@/managers/messaging.tsx";
 import {serialize} from "@/slate/serializer.tsx";
-import {zDataPartType} from "@tiny-chat/core-backend/types.ts";
+import {zDataPart} from "@tiny-chat/core-backend/types.ts";
 import {Editor, Path, Text, Transforms} from "slate";
 import {tokenize} from "@/slate/tokenizer.tsx";
 
@@ -52,10 +52,10 @@ function toggleMark(syntax: MarkSyntax) {
     if (hasSelection) {
         // Check if the selection covers a token exactly (full bounds or inner content)
         const matchingToken = tokens.find(t =>
-            t.type === syntax && (
-                (t.start === selStart && t.end === selEnd) ||                            // full token selected
-                (t.start + markerLen === selStart && t.end - markerLen === selEnd)       // inner content selected
-            )
+                t.type === syntax && (
+                    (t.start === selStart && t.end === selEnd) ||                            // full token selected
+                    (t.start + markerLen === selStart && t.end - markerLen === selEnd)       // inner content selected
+                )
         );
 
         if (matchingToken) {
@@ -149,7 +149,7 @@ export async function onSend() {
     const content = serialize();
     if (content.trim() === "") return;
     console.log("Sending:", editor.children, "serialized to:", content);
-    const parts: zDataPartType[] = [];
+    const parts: zDataPart[] = [];
     for (let i = 0; i < files.length; i++) {
         const reader = new FileReader();
         await new Promise((resolve) => {

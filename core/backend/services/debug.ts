@@ -1,23 +1,15 @@
-import {Model, ModelArg, Service, Stream} from "./index.ts";
-import {MessageUnomitted, zConfigType} from "@tiny-chat/core-backend/types.ts";
+import type {MessageUnomitted, Model, Stream, zConfig} from "../types.ts";
+import type {ServiceRunner} from "./index.ts";
 
-export class DebugService implements Service {
+export class Debug implements ServiceRunner {
     name = "debug";
-    apiKeyFormat = "[unused]";
+    settings = [];
 
-    async getModels() {
-        return [{name: "image-sim", features: ["generate" as const]} satisfies Model];
+    async getModels(_settings: any) {
+        return [{name: "image-sim", features: ["generate" as const], args: []} satisfies Model];
     }
 
-    getArgs(_model: string): ModelArg[] {
-        return [];
-    }
-
-    getFeatures(_model: string): string[] | null {
-        return null;
-    }
-
-    async* generate(_instruction: string, _context: MessageUnomitted[], _config: zConfigType): Stream {
+    async* generate(_settings: any, _instruction: string, _context: MessageUnomitted[], _config: zConfig): Stream {
         yield {type: "thought", value: "Thinking"};
         await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -43,7 +35,7 @@ export class DebugService implements Service {
         }
     }
 
-    async embed(_texts: string[], _config: zConfigType): Promise<number[][]> {
+    async embed(_settings: any, _texts: string[], _config: zConfig): Promise<number[][]> {
         return [];
     }
 }

@@ -16,12 +16,12 @@ import {useChats} from "@/managers/chats.tsx";
 import {useLocation} from "wouter";
 import {auth, extractText, scrubText, snippetText, trpc} from "@/utils.ts";
 import Drawers from "@/components/Drawers.tsx";
-import {embed} from "@/managers/embeddings";
 import {useSettings} from "@/managers/settings.tsx";
 
 export default function Sidebar() {
     const {folders, currentChat, setCurrentChat, temporary, setTemporary, incognito, setIncognito} = useChats();
     const {isMobile, isSidebarOpen, setSidebarOpen} = useLayout();
+    const {getEmbeddingConfig, getUseEmbeddingSearch} = useSettings();
 
     const {data: session, isPending: isSessionPending} = auth.useSession();
 
@@ -48,8 +48,6 @@ export default function Sidebar() {
     const [debouncedQuery] = useDebouncedValue(searchQuery, 400);
     const [spotlightActions, setSpotlightActions] = useState<SpotlightActionData[]>([]); // TODO - SpotlightActionGroup
 
-    const {getUseEmbeddingSearch} = useSettings();
-
     useEffect(() => {
         if (!(debouncedQuery.trim()?.length >= 3)) {
             setSpotlightActions([]);
@@ -58,9 +56,11 @@ export default function Sidebar() {
 
         let cancelled = false;
         (async () => {
-            const embedding = getUseEmbeddingSearch() ? (await embed(debouncedQuery))?.[0] : undefined;
             if (cancelled) return;
-            const results = await trpc.chats.search.mutate({text: debouncedQuery, embedding});
+            const results = await trpc.chats.search.mutate({
+                text: debouncedQuery,
+                config: getUseEmbeddingSearch() ? getEmbeddingConfig() : undefined
+            });
             if (cancelled) return;
             console.log("Results for", debouncedQuery, results);
             const seen = new Set<string>();

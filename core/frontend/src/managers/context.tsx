@@ -1,11 +1,10 @@
 import {create} from "zustand";
 import {subscribeWithSelector} from "zustand/middleware";
 import {useSettings} from "@/managers/settings.tsx";
-import {useServices} from "@/managers/services.tsx";
-import {extractText, scrubText, trpc} from "@/utils.ts";
+import {extractText, generate, scrubText, trpc} from "@/utils.ts";
 import {z} from "zod";
 import {Author, MemoryCategory, MemoryStability} from "@tiny-chat/core-backend/generated/prisma/enums.ts";
-import {MessageOmitted, MessageUnomitted, zData, zDataPart} from "@tiny-chat/core-backend/types.ts";
+import {MessageOmitted, MessageUnomitted, zData} from "@tiny-chat/core-backend/types.ts";
 import {useEmbeddings} from "@/managers/embeddings.tsx";
 import {useTasks} from "@/managers/tasks.tsx";
 
@@ -91,7 +90,6 @@ async function memorizeChat(chatId: string) {
     let config = getMemoryConfig();
     console.log("Memory config:", config);
     if (!config) return;
-    config = useServices.getState().prepareConfig(config);
 
     const instructions =
         `You analyze conversations to produce long-term memory candidates.
@@ -130,7 +128,7 @@ Output valid JSON only.`;
 
     console.log(`Finding memories in chat ${chatId}`);
 
-    const stream = await trpc.services.generate.mutate({
+    const stream = generate({
         instruction: instructions,
         context: [
             ...(await trpc.messages.list.query({chatId})),
@@ -142,12 +140,8 @@ Output valid JSON only.`;
     let response = "";
     for await (const event of stream) {
         console.log("Received event:", event);
-        try {
-            const dataPart = zDataPart.parse(event);
-            if (dataPart.type === "text") response += dataPart.value;
-        } catch (e) {
-            console.warn("Stream part is not zDataPart, this may be due to invalid model output", e);
-            // Ignore metadata
+        if (event.type === "data" && event.value.type === "text") {
+            response += event.value.value;
         }
     }
 

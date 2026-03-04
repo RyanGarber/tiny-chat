@@ -5,6 +5,7 @@ import {reorder} from "./messages.ts";
 import {zConfig, zData, zMetadata} from "../types.ts";
 import minisearch, {type SearchResult} from "minisearch";
 import {getMostRelevant} from "./embeddings.ts";
+import {services} from "../services/index.ts";
 
 export default router({
     find: procedure
@@ -104,10 +105,7 @@ export default router({
         }),
 
     search: procedure
-        .input(z.object({
-            text: z.string().min(1),
-            embedding: z.array(z.number()).optional(),
-        }))
+        .input(z.object({text: z.string().min(1), config: zConfig.optional()}))
         .mutation(async ({ctx, input}) => {
             const messages = (await ctx.prisma.message.findMany({
                 where: {userId: ctx.session.user.id, chat: {temporary: {equals: false}}},
@@ -154,21 +152,28 @@ export default router({
                 chatTitle: string,
             })[];
 
-            // --- Vector search (if query embedding is available) ---
+            let embedding: number[] = [];
+            if (input.config) {
+                const service = services.find(s => s.name === input.config?.service);
+                if (service) {
+                    const serviceSettings = ctx.session.user.settings?.services?.[service.name] ?? {};
+                    embedding = (await service.embed(serviceSettings, [input.text], input.config))[0];
+                }
+            }
+
             const messagesWithEmbeddings = mappedMessages.filter(m => m.embedding && m.embedding.length > 0);
-            const useVectorSearch = !!input.embedding?.length && messagesWithEmbeddings.length > 0;
+            const useVectorSearch = embedding.length && messagesWithEmbeddings.length > 0;
 
             if (!useVectorSearch) {
                 return textResults;
             }
 
             const vectorResults = getMostRelevant(
-                input.embedding!,
+                embedding,
                 messagesWithEmbeddings.map(m => ({value: m, embedding: m.embedding!})),
                 {maxCount: 50},
             );
 
-            // --- Merge and normalize scores ---
             const maxTextScore = textResults.reduce((m, r) => Math.max(m, r.score), 0) || 1;
             const maxVectorScore = vectorResults.reduce((m, r) => Math.max(m, r.score), 0) || 1;
 

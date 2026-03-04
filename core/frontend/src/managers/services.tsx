@@ -3,8 +3,8 @@ import {reloadConfig} from "@/managers/messaging.tsx";
 import {create} from "zustand";
 import {format} from "timeago.js";
 import {subscribeWithSelector} from "zustand/middleware";
-import {MessageUnomitted, Service, zConfig, zDataPart, zSpecialPart} from "@tiny-chat/core-backend/types.ts";
-import {trpc} from "@/utils.ts";
+import {MessageUnomitted, Service, zConfig, zDataPart} from "@tiny-chat/core-backend/types.ts";
+import {generate, trpc} from "@/utils.ts";
 import {useSettings} from "@/managers/settings.tsx";
 import {Author} from "@tiny-chat/core-backend/generated/prisma/enums.ts";
 import {useMemories} from "@/managers/context.tsx";
@@ -14,11 +14,9 @@ interface Services {
     init: () => Promise<void>;
 
     services: Service[];
-
     fetchServices: () => Promise<void>;
 
     abortController: AbortController | null;
-    prepareConfig: (config: zConfig) => zConfig;
     onMessage: (messageId: string) => Promise<void>;
 }
 
@@ -29,7 +27,6 @@ export const useServices = create(
         },
 
         services: [],
-
         fetchServices: async () => {
             useTasks.getState().addTask("models", "Finding models");
 
@@ -46,18 +43,6 @@ export const useServices = create(
         },
 
         abortController: null,
-        prepareConfig: (config: zConfig) => {
-            const prepared = config;
-            const args = get().services.find(s => s.name === config.service)?.models.find(m => m.name === config.model)?.args ?? [];
-            for (const arg of args) {
-                if (prepared.args?.[arg.name] === undefined) {
-                    console.log(`Using default value for arg ${arg.name}:`, arg.default)
-                    if (prepared.args === undefined) prepared.args = {};
-                    prepared.args[arg.name] = arg.default;
-                }
-            }
-            return prepared;
-        },
         onMessage: async (messageId: string) => {
             let {currentChat, messages} = useChats.getState();
             if (!currentChat) return;
@@ -120,7 +105,7 @@ export const useServices = create(
                                                     if (delay !== "just now") heading += `[Conversation timing: ${delay} ${delay.endsWith("s") ? "have" : "has"} passed since the last message.]\n`;
                                                 }
                                             } else {
-                                                heading = `[assistant:model=${m.author.slice(m.author.indexOf("/") + 1)}]\n`;
+                                                heading = `[assistant:model=${m.config.model}]\n`;
                                             }
                                             value = heading + value;
                                             isFirstText = false;
@@ -156,21 +141,19 @@ Do NOT include your own label in your response – the system will add it automa
                             + `Additionally, the user provided the following instructions:\n`
                             + `${userInstructions.join("\n")}` : "");
 
-                    const preparedConfig = get().prepareConfig(reply.config);
-
-                    console.log("Using instructions:", instructions, "context:", context, "and args:", preparedConfig.args);
+                    console.log("Using instructions:", instructions, "context:", context, "and args:", config.args);
 
                     const abortController = new AbortController();
                     abortController.signal.addEventListener("abort", () => reply.data.push({type: "abort"}));
                     set({abortController});
 
-                    const stream = await trpc.services.generate.mutate(
+                    const stream = generate(
                         {
                             instruction: instructions,
                             context: context.map(m => ({author: m.author, data: m.data})),
-                            config: preparedConfig,
+                            config
                         },
-                        {signal: abortController.signal},
+                        abortController.signal
                     );
 
                     let lastFlush = 0;
@@ -181,54 +164,52 @@ Do NOT include your own label in your response – the system will add it automa
                         lastFlush = performance.now();
                     };
 
-                    let hasText = false;
-                    for await (const event of stream) {
-                        console.log("Received event:", event);
+                    try {
+                        let hasText = false;
+                        for await (const event of stream) {
+                            console.log("Received event:", event);
 
-                        try {
-                            const dataPart = zDataPart.parse(event);
-                            if (dataPart.type === "abort") {
-                                console.log("Received abort");
-                                reply.data.push(dataPart);
-                            } else if (dataPart.type === "thought") {
-                                reply.state.thinking = true;
-                                reply.data.push(dataPart);
-                            } else if (dataPart.type === "text") {
-                                reply.state.thinking = false;
-                                reply.state.generating = true;
-                                if (!hasText) {
-                                    dataPart.value = dataPart.value.trimStart();
-                                    hasText = true;
+                            if (event.type === "data") {
+                                if (event.value.type === "abort") {
+                                    console.log("Received abort");
+                                    reply.data.push(event.value);
+                                } else if (event.value.type === "thought") {
+                                    reply.state.thinking = true;
+                                    reply.data.push(event.value);
+                                } else if (event.value.type === "text") {
+                                    reply.state.thinking = false;
+                                    reply.state.generating = true;
+                                    if (!hasText) {
+                                        event.value.value = event.value.value.trimStart();
+                                        hasText = true;
+                                    }
+                                    const last = reply.data[reply.data.length - 1];
+                                    if (last?.type === "text") last.value += event.value.value;
+                                    else reply.data.push(event.value);
+                                } else if (event.value.type === "file") {
+                                    reply.data.push(event.value);
                                 }
-                                const last = reply.data[reply.data.length - 1];
-                                if (last?.type === "text") last.value += dataPart.value;
-                                else reply.data.push(dataPart);
-                            } else if (dataPart.type === "file") {
-                                reply.data.push(dataPart);
-                            }
-                        } catch (e) {
-                            console.warn("Stream part isn't zDataPart, but this is probably normal");
-                        }
-
-                        try {
-                            const specialPart = zSpecialPart.parse(event);
-                            if (specialPart.type === "metadata") {
-                                reply.metadata = specialPart.value;
-                            } else if (specialPart.type === "fileUpdate") {
-                                const file = reply.data.filter(p => p.type === "file").find(p => p.name === specialPart.name);
-                                if (file) {
-                                    console.log("Updating URL of file:", file.name, "from URL:", file.url, "to:", specialPart.url);
-                                    file.url = specialPart.url;
-                                    console.log("Updated file (local):", file.url, "(global):", reply.data.filter(p => p.type === "file").find(p => p.name === specialPart.name)?.url);
+                            } else if (event.type === "special") {
+                                if (event.value.type === "metadata") {
+                                    reply.metadata = event.value.value;
+                                } else if (event.value.type === "fileUpdate") {
+                                    const fileName = event.value.name;
+                                    const file = reply.data.filter(p => p.type === "file").find(p => p.name === fileName);
+                                    if (file) {
+                                        console.log("Updating URL of file:", file.name, "from URL:", file.url, "to:", event.value.url);
+                                        file.url = event.value.url;
+                                        console.log("Updated file (local):", file.url, "(global):", reply.data.filter(p => p.type === "file").find(p => p.name === fileName)?.url);
+                                    }
                                 }
                             }
-                        } catch {
-                            // Not a metadata part – ignore
-                        }
 
-                        if (performance.now() - lastFlush >= 33) {
-                            await flush();
+                            if (performance.now() - lastFlush >= 33) {
+                                await flush();
+                            }
                         }
+                    } catch (e: any) {
+                        if (e.name === "AbortError") console.warn("Stream aborted");
+                        else throw e;
                     }
 
                     set({abortController: null});

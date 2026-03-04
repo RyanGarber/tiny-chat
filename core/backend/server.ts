@@ -1,11 +1,11 @@
 import {createHTTPHandler} from "@trpc/server/adapters/standalone";
-import {PrismaPg} from "@prisma/adapter-pg";
 import {createServer, IncomingMessage, ServerResponse} from "http";
 import {router} from "./index.ts";
 import {betterAuth} from "better-auth";
 import {toNodeHandler} from "better-auth/node";
 import {anonymous, bearer} from "better-auth/plugins";
 import {prismaAdapter} from "better-auth/adapters/prisma";
+import {PrismaPg} from "@prisma/adapter-pg";
 import {PrismaClient} from "./generated/prisma/client.ts";
 import {internalIpV4} from "internal-ip";
 import {TRPCError} from "@trpc/server";
@@ -19,6 +19,7 @@ import messages from "./routes/messages.ts";
 import sessions from "./routes/sessions.ts";
 import embeddings from "./routes/embeddings.ts";
 import services from "./routes/services.ts";
+import streamHandler from "./stream.ts";
 
 config({path: resolve(fileURLToPath(import.meta.url), "../../../.env")});
 
@@ -48,6 +49,18 @@ const trpc = router({
 });
 export type tRPC = typeof trpc;
 
+export const toHeaders = (reqHeaders: IncomingMessage["headers"]) => {
+    const headers = new Headers();
+    for (const [key, value] of Object.entries(reqHeaders)) {
+        if (Array.isArray(value)) {
+            value.forEach((v) => headers.append(key, v));
+        } else if (value) {
+            headers.append(key, value);
+        }
+    }
+    return headers;
+}
+
 const trpcContext = async ({
                                req,
                                res,
@@ -55,19 +68,12 @@ const trpcContext = async ({
     req: IncomingMessage;
     res: ServerResponse;
 }) => {
-    const headers = new Headers();
-    for (const [key, value] of Object.entries(req.headers)) {
-        if (Array.isArray(value)) {
-            value.forEach((v) => headers.append(key, v));
-        } else if (value) {
-            headers.append(key, value);
-        }
-    }
-    const session = await auth.api.getSession({headers});
+
+    const session = await auth.api.getSession({headers: toHeaders(req.headers)});
     if (!session?.user) {
         throw new TRPCError({
             code: "UNAUTHORIZED",
-            message: `Not authenticated. Headers: ${JSON.stringify(Object.fromEntries(headers.entries()))}`,
+            message: `Not authenticated. Headers: ${JSON.stringify(req.headers)}`,
         });
     }
     return {req, res, session, prisma: globalThis.prisma};
@@ -76,16 +82,16 @@ export type tRPCContext = Awaited<ReturnType<typeof trpcContext>>;
 
 const trpcHandler = createHTTPHandler({
     router: trpc,
-    basePath: `${process.env.VITE_DATA_PATH_TRPC}/`,
+    basePath: `${process.env.VITE_BACKEND_PATH_TRPC}/`,
     createContext: trpcContext,
     maxBodySize: 50 * 1024 * 1024
 });
 
 export const auth = betterAuth({
     baseURL: process.argv.includes('--dev')
-        ? `http://${process.argv.includes('--host') ? await internalIpV4() : 'localhost'}:${process.env.VITE_DATA_PORT}`
-        : process.env.VITE_DATA_URL,
-    basePath: process.env.VITE_DATA_PATH_AUTH,
+        ? `http://${process.argv.includes('--host') ? await internalIpV4() : 'localhost'}:${process.env.VITE_BACKEND_PORT}`
+        : process.env.VITE_BACKEND_URL,
+    basePath: process.env.VITE_BACKEND_PATH_AUTH,
     database: prismaAdapter(globalThis.prisma, {
         provider: "postgresql",
     }),
@@ -153,7 +159,8 @@ export const auth = betterAuth({
 const authHandler = toNodeHandler(auth);
 
 const server = createServer((req, res) => {
-    res.setHeader("Access-Control-Allow-Origin", req.headers.origin || process.env.VITE_DATA_URL!);
+    res.setHeader("Access-Control-Allow-Origin", req.headers.origin || process.env.VITE_BACKEND_URL!);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
     res.setHeader(
         "Access-Control-Allow-Methods",
         "GET, POST, PUT, DELETE, OPTIONS",
@@ -162,7 +169,6 @@ const server = createServer((req, res) => {
         "Access-Control-Allow-Headers",
         "Content-Type, Authorization, X-Requested-With, Accept, tRPC-Accept",
     );
-    res.setHeader("Access-Control-Allow-Credentials", "true");
 
     if (req.method === "OPTIONS") {
         res.writeHead(204);
@@ -170,10 +176,12 @@ const server = createServer((req, res) => {
         return;
     }
 
-    if (req.url?.startsWith(process.env.VITE_DATA_PATH_TRPC!)) {
+    if (req.url?.startsWith(process.env.VITE_BACKEND_PATH_TRPC!)) {
         trpcHandler(req, res);
-    } else if (req.url?.startsWith(process.env.VITE_DATA_PATH_AUTH!)) {
+    } else if (req.url?.startsWith(process.env.VITE_BACKEND_PATH_AUTH!)) {
         void authHandler(req, res);
+    } else if (req.url?.startsWith("/@/stream/")) {
+        void streamHandler(req, res, globalThis.prisma);
     } else {
         res.writeHead(200);
         res.end("OK");
@@ -182,7 +190,7 @@ const server = createServer((req, res) => {
 
 if (import.meta.main) {
     console.log(
-        `Backend listening at ${await internalIpV4()}:${process.env.VITE_DATA_PORT}`,
+        `Backend listening at ${await internalIpV4()}:${process.env.VITE_BACKEND_PORT}`,
     );
-    server.listen(process.env.VITE_DATA_PORT);
+    server.listen(process.env.VITE_BACKEND_PORT);
 }

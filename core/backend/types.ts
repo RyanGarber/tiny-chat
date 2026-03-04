@@ -1,5 +1,6 @@
 import {z} from "zod";
-import {type Message as PrismaMessage} from "./generated/prisma/client.ts";
+import {type Message} from "./generated/prisma/client.ts";
+import {Author} from "./generated/prisma/enums.ts";
 
 export type ModelFeature = "generate" | "embed";
 
@@ -100,12 +101,23 @@ export const zSpecialPart = z.discriminatedUnion("type", [
         value: zMetadata
     }),
 ]);
+
 export type zSpecialPart = z.infer<typeof zSpecialPart>;
 
-export type StreamPart = zDataPart | zSpecialPart;
-export type Stream = AsyncGenerator<StreamPart>;
+export const zGenerateInput = z.object({
+    instruction: z.string(),
+    context: z.array(z.object({id: z.cuid2().optional(), author: z.enum(Author), data: zData})),
+    config: zConfig,
+});
+export type zGenerateInput = z.infer<typeof zGenerateInput>;
 
-export type MessageUnomitted = PrismaMessage & {
+export const zGenerateOutput = z.discriminatedUnion("type", [
+    z.object({type: z.literal("data"), value: zDataPart}),
+    z.object({type: z.literal("special"), value: zSpecialPart}),
+])
+export type zGenerateOutput = z.infer<typeof zGenerateOutput>;
+
+export type MessageUnomitted = Message & {
     config: zConfig;
     data: zData;
     metadata: zMetadata;
@@ -122,7 +134,7 @@ export type MessageOmission = {
 
 export type MessageOmitted = Omit<MessageUnomitted, "metadata">
 
-export function wrapMessage(message: PrismaMessage): MessageOmitted {
+export function wrapMessage(message: Message): MessageOmitted {
     return {
         ...message,
         config: zConfig.parse(message.config),

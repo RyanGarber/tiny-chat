@@ -1,14 +1,15 @@
 import {type tRPC} from "@tiny-chat/core-backend/server";
-import {createTRPCClient, httpBatchStreamLink} from "@trpc/client";
+import {createTRPCClient, httpLink} from "@trpc/client";
 import {Children, isValidElement, ReactNode, useEffect, useRef, useState} from "react";
 import {createAuthClient} from "better-auth/react";
 import {anonymousClient, inferAdditionalFields} from "better-auth/client/plugins";
 import superjson from "superjson";
 import {auth as serverAuth} from "@tiny-chat/core-backend/server.ts";
-import {zData} from "@tiny-chat/core-backend/types.ts";
+import {zData, zGenerateInput, zGenerateOutput} from "@tiny-chat/core-backend/types.ts";
 import {notifications} from "@mantine/notifications";
 import {CodeHighlightAdapter} from "@mantine/code-highlight";
 import hljs from "highlight.js";
+import {useServices} from "@/managers/services.tsx";
 
 declare global {
     interface Window {
@@ -22,10 +23,10 @@ export const webUrl = import.meta.env.DEV ? `http://${__TAURI_DEV_HOST__ ?? "loc
 
 export const trpc = createTRPCClient<tRPC>({
     links: [
-        httpBatchStreamLink({
+        httpLink({
             url: import.meta.env.DEV
-                ? `http://${__TAURI_DEV_HOST__ ?? "localhost"}:${import.meta.env.VITE_DATA_PORT}${import.meta.env.VITE_DATA_PATH_TRPC}`
-                : `${import.meta.env.VITE_DATA_URL}${import.meta.env.VITE_DATA_PATH_TRPC}`,
+                ? `http://${__TAURI_DEV_HOST__ ?? "localhost"}:${import.meta.env.VITE_BACKEND_PORT}${import.meta.env.VITE_BACKEND_PATH_TRPC}`
+                : `${import.meta.env.VITE_BACKEND_URL}${import.meta.env.VITE_BACKEND_PATH_TRPC}`,
             transformer: superjson,
             headers: () => {
                 const token = localStorage.getItem("token");
@@ -37,9 +38,9 @@ export const trpc = createTRPCClient<tRPC>({
 
 export const auth = createAuthClient({
     baseURL: import.meta.env.DEV
-        ? `http://${__TAURI_DEV_HOST__ ?? "localhost"}:${import.meta.env.VITE_DATA_PORT}`
-        : import.meta.env.VITE_DATA_URL,
-    basePath: import.meta.env.VITE_DATA_PATH_AUTH,
+        ? `http://${__TAURI_DEV_HOST__ ?? "localhost"}:${import.meta.env.VITE_BACKEND_PORT}`
+        : import.meta.env.VITE_BACKEND_URL,
+    basePath: import.meta.env.VITE_BACKEND_PATH_AUTH,
     fetchOptions: {
         auth: {
             type: "Bearer",
@@ -280,4 +281,49 @@ export function useViewport() {
     }, []);
 
     return {height, containerRef};
+}
+
+export async function* generate(input: zGenerateInput, signal?: AbortSignal) {
+    const url = import.meta.env.DEV
+        ? `http://${__TAURI_DEV_HOST__ ?? "localhost"}:${import.meta.env.VITE_BACKEND_PORT}/@/stream/generate`
+        : `${import.meta.env.VITE_BACKEND_URL}/@/stream/generate`;
+
+    const args = useServices.getState().services.find(s => s.name === input.config.service)?.models.find(m => m.name === input.config.model)?.args ?? [];
+    console.log("Args:", args);
+    for (const arg of args) {
+        if (input.config.args?.[arg.name] === undefined) {
+            console.log(`Using default value for arg ${arg.name}:`, arg.default)
+            if (input.config.args === undefined) input.config.args = {};
+            input.config.args[arg.name] = arg.default;
+        }
+    }
+
+    const response = await fetch(url, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token") ?? ""}`,
+        },
+        body: JSON.stringify(input),
+        signal,
+    });
+
+    const reader = response.body!.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+        const {done, value} = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, {stream: true});
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop()!;
+
+        for (const line of lines) {
+            if (line.startsWith('data: ')) {
+                yield zGenerateOutput.parse(JSON.parse(line.slice(6)));
+            }
+        }
+    }
 }

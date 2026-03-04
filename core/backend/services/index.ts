@@ -2,7 +2,7 @@ import {Debug} from "./debug.ts";
 import {GoogleAiStudio} from "./google-ai-studio.ts";
 import {MicrosoftFoundry} from "./microsoft-foundry.ts";
 import {AnthropicAi} from "./anthropic-ai.ts";
-import type {MessageUnomitted, Model, Stream, zConfig} from "../types.ts";
+import type {MessageUnomitted, Model, zConfig, zGenerateOutput} from "../types.ts";
 
 export class SettingsError extends Error {
 }
@@ -17,7 +17,7 @@ export interface ServiceRunner {
         context: MessageUnomitted[],
         config: zConfig,
         abortSignal: AbortSignal
-    ) => Stream;
+    ) => AsyncGenerator<zGenerateOutput>;
     embed: (settings: any, texts: string[], config: zConfig) => Promise<number[][]>;
 }
 

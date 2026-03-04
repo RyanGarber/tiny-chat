@@ -54,10 +54,10 @@ jobs:
           PG_USER=${{ secrets.PG_USER }}
           PG_PASSWORD=${{ secrets.PG_PASSWORD }}
           PG_DATABASE=${{ secrets.PG_DATABASE }}
-          VITE_DATA_URL=${{ secrets.VITE_DATA_URL }}
-          VITE_DATA_PORT=${{ secrets.VITE_DATA_PORT }}
-          VITE_DATA_PATH_TRPC=${{ secrets.VITE_DATA_PATH_TRPC }}
-          VITE_DATA_PATH_AUTH=${{ secrets.VITE_DATA_PATH_AUTH }}
+          VITE_BACKEND_URL=${{ secrets.VITE_BACKEND_URL }}
+          VITE_BACKEND_PORT=${{ secrets.VITE_BACKEND_PORT }}
+          VITE_BACKEND_PATH_TRPC=${{ secrets.VITE_BACKEND_PATH_TRPC }}
+          VITE_BACKEND_PATH_AUTH=${{ secrets.VITE_BACKEND_PATH_AUTH }}
           VITE_WEB_URL=${{ secrets.VITE_WEB_URL }}
           VITE_WEB_PORT=${{ secrets.VITE_WEB_PORT }}
           AUTH_GITHUB_CLIENT=${{ secrets.AUTH_GITHUB_CLIENT }}

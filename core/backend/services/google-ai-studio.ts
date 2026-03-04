@@ -1,4 +1,4 @@
-import type {MessageUnomitted, Model, ModelArg, Stream, zConfig, zData} from "../types.ts";
+import type {MessageUnomitted, Model, ModelArg, zConfig, zData, zGenerateOutput} from "../types.ts";
 import {zMetadata} from "../types.ts";
 import {type Content, GoogleGenAI, type Part, type SendMessageParameters, ThinkingLevel} from "@google/genai";
 import {Author} from "../generated/prisma/enums.ts";
@@ -43,7 +43,7 @@ export class GoogleAiStudio implements ServiceRunner {
         });
     }
 
-    async* generate(settings: any, instruction: string, context: MessageUnomitted[], config: zConfig, abortSignal: AbortSignal): Stream {
+    async* generate(settings: any, instruction: string, context: MessageUnomitted[], config: zConfig, abortSignal: AbortSignal): AsyncGenerator<zGenerateOutput> {
         if (!settings.apiKey) throw new SettingsError();
 
         const client = new GoogleGenAI({apiKey: settings.apiKey});
@@ -114,7 +114,7 @@ export class GoogleAiStudio implements ServiceRunner {
             console.log("Model doesn't support system instructions; injecting into history...");
             (context[0].data as zData).unshift({type: "text", value: instruction});
         }
-
+        
         const response = await client.chats.create({
             model: config.model,
             history: context.slice(0, context.length - 1).map(boxMessage),
@@ -128,18 +128,20 @@ export class GoogleAiStudio implements ServiceRunner {
                 for (const part of chunk.candidates[0].content.parts) {
                     if (part.text) {
                         if (part.thought) {
-                            yield {type: "thought", value: part.text}
+                            yield {type: "data", value: {type: "thought", value: part.text}};
                         } else {
-                            yield {type: "text", value: part.text}
+                            yield {type: "data", value: {type: "text", value: part.text}}
                         }
                     }
                     if (part.inlineData) {
                         yield {
-                            type: "file",
-                            name: part.inlineData.displayName,
-                            mime: part.inlineData.mimeType,
-                            url: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`!,
-                            inline: true
+                            type: "data", value: {
+                                type: "file",
+                                name: part.inlineData.displayName,
+                                mime: part.inlineData.mimeType,
+                                url: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`!,
+                                inline: true
+                            }
                         }
                     }
                     parts.push(part);
@@ -150,7 +152,7 @@ export class GoogleAiStudio implements ServiceRunner {
             throw e;
         }
 
-        yield {type: "metadata", value: zMetadata.parse(parts)};
+        yield {type: "special", value: {type: "metadata", value: zMetadata.parse(parts)}};
     }
 
     async embed(settings: any, texts: string[], config: zConfig): Promise<number[][]> {

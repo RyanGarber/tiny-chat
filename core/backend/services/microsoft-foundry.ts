@@ -1,4 +1,4 @@
-import type {MessageUnomitted, Model, ModelArg, Stream, zConfig} from "../types.ts";
+import type {MessageUnomitted, Model, ModelArg, zConfig, zGenerateOutput} from "../types.ts";
 import {zMetadata} from "../types.ts";
 import OpenAI, {APIUserAbortError} from "openai";
 import type {
@@ -44,7 +44,7 @@ export class MicrosoftFoundry implements ServiceRunner {
         });
     }
 
-    async* generate(settings: any, instruction: string, context: MessageUnomitted[], config: zConfig, abortSignal: AbortSignal): Stream {
+    async* generate(settings: any, instruction: string, context: MessageUnomitted[], config: zConfig, abortSignal: AbortSignal): AsyncGenerator<zGenerateOutput> {
         if (!settings.resourceId || !settings.projectId || !settings.apiKey) throw new SettingsError();
 
         const azure = new OpenAI({
@@ -114,31 +114,38 @@ export class MicrosoftFoundry implements ServiceRunner {
                     if (chunk.type.startsWith("response.reasoning_summary_text")) {
                         if (chunk.type === "response.reasoning_summary_text.delta") {
                             if (chunk.summary_index !== currentThoughtIndex && currentThoughtIndex !== -1) {
-                                yield {type: "thought", value: currentThought};
+                                yield {type: "data", value: {type: "thought", value: currentThought}};
                                 currentThought = "";
                             }
                             currentThought += chunk.delta;
                             currentThoughtIndex = chunk.summary_index;
                         } else if (chunk.type === "response.reasoning_summary_text.done") {
-                            yield {type: "thought", value: currentThought};
+                            yield {type: "data", value: {type: "thought", value: currentThought}};
                             currentThought = "";
                             currentThoughtIndex = -1;
                         }
                     } else if (chunk.type === "response.output_text.delta") {
-                        yield {type: "text", value: chunk.delta};
+                        yield {type: "data", value: {type: "text", value: chunk.delta}};
                     } else if (chunk.type === "response.image_generation_call.in_progress") {
-                        yield {type: "file", name: chunk.item_id, url: "/placeholder.png", inline: true};
+                        yield {
+                            type: "data",
+                            value: {type: "file", name: chunk.item_id, url: "/placeholder.png", inline: true}
+                        };
                     } else if (chunk.type === "response.image_generation_call.partial_image") {
                         yield {
-                            type: "fileUpdate",
-                            name: chunk.item_id,
-                            url: `data:image/png;base64,${chunk.partial_image_b64}`
+                            type: "special", value: {
+                                type: "fileUpdate",
+                                name: chunk.item_id,
+                                url: `data:image/png;base64,${chunk.partial_image_b64}`
+                            }
                         }
                     } else if (chunk.type === "response.output_item.done" && chunk.item.type === "image_generation_call") {
                         yield {
-                            type: "fileUpdate",
-                            name: chunk.item.id,
-                            url: `data:image/png;base64,${chunk.item.result}`
+                            type: "special", value: {
+                                type: "fileUpdate",
+                                name: chunk.item.id,
+                                url: `data:image/png;base64,${chunk.item.result}`
+                            }
                         }
                     }
                     events.push(chunk);
@@ -149,9 +156,11 @@ export class MicrosoftFoundry implements ServiceRunner {
             }
 
             yield {
-                type: "metadata",
-                value: zMetadata.parse(events.filter(e => e.type !== "response.output_text.delta" && e.type !== "response.reasoning_summary_text.delta"))
-            }
+                type: "special", value: {
+                    type: "metadata",
+                    value: zMetadata.parse(events.filter(e => e.type !== "response.output_text.delta" && e.type !== "response.reasoning_summary_text.delta"))
+                }
+            };
         }
 
         /************************* COMPLETIONS API **************************/
@@ -179,7 +188,7 @@ export class MicrosoftFoundry implements ServiceRunner {
                 for await (const chunk of response) {
                     if (!chunk.choices?.[0]?.delta?.content) continue;
                     const content = chunk.choices[0].delta.content;
-                    yield {type: "text", value: content};
+                    yield {type: "data", value: {type: "text", value: content}};
                     chunks.push(chunk);
                 }
             } catch (e: any) {
@@ -187,16 +196,11 @@ export class MicrosoftFoundry implements ServiceRunner {
                 throw e;
             }
 
-            yield {type: "metadata", value: zMetadata.parse(chunks)};
+            yield {type: "special", value: {type: "metadata", value: zMetadata.parse(chunks)}};
         }
     }
 
     async embed(_settings: any, _texts: string[], _config: zConfig): Promise<number[][]> {
         return [];
-    }
-
-    parseKeys(keys: string | undefined) {
-        const [resource, project, apiKey] = keys?.split(';') || [];
-        return {resource, project, apiKey};
     }
 }

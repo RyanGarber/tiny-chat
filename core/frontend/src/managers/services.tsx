@@ -74,11 +74,14 @@ export const useServices = create(
                         ({
                             author: Author.USER, data: [{
                                 type: "text",
-                                value: memories.length
-                                    ? "Relevant long-term user context:\n"
-                                    + memories.map(m => `* ${m}`).join("\n") + "\n\n"
-                                    + "Use this only when relevant to the request."
-                                    : ""
+                                value: memories.length ?
+                                    `Potentially relevant long-term user context:
+
+${memories.map(m => `* ${m}`).join("\n")}
+
+IMPORTANT: Do not introduce or revisit the above topics unless:
+* The user explicitly asks, or
+* a brief, optional follow-up question would feel natural to a human in that moment.` : ""
                             }]
                         } satisfies Partial<MessageUnomitted>) as MessageUnomitted,
                         ...messages.slice(0, i + 1).map((m, i) => {
@@ -123,10 +126,6 @@ export const useServices = create(
 Today's date is ${new Date().toLocaleDateString()}.
 Assume knowledge must reflect current information. Prefer search results over training knowledge.
 For news, software, and other time-sensitive topics, always search. If uncertainty exists, search.
-
-Stay scoped to the current topic. Do not introduce or revisit previous topics unless:
-* The user explicitly asks, or
-* a brief, optional follow-up question would feel natural to a human in that moment.
 
 This conversation may include responses from multiple AI models. Previous assistant messages are labeled in the format:
 

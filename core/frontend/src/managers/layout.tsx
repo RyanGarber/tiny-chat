@@ -9,6 +9,9 @@ interface Layout {
     totalGestureBlocks: number;
     setGestureBlock: (value: boolean) => void;
 
+    drawerCloser: (() => void) | null;
+    setDrawerCloser: (fn: (() => void) | null) => void;
+
     isSidebarOpen: boolean;
     setSidebarOpen: (value: boolean) => void;
     getSidebarWidth: () => number;
@@ -46,6 +49,9 @@ export const useLayout = create(
                         ? state.totalGestureBlocks + 1
                         : Math.max(0, state.totalGestureBlocks - 1),
                 })),
+
+            drawerCloser: null,
+            setDrawerCloser: (fn) => set({drawerCloser: fn}),
 
             isSidebarOpen: false,
             setSidebarOpen: (value: boolean) => set({isSidebarOpen: value}),

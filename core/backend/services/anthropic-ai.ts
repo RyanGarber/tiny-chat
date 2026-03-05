@@ -1,4 +1,5 @@
-import type {MessageUnomitted, Model, zConfig, zGenerateOutput} from "../types.ts";
+import type {MessageUnomitted, Model, zConfig, zData, zGenerateOutput} from "../types.ts";
+import {zMetadata} from "../types.ts";
 import {type ServiceRunner, SettingsError} from "./index.ts";
 import {Author} from "../generated/prisma/enums.ts";
 import {Anthropic} from "@anthropic-ai/sdk";
@@ -13,76 +14,53 @@ import type {
 
 export class AnthropicAi implements ServiceRunner {
     name = "anthropic-ai";
-    settings = ["apiKey"]
+    settings = ["apiKey"];
 
-    getClient(settings: any) {
+    private getClient(settings: any) {
         return new Anthropic({
             apiKey: settings.apiKey,
-        })
+        });
     }
 
-    async getModels(settings: any): Promise<Model[]> {
-        if (!settings.apiKey) return [];
+    // ── Input conversion: zData → Anthropic SDK types ──────────────
 
-        const client = this.getClient(settings);
+    private toSdkContent(data: zData): ContentBlockParam[] {
+        return data.flatMap((part): ContentBlockParam[] => {
+            if (part.type === "text") {
+                return [{type: "text", text: part.value} satisfies TextBlockParam];
+            }
+            if (part.type === "file" && part.url.startsWith("data:image/")) {
+                return [{
+                    type: "image",
+                    source: {
+                        type: "base64",
+                        media_type: part.url.slice(5, part.url.indexOf(";")) as any,
+                        data: part.url.slice(part.url.indexOf(",") + 1)
+                    }
+                } satisfies ImageBlockParam];
+            }
+            return [];
+        });
+    }
 
-        return (await client.models.list()).data.map(m => ({
-            name: m.id, features: ["generate" as const], args: [
-                {type: "range", name: "tokens", min: 1, max: 10000, default: 1000, step: 100}
-            ]
+    private toSdkMessages(context: MessageUnomitted[]): MessageParam[] {
+        return context.map(m => ({
+            role: m.author === Author.USER ? "user" as const : "assistant" as const,
+            content: this.toSdkContent(m.data)
         }));
     }
 
-    async* generate(settings: any, instruction: string, context: MessageUnomitted[], config: zConfig, abortSignal: AbortSignal): AsyncGenerator<zGenerateOutput> {
-        if (!settings.apiKey) throw new SettingsError();
+    // ── Output conversion: Anthropic SDK stream → zGenerateOutput ──
 
-        const client = this.getClient(settings);
+    private async *fromSdkStream(
+        stream: ReturnType<Anthropic["messages"]["stream"]>
+    ): AsyncGenerator<zGenerateOutput> {
+        let currentThought = "";
+        const events: any[] = [];
 
-        console.log("Calling Claude");
         try {
-            const params: MessageCreateParamsStreaming = {
-                model: config.model,
-                stream: true,
-                system: instruction,
-                messages: [...context.flatMap(m => {
-                    const messages: MessageParam[] = [];
-
-                    const content: ContentBlockParam[] = [];
-                    for (const dataPart of m.data) {
-                        if (dataPart.type === "file") {
-                            if (dataPart.url.startsWith("data:image/")) {
-                                content.push({
-                                    type: "image",
-                                    source: {
-                                        type: "base64",
-                                        media_type: dataPart.url.slice(5, dataPart.url.indexOf(";")) as any,
-                                        data: dataPart.url.slice(dataPart.url.indexOf(",") + 1)
-                                    }
-                                } satisfies ImageBlockParam);
-                            }
-                        }
-                        if (dataPart.type === "text") {
-                            content.push({
-                                type: "text",
-                                text: dataPart.value
-                            } satisfies TextBlockParam);
-                        }
-                    }
-                    messages.push({
-                        role: m.author === Author.USER ? "user" : "assistant",
-                        content
-                    } satisfies MessageParam);
-
-                    return messages;
-                })],
-                max_tokens: parseInt(config.args?.tokens ?? "1000")
-            };
-
-            const stream = client.messages.stream(params, {signal: abortSignal});
-
-            let currentThought = "";
             for await (const chunk of stream) {
-                console.log("Claude Chunk: ", chunk);
+                events.push(chunk);
 
                 if (chunk.type === "content_block_start") {
                     if (chunk.content_block.type === "thinking") {
@@ -106,6 +84,53 @@ export class AnthropicAi implements ServiceRunner {
             if (e.name === "AbortError") return;
             throw e;
         }
+
+        yield {type: "special", value: {type: "metadata", value: zMetadata.parse(events)}};
+    }
+
+    // ── Model listing ──────────────────────────────────────────────
+
+    async getModels(settings: any): Promise<Model[]> {
+        if (!settings.apiKey) return [];
+
+        const client = this.getClient(settings);
+
+        return (await client.models.list()).data.map(m => ({
+            name: m.id,
+            features: ["generate" as const],
+            args: [
+                {type: "range", name: "tokens", min: 1, max: 10000, default: 1000, step: 100},
+                {type: "range", name: "temperature", min: 0, max: 1, step: 0.05, default: 1},
+            ]
+        }));
+    }
+
+    // ── Generation ─────────────────────────────────────────────────
+
+    async *generate(
+        settings: any,
+        instruction: string,
+        context: MessageUnomitted[],
+        config: zConfig,
+        abortSignal: AbortSignal
+    ): AsyncGenerator<zGenerateOutput> {
+        if (!settings.apiKey) throw new SettingsError();
+
+        const client = this.getClient(settings);
+
+        console.log("Calling Claude");
+
+        const params: MessageCreateParamsStreaming = {
+            model: config.model,
+            stream: true,
+            system: instruction,
+            messages: this.toSdkMessages(context),
+            max_tokens: parseInt(config.args?.tokens ?? "1000"),
+            temperature: config.args?.temperature as number ?? 1,
+        };
+
+        const stream = client.messages.stream(params, {signal: abortSignal});
+        yield* this.fromSdkStream(stream);
     }
 
     async embed(_settings: any, _texts: string[], _config: any): Promise<number[][]> {

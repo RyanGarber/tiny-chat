@@ -29,6 +29,7 @@ export default function Attachments({list, size}: {
 
     const [isOpen, {open, close}] = useDisclosure();
     const [slide, setSlide] = useState(0);
+    const [currentSlide, setCurrentSlide] = useState(0);
 
     return (
         <>
@@ -41,6 +42,7 @@ export default function Attachments({list, size}: {
                             src={a.mime?.startsWith("image/") ? a.url : null}
                             onClick={() => {
                                 setSlide(i);
+                                setCurrentSlide(i);
                                 open();
                             }}
                         >
@@ -50,7 +52,17 @@ export default function Attachments({list, size}: {
                 ))}
             </Avatar.Group>
             <Modal opened={isOpen} onClose={close} withCloseButton={false}>
-                <Carousel slideSize="100%" initialSlide={slide}>
+                <Carousel
+                    slideSize="100%"
+                    initialSlide={slide}
+                    onSlideChange={setCurrentSlide}
+                    previousControlProps={{
+                        style: {visibility: currentSlide === 0 ? "hidden" : "visible"}
+                    }}
+                    nextControlProps={{
+                        style: {visibility: currentSlide === list.length - 1 ? "hidden" : "visible"}
+                    }}
+                >
                     {list.map((a) => (
                         <Carousel.Slide key={a.name}>
                             <Card>

@@ -79,6 +79,8 @@ export default router({
                     user: {connect: {id: chat.userId}},
                     folder: {connect: {id: chat.folderId}},
                     title: input.title,
+                    temporary: chat.temporary,
+                    incognito: chat.incognito,
                     messages: {
                         createMany: {
                             data: messages.map((message) => ({

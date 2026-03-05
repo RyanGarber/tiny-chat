@@ -4,7 +4,6 @@ import {ActionIcon, Button, Menu, Modal, NavLink, NavLinkProps, TextInput,} from
 import {IconDots, IconEdit, IconTrash} from "@tabler/icons-react";
 import {useDisclosure} from "@mantine/hooks";
 import {useChats} from "@/managers/chats.tsx";
-import {alert} from "@/utils.ts";
 import {Chat} from "@tiny-chat/core-backend/generated/prisma/client.ts";
 
 export default function SidebarChat({
@@ -31,13 +30,11 @@ export default function SidebarChat({
         if (!title) return;
         await renameChat(chat.id, title);
         closeEdit();
-        alert("info", "Chat renamed");
     };
 
     const saveDelete = async () => {
         await deleteChat(chat.id);
         closeDelete();
-        alert("info", "Chat deleted");
     }
 
     // TODO use @mantine/modals

@@ -107,6 +107,7 @@ export default function MessageBody({message}: { message: MessageOmitted }) {
                         width={containerWidth + 20}
                         opened={isThinkingOpen}
                         onChange={setThinkingOpen}
+                        zIndex="calc(var(--mantine-z-index-app) + 2)"
                         middlewares={{
                             shift: true,
                             flip: true,

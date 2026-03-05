@@ -7,7 +7,6 @@ import {HistoryEditor} from "slate-history";
 import {deserialize} from "@/slate/serializer.tsx";
 import {alert, extractText, scrubText, trpc} from "@/utils.ts";
 import {useServices} from "@/managers/services.tsx";
-import {nprogress} from "@mantine/nprogress";
 import {useLayout} from "@/managers/layout.tsx";
 import {type MessageOmitted, zConfig, type zData} from "@tiny-chat/core-backend/types";
 import {Author} from "@tiny-chat/core-backend/generated/prisma/enums.ts";
@@ -203,13 +202,13 @@ export const useMessaging = create(
 
         deleteMessagePair: async (messageId) => {
             setInputDisabled(true);
-            nprogress.start();
+            useTasks.getState().addTask("deleteMessagePair", "Deleting message");
             await trpc.messages.delete.mutate({id: messageId});
-            nprogress.set(33);
+            useTasks.getState().updateTask("deleteMessagePair", 33);
             await useChats.getState().fetchFolders(false);
-            nprogress.set(66);
+            useTasks.getState().updateTask("deleteMessagePair", 66);
             await useChats.getState().fetchMessages(false);
-            nprogress.complete();
+            await useTasks.getState().removeTask("deleteMessagePair");
             setInputDisabled(false);
         },
     })),

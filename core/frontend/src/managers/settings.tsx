@@ -3,8 +3,8 @@ import {create} from "zustand";
 import {subscribeWithSelector} from "zustand/middleware";
 import {auth, hljsThemeNames, trpc} from "@/utils.ts";
 import {useServices} from "@/managers/services.tsx";
-import {nprogress} from "@mantine/nprogress";
 import {zConfig} from "@tiny-chat/core-backend/types.ts";
+import {useTasks} from "@/managers/tasks.tsx";
 
 export const zServices = z.record(z.string(), z.any()).optional();
 export const zSettings = z.object({
@@ -54,6 +54,9 @@ interface Settings {
 
     getServiceSetting: (service: string, key: string) => string | undefined;
     setServiceSetting: (service: string, key: string, value: string | undefined) => Promise<void>;
+
+    serviceErrors: Record<string, string | null>;
+    getServiceError: (service: string) => string | null;
 }
 
 export const useSettings = create(subscribeWithSelector<Settings>((set, get) => ({
@@ -68,31 +71,31 @@ export const useSettings = create(subscribeWithSelector<Settings>((set, get) => 
 
     accounts: [],
     linkAccount: async (providerId) => {
-        nprogress.start();
+        useTasks.getState().addTask("linkAccount", "Linking account");
         await auth.signIn.social({provider: providerId, callbackURL: window.location.href});
-        nprogress.complete();
+        await useTasks.getState().removeTask("linkAccount");
     },
     unlinkAccount: async (providerId) => {
-        nprogress.start();
+        useTasks.getState().addTask("unlinkAccount", "Unlinking account");
         await auth.unlinkAccount({providerId});
-        nprogress.set(50);
+        useTasks.getState().updateTask("unlinkAccount", 50);
         set({accounts: (await auth.listAccounts()).data ?? []});
-        nprogress.complete();
+        await useTasks.getState().removeTask("unlinkAccount");
     },
     deleteUser: async () => {
-        nprogress.start();
+        useTasks.getState().addTask("deleteUser", "Deleting account");
         await auth.deleteUser();
-        nprogress.complete();
+        await useTasks.getState().removeTask("deleteUser");
     },
 
     settings: {},
     setSettings: async (value, notify = true) => {
         const getSettings = async () => zSettings.parse((await auth.getSession()).data?.user?.settings ?? {});
-        if (notify) nprogress.start();
+        if (notify) useTasks.getState().addTask("setSettings", "Saving settings");
         await auth.updateUser({settings: {...await getSettings(), ...value}});
-        if (notify) nprogress.set(50);
+        if (notify) useTasks.getState().updateTask("setSettings", 50);
         set({settings: await getSettings()});
-        if (notify) nprogress.complete();
+        if (notify) await useTasks.getState().removeTask("setSettings");
     },
 
     getInstructions: () => {
@@ -157,13 +160,26 @@ export const useSettings = create(subscribeWithSelector<Settings>((set, get) => 
         return get().settings.services?.[service]?.[key];
     },
     setServiceSetting: async (service, key, value) => {
-        nprogress.start();
+        useTasks.getState().addTask("setServiceSetting", "Saving service settings");
         const services = get().settings.services ?? {};
         if (value) services[service] = {...services[service], [key]: value};
         else delete services[service]?.[key];
         await get().setSettings({services}, false);
-        nprogress.set(50);
+        useTasks.getState().updateTask("setServiceSetting", 50);
+        try {
+            const models = await trpc.services.getModels.query({service});
+            const count = models.length;
+            useTasks.getState().updateTask("setServiceSetting", 75, `${count} model${count === 1 ? "" : "s"} added`);
+            set({serviceErrors: {...get().serviceErrors, [service]: null}});
+        } catch (e: any) {
+            set({serviceErrors: {...get().serviceErrors, [service]: e.message || "Failed to load models"}});
+        }
         await useServices.getState().fetchServices();
-        nprogress.complete();
-    }
+        await useTasks.getState().removeTask("setServiceSetting");
+    },
+
+    serviceErrors: {},
+    getServiceError: (service) => {
+        return get().serviceErrors[service] ?? null;
+    },
 })));

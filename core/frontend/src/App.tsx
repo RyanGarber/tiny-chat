@@ -24,12 +24,15 @@ export default function App() {
         isMobile,
         shadow,
         totalGestureBlocks,
+        drawerCloser,
         isSidebarOpen,
         setSidebarOpen,
         getSidebarWidth,
         isInitializing,
         setInitializing
     } = useLayout();
+
+    const currentChat = useChats((s) => s.currentChat);
 
     const session = auth.useSession();
 
@@ -89,7 +92,13 @@ export default function App() {
 
     const navbarDragClose = useDrag(
         ({movement: [movementX], direction: [directionX], cancel}) => {
-            if (movementX < -50 && directionX < 0 && !totalGestureBlocks) {
+            if (movementX < -50 && directionX < 0) {
+                if (totalGestureBlocks) return; // modal open – block completely
+                if (drawerCloser) {
+                    drawerCloser();
+                    cancel();
+                    return;
+                }
                 setSidebarOpen(false);
                 cancel();
             }
@@ -106,7 +115,7 @@ export default function App() {
                 <CodeHighlightAdapterProvider adapter={hljsAdapter}>
                     <Tasks/>
                     <NavigationProgress/>
-                    <Notifications position="top-center"/>
+                    <Notifications position="bottom-right"/>
                     <Box pos="relative" h={viewport.height} ref={viewport.containerRef}>
                         <LoadingOverlay
                             visible={isInitializing}
@@ -144,7 +153,7 @@ export default function App() {
                                     top: 0,
                                     left: 0,
                                     bottom: 0,
-                                    width: 20,
+                                    width: 15,
                                     zIndex: "var(--mantine-z-index-max)",
                                     touchAction: "none",
                                 }}
@@ -181,6 +190,7 @@ export default function App() {
                                         zIndex: "calc(var(--mantine-z-index-app) + 1)",
                                     }}
                                     m={10}
+                                    ml={currentChat ? 10 : 20}
                                     opened={isSidebarOpen}
                                     onClick={() => setSidebarOpen(!isSidebarOpen)}
                                     display={!isMobile || isSidebarOpen ? "none" : "block"}

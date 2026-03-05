@@ -16,16 +16,16 @@ import {
     TextInput,
     Tooltip
 } from "@mantine/core";
-import {nprogress} from "@mantine/nprogress";
 import {JSX, useEffect, useRef, useState} from "react";
 import {IconBrandGithub, IconBrandGoogle, IconKey, IconPalette, IconSettingsAi, IconTrash} from "@tabler/icons-react";
 import {useServices} from "@/managers/services.tsx";
 import {codeThemes, themes, useSettings} from "@/managers/settings.tsx";
-import {alert, auth, consumeLabel, hashText, openExternal, trpc, webUrl} from "@/utils.ts";
+import {auth, consumeLabel, hashText, openExternal, trpc, webUrl} from "@/utils.ts";
 import {useDisclosure, UseDisclosureReturnValue} from "@mantine/hooks";
 import {useLayout} from "@/managers/layout.tsx";
 import {zConfig} from "@tiny-chat/core-backend/types.ts";
 import ModelSelect from "@/components/ModelSelect.tsx";
+import {useTasks} from "@/managers/tasks.tsx";
 
 export default function Drawers(
     {buttons}:
@@ -55,10 +55,11 @@ export default function Drawers(
         getCodeTheme,
         setCodeTheme,
         getServiceSetting,
-        setServiceSetting
+        setServiceSetting,
+        getServiceError
     } = useSettings();
     const {services} = useServices();
-    const {setGestureBlock} = useLayout();
+    const {setGestureBlock, setDrawerCloser} = useLayout();
 
     const {data: session} = auth.useSession();
 
@@ -86,16 +87,30 @@ export default function Drawers(
 
     const accountDrawer = useDisclosure(false);
     const settingsDrawer = useDisclosure(false);
-    const [isDeleteOpen, {open: openDelete, close: closeDelete}] = useDisclosure(false);
-    useEffect(() => {
-        setGestureBlock(accountDrawer[0] || settingsDrawer[0] || isDeleteOpen);
-    }, [accountDrawer[0], settingsDrawer[0], isDeleteOpen]);
 
-    const [cloneInterval, setCloneInterval] = useState<NodeJS.Timeout>();
     const [addingInstruction, setAddingInstruction] = useState(false);
-
     const [embedChange, setEmbedChange] = useState<zConfig | null>(null);
     const [isEmbedConfirmOpen, {open: openEmbedConfirm, close: closeEmbedding}] = useDisclosure();
+    const [isDeleteOpen, {open: openDelete, close: closeDelete}] = useDisclosure(false);
+
+    // Modals fully block swipe gestures
+    useEffect(() => {
+        setGestureBlock(isDeleteOpen || isEmbedConfirmOpen);
+    }, [isDeleteOpen, isEmbedConfirmOpen]);
+
+    // Drawers intercept swipe-to-close so it closes the drawer before the sidebar
+    useEffect(() => {
+        if (accountDrawer[0]) {
+            setDrawerCloser(accountDrawer[1].close);
+        } else if (settingsDrawer[0]) {
+            setDrawerCloser(settingsDrawer[1].close);
+        } else {
+            setDrawerCloser(null);
+        }
+        return () => setDrawerCloser(null);
+    }, [accountDrawer[0], settingsDrawer[0]]);
+
+    const [cloneInterval, setCloneInterval] = useState<NodeJS.Timeout>();
 
     return (
         <>
@@ -112,14 +127,14 @@ export default function Drawers(
                                         if (session?.user?.isAnonymous) {
                                             if (!isCloning) {
                                                 setCloning(true);
-                                                nprogress.start();
+                                                useTasks.getState().addTask("signIn", "Opening browser");
                                                 const id = await trpc.sessions.startClone.mutate();
                                                 await openExternal(`${webUrl}/#/app/${id}`);
-                                                nprogress.complete();
+                                                useTasks.getState().updateTask("signIn", 50, "Sign in to continue");
                                                 setCloneInterval(setInterval(() => {
-                                                    trpc.sessions.finalizeClone.query({id}).then((res) => {
+                                                    trpc.sessions.finalizeClone.query({id}).then(async (res) => {
                                                         if (res) {
-                                                            alert("info", "Signed in");
+                                                            await useTasks.getState().removeTask("signIn");
                                                             clearInterval(cloneInterval);
                                                             window.location.reload();
                                                         }
@@ -149,9 +164,9 @@ export default function Drawers(
                         <>
                             <Divider/>
                             <Button variant="default" fullWidth mt={10} onClick={async () => {
-                                nprogress.start();
+                                useTasks.getState().addTask("signOut", "Signing out");
                                 await auth.signOut();
-                                nprogress.complete();
+                                await useTasks.getState().removeTask("signOut");
                                 window.location.reload();
                             }}>
                                 Sign Out
@@ -191,16 +206,13 @@ export default function Drawers(
                                         if (e.target.value === instruction) return;
                                         if (e.target.value) {
                                             await editInstruction(index, e.target.value);
-                                            alert("info", "Instruction saved");
                                         } else {
                                             await removeInstruction(index);
-                                            alert("info", "Instruction removed");
                                         }
                                     }}
                                     leftSection={<Text c="dimmed" size="xs">{index + 1}</Text>}
                                     rightSection={<ActionIcon variant="subtle" onClick={async () => {
                                         await removeInstruction(index);
-                                        alert("info", "Instruction removed");
                                     }}><IconTrash size={16}/></ActionIcon>}
                                 />
                             ))}
@@ -216,7 +228,6 @@ export default function Drawers(
                                           await addInstruction(e.target.value);
                                           setAddingInstruction(false);
                                           e.target.value = "";
-                                          alert("info", "Instruction added");
                                       }}
                                       disabled={addingInstruction}/>
                             <Divider/>
@@ -226,7 +237,6 @@ export default function Drawers(
                                          configValue={getMemoryConfig()}
                                          onConfigChange={async (value) => {
                                              await setMemoryConfig(value ?? undefined);
-                                             alert("info", "Memory model saved");
                                          }}
                                          feature={"generate"}/>
                             <ModelSelect label="Embedding Model"
@@ -246,13 +256,11 @@ export default function Drawers(
                                         available.</Text>}
                                 <Button variant="gradient" fullWidth onClick={async () => {
                                     await setEmbeddingConfig(embedChange ?? undefined);
-                                    alert("info", "Embedding model saved");
                                     closeEmbedding();
                                 }} mt="lg">Confirm</Button>
                             </Modal>
                             <CheckboxCard p="xs" checked={getUseEmbeddingSearch()} onChange={async (value) => {
                                 await setUseEmbeddingSearch(value);
-                                alert("info", "Search settings saved");
                             }}>
                                 <Group>
                                     <CheckboxIndicator size="xs"/>
@@ -272,7 +280,6 @@ export default function Drawers(
                                     onChange={async (value) => {
                                         if (!value) return;
                                         await setTheme(value);
-                                        alert("info", "Theme saved");
                                     }}>
                             </Select>
                             <Select label="Code Theme"
@@ -284,7 +291,6 @@ export default function Drawers(
                                     onChange={async (value) => {
                                         if (!value) return;
                                         await setCodeTheme(value);
-                                        alert("info", "Code theme saved");
                                     }}
                                     ref={codeThemeRef}
                             />
@@ -293,7 +299,12 @@ export default function Drawers(
                     <Tabs.Panel value="apiKeys">
                         <Stack>
                             {services.filter(s => s.settings.length).map((service) => (
-                                <Box key={service.name}>
+                                <Box key={service.name}
+                                     style={getServiceError(service.name) ? {
+                                         border: "1px solid var(--mantine-color-red-6)",
+                                         borderRadius: "var(--mantine-radius-md)",
+                                         padding: "var(--mantine-spacing-xs)"
+                                     } : undefined}>
                                     <Text size="sm">{service.name}</Text>
                                     <Stack mt={5}>
                                         {service.settings.map(s => (
@@ -305,7 +316,6 @@ export default function Drawers(
                                                        onBlur={async (e) => {
                                                            if (e.target.value === (getServiceSetting(service.name, s) || "")) return;
                                                            await setServiceSetting(service.name, s, e.target.value);
-                                                           alert("info", "Service saved");
                                                        }}/>
                                         ))}
                                     </Stack>

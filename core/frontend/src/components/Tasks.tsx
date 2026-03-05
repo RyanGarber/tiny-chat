@@ -150,7 +150,7 @@ export default function Tasks() {
 
     return (
         <Dialog opened={taskList.length > 0 || isUpdateShown} withCloseButton={false} className="dialog"
-                style={{boxShadow: shadow}}>
+                style={{boxShadow: shadow}} zIndex={10000}>{/* TODO: var(--mantine-z-index-max) + 1?*/}
             <Stack gap="xs">
                 {taskList.map((task) => (
                     <Group key={task.id}>

@@ -1,6 +1,6 @@
 import {useCallback, useEffect, useLayoutEffect, useRef, useState,} from "react";
-import {Box, Group, ScrollArea, Stack, Text, ThemeIcon} from "@mantine/core";
-import {IconEyeOff, IconMessageCirclePlus} from "@tabler/icons-react";
+import {ActionIcon, Box, Group, ScrollArea, Stack, Text, ThemeIcon, Transition} from "@mantine/core";
+import {IconArrowDown, IconEyeOff, IconMessageCirclePlus} from "@tabler/icons-react";
 import Message from "@/components/Message.tsx";
 import {useMessaging} from "@/managers/messaging.tsx";
 import {useLayout} from "@/managers/layout.tsx";
@@ -69,8 +69,12 @@ export default function Chat() {
         }
     }, [checkIsAtBottom]);
 
+    const [isAtBottom, setIsAtBottom] = useState(true);
+
     const handleScroll = useCallback(() => {
-        isAtBottomRef.current = checkIsAtBottom();
+        const atBottom = checkIsAtBottom();
+        isAtBottomRef.current = atBottom;
+        setIsAtBottom(atBottom);
     }, [checkIsAtBottom]);
 
     useEffect(() => {
@@ -96,6 +100,42 @@ export default function Chat() {
         vv.addEventListener("resize", onResize);
         return () => vv.removeEventListener("resize", onResize);
     }, [scrollToBottom]);
+
+    // Immediately disengage autoscroll on any intentional upward scroll gesture
+    useEffect(() => {
+        const el = messagesViewportRef.current;
+        if (!el) return;
+
+        const isScrollable = () => el.scrollHeight > el.clientHeight + 1;
+
+        const onWheel = (e: WheelEvent) => {
+            if (e.deltaY < 0 && isAtBottomRef.current && isScrollable()) {
+                isAtBottomRef.current = false;
+                setIsAtBottom(false);
+            }
+        };
+
+        let touchStartY = 0;
+        const onTouchStart = (e: TouchEvent) => {
+            touchStartY = e.touches[0].clientY;
+        };
+        const onTouchMove = (e: TouchEvent) => {
+            const deltaY = touchStartY - e.touches[0].clientY;
+            if (deltaY < 0 && isAtBottomRef.current && isScrollable()) {
+                isAtBottomRef.current = false;
+                setIsAtBottom(false);
+            }
+        };
+
+        el.addEventListener("wheel", onWheel, {passive: true});
+        el.addEventListener("touchstart", onTouchStart, {passive: true});
+        el.addEventListener("touchmove", onTouchMove, {passive: true});
+        return () => {
+            el.removeEventListener("wheel", onWheel);
+            el.removeEventListener("touchstart", onTouchStart);
+            el.removeEventListener("touchmove", onTouchMove);
+        };
+    }, [messagesViewportRef.current]);
 
     useLayoutEffect(() => {
         if (isAtBottomRef.current) {
@@ -262,6 +302,36 @@ export default function Chat() {
                         />
                     </>
                 )}
+
+                {/* Scroll-to-bottom button — visible when autoscroll is paused */}
+                <Transition
+                    mounted={!isAtBottom && !isNewChat}
+                    transition="slide-up"
+                    duration={200}
+                    timingFunction="ease"
+                >
+                    {(styles) => (
+                        <ActionIcon
+                            variant="filled"
+                            radius="xl"
+                            size="lg"
+                            style={{
+                                position: "absolute",
+                                bottom: inputEffectsHeight + 16,
+                                right: 20,
+                                zIndex: "calc(var(--mantine-z-index-app) + 1)",
+                                boxShadow: shadow,
+                                ...styles,
+                            }}
+                            onClick={() => {
+                                isAtBottomRef.current = true;
+                                scrollToBottom('smooth');
+                            }}
+                        >
+                            <IconArrowDown size={18}/>
+                        </ActionIcon>
+                    )}
+                </Transition>
 
                 {/* InputEffects overlay — sits at the bottom of the scroll area */}
                 <Group

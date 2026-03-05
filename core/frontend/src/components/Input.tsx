@@ -21,7 +21,7 @@ import {
     Stack,
     Text,
 } from "@mantine/core";
-import {IconArrowUp, IconFile, IconPlayerStop, IconPlus} from "@tabler/icons-react";
+import {IconArrowUp, IconFile, IconPlayerStop, IconPlus, IconScreenshot} from "@tabler/icons-react";
 import {CSSProperties, useCallback, useLayoutEffect, useRef, useState,} from "react";
 import {Editable, ReactEditor, Slate} from "slate-react";
 import {serialize} from "@/slate/serializer.tsx";
@@ -84,6 +84,35 @@ export function Input(props: InputWrapperProps) {
         updateSavedConfig(JSON.stringify(config));
     };
 
+    const captureScreenshot = useCallback(async () => {
+        try {
+            const stream = await navigator.mediaDevices.getDisplayMedia({video: true});
+            const video = document.createElement("video");
+            video.srcObject = stream;
+            await new Promise<void>((resolve) => {
+                video.onloadedmetadata = () => resolve();
+            });
+            await video.play();
+
+            const canvas = document.createElement("canvas");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext("2d");
+            ctx!.drawImage(video, 0, 0);
+            stream.getTracks().forEach((track) => track.stop());
+
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+                    const file = new File([blob], `screenshot-${timestamp}.png`, {type: "image/png"});
+                    addFiles(file);
+                }
+            }, "image/png");
+        } catch (e) {
+            console.error("Failed to capture screenshot:", e);
+        }
+    }, [addFiles]);
+
     const resetMultiline = useCallback(() => {
         if (!serialize().length) setMultiline(false);
     }, [setMultiline, serialize, editor])
@@ -110,10 +139,13 @@ export function Input(props: InputWrapperProps) {
                     {(props) => (
                         <Menu.Item {...props} leftSection={<IconFile size={16}/>}
                                    closeMenuOnClick={false}>
-                            Add File
+                            File
                         </Menu.Item>
                     )}
                 </FileButton>
+                <Menu.Item leftSection={<IconScreenshot size={16}/>} onClick={captureScreenshot}>
+                    Screenshot
+                </Menu.Item>
             </Menu.Dropdown>
         </Menu>
     );

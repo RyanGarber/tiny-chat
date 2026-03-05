@@ -7,6 +7,7 @@ import {MessageOmitted} from "@tiny-chat/core-backend/types.ts";
 import {FolderListData} from "@tiny-chat/core-backend/routes/folders.ts";
 import {navigate} from "wouter/use-hash-location";
 import {nprogress} from "@mantine/nprogress";
+import {useTasks} from "@/managers/tasks.tsx";
 
 interface Chats {
     init: () => Promise<void>;
@@ -42,23 +43,23 @@ export const useChats = create(
 
         folders: [],
         fetchFolders: async (showProgress = true) => {
-            if (showProgress) nprogress.start();
+            if (showProgress) useTasks.getState().addTask("fetchFolders", "Loading chats");
             const chats = await trpc.folders.list.query();
             const {currentChat} = get();
             set({currentChat: currentChat ? await trpc.chats.find.query({id: currentChat.id}) : null});
             set({folders: chats});
-            if (showProgress) nprogress.complete();
+            if (showProgress) await useTasks.getState().removeTask("fetchFolders");
         },
         messages: [],
         fetchMessages: async (showProgress = true) => {
             const {currentChat} = get();
-            if (showProgress) nprogress.start();
+            if (showProgress) useTasks.getState().addTask("fetchMessages", "Loading messages");
             const messages = currentChat
                 ? await trpc.messages.list.query({chatId: currentChat.id})
                 : [];
             set({messages});
             console.log("Messages:", messages);
-            if (showProgress) nprogress.complete();
+            if (showProgress) await useTasks.getState().removeTask("fetchMessages");
         },
 
         currentChat: null,
@@ -81,37 +82,38 @@ export const useChats = create(
 
         renameChat: async (id, name) => {
             const {fetchFolders} = get();
-            nprogress.start();
+            useTasks.getState().addTask("renameChat", "Renaming chat");
             await trpc.chats.edit.mutate({id: id, title: name});
-            nprogress.set(50);
+            useTasks.getState().updateTask("renameChat", 50);
             await fetchFolders(false);
-            nprogress.complete();
+            await useTasks.getState().removeTask("renameChat");
         },
         cloneChat: async (untilMessageId) => {
             const {currentChat, setCurrentChat, fetchFolders} = get();
             console.log("Cloning chat at message:", untilMessageId);
-            nprogress.start();
+            useTasks.getState().addTask("cloneChat", "Forking chat");
             const chat = await trpc.chats.clone.mutate({
                 id: currentChat!.id,
                 untilMessageId,
                 title: `Fork of ${currentChat!.title}`
             });
-            nprogress.set(33);
+            useTasks.getState().updateTask("cloneChat", 33);
             await fetchFolders(false);
-            nprogress.set(66);
+            useTasks.getState().updateTask("cloneChat", 66);
             await setCurrentChat(chat.id, true, false);
-            nprogress.complete();
+            await useTasks.getState().removeTask("cloneChat");
         },
         deleteChat: async (id) => {
             const {currentChat, setCurrentChat, fetchFolders} = get();
             console.log(`Deleting chat ${id}`);
-            if (id === currentChat?.id) nprogress.start();
+            const isCurrent = id === currentChat?.id;
+            if (isCurrent) useTasks.getState().addTask("deleteChat", "Deleting chat");
             await trpc.chats.delete.mutate({id: id});
-            nprogress.set(33);
+            if (isCurrent) useTasks.getState().updateTask("deleteChat", 33);
             await fetchFolders(false);
-            nprogress.set(66);
+            if (isCurrent) useTasks.getState().updateTask("deleteChat", 66);
             if (currentChat?.id === id) await setCurrentChat(null, true, false);
-            nprogress.complete();
+            if (isCurrent) await useTasks.getState().removeTask("deleteChat");
         },
 
         temporary: false,

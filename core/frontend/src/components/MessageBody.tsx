@@ -1,4 +1,4 @@
-import {Box, Button, Divider, Group, Popover, ScrollAreaAutosize, Skeleton, Stack, Text,} from "@mantine/core";
+import {Box, Button, Group, Popover, ScrollAreaAutosize, Skeleton, Stack, Text,} from "@mantine/core";
 import {useElementSize} from "@mantine/hooks";
 import {MessageOmitted} from "@tiny-chat/core-backend/types";
 import {useEffect, useLayoutEffect, useRef, useState} from "react";
@@ -167,9 +167,6 @@ export default function MessageBody({message}: { message: MessageOmitted }) {
                     <Skeleton height={10} radius="md"/>
                     <Skeleton height={10} width="70%" mt={10} mb={20} radius="md"/>
                 </div>
-            )}
-            {message.data.some(p => p.type === "abort") && (
-                <Divider label="Stopped" size="md" styles={{label: {fontSize: 14}}}/>
             )}
         </Box>
     );

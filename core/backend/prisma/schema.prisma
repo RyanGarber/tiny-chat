@@ -24,6 +24,7 @@ model User {
   messages      Message[]
   sessions      Session[]
   summaries     Summary[]
+  tasks         Task[]
 
   @@map("user")
 }
@@ -85,6 +86,7 @@ model Folder {
   memories  Memory[]
   messages  Message[]
   summaries Summary[]
+  tasks     Task[]
 
   @@index([userId])
   @@map("folder")
@@ -103,6 +105,7 @@ model Chat {
   memories  Memory[]
   messages  Message[]
   summaries Summary[]
+  tasks     Task[]
 
   @@index([userId])
   @@index([folderId])
@@ -178,6 +181,26 @@ model Memory {
   @@index([folderId])
   @@index([chatId])
   @@map("memory")
+}
+
+model Task {
+  id        String                 @id
+  userId    String
+  folderId  String
+  chatId    String
+  schedule  Json
+  config    Json
+  data      Json
+  createdAt DateTime               @default(now())
+  embedding Unsupported("vector")?
+  chat      Chat                   @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  folder    Folder                 @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([folderId])
+  @@index([chatId])
+  @@map("task")
 }
 
 enum Author {

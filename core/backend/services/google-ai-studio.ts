@@ -1,20 +1,26 @@
-import type {MessageUnomitted, Model, ModelArg, zConfig, zData, zGenerateOutput} from "../types.ts";
+import type {MessageUnomitted, Model, ModelArg, zData, zGenerateOutput} from "../types.ts";
 import {zMetadata} from "../types.ts";
-import {type Content, GoogleGenAI, type Part, type SendMessageParameters, ThinkingLevel} from "@google/genai";
+import {
+    type Content,
+    type FunctionDeclaration,
+    GoogleGenAI,
+    type Part,
+    type SendMessageParameters,
+    ThinkingLevel
+} from "@google/genai";
 import {Author} from "../generated/prisma/enums.ts";
 import {type ServiceRunner, SettingsError} from "./index.ts";
+import type {ToolRunner} from "../tools/index.ts";
 
-export class GoogleAiStudio implements ServiceRunner {
-    name = "google-ai-studio";
-    settings = ["apiKey"];
+export const GoogleAIStudio: ServiceRunner = {
+    name: "google-ai-studio",
+    settings: ["apiKey"],
 
-    // ── Input conversion: zData → Google SDK types ─────────────────
-
-    async getModels(settings: any): Promise<Model[]> {
-        if (!settings.apiKey) return [];
+    async getModels(session) {
+        if (!session?.user?.settings?.services?.[this.name].apiKey) return [];
 
         const models = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models?key=${settings.apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models?key=${session.user.settings.services[this.name].apiKey}`,
         );
 
         return (await models.json()).models.map((m: any) => {
@@ -46,21 +52,22 @@ export class GoogleAiStudio implements ServiceRunner {
                 args
             } satisfies Model;
         });
-    }
+    },
 
     async* generate(
-        settings: any,
-        instruction: string,
-        context: MessageUnomitted[],
-        config: zConfig,
-        abortSignal: AbortSignal
-    ): AsyncGenerator<zGenerateOutput> {
-        if (!settings.apiKey) throw new SettingsError();
+        session,
+        instruction,
+        context,
+        config,
+        abortSignal,
+        tools?
+    ) {
+        if (!session.user.settings.services[this.name].apiKey) throw new SettingsError();
 
-        const client = new GoogleGenAI({apiKey: settings.apiKey});
+        const client = new GoogleGenAI({apiKey: session.user.settings.services[this.name].apiKey});
 
         const params: SendMessageParameters = {
-            message: this.toSdkContent(context[context.length - 1]).parts!
+            message: toSdkContent(context[context.length - 1]).parts!
         };
 
         params.config = {
@@ -81,7 +88,10 @@ export class GoogleAiStudio implements ServiceRunner {
         if (config.model.startsWith("gemini-") && !config.model.includes("-image")) {
             params.config.systemInstruction = instruction;
             params.config.thinkingConfig = {includeThoughts: true};
-            params.config.tools = [{googleSearch: {}, codeExecution: {}}];
+            params.config.tools = [
+                //{googleSearch: {}, codeExecution: {}},
+                ...(tools?.length ? [{functionDeclarations: toSdkTools(tools)}] : [])
+            ];
 
             if (config.model.includes("-2.5")) {
                 params.config.thinkingConfig.thinkingBudget = ({
@@ -108,18 +118,16 @@ export class GoogleAiStudio implements ServiceRunner {
 
         const stream = await client.chats.create({
             model: config.model,
-            history: context.slice(0, context.length - 1).map(m => this.toSdkContent(m)),
+            history: context.slice(0, context.length - 1).map(m => toSdkContent(m)),
         }).sendMessageStream(params);
 
-        yield* this.fromSdkStream(stream);
-    }
+        yield* fromSdkStream(stream);
+    },
 
-    // ── Output conversion: Google SDK stream → zGenerateOutput ─────
+    async embed(session, texts, config) {
+        if (!session.user.settings.services[this.name].apiKey) return [];
 
-    async embed(settings: any, texts: string[], config: zConfig): Promise<number[][]> {
-        if (!settings.apiKey) return [];
-
-        const client = new GoogleGenAI({apiKey: settings.apiKey});
+        const client = new GoogleGenAI({apiKey: session.user.settings.services[this.name].apiKey});
 
         const response = await client.models.embedContent({
             model: config.model,
@@ -128,73 +136,98 @@ export class GoogleAiStudio implements ServiceRunner {
 
         return response.embeddings?.map(e => e.values ?? []) ?? [];
     }
+}
 
-    // ── Model listing ──────────────────────────────────────────────
+function toSdkTools(tools: ToolRunner[]): FunctionDeclaration[] {
+    return tools.map(t => ({
+        name: t.name,
+        description: t.description,
+        parameters: t.parameters as any
+    }));
+}
 
-    private toSdkParts(data: zData): Part[] {
-        return data.flatMap((part): Part[] => {
-            if (part.type === "text") {
-                return [{text: part.value}];
-            }
-            if (part.type === "file" && part.url.startsWith("data:image/")) {
-                return [{
-                    inlineData: {
-                        mimeType: part.mime,
-                        data: part.url.split(";")[1].replace("base64,", "")
-                    }
-                }];
-            }
-            return [];
-        });
-    }
-
-    // ── Generation ─────────────────────────────────────────────────
-
-    private toSdkContent(message: MessageUnomitted): Content {
-        return {
-            role: message.author === Author.USER ? "user" : "model",
-            parts: this.toSdkParts(message.data)
-        };
-    }
-
-    // ── Embeddings ─────────────────────────────────────────────────
-
-    private async* fromSdkStream(
-        stream: AsyncIterable<any>
-    ): AsyncGenerator<zGenerateOutput> {
-        const parts: Part[] = [];
-
-        try {
-            for await (const chunk of stream) {
-                if (!chunk.candidates?.length || !chunk.candidates[0].content?.parts) continue;
-
-                for (const part of chunk.candidates[0].content.parts) {
-                    if (part.text) {
-                        if (part.thought) {
-                            yield {type: "data", value: {type: "thought", value: part.text}};
-                        } else {
-                            yield {type: "data", value: {type: "text", value: part.text}};
-                        }
-                    }
-                    if (part.inlineData) {
-                        yield {
-                            type: "data", value: {
-                                type: "file",
-                                name: part.inlineData.displayName,
-                                mime: part.inlineData.mimeType,
-                                url: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`!,
-                                inline: true
-                            }
-                        };
-                    }
-                    parts.push(part);
-                }
-            }
-        } catch (e: any) {
-            if (e?.name?.includes("AbortError")) return;
-            throw e;
+function toSdkParts(data: zData): Part[] {
+    return data.flatMap((part): Part[] => {
+        if (part.type === "text") {
+            return [{text: part.value}];
         }
+        if (part.type === "file") {
+            const mime = part.mime ?? part.url.slice(5, part.url.indexOf(";"));
+            const b64 = part.url.split(";base64,")[1] ?? part.url.slice(part.url.indexOf(",") + 1);
+            return [{inlineData: {mimeType: mime, data: b64}}];
+        }
+        if (part.type === "toolCall") {
+            // Don't send toolCall parts back — these represent what the model already generated.
+            // They're part of the history naturally from the previous turn.
+            return [];
+        }
+        if (part.type === "toolResult") {
+            // Send tool results back in user messages
+            return [{
+                functionResponse: {
+                    id: part.id,
+                    response: {
+                        result: !part.error ? part.value : undefined
+                    }
+                }
+            }];
+        }
+        return [];
+    });
+}
 
-        yield {type: "special", value: {type: "metadata", value: zMetadata.parse(parts)}};
+function toSdkContent(message: MessageUnomitted): Content {
+    return {
+        role: message.author === Author.USER ? "user" : "model",
+        parts: toSdkParts(message.data)
+    };
+}
+
+async function* fromSdkStream(
+    stream: AsyncIterable<any>
+): AsyncGenerator<zGenerateOutput> {
+    const parts: Part[] = [];
+
+    try {
+        for await (const chunk of stream) {
+            if (!chunk.candidates?.length || !chunk.candidates[0].content?.parts) continue;
+
+            for (const part of chunk.candidates[0].content.parts) {
+                if (part.text) {
+                    if (part.thought) {
+                        yield {type: "data", value: {type: "thought", value: part.text}};
+                    } else {
+                        yield {type: "data", value: {type: "text", value: part.text}};
+                    }
+                }
+                if (part.inlineData) {
+                    yield {
+                        type: "data", value: {
+                            type: "file",
+                            name: part.inlineData.displayName,
+                            mime: part.inlineData.mimeType,
+                            url: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`!,
+                            inline: true
+                        }
+                    };
+                }
+                if (part.functionCall) {
+                    yield {
+                        type: "data", value: {
+                            type: "toolCall",
+                            id: part.functionCall.id ?? part.functionCall.name,
+                            name: part.functionCall.name,
+                            args: part.functionCall.parameters ?? {}
+                        }
+                    };
+                }
+                parts.push(part);
+            }
+        }
+    } catch (e: any) {
+        if (e?.name?.includes("AbortError")) return;
+        throw e;
     }
+
+    yield {type: "special", value: {type: "metadata", value: zMetadata.parse(parts)}};
 }

@@ -62,3 +62,8 @@ export type Summary = Prisma.SummaryModel
  * 
  */
 export type Memory = Prisma.MemoryModel
+/**
+ * Model Task
+ * 
+ */
+export type Task = Prisma.TaskModel

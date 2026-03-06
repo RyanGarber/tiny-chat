@@ -21,7 +21,7 @@ import {
     Stack,
     Text,
 } from "@mantine/core";
-import {IconArrowUp, IconFile, IconPlayerStop, IconPlus, IconScreenshot} from "@tabler/icons-react";
+import {IconChevronsUp, IconFile, IconPlayerStop, IconPlus, IconScreenshot} from "@tabler/icons-react";
 import {CSSProperties, useCallback, useLayoutEffect, useRef, useState,} from "react";
 import {Editable, ReactEditor, Slate} from "slate-react";
 import {serialize} from "@/slate/serializer.tsx";
@@ -180,7 +180,6 @@ export function Input(props: InputWrapperProps) {
                         }}
                         feature={"generate"}
                     />
-                    {/*<Checkbox label="memory" size="xs" mt="xs" checked={!config?.incognito}/>*/}
                     {!!args?.length && <Divider my="xs"/>}
                     <Stack gap="xs">
                         {args?.map((arg) => (
@@ -216,7 +215,7 @@ export function Input(props: InputWrapperProps) {
                 onClick={abortController !== null ? () => abortController.abort() : onSend}
                 disabled={isMessagingDisabled && (abortController === null || abortController.signal.aborted)}
             >
-                {abortController !== null ? <IconPlayerStop size={24}/> : <IconArrowUp size={24}/>}
+                {abortController !== null ? <IconPlayerStop size={24}/> : <IconChevronsUp size={24}/>}
             </ActionIcon>
         </>
     );
@@ -265,12 +264,16 @@ export function Input(props: InputWrapperProps) {
                     style={{
                         "--input-left-section-width": "auto",
                         "--input-right-section-width": "auto",
+
                     }}
                     radius={(props.style as CSSProperties)?.borderRadius ?? 0}
                     styles={{
                         input: {
                             padding: 0,
                             wordBreak: "break-word",
+                            zIndex: "var(--mantine-z-index-app)",
+                            backgroundColor: "color-mix(in srgb, var(--mantine-color-body), transparent 15%)",
+                            backdropFilter: "blur(5px)",
                         },
                         section: {
                             display: "flex",

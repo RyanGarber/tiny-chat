@@ -64,10 +64,10 @@ export const zDataPart =
             args: z.any()
         }),
         z.object({
-            type: z.literal("toolCallReturn"),
+            type: z.literal("toolResult"),
+            value: z.any(),
+            error: z.boolean().optional(),
             id: z.string(),
-            result: z.enum(["success", "failure"]),
-            value: z.any()
         }),
         z.object({
             type: z.literal("abort"),

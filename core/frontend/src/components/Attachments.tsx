@@ -7,25 +7,33 @@ import {
     IconFileTypeTxt,
     IconFileTypeZip
 } from "@tabler/icons-react";
-import {JSX, useState} from "react";
-import {Avatar, Card, CardSection, Center, Image, Modal, Tooltip} from "@mantine/core";
+import {useState} from "react";
+import {Avatar, Card, Center, Image, Modal, Stack, Tooltip} from "@mantine/core";
 import {Carousel} from "@mantine/carousel";
 import {useDisclosure} from "@mantine/hooks";
+
+type IconEntry = { test: RegExp; Icon: React.ComponentType<{ size: number }> };
+
+const mimeIconEntries: IconEntry[] = [
+    {test: /pdf/, Icon: IconFileTypePdf},
+    {test: /csv/, Icon: IconFileTypeCsv},
+    {test: /word/, Icon: IconFileTypeDoc},
+    {test: /powerpoint|presentation/, Icon: IconFileTypePpt},
+    {test: /zip/, Icon: IconFileTypeZip},
+    {test: /text\/plain/, Icon: IconFileTypeTxt},
+];
+
+function getIcon(mime: string | undefined, iconSize: number) {
+    const entry = mimeIconEntries.find(e => e.test.test(mime ?? ""));
+    const Icon = entry?.Icon ?? IconFile;
+    return <Icon size={iconSize}/>;
+}
 
 export default function Attachments({list, size}: {
     list: { name?: string, mime?: string, url: string }[],
     size?: number
 }) {
     size = size ?? 24;
-
-    const icons: { mimeTest: RegExp, icon: JSX.Element }[] = [
-        {mimeTest: /pdf/, icon: <IconFileTypePdf size={size}/>},
-        {mimeTest: /csv/, icon: <IconFileTypeCsv size={size}/>},
-        {mimeTest: /word/, icon: <IconFileTypeDoc size={size}/>},
-        {mimeTest: /powerpoint|presentation|/, icon: <IconFileTypePpt size={size}/>},
-        {mimeTest: /zip/, icon: <IconFileTypeZip size={size}/>},
-        {mimeTest: /text\/plain/, icon: <IconFileTypeTxt size={size}/>}
-    ];
 
     const [isOpen, {open, close}] = useDisclosure();
     const [slide, setSlide] = useState(0);
@@ -46,7 +54,7 @@ export default function Attachments({list, size}: {
                                 open();
                             }}
                         >
-                            {icons.find(i => i.mimeTest.test(a.mime ?? ""))?.icon ?? <IconFile size={size}/>}
+                            {getIcon(a.mime, size!)}
                         </Avatar>
                     </Tooltip>
                 ))}
@@ -65,18 +73,22 @@ export default function Attachments({list, size}: {
                 >
                     {list.map((a) => (
                         <Carousel.Slide key={a.name}>
-                            <Card>
-                                <CardSection>
-                                    <Image
-                                        src={a.mime?.startsWith("image/") ? a.url : null}
-                                    />
-                                </CardSection>
-                                <CardSection>
-                                    <Center p={5}>
-                                        {a.name}
-                                    </Center>
-                                </CardSection>
-                            </Card>
+                            <Stack h="100%">
+                                <Center p={5}></Center>
+                                <Stack flex={1} justify="center">
+                                    {a.mime?.startsWith("image/")
+                                        ? <Image src={a.url}/>
+                                        : <Card withBorder h={200}>
+                                            <Center h="100%">
+                                                {getIcon(a.mime, 64)}
+                                            </Center>
+                                        </Card>
+                                    }
+                                </Stack>
+                                <Center p={5}>
+                                    {a.name}
+                                </Center>
+                            </Stack>
                         </Carousel.Slide>
                     ))}
                 </Carousel>

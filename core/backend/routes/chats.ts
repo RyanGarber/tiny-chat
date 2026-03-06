@@ -158,8 +158,7 @@ export default router({
             if (input.config) {
                 const service = services.find(s => s.name === input.config?.service);
                 if (service) {
-                    const serviceSettings = ctx.session.user.settings?.services?.[service.name] ?? {};
-                    embedding = (await service.embed(serviceSettings, [input.text], input.config))[0];
+                    embedding = (await service.embed(ctx.session, [input.text], input.config))[0];
                 }
             }
 

@@ -19,7 +19,8 @@ type CustomEditor = BaseEditor & ReactEditor & HistoryEditor;
 interface Messaging {
     editor: CustomEditor | null;
     setEditor: (editor: CustomEditor) => void;
-    clearEditor: () => void;
+    clearText: () => void;
+    setData: (data: zData) => Promise<void>;
     cursorPosition: number | null;
 
     files: File[];
@@ -57,7 +58,7 @@ export const useMessaging = create(
 
         cursorPosition: null,
 
-        clearEditor: () => {
+        clearText: () => {
             const {editor} = get();
             if (!editor) return;
             Transforms.select(editor, {
@@ -68,6 +69,21 @@ export const useMessaging = create(
             Transforms.setNodes(editor, {type: "paragraph"});
         },
 
+        setData: async (data: zData) => {
+            const {editor, clearText, addFiles} = get();
+            if (!editor) return;
+
+            clearText();
+            Transforms.insertNodes(editor, deserialize(extractText(data)));
+            Transforms.removeNodes(editor, {at: [0]});
+
+            const files: File[] = [];
+            for (const file of data.filter(p => p.type === "file")) {
+                files.push(new File([await (await fetch(file.url)).blob()], file.name!, {type: file.mime}));
+            }
+            addFiles(...files);
+        },
+
         files: [],
         addFiles: (...files) => {
             set({files: [...get().files, ...files]});
@@ -76,27 +92,24 @@ export const useMessaging = create(
             set({files: get().files.filter(f => f !== file)});
         },
         addQuote: (content) => {
-            const {editor, cursorPosition} = get();
+            const {editor, cursorPosition, config} = get();
             if (!editor) return;
 
-            const quote = {type: "quote", children: [{text: content}]};
+            const quote = {type: "quote", model: config?.model ?? "", children: [{text: content}]};
             const insertAt = cursorPosition ?? 0;
             editor.insertNode(quote, {at: [insertAt]});
         },
 
         editing: null,
         setEditing: async (value) => {
-            const {setConfig, setInsertingAfter, editor, clearEditor} = get();
+            const {setConfig, setInsertingAfter, editor, setData} = get();
             if (!editor) return;
 
-            if (value) {
-                setInsertingAfter(null);
-                await setInputData(value.data);
-            } else {
-                clearEditor();
-            }
+            if (value) setInsertingAfter(null);
 
             set({editing: value, truncating: value !== null});
+            setData(value?.data ?? []);
+
             if (value) setConfig(value.config);
             else reloadConfig();
         },
@@ -115,11 +128,12 @@ export const useMessaging = create(
 
         reset: () => {
             console.trace("Resetting messaging state");
-            const {setEditing, setInsertingAfter} = get();
+            const {setEditing, setInsertingAfter, setData} = get();
             set({files: []});
             useChats.setState({temporary: false, incognito: false});
             setEditing(null);
             setInsertingAfter(null);
+            setData([]);
         },
 
         scrollRequested: 0,
@@ -131,7 +145,7 @@ export const useMessaging = create(
         },
 
         sendMessage: async (data) => {
-            const {config, truncating, reset, editing} = get();
+            const {config, truncating, reset, editing, setData} = get();
             const {setCurrentChat, fetchFolders, fetchMessages, temporary, incognito} = useChats.getState();
             let currentChat = useChats.getState().currentChat;
             if (!config) return;
@@ -151,7 +165,7 @@ export const useMessaging = create(
                     author: editing.author,
                     config,
                     data,
-                    metadata: {},
+                    metadata: [],
                     truncate: truncating,
                 });
             } else {
@@ -161,7 +175,7 @@ export const useMessaging = create(
                     author: Author.USER,
                     config,
                     data,
-                    metadata: {},
+                    metadata: [],
                     previousId: get().insertingAfter?.id,
                     temporary,
                     incognito
@@ -190,7 +204,7 @@ export const useMessaging = create(
             } catch (e) {
                 alert("error", "Failed to run model")
                 await get().deleteMessagePair(message.id);
-                await setInputData(data);
+                await setData(data);
                 throw e;
             } finally {
                 setInputDisabled(false);
@@ -213,21 +227,6 @@ export const useMessaging = create(
         },
     })),
 );
-
-async function setInputData(data: zData) {
-    const {editor, clearEditor, addFiles} = useMessaging.getState();
-    if (!editor) return;
-
-    clearEditor();
-    Transforms.insertNodes(editor, deserialize(extractText(data)));
-    Transforms.removeNodes(editor, {at: [0]});
-
-    const files: File[] = [];
-    for (const file of data.filter(p => p.type === "file")) {
-        files.push(new File([await (await fetch(file.url)).blob()], file.name!, {type: file.mime}));
-    }
-    addFiles(...files);
-}
 
 function setInputDisabled(disabled: boolean) {
     const {isMessagingDisabled, setMessagingDisabled} = useLayout.getState();

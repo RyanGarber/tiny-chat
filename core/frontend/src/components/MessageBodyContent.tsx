@@ -1,11 +1,11 @@
 import {useLayout} from "@/managers/layout.tsx";
 import {useMessaging} from "@/managers/messaging.tsx";
-import {ActionIcon, Box, Image, Portal, Transition,} from "@mantine/core";
+import {ActionIcon, Box, Divider, Image, Portal, Transition,} from "@mantine/core";
 import {useTextSelection} from "@mantine/hooks";
 import {IconQuoteFilled} from "@tabler/icons-react";
 import React, {CSSProperties, useEffect, useLayoutEffect, useRef, useState} from "react";
 import {applyHljsTheme, extractText,} from "@/utils.ts";
-import {MessageOmitted} from "@tiny-chat/core-backend/types.ts";
+import {MessageOmitted, zDataPart} from "@tiny-chat/core-backend/types.ts";
 import {useSettings} from "@/managers/settings.tsx";
 import Markdown from "@/components/Markdown.tsx";
 import {Author} from "@tiny-chat/core-backend/generated/prisma/enums.ts";
@@ -165,6 +165,17 @@ export default function MessageBodyContent({message, style}: {
             } else {
                 break;
             }
+        } else if (part.type === "toolCall") {
+            if (streamedLength >= textOffset) {
+                const result = message.data.find(p => p.type === "toolResult" && p.id === part.id) as Extract<zDataPart, {
+                    type: "toolResult"
+                }>;
+                renderedParts.push(<Divider
+                    key={i} label={`${(!result ? "Running" : (!result.error ? "Succeeded" : "Failed"))}: ${part.name}`}
+                    size="md" styles={{label: {fontSize: 14}}}/>);
+            }
+        } else if (part.type === "abort") {
+            renderedParts.push(<Divider key={i} label="Stopped" size="md" styles={{label: {fontSize: 14}}}/>);
         }
     }
 

@@ -67,7 +67,7 @@ export const useChats = create(
             if (showProgress) nprogress.start();
             let chat = await trpc.chats.find.query({id: id!});
             if (id && !chat) {
-                if (pushState) nprogress.complete();
+                if (showProgress) nprogress.complete();
                 return;
             }
             if (pushState) navigate(id ? `/${id}` : "/");

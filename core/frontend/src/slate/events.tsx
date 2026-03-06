@@ -143,31 +143,34 @@ function toggleMark(syntax: MarkSyntax) {
 }
 
 export async function onSend() {
-    const {editor, files, sendMessage, clearEditor} = useMessaging.getState();
+    const {editor, files, sendMessage, setData} = useMessaging.getState();
     if (!editor) return;
 
-    const content = serialize();
-    if (content.trim() === "") return;
-    console.log("Sending:", editor.children, "serialized to:", content);
-    const parts: zDataPart[] = [];
+    const text = serialize();
+
+    const data: zDataPart[] = [];
     for (let i = 0; i < files.length; i++) {
         const reader = new FileReader();
         await new Promise((resolve) => {
             reader.onload = () => resolve(reader.result);
             reader.readAsDataURL(files[i]);
         });
-        parts.push({
+        data.push({
             type: "file",
             name: files[i].name,
             mime: files[i].type,
             url: reader.result as string,
         });
     }
-    parts.push({type: "text", value: content});
-    useMessaging.getState().requestScrollToBottom();
-    void sendMessage(parts);
-    clearEditor();
+    if (text.trim().length) data.push({type: "text", value: text});
 
+    if (!data.length) return;
+
+    console.log("Sending message:", data);
+
+    useMessaging.getState().requestScrollToBottom();
+    void sendMessage(data);
+    void setData([]);
 }
 
 export function onKeyDown(event: KeyboardEvent) {

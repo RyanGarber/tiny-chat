@@ -1,6 +1,6 @@
 import {useCallback, useEffect, useLayoutEffect, useRef, useState,} from "react";
-import {ActionIcon, Box, Group, ScrollArea, Stack, Text, ThemeIcon, Transition} from "@mantine/core";
-import {IconArrowDown, IconEyeOff, IconMessageCirclePlus} from "@tabler/icons-react";
+import {ActionIcon, Box, Burger, Button, Group, ScrollArea, Stack, Text, ThemeIcon, Transition} from "@mantine/core";
+import {IconArrowDown, IconEyeOff, IconMessageCirclePlus, IconStopwatch} from "@tabler/icons-react";
 import Message from "@/components/Message.tsx";
 import {useMessaging} from "@/managers/messaging.tsx";
 import {useLayout} from "@/managers/layout.tsx";
@@ -32,7 +32,7 @@ export default function Chat() {
         scrollRequested,
     } = useMessaging();
 
-    const {isMobile, shadow, isInitializing, isMessaging, getSidebarWidth} = useLayout();
+    const {isMobile, shadow, isInitializing, isMessaging, getSidebarWidth, isSidebarOpen, setSidebarOpen} = useLayout();
     const isiPhone = navigator.userAgent.includes("iPhone");
 
     const messagesViewportRef = useRef<HTMLDivElement>(null);
@@ -265,21 +265,38 @@ export default function Chat() {
                                 },
                             }}
                         >
-                            {isMobile && (
-                                <Box
-                                    style={{
-                                        position: "sticky",
-                                        top: 0,
-                                        left: 0,
-                                        right: 0,
-                                        height: 50,
-                                        zIndex: "var(--mantine-z-index-app)",
-                                        backgroundColor: "color-mix(in srgb, var(--mantine-color-body), transparent 15%)",
-                                        backdropFilter: "blur(5px)",
-                                        borderBottom: "1px solid var(--mantine-color-default-border)",
-                                    }}
+                            <Group
+                                pos="sticky"
+                                top={0} bottom={0} left={0} right={0}
+                                p={10}
+                                gap={5}
+                                maw={inputMaxWidth}
+                                m="0 auto"
+                                display={isMobile ? "block" : "none"} // TODO - tasks
+                                style={{
+                                    zIndex: "var(--mantine-z-index-app)",
+                                    backgroundColor: "color-mix(in srgb, var(--mantine-color-body), transparent 15%)",
+                                    backdropFilter: "blur(5px)",
+                                    boxShadow: shadow,
+                                    borderRadius: isInputMaxWidth ? "0 0 10px 10px" : 0,
+                                    ...(isInputMaxWidth ? {border: "1px solid var(--mantine-color-default-border)"} : {borderBottom: "1px solid var(--mantine-color-default-border)"})
+                                }}
+                                className="topbar"
+                            >
+                                <Burger
+                                    ml={!currentChat ? 10 : 0}
+                                    opened={isSidebarOpen}
+                                    onClick={() => setSidebarOpen(!isSidebarOpen)}
+                                    display={!isMobile || isSidebarOpen ? "none" : "block"}
+                                    size="sm"
                                 />
-                            )}
+                                <Button variant="subtle" p="5px 10px" h="auto">
+                                    <Group gap={5}>
+                                        <IconStopwatch size={18}/>
+                                        Tasks
+                                    </Group>
+                                </Button>
+                            </Group>
                             <Stack pt={10} px={20} m="0 auto" maw={860} gap={10}>
                                 {!isInitializing &&
                                     messages.map((message) => (
@@ -296,7 +313,7 @@ export default function Chat() {
                                 position: "absolute",
                                 inset: 0,
                                 pointerEvents: "none",
-                                maskImage: `linear-gradient(black 0%, transparent 25px, transparent calc(100% - ${25 + inputEffectsHeight}px), black 100%)`,
+                                maskImage: `linear-gradient(black 0%, transparent 25px, transparent calc(100% - ${25 + inputEffectsHeight}px), black 100%)`, // TODO - tasks - 100px
                                 background: "var(--mantine-color-body)",
                             }}
                         />

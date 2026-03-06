@@ -1,47 +1,50 @@
-import type {MessageUnomitted, Model, zConfig, zGenerateOutput} from "../types.ts";
+import type {Model, zGenerateOutput} from "../types.ts";
 import type {ServiceRunner} from "./index.ts";
 
-export class Debug implements ServiceRunner {
-    name = "debug";
-    settings = [];
+export const Debug: ServiceRunner = {
+    name: "debug",
+    settings: [],
 
-    async getModels(_settings: any) {
-        return [{name: "image-sim", features: ["generate" as const], args: []} satisfies Model];
-    }
+    async getModels(_session) {
+        return [{name: "tool-sim", features: ["generate" as const], args: []} satisfies Model];
+    },
 
-    async* generate(_settings: any, _instruction: string, _context: MessageUnomitted[], _config: zConfig, abortSignal: AbortSignal): AsyncGenerator<zGenerateOutput> {
-        yield {type: "data", value: {type: "thought", value: "Thinking"}};
-        await new Promise((resolve) => setTimeout(resolve, 500));
+    async* generate(_session, _instruction, context, _config, _abortSignal, _tools) {
+        const data: zGenerateOutput[] = [];
 
-        let words = "Thar be images:".match(/.{3}|.+$/gs)!;
-        for (const word of words) {
-            yield {type: "data", value: {type: "text", value: word}};
-            await new Promise((resolve) => setTimeout(resolve, 25));
-        }
+        const result = context[context.length - 1].data.find(p => p.type === "toolResult");
+        if (!result) {
+            yield {type: "data", value: {type: "thought", value: "Thinking evil thoughts"}};
+            await new Promise((resolve) => setTimeout(resolve, 500));
 
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        yield {
-            type: "data", value: {
-                type: "file",
-                mime: "image/png",
-                name: "image.png",
-                url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
-                inline: true
+            let words = "Finding your dirtiest secret...".match(/.{3}|.+$/gs)!;
+            for (const word of words) {
+                data.push({type: "data", value: {type: "text", value: word}});
+                yield data[data.length - 1];
+                await new Promise((resolve) => setTimeout(resolve, 25));
             }
-        };
 
-        words = "Thar hast been images".match(/.{3}|.+$/gs)!;
-        for (const word of words) {
-            yield {type: "data", value: {type: "text", value: word}};
-            await new Promise((resolve) => setTimeout(resolve, 25));
+            data.push({
+                type: "data",
+                value: {type: "toolCall", name: "find_memories", args: {fact: "my dirtiest secret"}, id: "1"}
+            });
+            yield data[data.length - 1];
+        } else {
+            console.log("find_memories result:", result);
+            const chosen = result.value[Math.floor(Math.random() * result.value.length)];
+            data.push({
+                type: "data",
+                value: {
+                    type: "text",
+                    value: !result.error ? `Your dirtiest secret is: ${chosen.fact} (I'm ${Math.round(chosen.confidence * 100)}% confident)` : "Couldn't find your dirtiest secret :("
+                }
+            });
+            yield data[data.length - 1];
         }
+        yield {type: "special", value: {type: "metadata", value: data}}
+    },
 
-        if (abortSignal.aborted) console.log("Aborted");
-
-        yield {type: "special", value: {type: "metadata", value: {}}}
-    }
-
-    async embed(_settings: any, _texts: string[], _config: zConfig): Promise<number[][]> {
+    async embed(_session, _texts, _config) {
         return [];
     }
 }

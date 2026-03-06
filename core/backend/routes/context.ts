@@ -4,7 +4,12 @@ import {procedure, router} from "../index.ts";
 import {MemoryCategory, MemoryStability} from "../generated/prisma/enums.ts";
 import {zConfig} from "../types.ts";
 import {getMostRelevant} from "./embeddings.ts";
-import {type Memory} from "../generated/prisma/client.ts";
+import {type Memory, type PrismaClient} from "../generated/prisma/client.ts";
+import {type Session} from "../server.ts";
+
+declare namespace globalThis {
+    let prisma: PrismaClient;
+}
 
 export default router({
     createMemories: procedure.input(z.object({
@@ -81,13 +86,18 @@ export default router({
     listRelevantMemories: procedure.input(z.object({
         embedding: z.array(z.number()),
     })).mutation(async ({ctx, input}) => {
-        return getMostRelevant(input.embedding, (await ctx.prisma.$queryRaw<(Memory & {
-            embedding: string
-        })[]>`SELECT *
-              FROM memory
-              WHERE "userId" = ${ctx.session.user.id}`).map(m => ({
-            value: m as Memory,
-            embedding: JSON.parse(m.embedding)
-        }))).map(m => m.value as Memory);
+        return listRelevantMemories(ctx.session, input.embedding);
     })
 })
+
+export async function listRelevantMemories(session: Session, embedding: number[]): Promise<Memory[]> {
+    return getMostRelevant(embedding, (await (globalThis.prisma as PrismaClient).$queryRaw<(Memory & {
+        embedding: string
+    })[]>`SELECT *
+          FROM memory
+          WHERE "userId" = ${session!.user!.id}
+            AND latest`).map(m => ({
+        value: m as Memory,
+        embedding: JSON.parse(m.embedding)
+    }))).map(m => m.value as Memory);
+}

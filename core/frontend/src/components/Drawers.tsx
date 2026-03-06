@@ -195,7 +195,6 @@ export default function Drawers(
                     </Tabs.List>
                     <Tabs.Panel value="general">
                         <Stack>
-                            {/* delete on !value or keep button? */}
                             {getInstructions().map((instruction, index) => (
                                 <Textarea
                                     key={hashText(index + instruction)}
@@ -216,84 +215,102 @@ export default function Drawers(
                                     }}><IconTrash size={16}/></ActionIcon>}
                                 />
                             ))}
-                            <Textarea key="add"
-                                      autosize
-                                      label="Instruction"
-                                      styles={{...(consumeLabel), ...{input: {paddingTop: 25}}}}
-                                      placeholder="Keep responses short."
-                                      onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-                                      onBlur={async (e) => {
-                                          if (!e.target.value) return;
-                                          setAddingInstruction(true);
-                                          await addInstruction(e.target.value);
-                                          setAddingInstruction(false);
-                                          e.target.value = "";
-                                      }}
-                                      disabled={addingInstruction}/>
+                            <Tooltip label="Custom instructions for the models" color="gray" position="right">
+                                <Textarea key="add"
+                                          autosize
+                                          label="Instruction"
+                                          styles={{...(consumeLabel), ...{input: {paddingTop: 25}}}}
+                                          placeholder="Keep responses short."
+                                          onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+                                          onBlur={async (e) => {
+                                              if (!e.target.value) return;
+                                              setAddingInstruction(true);
+                                              await addInstruction(e.target.value);
+                                              setAddingInstruction(false);
+                                              e.target.value = "";
+                                          }}
+                                          disabled={addingInstruction}/>
+                            </Tooltip>
                             <Divider/>
-                            <ModelSelect label="Memory Model"
-                                         styles={consumeLabel}
-                                         optional
-                                         configValue={getMemoryConfig()}
-                                         onConfigChange={async (value) => {
-                                             await setMemoryConfig(value ?? undefined);
-                                         }}
-                                         feature={"generate"}/>
-                            <ModelSelect label="Embedding Model"
-                                         styles={consumeLabel}
-                                         optional
-                                         configValue={getEmbeddingConfig()}
-                                         onConfigChange={(value) => {
-                                             setEmbedChange(value ?? null);
-                                             openEmbedConfirm();
-                                         }}
-                                         feature={"embed"}/>
-                            <Modal title="Change Embedding Model" opened={isEmbedConfirmOpen} onClose={closeEmbedding}>
+                            <Tooltip label="Model that generates embeddings" color="gray"
+                                     position="right">
+                                <ModelSelect label="Embedding Model"
+                                             styles={consumeLabel}
+                                             optional
+                                             configValue={getEmbeddingConfig()}
+                                             onConfigChange={(value) => {
+                                                 setEmbedChange(value ?? null);
+                                                 openEmbedConfirm();
+                                             }}
+                                             feature={"embed"}/>
+                            </Tooltip>
+                            <Modal title="Change Embedding Model" opened={isEmbedConfirmOpen}
+                                   onClose={closeEmbedding}>
                                 {embedChange
-                                    ? <Text>Are you sure? All embeddings will be regenerated using the
+                                    ? <Text>All embeddings will be regenerated using the
                                         model <strong>{embedChange.model}</strong>.</Text>
-                                    : <Text>Are you sure? Features like memory and smart search will not be
-                                        available.</Text>}
+                                    : <Text>Features like memory and smart search will not be available.</Text>}
                                 <Button variant="gradient" fullWidth onClick={async () => {
                                     await setEmbeddingConfig(embedChange ?? undefined);
                                     closeEmbedding();
                                 }} mt="lg">Confirm</Button>
                             </Modal>
-                            <CheckboxCard p="xs" checked={getUseEmbeddingSearch()} onChange={async (value) => {
-                                await setUseEmbeddingSearch(value);
-                            }}>
-                                <Group>
-                                    <CheckboxIndicator size="xs"/>
-                                    <Text size="sm">Use embeddings for search</Text>
-                                </Group>
-                            </CheckboxCard>
+                            <Tooltip
+                                label={getEmbeddingConfig() ? "Model that decides new memories" : "Requires embedding model"}
+                                color="gray" position="right">
+                                <ModelSelect
+                                    label="Memory Model"
+                                    styles={consumeLabel}
+                                    optional
+                                    configValue={getMemoryConfig()}
+                                    onConfigChange={async (value) => {
+                                        await setMemoryConfig(value ?? undefined);
+                                    }}
+                                    feature={"generate"}
+                                    disabled={!getEmbeddingConfig()}/>
+                            </Tooltip>
+                            <Tooltip
+                                label={getEmbeddingConfig() ? "Considers semantic meaning of text" : "Requires embedding model"}
+                                color="gray" position="right">
+                                <CheckboxCard p="xs" checked={getUseEmbeddingSearch()} onChange={async (value) => {
+                                    await setUseEmbeddingSearch(value);
+                                }} disabled={!getEmbeddingConfig()}
+                                              style={{cursor: !getEmbeddingConfig() ? "not-allowed" : "pointer"}}>
+                                    <Group>
+                                        <CheckboxIndicator size="xs" disabled={!getEmbeddingConfig()}/>
+                                        <Text size="sm">Smart Search</Text>
+                                    </Group>
+                                </CheckboxCard>
+                            </Tooltip>
                         </Stack>
                     </Tabs.Panel>
                     <Tabs.Panel value="appearance">
                         <Stack>
-                            <Select label="Theme"
-                                    styles={consumeLabel}
-                                    required
-                                    allowDeselect={false}
-                                    data={themes}
-                                    value={getTheme()}
-                                    onChange={async (value) => {
-                                        if (!value) return;
-                                        await setTheme(value);
-                                    }}>
-                            </Select>
-                            <Select label="Code Theme"
-                                    styles={consumeLabel}
-                                    required
-                                    allowDeselect={false}
-                                    data={codeThemes(getTheme())}
-                                    value={getCodeTheme()}
-                                    onChange={async (value) => {
-                                        if (!value) return;
-                                        await setCodeTheme(value);
-                                    }}
-                                    ref={codeThemeRef}
-                            />
+                            <Tooltip label="Styles the app" color="gray" position="right">
+                                <Select label="Theme"
+                                        styles={consumeLabel}
+                                        allowDeselect={false}
+                                        data={themes}
+                                        value={getTheme()}
+                                        onChange={async (value) => {
+                                            if (!value) return;
+                                            await setTheme(value);
+                                        }}>
+                                </Select>
+                            </Tooltip>
+                            <Tooltip label="Styles code blocks" color="gray" position="right">
+                                <Select label="Code Theme"
+                                        styles={consumeLabel}
+                                        allowDeselect={false}
+                                        data={codeThemes(getTheme())}
+                                        value={getCodeTheme()}
+                                        onChange={async (value) => {
+                                            if (!value) return;
+                                            await setCodeTheme(value);
+                                        }}
+                                        ref={codeThemeRef}
+                                />
+                            </Tooltip>
                         </Stack>
                     </Tabs.Panel>
                     <Tabs.Panel value="apiKeys">

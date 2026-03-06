@@ -160,8 +160,12 @@ export function snippetText(text: string, query: string, window: number = 160): 
 }
 
 export function scrubText(text: string, maxLength: number = -1): string {
-    if (text.split("\n")[0].match(/^\[(user|assistant)/)) text = text.slice(text.indexOf("\n") + 1);
+    if (text.split("\n")[0].match(/^\[(user|assistant)/)) {
+        text = text.slice(text.indexOf("\n") + 1);
+        if (!text.split("\n")[0].trim().length) text = text.slice(text.indexOf("\n") + 1);
+    }
     text = text
+        .replace(/::model=[^:]+::/g, "") // Remove quote model tags
         .replace(/::>::\s?(.*)/g, "$1") // Remove quote markers
         .replace(/!\[.*?]\(.*?\)/g, "") // Remove images
         .replace(/\[([^\]]+)]\((.*?)\)/g, "$1") // Remove links but keep text

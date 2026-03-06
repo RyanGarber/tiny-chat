@@ -109,9 +109,6 @@ export const auth = betterAuth({
     },
     trustedOrigins: [
         `http://localhost:${process.env.VITE_WEB_PORT}`,
-        `http://${await internalIpV4()}:${process.env.VITE_WEB_PORT}`,
-        "https://tauri.localhost",
-        "tauri://localhost",
         process.env.VITE_WEB_URL!,
     ],
     socialProviders: {
@@ -157,6 +154,8 @@ export const auth = betterAuth({
 });
 
 const authHandler = toNodeHandler(auth);
+
+export type Session = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
 
 const server = createServer((req, res) => {
     res.setHeader("Access-Control-Allow-Origin", req.headers.origin || process.env.VITE_BACKEND_URL!);

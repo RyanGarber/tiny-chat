@@ -1,7 +1,8 @@
 import {z} from "zod";
 import {procedure, router} from "../index.ts";
 import type {Memory, Message, Summary} from "../generated/prisma/client.ts";
-import {wrapMessage} from "../types.ts";
+import {wrapMessage, zConfig} from "../types.ts";
+import {type Session} from "../server.ts";
 
 const TX_TIMEOUT = 10000; // might not be needed
 
@@ -141,4 +142,12 @@ export function getMostRelevant(
     }
 
     return finalCandidates;
+}
+
+export function getEmbeddingConfig(session: Session) {
+    const config = zConfig.safeParse(session.user.settings?.embeddingConfig);
+    if (!config.success) {
+        return undefined;
+    }
+    return config.data;
 }

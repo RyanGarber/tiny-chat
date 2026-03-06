@@ -3,7 +3,7 @@ import {reloadConfig} from "@/managers/messaging.tsx";
 import {create} from "zustand";
 import {format} from "timeago.js";
 import {subscribeWithSelector} from "zustand/middleware";
-import {MessageUnomitted, Service, zConfig, zDataPart} from "@tiny-chat/core-backend/types.ts";
+import {MessageUnomitted, Service, zConfig, zDataPart, zMetadata} from "@tiny-chat/core-backend/types.ts";
 import {generate, trpc} from "@/utils.ts";
 import {useSettings} from "@/managers/settings.tsx";
 import {Author} from "@tiny-chat/core-backend/generated/prisma/enums.ts";
@@ -98,7 +98,17 @@ IMPORTANT: Do not introduce or revisit the above topics unless:
                                         ];
                                     }
                                     if (d.type === "text") {
-                                        let value = d.value.replace("::>::", ">");
+                                        let value = d.value.replace(/((?:^::>:: .*$\n?)+)/gm, (block) => {
+                                            const lines = block.trim().split("\n").map(l => l.replace(/^::>:: /, ""));
+                                            let modelName = "";
+                                            let contentLines = lines;
+                                            if (lines[0].startsWith("::model=") && lines[0].endsWith("::")) {
+                                                modelName = lines[0].slice("::model=".length, -2);
+                                                contentLines = lines.slice(1);
+                                            }
+                                            const prefix = modelName ? `Earlier, ${modelName} said:\n` : "";
+                                            return prefix + contentLines.map(l => `> ${l}`).join("\n") + "\n";
+                                        });
                                         if (isFirstText) {
                                             let heading;
                                             if (m.author === Author.USER) {
@@ -110,7 +120,7 @@ IMPORTANT: Do not introduce or revisit the above topics unless:
                                             } else {
                                                 heading = `[assistant:model=${m.config.model}]\n`;
                                             }
-                                            value = heading + value;
+                                            value = heading + "\n" + value;
                                             isFirstText = false;
                                         }
                                         return [{...d, value}];
@@ -131,10 +141,8 @@ This conversation may include responses from multiple AI models. Previous assist
 
 [assistant:model=<model-name>]
 
-You are the AI model "${reply.config.model}." You should speak only as "${reply.config.model}."
-
-IMPORTANT: These labels indicate which model generated each response and are NOT part of the message content.
-Do NOT include your own label in your response – the system will add it automatically.`
+You are the AI model "${reply.config.model}." You should speak only as "${reply.config.model}.
+You should call out and refer to other models by name when appropriate."`
                         + (userInstructions.length
                             ? `\n\n`
                             + `Additionally, the user provided the following instructions:\n`
@@ -169,13 +177,7 @@ Do NOT include your own label in your response – the system will add it automa
                             console.log("Received event:", event);
 
                             if (event.type === "data") {
-                                if (event.value.type === "abort") {
-                                    console.log("Received abort");
-                                    reply.data.push(event.value);
-                                } else if (event.value.type === "thought") {
-                                    reply.state.thinking = true;
-                                    reply.data.push(event.value);
-                                } else if (event.value.type === "text") {
+                                if (event.value.type === "text") {
                                     reply.state.thinking = false;
                                     reply.state.generating = true;
                                     if (!hasText) {
@@ -185,12 +187,15 @@ Do NOT include your own label in your response – the system will add it automa
                                     const last = reply.data[reply.data.length - 1];
                                     if (last?.type === "text") last.value += event.value.value;
                                     else reply.data.push(event.value);
-                                } else if (event.value.type === "file") {
+                                } else {
                                     reply.data.push(event.value);
+                                    if (event.value.type === "thought") {
+                                        reply.state.thinking = true;
+                                    }
                                 }
                             } else if (event.type === "special") {
                                 if (event.value.type === "metadata") {
-                                    reply.metadata = event.value.value;
+                                    (reply.metadata as zMetadata[]).push(event.value.value);
                                 } else if (event.value.type === "fileUpdate") {
                                     const fileName = event.value.name;
                                     const file = reply.data.filter(p => p.type === "file").find(p => p.name === fileName);
@@ -232,19 +237,19 @@ async function prepare(previousId: string, config: zConfig): Promise<MessageUnom
             author: Author.MODEL,
             config: config,
             data: [],
-            metadata: {}
+            metadata: []
         })
         : await trpc.messages.edit.mutate({
             id: existing.id,
             author: existing.author,
             config: existing.config,
             data: [],
-            metadata: {},
+            metadata: [],
             truncate: false,
         });
     await useChats.getState().fetchMessages(false);
     const replyRef = useChats.getState().messages.find((m) => m.id === reply.id) as MessageUnomitted;
-    replyRef.metadata = {};
+    replyRef.metadata = [];
     return replyRef;
 }
 

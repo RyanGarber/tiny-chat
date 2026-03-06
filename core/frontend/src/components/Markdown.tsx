@@ -1,12 +1,13 @@
 import {CSSProperties, Fragment, memo} from "react";
 import {getTextFromChildren, openExternal} from "@/utils.ts";
 import ReactMarkdown, {Components} from "react-markdown";
-import {Blockquote, Typography} from "@mantine/core";
+import {Blockquote, Group, ScrollArea, Text, Typography} from "@mantine/core";
 import RemarkGfm from "remark-gfm";
 import RemarkBreaks from "remark-breaks";
 import {CodeHighlight} from "@mantine/code-highlight";
 import katex from "katex";
 import 'katex/dist/katex.min.css';
+import {IconQuoteFilled} from "@tabler/icons-react";
 
 const STREAMING_MARKER = "\uE000";
 const MATH_MARKER = "\uE001";
@@ -27,15 +28,33 @@ const components: Components = {
     blockquote: (node) => {
         const text = getTextFromChildren(node.children);
         if (text.trim().startsWith("::>:: ")) {
+            const lines = text.split("\n");
+            let modelName = "";
+            let contentLines = lines;
+
+            const firstContent = lines[0].replace(/^::>::\s?/, "");
+            if (firstContent.startsWith("::model=") && firstContent.endsWith("::")) {
+                modelName = firstContent.slice("::model=".length, -2);
+                contentLines = lines.slice(1);
+            }
+
             return (
-                <Blockquote className="ignore-typography">
-                    {text.split("\n").map((line, index) => (
-                        <Fragment key={index}>
-                            {line.replace(/^::>::\s?/gm, "")}
-                            {index < text.split("\n").length - 1 && <br/>}
-                        </Fragment>
-                    ))}
-                </Blockquote>
+                <>
+                    {modelName && (
+                        <Group gap={5} c="dimmed" mb={4}>
+                            <IconQuoteFilled size={14} style={{transform: "scale(-1,1)"}}/>
+                            <Text size="xs">{modelName}</Text>
+                        </Group>
+                    )}
+                    <Blockquote className="ignore-typography" mb="var(--mantine-spacing-lg)">
+                        {contentLines.map((line, index) => (
+                            <Fragment key={index}>
+                                {line.replace(/^::>::\s?/gm, "")}
+                                {index < contentLines.length - 1 && <br/>}
+                            </Fragment>
+                        ))}
+                    </Blockquote>
+                </>
             );
         }
         return <Blockquote>{node.children}</Blockquote>;
@@ -78,6 +97,13 @@ const components: Components = {
             </div>
         );
     },
+    table: (node) => {
+        return (
+            <ScrollArea scrollbars="x" type="always">
+                <table>{node.children}</table>
+            </ScrollArea>
+        );
+    },
     a: (node) => {
         return <a href={node.href} onClick={async (e) => {
             if (!node.href) return;
@@ -90,9 +116,14 @@ const components: Components = {
 const LATEX_CHAR_RE = /[\\^_{}]/;
 
 const filter = (text: string) => {
-    if (text.split("\n")[0].match(/^\[(user|assistant)/)) text = text.slice(text.indexOf("\n") + 1);
+    if (text.split("\n")[0].match(/^\[(user|assistant)/)) {
+        text = text.slice(text.indexOf("\n") + 1);
+        if (!text.split("\n")[0].trim().length) text = text.slice(text.indexOf("\n") + 1);
+    }
 
-    text = text.replace(/^::>:: (.*)$/gm, "> ::>:: $1");
+    text = text.replace(/((?:^::>:: .*$\n?)+)/gm, (block) =>
+        block.replace(/^::>:: (.*)$/gm, "> ::>:: $1")
+    );
 
     text = text.replace(
         /(`{3,}[\s\S]*?`{3,}|``[^`\n]*``|`[^`\n]+`)|^[ \t]*\$\$([\s\S]*?)\$\$[ \t]*$|^[ \t]*\\\[([\s\S]*?)\\\][ \t]*$|(?<![$\\])\$(?![\s\d])([^$\n]+?)(?<!\s)\$(?![$a-zA-Z_\d])|(?<!\\)\\\(([^\n]*?)\\\)/gm,

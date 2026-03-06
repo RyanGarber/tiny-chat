@@ -1,8 +1,10 @@
 import {IncomingMessage, ServerResponse} from "http";
 import {auth, toHeaders} from "./server.ts";
-import {type MessageUnomitted, zGenerateInput} from "./types.ts";
+import {type MessageUnomitted, type zData, zGenerateInput, type zGenerateOutput} from "./types.ts";
+import {Author} from "./generated/prisma/enums.ts";
 import {services} from "./services/index.ts";
 import {PrismaClient} from "./generated/prisma/client.ts";
+import {tools} from "./tools/index.ts";
 
 export default async function streamHandler(req: IncomingMessage, res: ServerResponse, prisma: PrismaClient) {
     try {
@@ -36,8 +38,6 @@ export default async function streamHandler(req: IncomingMessage, res: ServerRes
             const service = services.find(s => s.name === input.config.service);
             if (!service) return;
 
-            const settings = session.user.settings?.services?.[service.name] ?? {};
-
             const context: MessageUnomitted[] = [];
             const messageDatas = await prisma.message.findMany({
                 where: {
@@ -55,19 +55,76 @@ export default async function streamHandler(req: IncomingMessage, res: ServerRes
                 }
             }
 
-            console.log("Calling model for user with context length:", context.length);
+            // Agentic loop: keep generating until the model stops calling tools
+            while (true) {
+                const modelData: zData = [];
+                const userData: zData = [];
 
-            const stream = service.generate(
-                settings,
-                input.instruction,
-                context,
-                input.config,
-                controller.signal
-            );
+                console.log("Starting model run for message:", input.context[input.context.length - 1].data);
+                const stream = service.generate(
+                    session,
+                    input.instruction,
+                    context,
+                    input.config,
+                    controller.signal,
+                    tools,
+                );
 
-            for await (const event of stream) {
-                console.log("Sending event:", event);
-                res.write(`data: ${JSON.stringify(event)}\n\n`);
+                for await (const event of stream) {
+                    console.log("Sending event:", event);
+                    res.write(`data: ${JSON.stringify(event)}\n\n`);
+
+                    // Accumulate assistant data parts (excluding special events)
+                    if (event.type === "data") {
+                        modelData.push(event.value);
+                    }
+                }
+
+                // Find any tool calls in this pass
+                const toolCalls = modelData.filter(p => p.type === "toolCall");
+                if (!toolCalls.length) break;
+
+                // Execute each tool and collect results
+                for (const part of toolCalls) {
+                    if (part.type !== "toolCall") continue;
+
+                    const tool = tools.find(t => t.name === part.name);
+                    if (!tool) {
+                        console.warn(`Called tool '${part.name}' does not exist`)
+                        userData.push({
+                            type: "toolResult",
+                            id: part.id,
+                            error: true,
+                            value: `Tool "${part.name}" not found`
+                        });
+                        continue;
+                    }
+
+                    try {
+                        const validated = tool.schema.parse(part.args);
+                        const value = await tool.run(session, validated);
+                        userData.push({type: "toolResult", id: part.id, value});
+                    } catch (e: any) {
+                        console.warn(`Called tool '${part.name}' threw error:`, e);
+                        userData.push({
+                            type: "toolResult",
+                            id: part.id,
+                            error: true,
+                            value: e.message ?? String(e)
+                        });
+                    }
+                }
+
+                // Emit the tool results to the client so the UI can display them
+                for (const part of userData) {
+                    const event: zGenerateOutput = {type: "data", value: part};
+                    console.log("Sending tool result:", event);
+                    res.write(`data: ${JSON.stringify(event)}\n\n`);
+                }
+
+                // Append the assistant turn and the tool results as a user turn, then loop
+                context.push({author: Author.MODEL, data: modelData} as MessageUnomitted);
+                context.push({author: Author.USER, data: userData} as MessageUnomitted);
             }
 
             res.end();

@@ -1,5 +1,5 @@
 import {useEffect} from "react";
-import {AppShell, Box, Burger, LoadingOverlay, MantineProvider, Overlay} from "@mantine/core";
+import {AppShell, Box, LoadingOverlay, MantineProvider, Overlay} from "@mantine/core";
 import {NavigationProgress} from "@mantine/nprogress";
 import {useDrag} from "@use-gesture/react";
 import Chat from "@/components/Chat.tsx";
@@ -31,8 +31,6 @@ export default function App() {
         isInitializing,
         setInitializing
     } = useLayout();
-
-    const currentChat = useChats((s) => s.currentChat);
 
     const session = auth.useSession();
 
@@ -184,18 +182,6 @@ export default function App() {
                                     overflow: "hidden",
                                 }}
                             >
-                                <Burger
-                                    style={{
-                                        position: "fixed",
-                                        zIndex: "calc(var(--mantine-z-index-app) + 1)",
-                                    }}
-                                    m={10}
-                                    ml={currentChat ? 10 : 20}
-                                    opened={isSidebarOpen}
-                                    onClick={() => setSidebarOpen(!isSidebarOpen)}
-                                    display={!isMobile || isSidebarOpen ? "none" : "block"}
-                                    size="sm"
-                                />
                                 <Chat/>
                             </AppShell.Main>
                         </AppShell>

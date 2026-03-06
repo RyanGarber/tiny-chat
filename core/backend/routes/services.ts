@@ -2,6 +2,8 @@ import {z} from "zod";
 import {procedure, router} from "../index.ts";
 import {services} from "../services/index.ts";
 import {type Service, zConfig} from "../types.ts";
+import {type Session} from "../server.ts";
+import {getEmbeddingConfig} from "./embeddings.ts";
 
 export default router({
     getModels: procedure
@@ -9,18 +11,15 @@ export default router({
         .query(async ({ctx, input}) => {
             const service = services.find(s => s.name === input.service);
             if (!service) throw new Error(`Service "${input.service}" not found`);
-            const settings = ctx.session.user.settings?.services?.[service.name] ?? {};
-            return service.getModels(settings);
+            return service.getModels(ctx.session);
         }),
 
     listServices: procedure.query(async ({ctx}) => {
         const available: Service[] = [];
 
-        // TODO - make settings object custom per service (e.g., 'projectId')
         for (const service of services) {
             try {
-                const settings = ctx.session.user.settings?.services?.[service.name] ?? {};
-                const models = await service.getModels(settings);
+                const models = await service.getModels(ctx.session);
                 available.push({
                     name: service.name,
                     settings: service.settings,
@@ -42,9 +41,16 @@ export default router({
     embed: procedure
         .input(z.object({texts: z.array(z.string()), config: zConfig}))
         .mutation(async ({ctx, input}) => {
-            const service = services.find(s => s.name === input.config.service);
-            if (!service) return [];
-            const settings = ctx.session.user.settings?.services?.[service.name] ?? {};
-            return service.embed(settings, input.texts, input.config);
+            return embed(ctx.session, input.texts);
         }),
 });
+
+export async function embed(session: Session, texts: string[]) {
+    const config = getEmbeddingConfig(session);
+    if (!config) return [];
+
+    const service = services.find(s => s.name === config.service);
+    if (!service) return [];
+
+    return service.embed(session, texts, config);
+}

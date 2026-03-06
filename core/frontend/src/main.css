@@ -156,3 +156,8 @@ body {
 .dialog {
     background: var(--tc-surface);
 }
+
+/* TODO - TASKS */
+.topbar * {
+    z-index: calc(var(--mantine-z-index-app) + 1);
+}

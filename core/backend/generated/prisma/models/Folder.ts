@@ -179,6 +179,7 @@ export type FolderWhereInput = {
   memories?: Prisma.MemoryListRelationFilter
   messages?: Prisma.MessageListRelationFilter
   summaries?: Prisma.SummaryListRelationFilter
+  tasks?: Prisma.TaskListRelationFilter
 }
 
 export type FolderOrderByWithRelationInput = {
@@ -191,6 +192,7 @@ export type FolderOrderByWithRelationInput = {
   memories?: Prisma.MemoryOrderByRelationAggregateInput
   messages?: Prisma.MessageOrderByRelationAggregateInput
   summaries?: Prisma.SummaryOrderByRelationAggregateInput
+  tasks?: Prisma.TaskOrderByRelationAggregateInput
 }
 
 export type FolderWhereUniqueInput = Prisma.AtLeast<{
@@ -206,6 +208,7 @@ export type FolderWhereUniqueInput = Prisma.AtLeast<{
   memories?: Prisma.MemoryListRelationFilter
   messages?: Prisma.MessageListRelationFilter
   summaries?: Prisma.SummaryListRelationFilter
+  tasks?: Prisma.TaskListRelationFilter
 }, "id">
 
 export type FolderOrderByWithAggregationInput = {
@@ -237,6 +240,7 @@ export type FolderCreateInput = {
   memories?: Prisma.MemoryCreateNestedManyWithoutFolderInput
   messages?: Prisma.MessageCreateNestedManyWithoutFolderInput
   summaries?: Prisma.SummaryCreateNestedManyWithoutFolderInput
+  tasks?: Prisma.TaskCreateNestedManyWithoutFolderInput
 }
 
 export type FolderUncheckedCreateInput = {
@@ -248,6 +252,7 @@ export type FolderUncheckedCreateInput = {
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutFolderInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutFolderInput
   summaries?: Prisma.SummaryUncheckedCreateNestedManyWithoutFolderInput
+  tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutFolderInput
 }
 
 export type FolderUpdateInput = {
@@ -259,6 +264,7 @@ export type FolderUpdateInput = {
   memories?: Prisma.MemoryUpdateManyWithoutFolderNestedInput
   messages?: Prisma.MessageUpdateManyWithoutFolderNestedInput
   summaries?: Prisma.SummaryUpdateManyWithoutFolderNestedInput
+  tasks?: Prisma.TaskUpdateManyWithoutFolderNestedInput
 }
 
 export type FolderUncheckedUpdateInput = {
@@ -270,6 +276,7 @@ export type FolderUncheckedUpdateInput = {
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutFolderNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutFolderNestedInput
   summaries?: Prisma.SummaryUncheckedUpdateManyWithoutFolderNestedInput
+  tasks?: Prisma.TaskUncheckedUpdateManyWithoutFolderNestedInput
 }
 
 export type FolderCreateManyInput = {
@@ -426,6 +433,20 @@ export type FolderUpdateOneRequiredWithoutMemoriesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.FolderUpdateToOneWithWhereWithoutMemoriesInput, Prisma.FolderUpdateWithoutMemoriesInput>, Prisma.FolderUncheckedUpdateWithoutMemoriesInput>
 }
 
+export type FolderCreateNestedOneWithoutTasksInput = {
+  create?: Prisma.XOR<Prisma.FolderCreateWithoutTasksInput, Prisma.FolderUncheckedCreateWithoutTasksInput>
+  connectOrCreate?: Prisma.FolderCreateOrConnectWithoutTasksInput
+  connect?: Prisma.FolderWhereUniqueInput
+}
+
+export type FolderUpdateOneRequiredWithoutTasksNestedInput = {
+  create?: Prisma.XOR<Prisma.FolderCreateWithoutTasksInput, Prisma.FolderUncheckedCreateWithoutTasksInput>
+  connectOrCreate?: Prisma.FolderCreateOrConnectWithoutTasksInput
+  upsert?: Prisma.FolderUpsertWithoutTasksInput
+  connect?: Prisma.FolderWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.FolderUpdateToOneWithWhereWithoutTasksInput, Prisma.FolderUpdateWithoutTasksInput>, Prisma.FolderUncheckedUpdateWithoutTasksInput>
+}
+
 export type FolderCreateWithoutUserInput = {
   id: string
   title?: string | null
@@ -434,6 +455,7 @@ export type FolderCreateWithoutUserInput = {
   memories?: Prisma.MemoryCreateNestedManyWithoutFolderInput
   messages?: Prisma.MessageCreateNestedManyWithoutFolderInput
   summaries?: Prisma.SummaryCreateNestedManyWithoutFolderInput
+  tasks?: Prisma.TaskCreateNestedManyWithoutFolderInput
 }
 
 export type FolderUncheckedCreateWithoutUserInput = {
@@ -444,6 +466,7 @@ export type FolderUncheckedCreateWithoutUserInput = {
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutFolderInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutFolderInput
   summaries?: Prisma.SummaryUncheckedCreateNestedManyWithoutFolderInput
+  tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutFolderInput
 }
 
 export type FolderCreateOrConnectWithoutUserInput = {
@@ -490,6 +513,7 @@ export type FolderCreateWithoutChatsInput = {
   memories?: Prisma.MemoryCreateNestedManyWithoutFolderInput
   messages?: Prisma.MessageCreateNestedManyWithoutFolderInput
   summaries?: Prisma.SummaryCreateNestedManyWithoutFolderInput
+  tasks?: Prisma.TaskCreateNestedManyWithoutFolderInput
 }
 
 export type FolderUncheckedCreateWithoutChatsInput = {
@@ -500,6 +524,7 @@ export type FolderUncheckedCreateWithoutChatsInput = {
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutFolderInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutFolderInput
   summaries?: Prisma.SummaryUncheckedCreateNestedManyWithoutFolderInput
+  tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutFolderInput
 }
 
 export type FolderCreateOrConnectWithoutChatsInput = {
@@ -526,6 +551,7 @@ export type FolderUpdateWithoutChatsInput = {
   memories?: Prisma.MemoryUpdateManyWithoutFolderNestedInput
   messages?: Prisma.MessageUpdateManyWithoutFolderNestedInput
   summaries?: Prisma.SummaryUpdateManyWithoutFolderNestedInput
+  tasks?: Prisma.TaskUpdateManyWithoutFolderNestedInput
 }
 
 export type FolderUncheckedUpdateWithoutChatsInput = {
@@ -536,6 +562,7 @@ export type FolderUncheckedUpdateWithoutChatsInput = {
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutFolderNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutFolderNestedInput
   summaries?: Prisma.SummaryUncheckedUpdateManyWithoutFolderNestedInput
+  tasks?: Prisma.TaskUncheckedUpdateManyWithoutFolderNestedInput
 }
 
 export type FolderCreateWithoutMessagesInput = {
@@ -546,6 +573,7 @@ export type FolderCreateWithoutMessagesInput = {
   user: Prisma.UserCreateNestedOneWithoutFoldersInput
   memories?: Prisma.MemoryCreateNestedManyWithoutFolderInput
   summaries?: Prisma.SummaryCreateNestedManyWithoutFolderInput
+  tasks?: Prisma.TaskCreateNestedManyWithoutFolderInput
 }
 
 export type FolderUncheckedCreateWithoutMessagesInput = {
@@ -556,6 +584,7 @@ export type FolderUncheckedCreateWithoutMessagesInput = {
   chats?: Prisma.ChatUncheckedCreateNestedManyWithoutFolderInput
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutFolderInput
   summaries?: Prisma.SummaryUncheckedCreateNestedManyWithoutFolderInput
+  tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutFolderInput
 }
 
 export type FolderCreateOrConnectWithoutMessagesInput = {
@@ -582,6 +611,7 @@ export type FolderUpdateWithoutMessagesInput = {
   user?: Prisma.UserUpdateOneRequiredWithoutFoldersNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutFolderNestedInput
   summaries?: Prisma.SummaryUpdateManyWithoutFolderNestedInput
+  tasks?: Prisma.TaskUpdateManyWithoutFolderNestedInput
 }
 
 export type FolderUncheckedUpdateWithoutMessagesInput = {
@@ -592,6 +622,7 @@ export type FolderUncheckedUpdateWithoutMessagesInput = {
   chats?: Prisma.ChatUncheckedUpdateManyWithoutFolderNestedInput
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutFolderNestedInput
   summaries?: Prisma.SummaryUncheckedUpdateManyWithoutFolderNestedInput
+  tasks?: Prisma.TaskUncheckedUpdateManyWithoutFolderNestedInput
 }
 
 export type FolderCreateWithoutSummariesInput = {
@@ -602,6 +633,7 @@ export type FolderCreateWithoutSummariesInput = {
   user: Prisma.UserCreateNestedOneWithoutFoldersInput
   memories?: Prisma.MemoryCreateNestedManyWithoutFolderInput
   messages?: Prisma.MessageCreateNestedManyWithoutFolderInput
+  tasks?: Prisma.TaskCreateNestedManyWithoutFolderInput
 }
 
 export type FolderUncheckedCreateWithoutSummariesInput = {
@@ -612,6 +644,7 @@ export type FolderUncheckedCreateWithoutSummariesInput = {
   chats?: Prisma.ChatUncheckedCreateNestedManyWithoutFolderInput
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutFolderInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutFolderInput
+  tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutFolderInput
 }
 
 export type FolderCreateOrConnectWithoutSummariesInput = {
@@ -638,6 +671,7 @@ export type FolderUpdateWithoutSummariesInput = {
   user?: Prisma.UserUpdateOneRequiredWithoutFoldersNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutFolderNestedInput
   messages?: Prisma.MessageUpdateManyWithoutFolderNestedInput
+  tasks?: Prisma.TaskUpdateManyWithoutFolderNestedInput
 }
 
 export type FolderUncheckedUpdateWithoutSummariesInput = {
@@ -648,6 +682,7 @@ export type FolderUncheckedUpdateWithoutSummariesInput = {
   chats?: Prisma.ChatUncheckedUpdateManyWithoutFolderNestedInput
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutFolderNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutFolderNestedInput
+  tasks?: Prisma.TaskUncheckedUpdateManyWithoutFolderNestedInput
 }
 
 export type FolderCreateWithoutMemoriesInput = {
@@ -658,6 +693,7 @@ export type FolderCreateWithoutMemoriesInput = {
   user: Prisma.UserCreateNestedOneWithoutFoldersInput
   messages?: Prisma.MessageCreateNestedManyWithoutFolderInput
   summaries?: Prisma.SummaryCreateNestedManyWithoutFolderInput
+  tasks?: Prisma.TaskCreateNestedManyWithoutFolderInput
 }
 
 export type FolderUncheckedCreateWithoutMemoriesInput = {
@@ -668,6 +704,7 @@ export type FolderUncheckedCreateWithoutMemoriesInput = {
   chats?: Prisma.ChatUncheckedCreateNestedManyWithoutFolderInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutFolderInput
   summaries?: Prisma.SummaryUncheckedCreateNestedManyWithoutFolderInput
+  tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutFolderInput
 }
 
 export type FolderCreateOrConnectWithoutMemoriesInput = {
@@ -694,6 +731,7 @@ export type FolderUpdateWithoutMemoriesInput = {
   user?: Prisma.UserUpdateOneRequiredWithoutFoldersNestedInput
   messages?: Prisma.MessageUpdateManyWithoutFolderNestedInput
   summaries?: Prisma.SummaryUpdateManyWithoutFolderNestedInput
+  tasks?: Prisma.TaskUpdateManyWithoutFolderNestedInput
 }
 
 export type FolderUncheckedUpdateWithoutMemoriesInput = {
@@ -702,6 +740,67 @@ export type FolderUncheckedUpdateWithoutMemoriesInput = {
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   chats?: Prisma.ChatUncheckedUpdateManyWithoutFolderNestedInput
+  messages?: Prisma.MessageUncheckedUpdateManyWithoutFolderNestedInput
+  summaries?: Prisma.SummaryUncheckedUpdateManyWithoutFolderNestedInput
+  tasks?: Prisma.TaskUncheckedUpdateManyWithoutFolderNestedInput
+}
+
+export type FolderCreateWithoutTasksInput = {
+  id: string
+  title?: string | null
+  createdAt?: Date | string
+  chats?: Prisma.ChatCreateNestedManyWithoutFolderInput
+  user: Prisma.UserCreateNestedOneWithoutFoldersInput
+  memories?: Prisma.MemoryCreateNestedManyWithoutFolderInput
+  messages?: Prisma.MessageCreateNestedManyWithoutFolderInput
+  summaries?: Prisma.SummaryCreateNestedManyWithoutFolderInput
+}
+
+export type FolderUncheckedCreateWithoutTasksInput = {
+  id: string
+  userId: string
+  title?: string | null
+  createdAt?: Date | string
+  chats?: Prisma.ChatUncheckedCreateNestedManyWithoutFolderInput
+  memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutFolderInput
+  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutFolderInput
+  summaries?: Prisma.SummaryUncheckedCreateNestedManyWithoutFolderInput
+}
+
+export type FolderCreateOrConnectWithoutTasksInput = {
+  where: Prisma.FolderWhereUniqueInput
+  create: Prisma.XOR<Prisma.FolderCreateWithoutTasksInput, Prisma.FolderUncheckedCreateWithoutTasksInput>
+}
+
+export type FolderUpsertWithoutTasksInput = {
+  update: Prisma.XOR<Prisma.FolderUpdateWithoutTasksInput, Prisma.FolderUncheckedUpdateWithoutTasksInput>
+  create: Prisma.XOR<Prisma.FolderCreateWithoutTasksInput, Prisma.FolderUncheckedCreateWithoutTasksInput>
+  where?: Prisma.FolderWhereInput
+}
+
+export type FolderUpdateToOneWithWhereWithoutTasksInput = {
+  where?: Prisma.FolderWhereInput
+  data: Prisma.XOR<Prisma.FolderUpdateWithoutTasksInput, Prisma.FolderUncheckedUpdateWithoutTasksInput>
+}
+
+export type FolderUpdateWithoutTasksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  chats?: Prisma.ChatUpdateManyWithoutFolderNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutFoldersNestedInput
+  memories?: Prisma.MemoryUpdateManyWithoutFolderNestedInput
+  messages?: Prisma.MessageUpdateManyWithoutFolderNestedInput
+  summaries?: Prisma.SummaryUpdateManyWithoutFolderNestedInput
+}
+
+export type FolderUncheckedUpdateWithoutTasksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  chats?: Prisma.ChatUncheckedUpdateManyWithoutFolderNestedInput
+  memories?: Prisma.MemoryUncheckedUpdateManyWithoutFolderNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutFolderNestedInput
   summaries?: Prisma.SummaryUncheckedUpdateManyWithoutFolderNestedInput
 }
@@ -720,6 +819,7 @@ export type FolderUpdateWithoutUserInput = {
   memories?: Prisma.MemoryUpdateManyWithoutFolderNestedInput
   messages?: Prisma.MessageUpdateManyWithoutFolderNestedInput
   summaries?: Prisma.SummaryUpdateManyWithoutFolderNestedInput
+  tasks?: Prisma.TaskUpdateManyWithoutFolderNestedInput
 }
 
 export type FolderUncheckedUpdateWithoutUserInput = {
@@ -730,6 +830,7 @@ export type FolderUncheckedUpdateWithoutUserInput = {
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutFolderNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutFolderNestedInput
   summaries?: Prisma.SummaryUncheckedUpdateManyWithoutFolderNestedInput
+  tasks?: Prisma.TaskUncheckedUpdateManyWithoutFolderNestedInput
 }
 
 export type FolderUncheckedUpdateManyWithoutUserInput = {
@@ -748,6 +849,7 @@ export type FolderCountOutputType = {
   memories: number
   messages: number
   summaries: number
+  tasks: number
 }
 
 export type FolderCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -755,6 +857,7 @@ export type FolderCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions
   memories?: boolean | FolderCountOutputTypeCountMemoriesArgs
   messages?: boolean | FolderCountOutputTypeCountMessagesArgs
   summaries?: boolean | FolderCountOutputTypeCountSummariesArgs
+  tasks?: boolean | FolderCountOutputTypeCountTasksArgs
 }
 
 /**
@@ -795,6 +898,13 @@ export type FolderCountOutputTypeCountSummariesArgs<ExtArgs extends runtime.Type
   where?: Prisma.SummaryWhereInput
 }
 
+/**
+ * FolderCountOutputType without action
+ */
+export type FolderCountOutputTypeCountTasksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TaskWhereInput
+}
+
 
 export type FolderSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -806,6 +916,7 @@ export type FolderSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   memories?: boolean | Prisma.Folder$memoriesArgs<ExtArgs>
   messages?: boolean | Prisma.Folder$messagesArgs<ExtArgs>
   summaries?: boolean | Prisma.Folder$summariesArgs<ExtArgs>
+  tasks?: boolean | Prisma.Folder$tasksArgs<ExtArgs>
   _count?: boolean | Prisma.FolderCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["folder"]>
 
@@ -839,6 +950,7 @@ export type FolderInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   memories?: boolean | Prisma.Folder$memoriesArgs<ExtArgs>
   messages?: boolean | Prisma.Folder$messagesArgs<ExtArgs>
   summaries?: boolean | Prisma.Folder$summariesArgs<ExtArgs>
+  tasks?: boolean | Prisma.Folder$tasksArgs<ExtArgs>
   _count?: boolean | Prisma.FolderCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type FolderIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -856,6 +968,7 @@ export type $FolderPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     memories: Prisma.$MemoryPayload<ExtArgs>[]
     messages: Prisma.$MessagePayload<ExtArgs>[]
     summaries: Prisma.$SummaryPayload<ExtArgs>[]
+    tasks: Prisma.$TaskPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1261,6 +1374,7 @@ export interface Prisma__FolderClient<T, Null = never, ExtArgs extends runtime.T
   memories<T extends Prisma.Folder$memoriesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Folder$memoriesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MemoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   messages<T extends Prisma.Folder$messagesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Folder$messagesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   summaries<T extends Prisma.Folder$summariesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Folder$summariesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SummaryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  tasks<T extends Prisma.Folder$tasksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Folder$tasksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1783,6 +1897,30 @@ export type Folder$summariesArgs<ExtArgs extends runtime.Types.Extensions.Intern
   take?: number
   skip?: number
   distinct?: Prisma.SummaryScalarFieldEnum | Prisma.SummaryScalarFieldEnum[]
+}
+
+/**
+ * Folder.tasks
+ */
+export type Folder$tasksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Task
+   */
+  select?: Prisma.TaskSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Task
+   */
+  omit?: Prisma.TaskOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TaskInclude<ExtArgs> | null
+  where?: Prisma.TaskWhereInput
+  orderBy?: Prisma.TaskOrderByWithRelationInput | Prisma.TaskOrderByWithRelationInput[]
+  cursor?: Prisma.TaskWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TaskScalarFieldEnum | Prisma.TaskScalarFieldEnum[]
 }
 
 /**

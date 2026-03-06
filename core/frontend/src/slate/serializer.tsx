@@ -6,13 +6,17 @@ const QUOTE_PREFIX = "::>:: ";
 export function serializeElement(element: BaseElement): string | null {
     if ((element as BaseElement).hidden) return null;
     switch (element.type) {
-        case "quote":
+        case "quote": {
+            const model = (element as any).model as string | undefined;
+            const modelTag = model ? `${QUOTE_PREFIX}::model=${model}::\n` : "";
             return (
+                modelTag +
                 (element.children[0] as BaseText).text
                     .split("\n")
                     .map((line) => `${QUOTE_PREFIX}${line}`)
                     .join("\n") + "\n"
             );
+        }
         default:
             return element.children
                 .map((child) => {
@@ -24,10 +28,7 @@ export function serializeElement(element: BaseElement): string | null {
 }
 
 export function serialize(): string {
-    const {editor} = useMessaging.getState();
-    if (!editor) console.log("No editor state available for serialization")
-    if (!editor) return "";
-    return editor.children
+    return useMessaging.getState().editor!.children
         .map((node) => serializeElement(node as BaseElement))
         .filter((line) => line !== null)
         .join("\n");
@@ -42,10 +43,18 @@ export function deserialize(md: string): Descendant[] {
     const endQuote = (line?: string) => {
         if (!quoteLines.length) return false;
 
+        let model = "";
+        let contentLines = quoteLines;
+        if (quoteLines[0].startsWith("::model=") && quoteLines[0].endsWith("::")) {
+            model = quoteLines[0].slice("::model=".length, -2);
+            contentLines = quoteLines.slice(1);
+        }
+
         nodes.push({
             type: "quote",
-            children: [{text: quoteLines.join("\n")}],
-        });
+            model,
+            children: [{text: contentLines.join("\n")}],
+        } as Descendant & { model: string });
 
         quoteLines = [];
         return !line?.trim().length;

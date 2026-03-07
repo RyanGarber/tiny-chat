@@ -9,7 +9,7 @@ import {zData, zGenerateInput, zGenerateOutput} from "@tiny-chat/core-backend/ty
 import {notifications} from "@mantine/notifications";
 import {CodeHighlightAdapter} from "@mantine/code-highlight";
 import hljs from "highlight.js";
-import {useServices} from "@/managers/services.tsx";
+import {useProviders} from "@/managers/providers.tsx";
 
 declare global {
     interface Window {
@@ -289,10 +289,10 @@ export function useViewport() {
 
 export async function* generate(input: zGenerateInput, signal?: AbortSignal) {
     const url = import.meta.env.DEV
-        ? `http://${__TAURI_DEV_HOST__ ?? "localhost"}:${import.meta.env.VITE_BACKEND_PORT}/@/stream/generate`
-        : `${import.meta.env.VITE_BACKEND_URL}/@/stream/generate`;
+        ? `http://${__TAURI_DEV_HOST__ ?? "localhost"}:${import.meta.env.VITE_BACKEND_PORT}/@/generate`
+        : `${import.meta.env.VITE_BACKEND_URL}/@/generate`;
 
-    const args = useServices.getState().services.find(s => s.name === input.config.service)?.models.find(m => m.name === input.config.model)?.args ?? [];
+    const args = useProviders.getState().chatProviders.find(s => s.name === input.config.service)?.models.find(m => m.name === input.config.model)?.args ?? [];
     console.log("Args:", args);
     for (const arg of args) {
         if (input.config.args?.[arg.name] === undefined) {
@@ -325,8 +325,12 @@ export async function* generate(input: zGenerateInput, signal?: AbortSignal) {
         buffer = lines.pop()!;
 
         for (const line of lines) {
+            console.log(line);
             if (line.startsWith('data: ')) {
                 yield zGenerateOutput.parse(JSON.parse(line.slice(6)));
+            }
+            if (line.startsWith('error: ')) {
+                throw new Error(line.slice(7));
             }
         }
     }

@@ -1,6 +1,6 @@
 import {Select, SelectProps} from "@mantine/core";
 import {ModelFeature, zConfig} from "@tiny-chat/core-backend/types.ts";
-import {useServices} from "@/managers/services.tsx";
+import {useProviders} from "@/managers/providers.tsx";
 
 interface ModelSelectProps extends SelectProps {
     feature: ModelFeature;
@@ -16,13 +16,13 @@ export default function ModelSelect({
                                         onConfigChange,
                                         ...selectProps
                                     }: ModelSelectProps) {
-    const {services} = useServices();
+    const {chatProviders} = useProviders();
     return (
         <Select
             required={!optional}
             allowDeselect={optional} // TODO - remove `| null` type when !optional
             maxDropdownHeight={250}
-            data={services.map((s) => ({
+            data={chatProviders.map((s) => ({
                 group: s.name,
                 items: s.models.filter(m => m.features.includes(feature)).sort((a, b) => a.name.localeCompare(b.name)).map((m) => ({
                     label: m.name,

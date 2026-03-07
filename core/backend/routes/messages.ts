@@ -145,7 +145,7 @@ export default router({
             return reorder((await ctx.prisma.message.findMany({
                 where: {chatId: input.chatId, userId: ctx.session.user.id},
                 omit: {metadata: true}
-            })).map(m => ({...m, metadata: {_omit: true}}))).map(wrapMessage);
+            })).map(m => ({...m, metadata: ["_omit"]}))).map(wrapMessage);
         }),
 
     listOmissions: procedure
@@ -154,7 +154,7 @@ export default router({
             return new Map((await ctx.prisma.message.findMany({
                 where: {id: {in: input.ids}, userId: ctx.session.user.id},
                 select: {id: true, metadata: true}
-            })).map(m => [m.id, {metadata: m.metadata}]));
+            })).map(m => [m.id, {metadata: zMetadata.parse(m.metadata)}]));
         })
 });
 

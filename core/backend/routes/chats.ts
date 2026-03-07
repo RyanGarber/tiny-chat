@@ -5,7 +5,7 @@ import {reorder} from "./messages.ts";
 import {zConfig, zData, zMetadata} from "../types.ts";
 import minisearch, {type SearchResult} from "minisearch";
 import {getMostRelevant} from "./embeddings.ts";
-import {services} from "../services/index.ts";
+import {chatProviders} from "../providers/chat/index.ts";
 
 export default router({
     find: procedure
@@ -156,7 +156,7 @@ export default router({
 
             let embedding: number[] = [];
             if (input.config) {
-                const service = services.find(s => s.name === input.config?.service);
+                const service = chatProviders.find(s => s.name === input.config?.service);
                 if (service) {
                     embedding = (await service.embed(ctx.session, [input.text], input.config))[0];
                 }

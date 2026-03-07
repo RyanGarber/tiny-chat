@@ -1,8 +1,10 @@
 import {z} from "zod";
 import {type Session} from "../server.ts";
-import {FindMemories} from "./find-memories.ts";
+import {SearchMemory} from "./search-memory.ts";
+import {searchProviders} from "../providers/search/index.ts";
+import {SearchWeb} from "./search-web.ts";
 
-export interface ToolRunner<T extends z.ZodType = z.ZodType> {
+export interface CustomTool<T extends z.ZodType = z.ZodType> {
     name: string;
     description: string;
     parameters: ReturnType<z.ZodType["toJSONSchema"]>;
@@ -11,4 +13,10 @@ export interface ToolRunner<T extends z.ZodType = z.ZodType> {
     run(session: Session, params: z.infer<T>): Promise<any>;
 }
 
-export const tools: ToolRunner[] = [FindMemories];
+export const tools = (session: Session) => {
+    const available: CustomTool[] = [SearchMemory];
+    if (session.user.settings.services?.[searchProviders[0].name]?.apiKey) {
+        available.push(SearchWeb);
+    }
+    return available;
+};

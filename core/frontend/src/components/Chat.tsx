@@ -1,6 +1,6 @@
 import {useCallback, useEffect, useLayoutEffect, useRef, useState,} from "react";
-import {ActionIcon, Box, Burger, Button, Group, ScrollArea, Stack, Text, ThemeIcon, Transition} from "@mantine/core";
-import {IconArrowDown, IconEyeOff, IconMessageCirclePlus, IconStopwatch} from "@tabler/icons-react";
+import {ActionIcon, Box, Burger, Group, ScrollArea, Stack, Text, ThemeIcon, Transition} from "@mantine/core";
+import {IconArrowDown, IconEyeOff, IconMessageCirclePlus} from "@tabler/icons-react";
 import Message from "@/components/Message.tsx";
 import {useMessaging} from "@/managers/messaging.tsx";
 import {useLayout} from "@/managers/layout.tsx";
@@ -200,6 +200,33 @@ export default function Chat() {
 
     return (
         <Stack h="100%" gap={0} px={!isInputMaxWidth && !currentChat ? 20 : 0}>
+            {isMobile && (
+                <Group
+                    pos="fixed"
+                    top={0} left={0} right={0}
+                    p={10}
+                    gap={5}
+                    maw={inputMaxWidth}
+                    m="0 auto"
+                    style={{
+                        zIndex: "var(--mantine-z-index-app)",
+                        backgroundColor: "color-mix(in srgb, var(--mantine-color-body), transparent 15%)",
+                        backdropFilter: "blur(5px)",
+                        boxShadow: shadow,
+                        borderRadius: isInputMaxWidth ? "0 0 10px 10px" : 0,
+                        ...(isInputMaxWidth ? {border: "1px solid var(--mantine-color-default-border)"} : {borderBottom: "1px solid var(--mantine-color-default-border)"})
+                    }}
+                    className="topbar"
+                >
+                    <Burger
+                        ml={!currentChat ? 10 : 0}
+                        opened={isSidebarOpen}
+                        onClick={() => setSidebarOpen(!isSidebarOpen)}
+                        display={isSidebarOpen ? "none" : "block"}
+                        size="sm"
+                    />
+                </Group>
+            )}
             {/* Main content area */}
             <Box flex={1} pos="relative" mih={0} style={{overflow: "hidden"}}>
                 {/* New chat hero overlay */}
@@ -290,12 +317,12 @@ export default function Chat() {
                                     display={!isMobile || isSidebarOpen ? "none" : "block"}
                                     size="sm"
                                 />
-                                <Button variant="subtle" p="5px 10px" h="auto">
-                                    <Group gap={5}>
+                                {/*<Button variant="subtle" p="5px 10px" h="auto">
+                                    <Group gap={5}>*
                                         <IconStopwatch size={18}/>
                                         Tasks
                                     </Group>
-                                </Button>
+                                </Button>*/}
                             </Group>
                             <Stack pt={10} px={20} m="0 auto" maw={860} gap={10}>
                                 {!isInitializing &&

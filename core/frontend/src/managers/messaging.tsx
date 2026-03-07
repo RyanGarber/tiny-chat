@@ -6,7 +6,7 @@ import {ReactEditor} from "slate-react";
 import {HistoryEditor} from "slate-history";
 import {deserialize} from "@/slate/serializer.tsx";
 import {alert, extractText, scrubText, trpc} from "@/utils.ts";
-import {useServices} from "@/managers/services.tsx";
+import {useProviders} from "@/managers/providers.tsx";
 import {useLayout} from "@/managers/layout.tsx";
 import {type MessageOmitted, zConfig, type zData} from "@tiny-chat/core-backend/types";
 import {Author} from "@tiny-chat/core-backend/generated/prisma/enums.ts";
@@ -108,7 +108,7 @@ export const useMessaging = create(
             if (value) setInsertingAfter(null);
 
             set({editing: value, truncating: value !== null});
-            setData(value?.data ?? []);
+            void setData(value?.data ?? []);
 
             if (value) setConfig(value.config);
             else reloadConfig();
@@ -200,18 +200,17 @@ export const useMessaging = create(
 
             try {
                 console.log(`Running model ${get().config!.model} on message ${message.id}`);
-                await useServices.getState().onMessage(message.id);
+                await useProviders.getState().handleMessage(message.id);
             } catch (e) {
                 alert("error", "Failed to run model")
                 await get().deleteMessagePair(message.id);
                 await setData(data);
-                throw e;
+                throw e; // rethrow for logging
             } finally {
                 setInputDisabled(false);
-                useServices.setState({abortController: null});
+                useProviders.setState({abortController: null});
+                void useEmbeddings.getState().updateEmbeddings();
             }
-
-            void useEmbeddings.getState().updateEmbeddings();
         },
 
         deleteMessagePair: async (messageId) => {
@@ -246,7 +245,7 @@ export function reloadConfig() {
     console.log("No messages in chat; trying fallback configs");
     let lastConfigString = readLocalStorageValue<string>({key: "config", sync: true});
     const lastConfig = lastConfigString ? zConfig.parse(JSON.parse(lastConfigString)) : null;
-    const fallbackService = useServices.getState().services.find(s => s.models.length > 0);
+    const fallbackService = useProviders.getState().chatProviders.find(s => s.models.length > 0);
     try {
         setConfig(lastConfig ?? {
             service: fallbackService!.name,

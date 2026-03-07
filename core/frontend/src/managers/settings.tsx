@@ -2,11 +2,11 @@ import {z} from "zod";
 import {create} from "zustand";
 import {subscribeWithSelector} from "zustand/middleware";
 import {auth, hljsThemeNames, trpc} from "@/utils.ts";
-import {useServices} from "@/managers/services.tsx";
+import {useProviders} from "@/managers/providers.tsx";
 import {zConfig} from "@tiny-chat/core-backend/types.ts";
 import {useTasks} from "@/managers/tasks.tsx";
 
-export const zServices = z.record(z.string(), z.any()).optional();
+export const zProviders = z.record(z.string(), z.any()).optional();
 export const zSettings = z.object({
     instructions: z.array(z.string()),
     memoryConfig: zConfig,
@@ -14,7 +14,7 @@ export const zSettings = z.object({
     useEmbeddingSearch: z.boolean(),
     theme: z.string(),
     codeTheme: z.string(),
-    services: zServices,
+    services: zProviders,
 }).partial();
 export type zSettingsType = z.infer<typeof zSettings>;
 
@@ -52,11 +52,11 @@ interface Settings {
     getCodeTheme: () => string;
     setCodeTheme: (value: string) => Promise<void>;
 
-    getServiceSetting: (service: string, key: string) => string | undefined;
-    setServiceSetting: (service: string, key: string, value: string | undefined) => Promise<void>;
+    getProviderSetting: (service: string, key: string) => string | undefined;
+    setProviderSetting: (service: string, key: string, value: string | undefined) => Promise<void>;
 
-    serviceErrors: Record<string, string | null>;
-    getServiceError: (service: string) => string | null;
+    providerErrors: Record<string, string | null>;
+    getProviderError: (service: string) => string | null;
 }
 
 export const useSettings = create(subscribeWithSelector<Settings>((set, get) => ({
@@ -156,30 +156,32 @@ export const useSettings = create(subscribeWithSelector<Settings>((set, get) => 
         await get().setSettings({codeTheme: value});
     },
 
-    getServiceSetting: (service, key) => {
+    getProviderSetting: (service, key) => {
         return get().settings.services?.[service]?.[key];
     },
-    setServiceSetting: async (service, key, value) => {
-        useTasks.getState().addTask("setServiceSetting", "Saving service settings");
+    setProviderSetting: async (service, key, value) => {
+        useTasks.getState().addTask("setProviderSetting", "Saving provider settings");
         const services = get().settings.services ?? {};
         if (value) services[service] = {...services[service], [key]: value};
         else delete services[service]?.[key];
         await get().setSettings({services}, false);
-        useTasks.getState().updateTask("setServiceSetting", 50);
-        try {
-            const models = await trpc.services.getModels.query({service});
-            const count = models.length;
-            useTasks.getState().updateTask("setServiceSetting", 75, `${count} model${count === 1 ? "" : "s"} added`);
-            set({serviceErrors: {...get().serviceErrors, [service]: null}});
-        } catch (e: any) {
-            set({serviceErrors: {...get().serviceErrors, [service]: e.message || "Failed to load models"}});
+        if (useProviders.getState().chatProviders.find(p => p.name === service)) {
+            useTasks.getState().updateTask("setProviderSetting", 50);
+            try {
+                const models = await trpc.providers.getChatModels.query({service: service});
+                const count = models.length;
+                useTasks.getState().updateTask("setProviderSetting", 75, `${count} model${count === 1 ? "" : "s"} added`);
+                set({providerErrors: {...get().providerErrors, [service]: null}});
+            } catch (e: any) {
+                set({providerErrors: {...get().providerErrors, [service]: e.message || "Provider error"}});
+            }
+            await useProviders.getState().updateProviders();
         }
-        await useServices.getState().fetchServices();
-        await useTasks.getState().removeTask("setServiceSetting");
+        await useTasks.getState().removeTask("setProviderSetting");
     },
 
-    serviceErrors: {},
-    getServiceError: (service) => {
-        return get().serviceErrors[service] ?? null;
+    providerErrors: {},
+    getProviderError: (service) => {
+        return get().providerErrors[service] ?? null;
     },
 })));

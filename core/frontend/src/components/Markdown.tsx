@@ -92,8 +92,8 @@ const components: Components = {
             <div className="code-fade-in">
                 <CodeHighlight code={code}
                                language={node.className?.replace("language-", "")}
-                               withExpandButton
-                               defaultExpanded={code.split("\n").length <= 7}/>
+                               withExpandButton={code.split("\n").length >= 8}
+                               defaultExpanded={code.split("\n").length < 8}/>
             </div>
         );
     },

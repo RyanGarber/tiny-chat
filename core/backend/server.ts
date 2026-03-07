@@ -18,8 +18,8 @@ import context from "./routes/context.ts";
 import messages from "./routes/messages.ts";
 import sessions from "./routes/sessions.ts";
 import embeddings from "./routes/embeddings.ts";
-import services from "./routes/services.ts";
-import streamHandler from "./stream.ts";
+import providers from "./routes/providers.ts";
+import chatHandler from "./generate.ts";
 
 config({path: resolve(fileURLToPath(import.meta.url), "../../../.env")});
 
@@ -45,7 +45,7 @@ const trpc = router({
     messages,
     sessions,
     embeddings,
-    services,
+    providers,
 });
 export type tRPC = typeof trpc;
 
@@ -179,8 +179,8 @@ const server = createServer((req, res) => {
         trpcHandler(req, res);
     } else if (req.url?.startsWith(process.env.VITE_BACKEND_PATH_AUTH!)) {
         void authHandler(req, res);
-    } else if (req.url?.startsWith("/@/stream/")) {
-        void streamHandler(req, res, globalThis.prisma);
+    } else if (req.url?.startsWith("/@/generate")) {
+        void chatHandler(req, res, globalThis.prisma);
     } else {
         res.writeHead(200);
         res.end("OK");

@@ -1,7 +1,7 @@
-import type {Model, zGenerateOutput} from "../types.ts";
-import type {ServiceRunner} from "./index.ts";
+import type {Model, zGenerateOutput} from "../../types.ts";
+import type {ChatProvider} from "./index.ts";
 
-export const Debug: ServiceRunner = {
+export const Debug: ChatProvider = {
     name: "debug",
     settings: [],
 
@@ -17,7 +17,7 @@ export const Debug: ServiceRunner = {
             yield {type: "data", value: {type: "thought", value: "Thinking evil thoughts"}};
             await new Promise((resolve) => setTimeout(resolve, 500));
 
-            let words = "Finding your dirtiest secret...".match(/.{3}|.+$/gs)!;
+            let words = "Searching for the meaning of life...".match(/.{3}|.+$/gs)!;
             for (const word of words) {
                 data.push({type: "data", value: {type: "text", value: word}});
                 yield data[data.length - 1];
@@ -26,17 +26,16 @@ export const Debug: ServiceRunner = {
 
             data.push({
                 type: "data",
-                value: {type: "toolCall", name: "find_memories", args: {fact: "my dirtiest secret"}, id: "1"}
+                value: {type: "toolCall", name: "search_web", args: {query: "meaning of life"}, id: "1"}
             });
             yield data[data.length - 1];
         } else {
-            console.log("find_memories result:", result);
             const chosen = result.value[Math.floor(Math.random() * result.value.length)];
             data.push({
                 type: "data",
                 value: {
                     type: "text",
-                    value: !result.error ? `Your dirtiest secret is: ${chosen.fact} (I'm ${Math.round(chosen.confidence * 100)}% confident)` : "Couldn't find your dirtiest secret :("
+                    value: !result.error ? `The meaning of life is: ${chosen.content}\n\n(Source: ${chosen.source})` : "Couldn't find it :("
                 }
             });
             yield data[data.length - 1];

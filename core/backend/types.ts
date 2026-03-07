@@ -24,10 +24,15 @@ export interface Model {
     args: ModelArg[];
 }
 
-export interface Service {
+export interface ChatProviderStatus {
     name: string;
     settings: string[];
     models: Model[];
+}
+
+export interface SearchProviderStatus {
+    name: string;
+    settings: string[];
 }
 
 export const zConfig = z.object({
@@ -43,6 +48,7 @@ export const zDataPart =
     z.discriminatedUnion("type", [
         z.object({
             type: z.literal("thought"),
+            id: z.string().optional(),
             value: z.string()
         }),
         z.object({
@@ -65,9 +71,10 @@ export const zDataPart =
         }),
         z.object({
             type: z.literal("toolResult"),
+            id: z.string(),
+            name: z.string(),
             value: z.any(),
             error: z.boolean().optional(),
-            id: z.string(),
         }),
         z.object({
             type: z.literal("abort"),
@@ -84,7 +91,7 @@ export const zData = z.array(zDataPart);
 
 export type zData = z.infer<typeof zData>;
 
-export const zMetadata = z.any();
+export const zMetadata = z.array(z.any());
 
 export type zMetadata = z.infer<typeof zMetadata>;
 

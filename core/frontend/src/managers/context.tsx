@@ -4,7 +4,7 @@ import {useSettings} from "@/managers/settings.tsx";
 import {extractText, generate, scrubText, trpc} from "@/utils.ts";
 import {z} from "zod";
 import {Author, MemoryCategory, MemoryStability} from "@tiny-chat/core-backend/generated/prisma/enums.ts";
-import {MessageOmitted, MessageUnomitted, zData} from "@tiny-chat/core-backend/types.ts";
+import {MessageOmitted, zData} from "@tiny-chat/core-backend/types.ts";
 import {useEmbeddings} from "@/managers/embeddings.tsx";
 import {useTasks} from "@/managers/tasks.tsx";
 
@@ -70,7 +70,7 @@ export const useMemories = create(subscribeWithSelector<Context>((_, get) => {
             const config = getEmbeddingConfig();
             if (!config) return [];
 
-            const embeddings = await trpc.services.embed.mutate({
+            const embeddings = await trpc.providers.embed.mutate({
                 texts: [scrubText(extractText(message.data))],
                 config
             });
@@ -132,7 +132,7 @@ Output valid JSON only.`;
         instruction: instructions,
         context: [
             ...(await trpc.messages.list.query({chatId})),
-            ({author: Author.USER, data} satisfies Partial<MessageUnomitted>)
+            ({author: Author.USER, data})
         ],
         config
     });

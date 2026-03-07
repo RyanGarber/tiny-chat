@@ -71,5 +71,5 @@ export async function embed(...texts: string[]) {
     if (!config) return null;
 
     console.log("Calling embedding model via backend:", config);
-    return await trpc.services.embed.mutate({texts, config});
+    return await trpc.providers.embed.mutate({texts, config});
 }

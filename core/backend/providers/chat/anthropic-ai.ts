@@ -1,7 +1,7 @@
-import type {MessageUnomitted, zData, zGenerateOutput} from "../types.ts";
-import {zMetadata} from "../types.ts";
-import {type ServiceRunner, SettingsError} from "./index.ts";
-import {Author} from "../generated/prisma/enums.ts";
+import type {MessageUnomitted, zData, zGenerateOutput} from "../../types.ts";
+import {zMetadata} from "../../types.ts";
+import {type ChatProvider, SettingsError} from "./index.ts";
+import {Author} from "../../generated/prisma/enums.ts";
 import {Anthropic} from "@anthropic-ai/sdk";
 import type {
     ContentBlockParam,
@@ -14,10 +14,11 @@ import type {
     ToolResultBlockParam,
     ToolUseBlockParam
 } from "@anthropic-ai/sdk/resources";
-import type {ToolRunner} from "../tools/index.ts";
+import type {CustomTool} from "../../tools/index.ts";
+import {splitToolResults} from "../../generate.ts";
 
 
-export const AnthropicAI: ServiceRunner = {
+export const AnthropicAI: ChatProvider = {
     name: "anthropic-ai",
     settings: ["apiKey"],
 
@@ -50,6 +51,7 @@ export const AnthropicAI: ServiceRunner = {
 
         console.log("Calling Claude");
 
+        context = splitToolResults(context);
         const params: MessageCreateParamsStreaming = {
             model: config.model,
             stream: true,
@@ -180,7 +182,7 @@ async function* fromSdkStream(
     yield {type: "special", value: {type: "metadata", value: zMetadata.parse(events)}};
 }
 
-function toSdkTools(tools: ToolRunner[]): Tool[] {
+function toSdkTools(tools: CustomTool[]): Tool[] {
     return tools.map(t => ({
         name: t.name,
         description: t.description,

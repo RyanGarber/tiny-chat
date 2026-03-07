@@ -6,7 +6,7 @@ import Chat from "@/components/Chat.tsx";
 import Sidebar from "@/components/Sidebar.tsx";
 import {useLayout} from "@/managers/layout.tsx";
 import {useChats} from "@/managers/chats.tsx";
-import {useServices} from "@/managers/services.tsx";
+import {useProviders} from "@/managers/providers.tsx";
 import {auth, hljsAdapter, trpc, useViewport} from "@/utils.ts";
 import {Notifications} from "@mantine/notifications";
 import {useSettings} from "@/managers/settings.tsx";
@@ -60,7 +60,7 @@ export default function App() {
             const uninit: (() => void)[] = [];
             (async () => {
                 await useSettings.getState().init();
-                await useServices.getState().init();
+                await useProviders.getState().init();
                 await useChats.getState().init();
                 await useEmbeddings.getState().init();
 

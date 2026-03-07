@@ -4,7 +4,7 @@ import {procedure, router} from "../index.ts";
 import {MemoryCategory, MemoryStability} from "../generated/prisma/enums.ts";
 import {zConfig} from "../types.ts";
 import {getMostRelevant} from "./embeddings.ts";
-import {type Memory, type PrismaClient} from "../generated/prisma/client.ts";
+import {type Memory, Prisma, type PrismaClient} from "../generated/prisma/client.ts";
 import {type Session} from "../server.ts";
 
 declare namespace globalThis {
@@ -90,12 +90,14 @@ export default router({
     })
 })
 
-export async function listRelevantMemories(session: Session, embedding: number[]): Promise<Memory[]> {
+export async function listRelevantMemories(session: Session, embedding: number[], category?: MemoryCategory[], stability?: MemoryStability[]): Promise<Memory[]> {
     return getMostRelevant(embedding, (await (globalThis.prisma as PrismaClient).$queryRaw<(Memory & {
         embedding: string
     })[]>`SELECT *
           FROM memory
           WHERE "userId" = ${session!.user!.id}
+            AND category IN (${Prisma.join(category ?? Object.values(MemoryCategory))})
+            AND stability IN (${Prisma.join(stability ?? Object.values(MemoryStability))})
             AND latest`).map(m => ({
         value: m as Memory,
         embedding: JSON.parse(m.embedding)

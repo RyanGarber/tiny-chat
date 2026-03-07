@@ -1,5 +1,5 @@
-import type {MessageUnomitted, Model, ModelArg, zData, zGenerateOutput} from "../types.ts";
-import {zMetadata} from "../types.ts";
+import type {MessageUnomitted, Model, ModelArg, zConfig, zData, zGenerateOutput} from "../../types.ts";
+import {zMetadata} from "../../types.ts";
 import {
     type Content,
     type FunctionDeclaration,
@@ -8,11 +8,11 @@ import {
     type SendMessageParameters,
     ThinkingLevel
 } from "@google/genai";
-import {Author} from "../generated/prisma/enums.ts";
-import {type ServiceRunner, SettingsError} from "./index.ts";
-import type {ToolRunner} from "../tools/index.ts";
+import {Author} from "../../generated/prisma/enums.ts";
+import {type ChatProvider, SettingsError} from "./index.ts";
+import type {CustomTool} from "../../tools/index.ts";
 
-export const GoogleAIStudio: ServiceRunner = {
+export const GoogleAIStudio: ChatProvider = {
     name: "google-ai-studio",
     settings: ["apiKey"],
 
@@ -67,7 +67,7 @@ export const GoogleAIStudio: ServiceRunner = {
         const client = new GoogleGenAI({apiKey: session.user.settings.services[this.name].apiKey});
 
         const params: SendMessageParameters = {
-            message: toSdkContent(context[context.length - 1]).parts!
+            message: toSdkContent(context[context.length - 1], config).parts!
         };
 
         params.config = {
@@ -89,7 +89,7 @@ export const GoogleAIStudio: ServiceRunner = {
             params.config.systemInstruction = instruction;
             params.config.thinkingConfig = {includeThoughts: true};
             params.config.tools = [
-                //{googleSearch: {}, codeExecution: {}},
+                //{googleSearch: {}, codeExecution: {}}, - TODO - disabling search+code just for a model that can't send a GOD DAMN TOOL ARG?!
                 ...(tools?.length ? [{functionDeclarations: toSdkTools(tools)}] : [])
             ];
 
@@ -118,7 +118,7 @@ export const GoogleAIStudio: ServiceRunner = {
 
         const stream = await client.chats.create({
             model: config.model,
-            history: context.slice(0, context.length - 1).map(m => toSdkContent(m)),
+            history: context.slice(0, context.length - 1).map(m => toSdkContent(m, config)),
         }).sendMessageStream(params);
 
         yield* fromSdkStream(stream);
@@ -138,48 +138,72 @@ export const GoogleAIStudio: ServiceRunner = {
     }
 }
 
-function toSdkTools(tools: ToolRunner[]): FunctionDeclaration[] {
+function stripUnsupportedFields(schema: any): any {
+    if (typeof schema !== "object" || schema === null) return schema;
+    // Google's API does not support $schema or additionalProperties —
+    // their presence causes the entire parameter schema to be silently dropped.
+    const {$schema, additionalProperties, ...rest} = schema;
+    return Object.fromEntries(
+        Object.entries(rest).map(([k, v]) =>
+            [k, Array.isArray(v) ? v : typeof v === "object" ? stripUnsupportedFields(v) : v]
+        )
+    );
+}
+
+function toSdkTools(tools: CustomTool[]): FunctionDeclaration[] {
     return tools.map(t => ({
         name: t.name,
         description: t.description,
-        parameters: t.parameters as any
+        parameters: stripUnsupportedFields(t.parameters)
     }));
 }
 
-function toSdkParts(data: zData): Part[] {
-    return data.flatMap((part): Part[] => {
-        if (part.type === "text") {
-            return [{text: part.value}];
-        }
-        if (part.type === "file") {
-            const mime = part.mime ?? part.url.slice(5, part.url.indexOf(";"));
-            const b64 = part.url.split(";base64,")[1] ?? part.url.slice(part.url.indexOf(",") + 1);
-            return [{inlineData: {mimeType: mime, data: b64}}];
-        }
-        if (part.type === "toolCall") {
-            // Don't send toolCall parts back — these represent what the model already generated.
-            // They're part of the history naturally from the previous turn.
-            return [];
-        }
-        if (part.type === "toolResult") {
-            // Send tool results back in user messages
-            return [{
-                functionResponse: {
-                    id: part.id,
-                    response: {
-                        result: !part.error ? part.value : undefined
-                    }
-                }
-            }];
-        }
-        return [];
-    });
-}
-
-function toSdkContent(message: MessageUnomitted): Content {
+function toSdkContent(message: MessageUnomitted, config: zConfig): Content {
+    const isSameModel = message.config?.model === config.model;
     return {
         role: message.author === Author.USER ? "user" : "model",
-        parts: toSdkParts(message.data)
+        parts: message.data.flatMap((part): Part[] => {
+            if (part.type === "text") {
+                return [{text: part.value}];
+            }
+            if (part.type === "thought" && isSameModel) {
+                const match = message.metadata.flat().find(p => p.thought && p.thoughtSignature);
+                return [{
+                    thought: true,
+                    thoughtSignature: match?.thoughtSignature ?? "skip_thought_signature_validator",
+                    text: part.value
+                }];
+            }
+            if (part.type === "file") {
+                const mime = part.mime ?? part.url.slice(5, part.url.indexOf(";"));
+                const b64 = part.url.split(";base64,")[1] ?? part.url.slice(part.url.indexOf(",") + 1);
+                return [{inlineData: {mimeType: mime, data: b64}}];
+            }
+            if (part.type === "toolCall") {
+                const match = message.metadata.flat().find(p => p.functionCall?.name === part.name && p.functionCall?.id === part.id && p.thoughtSignature);
+                return [{
+                    functionCall: {
+                        id: part.id,
+                        name: part.name,
+                        args: part.args ?? {},
+                    },
+                    thoughtSignature: match?.thoughtSignature ?? "skip_thought_signature_validator",
+                }];
+            }
+            if (part.type === "toolResult") {
+                return [{
+                    functionResponse: {
+                        id: part.id,
+                        name: part.name,
+                        response: {
+                            result: !part.error ? part.value : undefined,
+                            error: part.error ? part.value : undefined
+                        }
+                    }
+                }];
+            }
+            return [];
+        })
     };
 }
 
@@ -217,7 +241,7 @@ async function* fromSdkStream(
                             type: "toolCall",
                             id: part.functionCall.id ?? part.functionCall.name,
                             name: part.functionCall.name,
-                            args: part.functionCall.parameters ?? {}
+                            args: part.functionCall.args ?? {},
                         }
                     };
                 }

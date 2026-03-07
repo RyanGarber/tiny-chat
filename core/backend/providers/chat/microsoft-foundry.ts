@@ -1,7 +1,8 @@
-import type {MessageUnomitted, Model, ModelArg, zConfig, zData, zDataPart, zGenerateOutput} from "../types.ts";
-import {zMetadata} from "../types.ts";
+import type {MessageUnomitted, Model, ModelArg, zConfig, zData, zDataPart, zGenerateOutput} from "../../types.ts";
+import {zMetadata} from "../../types.ts";
 import OpenAI, {APIUserAbortError} from "openai";
 import type {
+    FunctionTool,
     ResponseCreateParamsStreaming,
     ResponseInputContent,
     ResponseInputItem,
@@ -12,11 +13,12 @@ import {
     type ChatCompletionMessageParam,
     type ChatCompletionTool
 } from "openai/resources/chat/completions";
-import {Author} from "../generated/prisma/enums.ts";
-import {type ServiceRunner, SettingsError} from "./index.ts";
-import type {ToolRunner} from "../tools/index.ts";
+import {Author} from "../../generated/prisma/enums.ts";
+import {type ChatProvider, SettingsError} from "./index.ts";
+import type {CustomTool} from "../../tools/index.ts";
+import {splitToolResults} from "../../generate.ts";
 
-export const MicrosoftFoundry: ServiceRunner = {
+export const MicrosoftFoundry: ChatProvider = {
     name: "microsoft-foundry",
     settings: ["resourceId", "projectId", "apiKey"],
 
@@ -28,8 +30,7 @@ export const MicrosoftFoundry: ServiceRunner = {
             {headers: {"Authorization": `Bearer ${settings.apiKey}`}});
 
         const json = await deployments.json();
-        console.log("gpt-5.2-chat capabilities:", json.value.find(d => d.name === "gpt-5.2-chat")?.capabilities);
-        console.log("grok-3 capabilities:", json.value.find(d => d.name === "grok-3")?.capabilities);
+        console.log("gpt-5.3-chat capabilities:", json.value.find((d: any) => d.name === "gpt-5.3-chat")?.capabilities);
 
         return json.value.map((d: any) => {
             const args: ModelArg[] = [
@@ -64,8 +65,9 @@ export const MicrosoftFoundry: ServiceRunner = {
 
         const client = getClient(settings);
 
+        context = splitToolResults(context);
         if (usesResponsesApi(config.model)) {
-            yield* generateResponses(client, instruction, context, config, abortSignal);
+            yield* generateResponses(client, instruction, context, config, abortSignal, tools);
         } else {
             yield* generateCompletions(client, instruction, context, config, abortSignal, tools);
         }
@@ -114,19 +116,85 @@ function toResponsesContent(data: zData, author: Author): ResponseInputContent[]
     });
 }
 
-function toResponsesInput(context: MessageUnomitted[], instruction: string): ResponseInputItem[] {
-    return [
+function toResponsesInput(context: MessageUnomitted[], instruction: string, config: zConfig): ResponseInputItem[] {
+    const items: ResponseInputItem[] = [
         {
             type: "message",
             role: "system",
             content: [{type: "input_text", text: instruction}]
         },
-        ...context.map(m => ({
-            type: "message" as const,
-            role: m.author === Author.USER ? "user" as const : "assistant" as const,
-            content: toResponsesContent(m.data, m.author)
-        }))
     ];
+
+    for (const m of context) {
+        const isSameModel = m.config?.model === config.model;
+
+        if (m.author === Author.MODEL) {
+            // Reconstruct reasoning items from thoughts with ids (only if same model)
+            if (isSameModel) {
+                const thoughtsWithId = m.data.filter(p => p.type === "thought" && p.id);
+                for (const thought of thoughtsWithId) {
+                    if (thought.type !== "thought" || !thought.id) continue;
+                    // Find the matching reasoning item in metadata
+                    const reasoningEvent = (m.metadata ?? []).flat().find(
+                        (e: any) => e.type === "response.output_item.done" && e.item?.type === "reasoning" && e.item?.id === thought.id
+                    );
+                    if (reasoningEvent?.item?.encrypted_content) {
+                        items.push({
+                            type: "reasoning",
+                            id: thought.id,
+                            summary: reasoningEvent.item.summary ?? [],
+                            encrypted_content: reasoningEvent.item.encrypted_content
+                        });
+                    }
+                }
+            }
+
+            // Emit tool calls as top-level function_call items
+            const toolCalls = m.data.filter(p => p.type === "toolCall");
+            const rest = m.data.filter(p => p.type !== "toolCall" && p.type !== "thought");
+
+            if (rest.length) {
+                items.push({
+                    type: "message",
+                    role: "assistant",
+                    content: toResponsesContent(rest, Author.MODEL),
+                });
+            }
+
+            for (const part of toolCalls) {
+                if (part.type !== "toolCall") continue;
+                items.push({
+                    type: "function_call",
+                    call_id: part.id,
+                    name: part.name,
+                    arguments: JSON.stringify(part.args ?? {}),
+                });
+            }
+        } else {
+            // User message — may contain tool results and regular content
+            const toolResults = m.data.filter(p => p.type === "toolResult");
+            const rest = m.data.filter(p => p.type !== "toolResult");
+
+            for (const part of toolResults) {
+                if (part.type !== "toolResult") continue;
+                items.push({
+                    type: "function_call_output",
+                    call_id: part.id,
+                    output: typeof part.value === "string" ? part.value : JSON.stringify(part.value),
+                });
+            }
+
+            if (rest.length) {
+                items.push({
+                    type: "message",
+                    role: "user",
+                    content: toResponsesContent(rest, Author.USER),
+                });
+            }
+        }
+    }
+
+    return items;
 }
 
 function toCompletionsContent(data: zData): ChatCompletionContentPart[] {
@@ -200,7 +268,7 @@ function toCompletionsMessages(context: MessageUnomitted[], instruction: string)
     return messages;
 }
 
-function toCompletionsTools(tools: ToolRunner[]): ChatCompletionTool[] {
+function toCompletionsTools(tools: CustomTool[]): ChatCompletionTool[] {
     return tools.map(t => ({
         type: "function" as const,
         function: {
@@ -217,26 +285,58 @@ async function* fromResponsesStream(
     const events: ResponseStreamEvent[] = [];
     let currentThought = "";
     let currentThoughtIndex = -1;
+    let currentReasoningItemId = "";
+
+    // Tool call accumulation
+    let currentToolCallId = "";
+    let currentToolCallName = "";
+    let currentToolCallArgs = "";
 
     try {
         for await (const chunk of stream) {
             events.push(chunk);
 
+            if (chunk.type === "response.output_item.added" && chunk.item.type === "reasoning") {
+                currentReasoningItemId = chunk.item.id;
+            }
+
             if (chunk.type.startsWith("response.reasoning_summary_text")) {
                 if (chunk.type === "response.reasoning_summary_text.delta") {
                     if (chunk.summary_index !== currentThoughtIndex && currentThoughtIndex !== -1) {
-                        yield {type: "data", value: {type: "thought", value: currentThought}};
+                        yield {
+                            type: "data",
+                            value: {type: "thought", id: currentReasoningItemId || undefined, value: currentThought}
+                        };
                         currentThought = "";
                     }
                     currentThought += chunk.delta;
                     currentThoughtIndex = chunk.summary_index;
                 } else if (chunk.type === "response.reasoning_summary_text.done") {
-                    yield {type: "data", value: {type: "thought", value: currentThought}};
+                    yield {
+                        type: "data",
+                        value: {type: "thought", id: currentReasoningItemId || undefined, value: currentThought}
+                    };
                     currentThought = "";
                     currentThoughtIndex = -1;
                 }
             } else if (chunk.type === "response.output_text.delta") {
                 yield {type: "data", value: {type: "text", value: chunk.delta}};
+            } else if (chunk.type === "response.output_item.added" && chunk.item.type === "function_call") {
+                currentToolCallId = chunk.item.call_id;
+                currentToolCallName = chunk.item.name;
+                currentToolCallArgs = "";
+            } else if (chunk.type === "response.function_call_arguments.delta") {
+                currentToolCallArgs += chunk.delta;
+            } else if (chunk.type === "response.function_call_arguments.done") {
+                let args: any = {};
+                try {
+                    args = JSON.parse(currentToolCallArgs);
+                } catch {
+                }
+                yield {type: "data", value: {type: "toolCall", id: currentToolCallId, name: currentToolCallName, args}};
+                currentToolCallId = "";
+                currentToolCallName = "";
+                currentToolCallArgs = "";
             } else if (chunk.type === "response.image_generation_call.in_progress") {
                 yield {
                     type: "data",
@@ -269,7 +369,7 @@ async function* fromResponsesStream(
         type: "special", value: {
             type: "metadata",
             value: zMetadata.parse(events.filter(
-                e => e.type !== "response.output_text.delta" && e.type !== "response.reasoning_summary_text.delta"
+                e => e.type !== "response.output_text.delta" && e.type !== "response.reasoning_summary_text.delta" && e.type !== "response.function_call_arguments.delta"
             ))
         }
     };
@@ -281,7 +381,7 @@ async function* generateCompletions(
     context: MessageUnomitted[],
     config: zConfig,
     abortSignal: AbortSignal,
-    tools?: ToolRunner[]
+    tools?: CustomTool[]
 ): AsyncGenerator<zGenerateOutput> {
     const stream = await client.chat.completions.create({
         model: config.model,
@@ -342,23 +442,36 @@ async function* fromCompletionsStream(
     yield {type: "special", value: {type: "metadata", value: zMetadata.parse(chunks)}};
 }
 
+function toResponsesTools(tools: CustomTool[]): FunctionTool[] {
+    return tools.map(t => ({
+        type: "function" as const,
+        name: t.name,
+        description: t.description,
+        parameters: t.parameters as FunctionTool["parameters"],
+        strict: null,
+    }));
+}
+
 async function* generateResponses(
     client: OpenAI,
     instruction: string,
     context: MessageUnomitted[],
     config: zConfig,
-    abortSignal: AbortSignal
+    abortSignal: AbortSignal,
+    tools?: CustomTool[]
 ): AsyncGenerator<zGenerateOutput> {
     if (config.schema) instruction += "\n\nSchema: " + JSON.stringify(config.schema);
 
     const params: ResponseCreateParamsStreaming = {
         model: config.model,
         stream: true,
+        store: false,
         temperature: config.args.temperature as number,
-        input: toResponsesInput(context, instruction)
+        input: toResponsesInput(context, instruction, config),
+        ...(tools?.length ? {tools: toResponsesTools(tools)} : {})
     };
 
-    if (config.model.includes("gpt-5")) {
+    if (config.model.includes("gpt-5") || config.model.includes("o3") || config.model.includes("o4")) {
         params.reasoning = {effort: config.args.reasoning, summary: "detailed"};
         params.include = ["reasoning.encrypted_content"];
     }

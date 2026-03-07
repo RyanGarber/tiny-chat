@@ -3,47 +3,55 @@ import {reloadConfig} from "@/managers/messaging.tsx";
 import {create} from "zustand";
 import {format} from "timeago.js";
 import {subscribeWithSelector} from "zustand/middleware";
-import {MessageUnomitted, Service, zConfig, zDataPart, zMetadata} from "@tiny-chat/core-backend/types.ts";
+import {
+    ChatProviderStatus,
+    MessageUnomitted,
+    SearchProviderStatus,
+    zConfig,
+    zDataPart,
+    zMetadata
+} from "@tiny-chat/core-backend/types.ts";
 import {generate, trpc} from "@/utils.ts";
 import {useSettings} from "@/managers/settings.tsx";
 import {Author} from "@tiny-chat/core-backend/generated/prisma/enums.ts";
 import {useMemories} from "@/managers/context.tsx";
 import {useTasks} from "@/managers/tasks.tsx";
 
-interface Services {
+interface Providers {
     init: () => Promise<void>;
 
-    services: Service[];
-    fetchServices: () => Promise<void>;
+    chatProviders: ChatProviderStatus[];
+    searchProviders: SearchProviderStatus[];
+    updateProviders: () => Promise<void>;
 
     abortController: AbortController | null;
-    onMessage: (messageId: string) => Promise<void>;
+    handleMessage: (messageId: string) => Promise<void>;
 }
 
-export const useServices = create(
-    subscribeWithSelector<Services>((set, get) => ({
+export const useProviders = create(
+    subscribeWithSelector<Providers>((set, get) => ({
         init: async () => {
-            await get().fetchServices();
+            await get().updateProviders();
         },
 
-        services: [],
-        fetchServices: async () => {
-            useTasks.getState().addTask("models", "Finding models");
+        chatProviders: [],
+        searchProviders: [],
+        updateProviders: async () => {
+            useTasks.getState().addTask("providers", "Checking availability");
 
-            let available = await trpc.services.listServices.query();
+            let providers = await trpc.providers.listProviders.query();
+            const chatProviderModels = providers.chat.reduce((acc, s) => acc + s.models.length, 0);
+            useTasks.getState().updateTask("providers", 100, `Found ${chatProviderModels} model${chatProviderModels === 1 ? "" : "s"}`, "Finding models");
 
-            const availableModels = available.reduce((acc, s) => acc + s.models.length, 0);
-            useTasks.getState().updateTask("models", 100, `Found ${availableModels} model${availableModels === 1 ? "" : "s"}`, "Finding models");
-
-            console.log("Fetched services:", available);
-            set({services: available});
+            console.log("Updated providers:", providers);
+            set({chatProviders: providers.chat, searchProviders: providers.search});
             reloadConfig();
 
-            void useTasks.getState().removeTask("models");
+            void useTasks.getState().removeTask("providers");
         },
 
         abortController: null,
-        onMessage: async (messageId: string) => {
+        handleMessage: async (messageId: string) => {
             let {currentChat, messages} = useChats.getState();
             if (!currentChat) return;
 
@@ -89,7 +97,7 @@ IMPORTANT: Do not introduce or revisit the above topics unless:
                             let fileNumber = 1;
                             return {
                                 ...m,
-                                metadata: omissions.get(m.id)?.metadata,
+                                metadata: zMetadata.parse(omissions.get(m.id)?.metadata),
                                 data: m.data.flatMap((d): zDataPart[] => {
                                     if (d.type === "file") {
                                         return [
@@ -133,16 +141,24 @@ IMPORTANT: Do not introduce or revisit the above topics unless:
 
                     const userInstructions = currentChat.incognito ? [] : useSettings.getState().getInstructions();
                     const instructions = `
+Formatting re-enabled - always use Markdown in your responses. Use LaTeX for math, and code blocks for code.
+
 Today's date is ${new Date().toLocaleDateString()}.
 Assume knowledge must reflect current information. Prefer search results over training knowledge.
 For news, software, and other time-sensitive topics, always search. If uncertainty exists, search.
 
-This conversation may include responses from multiple AI models. Previous assistant messages are labeled in the format:
+This conversation may include responses from multiple AI models.
 
+Assistant messages are labeled like:
 [assistant:model=<model-name>]
 
-You are the AI model "${reply.config.model}." You should speak only as "${reply.config.model}.
-You should call out and refer to other models by name when appropriate."`
+Identity rules:
+- You are the model "${reply.config.model}".
+- Only messages with the label "[assistant:model=${reply.config.model}]" were written by you.
+- Messages labeled with any other model name were written by a different model.
+- If you quote or reference another assistant message, do not say "I"; name the model that produced it.
+
+IMPORTANT: Do not include the [assistant:model=<model-name>] label in your response, as the system will add it automatically.`
                         + (userInstructions.length
                             ? `\n\n`
                             + `Additionally, the user provided the following instructions:\n`
@@ -157,7 +173,7 @@ You should call out and refer to other models by name when appropriate."`
                     const stream = generate(
                         {
                             instruction: instructions,
-                            context: context.map(m => ({author: m.author, data: m.data})),
+                            context: context.map(m => ({id: m.id, author: m.author, data: m.data})),
                             config
                         },
                         abortController.signal
@@ -170,6 +186,8 @@ You should call out and refer to other models by name when appropriate."`
                         await new Promise<void>(r => setTimeout(r, 0));
                         lastFlush = performance.now();
                     };
+
+                    let error: any = null;
 
                     try {
                         let hasText = false;
@@ -213,14 +231,15 @@ You should call out and refer to other models by name when appropriate."`
                         }
                     } catch (e: any) {
                         if (e.name === "AbortError") console.warn("Stream aborted");
-                        else throw e;
+                        else error = e;
+                    } finally {
+                        set({abortController: null});
+
+                        await flush();
+                        await publish(reply);
+                        console.log("Published reply:", reply);
                     }
-
-                    set({abortController: null});
-
-                    await flush();
-                    await publish(reply);
-                    console.log("Published reply:", reply);
+                    if (error) throw error;
                 }
             }
         },

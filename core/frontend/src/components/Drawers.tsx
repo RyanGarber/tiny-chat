@@ -9,6 +9,7 @@ import {
     Group,
     Modal,
     Select,
+    Space,
     Stack,
     Tabs,
     Text,
@@ -18,7 +19,7 @@ import {
 } from "@mantine/core";
 import {JSX, useEffect, useRef, useState} from "react";
 import {IconBrandGithub, IconBrandGoogle, IconKey, IconPalette, IconSettingsAi, IconTrash} from "@tabler/icons-react";
-import {useServices} from "@/managers/services.tsx";
+import {useProviders} from "@/managers/providers.tsx";
 import {codeThemes, themes, useSettings} from "@/managers/settings.tsx";
 import {auth, consumeLabel, hashText, openExternal, trpc, webUrl} from "@/utils.ts";
 import {useDisclosure, UseDisclosureReturnValue} from "@mantine/hooks";
@@ -54,11 +55,11 @@ export default function Drawers(
         setTheme,
         getCodeTheme,
         setCodeTheme,
-        getServiceSetting,
-        setServiceSetting,
-        getServiceError
+        getProviderSetting,
+        setProviderSetting,
+        getProviderError
     } = useSettings();
-    const {services} = useServices();
+    const {chatProviders, searchProviders} = useProviders();
     const {setGestureBlock, setDrawerCloser} = useLayout();
 
     const {data: session} = auth.useSession();
@@ -111,6 +112,34 @@ export default function Drawers(
     }, [accountDrawer[0], settingsDrawer[0]]);
 
     const [cloneInterval, setCloneInterval] = useState<NodeJS.Timeout>();
+
+    const ProviderSettings = (providers: { name: string, settings: string[] }[]) => (
+        <>
+            {providers.filter(s => s.settings.length).map((service) => (
+                <Box key={service.name}
+                     style={getProviderError(service.name) ? {
+                         border: "1px solid var(--mantine-color-red-6)",
+                         borderRadius: "var(--mantine-radius-md)",
+                         padding: "var(--mantine-spacing-xs)"
+                     } : undefined}>
+                    <Text size="sm">{service.name}</Text>
+                    <Stack mt={5}>
+                        {service.settings.map(s => (
+                            <TextInput key={service.name + s}
+                                       label={s}
+                                       styles={consumeLabel}
+                                       defaultValue={getProviderSetting(service.name, s) || ""}
+                                       onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+                                       onBlur={async (e) => {
+                                           if (e.target.value === (getProviderSetting(service.name, s) || "")) return;
+                                           await setProviderSetting(service.name, s, e.target.value);
+                                       }}/>
+                        ))}
+                    </Stack>
+                </Box>
+            ))}
+        </>
+    );
 
     return (
         <>
@@ -195,6 +224,7 @@ export default function Drawers(
                     </Tabs.List>
                     <Tabs.Panel value="general">
                         <Stack>
+                            <Text size="sm">Instructions</Text>
                             {getInstructions().map((instruction, index) => (
                                 <Textarea
                                     key={hashText(index + instruction)}
@@ -215,7 +245,7 @@ export default function Drawers(
                                     }}><IconTrash size={16}/></ActionIcon>}
                                 />
                             ))}
-                            <Tooltip label="Custom instructions for the models" color="gray" position="right">
+                            <Tooltip label="System instructions for models" color="gray" position="right">
                                 <Textarea key="add"
                                           autosize
                                           label="Instruction"
@@ -231,7 +261,8 @@ export default function Drawers(
                                           }}
                                           disabled={addingInstruction}/>
                             </Tooltip>
-                            <Divider/>
+                            <Space/>
+                            <Text size="sm">Features</Text>
                             <Tooltip label="Model that generates embeddings" color="gray"
                                      position="right">
                                 <ModelSelect label="Embedding Model"
@@ -286,8 +317,9 @@ export default function Drawers(
                     </Tabs.Panel>
                     <Tabs.Panel value="appearance">
                         <Stack>
+                            <Text size="sm">Themes</Text>
                             <Tooltip label="Styles the app" color="gray" position="right">
-                                <Select label="Theme"
+                                <Select label="App Theme"
                                         styles={consumeLabel}
                                         allowDeselect={false}
                                         data={themes}
@@ -315,29 +347,11 @@ export default function Drawers(
                     </Tabs.Panel>
                     <Tabs.Panel value="apiKeys">
                         <Stack>
-                            {services.filter(s => s.settings.length).map((service) => (
-                                <Box key={service.name}
-                                     style={getServiceError(service.name) ? {
-                                         border: "1px solid var(--mantine-color-red-6)",
-                                         borderRadius: "var(--mantine-radius-md)",
-                                         padding: "var(--mantine-spacing-xs)"
-                                     } : undefined}>
-                                    <Text size="sm">{service.name}</Text>
-                                    <Stack mt={5}>
-                                        {service.settings.map(s => (
-                                            <TextInput key={service.name + s}
-                                                       label={s}
-                                                       styles={consumeLabel}
-                                                       defaultValue={getServiceSetting(service.name, s) || ""}
-                                                       onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-                                                       onBlur={async (e) => {
-                                                           if (e.target.value === (getServiceSetting(service.name, s) || "")) return;
-                                                           await setServiceSetting(service.name, s, e.target.value);
-                                                       }}/>
-                                        ))}
-                                    </Stack>
-                                </Box>
-                            ))}
+                            <Text size="sm">Chat</Text>
+                            {ProviderSettings(chatProviders)}
+                            <Space/>
+                            <Text size="sm">Search</Text>
+                            {ProviderSettings(searchProviders)}
                         </Stack>
                     </Tabs.Panel>
                 </Tabs>

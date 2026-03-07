@@ -25,7 +25,7 @@ import {IconChevronsUp, IconFile, IconPlayerStop, IconPlus, IconScreenshot} from
 import {CSSProperties, useCallback, useLayoutEffect, useRef, useState,} from "react";
 import {Editable, ReactEditor, Slate} from "slate-react";
 import {serialize} from "@/slate/serializer.tsx";
-import {useServices} from "@/managers/services.tsx";
+import {useProviders} from "@/managers/providers.tsx";
 import {useLayout} from "@/managers/layout.tsx";
 import {useLocalStorage} from "@mantine/hooks";
 import {DropzoneFullScreen} from "@mantine/dropzone";
@@ -33,7 +33,7 @@ import ModelSelect from "@/components/ModelSelect.tsx";
 
 export function Input(props: InputWrapperProps) {
     const {setEditor, config, setConfig, addFiles} = useMessaging();
-    const {services, abortController} = useServices();
+    const {chatProviders, abortController} = useProviders();
     const {shadow, setIsMessaging, isMessagingDisabled} = useLayout();
 
     const [isMultiline, setMultiline] = useState(false);
@@ -75,7 +75,7 @@ export function Input(props: InputWrapperProps) {
 
     const [_, updateSavedConfig] = useLocalStorage<string>({key: "config"});
 
-    const args = services.find(s => s.name === config?.service)?.models.find(m => m.name === config?.model)?.args ?? [];
+    const args = chatProviders.find(s => s.name === config?.service)?.models.find(m => m.name === config?.model)?.args ?? [];
 
     const setArg = (name: string, value: any) => {
         if (!config) return;

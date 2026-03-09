@@ -1,7 +1,7 @@
 import {ActionIcon, Box, Group} from "@mantine/core";
-import {IconX} from "@tabler/icons-react";
 import {ReactNode} from "react";
 import {useLayout} from "@/managers/layout.tsx";
+import {Icon} from "@iconify/react";
 
 export default function InputEffect({
                                         content,
@@ -25,7 +25,7 @@ export default function InputEffect({
             style={{boxShadow: shadow, pointerEvents: "auto"}}
         >
             <ActionIcon size={20} variant="subtle" onClick={onDelete} disabled={isMessagingDisabled}>
-                <IconX size={18}/>
+                <Icon icon="lucide:x" height={18}/>
             </ActionIcon>
             <Box>{content}</Box>
         </Group>

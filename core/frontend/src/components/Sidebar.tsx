@@ -1,22 +1,28 @@
 import {useEffect, useState} from "react";
 import {useDebouncedValue} from "@mantine/hooks";
-import {ActionIcon, Avatar, Burger, Divider, Group, NavLink, ScrollArea, Space, Stack, Tooltip} from "@mantine/core";
+import {
+    ActionIcon,
+    Avatar,
+    Burger,
+    Divider,
+    Group,
+    NavLink,
+    ScrollArea,
+    Space,
+    Stack,
+    Text,
+    Tooltip
+} from "@mantine/core";
 import {Spotlight, spotlight, SpotlightActionData} from "@mantine/spotlight";
 import {useLayout} from "@/managers/layout.tsx";
-import {
-    IconEyeOff,
-    IconHexagonPlus,
-    IconSearch,
-    IconSettings2,
-    IconUserHexagon,
-    IconUserOff,
-} from "@tabler/icons-react";
 import SidebarChat from "@/components/SidebarChat.tsx";
 import {useChats} from "@/managers/chats.tsx";
 import {useLocation} from "wouter";
 import {auth, extractText, scrubText, snippetText, trpc} from "@/utils.ts";
 import Drawers from "@/components/Drawers.tsx";
 import {useSettings} from "@/managers/settings.tsx";
+import {Icon} from "@iconify/react";
+import {version} from "../../../../apps/tauri/tauri.conf.json";
 
 export default function Sidebar() {
     const {folders, currentChat, setCurrentChat, temporary, setTemporary, incognito, setIncognito} = useChats();
@@ -88,7 +94,7 @@ export default function Sidebar() {
         <>
             <Group justify="space-between" px={5} pb={5}>
                 <ActionIcon variant="transparent" onClick={spotlight.open}>
-                    <IconSearch size={18} color="var(--mantine-color-dimmed)"/>
+                    <Icon icon="lucide:search" height={18} color="var(--mantine-color-text)"/>
                 </ActionIcon>
                 <Spotlight
                     actions={spotlightActions}
@@ -102,7 +108,8 @@ export default function Sidebar() {
                 <Burger opened={isSidebarOpen} onClick={() => setSidebarOpen(!isSidebarOpen)} size={16}/>
             </Group>
             <Group align="center" mt={5} gap={2}>
-                <NavLink label="New Chat" leftSection={<IconHexagonPlus size={20}/>} className="new-chat"
+                <NavLink label="New Chat" leftSection={<Icon icon="lucide:message-circle-plus" height={18}/>}
+                         className="new-chat"
                          onClick={() => closeAfter(() => void setCurrentChat(null))} active={!currentChat}
                          variant="subtle"
                          flex={1} bdrs="md"/>
@@ -110,14 +117,14 @@ export default function Sidebar() {
                     <ActionIcon size={32} variant="subtle" c="dimmed" bdrs="md" className="nav-link-like filled"
                                 onClick={() => closeAfter(() => void setTemporary(!isTemporary))}
                                 data-active={isTemporary}>
-                        <IconEyeOff size={22}/>
+                        <Icon icon="lucide:list-x" height={18}/>
                     </ActionIcon>
                 </Tooltip>
-                <Tooltip label="Incognito" color="gray" position="right">
+                <Tooltip label="Anonymous" color="gray" position="right">
                     <ActionIcon size={32} variant="subtle" c="dimmed" bdrs="md" className="nav-link-like filled"
                                 onClick={() => closeAfter(() => void setIncognito(!isIncognito))}
                                 data-active={isIncognito}>
-                        <IconUserOff size={22}/>
+                        <Icon icon="lucide:user-x" height={18}/>
                     </ActionIcon>
                 </Tooltip>
             </Group>
@@ -161,11 +168,19 @@ export default function Sidebar() {
                 <>
                     <NavLink
                         label={!session?.user || session.user.isAnonymous ? 'Sign In' : session.user.name.split(' ')[0]}
-                        leftSection={session?.user?.image ? <Avatar src={session.user.image} size={20}/> :
-                            <IconUserHexagon size={20}/>}
+                        leftSection={session?.user?.image ? <Avatar src={session.user.image} size={18}/> :
+                            <Icon icon="lucide:circle-user" height={18}/>}
                         onClick={account[1].open} bdrs="md"/>
-                    <NavLink label="Settings" leftSection={<IconSettings2 size={20}/>} onClick={settings[1].open}
-                             bdrs="md"/>
+                    <NavLink
+                        label={
+                            <Group justify="space-between">
+                                Settings
+                                <Text size="sm" c="dimmed" pr={5}>v{version}</Text>
+                            </Group>
+                        }
+                        leftSection={<Icon icon="lucide:settings" height={18}/>}
+                        onClick={settings[1].open}
+                        bdrs="md"/>
                 </>
             )}/>
         </>
@@ -177,27 +192,29 @@ export default function Sidebar() {
                 <Burger opened={isSidebarOpen} onClick={() => setSidebarOpen(!isSidebarOpen)} size={16}/>
                 <Space/>
                 <Tooltip label="New Chat" position="right" color="gray">
-                    <ActionIcon variant="subtle" size={36} className="new-chat nav-link-like"
+                    <ActionIcon variant="subtle" size={32} c="dimmed" className="new-chat nav-link-like filled"
                                 data-active={!currentChat}
                                 onClick={() => closeAfter(() => void setCurrentChat(null))}>
-                        <IconHexagonPlus size={20} color="var(--mantine-color-dimmed)"/>
+                        <Icon icon="lucide:message-circle-plus" height={18}/>
                     </ActionIcon>
                 </Tooltip>
             </Stack>
             <Drawers buttons={(account, settings) => (
                 <Stack align="center" gap={5}>
                     <Tooltip
-                        label={!session?.user || session.user.isAnonymous ? 'Sign In' : session.user.name.split(' ')[0]}
+                        label={!session?.user || session.user.isAnonymous ? 'Sign In' : "Account"}
                         position="right" color="gray">
-                        <ActionIcon variant="subtle" onClick={account[1].open} size={36} className="nav-link-like">
+                        <ActionIcon variant="subtle" size={32} c="dimmed" className="nav-link-like"
+                                    onClick={account[1].open}>
                             {session?.user?.image
-                                ? <Avatar src={session.user.image} size={20}/>
-                                : <IconUserHexagon size={20}/>}
+                                ? <Avatar src={session.user.image} size={18}/>
+                                : <Icon icon="lucide:user-x" height={18}/>}
                         </ActionIcon>
                     </Tooltip>
                     <Tooltip label="Settings" position="right" color="gray">
-                        <ActionIcon variant="subtle" onClick={settings[1].open} size={36} className="nav-link-like">
-                            <IconSettings2 size={20} color="var(--mantine-color-dimmed)"/>
+                        <ActionIcon variant="subtle" size={32} c="dimmed" className="nav-link-like"
+                                    onClick={settings[1].open}>
+                            <Icon icon="lucide:settings" height={18}/>
                         </ActionIcon>
                     </Tooltip>
                 </Stack>

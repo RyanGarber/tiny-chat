@@ -1,10 +1,10 @@
 import {useEffect, useRef, useState} from "react";
 import {useLayout} from "@/managers/layout.tsx";
 import {ActionIcon, Button, Menu, Modal, NavLink, NavLinkProps, TextInput,} from "@mantine/core";
-import {IconDots, IconEdit, IconTrash} from "@tabler/icons-react";
 import {useDisclosure} from "@mantine/hooks";
 import {useChats} from "@/managers/chats.tsx";
 import {Chat} from "@tiny-chat/core-backend/generated/prisma/client.ts";
+import {Icon} from "@iconify/react";
 
 export default function SidebarChat({
                                         chat,
@@ -62,12 +62,12 @@ export default function SidebarChat({
                                 variant={active ? "white" : (isOpen ? "filled" : "light")}
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                <IconDots size={16}/>
+                                <Icon icon="lucide:ellipsis" height={16}/>
                             </ActionIcon>
                         </Menu.Target>
                         <Menu.Dropdown>
                             <Menu.Item
-                                leftSection={<IconEdit size={16}/>}
+                                leftSection={<Icon icon="lucide:folder-pen" height={18}/>}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setTitle(chat.title || "");
@@ -77,7 +77,7 @@ export default function SidebarChat({
                                 Rename
                             </Menu.Item>
                             <Menu.Item
-                                leftSection={<IconTrash size={16}/>}
+                                leftSection={<Icon icon="lucide:trash" height={18}/>}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     openDelete();
@@ -102,7 +102,7 @@ export default function SidebarChat({
                     onKeyDown={(e) => e.key === "Enter" && saveTitle()}
                     data-autofocus
                 />
-                <Button variant="gradient" fullWidth onClick={saveTitle}>
+                <Button variant="filled" fullWidth onClick={saveTitle}>
                     Save
                 </Button>
             </Modal>
@@ -111,11 +111,9 @@ export default function SidebarChat({
                 opened={isDeleteOpen}
                 onClose={closeDelete}
             >
-                <Modal.Body>
-                    <Button color="red" fullWidth onClick={saveDelete}>
-                        Confirm
-                    </Button>
-                </Modal.Body>
+                <Button color="red" fullWidth onClick={saveDelete}>
+                    Confirm
+                </Button>
             </Modal>
         </>
     );

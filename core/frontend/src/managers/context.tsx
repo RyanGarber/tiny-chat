@@ -49,12 +49,14 @@ export const useMemories = create(subscribeWithSelector<Context>((_, get) => {
                 const lastMessage = chats[i].messages[0].createdAt;
                 const hours = (now.getTime() - lastMessage.getTime()) / (1000 * 60 * 60);
                 if (hours > UPDATE_AFTER_HR) {
-                    addTask("memories", "Saving new memories");
+                    addTask("memories", "Saving new memories", undefined, undefined, {
+                        crawlSpeed: 5 / chats.length,
+                        crawlMax: 50 / chats.length
+                    });
                     console.log(`Chat ${chats[i].id} is stale (${hours}h), memorizing...`);
                     const result = await memorizeChat(chats[i].id);
                     totalMemories += result?.memories.length ?? 0;
-                    updateTask("memories", i / chats.length * 100, `Learned ${totalMemories} new thing${totalMemories !== -1 ? "s" : ""}`);
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    await updateTask("memories", ((i + 1) / chats.length) * 100, `Learned ${totalMemories} new thing${totalMemories !== -1 ? "s" : ""}`);
                 }
             }
 

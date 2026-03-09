@@ -1,5 +1,5 @@
 import {useEffect} from "react";
-import {AppShell, Box, LoadingOverlay, MantineProvider, Overlay} from "@mantine/core";
+import {AppShell, Box, LoadingOverlay, MantineProvider, Overlay, Text} from "@mantine/core";
 import {NavigationProgress} from "@mantine/nprogress";
 import {useDrag} from "@use-gesture/react";
 import Chat from "@/components/Chat.tsx";
@@ -14,7 +14,7 @@ import {CodeHighlightAdapterProvider} from "@mantine/code-highlight";
 import {useMemories} from "./managers/context.tsx";
 import {cssResolver, theme} from "@/theme.tsx";
 import {useEmbeddings} from "@/managers/embeddings.tsx";
-import {ModalsProvider} from "@mantine/modals";
+import {modals, ModalsProvider} from "@mantine/modals";
 import Tasks from "@/components/Tasks.tsx";
 import {useTasks} from "@/managers/tasks.tsx";
 
@@ -46,7 +46,12 @@ export default function App() {
                 return;
             }
 
+            const oldToken = localStorage.getItem("token");
             localStorage.setItem("token", session.data.session.token);
+            if (session.data.session.token !== oldToken) {
+                window.location.reload();
+                return;
+            }
 
             if (window.location.hash.startsWith("#/app/") && !session.data.user.isAnonymous) {
                 (async () => {
@@ -59,13 +64,24 @@ export default function App() {
 
             const uninit: (() => void)[] = [];
             (async () => {
-                await useSettings.getState().init();
-                await useProviders.getState().init();
-                await useChats.getState().init();
-                await useEmbeddings.getState().init();
-
-                uninit.push(useMemories.getState().init());
-                uninit.push(useTasks.getState().init());
+                try {
+                    uninit.push(useTasks.getState().init()); // init first so updates always work
+                    await useSettings.getState().init();
+                    await useProviders.getState().init();
+                    await useChats.getState().init();
+                    await useEmbeddings.getState().init();
+                    uninit.push(useMemories.getState().init());
+                } catch (e: any) {
+                    modals.open({
+                        children: <Text ta="center">Tiny Chat isn't available right now.<br/>Please try again
+                            later.</Text>,
+                        withCloseButton: false,
+                        closeOnClickOutside: false,
+                        closeOnEscape: false,
+                        centered: true,
+                    });
+                    throw e;
+                }
 
                 setInitializing(false);
             })();
@@ -172,6 +188,7 @@ export default function App() {
                                 style={{
                                     boxShadow: isSidebarOpen || !isMobile ? shadow : "",
                                     touchAction: "pan-y",
+                                    fontWeight: 450
                                 }}
                             ><Sidebar/></AppShell.Navbar>
                             <AppShell.Main

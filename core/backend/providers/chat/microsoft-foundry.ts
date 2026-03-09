@@ -400,24 +400,30 @@ async function* fromCompletionsStream(
     const chunks: any[] = [];
     // Accumulate tool call deltas keyed by index
     const toolCallAccum: Record<number, { id: string; name: string; args: string }> = {};
+    let currentThought = "";
 
     try {
+
         for await (const chunk of stream) {
             chunks.push(chunk);
             const delta = chunk.choices?.[0]?.delta;
             if (!delta) continue;
 
-            if (delta.content) {
-                yield {type: "data", value: {type: "text", value: delta.content}};
+            if (delta.reasoning_content) {
+                currentThought += delta.reasoning_content;
             }
 
             if (delta.tool_calls) {
+                if (currentThought) {
+                    yield {type: "data", value: {type: "thought", value: currentThought}};
+                    currentThought = "";
+                }
                 for (const tc of delta.tool_calls) {
                     if (!toolCallAccum[tc.index]) {
                         toolCallAccum[tc.index] = {id: tc.id ?? "", name: tc.function?.name ?? "", args: ""};
                     }
                     if (tc.id) toolCallAccum[tc.index].id = tc.id;
-                    if (tc.function?.name) toolCallAccum[tc.index].name += tc.function.name;
+                    if (tc.function?.name) toolCallAccum[tc.index].name = tc.function.name;
                     if (tc.function?.arguments) toolCallAccum[tc.index].args += tc.function.arguments;
                 }
             }
@@ -432,6 +438,14 @@ async function* fromCompletionsStream(
                     }
                     yield {type: "data", value: {type: "toolCall", id: tc.id, name: tc.name, args}};
                 }
+            }
+
+            if (delta.content) {
+                if (currentThought) {
+                    yield {type: "data", value: {type: "thought", value: currentThought}};
+                    currentThought = "";
+                }
+                yield {type: "data", value: {type: "text", value: delta.content}};
             }
         }
     } catch (e: any) {

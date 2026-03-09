@@ -140,25 +140,15 @@ IMPORTANT: Do not introduce or revisit the above topics unless:
                     ];
 
                     const userInstructions = currentChat.incognito ? [] : useSettings.getState().getInstructions();
-                    const instructions = `
-Formatting re-enabled - always use Markdown in your responses. Use LaTeX for math, and code blocks for code.
+                    const instructions = `Formatting re-enabled.
 
-Today's date is ${new Date().toLocaleDateString()}.
-Assume knowledge must reflect current information. Prefer search results over training knowledge.
-For news, software, and other time-sensitive topics, always search. If uncertainty exists, search.
+Today's date is ${new Date().toLocaleDateString()}. For time-sensitive topics (news, software, etc.), search rather than relying on training data.
 
-This conversation may include responses from multiple AI models.
+Render responses in Markdown — use headers, tables, lists, and code blocks where helpful. Use LaTeX for math. Keep paragraphs short.
 
-Assistant messages are labeled like:
-[assistant:model=<model-name>]
+This conversation may include responses from multiple AI models. Your model name is "${reply.config.model}". Only messages labeled [assistant:model=${reply.config.model}] were written by you — treat others as written by the named model.
 
-Identity rules:
-- You are the model "${reply.config.model}".
-- Only messages with the label "[assistant:model=${reply.config.model}]" were written by you.
-- Messages labeled with any other model name were written by a different model.
-- If you quote or reference another assistant message, do not say "I"; name the model that produced it.
-
-IMPORTANT: Do not include the [assistant:model=<model-name>] label in your response, as the system will add it automatically.`
+Do not include the [assistant:model=...] label in your response.`
                         + (userInstructions.length
                             ? `\n\n`
                             + `Additionally, the user provided the following instructions:\n`

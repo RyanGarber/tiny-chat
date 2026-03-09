@@ -14,7 +14,7 @@ export const darkPalette: MantineColorsTuple = [
 ];
 
 export const theme = createTheme({
-    fontFamily: "Archivo, sans-serif",
+    fontFamily: "'Rubik', sans-serif",
     primaryColor: "blue",
     defaultRadius: "md",
     colors: {

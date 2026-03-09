@@ -335,3 +335,24 @@ export async function* generate(input: zGenerateInput, signal?: AbortSignal) {
         }
     }
 }
+
+export function takeStringOutOfNodeAndChildren(node: ReactNode, str: string): ReactNode {
+    if (typeof node === "string") {
+        return node.split(str).join("");
+    }
+    if (isValidElement(node)) {
+        return {
+            ...node,
+            props: {
+                // @ts-ignore
+                ...node.props,
+                // @ts-ignore
+                children: takeStringOutOfNodeAndChildren(node.props.children, str),
+            },
+        };
+    }
+    if (Array.isArray(node)) {
+        return node.map(child => takeStringOutOfNodeAndChildren(child, str));
+    }
+    return node;
+}

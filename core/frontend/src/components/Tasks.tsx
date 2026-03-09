@@ -6,7 +6,8 @@ import {format} from "timeago.js";
 import {useLayout} from "@/managers/layout.tsx";
 
 interface DisplayedTask extends Task {
-    completing: boolean;
+    /** Whether this task is in its removal animation / hold phase */
+    removing: boolean;
     displayedProgress: number;
 }
 
@@ -17,18 +18,15 @@ export default function Tasks() {
 
     const [displayedTasks, setDisplayedTasks] = useState<Record<string, DisplayedTask>>({});
 
-    // Ref mirrors so animation/jitter callbacks never see stale closures
+    // Ref mirrors so callbacks never see stale closures
     const displayedRef = useRef<Record<string, DisplayedTask>>({});
     const tasksRef = useRef<Record<string, Task>>({});
-    const removingRef = useRef<Set<string>>(new Set());
     const animFramesRef = useRef<Record<string, number>>({});
-    const closeTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+    const holdTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
     const jitterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // Keep tasksRef in sync so jitter closure always reads fresh real progress
     tasksRef.current = tasks;
 
-    /** Syncs both the ref and React state in one call */
     const setDisplayed = useCallback(
         (updater: (prev: Record<string, DisplayedTask>) => Record<string, DisplayedTask>) => {
             displayedRef.current = updater(displayedRef.current);
@@ -38,54 +36,103 @@ export default function Tasks() {
     );
 
     useEffect(() => {
-        // Add / update active tasks — preserve displayedProgress if jitter pushed it ahead
         for (const [id, task] of Object.entries(tasks)) {
-            if (!task.removeCallback) {
+            const displayed = displayedRef.current[id];
+
+            // ── New task ──────────────────────────────────────────────────────
+            if (!displayed) {
                 setDisplayed((prev) => ({
                     ...prev,
-                    [id]: {
-                        ...task,
-                        completing: false,
-                        // Don't go backwards; snap forward if real progress overtakes jitter
-                        displayedProgress: Math.max(task.progress, prev[id]?.displayedProgress ?? 0),
-                    },
+                    [id]: {...task, removing: false, displayedProgress: task.progress},
                 }));
-            } else if (!removingRef.current.has(id)) {
-                removingRef.current.add(id);
-                if (animFramesRef.current[id]) cancelAnimationFrame(animFramesRef.current[id]);
-                if (closeTimersRef.current[id]) clearTimeout(closeTimersRef.current[id]);
+                continue;
+            }
 
-                const startProgress = displayedRef.current[id]?.displayedProgress ?? 100;
+            // ── Metadata-only update (no animTarget change) ───────────────────
+            if (task.animTarget === undefined && !task.removeResolve) {
+                setDisplayed((prev) =>
+                    prev[id] ? {...prev, [id]: {...prev[id], name: task.name, details: task.details}} : prev
+                );
+                continue;
+            }
+
+            // ── Animate toward animTarget ─────────────────────────────────────
+            if (task.animTarget !== undefined) {
+                const target = task.animTarget;
+                const isRemoval = task.removeResolve !== undefined;
+
+                // Don't restart animation if already running toward the same target — but still sync metadata
+                if (displayed.animTarget === target && animFramesRef.current[id]) {
+                    setDisplayed((prev) =>
+                        prev[id] ? {...prev, [id]: {...prev[id], name: task.name, details: task.details}} : prev
+                    );
+                    continue;
+                }
+
+                // Cancel any previous animation for this task
+                if (animFramesRef.current[id]) cancelAnimationFrame(animFramesRef.current[id]);
+                if (holdTimersRef.current[id]) clearTimeout(holdTimersRef.current[id]);
+
+                const startProgress = displayedRef.current[id]?.displayedProgress ?? 0;
                 const startTime = performance.now();
-                const duration = 500;
+                // Removal always gets 500 ms; progress updates scale with distance (min 200 ms, max 600 ms)
+                const distance = Math.abs(target - startProgress);
+                const duration = isRemoval ? 500 : Math.min(600, Math.max(200, distance * 6));
+
+                // Mirror animTarget (and updated metadata) into displayedRef so the continue-guard above works
+                setDisplayed((prev) =>
+                    prev[id] ? {...prev,
+                        [id]: {
+                            ...prev[id],
+                            name: task.name,
+                            details: task.details,
+                            animTarget: target,
+                            removing: isRemoval
+                        }
+                    } : prev
+                );
 
                 const animate = (now: number) => {
                     const t = Math.min((now - startTime) / duration, 1);
-                    const newProgress = startProgress + (100 - startProgress) * t;
+                    // Ease-out cubic
+                    const ease = 1 - Math.pow(1 - t, 3);
+                    const newProgress = startProgress + (target - startProgress) * ease;
 
                     setDisplayed((prev) =>
-                        prev[id]
-                            ? {...prev, [id]: {...prev[id], displayedProgress: newProgress, completing: true}}
-                            : prev
+                        prev[id] ? {...prev, [id]: {...prev[id], displayedProgress: newProgress}} : prev
                     );
 
                     if (t < 1) {
                         animFramesRef.current[id] = requestAnimationFrame(animate);
                     } else {
-                        closeTimersRef.current[id] = setTimeout(() => {
-                            setDisplayed(({[id]: _, ...rest}) => rest);
-                            task.removeCallback?.();
-                            removingRef.current.delete(id);
-                        }, 700);
+                        delete animFramesRef.current[id];
+                        // Resolve the update promise (animResolve)
+                        task.animResolve?.();
+
+                        if (isRemoval) {
+                            // Hold at 100 % briefly, then dismiss
+                            holdTimersRef.current[id] = setTimeout(() => {
+                                setDisplayed(({[id]: _, ...rest}) => rest);
+                                task.removeResolve?.();
+                                delete holdTimersRef.current[id];
+                            }, 600);
+                        }
                     }
                 };
 
                 animFramesRef.current[id] = requestAnimationFrame(animate);
             }
         }
+
+        // Clean up displayed tasks that are no longer in the store (edge-case safety)
+        for (const id of Object.keys(displayedRef.current)) {
+            if (!tasks[id] && !holdTimersRef.current[id] && !animFramesRef.current[id]) {
+                setDisplayed(({[id]: _, ...rest}) => rest);
+            }
+        }
     }, [tasks, setDisplayed]);
 
-    // Jitter loop — bumps active tasks by a small random amount on a random interval
+    // Jitter loop — organically bumps non-animating, non-removing tasks
     useEffect(() => {
         const tick = () => {
             setDisplayed((prev) => {
@@ -94,19 +141,19 @@ export default function Tasks() {
                 const updated: Record<string, DisplayedTask> = {};
 
                 for (const [id, task] of Object.entries(prev)) {
-                    if (task.completing) {
+                    // Skip tasks that are animating toward a target or being removed
+                    if (task.removing || animFramesRef.current[id]) {
                         updated[id] = task;
                         continue;
                     }
-                    const maxAhead = 25;
                     const realProgress = realTasks[id]?.progress ?? task.displayedProgress;
-                    const cap = Math.min(realProgress + maxAhead, 99);
+                    const cap = Math.min(realProgress + task.options.crawlMax, 99);
                     if (task.displayedProgress >= cap) {
                         updated[id] = task;
                         continue;
                     }
-                    const multiplier = Math.max(0, Math.min(1, ((realProgress + maxAhead) - task.displayedProgress) / maxAhead));
-                    const bump = (1 + Math.random() * 4) * multiplier;
+                    const multiplier = Math.max(0, Math.min(1, (cap - task.displayedProgress) / task.options.crawlMax));
+                    const bump = (Math.random() * task.options.crawlSpeed) * multiplier;
                     updated[id] = {...task, displayedProgress: task.displayedProgress + bump};
                     changed = true;
                 }
@@ -114,7 +161,6 @@ export default function Tasks() {
                 return changed ? updated : prev;
             });
 
-            // Schedule next tick at a random interval so it feels organic (500–2000 ms)
             jitterTimerRef.current = setTimeout(tick, 500 + Math.random() * 1500);
         };
 
@@ -129,7 +175,7 @@ export default function Tasks() {
     useEffect(() => {
         return () => {
             Object.values(animFramesRef.current).forEach(cancelAnimationFrame);
-            Object.values(closeTimersRef.current).forEach(clearTimeout);
+            Object.values(holdTimersRef.current).forEach(clearTimeout);
             if (jitterTimerRef.current) clearTimeout(jitterTimerRef.current);
         };
     }, []);
@@ -146,11 +192,11 @@ export default function Tasks() {
         }
     }, [tauriUpdate]);
 
-    let updateTimeAgo: string | null = tauriUpdate?.date ? format(new Date(tauriUpdate.date)) : null;
+    const updateTimeAgo: string | null = tauriUpdate?.date ? format(new Date(tauriUpdate.date)) : null;
 
     return (
         <Dialog opened={taskList.length > 0 || isUpdateShown} withCloseButton={false} className="dialog"
-                style={{boxShadow: shadow}} zIndex={10000}>{/* TODO: var(--mantine-z-index-max) + 1?*/}
+                style={{boxShadow: shadow}} zIndex={10000}>
             <Stack gap="xs">
                 {taskList.map((task) => (
                     <Group key={task.id}>

@@ -1,23 +1,26 @@
 import {useCallback, useEffect, useLayoutEffect, useRef, useState,} from "react";
-import {ActionIcon, Box, Burger, Group, ScrollArea, Stack, Text, ThemeIcon, Transition} from "@mantine/core";
-import {IconArrowDown, IconEyeOff, IconMessageCirclePlus} from "@tabler/icons-react";
+import {ActionIcon, Box, Burger, Group, ScrollArea, Stack, Text, ThemeIcon, Tooltip, Transition} from "@mantine/core";
 import Message from "@/components/Message.tsx";
 import {useMessaging} from "@/managers/messaging.tsx";
 import {useLayout} from "@/managers/layout.tsx";
 import InputEffect from "@/components/InputEffect.tsx";
 import {useChats} from "@/managers/chats.tsx";
 import {Input} from "@/components/Input.tsx";
-import {extractText, scrubText} from "@/utils.ts";
+import {auth, extractText, scrubText} from "@/utils.ts";
 import Attachments from "@/components/Attachments.tsx";
+import {Icon} from "@iconify/react";
 
 const SCROLL_BOTTOM_THRESHOLD = 80;
 
 export default function Chat() {
     const {
         currentChat,
+        setCurrentChat,
         messages,
         temporary,
-        incognito
+        setTemporary,
+        incognito,
+        setIncognito
     } = useChats();
 
     const {
@@ -34,6 +37,8 @@ export default function Chat() {
 
     const {isMobile, shadow, isInitializing, isMessaging, getSidebarWidth, isSidebarOpen, setSidebarOpen} = useLayout();
     const isiPhone = navigator.userAgent.includes("iPhone");
+
+    const {data: session} = auth.useSession();
 
     const messagesViewportRef = useRef<HTMLDivElement>(null);
     const isAtBottomRef = useRef(true);
@@ -193,40 +198,71 @@ export default function Chat() {
     };
 
     const isNewChat = currentChat === null && !isInitializing;
+    const isTemporary = temporary || currentChat?.temporary;
+    const isIncognito = incognito || currentChat?.incognito;
 
     useEffect(() => {
         if (isNewChat) hasBeenNewChat.current = true;
     }, [isNewChat]);
 
+    const topbar = (fixed: boolean) => {
+        return (
+            <Group
+                pos={fixed ? "fixed" : "sticky"}
+                top={0} left={0} right={0}
+                bottom={fixed ? undefined : 0}
+                p={10}
+                gap={5}
+                display={isMobile ? undefined : "none"}
+                style={{
+                    zIndex: "var(--mantine-z-index-app)",
+                    backgroundColor: "color-mix(in srgb, var(--mantine-color-body), transparent 15%)",
+                    backdropFilter: "blur(5px)",
+                    boxShadow: shadow,
+                    borderBottom: "1px solid var(--mantine-color-default-border)"
+                }}
+                className="topbar"
+            >
+                <Burger
+                    opened={isSidebarOpen}
+                    onClick={() => setSidebarOpen(!isSidebarOpen)}
+                    display={!isMobile || isSidebarOpen ? "none" : undefined}
+                    size="sm"
+                />
+                <Group justify="space-between" flex={1}>
+                    <Group gap={4}>
+                        <Tooltip label="New Chat" position="bottom" color="gray">
+                            <ActionIcon size={32} variant="subtle" c="dimmed" bdrs="md" className="nav-link-like filled"
+                                        onClick={() => void setCurrentChat(null)}
+                                        data-active={!currentChat}>
+                                <Icon icon="lucide:message-circle-plus" height={18}/>
+                            </ActionIcon>
+                        </Tooltip>
+                    </Group>
+                    <Group gap={4}>
+                        <Tooltip label="Temporary" position="bottom" color="gray">
+                            <ActionIcon size={32} variant="subtle" c="dimmed" bdrs="md" className="nav-link-like filled"
+                                        onClick={() => void setTemporary(!isTemporary)}
+                                        data-active={isTemporary}>
+                                <Icon icon="lucide:list-x" height={18}/>
+                            </ActionIcon>
+                        </Tooltip>
+                        <Tooltip label="Anonymous" position="bottom" color="gray">
+                            <ActionIcon size={32} variant="subtle" c="dimmed" bdrs="md" className="nav-link-like filled"
+                                        onClick={() => void setIncognito(!isIncognito)}
+                                        data-active={isIncognito}>
+                                <Icon icon="lucide:user-x" height={18}/>
+                            </ActionIcon>
+                        </Tooltip>
+                    </Group>
+                </Group>
+            </Group>
+        )
+    }
+
     return (
         <Stack h="100%" gap={0} px={!isInputMaxWidth && !currentChat ? 20 : 0}>
-            {isMobile && (
-                <Group
-                    pos="fixed"
-                    top={0} left={0} right={0}
-                    p={10}
-                    gap={5}
-                    maw={inputMaxWidth}
-                    m="0 auto"
-                    style={{
-                        zIndex: "var(--mantine-z-index-app)",
-                        backgroundColor: "color-mix(in srgb, var(--mantine-color-body), transparent 15%)",
-                        backdropFilter: "blur(5px)",
-                        boxShadow: shadow,
-                        borderRadius: isInputMaxWidth ? "0 0 10px 10px" : 0,
-                        ...(isInputMaxWidth ? {border: "1px solid var(--mantine-color-default-border)"} : {borderBottom: "1px solid var(--mantine-color-default-border)"})
-                    }}
-                    className="topbar"
-                >
-                    <Burger
-                        ml={!currentChat ? 10 : 0}
-                        opened={isSidebarOpen}
-                        onClick={() => setSidebarOpen(!isSidebarOpen)}
-                        display={isSidebarOpen ? "none" : "block"}
-                        size="sm"
-                    />
-                </Group>
-            )}
+            {isMobile && topbar(true)}
             {/* Main content area */}
             <Box flex={1} pos="relative" mih={0} style={{overflow: "hidden"}}>
                 {/* New chat hero overlay */}
@@ -254,7 +290,7 @@ export default function Chat() {
                             }}
                         >
                             <ThemeIcon variant="light" size={48} radius="xl">
-                                <IconMessageCirclePlus size={26}/>
+                                <Icon icon="lucide:list-plus" height={26}/>
                             </ThemeIcon>
                             <Text size="xl" fw={600} mt={4}>New Chat</Text>
                         </Stack>
@@ -268,13 +304,14 @@ export default function Chat() {
                             }}
                         >
                             <ThemeIcon variant="light" color="gray" size={48} radius="xl">
-                                <IconEyeOff size={26}/>
+                                <Icon icon="lucide:list-x" height={26}/>
                             </ThemeIcon>
                             <Text size="xl" fw={600} mt={4}>New Temporary Chat</Text>
                         </Stack>
                     </div>
                     {!incognito
-                        ? <Text size="sm" c="dimmed" mt={6}>What's on your mind?</Text>
+                        ? <Text size="sm" c="dimmed" mt={6}>What's on the
+                            agenda{session?.user?.name && `, ${session.user.name.split(' ')[0]}`}?</Text>
                         : <Text size="sm" c="dimmed" mt={6}>No memories will be available in this chat</Text>
                     }
                 </Stack>
@@ -292,38 +329,7 @@ export default function Chat() {
                                 },
                             }}
                         >
-                            <Group
-                                pos="sticky"
-                                top={0} bottom={0} left={0} right={0}
-                                p={10}
-                                gap={5}
-                                maw={inputMaxWidth}
-                                m="0 auto"
-                                display={isMobile ? "block" : "none"} // TODO - tasks
-                                style={{
-                                    zIndex: "var(--mantine-z-index-app)",
-                                    backgroundColor: "color-mix(in srgb, var(--mantine-color-body), transparent 15%)",
-                                    backdropFilter: "blur(5px)",
-                                    boxShadow: shadow,
-                                    borderRadius: isInputMaxWidth ? "0 0 10px 10px" : 0,
-                                    ...(isInputMaxWidth ? {border: "1px solid var(--mantine-color-default-border)"} : {borderBottom: "1px solid var(--mantine-color-default-border)"})
-                                }}
-                                className="topbar"
-                            >
-                                <Burger
-                                    ml={!currentChat ? 10 : 0}
-                                    opened={isSidebarOpen}
-                                    onClick={() => setSidebarOpen(!isSidebarOpen)}
-                                    display={!isMobile || isSidebarOpen ? "none" : "block"}
-                                    size="sm"
-                                />
-                                {/*<Button variant="subtle" p="5px 10px" h="auto">
-                                    <Group gap={5}>*
-                                        <IconStopwatch size={18}/>
-                                        Tasks
-                                    </Group>
-                                </Button>*/}
-                            </Group>
+                            {topbar(false)}
                             <Stack pt={10} px={20} m="0 auto" maw={860} gap={10}>
                                 {!isInitializing &&
                                     messages.map((message) => (
@@ -372,7 +378,7 @@ export default function Chat() {
                                 scrollToBottom('smooth');
                             }}
                         >
-                            <IconArrowDown size={18}/>
+                            <Icon icon="lucide:chevrons-down" height={18}/>
                         </ActionIcon>
                     )}
                 </Transition>
@@ -426,7 +432,8 @@ export default function Chat() {
                             {files.map(file => (
                                 <InputEffect
                                     content={<Attachments
-                                        list={[{name: file.name, mime: file.type, url: URL.createObjectURL(file)}]}/>}
+                                        list={[{name: file.name, mime: file.type, url: URL.createObjectURL(file)}]}
+                                        width={inputMaxWidth}/>}
                                     onDelete={() => removeFile(file)}
                                     key={file.name}
                                 />

@@ -1,41 +1,54 @@
-import {Popover, Typography} from "@mantine/core";
-import {useElementSize, useMergedRef} from "@mantine/hooks";
-import {ReactNode, useEffect, useRef, useState} from "react";
+import {Button, FloatingPosition, Popover, ScrollAreaAutosize, Typography} from "@mantine/core";
+import {ReactNode, useEffect, useLayoutEffect, useRef, useState} from "react";
 
 export default function MessageBodyPopover({
                                                width,
-                                               renderTarget,
-                                               renderDropdown,
-                                               opened,
-                                               onChange,
+                                               button,
+                                               dropdown,
+                                               defaultOpened,
+                                               autoscroll,
                                            }: {
     width: number | string,
-    renderTarget: (props: { ref: (node: HTMLElement | null) => void }) => ReactNode,
-    renderDropdown: (props: { maxHeight: number }) => ReactNode,
-    opened?: boolean,
-    onChange?: (opened: boolean) => void
+    button: ReactNode,
+    dropdown: ReactNode,
+    defaultOpened?: boolean,
+    autoscroll?: boolean,
 }) {
-    const {ref: elementSizeRef, width: targetWidth} = useElementSize<HTMLElement>();
-    const targetElementRef = useRef<HTMLElement | null>(null);
-    const [maxHeight, setMaxHeight] = useState(400);
-    const [position, setPosition] = useState<"bottom-start" | "bottom-end" | "top-start" | "top-end">("bottom-start");
+    const [opened, setOpened] = useState(defaultOpened);
 
-    const setTargetRef = useMergedRef(elementSizeRef, (node: HTMLElement | null) => {
-        targetElementRef.current = node;
-    });
+    const [maxHeight, setMaxHeight] = useState(400);
+    const [position, setPosition] = useState<FloatingPosition>("bottom");
+
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const scrollRef = useRef<HTMLDivElement | null>(null);
+    useEffect(() => {
+        setOpened(defaultOpened ?? false);
+    }, [defaultOpened]);
+
+    useLayoutEffect(() => {
+        if (defaultOpened && opened && scrollRef.current && autoscroll) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+    }, [dropdown, defaultOpened, opened]); // TODO - will dropdown be causing scrolls without content changes?
+
+    useLayoutEffect(() => {
+        if (!defaultOpened && scrollRef.current) {
+            scrollRef.current.scrollTo({top: 0, behavior: "smooth"});
+        }
+    }, [defaultOpened]);
 
     useEffect(() => {
         const updatePosition = () => {
-            if (!targetElementRef.current) return;
-            const rect = targetElementRef.current.getBoundingClientRect();
+            if (!buttonRef.current) return;
+            const rect = buttonRef.current.getBoundingClientRect();
             const isInBottomHalf = rect.top > window.innerHeight / 2;
-            const spaceLeft = rect.left;
-            const spaceRight = window.innerWidth - rect.right;
-            const prefersStart = spaceRight >= spaceLeft;
+            //const spaceLeft = rect.left;
+            //const spaceRight = window.innerWidth - rect.right;
+            //const prefersStart = spaceRight >= spaceLeft;
             if (isInBottomHalf) {
-                setPosition(prefersStart ? "top-start" : "top-end");
+                setPosition("top");
             } else {
-                setPosition(prefersStart ? "bottom-start" : "bottom-end");
+                setPosition("bottom");
             }
         };
 
@@ -51,16 +64,18 @@ export default function MessageBodyPopover({
     return (
         <Popover
             position={position}
-            //withArrow - TODO - arrow doesn't position correctly
+            withArrow
             arrowSize={15}
+            arrowPosition="center"
+            arrowOffset={15}
+            withOverlay
             shadow="md"
             offset={{mainAxis: 15}}
-            arrowOffset={targetWidth / 2}
             width={width}
-            opened={opened}
-            onChange={onChange}
-            zIndex="calc(var(--mantine-z-index-app) + 2)"
             withinPortal={false}
+            transitionProps={{duration: 0}}
+            opened={opened}
+            onChange={setOpened}
             middlewares={{
                 shift: {padding: 10},
                 flip: true,
@@ -77,11 +92,23 @@ export default function MessageBodyPopover({
                 },
             }}
         >
-            <Popover.Target>{renderTarget({ref: setTargetRef})}</Popover.Target>
+            <Popover.Target>
+                <Button
+                    variant={opened ? "filled" : "subtle"}
+                    size="xs"
+                    ref={buttonRef}
+                    onClick={() => setOpened(!opened)}
+                    my={10}
+                >
+                    {button}
+                </Button>
+            </Popover.Target>
             <Popover.Dropdown>
-                <Typography style={{overflowWrap: "break-word"}}>
-                    {renderDropdown({maxHeight})}
-                </Typography>
+                <ScrollAreaAutosize mah={maxHeight} viewportRef={scrollRef}>
+                    <Typography style={{overflowWrap: "break-word"}}>
+                        {dropdown}
+                    </Typography>
+                </ScrollAreaAutosize>
             </Popover.Dropdown>
         </Popover>
     );

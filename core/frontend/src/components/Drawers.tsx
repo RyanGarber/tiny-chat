@@ -18,7 +18,6 @@ import {
     Tooltip
 } from "@mantine/core";
 import {JSX, useEffect, useRef, useState} from "react";
-import {IconBrandGithub, IconBrandGoogle, IconKey, IconPalette, IconSettingsAi, IconTrash} from "@tabler/icons-react";
 import {useProviders} from "@/managers/providers.tsx";
 import {codeThemes, themes, useSettings} from "@/managers/settings.tsx";
 import {auth, consumeLabel, hashText, openExternal, trpc, webUrl} from "@/utils.ts";
@@ -27,6 +26,7 @@ import {useLayout} from "@/managers/layout.tsx";
 import {zConfig} from "@tiny-chat/core-backend/types.ts";
 import ModelSelect from "@/components/ModelSelect.tsx";
 import {useTasks} from "@/managers/tasks.tsx";
+import {Icon} from "@iconify/react";
 
 export default function Drawers(
     {buttons}:
@@ -185,8 +185,8 @@ export default function Drawers(
                             <Text c="dimmed" size="sm">
                                 Link an account to save chats and settings.
                             </Text>
-                            {provider('google', 'Google', <IconBrandGoogle/>)}
-                            {provider('github', 'GitHub', <IconBrandGithub/>)}
+                            {provider('google', 'Google', <Icon icon="lucide:chromium"/>)}
+                            {provider('github', 'GitHub', <Icon icon="lucide:github"/>)}
                         </>
                     )}
                     {(session?.user && !session.user.isAnonymous) && (
@@ -218,9 +218,12 @@ export default function Drawers(
             <Drawer opened={settingsDrawer[0]} onClose={settingsDrawer[1].close} title="Settings">
                 <Tabs defaultValue="general">
                     <Tabs.List mb="lg">
-                        <Tabs.Tab value="general" leftSection={<IconSettingsAi size={16}/>}>General</Tabs.Tab>
-                        <Tabs.Tab value="appearance" leftSection={<IconPalette size={16}/>}>Appearance</Tabs.Tab>
-                        <Tabs.Tab value="apiKeys" leftSection={<IconKey size={16}/>}>API Keys</Tabs.Tab>
+                        <Tabs.Tab value="general"
+                                  leftSection={<Icon icon="lucide:settings-2" height={18}/>}>General</Tabs.Tab>
+                        <Tabs.Tab value="appearance"
+                                  leftSection={<Icon icon="lucide:image" height={18}/>}>Appearance</Tabs.Tab>
+                        <Tabs.Tab value="apiKeys" leftSection={<Icon icon="lucide:key-round" height={18}/>}>API
+                            Keys</Tabs.Tab>
                     </Tabs.List>
                     <Tabs.Panel value="general">
                         <Stack>
@@ -242,7 +245,7 @@ export default function Drawers(
                                     leftSection={<Text c="dimmed" size="xs">{index + 1}</Text>}
                                     rightSection={<ActionIcon variant="subtle" onClick={async () => {
                                         await removeInstruction(index);
-                                    }}><IconTrash size={16}/></ActionIcon>}
+                                    }}><Icon icon="lucide:trash" height={18}/></ActionIcon>}
                                 />
                             ))}
                             <Tooltip label="System instructions for models" color="gray" position="right">

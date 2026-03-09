@@ -26,7 +26,7 @@ export const Debug: ChatProvider = {
 
             data.push({
                 type: "data",
-                value: {type: "toolCall", name: "search_web", args: {query: "meaning of life"}, id: "1"}
+                value: {type: "toolCall", name: "search_memory", args: {query: "meaning of life"}, id: "1"}
             });
             yield data[data.length - 1];
         } else {
@@ -35,7 +35,7 @@ export const Debug: ChatProvider = {
                 type: "data",
                 value: {
                     type: "text",
-                    value: !result.error ? `The meaning of life is: ${chosen.content}\n\n(Source: ${chosen.source})` : "Couldn't find it :("
+                    value: !result.error ? `The meaning of life is: ${chosen.fact}` : "Couldn't find it :("
                 }
             });
             yield data[data.length - 1];

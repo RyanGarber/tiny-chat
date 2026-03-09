@@ -3,10 +3,10 @@ import {useElementSize} from "@mantine/hooks";
 import {MessageOmitted} from "@tiny-chat/core-backend/types";
 import MessageBodyContent from "@/components/MessageBodyContent.tsx";
 import {useLayout} from "@/managers/layout.tsx";
-import {IconArrowForwardUp, IconPaperclip,} from "@tabler/icons-react";
 import {useChats} from "@/managers/chats.tsx";
 import Attachments from "@/components/Attachments.tsx";
 import {Author} from "@tiny-chat/core-backend/generated/prisma/enums.ts";
+import {Icon} from "@iconify/react";
 
 export default function MessageBody({message}: { message: MessageOmitted }) {
     const {shadow} = useLayout();
@@ -18,10 +18,10 @@ export default function MessageBody({message}: { message: MessageOmitted }) {
         const config = messages[messages.findIndex(m => m.id === message.id) + 1]?.config;
         const files = message.data.filter(p => p.type === "file");
         return (
-            <Box ref={containerRef}>
-                <Stack gap={5} maw="100%">
+            <Group w="100%" justify="end" ref={containerRef}>
+                <Stack gap={5} w="fit-content">
                     {config && <Group gap={5} c="dimmed">
-                        <IconArrowForwardUp size={14}/>
+                        <Icon icon="lucide:forward" height={14}/>
                         <Text size="xs">{config.model}</Text>
                     </Group>}
 
@@ -35,13 +35,14 @@ export default function MessageBody({message}: { message: MessageOmitted }) {
                         <MessageBodyContent message={message} containerWidth={containerWidth}/>
                     </Box>
                     {files.length !== 0 &&
-                        <Group gap={0} c="dimmed">
-                            <IconPaperclip size={14}/>
-                            <Attachments list={files.map(f => ({name: f.name, mime: f.mime, url: f.url}))}/>
+                        <Group gap={5} c="dimmed" mb={-30} style={{zIndex: "var(--mantine-z-index-app"}}>
+                            <Icon icon="lucide:paperclip" height={18}/>
+                            <Attachments list={files.map(f => ({name: f.name, mime: f.mime, url: f.url}))}
+                                         width={containerWidth}/>
                         </Group>
                     }
                 </Stack>
-            </Box>
+            </Group>
         );
     } // no thinking or generating for user messages
 

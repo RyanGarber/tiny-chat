@@ -1,16 +1,18 @@
 import {CSSProperties, Fragment, memo} from "react";
-import {getTextFromChildren, openExternal} from "@/utils.ts";
+import {getTextFromChildren, openExternal, takeStringOutOfNodeAndChildren} from "@/utils.ts";
 import ReactMarkdown, {Components} from "react-markdown";
-import {Blockquote, Group, ScrollArea, Text, Typography} from "@mantine/core";
+import {Blockquote, Group, ScrollArea, Text, ThemeIcon, Typography} from "@mantine/core";
 import RemarkGfm from "remark-gfm";
 import RemarkBreaks from "remark-breaks";
 import {CodeHighlight} from "@mantine/code-highlight";
 import katex from "katex";
 import 'katex/dist/katex.min.css';
-import {IconQuoteFilled} from "@tabler/icons-react";
+import {Icon} from "@iconify/react";
 
 const STREAMING_MARKER = "\uE000";
 const MATH_MARKER = "\uE001";
+const CODE_MARKER = "\uE002";
+const WRITING_MARKER = "\uE003";
 
 const renderKatex = (math: string, displayMode: boolean): string | null => {
     try {
@@ -27,6 +29,16 @@ const renderKatex = (math: string, displayMode: boolean): string | null => {
 const components: Components = {
     blockquote: (node) => {
         const text = getTextFromChildren(node.children);
+
+        if (text.trim().startsWith(WRITING_MARKER)) {
+            return (
+                <Blockquote
+                    icon={<ThemeIcon variant="transparent" color="dimmed"><Icon icon="lucide:pencil-line" height={18}/></ThemeIcon>}>
+                    {takeStringOutOfNodeAndChildren(node.children, WRITING_MARKER)}
+                </Blockquote>
+            );
+        }
+
         if (text.trim().startsWith("::>:: ")) {
             const lines = text.split("\n");
             let modelName = "";
@@ -42,7 +54,7 @@ const components: Components = {
                 <>
                     {modelName && (
                         <Group gap={5} c="dimmed" mb={4}>
-                            <IconQuoteFilled size={14} style={{transform: "scale(-1,1)"}}/>
+                            <Icon icon="lucide:message-square-quote" height={14} style={{transform: "scale(-1,1)"}}/>
                             <Text size="xs">{modelName}</Text>
                         </Group>
                     )}
@@ -57,6 +69,7 @@ const components: Components = {
                 </>
             );
         }
+
         return <Blockquote>{node.children}</Blockquote>;
     },
     code: (node) => {
@@ -80,7 +93,7 @@ const components: Components = {
         const isStreaming = rawCode.includes(STREAMING_MARKER);
         const code = (isStreaming ? rawCode.replace(STREAMING_MARKER, "") : rawCode).trimEnd();
 
-        if (!node.className && !code.includes("\n")) {
+        if (!node.className) {
             return <code>{code}</code>;
         }
 
@@ -110,10 +123,10 @@ const components: Components = {
             e.preventDefault();
             await openExternal(node.href);
         }}>{node.children}</a>
-    }
+    },
 };
 
-const LATEX_CHAR_RE = /[\\^_{}]/;
+const LATEX_CHAR_RE = /[\\^_{}]|\\[a-zA-Z]/;
 
 const filter = (text: string) => {
     if (text.split("\n")[0].match(/^\[(user|assistant)/)) {
@@ -125,24 +138,79 @@ const filter = (text: string) => {
         block.replace(/^::>:: (.*)$/gm, "> ::>:: $1")
     );
 
+    // Convert :::writing ... ::: directive blocks into standard blockquotes with the writing marker
     text = text.replace(
-        /(`{3,}[\s\S]*?`{3,}|``[^`\n]*``|`[^`\n]+`)|^[ \t]*\$\$([\s\S]*?)\$\$[ \t]*$|^[ \t]*\\\[([\s\S]*?)\\\][ \t]*$|(?<![$\\])\$(?![\s\d])([^$\n]+?)(?<!\s)\$(?![$a-zA-Z_\d])|(?<!\\)\\\(([^\n]*?)\\\)/gm,
-        (match, code, displayDollar, displayBracket, inlineDollar, inlineParen) => {
-            if (code !== undefined) return match;
-
-            const displayMath = displayDollar ?? displayBracket;
-            if (displayMath !== undefined)
-                return "```math\n" + displayMath.trim() + "\n```";
-
-            if (inlineDollar !== undefined)
-                return "`" + MATH_MARKER + inlineDollar + "`";
-
-            if (inlineParen !== undefined && LATEX_CHAR_RE.test(inlineParen))
-                return "`" + MATH_MARKER + inlineParen + "`";
-
-            return match;
+        /^:::writing\s*\n([\s\S]*?)^:::\s*$/gm,
+        (_, content) => {
+            const lines = content.trimEnd().split("\n");
+            return lines.map((l: string, i: number) => `> ${i === 0 ? WRITING_MARKER : ""}${l}`).join("\n");
         }
     );
+
+    const codeBlocks: string[] = [];
+    text = text.replace(
+        /(`{3,}[\s\S]*?`{3,}|``[^`\n]*``|`[^`\n]+`)/g,
+        (match) => {
+            codeBlocks.push(match);
+            return `\x00${CODE_MARKER}${codeBlocks.length - 1}\x00`;
+        }
+    );
+
+    // Step 2: Display math — $$...$$ (block, possibly multiline)
+    text = text.replace(
+        /^[ \t]*\$\$([\s\S]*?)\$\$[ \t]*$/gm,
+        (_, inner) => "```math\n" + inner.trim() + "\n```"
+    );
+
+    // Step 3: Display math — \[...\] (block, possibly multiline)
+    text = text.replace(
+        /^[ \t]*\\\[([\s\S]*?)\\\][ \t]*$/gm,
+        (_, inner) => "```math\n" + inner.trim() + "\n```"
+    );
+
+    // Step 4: Inline math — \(...\)
+    // Allow any content that isn't a newline; filter false positives via LATEX_CHAR_RE
+    text = text.replace(
+        /\\\(([^\n]*?)\\\)/g,
+        (match, inner) => {
+            if (!LATEX_CHAR_RE.test(inner)) return match;
+            return "`" + MATH_MARKER + inner.trim() + "`";
+        }
+    );
+
+    // Step 5: Inline math — $...$
+    // Rules:
+    //   - Not preceded by $, \, digit, or letter (avoid $$, \$, word$)
+    //   - Allow optional single space padding inside: $ expr $
+    //   - Content must not be empty or whitespace-only
+    //   - Content must not contain newlines
+    //   - Not followed by $, digit, or letter (avoid $$, $1, $var)
+    text = text.replace(
+        /(?<![\\$a-zA-Z\d])\$[ \t]?(?![\{\d])((?:[^$\\\n]|\\.)+?)[ \t]?\$(?!\$)/g,
+        (match, inner) => {
+            const trimmed = inner.trim();
+            if (!trimmed) return match;
+            return "`" + MATH_MARKER + trimmed + "`";
+        }
+    );
+
+    // Step 6: Restore code blocks
+    text = text.replace(
+        new RegExp(`\\x00${CODE_MARKER}(\\d+)\\x00`, "g"),
+        (_, i) => codeBlocks[parseInt(i)]
+    );
+
+    // Step 7: Add plaintext language to code blocks without a language
+    let inBlock = false;
+    text = text.split('\n').map(line => {
+        if (!inBlock && line.match(/^```(\w*)$/)) {
+            inBlock = true;
+            return line === '```' ? '```plaintext' : line;
+        } else if (inBlock && line.match(/^```$/)) {
+            inBlock = false;
+        }
+        return line;
+    }).join('\n');
 
     const backticks = text.match(/```/g)?.length ?? 0;
     if (backticks !== 0 && backticks % 2 !== 0) {

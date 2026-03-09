@@ -26,7 +26,7 @@ interface Messaging {
     files: File[];
     addFiles: (...files: File[]) => void;
     removeFile: (file: File) => void;
-    addQuote: (content: string) => void;
+    addQuote: (message: MessageOmitted, content: string) => void;
 
     editing: MessageOmitted | null;
     setEditing: (editing: MessageOmitted | null) => void;
@@ -91,11 +91,11 @@ export const useMessaging = create(
         removeFile: (file) => {
             set({files: get().files.filter(f => f !== file)});
         },
-        addQuote: (content) => {
-            const {editor, cursorPosition, config} = get();
+        addQuote: (message, content) => {
+            const {editor, cursorPosition} = get();
             if (!editor) return;
 
-            const quote = {type: "quote", model: config?.model ?? "", children: [{text: content}]};
+            const quote = {type: "quote", model: message.config.model ?? "", children: [{text: content}]};
             const insertAt = cursorPosition ?? 0;
             editor.insertNode(quote, {at: [insertAt]});
         },

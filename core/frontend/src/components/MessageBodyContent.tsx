@@ -1,27 +1,15 @@
 import {useLayout} from "@/managers/layout.tsx";
 import {useMessaging} from "@/managers/messaging.tsx";
-import {
-    ActionIcon,
-    Badge,
-    Box,
-    Button,
-    Divider,
-    Image,
-    Portal,
-    ScrollAreaAutosize,
-    Stack,
-    ThemeIcon,
-    Transition,
-} from "@mantine/core";
+import {ActionIcon, Badge, Box, Divider, Image, Portal, Stack, ThemeIcon, Transition,} from "@mantine/core";
 import {useTextSelection} from "@mantine/hooks";
-import {IconBrain, IconQuoteFilled, IconTerminal} from "@tabler/icons-react";
-import React, {CSSProperties, useEffect, useLayoutEffect, useRef, useState} from "react";
+import React, {useEffect, useLayoutEffect, useRef, useState} from "react";
 import {applyHljsTheme, extractText,} from "@/utils.ts";
 import {MessageOmitted, zDataPart} from "@tiny-chat/core-backend/types.ts";
 import {useSettings} from "@/managers/settings.tsx";
 import Markdown from "@/components/Markdown.tsx";
 import {Author} from "@tiny-chat/core-backend/generated/prisma/enums.ts";
 import MessageBodyPopover from "@/components/MessageBodyPopover.tsx";
+import {Icon} from "@iconify/react";
 
 function useStreamedLength(fullLength: number, isGenerating: boolean): number {
     const [displayedLength, setDisplayedLength] = useState(fullLength);
@@ -96,69 +84,67 @@ function ThoughtGroupPopover({
     isThinkingActive: boolean;
     containerWidth: number;
 }) {
-    const [opened, setOpened] = useState(isThinkingActive);
-    const thinkingRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        setOpened(isThinkingActive);
-    }, [isThinkingActive]);
-
-    useLayoutEffect(() => {
-        if (isThinkingActive && opened && thinkingRef.current) {
-            thinkingRef.current.scrollTop = thinkingRef.current.scrollHeight;
-        }
-    }, [thoughts.length, isThinkingActive, opened]);
-
-    useLayoutEffect(() => {
-        if (!isThinkingActive && thinkingRef.current) {
-            thinkingRef.current.scrollTo({top: 0, behavior: "smooth"});
-        }
-    }, [isThinkingActive]);
-
     return (
         <MessageBodyPopover
             width={containerWidth + 20}
-            opened={opened}
-            onChange={setOpened}
-            renderTarget={({ref}) => (
-                <Button
-                    variant="subtle"
-                    size="xs"
-                    ref={ref}
-                    onClick={() => setOpened(!opened)}
-                    my={10}
-                >
+            defaultOpened={isThinkingActive}
+            autoscroll={true}
+            button={
+                <>
                     <ThemeIcon variant="transparent" size={22} mr={5}>
-                        <IconBrain size={18}/>
+                        <Icon icon="lucide:brain" height={18}/>
                     </ThemeIcon>
                     {isThinkingActive ? "Thinking" : "Thought"}
-                </Button>
-            )}
-            renderDropdown={({maxHeight}) => (
-                <ScrollAreaAutosize mah={maxHeight} viewportRef={thinkingRef}>
-                    <Stack>
-                        {thoughts.map((thought, index) => (
-                            <Box
-                                key={index}
-                                py={10}
-                                pl={20}
-                                style={{
-                                    borderLeft: "2px solid var(--mantine-color-default-border)",
-                                }}
-                            >
-                                <Markdown source={thought}/>
-                            </Box>
-                        ))}
-                    </Stack>
-                </ScrollAreaAutosize>
-            )}
-        />
+                </>
+            }
+            dropdown={
+                <Stack>
+                    {thoughts.map((thought, index) => (
+                        <Box
+                            key={index}
+                            py={10}
+                            pl={20}
+                            style={{
+                                borderLeft: "2px solid var(--mantine-color-default-border)",
+                            }}
+                        >
+                            <Markdown style={{maxWidth: containerWidth - 15}} source={thought}/>
+                        </Box>
+                    ))}
+                </Stack>
+            }/>
     );
 }
 
-export default function MessageBodyContent({message, style, containerWidth}: {
+function ToolPopover({call, result, containerWidth}: {
+    call: Extract<zDataPart, { type: "toolCall" }>,
+    result?: Extract<zDataPart, { type: "toolResult" }>,
+    containerWidth: number
+}) {
+    const input = call.args ? JSON.stringify(call.args, null, 2).replace(/`/g, "\\`") : "/* empty */";
+    const output = result?.value ? JSON.stringify(result.value, null, 2).replace(/`/g, "\\`") : "/* empty */";
+    return (
+        <MessageBodyPopover
+            width={containerWidth + 20}
+            defaultOpened={result === null}
+            button={
+                <>
+                    <ThemeIcon variant="transparent" size={22} mr={5}>
+                        <Icon icon="lucide:braces" height={18}/>
+                    </ThemeIcon>
+                    {!result ? "Using" : "Used"}
+                    <Badge variant="light" ml={4} size="xs" style={{cursor: "pointer"}}
+                           c={result?.error ? "red" : undefined}>{call.name}</Badge>
+                </>
+            } dropdown={
+            <Markdown style={{maxWidth: containerWidth - 15}}
+                      source={`#### Input\n\`\`\`json\n${input}\n\`\`\`\n\n#### Output\n\`\`\`json\n${output}\n\`\`\``}/>
+        }/>
+    );
+}
+
+export default function MessageBodyContent({message, containerWidth}: {
     message: MessageOmitted;
-    style?: CSSProperties;
     containerWidth: number;
 }) {
     const isGenerating = message.state.generating;
@@ -204,7 +190,8 @@ export default function MessageBodyContent({message, style, containerWidth}: {
         }
     }, [streamedLength, isGenerating]);
 
-    if (message.author === Author.USER) return <Markdown source={extractText(message.data)} style={style}/>;
+    if (message.author === Author.USER) return <Markdown source={extractText(message.data)}
+                                                         style={{maxWidth: containerWidth - 40}}/>;
 
     const selection = useTextSelection();
     const selectedTextRef = useRef("");
@@ -242,7 +229,7 @@ export default function MessageBodyContent({message, style, containerWidth}: {
 
     const handleQuoteClick = () => {
         const text = (window.getSelection()?.toString() || selectedTextRef.current || selection?.toString() || "").trim();
-        if (text) addQuote(text);
+        if (text) addQuote(message, text);
     };
 
     // Render parts
@@ -272,8 +259,10 @@ export default function MessageBodyContent({message, style, containerWidth}: {
             i = end;
         } else if (part.type === "text") {
             if (streamedLength <= textOffset) break;
-            const visibleText = part.value.slice(0, streamedLength - textOffset);
-            renderedParts.push(<Markdown key={i} source={visibleText} style={style}/>);
+            if (part.value.trim() !== "") {
+                const visibleText = part.value.slice(0, streamedLength - textOffset);
+                renderedParts.push(<Markdown key={i} source={visibleText}/>);
+            }
             textOffset += part.value.length;
             if (streamedLength < textOffset) break; // still streaming this segment
         } else if (part.type === "file" && part.mime?.startsWith("image/") && part.inline) {
@@ -294,25 +283,7 @@ export default function MessageBodyContent({message, style, containerWidth}: {
                     type: "toolResult"
                 }>[];
                 const result = matchingResults.length === 1 ? matchingResults[0] : firstResult;
-                const input = part.args ? JSON.stringify(part.args, null, 2).replace(/`/g, "\\`") : "/* empty */";
-                const output = result?.value ? JSON.stringify(result.value, null, 2).replace(/`/g, "\\`") : "/* empty */";
-                renderedParts.push(
-                    <MessageBodyPopover key={i} width={containerWidth + 20} renderTarget={({ref}) => (
-                        <Button variant="subtle" key={i} size="xs" ref={ref} my={10}>
-                            <ThemeIcon variant="transparent" size={22} mr={5}>
-                                <IconTerminal size={18}/>
-                            </ThemeIcon>
-                            {!result ? "Using" : "Used"}
-                            <Badge variant="light" ml={4} size="xs" style={{cursor: "pointer"}}
-                                   c={result?.error ? "red" : undefined}>{part.name}</Badge>
-                        </Button>
-                    )} renderDropdown={({maxHeight}) => (
-                        <ScrollAreaAutosize mah={maxHeight} scrollbars="y">
-                            <Markdown style={{maxWidth: containerWidth - 15}}
-                                      source={`#### Input\n\`\`\`json\n${input}\n\`\`\`\n\n#### Output\n\`\`\`json\n${output}\n\`\`\``}/>
-                        </ScrollAreaAutosize>
-                    )}/>
-                );
+                renderedParts.push(<ToolPopover key={i} call={part} result={result} containerWidth={containerWidth}/>);
             }
         } else if (part.type === "abort") {
             renderedParts.push(<Divider key={i} label="Stopped" size="md" styles={{label: {fontSize: 14}}}/>);
@@ -351,7 +322,7 @@ export default function MessageBodyContent({message, style, containerWidth}: {
                             onTouchStart={captureSelectionForQuote}
                             onClick={handleQuoteClick}
                         >
-                            <IconQuoteFilled size={18}/>
+                            <Icon icon="lucide:message-square-quote" height={16}/>
                         </ActionIcon>
                     )}
                 </Transition>

@@ -21,6 +21,7 @@ export const SearchMemory: CustomTool<typeof schema> = {
             fact: m.fact,
             category: m.category,
             evidence: m.evidence,
+            createdAt: m.createdAt
         }));
     }
 }

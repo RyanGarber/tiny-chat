@@ -21,7 +21,6 @@ import {
     Stack,
     Text,
 } from "@mantine/core";
-import {IconChevronsUp, IconFile, IconPlayerStop, IconPlus, IconScreenshot} from "@tabler/icons-react";
 import {CSSProperties, useCallback, useLayoutEffect, useRef, useState,} from "react";
 import {Editable, ReactEditor, Slate} from "slate-react";
 import {serialize} from "@/slate/serializer.tsx";
@@ -30,6 +29,7 @@ import {useLayout} from "@/managers/layout.tsx";
 import {useLocalStorage} from "@mantine/hooks";
 import {DropzoneFullScreen} from "@mantine/dropzone";
 import ModelSelect from "@/components/ModelSelect.tsx";
+import {Icon} from "@iconify/react";
 
 export function Input(props: InputWrapperProps) {
     const {setEditor, config, setConfig, addFiles} = useMessaging();
@@ -128,22 +128,21 @@ export function Input(props: InputWrapperProps) {
                     size={32}
                     disabled={isMessagingDisabled}
                 >
-                    <IconPlus size={24}/> {/* ALL TODO */}
+                    <Icon icon="lucide:paperclip" height={18}/>
                     <DropzoneFullScreen
                         onDrop={(files) => addFiles(...files)}/> {/* TODO - not any */}
                 </ActionIcon>
             </Menu.Target>
             <Menu.Dropdown style={{boxShadow: shadow}}>
-                <FileButton onChange={(files) => addFiles(...files)}
-                            accept="image/jpeg,image/png,image/webp,image/gif" multiple>
+                <FileButton onChange={(files) => addFiles(...files)} multiple>
                     {(props) => (
-                        <Menu.Item {...props} leftSection={<IconFile size={16}/>}
+                        <Menu.Item {...props} leftSection={<Icon icon="lucide:file" height={18}/>}
                                    closeMenuOnClick={false}>
                             File
                         </Menu.Item>
                     )}
                 </FileButton>
-                <Menu.Item leftSection={<IconScreenshot size={16}/>} onClick={captureScreenshot}>
+                <Menu.Item leftSection={<Icon icon="lucide:screen-share" height={18}/>} onClick={captureScreenshot}>
                     Screenshot
                 </Menu.Item>
             </Menu.Dropdown>
@@ -215,7 +214,8 @@ export function Input(props: InputWrapperProps) {
                 onClick={abortController !== null ? () => abortController.abort() : onSend}
                 disabled={isMessagingDisabled && (abortController === null || abortController.signal.aborted)}
             >
-                {abortController !== null ? <IconPlayerStop size={24}/> : <IconChevronsUp size={24}/>}
+                {abortController !== null ? <Icon icon="lucide:square" height={18}/> :
+                    <Icon icon="lucide:send" height={18}/>}
             </ActionIcon>
         </>
     );

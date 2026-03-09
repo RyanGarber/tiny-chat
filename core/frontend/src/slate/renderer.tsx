@@ -1,9 +1,9 @@
 import {useMessaging} from "@/managers/messaging.tsx";
 import {ActionIcon, Blockquote, Box, Group, Text as MantineText} from "@mantine/core";
-import {IconQuoteFilled, IconX} from "@tabler/icons-react";
 import {BaseText, Node, Range, Text, Transforms} from "slate";
 import {ReactEditor, RenderElementProps} from "slate-react";
 import {tokenize} from "@/slate/tokenizer.tsx";
+import {Icon} from "@iconify/react";
 
 export function renderElement(props: RenderElementProps) {
     const editor = useMessaging.getState().editor!;
@@ -25,7 +25,7 @@ export function renderElement(props: RenderElementProps) {
                 >
                     {modelName && (
                         <Group gap={5} c="dimmed" mb={4}>
-                            <IconQuoteFilled size={14} style={{transform: "scale(-1,1)"}}/>
+                            <Icon icon="lucide:message-square-quote" height={14}/>
                             <MantineText size="xs">{modelName}</MantineText>
                         </Group>
                     )}
@@ -38,7 +38,7 @@ export function renderElement(props: RenderElementProps) {
                                 Transforms.removeNodes(editor, {at: path});
                             }}
                         >
-                            <IconX size={18}/>
+                            <Icon icon="lucide:x" height={18}/>
                         </ActionIcon>
                         <Box pl={5}>{(props.element.children[0] as BaseText).text}</Box>
                     </div>

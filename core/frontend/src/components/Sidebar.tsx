@@ -1,259 +1,316 @@
-import {useEffect, useState} from "react";
-import {useDebouncedValue} from "@mantine/hooks";
+import { useEffect, useState } from 'react';
+import { useDebouncedValue } from '@mantine/hooks';
 import {
-    ActionIcon,
-    Avatar,
-    Burger,
-    Divider,
-    Group,
-    NavLink,
-    ScrollArea,
-    Space,
-    Stack,
-    Text,
-    Tooltip
-} from "@mantine/core";
-import {Spotlight, spotlight, SpotlightActionData} from "@mantine/spotlight";
-import {useLayout} from "@/managers/layout.tsx";
-import SidebarChat from "@/components/SidebarChat.tsx";
-import {useChats} from "@/managers/chats.tsx";
-import {useLocation} from "wouter";
-import {auth, extractText, scrubText, snippetText, trpc} from "@/utils.ts";
-import Drawers from "@/components/Drawers.tsx";
-import {useSettings} from "@/managers/settings.tsx";
-import {Icon} from "@iconify/react";
-import {version} from "../../../../apps/tauri/tauri.conf.json";
+  ActionIcon,
+  Avatar,
+  Burger,
+  Divider,
+  Group,
+  NavLink,
+  ScrollArea,
+  Space,
+  Stack,
+  Text,
+  Tooltip,
+} from '@mantine/core';
+import { Spotlight, spotlight, SpotlightActionData } from '@mantine/spotlight';
+import { useLayout } from '@/managers/layout.tsx';
+import SidebarChat from '@/components/SidebarChat.tsx';
+import { useChats } from '@/managers/chats.tsx';
+import { useLocation } from 'wouter';
+import { auth, extractText, scrubText, snippetText, trpc } from '@/utils.ts';
+import Drawers from '@/components/Drawers.tsx';
+import { useSettings } from '@/managers/settings.tsx';
+import { Icon } from '@iconify/react';
+import { version } from '../../../../apps/tauri/tauri.conf.json';
 
 export default function Sidebar() {
-    const {folders, currentChat, setCurrentChat, temporary, setTemporary, incognito, setIncognito} = useChats();
-    const {isMobile, isSidebarOpen, setSidebarOpen} = useLayout();
-    const {getEmbeddingConfig, getUseEmbeddingSearch} = useSettings();
+  const { folders, currentChat, setCurrentChat, temporary, setTemporary, incognito, setIncognito } =
+    useChats();
+  const { isMobile, isSidebarOpen, setSidebarOpen } = useLayout();
+  const { getEmbeddingConfig, getUseEmbeddingSearch } = useSettings();
 
-    const {data: session, isPending: isSessionPending} = auth.useSession();
+  const { data: session, isPending: isSessionPending } = auth.useSession();
 
-    const [location] = useLocation();
-    useEffect(() => {
-        if (isSessionPending || !session?.user) return;
-        if (window.location.hash.length < 2) window.location.hash = "#/";
-        if (!window.location.hash.startsWith("#/app/")) {
-            if (currentChat?.id ?? "" !== location.slice(1)) {
-                void setCurrentChat(location.slice(1) || null, false);
-            }
-        }
-    }, [location, isSessionPending, session?.user?.id]);
+  const [location] = useLocation();
+  useEffect(() => {
+    if (isSessionPending || !session?.user) return;
+    if (window.location.hash.length < 2) window.location.hash = '#/';
+    if (!window.location.hash.startsWith('#/app/')) {
+      if (currentChat?.id ?? '' !== location.slice(1)) {
+        void setCurrentChat(location.slice(1) || null, false);
+      }
+    }
+  }, [location, isSessionPending, session?.user?.id]);
 
-    const closeAfter = (action?: () => void) => {
-        action?.();
-        if (isMobile) setSidebarOpen(false);
+  const closeAfter = (action?: () => void) => {
+    action?.();
+    if (isMobile) setSidebarOpen(false);
+  };
+
+  const isTemporary = temporary || currentChat?.temporary;
+  const isIncognito = incognito || currentChat?.incognito;
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery] = useDebouncedValue(searchQuery, 400);
+  const [spotlightActions, setSpotlightActions] = useState<SpotlightActionData[]>([]); // TODO - SpotlightActionGroup
+
+  useEffect(() => {
+    if (!(debouncedQuery.trim()?.length >= 3)) {
+      setSpotlightActions([]);
+      return;
     }
 
-    const isTemporary = temporary || currentChat?.temporary;
-    const isIncognito = incognito || currentChat?.incognito;
+    let cancelled = false;
+    (async () => {
+      if (cancelled) return;
+      const results = await trpc.chats.search.mutate({
+        text: debouncedQuery,
+        config: getUseEmbeddingSearch() ? getEmbeddingConfig() : undefined,
+      });
+      if (cancelled) return;
+      console.log('Results for', debouncedQuery, results);
+      const seen = new Set<string>();
+      setSpotlightActions(
+        results
+          .filter((r) => {
+            if (seen.has(r.chatId)) return false;
+            seen.add(r.chatId);
+            return true;
+          })
+          .map((r) => ({
+            id: r.id,
+            label: scrubText(r.chatTitle, 50),
+            description: snippetText(scrubText(extractText(r.data)), debouncedQuery),
+            onClick: () => closeAfter(() => void setCurrentChat(r.chatId)), // TODO - scroll to chat
+          })),
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedQuery]);
 
-    const [searchQuery, setSearchQuery] = useState('');
-    const [debouncedQuery] = useDebouncedValue(searchQuery, 400);
-    const [spotlightActions, setSpotlightActions] = useState<SpotlightActionData[]>([]); // TODO - SpotlightActionGroup
-
-    useEffect(() => {
-        if (!(debouncedQuery.trim()?.length >= 3)) {
-            setSpotlightActions([]);
-            return;
-        }
-
-        let cancelled = false;
-        (async () => {
-            if (cancelled) return;
-            const results = await trpc.chats.search.mutate({
-                text: debouncedQuery,
-                config: getUseEmbeddingSearch() ? getEmbeddingConfig() : undefined
-            });
-            if (cancelled) return;
-            console.log("Results for", debouncedQuery, results);
-            const seen = new Set<string>();
-            setSpotlightActions(
-                results
-                    .filter((r) => {
-                        if (seen.has(r.chatId)) return false;
-                        seen.add(r.chatId);
-                        return true;
-                    })
-                    .map((r) => ({
-                        id: r.id,
-                        label: scrubText(r.chatTitle, 50),
-                        description: snippetText(scrubText(extractText(r.data)), debouncedQuery),
-                        onClick: () => closeAfter(() => void setCurrentChat(r.chatId)), // TODO - scroll to chat
-                    }))
-            );
-        })();
-        return () => {
-            cancelled = true;
-        };
-    }, [debouncedQuery]);
-
-    const expanded = (
-        <>
-            <Group justify="space-between" px={5} pb={5}>
-                <ActionIcon variant="transparent" onClick={spotlight.open}>
-                    <Icon icon="lucide:search" height={18} color="var(--mantine-color-text)"/>
-                </ActionIcon>
-                <Spotlight
-                    actions={spotlightActions}
-                    query={searchQuery}
-                    onQueryChange={setSearchQuery}
-                    highlightQuery
-                    scrollAreaProps={{mah: 400}}
-                    nothingFound={searchQuery.trim().length >= 3 ? "No results" : "Type to search…"}
-                    filter={(_, actions) => actions}
-                />
-                <Burger opened={isSidebarOpen} onClick={() => setSidebarOpen(!isSidebarOpen)} size={16}/>
-            </Group>
-            <Group align="center" mt={5} gap={2}>
-                <NavLink label="New Chat" leftSection={<Icon icon="lucide:message-circle-plus" height={18}/>}
-                         className="new-chat"
-                         onClick={() => closeAfter(() => void setCurrentChat(null))} active={!currentChat}
-                         variant="subtle"
-                         flex={1} bdrs="md"/>
-                <Tooltip label="Temporary" color="gray" position="right">
-                    <ActionIcon size={32} variant="subtle" c="dimmed" bdrs="md" className="nav-link-like filled"
-                                onClick={() => closeAfter(() => void setTemporary(!isTemporary))}
-                                data-active={isTemporary}>
-                        <Icon icon="lucide:list-x" height={18}/>
-                    </ActionIcon>
-                </Tooltip>
-                <Tooltip label="Anonymous" color="gray" position="right">
-                    <ActionIcon size={32} variant="subtle" c="dimmed" bdrs="md" className="nav-link-like filled"
-                                onClick={() => closeAfter(() => void setIncognito(!isIncognito))}
-                                data-active={isIncognito}>
-                        <Icon icon="lucide:user-x" height={18}/>
-                    </ActionIcon>
-                </Tooltip>
-            </Group>
-            <Divider my="sm"/>
-            <ScrollArea flex={1}>
-                <Stack gap={5}>
-                    {folders.map((folder) =>
-                        folder.chats.length === 1 ? (
-                            <SidebarChat
-                                key={folder.chats[0].id}
-                                chat={folder.chats[0]}
-                                props={{
-                                    onClick: () => closeAfter(() => void setCurrentChat(folder.chats[0].id)),
-                                    bdrs: 'md'
-                                }}
-                            />
-                        ) : (
-                            <NavLink
-                                key={folder.id}
-                                label={folder.title || "Generating..."}
-                                leftSection={folder.chats.length}
-                                defaultOpened={true}
-                            >
-                                {folder.chats.map((chat) => (
-                                    <SidebarChat
-                                        key={chat.id}
-                                        chat={chat}
-                                        props={{
-                                            onClick: () => closeAfter(() => void setCurrentChat(chat.id)),
-                                            bdrs: 'md'
-                                        }}
-                                    />
-                                ))}
-                            </NavLink>
-                        ),
-                    )}
-                </Stack>
-            </ScrollArea>
-            <Divider my="sm"/>
-            <Drawers buttons={(account, settings) => (
-                <>
-                    <NavLink
-                        label={!session?.user || session.user.isAnonymous ? 'Sign In' : session.user.name.split(' ')[0]}
-                        leftSection={session?.user?.image ? <Avatar src={session.user.image} size={18}/> :
-                            <Icon icon="lucide:circle-user" height={18}/>}
-                        onClick={account[1].open} bdrs="md"/>
-                    <NavLink
-                        label={
-                            <Group justify="space-between">
-                                Settings
-                                <Text size="sm" c="dimmed" pr={5}>v{version}</Text>
-                            </Group>
-                        }
-                        leftSection={<Icon icon="lucide:settings" height={18}/>}
-                        onClick={settings[1].open}
-                        bdrs="md"/>
-                </>
-            )}/>
-        </>
-    );
-
-    const collapsed = (
-        <Stack align="center" justify="space-between" h="100%" gap={0} py={4}>
-            <Stack align="center" gap={5}>
-                <Burger opened={isSidebarOpen} onClick={() => setSidebarOpen(!isSidebarOpen)} size={16}/>
-                <Space/>
-                <Tooltip label="New Chat" position="right" color="gray">
-                    <ActionIcon variant="subtle" size={32} c="dimmed" className="new-chat nav-link-like filled"
-                                data-active={!currentChat}
-                                onClick={() => closeAfter(() => void setCurrentChat(null))}>
-                        <Icon icon="lucide:message-circle-plus" height={18}/>
-                    </ActionIcon>
-                </Tooltip>
-            </Stack>
-            <Drawers buttons={(account, settings) => (
-                <Stack align="center" gap={5}>
-                    <Tooltip
-                        label={!session?.user || session.user.isAnonymous ? 'Sign In' : "Account"}
-                        position="right" color="gray">
-                        <ActionIcon variant="subtle" size={32} c="dimmed" className="nav-link-like"
-                                    onClick={account[1].open}>
-                            {session?.user?.image
-                                ? <Avatar src={session.user.image} size={18}/>
-                                : <Icon icon="lucide:user-x" height={18}/>}
-                        </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Settings" position="right" color="gray">
-                        <ActionIcon variant="subtle" size={32} c="dimmed" className="nav-link-like"
-                                    onClick={settings[1].open}>
-                            <Icon icon="lucide:settings" height={18}/>
-                        </ActionIcon>
-                    </Tooltip>
-                </Stack>
-            )}/>
+  const expanded = (
+    <>
+      <Group justify="space-between" px={5} pb={5}>
+        <ActionIcon variant="transparent" onClick={spotlight.open}>
+          <Icon icon="lucide:search" height={18} color="var(--mantine-color-text)" />
+        </ActionIcon>
+        <Spotlight
+          actions={spotlightActions}
+          query={searchQuery}
+          onQueryChange={setSearchQuery}
+          highlightQuery
+          scrollAreaProps={{ mah: 400 }}
+          nothingFound={searchQuery.trim().length >= 3 ? 'No results' : 'Type to search…'}
+          filter={(_, actions) => actions}
+        />
+        <Burger opened={isSidebarOpen} onClick={() => setSidebarOpen(!isSidebarOpen)} size={16} />
+      </Group>
+      <Group align="center" mt={5} gap={2}>
+        <NavLink
+          label="New Chat"
+          leftSection={<Icon icon="lucide:message-circle-plus" height={18} />}
+          className="new-chat"
+          onClick={() => closeAfter(() => void setCurrentChat(null))}
+          active={!currentChat}
+          variant="subtle"
+          flex={1}
+          bdrs="md"
+        />
+        <Tooltip label="Temporary" color="gray" position="right">
+          <ActionIcon
+            size={32}
+            variant="subtle"
+            c="dimmed"
+            bdrs="md"
+            className="nav-link-like filled"
+            onClick={() => closeAfter(() => void setTemporary(!isTemporary))}
+            data-active={isTemporary}
+          >
+            <Icon icon="lucide:list-x" height={18} />
+          </ActionIcon>
+        </Tooltip>
+        <Tooltip label="Anonymous" color="gray" position="right">
+          <ActionIcon
+            size={32}
+            variant="subtle"
+            c="dimmed"
+            bdrs="md"
+            className="nav-link-like filled"
+            onClick={() => closeAfter(() => void setIncognito(!isIncognito))}
+            data-active={isIncognito}
+          >
+            <Icon icon="lucide:user-x" height={18} />
+          </ActionIcon>
+        </Tooltip>
+      </Group>
+      <Divider my="sm" />
+      <ScrollArea flex={1}>
+        <Stack gap={5}>
+          {folders.map((folder) =>
+            folder.chats.length === 1 ? (
+              <SidebarChat
+                key={folder.chats[0].id}
+                chat={folder.chats[0]}
+                props={{
+                  onClick: () => closeAfter(() => void setCurrentChat(folder.chats[0].id)),
+                  bdrs: 'md',
+                }}
+              />
+            ) : (
+              <NavLink
+                key={folder.id}
+                label={folder.title || 'Generating...'}
+                leftSection={folder.chats.length}
+                defaultOpened={true}
+              >
+                {folder.chats.map((chat) => (
+                  <SidebarChat
+                    key={chat.id}
+                    chat={chat}
+                    props={{
+                      onClick: () => closeAfter(() => void setCurrentChat(chat.id)),
+                      bdrs: 'md',
+                    }}
+                  />
+                ))}
+              </NavLink>
+            ),
+          )}
         </Stack>
-    );
+      </ScrollArea>
+      <Divider my="sm" />
+      <Drawers
+        buttons={(account, settings) => (
+          <>
+            <NavLink
+              label={
+                !session?.user || session.user.isAnonymous
+                  ? 'Sign In'
+                  : session.user.name.split(' ')[0]
+              }
+              leftSection={
+                session?.user?.image ? (
+                  <Avatar src={session.user.image} size={18} />
+                ) : (
+                  <Icon icon="lucide:circle-user" height={18} />
+                )
+              }
+              onClick={account[1].open}
+              bdrs="md"
+            />
+            <NavLink
+              label={
+                <Group justify="space-between">
+                  Settings
+                  <Text size="sm" c="dimmed" pr={5}>
+                    v{version}
+                  </Text>
+                </Group>
+              }
+              leftSection={<Icon icon="lucide:settings" height={18} />}
+              onClick={settings[1].open}
+              bdrs="md"
+            />
+          </>
+        )}
+      />
+    </>
+  );
 
-    if (isMobile) {
-        return expanded;
-    }
+  const collapsed = (
+    <Stack align="center" justify="space-between" h="100%" gap={0} py={4}>
+      <Stack align="center" gap={5}>
+        <Burger opened={isSidebarOpen} onClick={() => setSidebarOpen(!isSidebarOpen)} size={16} />
+        <Space />
+        <Tooltip label="New Chat" position="right" color="gray">
+          <ActionIcon
+            variant="subtle"
+            size={32}
+            c="dimmed"
+            className="new-chat nav-link-like filled"
+            data-active={!currentChat}
+            onClick={() => closeAfter(() => void setCurrentChat(null))}
+          >
+            <Icon icon="lucide:message-circle-plus" height={18} />
+          </ActionIcon>
+        </Tooltip>
+      </Stack>
+      <Drawers
+        buttons={(account, settings) => (
+          <Stack align="center" gap={5}>
+            <Tooltip
+              label={!session?.user || session.user.isAnonymous ? 'Sign In' : 'Account'}
+              position="right"
+              color="gray"
+            >
+              <ActionIcon
+                variant="subtle"
+                size={32}
+                c="dimmed"
+                className="nav-link-like"
+                onClick={account[1].open}
+              >
+                {session?.user?.image ? (
+                  <Avatar src={session.user.image} size={18} />
+                ) : (
+                  <Icon icon="lucide:user-x" height={18} />
+                )}
+              </ActionIcon>
+            </Tooltip>
+            <Tooltip label="Settings" position="right" color="gray">
+              <ActionIcon
+                variant="subtle"
+                size={32}
+                c="dimmed"
+                className="nav-link-like"
+                onClick={settings[1].open}
+              >
+                <Icon icon="lucide:settings" height={18} />
+              </ActionIcon>
+            </Tooltip>
+          </Stack>
+        )}
+      />
+    </Stack>
+  );
 
-    return (
-        <div style={{position: "relative", height: "100%", overflow: "hidden"}}>
-            <div
-                style={{
-                    position: "absolute",
-                    inset: 0,
-                    opacity: isSidebarOpen ? 1 : 0,
-                    visibility: isSidebarOpen ? "visible" : "hidden",
-                    transition: "opacity 200ms ease 50ms, visibility 0ms linear " + (isSidebarOpen ? "0ms" : "250ms"),
-                    display: "flex",
-                    flexDirection: "column"
-                }}
-            >
-                {expanded}
-            </div>
-            <div
-                style={{
-                    position: "absolute",
-                    inset: 0,
-                    opacity: isSidebarOpen ? 0 : 1,
-                    visibility: isSidebarOpen ? "hidden" : "visible",
-                    transition: "opacity 200ms ease 50ms, visibility 0ms linear " + (isSidebarOpen ? "250ms" : "0ms"),
-                    display: "flex",
-                    flexDirection: "column",
-                }}
-            >
-                {collapsed}
-            </div>
-        </div>
-    );
+  if (isMobile) {
+    return expanded;
+  }
+
+  return (
+    <div style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          opacity: isSidebarOpen ? 1 : 0,
+          visibility: isSidebarOpen ? 'visible' : 'hidden',
+          transition:
+            'opacity 200ms ease 50ms, visibility 0ms linear ' + (isSidebarOpen ? '0ms' : '250ms'),
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {expanded}
+      </div>
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          opacity: isSidebarOpen ? 0 : 1,
+          visibility: isSidebarOpen ? 'hidden' : 'visible',
+          transition:
+            'opacity 200ms ease 50ms, visibility 0ms linear ' + (isSidebarOpen ? '250ms' : '0ms'),
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {collapsed}
+      </div>
+    </div>
+  );
 }

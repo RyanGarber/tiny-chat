@@ -1,336 +1,353 @@
-import {useMessaging} from "@/managers/messaging.tsx";
-import {setupEditor} from "@/slate/setup.tsx";
-import {onKeyDown, onSend} from "@/slate/events.tsx";
-import {decorate, renderElement, renderLeaf} from "@/slate/renderer.tsx";
+import { useMessaging } from '@/managers/messaging.tsx';
+import { setupEditor } from '@/slate/setup.tsx';
+import { onKeyDown, onSend } from '@/slate/events.tsx';
+import { decorate, renderElement, renderLeaf } from '@/slate/renderer.tsx';
 import {
-    ActionIcon,
-    Box,
-    Button,
-    Divider,
-    FileButton,
-    InputBase,
-    InputWrapper,
-    InputWrapperProps,
-    Menu,
-    Popover,
-    PopoverDropdown,
-    PopoverTarget,
-    ScrollAreaAutosize,
-    Select,
-    Slider,
-    Stack,
-    Text,
-} from "@mantine/core";
-import {CSSProperties, useCallback, useLayoutEffect, useRef, useState,} from "react";
-import {Editable, ReactEditor, Slate} from "slate-react";
-import {serialize} from "@/slate/serializer.tsx";
-import {useProviders} from "@/managers/providers.tsx";
-import {useLayout} from "@/managers/layout.tsx";
-import {useLocalStorage} from "@mantine/hooks";
-import {DropzoneFullScreen} from "@mantine/dropzone";
-import ModelSelect from "@/components/ModelSelect.tsx";
-import {Icon} from "@iconify/react";
+  ActionIcon,
+  Box,
+  Button,
+  Divider,
+  FileButton,
+  InputBase,
+  InputWrapper,
+  InputWrapperProps,
+  Menu,
+  Popover,
+  PopoverDropdown,
+  PopoverTarget,
+  ScrollAreaAutosize,
+  Select,
+  Slider,
+  Stack,
+  Text,
+} from '@mantine/core';
+import { CSSProperties, useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { Editable, ReactEditor, Slate } from 'slate-react';
+import { serialize } from '@/slate/serializer.tsx';
+import { useProviders } from '@/managers/providers.tsx';
+import { useLayout } from '@/managers/layout.tsx';
+import { useLocalStorage } from '@mantine/hooks';
+import { DropzoneFullScreen } from '@mantine/dropzone';
+import ModelSelect from '@/components/ModelSelect.tsx';
+import { Icon } from '@iconify/react';
 
 export function Input(props: InputWrapperProps) {
-    const {setEditor, config, setConfig, addFiles} = useMessaging();
-    const {chatProviders, abortController} = useProviders();
-    const {shadow, setIsMessaging, isMessagingDisabled} = useLayout();
+  const { setEditor, config, setConfig, addFiles } = useMessaging();
+  const { chatProviders, abortController } = useProviders();
+  const { shadow, setIsMessaging, isMessagingDisabled } = useLayout();
 
-    const [isMultiline, setMultiline] = useState(false);
-    const scrollRef = useRef<HTMLDivElement>(null);
-    const leftSectionRef = useRef<HTMLDivElement>(null);
-    const rightSectionRef = useRef<HTMLDivElement>(null);
+  const [isMultiline, setMultiline] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const leftSectionRef = useRef<HTMLDivElement>(null);
+  const rightSectionRef = useRef<HTMLDivElement>(null);
 
-    const [editor] = useState(() => setupEditor());
-    useLayoutEffect(() => setEditor(editor), []);
+  const [editor] = useState(() => setupEditor());
+  useLayoutEffect(() => setEditor(editor), []);
 
-    useLayoutEffect(() => {
-        const observer = new ResizeObserver((entries) => {
-            const entry = entries[0];
-            const height = entry.contentRect.height;
-            if (height > 40) setMultiline(true);
-        });
-        if (scrollRef.current) {
-            observer.observe(scrollRef.current);
-        }
-        return () => observer.disconnect();
-    }, [scrollRef.current]);
+  useLayoutEffect(() => {
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      const height = entry.contentRect.height;
+      if (height > 40) setMultiline(true);
+    });
+    if (scrollRef.current) {
+      observer.observe(scrollRef.current);
+    }
+    return () => observer.disconnect();
+  }, [scrollRef.current]);
 
-    const [sectionWidths, setSectionWidths] = useState({left: 42, right: 42});
-    useLayoutEffect(() => {
-        const updateWidths = () => {
-            const leftWidth = leftSectionRef.current?.offsetWidth ?? 42;
-            const rightWidth = rightSectionRef.current?.offsetWidth ?? 42;
-            setSectionWidths({left: leftWidth, right: rightWidth});
-        };
-
-        updateWidths();
-        const observer = new ResizeObserver(updateWidths);
-
-        if (leftSectionRef.current) observer.observe(leftSectionRef.current);
-        if (rightSectionRef.current) observer.observe(rightSectionRef.current);
-
-        return () => observer.disconnect();
-    }, []);
-
-    const [_, updateSavedConfig] = useLocalStorage<string>({key: "config"});
-
-    const args = chatProviders.find(s => s.name === config?.service)?.models.find(m => m.name === config?.model)?.args ?? [];
-
-    const setArg = (name: string, value: any) => {
-        if (!config) return;
-        config.args = {...config.args, [name]: value};
-        setConfig(config);
-        updateSavedConfig(JSON.stringify(config));
+  const [sectionWidths, setSectionWidths] = useState({ left: 42, right: 42 });
+  useLayoutEffect(() => {
+    const updateWidths = () => {
+      const leftWidth = leftSectionRef.current?.offsetWidth ?? 42;
+      const rightWidth = rightSectionRef.current?.offsetWidth ?? 42;
+      setSectionWidths({ left: leftWidth, right: rightWidth });
     };
 
-    const captureScreenshot = useCallback(async () => {
-        try {
-            const stream = await navigator.mediaDevices.getDisplayMedia({video: true});
-            const video = document.createElement("video");
-            video.srcObject = stream;
-            await new Promise<void>((resolve) => {
-                video.onloadedmetadata = () => resolve();
-            });
-            await video.play();
+    updateWidths();
+    const observer = new ResizeObserver(updateWidths);
 
-            const canvas = document.createElement("canvas");
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const ctx = canvas.getContext("2d");
-            ctx!.drawImage(video, 0, 0);
-            stream.getTracks().forEach((track) => track.stop());
+    if (leftSectionRef.current) observer.observe(leftSectionRef.current);
+    if (rightSectionRef.current) observer.observe(rightSectionRef.current);
 
-            canvas.toBlob((blob) => {
-                if (blob) {
-                    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-                    const file = new File([blob], `screenshot-${timestamp}.png`, {type: "image/png"});
-                    addFiles(file);
-                }
-            }, "image/png");
-        } catch (e) {
-            console.error("Failed to capture screenshot:", e);
+    return () => observer.disconnect();
+  }, []);
+
+  const [_, updateSavedConfig] = useLocalStorage<string>({ key: 'config' });
+
+  const args =
+    chatProviders
+      .find((s) => s.name === config?.service)
+      ?.models.find((m) => m.name === config?.model)?.args ?? [];
+
+  const setArg = (name: string, value: any) => {
+    if (!config) return;
+    config.args = { ...config.args, [name]: value };
+    setConfig(config);
+    updateSavedConfig(JSON.stringify(config));
+  };
+
+  const captureScreenshot = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      await new Promise<void>((resolve) => {
+        video.onloadedmetadata = () => resolve();
+      });
+      await video.play();
+
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx!.drawImage(video, 0, 0);
+      stream.getTracks().forEach((track) => track.stop());
+
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          const file = new File([blob], `screenshot-${timestamp}.png`, { type: 'image/png' });
+          addFiles(file);
         }
-    }, [addFiles]);
+      }, 'image/png');
+    } catch (e) {
+      console.error('Failed to capture screenshot:', e);
+    }
+  }, [addFiles]);
 
-    const resetMultiline = useCallback(() => {
-        if (!serialize().length) setMultiline(false);
-    }, [setMultiline, serialize, editor])
+  const resetMultiline = useCallback(() => {
+    if (!serialize().length) setMultiline(false);
+  }, [setMultiline, serialize, editor]);
 
-    const leftActionContent = (
-        <Menu
-            position="top-start"
-            transitionProps={{transition: "fade-up"}}
-        >
-            <Menu.Target>
-                <ActionIcon
-                    variant="subtle"
-                    size={32}
-                    disabled={isMessagingDisabled}
-                >
-                    <Icon icon="lucide:paperclip" height={18}/>
-                    <DropzoneFullScreen
-                        onDrop={(files) => addFiles(...files)}/> {/* TODO - not any */}
-                </ActionIcon>
-            </Menu.Target>
-            <Menu.Dropdown style={{boxShadow: shadow}}>
-                <FileButton onChange={(files) => addFiles(...files)} multiple>
-                    {(props) => (
-                        <Menu.Item {...props} leftSection={<Icon icon="lucide:file" height={18}/>}
-                                   closeMenuOnClick={false}>
-                            File
-                        </Menu.Item>
-                    )}
-                </FileButton>
-                <Menu.Item leftSection={<Icon icon="lucide:screen-share" height={18}/>} onClick={captureScreenshot}>
-                    Screenshot
-                </Menu.Item>
-            </Menu.Dropdown>
-        </Menu>
-    );
-
-    const rightActionContent = (
-        <>
-            <Popover position="top" transitionProps={{transition: "fade-up"}}>
-                <PopoverTarget>
-                    <Button fw="normal"
-                            bg="var(--tc-surface)"
-                            c="var(--mantine-color-text)"
-                            maw="25vw">{config?.model}</Button>
-                </PopoverTarget>
-                <PopoverDropdown maw={250}>
-                    <ModelSelect
-                        flex={1}
-                        variant="filled"
-                        comboboxProps={{
-                            withinPortal: false,
-                            transitionProps: {transition: "fade-up"},
-                            offset: 0,
-                        }}
-                        styles={{
-                            dropdown: {
-                                boxShadow: shadow,
-                            },
-                        }}
-                        configValue={config}
-                        onConfigChange={(value) => {
-                            setConfig(value!);
-                            updateSavedConfig(JSON.stringify(value));
-                        }}
-                        feature={"generate"}
-                    />
-                    {!!args?.length && <Divider my="xs"/>}
-                    <Stack gap="xs">
-                        {args?.map((arg) => (
-                            <Box key={arg.name}>
-                                {arg.type === "list" && (
-                                    <>
-                                        <Text size="xs" mb={2}>{arg.name}</Text>
-                                        <Select key={arg.name}
-                                                comboboxProps={{withinPortal: false, offset: 0}}
-                                                data={arg.values}
-                                                size="xs"
-                                                value={config?.args?.[arg.name] ?? arg.default}
-                                                onChange={value => setArg(arg.name, value)}/>
-                                    </>
-                                )}
-                                {arg.type === "range" && (
-                                    <>
-                                        <Text size="xs" mb={2}>{arg.name}</Text>
-                                        <Slider min={arg.min} max={arg.max}
-                                                step={arg.step}
-                                                value={config?.args?.[arg.name] ?? arg.default}
-                                                onChange={value => setArg(arg.name, value)}/>
-                                    </>
-                                )}
-                            </Box>
-                        ))}
-                    </Stack>
-                </PopoverDropdown>
-            </Popover>
-            <ActionIcon
-                variant="subtle"
-                size={32}
-                onClick={abortController !== null ? () => abortController.abort() : onSend}
-                disabled={isMessagingDisabled && (abortController === null || abortController.signal.aborted)}
+  const leftActionContent = (
+    <Menu position="top-start" transitionProps={{ transition: 'fade-up' }}>
+      <Menu.Target>
+        <ActionIcon variant="subtle" size={32} disabled={isMessagingDisabled}>
+          <Icon icon="lucide:paperclip" height={18} />
+          <DropzoneFullScreen onDrop={(files) => addFiles(...files)} /> {/* TODO - not any */}
+        </ActionIcon>
+      </Menu.Target>
+      <Menu.Dropdown style={{ boxShadow: shadow }}>
+        <FileButton onChange={(files) => addFiles(...files)} multiple>
+          {(props) => (
+            <Menu.Item
+              {...props}
+              leftSection={<Icon icon="lucide:file" height={18} />}
+              closeMenuOnClick={false}
             >
-                {abortController !== null ? <Icon icon="lucide:square" height={18}/> :
-                    <Icon icon="lucide:send" height={18}/>}
-            </ActionIcon>
-        </>
-    );
-
-    const leftActions = (
-        <div
-            ref={leftSectionRef}
-            style={{
-                display: "flex",
-                alignItems: "center",
-                opacity: isMultiline ? 0 : 1,
-                pointerEvents: isMultiline ? "none" : "auto",
-                transition: "opacity 200ms ease",
-            }}
+              File
+            </Menu.Item>
+          )}
+        </FileButton>
+        <Menu.Item
+          leftSection={<Icon icon="lucide:screen-share" height={18} />}
+          onClick={captureScreenshot}
         >
-            {leftActionContent}
-        </div>
-    );
+          Screenshot
+        </Menu.Item>
+      </Menu.Dropdown>
+    </Menu>
+  );
 
-    const rightActions = (
-        <div
-            ref={rightSectionRef}
-            style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "5px",
-                opacity: isMultiline ? 0 : 1,
-                pointerEvents: isMultiline ? "none" : "auto",
-                transition: "opacity 200ms ease",
+  const rightActionContent = (
+    <>
+      <Popover position="top" transitionProps={{ transition: 'fade-up' }}>
+        <PopoverTarget>
+          <Button fw="normal" bg="var(--tc-surface)" c="var(--mantine-color-text)" maw="25vw">
+            {config?.model}
+          </Button>
+        </PopoverTarget>
+        <PopoverDropdown maw={250}>
+          <ModelSelect
+            flex={1}
+            variant="filled"
+            comboboxProps={{
+              withinPortal: false,
+              transitionProps: { transition: 'fade-up' },
+              offset: 0,
             }}
+            styles={{
+              dropdown: {
+                boxShadow: shadow,
+              },
+            }}
+            configValue={config}
+            onConfigChange={(value) => {
+              setConfig(value!);
+              updateSavedConfig(JSON.stringify(value));
+            }}
+            feature={'generate'}
+          />
+          {!!args?.length && <Divider my="xs" />}
+          <Stack gap="xs">
+            {args?.map((arg) => (
+              <Box key={arg.name}>
+                {arg.type === 'list' && (
+                  <>
+                    <Text size="xs" mb={2}>
+                      {arg.name}
+                    </Text>
+                    <Select
+                      key={arg.name}
+                      comboboxProps={{ withinPortal: false, offset: 0 }}
+                      data={arg.values}
+                      size="xs"
+                      value={config?.args?.[arg.name] ?? arg.default}
+                      onChange={(value) => setArg(arg.name, value)}
+                    />
+                  </>
+                )}
+                {arg.type === 'range' && (
+                  <>
+                    <Text size="xs" mb={2}>
+                      {arg.name}
+                    </Text>
+                    <Slider
+                      min={arg.min}
+                      max={arg.max}
+                      step={arg.step}
+                      value={config?.args?.[arg.name] ?? arg.default}
+                      onChange={(value) => setArg(arg.name, value)}
+                    />
+                  </>
+                )}
+              </Box>
+            ))}
+          </Stack>
+        </PopoverDropdown>
+      </Popover>
+      <ActionIcon
+        variant="subtle"
+        size={32}
+        onClick={abortController !== null ? () => abortController.abort() : onSend}
+        disabled={
+          isMessagingDisabled && (abortController === null || abortController.signal.aborted)
+        }
+      >
+        {abortController !== null ? (
+          <Icon icon="lucide:square" height={18} />
+        ) : (
+          <Icon icon="lucide:send" height={18} />
+        )}
+      </ActionIcon>
+    </>
+  );
+
+  const leftActions = (
+    <div
+      ref={leftSectionRef}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        opacity: isMultiline ? 0 : 1,
+        pointerEvents: isMultiline ? 'none' : 'auto',
+        transition: 'opacity 200ms ease',
+      }}
+    >
+      {leftActionContent}
+    </div>
+  );
+
+  const rightActions = (
+    <div
+      ref={rightSectionRef}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '5px',
+        opacity: isMultiline ? 0 : 1,
+        pointerEvents: isMultiline ? 'none' : 'auto',
+        transition: 'opacity 200ms ease',
+      }}
+    >
+      {rightActionContent}
+    </div>
+  );
+
+  return (
+    <>
+      <InputWrapper {...props}>
+        <InputBase
+          component="div"
+          multiline
+          pointer
+          disabled={isMessagingDisabled}
+          leftSection={leftActions}
+          rightSection={rightActions}
+          style={{
+            '--input-left-section-width': 'auto',
+            '--input-right-section-width': 'auto',
+          }}
+          radius={(props.style as CSSProperties)?.borderRadius ?? 0}
+          styles={{
+            input: {
+              padding: 0,
+              wordBreak: 'break-word',
+              zIndex: 'var(--mantine-z-index-app)',
+              backgroundColor: 'color-mix(in srgb, var(--mantine-color-body), transparent 15%)',
+              backdropFilter: 'blur(5px)',
+            },
+            section: {
+              display: 'flex',
+              alignItems: 'center',
+              margin: '5px',
+              pointerEvents: 'none',
+            },
+          }}
         >
-            {rightActionContent}
-        </div>
-    );
-
-    return (
-        <>
-            <InputWrapper {...props}>
-                <InputBase
-                    component="div"
-                    multiline
-                    pointer
-                    disabled={isMessagingDisabled}
-                    leftSection={leftActions}
-                    rightSection={rightActions}
-                    style={{
-                        "--input-left-section-width": "auto",
-                        "--input-right-section-width": "auto",
-
-                    }}
-                    radius={(props.style as CSSProperties)?.borderRadius ?? 0}
-                    styles={{
-                        input: {
-                            padding: 0,
-                            wordBreak: "break-word",
-                            zIndex: "var(--mantine-z-index-app)",
-                            backgroundColor: "color-mix(in srgb, var(--mantine-color-body), transparent 15%)",
-                            backdropFilter: "blur(5px)",
-                        },
-                        section: {
-                            display: "flex",
-                            alignItems: "center",
-                            margin: "5px",
-                            pointerEvents: "none"
-                        },
-                    }}
-                >
-                    <ScrollAreaAutosize
-                        ref={scrollRef}
-                        type="auto"
-                        mah={200}
-                        scrollbarSize={6}
-                        style={{
-                            paddingLeft: (!isMultiline ? sectionWidths.left : 0) + 10,
-                            paddingRight: (!isMultiline ? sectionWidths.right : 0) + 10,
-                            paddingTop: 5,
-                            paddingBottom: 5,
-                            minHeight: "var(--input-height)",
-                            cursor: isMessagingDisabled ? "not-allowed" : "text",
-                            transition: "padding-left 200ms ease, padding-right 200ms ease",
-                        }}
-                        onClick={() => ReactEditor.focus(editor)}
-                    >
-                        <Slate
-                            editor={editor!}
-                            initialValue={[{type: "paragraph", children: [{text: ""}]}]}
-                            onValueChange={resetMultiline}
-                        >
-                            <Editable
-                                renderElement={useCallback(renderElement, [])}
-                                renderLeaf={useCallback(renderLeaf, [])}
-                                decorate={useCallback(decorate, [])}
-                                onKeyDown={onKeyDown}
-                                onFocus={() => setIsMessaging(true)}
-                                onBlur={() => setIsMessaging(false)}
-                                readOnly={isMessagingDisabled}
-                            ></Editable>
-                        </Slate>
-                    </ScrollAreaAutosize>
-                    <div style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: isMultiline ? "0 5px 5px 5px" : "0 5px 0 5px",
-                        maxHeight: isMultiline ? 50 : 0,
-                        opacity: isMultiline ? 1 : 0,
-                        overflow: "hidden",
-                        pointerEvents: isMultiline ? "auto" : "none",
-                        transition: "max-height 200ms ease, opacity 200ms ease, padding-bottom 200ms ease",
-                    }}>
-                        <div style={{display: "flex", alignItems: "center"}}>{leftActionContent}</div>
-                        <div style={{display: "flex", alignItems: "center", gap: "5px"}}>{rightActionContent}</div>
-                    </div>
-                </InputBase>
-            </InputWrapper>
-        </>
-    );
+          <ScrollAreaAutosize
+            ref={scrollRef}
+            type="auto"
+            mah={200}
+            scrollbarSize={6}
+            style={{
+              paddingLeft: (!isMultiline ? sectionWidths.left : 0) + 10,
+              paddingRight: (!isMultiline ? sectionWidths.right : 0) + 10,
+              paddingTop: 5,
+              paddingBottom: 5,
+              minHeight: 'var(--input-height)',
+              cursor: isMessagingDisabled ? 'not-allowed' : 'text',
+              transition: 'padding-left 200ms ease, padding-right 200ms ease',
+            }}
+            onClick={() => ReactEditor.focus(editor)}
+          >
+            <Slate
+              editor={editor!}
+              initialValue={[{ type: 'paragraph', children: [{ text: '' }] }]}
+              onValueChange={resetMultiline}
+            >
+              <Editable
+                renderElement={useCallback(renderElement, [])}
+                renderLeaf={useCallback(renderLeaf, [])}
+                decorate={useCallback(decorate, [])}
+                onKeyDown={onKeyDown}
+                onFocus={() => setIsMessaging(true)}
+                onBlur={() => setIsMessaging(false)}
+                readOnly={isMessagingDisabled}
+              ></Editable>
+            </Slate>
+          </ScrollAreaAutosize>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: isMultiline ? '0 5px 5px 5px' : '0 5px 0 5px',
+              maxHeight: isMultiline ? 50 : 0,
+              opacity: isMultiline ? 1 : 0,
+              overflow: 'hidden',
+              pointerEvents: isMultiline ? 'auto' : 'none',
+              transition: 'max-height 200ms ease, opacity 200ms ease, padding-bottom 200ms ease',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center' }}>{leftActionContent}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              {rightActionContent}
+            </div>
+          </div>
+        </InputBase>
+      </InputWrapper>
+    </>
+  );
 }

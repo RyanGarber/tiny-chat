@@ -5,8 +5,8 @@ LLMs without the bloat.
 ## Features
 
 - Chat with LLMs
-    - **Gemini** via Google AI Studio
-    - **GPT**, **Claude**, **DeepSeek**, and **more** via Microsoft Foundry
+  - **Gemini** via Google AI Studio
+  - **GPT**, **Claude**, **DeepSeek**, and **more** via Microsoft Foundry
 - Fork chats at any point
 - Edit messages in place
 - Switch models at any time

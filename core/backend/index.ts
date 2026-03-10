@@ -1,9 +1,9 @@
-import {initTRPC} from "@trpc/server";
-import {type tRPCContext} from "./server.ts";
-import superjson from "superjson";
+import { initTRPC } from '@trpc/server';
+import { type tRPCContext } from './server.ts';
+import superjson from 'superjson';
 
 const trpc = initTRPC.context<tRPCContext>().create({
-    transformer: superjson,
+  transformer: superjson,
 });
 
 export const router = trpc.router;

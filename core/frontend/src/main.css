@@ -2,162 +2,164 @@
 
 html,
 body {
-    overflow: hidden;
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    overscroll-behavior: none;
-    -webkit-overflow-scrolling: auto;
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: auto;
 }
 
 .mantine-AppShell-root,
 .mantine-AppShell-main {
-    min-height: 0 !important;
-    max-height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
 }
 
 .mantine-NavLink-label {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .section-on-hover .mantine-NavLink-section {
-    display: none;
+  display: none;
 }
 
 .section-on-hover:hover .mantine-NavLink-section,
 .section-on-hover.hover .mantine-NavLink-section {
-    display: flex;
+  display: flex;
 }
 
-.nav-link-like:is(:hover, [data-active="true"]) {
-    background-color: var(--tc-surface);
+.nav-link-like:is(:hover, [data-active='true']) {
+  background-color: var(--tc-surface);
 }
 
-.nav-link-like.filled[data-active="true"] {
-    background-color: var(--mantine-color-blue-filled);
+.nav-link-like.filled[data-active='true'] {
+  background-color: var(--mantine-color-blue-filled);
 }
 
-.nav-link-like.filled[data-active="true"]:hover {
-    background-color: var(--mantine-color-blue-filled-hover);
+.nav-link-like.filled[data-active='true']:hover {
+  background-color: var(--mantine-color-blue-filled-hover);
 }
 
-.nav-link-like.filled[data-active="true"] * {
-    color: var(--mantine-color-white);
+.nav-link-like.filled[data-active='true'] * {
+  color: var(--mantine-color-white);
 }
 
 .new-chat {
-    color: revert;
+  color: revert;
 }
 
-.new-chat:is(:hover, [data-active="true"]) {
-    background-color: var(--tc-surface);
+.new-chat:is(:hover, [data-active='true']) {
+  background-color: var(--tc-surface);
 }
 
 [data-slate-editor] {
-    align-content: center;
+  align-content: center;
 }
 
 [data-slate-editor] p {
-    margin: 0;
+  margin: 0;
 }
 
 [contenteditable] {
-    font-size: 16px; /* prevents iOS zoom I guess */
+  font-size: 16px; /* prevents iOS zoom I guess */
 }
 
 [contenteditable]:focus {
-    outline: 0 solid transparent !important;
+  outline: 0 solid transparent !important;
 }
 
-[data-use-hljs-bg="true"] [class*="mantine-CodeHighlight"] {
-    --ch-background: var(--hljs-bg)
+[data-use-hljs-bg='true'] [class*='mantine-CodeHighlight'] {
+  --ch-background: var(--hljs-bg);
 }
 
-[data-use-hljs-bg="true"] .mantine-CodeHighlight-pre {
-    background: var(--hljs-bg);
+[data-use-hljs-bg='true'] .mantine-CodeHighlight-pre {
+  background: var(--hljs-bg);
 }
 
-[data-use-hljs-bg="true"] .mantine-Typography-root *:has(pre) {
-    background: var(--hljs-bg);
+[data-use-hljs-bg='true'] .mantine-Typography-root *:has(pre) {
+  background: var(--hljs-bg);
 }
 
-[data-use-hljs-bg="false"] .hljs {
-    background: transparent;
+[data-use-hljs-bg='false'] .hljs {
+  background: transparent;
 }
 
 .mantine-Typography-root .ignore-typography {
-    all: revert;
+  all: revert;
 }
 
 .mantine-Typography-root :not(pre) > code {
-    font-size: inherit;
-    background: var(--tc-surface);
+  font-size: inherit;
+  background: var(--tc-surface);
 }
 
 .mantine-Typography-root .ignore-typography.mantine-Blockquote-root {
-    position: relative;
-    margin: 0;
-    border-inline-start: 3px solid var(--mantine-color-blue-filled);
-    border-start-end-radius: var(--mantine-radius-default);
-    border-end-end-radius: var(--mantine-radius-default);
-    background: rgba(25, 113, 194, 0.06);
-    padding: calc(var(--mantine-spacing-xl) / 4) calc(2.375rem * var(--mantine-scale) / 2);
+  position: relative;
+  margin: 0;
+  border-inline-start: 3px solid var(--mantine-color-blue-filled);
+  border-start-end-radius: var(--mantine-radius-default);
+  border-end-end-radius: var(--mantine-radius-default);
+  background: rgba(25, 113, 194, 0.06);
+  padding: calc(var(--mantine-spacing-xl) / 4) calc(2.375rem * var(--mantine-scale) / 2);
 }
 
 .user-message {
-    background: var(--tc-surface);
+  background: var(--tc-surface);
 }
 
 .code-fade-in {
-    animation: codeFadeIn 0.3s ease;
+  animation: codeFadeIn 0.3s ease;
 }
 
 @keyframes codeFadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes streaming-cursor-blink {
-    0%, 49% {
-        opacity: 1;
-    }
-    50%, 100% {
-        opacity: 0;
-    }
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
 }
 
 /* Inline cursor appended to last block element while streaming */
 .is-streaming .mantine-Typography-root:last-of-type > :last-child:not(pre):not(div)::after {
-    content: '▋';
-    animation: streaming-cursor-blink 0.7s step-end infinite;
-    font-style: normal;
-    font-weight: normal;
+  content: '▋';
+  animation: streaming-cursor-blink 0.7s step-end infinite;
+  font-style: normal;
+  font-weight: normal;
 }
 
 /* Standalone cursor shown when no text has arrived yet */
 .streaming-cursor-standalone {
-    animation: streaming-cursor-blink 0.7s step-end infinite;
-    font-size: 1.1em;
-    line-height: 1;
+  animation: streaming-cursor-blink 0.7s step-end infinite;
+  font-size: 1.1em;
+  line-height: 1;
 }
 
 .input-effect {
-    background: var(--tc-surface);
+  background: var(--tc-surface);
 }
 
 .dialog {
-    background: var(--tc-surface);
+  background: var(--tc-surface);
 }
 
 /* TODO - TASKS */
 .topbar * {
-    z-index: calc(var(--mantine-z-index-app) + 1);
+  z-index: calc(var(--mantine-z-index-app) + 1);
 }

@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 63;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -183,7 +183,6 @@
 				LastUpgradeCheck = 1430;
 			};
 			buildConfigurationList = 42C843143C22669B12658F81 /* Build configuration list for PBXProject "tiny-chat" */;
-			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -192,6 +191,8 @@
 			);
 			mainGroup = CE24ADC3BD17D05171D45349;
 			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = CCEC59C6F590576F3C4070B3 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -265,9 +266,10 @@
 				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"\".\"",
 				);
 				INFOPLIST_FILE = "tiny-chat_iOS/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Tiny Chat";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -432,6 +434,8 @@
 					"\".\"",
 				);
 				INFOPLIST_FILE = "tiny-chat_iOS/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Tiny Chat";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

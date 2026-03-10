@@ -51,8 +51,8 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
-        CFBundleShortVersionString: 0.1.0
-        CFBundleVersion: "0.1.0"
+        CFBundleShortVersionString: 0.2.4
+        CFBundleVersion: "0.2.4"
     entitlements:
       path: tiny-chat_iOS/tiny-chat_iOS.entitlements
     scheme:

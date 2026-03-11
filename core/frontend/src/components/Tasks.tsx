@@ -192,9 +192,11 @@ export default function Tasks() {
 
   // Cleanup on unmount
   useEffect(() => {
+    const animFrames = animFramesRef.current;
+    const holdTimers = holdTimersRef.current;
     return () => {
-      Object.values(animFramesRef.current).forEach(cancelAnimationFrame);
-      Object.values(holdTimersRef.current).forEach(clearTimeout);
+      Object.values(animFrames).forEach(cancelAnimationFrame);
+      Object.values(holdTimers).forEach(clearTimeout);
       if (jitterTimerRef.current) clearTimeout(jitterTimerRef.current);
     };
   }, []);
@@ -209,7 +211,7 @@ export default function Tasks() {
       if (!tauriUpdate.started) showUpdate();
       else hideUpdate();
     }
-  }, [tauriUpdate]);
+  }, [hideUpdate, showUpdate, tauriUpdate]);
 
   const updateTimeAgo: string | null = tauriUpdate?.date
     ? format(new Date(tauriUpdate.date))
@@ -249,7 +251,7 @@ export default function Tasks() {
             </Stack>
             <Stack gap={5} justify="space-between" align="end">
               <CloseButton onClick={hideUpdate} mt={-5} mr={-5} />
-              <Button variant="filled" size="xs" onClick={startTauriUpdate}>
+              <Button variant="filled" size="xs" onClick={() => void startTauriUpdate()}>
                 Update
               </Button>
             </Stack>

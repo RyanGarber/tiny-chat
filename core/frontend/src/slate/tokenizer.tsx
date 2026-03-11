@@ -22,23 +22,23 @@ export function tokenize(md: string): Token[] {
   let i = 0;
 
   // Block-level markers — only valid at the very start of the string
-  const headingMatch = md.match(/^(#{1,6}) /);
+  const headingMatch = /^(#{1,6}) /.exec(md);
   if (headingMatch) {
     const level = headingMatch[1].length;
     tokens.push({ type: 'heading', level, start: 0, end: md.length });
     i = level + 1; // skip past "## "
   } else {
-    const listMatch = md.match(/^(-|\*|\+|\d+\.) /);
+    const listMatch = /^(-|\*|\+|\d+\.) /.exec(md);
     if (listMatch) {
       tokens.push({ type: 'listMarker', start: 0, end: listMatch[0].length });
       i = listMatch[0].length;
     }
-    const quoteMatch = md.match(/^> /);
+    const quoteMatch = /^> /.exec(md);
     if (quoteMatch) {
       tokens.push({ type: 'quoteMarker', start: 0, end: md.length });
       i = quoteMatch[0].length;
     }
-    const codeMatch = md.match(/^```/);
+    const codeMatch = /^```/.exec(md);
     if (codeMatch) {
       tokens.push({ type: 'codeMarker', start: i, end: codeMatch[0].length });
       i = codeMatch[0].length;

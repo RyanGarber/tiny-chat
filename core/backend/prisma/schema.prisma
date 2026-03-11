@@ -23,7 +23,6 @@ model User {
   memories      Memory[]
   messages      Message[]
   sessions      Session[]
-  summaries     Summary[]
   tasks         Task[]
 
   @@map("user")
@@ -85,7 +84,6 @@ model Folder {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   memories  Memory[]
   messages  Message[]
-  summaries Summary[]
   tasks     Task[]
 
   @@index([userId])
@@ -104,7 +102,6 @@ model Chat {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   memories  Memory[]
   messages  Message[]
-  summaries Summary[]
   tasks     Task[]
 
   @@index([userId])
@@ -129,8 +126,8 @@ model Message {
   previous   Message?               @relation("Chat", fields: [previousId], references: [id], onDelete: Cascade)
   next       Message?               @relation("Chat")
   user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  memories   Memory[]               @relation("MemoryToMessage")
-  summaries  Summary[]              @relation("MessageToSummary")
+  memories   Memory[]
+  tasks      Task[]
 
   @@index([userId])
   @@index([folderId])
@@ -138,31 +135,12 @@ model Message {
   @@map("message")
 }
 
-model Summary {
-  id        String                 @id
-  userId    String
-  folderId  String
-  chatId    String
-  config    Json
-  text      String
-  createdAt DateTime               @default(now())
-  embedding Unsupported("vector")?
-  chat      Chat                   @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  folder    Folder                 @relation(fields: [folderId], references: [id], onDelete: Cascade)
-  user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages  Message[]              @relation("MessageToSummary")
-
-  @@index([userId])
-  @@index([folderId])
-  @@index([chatId])
-  @@map("summary")
-}
-
 model Memory {
   id         String                 @id
   userId     String
   folderId   String
   chatId     String
+  messageId  String
   config     Json
   fact       String
   category   MemoryCategory
@@ -170,16 +148,17 @@ model Memory {
   evidence   String[]
   confidence Float
   createdAt  DateTime               @default(now())
-  latest     Boolean                @default(true)
+  active     Boolean                @default(true)
   embedding  Unsupported("vector")?
   chat       Chat                   @relation(fields: [chatId], references: [id], onDelete: Cascade)
   folder     Folder                 @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  message    Message                @relation(fields: [messageId], references: [id], onDelete: Cascade)
   user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages   Message[]              @relation("MemoryToMessage")
 
   @@index([userId])
   @@index([folderId])
   @@index([chatId])
+  @@index([messageId])
   @@map("memory")
 }
 
@@ -188,6 +167,7 @@ model Task {
   userId    String
   folderId  String
   chatId    String
+  messageId String
   schedule  Json
   config    Json
   data      Json
@@ -196,10 +176,12 @@ model Task {
   chat      Chat                   @relation(fields: [chatId], references: [id], onDelete: Cascade)
   folder    Folder                 @relation(fields: [folderId], references: [id], onDelete: Cascade)
   user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   Message                @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([folderId])
   @@index([chatId])
+  @@index([messageId])
   @@map("task")
 }
 

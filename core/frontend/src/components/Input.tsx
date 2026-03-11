@@ -42,7 +42,7 @@ export function Input(props: InputWrapperProps) {
   const rightSectionRef = useRef<HTMLDivElement>(null);
 
   const [editor] = useState(() => setupEditor());
-  useLayoutEffect(() => setEditor(editor), []);
+  useLayoutEffect(() => setEditor(editor), [editor, setEditor]);
 
   useLayoutEffect(() => {
     const observer = new ResizeObserver((entries) => {
@@ -54,7 +54,7 @@ export function Input(props: InputWrapperProps) {
       observer.observe(scrollRef.current);
     }
     return () => observer.disconnect();
-  }, [scrollRef.current]);
+  }, []);
 
   const [sectionWidths, setSectionWidths] = useState({ left: 42, right: 42 });
   useLayoutEffect(() => {
@@ -73,6 +73,7 @@ export function Input(props: InputWrapperProps) {
     return () => observer.disconnect();
   }, []);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_, updateSavedConfig] = useLocalStorage<string>({ key: 'config' });
 
   const args =
@@ -80,8 +81,9 @@ export function Input(props: InputWrapperProps) {
       .find((s) => s.name === config?.service)
       ?.models.find((m) => m.name === config?.model)?.args ?? [];
 
-  const setArg = (name: string, value: any) => {
+  const setArg = (name: string, value: unknown) => {
     if (!config) return;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     config.args = { ...config.args, [name]: value };
     setConfig(config);
     updateSavedConfig(JSON.stringify(config));
@@ -118,7 +120,7 @@ export function Input(props: InputWrapperProps) {
 
   const resetMultiline = useCallback(() => {
     if (!serialize().length) setMultiline(false);
-  }, [setMultiline, serialize, editor]);
+  }, [setMultiline]);
 
   const leftActionContent = (
     <Menu position="top-start" transitionProps={{ transition: 'fade-up' }}>
@@ -142,7 +144,7 @@ export function Input(props: InputWrapperProps) {
         </FileButton>
         <Menu.Item
           leftSection={<Icon icon="lucide:screen-share" height={18} />}
-          onClick={captureScreenshot}
+          onClick={() => void captureScreenshot()}
         >
           Screenshot
         </Menu.Item>
@@ -193,7 +195,10 @@ export function Input(props: InputWrapperProps) {
                       comboboxProps={{ withinPortal: false, offset: 0 }}
                       data={arg.values}
                       size="xs"
-                      value={config?.args?.[arg.name] ?? arg.default}
+                      value={
+                        (config?.args as Record<string, string> | undefined)?.[arg.name] ??
+                        arg.default
+                      }
                       onChange={(value) => setArg(arg.name, value)}
                     />
                   </>
@@ -207,7 +212,10 @@ export function Input(props: InputWrapperProps) {
                       min={arg.min}
                       max={arg.max}
                       step={arg.step}
-                      value={config?.args?.[arg.name] ?? arg.default}
+                      value={
+                        (config?.args as Record<string, number> | undefined)?.[arg.name] ??
+                        arg.default
+                      }
                       onChange={(value) => setArg(arg.name, value)}
                     />
                   </>
@@ -313,12 +321,12 @@ export function Input(props: InputWrapperProps) {
             onClick={() => ReactEditor.focus(editor)}
           >
             <Slate
-              editor={editor!}
+              editor={editor}
               initialValue={[{ type: 'paragraph', children: [{ text: '' }] }]}
               onValueChange={resetMultiline}
             >
               <Editable
-                renderElement={useCallback(renderElement, [])}
+                renderElement={useCallback(renderElement, [])} // TODO - eskms - ughhhhhhh
                 renderLeaf={useCallback(renderLeaf, [])}
                 decorate={useCallback(decorate, [])}
                 onKeyDown={onKeyDown}

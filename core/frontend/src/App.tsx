@@ -11,9 +11,7 @@ import { auth, hljsAdapter, trpc, useViewport } from '@/utils.ts';
 import { Notifications } from '@mantine/notifications';
 import { useSettings } from '@/managers/settings.tsx';
 import { CodeHighlightAdapterProvider } from '@mantine/code-highlight';
-import { useMemories } from './managers/context.tsx';
 import { cssResolver, theme } from '@/theme.tsx';
-import { useEmbeddings } from '@/managers/embeddings.tsx';
 import { modals, ModalsProvider } from '@mantine/modals';
 import Tasks from '@/components/Tasks.tsx';
 import { useTasks } from '@/managers/tasks.tsx';
@@ -39,7 +37,7 @@ export default function App() {
       if (session.isPending) return;
 
       if (!session.data || session.error) {
-        (async () => {
+        void (async () => {
           const result = await auth.signIn.anonymous();
           if (result.data?.token) localStorage.setItem('token', result.data.token);
         })();
@@ -54,7 +52,7 @@ export default function App() {
       }
 
       if (window.location.hash.startsWith('#/app/') && !session.data.user.isAnonymous) {
-        (async () => {
+        void (async () => {
           const id = window.location.hash.slice('#/app/'.length);
           console.log('Accepting clone', id);
           await trpc.sessions.acceptClone.mutate({ id });
@@ -63,15 +61,13 @@ export default function App() {
       }
 
       const uninit: (() => void)[] = [];
-      (async () => {
+      void (async () => {
         try {
+          await useSettings.getState().init(); // init first so tasks have access
           uninit.push(useTasks.getState().init()); // init first so updates always work
-          await useSettings.getState().init();
           await useProviders.getState().init();
           await useChats.getState().init();
-          await useEmbeddings.getState().init();
-          uninit.push(useMemories.getState().init());
-        } catch (e: any) {
+        } catch (e: unknown) {
           modals.open({
             children: (
               <Text ta="center">
@@ -92,11 +88,11 @@ export default function App() {
       })();
       return () => uninit.forEach((d) => d());
     }
-  }, [isInitializing, setInitializing, session.data, session.isPending]);
+  }, [isInitializing, setInitializing, session.data, session.isPending, session.error]);
 
   useEffect(() => {
     setSidebarOpen(!isMobile);
-  }, [isMobile]);
+  }, [isMobile, setSidebarOpen]);
 
   // TODO - maybe drag area should be bigger (but it blocks)
   const navbarDragOpen = useDrag(
@@ -128,7 +124,7 @@ export default function App() {
   const viewport = useViewport();
   return (
     <MantineProvider
-      forceColorScheme={useSettings.getState().getTheme() as any}
+      forceColorScheme={useSettings.getState().getTheme() as 'light' | 'dark' | undefined}
       theme={theme}
       cssVariablesResolver={cssResolver}
     >

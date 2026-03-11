@@ -4,10 +4,10 @@ import { BaseElement, BaseText, Descendant, Text } from 'slate';
 const QUOTE_PREFIX = '::>:: ';
 
 export function serializeElement(element: BaseElement): string | null {
-  if ((element as BaseElement).hidden) return null;
+  if (element.hidden) return null;
   switch (element.type) {
     case 'quote': {
-      const model = (element as any).model as string | undefined;
+      const model = (element as unknown as { model: string }).model as string | undefined;
       const modelTag = model ? `${QUOTE_PREFIX}::model=${model}::\n` : '';
       return (
         modelTag +
@@ -21,8 +21,8 @@ export function serializeElement(element: BaseElement): string | null {
     default:
       return element.children
         .map((child) => {
-          if (Text.isText(child)) return (child as BaseText).text;
-          else return serializeElement(child as BaseElement);
+          if (Text.isText(child)) return child.text;
+          else return serializeElement(child);
         })
         .join('');
   }

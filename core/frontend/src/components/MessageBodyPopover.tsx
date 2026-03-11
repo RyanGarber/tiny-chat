@@ -22,14 +22,14 @@ export default function MessageBodyPopover({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    setOpened(defaultOpened ?? false);
+    (() => setOpened(defaultOpened ?? false))();
   }, [defaultOpened]);
 
   useLayoutEffect(() => {
     if (defaultOpened && opened && scrollRef.current && autoscroll) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [dropdown, defaultOpened, opened]); // TODO - will dropdown be causing scrolls without content changes?
+  }, [dropdown, defaultOpened, opened, autoscroll]);
 
   useLayoutEffect(() => {
     if (!defaultOpened && scrollRef.current) {

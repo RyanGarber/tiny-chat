@@ -82,6 +82,7 @@ const components: Components = {
     return <Blockquote>{node.children}</Blockquote>;
   },
   code: (node) => {
+    // eslint-disable-next-line @typescript-eslint/no-base-to-string
     const rawCode = String(node.children ?? '');
 
     // Display math — converted from $$...$$ by filter()
@@ -132,10 +133,10 @@ const components: Components = {
     return (
       <a
         href={node.href}
-        onClick={async (e) => {
+        onClick={(e) => {
           if (!node.href) return;
           e.preventDefault();
-          await openExternal(node.href);
+          void openExternal(node.href);
         }}
       >
         {node.children}
@@ -147,7 +148,7 @@ const components: Components = {
 const LATEX_CHAR_RE = /[\\^_{}]|\\[a-zA-Z]/;
 
 const filter = (text: string) => {
-  if (text.split('\n')[0].match(/^\[(user|assistant)/)) {
+  if (/^\[(user|assistant)/.exec(text.split('\n')[0])) {
     text = text.slice(text.indexOf('\n') + 1);
     if (!text.split('\n')[0].trim().length) text = text.slice(text.indexOf('\n') + 1);
   }
@@ -157,7 +158,7 @@ const filter = (text: string) => {
   );
 
   // Convert :::writing ... ::: directive blocks into standard blockquotes with the writing marker
-  text = text.replace(/^:::writing\s*\n([\s\S]*?)^:::\s*$/gm, (_, content) => {
+  text = text.replace(/^:::writing\s*\n([\s\S]*?)^:::\s*$/gm, (_, content: string) => {
     const lines = content.trimEnd().split('\n');
     return lines.map((l: string, i: number) => `> ${i === 0 ? WRITING_MARKER : ''}${l}`).join('\n');
   });
@@ -171,25 +172,25 @@ const filter = (text: string) => {
   // Step 2: Display math — $$...$$ (block, possibly multiline)
   text = text.replace(
     /^[ \t]*\$\$([\s\S]*?)\$\$[ \t]*$/gm,
-    (_, inner) => '```math\n' + inner.trim() + '\n```',
+    (_, inner: string) => '```math\n' + inner.trim() + '\n```',
   );
 
   // Step 3: Display math — \[...\] (block, possibly multiline)
   text = text.replace(
-    /^[ \t]*\\\[([\s\S]*?)\\\][ \t]*$/gm,
-    (_, inner) => '```math\n' + inner.trim() + '\n```',
+    /^[ \t]*\\\[([\s\S]*?)\\][ \t]*$/gm,
+    (_, inner: string) => '```math\n' + inner.trim() + '\n```',
   );
 
   // Step 4: Inline math — \(...\)
   // Allow any content that isn't a newline; filter false positives via LATEX_CHAR_RE
-  text = text.replace(/\\\(([^\n]*?)\\\)/g, (match, inner) => {
+  text = text.replace(/\\\(([^\n]*?)\\\)/g, (match, inner: string) => {
     if (!LATEX_CHAR_RE.test(inner)) return match;
     return '`' + MATH_MARKER + inner.trim() + '`';
   });
 
   text = text.replace(
-    /(?<![\\$a-zA-Z\d])\$[ \t]?(?![\{\d])((?:[^$\\\n]|\\.)+?)[ \t]?\$(?!\$)/g,
-    (match, inner) => {
+    /(?<![\\$a-zA-Z\d])\$[ \t]?(?![{\d])((?:[^$\\\n]|\\.)+?)[ \t]?\$(?!\$)/g,
+    (match, inner: string) => {
       const trimmed = inner.trim();
       if (!trimmed) return match;
 
@@ -203,7 +204,7 @@ const filter = (text: string) => {
   // Step 6: Restore code blocks
   text = text.replace(
     new RegExp(`\\x00${CODE_MARKER}(\\d+)\\x00`, 'g'),
-    (_, i) => codeBlocks[parseInt(i)],
+    (_, i: string) => codeBlocks[parseInt(i)],
   );
 
   // Step 7: Add plaintext language to code blocks without a language
@@ -211,10 +212,10 @@ const filter = (text: string) => {
   text = text
     .split('\n')
     .map((line) => {
-      if (!inBlock && line.match(/^```(\w*)$/)) {
+      if (!inBlock && /^```(\w*)$/.exec(line)) {
         inBlock = true;
         return line === '```' ? '```plaintext' : line;
-      } else if (inBlock && line.match(/^```$/)) {
+      } else if (inBlock && /^```$/.exec(line)) {
         inBlock = false;
       }
       return line;
@@ -228,7 +229,7 @@ const filter = (text: string) => {
   return text;
 };
 
-export default memo(
+export const Markdown = memo(
   ({ source, style }: { source: string; style?: CSSProperties }) => {
     return (
       <Typography style={{ overflowWrap: 'break-word', ...style }}>

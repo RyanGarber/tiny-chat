@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'apps-web',
-      script: 'npm',
+      script: 'pnpm',
       args: 'start',
       instances: 1,
       autorestart: true,

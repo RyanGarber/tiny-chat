@@ -3,8 +3,8 @@ import { reloadConfig, useMessaging } from '@/managers/messaging.tsx';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { trpc } from '@/utils.ts';
 import { Chat } from '@tiny-chat/core-backend/generated/prisma/client.ts';
-import { MessageOmitted } from '@tiny-chat/core-backend/types.ts';
-import { FolderListData } from '@tiny-chat/core-backend/routes/folders.ts';
+import { MessageOmitted } from '@tiny-chat/core-backend/src/types.ts';
+import { FolderListData } from '@tiny-chat/core-backend/src/routes/folders.ts';
 import { navigate } from 'wouter/use-hash-location';
 import { nprogress } from '@mantine/nprogress';
 import { useTasks } from '@/managers/tasks.tsx';
@@ -25,10 +25,10 @@ interface Chats {
   deleteChat: (id: string) => Promise<void>;
 
   temporary: boolean;
-  setTemporary: (temporary: boolean) => void;
+  setTemporary: (temporary: boolean) => Promise<void>;
 
   incognito: boolean;
-  setIncognito: (incognito: boolean) => void;
+  setIncognito: (incognito: boolean) => Promise<void>;
 }
 
 export const useChats = create(
@@ -63,7 +63,7 @@ export const useChats = create(
     currentChat: null,
     setCurrentChat: async (id, pushState = true, showProgress = true) => {
       if (showProgress) nprogress.start();
-      let chat = await trpc.chats.find.query({ id: id! });
+      const chat = await trpc.chats.find.query({ id: id! });
       if (id && !chat) {
         if (showProgress) nprogress.complete();
         return;
@@ -82,7 +82,7 @@ export const useChats = create(
       const { fetchFolders } = get();
       useTasks.getState().addTask('renameChat', 'Renaming chat');
       await trpc.chats.edit.mutate({ id: id, title: name });
-      useTasks.getState().updateTask('renameChat', 50);
+      await useTasks.getState().updateTask('renameChat', 50);
       await fetchFolders(false);
       await useTasks.getState().removeTask('renameChat');
     },
@@ -95,9 +95,9 @@ export const useChats = create(
         untilMessageId,
         title: `Fork of ${currentChat!.title}`,
       });
-      useTasks.getState().updateTask('cloneChat', 33);
+      await useTasks.getState().updateTask('cloneChat', 33);
       await fetchFolders(false);
-      useTasks.getState().updateTask('cloneChat', 66);
+      await useTasks.getState().updateTask('cloneChat', 66);
       await setCurrentChat(chat.id, true, false);
       await useTasks.getState().removeTask('cloneChat');
     },
@@ -107,9 +107,9 @@ export const useChats = create(
       const isCurrent = id === currentChat?.id;
       if (isCurrent) useTasks.getState().addTask('deleteChat', 'Deleting chat');
       await trpc.chats.delete.mutate({ id: id });
-      if (isCurrent) useTasks.getState().updateTask('deleteChat', 33);
+      if (isCurrent) await useTasks.getState().updateTask('deleteChat', 33);
       await fetchFolders(false);
-      if (isCurrent) useTasks.getState().updateTask('deleteChat', 66);
+      if (isCurrent) await useTasks.getState().updateTask('deleteChat', 66);
       if (currentChat?.id === id) await setCurrentChat(null, true, false);
       if (isCurrent) await useTasks.getState().removeTask('deleteChat');
     },

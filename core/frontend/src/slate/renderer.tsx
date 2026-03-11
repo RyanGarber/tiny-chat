@@ -10,7 +10,7 @@ export function renderElement(props: RenderElementProps) {
 
   switch (props.element.type) {
     case 'quote': {
-      const modelName = (props.element as any).model as string | undefined;
+      const modelName = (props.element as unknown as { model: string }).model as string | undefined;
       return (
         <Blockquote
           contentEditable={false}
@@ -62,6 +62,8 @@ export function renderElement(props: RenderElementProps) {
 }
 
 export function renderLeaf(props: any) {
+  // TODO eskms - kms
+
   let { attributes, children, leaf } = props;
 
   if (leaf.bold) {

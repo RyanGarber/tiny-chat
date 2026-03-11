@@ -36,11 +36,11 @@ export function setupEditor() {
 
     if (path.length === 0) {
       const checkHidden = (checkFirst: BaseElement, checkSecond: BaseElement, isFirst: boolean) => {
-        let isAlone = root.children.length === 1;
-        let isUnempty = (checkFirst.children[0] as BaseText).text.length > 0;
-        let isRedundant = !isAlone && checkSecond.type === 'paragraph';
+        const isAlone = root.children.length === 1;
+        const isUnempty = (checkFirst.children[0] as BaseText).text.length > 0;
+        const isRedundant = !isAlone && checkSecond.type === 'paragraph';
 
-        if (!checkFirst || checkFirst.type !== 'paragraph') {
+        if (checkFirst?.type !== 'paragraph') {
           Transforms.insertNodes(
             editor,
             { type: 'paragraph', children: [{ text: '' }], hidden: true },

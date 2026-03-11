@@ -16,7 +16,7 @@ export default function SidebarChat({ chat, props }: { chat: Chat; props: NavLin
 
   useEffect(() => {
     setGestureBlock(isEditOpen);
-  }, [isEditOpen]);
+  }, [isEditOpen, setGestureBlock]);
 
   const saveTitle = async () => {
     if (!title) return;
@@ -39,7 +39,7 @@ export default function SidebarChat({ chat, props }: { chat: Chat; props: NavLin
     <>
       <NavLink
         key={chat.id}
-        label={chat.title || 'Generating...'}
+        label={chat.title ?? 'Generating...'}
         variant="filled"
         active={active}
         ref={navLinkRef}
@@ -62,7 +62,7 @@ export default function SidebarChat({ chat, props }: { chat: Chat; props: NavLin
                 leftSection={<Icon icon="lucide:folder-pen" height={18} />}
                 onClick={(e) => {
                   e.stopPropagation();
-                  setTitle(chat.title || '');
+                  setTitle(chat.title ?? '');
                   openEdit();
                 }}
               >
@@ -85,17 +85,17 @@ export default function SidebarChat({ chat, props }: { chat: Chat; props: NavLin
         <TextInput
           placeholder="Chat Title"
           mb={10}
-          value={title || ''}
+          value={title ?? ''}
           onChange={(e) => setTitle(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && saveTitle()}
+          onKeyDown={(e) => e.key === 'Enter' && void saveTitle()}
           data-autofocus
         />
-        <Button variant="filled" fullWidth onClick={saveTitle}>
+        <Button variant="filled" fullWidth onClick={() => void saveTitle()}>
           Save
         </Button>
       </Modal>
       <Modal title="Delete Chat" opened={isDeleteOpen} onClose={closeDelete}>
-        <Button color="red" fullWidth onClick={saveDelete}>
+        <Button color="red" fullWidth onClick={() => void saveDelete()}>
           Confirm
         </Button>
       </Modal>

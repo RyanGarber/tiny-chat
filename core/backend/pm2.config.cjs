@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'core-backend',
-      script: 'npm',
+      script: 'pnpm',
       args: 'start',
       instances: 1,
       autorestart: true,

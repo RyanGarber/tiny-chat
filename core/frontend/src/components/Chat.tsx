@@ -64,7 +64,7 @@ export default function Chat() {
   const smoothScrollVersionRef = useRef(0);
   const isSmoothScrollingRef = useRef(false);
 
-  const hasBeenNewChat = useRef(false);
+  const [hasBeenNewChat, setHasBeenNewChat] = useState(false);
 
   const checkIsAtBottom = useCallback(() => {
     const el = messagesViewportRef.current;
@@ -162,13 +162,14 @@ export default function Chat() {
       el.removeEventListener('touchstart', onTouchStart);
       el.removeEventListener('touchmove', onTouchMove);
     };
-  }, [messagesViewportRef.current]);
+  }, []);
 
+  const lastMessageData = messages[messages.length - 1]?.data;
   useLayoutEffect(() => {
     if (isAtBottomRef.current) {
       scrollToBottom();
     }
-  }, [messages, messages[messages.length - 1]?.data, scrollToBottom]);
+  }, [messages, lastMessageData, scrollToBottom]);
 
   useEffect(() => {
     if (scrollRequested > 0 && !isInitializing) {
@@ -193,7 +194,7 @@ export default function Chat() {
     if (inputRef.current) observer.observe(inputRef.current);
     handleResize();
     return () => observer.disconnect();
-  }, [inputRef.current]);
+  }, [getSidebarWidth]);
 
   const inputEffectsRef = useRef<HTMLDivElement>(null);
   const [inputEffectsHeight, setInputEffectsHeight] = useState(0);
@@ -206,7 +207,21 @@ export default function Chat() {
     if (inputEffectsRef.current) observer.observe(inputEffectsRef.current);
     handleResize();
     return () => observer.disconnect();
-  }, [inputEffectsRef.current]);
+  }, []);
+
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [chatContainerHeight, setChatContainerHeight] = useState(600);
+
+  useLayoutEffect(() => {
+    const el = chatContainerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
+      setChatContainerHeight(el.clientHeight);
+    });
+    observer.observe(el);
+    setChatContainerHeight(el.clientHeight);
+    return () => observer.disconnect();
+  }, []);
 
   let hasHitEdit = false;
   const getMessageOpacity = (message: { id: string }) => {
@@ -223,7 +238,8 @@ export default function Chat() {
   const isIncognito = incognito || currentChat?.incognito;
 
   useEffect(() => {
-    if (isNewChat) hasBeenNewChat.current = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (isNewChat) setHasBeenNewChat(true);
   }, [isNewChat]);
 
   const topbar = (fixed: boolean) => {
@@ -305,7 +321,7 @@ export default function Chat() {
     <Stack h="100%" gap={0} px={!isInputMaxWidth && !currentChat ? 20 : 0}>
       {isMobile && topbar(true)}
       {/* Main content area */}
-      <Box flex={1} pos="relative" mih={0} style={{ overflow: 'hidden' }}>
+      <Box flex={1} pos="relative" mih={0} style={{ overflow: 'hidden' }} ref={chatContainerRef}>
         {/* New chat hero overlay */}
         <Stack
           pos="absolute"
@@ -356,7 +372,11 @@ export default function Chat() {
           </div>
           {!incognito ? (
             <Text size="sm" c="dimmed" mt={6}>
-              What's on the agenda{session?.user?.name && `, ${session.user.name.split(' ')[0]}`}?
+              What's on the agenda
+              {!session?.user?.isAnonymous &&
+                session?.user?.name &&
+                `, ${session.user.name.split(' ')[0]}`}
+              ?
             </Text>
           ) : (
             <Text size="sm" c="dimmed" mt={6}>
@@ -481,6 +501,7 @@ export default function Chat() {
                     <Attachments
                       list={[{ name: file.name, mime: file.type, url: URL.createObjectURL(file) }]}
                       width={inputMaxWidth}
+                      maxHeight={chatContainerHeight}
                     />
                   }
                   onDelete={() => removeFile(file)}
@@ -509,9 +530,7 @@ export default function Chat() {
           flexGrow: isNewChat && !(isiPhone && isMessaging) ? 1 : 0,
           flexShrink: 0,
           flexBasis: isNewChat && !(isiPhone && isMessaging) ? 60 : 0,
-          transition: hasBeenNewChat.current
-            ? 'flex-grow 400ms ease, flex-basis 400ms ease'
-            : 'none',
+          transition: hasBeenNewChat ? 'flex-grow 400ms ease, flex-basis 400ms ease' : 'none',
         }}
       />
     </Stack>

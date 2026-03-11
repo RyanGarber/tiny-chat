@@ -1,0 +1,14 @@
+packages:
+  - 'core/*'
+  - 'apps/*'
+allowBuilds:
+  '@prisma/engines': true
+  esbuild: true
+  prisma: true
+  protobufjs: true
+allowedDeprecatedVersions:
+  glob: "*"
+  'node-domexception': "*"
+peerDependencyRules:
+  allowedVersions:
+    'eslint-plugin-react-hooks>eslint': '10'

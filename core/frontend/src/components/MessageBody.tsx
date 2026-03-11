@@ -1,6 +1,6 @@
 import { Box, Group, Skeleton, Stack, Text } from '@mantine/core';
 import { useElementSize } from '@mantine/hooks';
-import { MessageOmitted } from '@tiny-chat/core-backend/types';
+import { MessageOmitted } from '@tiny-chat/core-backend/src/types';
 import MessageBodyContent from '@/components/MessageBodyContent.tsx';
 import { useLayout } from '@/managers/layout.tsx';
 import { useChats } from '@/managers/chats.tsx';

@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { auth, hljsThemeNames, trpc } from '@/utils.ts';
 import { useProviders } from '@/managers/providers.tsx';
-import { zConfig } from '@tiny-chat/core-backend/types.ts';
+import { zConfig } from '@tiny-chat/core-backend/src/types.ts';
 import { useTasks } from '@/managers/tasks.tsx';
 
 export const zProviders = z.record(z.string(), z.any()).optional();
@@ -15,7 +15,7 @@ export const zSettings = z
     useEmbeddingSearch: z.boolean(),
     theme: z.string(),
     codeTheme: z.string(),
-    services: zProviders,
+    providers: zProviders,
   })
   .partial();
 export type zSettingsType = z.infer<typeof zSettings>;
@@ -30,6 +30,7 @@ export const codeThemes = (theme: string) =>
 interface Settings {
   init: () => Promise<void>;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   accounts: any;
   linkAccount: (providerId: string) => Promise<void>;
   unlinkAccount: (providerId: string) => Promise<void>;
@@ -82,7 +83,7 @@ export const useSettings = create(
     unlinkAccount: async (providerId) => {
       useTasks.getState().addTask('unlinkAccount', 'Unlinking account');
       await auth.unlinkAccount({ providerId });
-      useTasks.getState().updateTask('unlinkAccount', 50);
+      await useTasks.getState().updateTask('unlinkAccount', 50);
       set({ accounts: (await auth.listAccounts()).data ?? [] });
       await useTasks.getState().removeTask('unlinkAccount');
     },
@@ -98,7 +99,7 @@ export const useSettings = create(
         zSettings.parse((await auth.getSession()).data?.user?.settings ?? {});
       if (notify) useTasks.getState().addTask('setSettings', 'Saving settings');
       await auth.updateUser({ settings: { ...(await getSettings()), ...value } });
-      if (notify) useTasks.getState().updateTask('setSettings', 50);
+      if (notify) await useTasks.getState().updateTask('setSettings', 50);
       set({ settings: await getSettings() });
       if (notify) await useTasks.getState().removeTask('setSettings');
     },
@@ -140,7 +141,8 @@ export const useSettings = create(
     setEmbeddingConfig: async (value) => {
       await get().setSettings({ embeddingConfig: value });
       console.log('Resetting all embeddings due to changed model');
-      void trpc.embeddings.resetAll.mutate();
+      await trpc.embeddings.reset.mutate();
+      await useTasks.getState().fixMissingEmbeddings();
     },
     getUseEmbeddingSearch: () => {
       return get().settings.useEmbeddingSearch ?? true;
@@ -166,27 +168,33 @@ export const useSettings = create(
       await get().setSettings({ codeTheme: value });
     },
 
-    getProviderSetting: (service, key) => {
-      return get().settings.services?.[service]?.[key];
+    getProviderSetting: (name, key) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return,@typescript-eslint/no-unsafe-member-access
+      return get().settings.providers?.[name]?.[key];
     },
-    setProviderSetting: async (service, key, value) => {
+    setProviderSetting: async (name, key, value) => {
       useTasks.getState().addTask('setProviderSetting', 'Saving provider settings');
-      const services = get().settings.services ?? {};
-      if (value) services[service] = { ...services[service], [key]: value };
-      else delete services[service]?.[key];
-      await get().setSettings({ services }, false);
-      if (useProviders.getState().chatProviders.find((p) => p.name === service)) {
-        useTasks.getState().updateTask('setProviderSetting', 50);
+      const providers = get().settings.providers ?? {};
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      if (value) providers[name] = { ...providers[name], [key]: value };
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      else delete providers[name]?.[key];
+      await get().setSettings({ providers }, false);
+      if (useProviders.getState().chatProviders.find((p) => p.name === name)) {
+        void useTasks.getState().updateTask('setProviderSetting', 50);
         try {
-          const models = await trpc.providers.getChatModels.query({ service: service });
+          const models = await trpc.providers.getChatModels.query({ service: name });
           const count = models.length;
-          useTasks
+          void useTasks
             .getState()
             .updateTask('setProviderSetting', 75, `${count} model${count === 1 ? '' : 's'} added`);
-          set({ providerErrors: { ...get().providerErrors, [service]: null } });
-        } catch (e: any) {
+          set({ providerErrors: { ...get().providerErrors, [name]: null } });
+        } catch (e: unknown) {
           set({
-            providerErrors: { ...get().providerErrors, [service]: e.message || 'Provider error' },
+            providerErrors: {
+              ...get().providerErrors,
+              [name]: (e as Error).message ?? 'Provider error',
+            },
           });
         }
         await useProviders.getState().updateProviders();

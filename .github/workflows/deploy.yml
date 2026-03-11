@@ -12,10 +12,14 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - uses: actions/setup-node@v6
         with:
           node-version: lts/*
-          cache: npm
+          cache: pnpm
 
       - name: Create environment
         run: |
@@ -38,18 +42,19 @@ jobs:
           EOF
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build backend and web
         run: |
-          npm run build:web
+          pnpm run build:web
           cp -r core/frontend/dist apps/web/dist
 
       - name: Create deploy artifact
         run: |
           mkdir deploy
           cp package.json deploy/
-          cp package-lock.json deploy/
+          cp pnpm-lock.yaml deploy/
+          cp pnpm-workspace.yaml deploy/
           mkdir deploy/core
           cp -r core/backend deploy/core/backend
           mkdir deploy/apps
@@ -102,7 +107,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd ~/deploy
-          npm ci
+          pnpm install --frozen-lockfile
 
       - name: Deploy
         run: pm2 restart all

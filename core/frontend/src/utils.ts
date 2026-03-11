@@ -1,11 +1,13 @@
-import { type tRPC } from '@tiny-chat/core-backend/server';
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
+import { type tRPC } from '@tiny-chat/core-backend/src/server';
 import { createTRPCClient, httpLink } from '@trpc/client';
 import { Children, isValidElement, ReactNode, useEffect, useRef, useState } from 'react';
 import { createAuthClient } from 'better-auth/react';
 import { anonymousClient, inferAdditionalFields } from 'better-auth/client/plugins';
 import superjson from 'superjson';
-import { auth as serverAuth } from '@tiny-chat/core-backend/server.ts';
-import { zData, zGenerateInput, zGenerateOutput } from '@tiny-chat/core-backend/types.ts';
+import { auth as serverAuth } from '@tiny-chat/core-backend/src/server.ts';
+import { zData, zGenerateInput, zGenerateOutput } from '@tiny-chat/core-backend/src/types.ts';
 import { notifications } from '@mantine/notifications';
 import { CodeHighlightAdapter } from '@mantine/code-highlight';
 import hljs from 'highlight.js';
@@ -13,7 +15,7 @@ import { useProviders } from '@/managers/providers.tsx';
 
 declare global {
   interface Window {
-    __TAURI__?: any;
+    __TAURI__?: unknown;
   }
 }
 declare const __TAURI_DEV_HOST__: string | undefined; // TODO - set this on regular dev:web somehow?
@@ -68,7 +70,7 @@ export const consumeLabel = {
     paddingTop: 'calc(var(--mantine-spacing-sm) / 2)',
     zIndex: 1,
   },
-} as any;
+} as never;
 
 export const hashText = (text: string) => {
   let hash = 0;
@@ -84,13 +86,9 @@ export function alert(type: 'info' | 'warning' | 'error', message: string) {
   notifications.show({ message, color });
 }
 
-export function extractThoughts(data: zData) {
-  return data.filter((part) => part.type === 'thought').map((t) => t.value);
-}
-
 // TODO - added 'hidden' field for file heading; moved to onSend... will we want to keep it?
 export function extractText(data: zData, includeHidden = false) {
-  let textParts: string[] = [];
+  const textParts: string[] = [];
   for (const part of data) {
     if (part.type === 'text' && (includeHidden || !part.hidden)) {
       textParts.push(part.value);
@@ -99,26 +97,13 @@ export function extractText(data: zData, includeHidden = false) {
   return textParts.join('\n'); // TODO - newlines?
 }
 
-export function inspect(obj: any, currentPath = '') {
-  Object.keys(obj).forEach((key) => {
-    const value = obj[key];
-    const path = currentPath ? `${currentPath}.${key}` : key;
-    if (typeof value !== 'object') {
-      console.log(
-        `> ${path}: ${typeof value}${typeof value !== 'symbol' ? ` = '${value}` : ''}'${value.name ? ` (from ${value.name})` : ''}`,
-      );
-    } else if (value !== null) {
-      inspect(value, path);
-    }
-  });
-}
-
 export function getTextFromChildren(children: ReactNode): string {
   let text = '';
   Children.forEach(children, (child) => {
     if (typeof child === 'string' || typeof child === 'number') {
       text += child;
     } else if (isValidElement(child)) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
       text += getTextFromChildren((child.props as any).children);
     } else if (Array.isArray(child)) {
       text += getTextFromChildren(child);
@@ -130,7 +115,7 @@ export function getTextFromChildren(children: ReactNode): string {
     .join('\n');
 }
 
-export function snippetText(text: string, query: string, window: number = 160): string {
+export function snippetText(text: string, query: string, window = 160): string {
   const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const lower = text.toLowerCase();
   let matchIndex = -1;
@@ -158,8 +143,8 @@ export function snippetText(text: string, query: string, window: number = 160): 
   return (start > 0 ? '…' : '') + snippet + (end < text.length ? '…' : '');
 }
 
-export function scrubText(text: string, maxLength: number = -1): string {
-  if (text.split('\n')[0].match(/^\[(user|assistant)/)) {
+export function scrubText(text: string, maxLength = -1): string {
+  if (/^\[(user|assistant)/.exec(text.split('\n')[0])) {
     text = text.slice(text.indexOf('\n') + 1);
     if (!text.split('\n')[0].trim().length) text = text.slice(text.indexOf('\n') + 1);
   }
@@ -185,7 +170,7 @@ export function scrubText(text: string, maxLength: number = -1): string {
 }
 
 const hljsThemes = import.meta.glob('./*.min.css', {
-  base: '/../../node_modules/highlight.js/styles',
+  base: '/node_modules/highlight.js/styles',
   query: '?url',
   import: 'default',
 });
@@ -203,9 +188,11 @@ export const applyHljsTheme = async (theme: string) => {
   }
   link.dataset.current = theme;
 
-  await new Promise<void>(async (resolve) => {
-    link.onload = () => resolve();
-    link.href = (await hljsThemes[`./${theme}.min.css`]()) as string;
+  await new Promise<void>((resolve) => {
+    void (async () => {
+      link.onload = () => resolve();
+      link.href = (await hljsThemes[`./${theme}.min.css`]()) as string;
+    })();
   });
 
   let backgroundColor;
@@ -301,13 +288,15 @@ export async function* generate(input: zGenerateInput, signal?: AbortSignal) {
       .chatProviders.find((s) => s.name === input.config.service)
       ?.models.find((m) => m.name === input.config.model)?.args ?? [];
   console.log('Args:', args);
+  const inputArgs = (input.config.args ?? {}) as Record<string, unknown>;
   for (const arg of args) {
-    if (input.config.args?.[arg.name] === undefined) {
+    if (inputArgs?.[arg.name] === undefined) {
       console.log(`Using default value for arg ${arg.name}:`, arg.default);
       if (input.config.args === undefined) input.config.args = {};
-      input.config.args[arg.name] = arg.default;
+      inputArgs[arg.name] = arg.default;
     }
   }
+  input.config.args = inputArgs;
 
   const response = await fetch(url, {
     method: 'POST',
@@ -351,14 +340,16 @@ export function takeStringOutOfNodeAndChildren(node: ReactNode, str: string): Re
     return {
       ...node,
       props: {
-        // @ts-ignore
+        // @ts-expect-error unknown
         ...node.props,
-        // @ts-ignore
+        // @ts-expect-error unknown
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         children: takeStringOutOfNodeAndChildren(node.props.children, str),
       },
     };
   }
   if (Array.isArray(node)) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     return node.map((child) => takeStringOutOfNodeAndChildren(child, str));
   }
   return node;

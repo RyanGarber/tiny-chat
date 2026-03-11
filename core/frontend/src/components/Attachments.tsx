@@ -13,7 +13,10 @@ import {
 import { Carousel } from '@mantine/carousel';
 import { Icon } from '@iconify/react';
 
-type IconEntry = { test: RegExp; icon: string };
+interface IconEntry {
+  test: RegExp;
+  icon: string;
+}
 
 const mimeIconEntries: IconEntry[] = [
   { test: /html|css|js|ts|java|python|cpp/, icon: 'file-braces-corner' },
@@ -34,12 +37,17 @@ export default function Attachments({
   list,
   size,
   width,
+  maxHeight,
 }: {
   list: { name?: string; mime?: string; url: string }[];
   size?: number;
   width?: number | string;
+  maxHeight?: number;
 }) {
   size = size ?? 30;
+
+  // Reserve space for PopoverDropdown padding (~32px) so the Carousel fits within maxHeight
+  const carouselHeight = maxHeight ? Math.max(maxHeight - 100, 200) : 400;
 
   const [slide, setSlide] = useState(0);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -76,9 +84,10 @@ export default function Attachments({
             ))}
           </Avatar.Group>
         </PopoverTarget>
-        <PopoverDropdown>
+        <PopoverDropdown maw="calc(100vw - 20px)">
           <Carousel
             slideSize="100%"
+            height={carouselHeight}
             initialSlide={slide}
             onSlideChange={setCurrentSlide}
             previousControlProps={{
@@ -92,9 +101,9 @@ export default function Attachments({
               <Carousel.Slide key={a.name}>
                 <Stack h="100%">
                   <Center p={5}></Center>
-                  <Stack flex={1} justify="center">
+                  <Stack flex={1} justify="center" mih={0} style={{ overflow: 'hidden' }}>
                     {a.mime?.startsWith('image/') ? (
-                      <Image src={a.url} />
+                      <Image src={a.url} fit="contain" h="100%" w="100%" />
                     ) : (
                       <Card withBorder h={200}>
                         <Center h="100%">{getIcon(a.mime, 64)}</Center>

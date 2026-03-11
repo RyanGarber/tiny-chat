@@ -2,7 +2,7 @@ import { KeyboardEvent } from 'react';
 import { useLayout } from '@/managers/layout.tsx';
 import { useMessaging } from '@/managers/messaging.tsx';
 import { serialize } from '@/slate/serializer.tsx';
-import { zDataPart } from '@tiny-chat/core-backend/types.ts';
+import { zDataPart } from '@tiny-chat/core-backend/src/types.ts';
 import { Editor, Path, Text, Transforms } from 'slate';
 import { tokenize } from '@/slate/tokenizer.tsx';
 
@@ -158,16 +158,16 @@ export async function onSend() {
   const text = serialize();
 
   const data: zDataPart[] = [];
-  for (let i = 0; i < files.length; i++) {
+  for (const file of files) {
     const reader = new FileReader();
     await new Promise((resolve) => {
       reader.onload = () => resolve(reader.result);
-      reader.readAsDataURL(files[i]);
+      reader.readAsDataURL(file);
     });
     data.push({
       type: 'file',
-      name: files[i].name,
-      mime: files[i].type,
+      name: file.name,
+      mime: file.type,
       url: reader.result as string,
     });
   }

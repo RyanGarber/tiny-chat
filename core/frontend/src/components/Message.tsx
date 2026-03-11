@@ -13,11 +13,25 @@ import { useClipboard, useDisclosure } from '@mantine/hooks';
 import { useMessaging } from '@/managers/messaging.tsx';
 import { useChats } from '@/managers/chats.tsx';
 import MessageBody from '@/components/MessageBody.tsx';
-import { MessageOmitted as MessageData } from '@tiny-chat/core-backend/types.ts';
+import { MessageOmitted as MessageData } from '@tiny-chat/core-backend/src/types.ts';
 import { extractText } from '@/utils.ts';
 import { Author } from '@tiny-chat/core-backend/generated/prisma/enums.ts';
 import { JSX } from 'react';
 import { Icon } from '@iconify/react';
+
+const Divider = function ({ thick }: { thick: boolean }) {
+  return (
+    <div
+      style={{
+        flex: 1,
+        border: 'none',
+        borderTop: thick
+          ? '2px solid var(--mantine-color-dimmed)'
+          : '1px solid var(--mantine-color-default-border)',
+      }}
+    ></div>
+  );
+};
 
 export default function Message({ message, opacity }: { message: MessageData; opacity: number }) {
   const { currentChat, cloneChat, messages } = useChats();
@@ -29,21 +43,6 @@ export default function Message({ message, opacity }: { message: MessageData; op
   const [isConfirmingDelete, { open: onConfirmDelete, close: onCancelDelete }] =
     useDisclosure(false);
   const clipboard = useClipboard();
-
-  const Divider = function ({ messageId }: { messageId: string }) {
-    return (
-      <div
-        style={{
-          flex: 1,
-          border: 'none',
-          borderTop:
-            insertingAfter?.id === messageId
-              ? '2px solid var(--mantine-color-dimmed)'
-              : '1px solid var(--mantine-color-default-border)',
-        }}
-      ></div>
-    );
-  };
 
   const actions: JSX.Element[] = [];
   if (messages.length > messages.indexOf(message) + 1) {
@@ -66,7 +65,7 @@ export default function Message({ message, opacity }: { message: MessageData; op
   if (!currentChat!.temporary) {
     actions.push(
       <Tooltip label="Fork Here" position="bottom" color="gray" key="clone">
-        <ActionIcon variant="subtle" size={32} onClick={() => cloneChat(message.id)}>
+        <ActionIcon variant="subtle" size={32} onClick={() => void cloneChat(message.id)}>
           <Icon icon="lucide:split" width={20} />
         </ActionIcon>
       </Tooltip>,
@@ -162,17 +161,17 @@ export default function Message({ message, opacity }: { message: MessageData; op
             transition: 'opacity 0.2s',
           }}
         >
-          <Divider messageId={message.id}></Divider>
+          <Divider thick={insertingAfter?.id === message.id}></Divider>
           <Box>{actions}</Box>
-          <Divider messageId={message.id}></Divider>
+          <Divider thick={insertingAfter?.id === message.id}></Divider>
         </div>
       )}
       <Modal opened={isConfirmingDelete} onClose={onCancelDelete} title="Delete Message">
         <Button
           color="red"
           fullWidth
-          onClick={async () => {
-            await deleteMessagePair(message.id);
+          onClick={() => {
+            void deleteMessagePair(message.id);
             onCancelDelete();
           }}
         >

@@ -19,8 +19,10 @@
     "@tanstack/react-query": "^5.90.20",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2.5.3",
+    "@tauri-apps/plugin-os": "^2.3.2",
     "@tauri-apps/plugin-process": "^2.3.1",
     "@tauri-apps/plugin-updater": "^2.10.0",
+    "@tiny-chat/core-backend": "workspace:*",
     "@trpc/client": "^11.10.0",
     "@trpc/react-query": "^11.10.0",
     "@types/katex": "^0.16.8",
@@ -39,6 +41,7 @@
     "superjson": "^2.2.6",
     "timeago.js": "^4.0.2",
     "wouter": "^3.9.0",
+    "zod": "^4.3.6",
     "zustand": "^5.0.10"
   },
   "devDependencies": {

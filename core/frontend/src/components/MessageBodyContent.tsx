@@ -14,9 +14,9 @@ import {
 import { useTextSelection } from '@mantine/hooks';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { applyHljsTheme, extractText } from '@/utils.ts';
-import { MessageOmitted, zDataPart } from '@tiny-chat/core-backend/types.ts';
+import { MessageOmitted, zDataPart } from '@tiny-chat/core-backend/src/types.ts';
 import { useSettings } from '@/managers/settings.tsx';
-import Markdown from '@/components/Markdown.tsx';
+import { Markdown } from '@/components/Markdown.tsx';
 import { Author } from '@tiny-chat/core-backend/generated/prisma/enums.ts';
 import MessageBodyPopover from '@/components/MessageBodyPopover.tsx';
 import { Icon } from '@iconify/react';
@@ -222,7 +222,7 @@ export default function MessageBodyContent({
   if (message.author === Author.USER)
     return (
       <Markdown source={extractText(message.data)} style={{ maxWidth: containerWidth - 40 }} />
-    );
+    ); // TODO - eskms - bruh
 
   const selection = useTextSelection();
   const selectedTextRef = useRef('');
@@ -249,20 +249,20 @@ export default function MessageBodyContent({
 
   useEffect(() => {
     if (!isSelected) return;
-    selectedTextRef.current = window.getSelection()?.toString() || selection?.toString() || '';
+    selectedTextRef.current = window.getSelection()?.toString() ?? selection?.toString() ?? '';
   }, [isSelected, selection]);
 
   const captureSelectionForQuote = (e: React.MouseEvent | React.TouchEvent) => {
     // Keep text selected while pressing the quote button (notably on iOS Safari).
     e.preventDefault();
-    selectedTextRef.current = window.getSelection()?.toString() || selection?.toString() || '';
+    selectedTextRef.current = window.getSelection()?.toString() ?? selection?.toString() ?? '';
   };
 
   const handleQuoteClick = () => {
     const text = (
-      window.getSelection()?.toString() ||
-      selectedTextRef.current ||
-      selection?.toString() ||
+      window.getSelection()?.toString() ??
+      selectedTextRef.current ??
+      selection?.toString() ??
       ''
     ).trim();
     if (text) addQuote(message, text);
@@ -314,14 +314,7 @@ export default function MessageBodyContent({
       if (streamedLength >= textOffset) {
         const firstResult = message.data
           .filter((_, j) => j > i)
-          .find((p) => p.type === 'toolResult') as
-          | Extract<
-              zDataPart,
-              {
-                type: 'toolResult';
-              }
-            >
-          | undefined;
+          .find((p) => p.type === 'toolResult');
         const matchingResults = message.data.filter(
           (p) => p.type === 'toolResult' && p.name === part.name && p.id === part.id,
         ) as Extract<

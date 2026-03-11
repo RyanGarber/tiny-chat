@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { useSettings } from '@/managers/settings.tsx';
+import { trpc } from '@/utils.ts';
 
 export interface TaskOptions {
   crawlSpeed: number;
@@ -18,12 +20,12 @@ export interface Task {
   removeResolve?: () => void;
 }
 
-type UpdateBoxed = {
+interface UpdateBoxed {
   version: string;
   currentVersion: string;
   date: string | undefined;
   started?: boolean;
-};
+}
 
 interface Tasks {
   init: () => () => void;
@@ -39,6 +41,8 @@ interface Tasks {
   updateTask: (id: string, progress?: number, details?: string, name?: string) => Promise<void>;
   removeTask: (id: string) => Promise<void>;
 
+  fixMissingEmbeddings: () => Promise<void>;
+
   tauriUpdate: UpdateBoxed | null;
   findTauriUpdates: () => Promise<void>;
   startTauriUpdate: () => Promise<void>;
@@ -47,7 +51,14 @@ interface Tasks {
 export const useTasks = create<Tasks>((set, get) => ({
   init: () => {
     void get().findTauriUpdates();
-    const interval = setInterval(get().findTauriUpdates, 1000 * 60 * 60);
+    void get().fixMissingEmbeddings();
+    const interval = setInterval(
+      () => {
+        void get().findTauriUpdates();
+        void get().fixMissingEmbeddings();
+      },
+      1000 * 60 * 10,
+    );
     return () => clearInterval(interval);
   },
 
@@ -109,8 +120,25 @@ export const useTasks = create<Tasks>((set, get) => ({
         },
       });
     });
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { [id]: _, ...rest } = get().tasks;
     set({ tasks: rest });
+  },
+
+  fixMissingEmbeddings: async () => {
+    if (!useSettings.getState().settings.embeddingConfig) return;
+
+    const { addTask, updateTask, removeTask } = get();
+
+    addTask('fix-embeddings', 'Generating embeddings');
+    const result = await trpc.embeddings.fixMissing.mutate();
+    const failed =
+      result.messages.total + result.memories.total - result.messages.fixed - result.memories.fixed;
+    if (failed > 0) {
+      void updateTask('fix-embeddings', 100, `${failed} could not be generated`);
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
+    await removeTask('fix-embeddings');
   },
 
   tauriUpdate: null,
@@ -131,6 +159,7 @@ export const useTasks = create<Tasks>((set, get) => ({
   startTauriUpdate: async () => {
     const { addTask, updateTask, removeTask } = get();
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const Update = (await import('@tauri-apps/plugin-updater')).Update.prototype;
     const update = get().tauriUpdate as typeof Update | null;
     set({ tauriUpdate: { ...get().tauriUpdate!, started: true } });
@@ -150,7 +179,7 @@ export const useTasks = create<Tasks>((set, get) => ({
       }
       if (event.event === 'Progress') {
         current += event.data.chunkLength;
-        if (total) updateTask('update', (current / total) * 100);
+        if (total) void updateTask('update', (current / total) * 100);
       }
     });
 

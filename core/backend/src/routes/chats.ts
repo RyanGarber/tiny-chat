@@ -1,0 +1,223 @@
+import { z } from 'zod';
+import { procedure, router } from '../index.ts';
+import { createId } from '@paralleldrive/cuid2';
+import { reorder } from './messages.ts';
+import { zConfig, zData, zMetadata } from '../types.ts';
+import minisearch, { type SearchResult } from 'minisearch';
+import { chatProviders } from '../providers/model/index.ts';
+import { getMostRelevant } from '../embed.ts';
+
+export default router({
+  find: procedure.input(z.object({ id: z.cuid2().nullable() })).query(async ({ ctx, input }) => {
+    if (!input.id) return null;
+    return ctx.prisma.chat.findUnique({
+      where: { id: input.id, userId: ctx.session.user.id },
+    });
+  }),
+
+  edit: procedure
+    .input(z.object({ id: z.cuid2(), title: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const chat = await ctx.prisma.chat.findUniqueOrThrow({
+        where: { id: input.id, userId: ctx.session.user.id },
+        select: { title: true, folder: { select: { id: true, title: true } } },
+      });
+      await ctx.prisma.chat.update({
+        where: { id: input.id },
+        data: {
+          title: input.title,
+          ...(chat.folder.title === chat.title
+            ? { folder: { update: { title: input.title } } }
+            : {}),
+        },
+      });
+    }),
+
+  clone: procedure
+    .input(z.object({ id: z.cuid2(), untilMessageId: z.cuid2(), title: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const chat = await ctx.prisma.chat.findUniqueOrThrow({
+        where: { id: input.id, userId: ctx.session.user.id },
+        include: { folder: { include: { chats: true } } },
+      });
+      let messages = reorder(
+        await ctx.prisma.message.findMany({
+          where: { chatId: input.id },
+        }),
+      );
+
+      let reachedMessage = false;
+      messages = messages.filter((message) => {
+        if (message.id === input.untilMessageId) {
+          reachedMessage = true;
+          return true;
+        } else {
+          return !reachedMessage;
+        }
+      });
+
+      messages.forEach((message) => {
+        const id = createId();
+        const next = messages.find((m) => m.previousId === message.id);
+        if (next) next.previousId = id;
+        message.id = id;
+        delete (message as any).chatId;
+      });
+
+      if (chat.folder.chats.length === 1) {
+        await ctx.prisma.folder.update({
+          where: { id: chat.folderId },
+          data: {
+            title: chat.title,
+          },
+        });
+      }
+
+      return ctx.prisma.chat.create({
+        data: {
+          id: createId(),
+          user: { connect: { id: chat.userId } },
+          folder: { connect: { id: chat.folderId } },
+          title: input.title,
+          temporary: chat.temporary,
+          incognito: chat.incognito,
+          messages: {
+            createMany: {
+              data: messages.map((message) => ({
+                ...message,
+                config: zConfig.parse(message.config),
+                data: zData.parse(message.data),
+                metadata: zMetadata.parse(message.metadata),
+              })),
+            },
+          },
+        },
+      });
+    }),
+
+  delete: procedure.input(z.object({ id: z.cuid2() })).mutation(async ({ ctx, input }) => {
+    const chat = await ctx.prisma.chat.findUniqueOrThrow({
+      where: { id: input.id, userId: ctx.session.user.id },
+      include: { folder: { include: { chats: true } } },
+    });
+    if (chat.folder.chats.length === 1)
+      await ctx.prisma.folder.delete({ where: { id: chat.folderId } });
+    else await ctx.prisma.chat.delete({ where: { id: input.id } });
+  }),
+
+  search: procedure
+    .input(z.object({ text: z.string().min(1), config: zConfig.optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const messages = (
+        await ctx.prisma.message.findMany({
+          where: { userId: ctx.session.user.id, chat: { temporary: { equals: false } } },
+          include: { chat: { select: { title: true } }, folder: { select: { title: true } } },
+        })
+      ).map((m) => ({ ...m, embedding: null as number[] | null }));
+
+      const embeddings = await ctx.prisma.$queryRaw<
+        {
+          id: string;
+          embedding: string;
+        }[]
+      >`SELECT id, embedding
+                 FROM message
+                 WHERE "userId" = ${ctx.session.user.id}`;
+      for (const message of messages) {
+        const raw = embeddings.find((e) => e.id === message.id)?.embedding;
+        if (raw) message.embedding = JSON.parse(raw);
+      }
+
+      const mappedMessages = messages.map((message) => ({
+        id: message.id,
+        chatId: message.chatId,
+        data: zData.parse(message.data),
+        folderTitle: message.folder.title,
+        chatTitle: message.chat.title,
+        text: zData
+          .parse(message.data)
+          .filter((p) => p.type === 'text')
+          .map((t) => t.value)
+          .join('\n'),
+        embedding: message.embedding,
+      }));
+
+      // --- Text search (minisearch) ---
+      const textIndex = new minisearch({
+        fields: ['folderTitle', 'chatTitle', 'text'],
+        storeFields: ['id', 'chatId', 'data', 'folderTitle', 'chatTitle'],
+        searchOptions: {
+          boost: { chatTitle: 2 },
+          fuzzy: 0.2,
+          prefix: true,
+        },
+      });
+      textIndex.addAll(mappedMessages);
+      const textResults = textIndex.search(input.text) as (SearchResult & {
+        id: string;
+        chatId: string;
+        data: zData;
+        folderTitle: string;
+        chatTitle: string;
+      })[];
+
+      let embedding: number[] = [];
+      if (input.config) {
+        const service = chatProviders.find((s) => s.name === input.config?.service);
+        if (service) {
+          embedding = (await service.embed(ctx.session, [input.text], input.config))[0];
+        }
+      }
+
+      const messagesWithEmbeddings = mappedMessages.filter(
+        (m) => m.embedding && m.embedding.length > 0,
+      );
+      const useVectorSearch = embedding.length && messagesWithEmbeddings.length > 0;
+
+      if (!useVectorSearch) {
+        return textResults;
+      }
+
+      const vectorResults = getMostRelevant(
+        embedding,
+        messagesWithEmbeddings.map((m) => ({ value: m, embedding: m.embedding! })),
+        { maxCount: 50 },
+      );
+
+      const maxTextScore = textResults.reduce((m, r) => Math.max(m, r.score), 0) || 1;
+      const maxVectorScore = vectorResults.reduce((m, r) => Math.max(m, r.score), 0) || 1;
+
+      const textScoreMap = new Map(textResults.map((r) => [r.id, r.score / maxTextScore]));
+      const vectorScoreMap = new Map(
+        vectorResults.map((r) => [(r.value as { id: string }).id, r.score / maxVectorScore]),
+      );
+
+      const allIds = new Set([...textScoreMap.keys(), ...vectorScoreMap.keys()]) as Set<string>;
+
+      return Array.from(allIds)
+        .map((id) => {
+          const textScore = textScoreMap.get(id) ?? 0;
+          const vectorScore = vectorScoreMap.get(id) ?? 0;
+          const combinedScore = (textScore + vectorScore) / 2;
+          const message = mappedMessages.find((m) => m.id === id)!;
+          const textResult = textResults.find((r) => r.id === id);
+          return {
+            id,
+            chatId: message.chatId,
+            data: message.data,
+            folderTitle: message.folderTitle,
+            chatTitle: message.chatTitle,
+            score: combinedScore,
+            match: textResult?.match ?? {},
+            terms: textResult?.terms ?? [],
+          } as SearchResult & {
+            id: string;
+            chatId: string;
+            data: zData;
+            folderTitle: string;
+            chatTitle: string;
+          };
+        })
+        .sort((a, b) => b.score - a.score);
+    }),
+});

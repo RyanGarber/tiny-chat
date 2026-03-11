@@ -10,11 +10,10 @@ import {
   zConfig,
   zDataPart,
   zMetadata,
-} from '@tiny-chat/core-backend/types.ts';
+} from '@tiny-chat/core-backend/src/types.ts';
 import { generate, trpc } from '@/utils.ts';
 import { useSettings } from '@/managers/settings.tsx';
 import { Author } from '@tiny-chat/core-backend/generated/prisma/enums.ts';
-import { useMemories } from '@/managers/context.tsx';
 import { useTasks } from '@/managers/tasks.tsx';
 
 interface Providers {
@@ -39,9 +38,9 @@ export const useProviders = create(
     updateProviders: async () => {
       useTasks.getState().addTask('providers', 'Checking availability');
 
-      let providers = await trpc.providers.listProviders.query();
+      const providers = await trpc.providers.listProviders.query();
       const chatProviderModels = providers.chat.reduce((acc, s) => acc + s.models.length, 0);
-      useTasks
+      void useTasks
         .getState()
         .updateTask(
           'providers',
@@ -59,7 +58,7 @@ export const useProviders = create(
 
     abortController: null,
     handleMessage: async (messageId: string) => {
-      let { currentChat, messages } = useChats.getState();
+      const { currentChat, messages } = useChats.getState();
       if (!currentChat) return;
 
       const config = messages.find((m) => m.id === messageId)!.config;
@@ -86,77 +85,64 @@ export const useProviders = create(
 
           const memories = currentChat.incognito
             ? []
-            : await useMemories.getState().getRelevantMemories(messages[i]);
-          const context: MessageUnomitted[] = [
-            {
-              author: Author.USER,
-              data: [
-                {
-                  type: 'text',
-                  value: memories.length
-                    ? `Potentially relevant long-term user context:
-
-${memories.map((m) => `* ${m}`).join('\n')}
-
-IMPORTANT: Do not introduce or revisit the above topics unless:
-* The user explicitly asks, or
-* a brief, optional follow-up question would feel natural to a human in that moment.`
-                    : '',
-                },
-              ],
-            } satisfies Partial<MessageUnomitted> as MessageUnomitted,
-            ...messages.slice(0, i + 1).map((m, i) => {
-              let isFirstText = true;
-              let fileNumber = 1;
-              return {
-                ...m,
-                metadata: zMetadata.parse(omissions.get(m.id)?.metadata),
-                data: m.data.flatMap((d): zDataPart[] => {
-                  if (d.type === 'file') {
-                    return [
-                      { type: 'text', value: `Attached file #${fileNumber++} (${d.name}):` },
-                      d,
-                    ];
-                  }
-                  if (d.type === 'text') {
-                    let value = d.value.replace(/((?:^::>:: .*$\n?)+)/gm, (block) => {
-                      const lines = block
-                        .trim()
-                        .split('\n')
-                        .map((l) => l.replace(/^::>:: /, ''));
-                      let modelName = '';
-                      let contentLines = lines;
-                      if (lines[0].startsWith('::model=') && lines[0].endsWith('::')) {
-                        modelName = lines[0].slice('::model='.length, -2);
-                        contentLines = lines.slice(1);
-                      }
-                      const prefix = modelName ? `Earlier, ${modelName} said:\n` : '';
-                      return prefix + contentLines.map((l) => `> ${l}`).join('\n') + '\n';
-                    });
-                    if (isFirstText) {
-                      let heading;
-                      if (m.author === Author.USER) {
-                        heading = `[user]\n`;
-                        if (i !== 0) {
-                          const delay = format(messages[i - 1].createdAt, undefined, {
-                            relativeDate: m.createdAt,
-                          }).replace(' ago', '');
-                          if (delay !== 'just now')
-                            heading += `[Conversation timing: ${delay} ${delay.endsWith('s') ? 'have' : 'has'} passed since the last message.]\n`;
-                        }
-                      } else {
-                        heading = `[assistant:model=${m.config.model}]\n`;
-                      }
-                      value = heading + '\n' + value;
-                      isFirstText = false;
+            : await trpc.embeddings.getMemoryContext.mutate({
+                context: messages
+                  .slice(0, i + 1)
+                  .filter((m) => m.author === Author.USER)
+                  .slice(-4)
+                  .map((m) => m.id),
+              });
+          const context: MessageUnomitted[] = messages.slice(0, i + 1).map((m, i) => {
+            let isFirstText = true;
+            let fileNumber = 1;
+            return {
+              ...m,
+              metadata: zMetadata.parse(omissions.get(m.id)?.metadata),
+              data: m.data.flatMap((d): zDataPart[] => {
+                if (d.type === 'file') {
+                  return [
+                    { type: 'text', value: `Attached file #${fileNumber++} (${d.name}):` },
+                    d,
+                  ];
+                }
+                if (d.type === 'text') {
+                  let value = d.value.replace(/((?:^::>:: .*$\n?)+)/gm, (block) => {
+                    const lines = block
+                      .trim()
+                      .split('\n')
+                      .map((l) => l.replace(/^::>:: /, ''));
+                    let modelName = '';
+                    let contentLines = lines;
+                    if (lines[0].startsWith('::model=') && lines[0].endsWith('::')) {
+                      modelName = lines[0].slice('::model='.length, -2);
+                      contentLines = lines.slice(1);
                     }
-                    return [{ ...d, value }];
+                    const prefix = modelName ? `Earlier, ${modelName} said:\n` : '';
+                    return prefix + contentLines.map((l) => `> ${l}`).join('\n') + '\n';
+                  });
+                  if (isFirstText) {
+                    let heading;
+                    if (m.author === Author.USER) {
+                      heading = `[user]\n`;
+                      if (i !== 0) {
+                        const delay = format(messages[i - 1].createdAt, undefined, {
+                          relativeDate: m.createdAt,
+                        }).replace(' ago', '');
+                        if (delay !== 'just now')
+                          heading += `[Conversation timing: ${delay} ${delay.endsWith('s') ? 'have' : 'has'} passed since the last message.]\n`;
+                      }
+                    } else {
+                      heading = `[assistant:model=${m.config.model}]\n`;
+                    }
+                    value = heading + '\n' + value;
+                    isFirstText = false;
                   }
-                  return [d];
-                }),
-              };
-            }),
-          ];
+                  return [{ ...d, value }];
+                }
+                return [d];
+              }),
+            };
+          });
 
           const userInstructions = currentChat.incognito
             ? []
@@ -164,13 +150,26 @@ IMPORTANT: Do not introduce or revisit the above topics unless:
           const instructions =
             `Formatting re-enabled.
 
+## Instructions
+
 Today's date is ${new Date().toLocaleDateString()}. For time-sensitive topics (news, software, etc.), search rather than relying on training data.
 
 Render responses in Markdown — use headers, tables, lists, and code blocks where helpful. Use LaTeX for math. Keep paragraphs short.
 
+## Identity
+
 This conversation may include responses from multiple AI models. Your model name is "${reply.config.model}". Only messages labeled [assistant:model=${reply.config.model}] were written by you — treat others as written by the named model.
 
-Do not include the [assistant:model=...] label in your response.` +
+Do not include the [assistant:model=...] label in your response.
+
+## Context
+
+Your memories of the user:
+
+${memories.length ? memories.map((m) => `- ${m}`).join('\n') : '- (none)'}
+
+If the user reveals new information, call add_memory. If something above changes, call update_memory or delete_memory with the exact ID shown.
+` +
             (userInstructions.length
               ? `\n\n` +
                 `Additionally, the user provided the following instructions:\n` +
@@ -209,7 +208,7 @@ Do not include the [assistant:model=...] label in your response.` +
             lastFlush = performance.now();
           };
 
-          let error: any = null;
+          let error: unknown = null;
 
           try {
             let hasText = false;
@@ -266,7 +265,8 @@ Do not include the [assistant:model=...] label in your response.` +
                 await flush();
               }
             }
-          } catch (e: any) {
+          } catch (e: unknown) {
+            // @ts-expect-error ts is fucking stupid
             if (e.name === 'AbortError') console.warn('Stream aborted');
             else error = e;
           } finally {
@@ -276,7 +276,7 @@ Do not include the [assistant:model=...] label in your response.` +
             await publish(reply);
             console.log('Published reply:', reply);
           }
-          if (error) throw error;
+          if (error) throw error as Error;
         }
       }
     },
@@ -286,7 +286,7 @@ Do not include the [assistant:model=...] label in your response.` +
 async function prepare(previousId: string, config: zConfig): Promise<MessageUnomitted> {
   const messages = useChats.getState().messages;
   const existing = messages.find((m) => m.previousId === previousId);
-  let reply = !existing
+  const reply = !existing
     ? await trpc.messages.create.mutate({
         chatId: messages[0].chatId,
         previousId: previousId,

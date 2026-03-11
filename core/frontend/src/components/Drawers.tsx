@@ -21,9 +21,9 @@ import { JSX, useEffect, useRef, useState } from 'react';
 import { useProviders } from '@/managers/providers.tsx';
 import { codeThemes, themes, useSettings } from '@/managers/settings.tsx';
 import { auth, consumeLabel, hashText, openExternal, trpc, webUrl } from '@/utils.ts';
-import { useDisclosure, UseDisclosureReturnValue } from '@mantine/hooks';
+import { useDisclosure } from '@mantine/hooks';
 import { useLayout } from '@/managers/layout.tsx';
-import { zConfig } from '@tiny-chat/core-backend/types.ts';
+import { zConfig } from '@tiny-chat/core-backend/src/types.ts';
 import ModelSelect from '@/components/ModelSelect.tsx';
 import { useTasks } from '@/managers/tasks.tsx';
 import { Icon } from '@iconify/react';
@@ -31,11 +31,12 @@ import { Icon } from '@iconify/react';
 export default function Drawers({
   buttons,
 }: {
-  buttons: (account: UseDisclosureReturnValue, settings: UseDisclosureReturnValue) => JSX.Element;
+  buttons: (account: () => void, settings: () => void) => JSX.Element;
 }) {
   const [isCloning, setCloning] = useState(false);
 
   const {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     accounts,
     linkAccount,
     unlinkAccount,
@@ -71,28 +72,30 @@ export default function Drawers({
         {icon}
         <Text>{name}</Text>
       </Group>
+      {/* eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-explicit-any */}
       {accounts.find((account: any) => account.providerId === id) ? (
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         accounts.length === 1 ? (
           <Tooltip label="Must have one account" color="gray">
-            <Button variant="light" onClick={async () => await unlinkAccount(id)} disabled>
+            <Button variant="light" onClick={() => void unlinkAccount(id)} disabled>
               Unlink
             </Button>
           </Tooltip>
         ) : (
-          <Button variant="light" onClick={async () => await unlinkAccount(id)}>
+          <Button variant="light" onClick={() => void unlinkAccount(id)}>
             Unlink
           </Button>
         )
       ) : (
-        <Button variant="default" onClick={async () => await linkAccount(id)}>
+        <Button variant="default" onClick={() => void linkAccount(id)}>
           Link
         </Button>
       )}
     </Group>
   );
 
-  const accountDrawer = useDisclosure(false);
-  const settingsDrawer = useDisclosure(false);
+  const [accountsOpened, { open: openAccounts, close: closeAccounts }] = useDisclosure(false);
+  const [settingsOpened, { open: openSettings, close: closeSettings }] = useDisclosure(false);
 
   const [addingInstruction, setAddingInstruction] = useState(false);
   const [embedChange, setEmbedChange] = useState<zConfig | null>(null);
@@ -102,19 +105,19 @@ export default function Drawers({
   // Modals fully block swipe gestures
   useEffect(() => {
     setGestureBlock(isDeleteOpen || isEmbedConfirmOpen);
-  }, [isDeleteOpen, isEmbedConfirmOpen]);
+  }, [isDeleteOpen, isEmbedConfirmOpen, setGestureBlock]);
 
   // Drawers intercept swipe-to-close so it closes the drawer before the sidebar
   useEffect(() => {
-    if (accountDrawer[0]) {
-      setDrawerCloser(accountDrawer[1].close);
-    } else if (settingsDrawer[0]) {
-      setDrawerCloser(settingsDrawer[1].close);
+    if (accountsOpened) {
+      setDrawerCloser(closeAccounts);
+    } else if (settingsOpened) {
+      setDrawerCloser(closeSettings);
     } else {
       setDrawerCloser(null);
     }
     return () => setDrawerCloser(null);
-  }, [accountDrawer[0], settingsDrawer[0]]);
+  }, [accountsOpened, closeAccounts, settingsOpened, closeSettings, setDrawerCloser]);
 
   const [cloneInterval, setCloneInterval] = useState<NodeJS.Timeout>();
 
@@ -142,11 +145,11 @@ export default function Drawers({
                   key={service.name + s}
                   label={s}
                   styles={consumeLabel}
-                  defaultValue={getProviderSetting(service.name, s) || ''}
+                  defaultValue={getProviderSetting(service.name, s) ?? ''}
                   onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-                  onBlur={async (e) => {
-                    if (e.target.value === (getProviderSetting(service.name, s) || '')) return;
-                    await setProviderSetting(service.name, s, e.target.value);
+                  onBlur={(e) => {
+                    if (e.target.value === (getProviderSetting(service.name, s) ?? '')) return;
+                    void setProviderSetting(service.name, s, e.target.value);
                   }}
                 />
               ))}
@@ -158,10 +161,10 @@ export default function Drawers({
 
   return (
     <>
-      {buttons(accountDrawer, settingsDrawer)}
+      {buttons(openAccounts, openSettings)}
       <Drawer
-        opened={accountDrawer[0]}
-        onClose={accountDrawer[1].close}
+        opened={accountsOpened}
+        onClose={closeAccounts}
         title={session?.user && !session.user.isAnonymous ? 'Account' : 'Sign In'}
       >
         <Stack>
@@ -177,32 +180,34 @@ export default function Drawers({
               <Button
                 variant="default"
                 fullWidth
-                onClick={async () => {
-                  if (session?.user?.isAnonymous) {
-                    if (!isCloning) {
-                      setCloning(true);
-                      useTasks.getState().addTask('signIn', 'Opening browser');
-                      const id = await trpc.sessions.startClone.mutate();
-                      await openExternal(`${webUrl}/#/app/${id}`);
-                      useTasks.getState().updateTask('signIn', 50, 'Sign in to continue');
-                      setCloneInterval(
-                        setInterval(() => {
-                          trpc.sessions.finalizeClone.query({ id }).then(async (res) => {
-                            if (res) {
-                              await useTasks.getState().removeTask('signIn');
-                              clearInterval(cloneInterval);
-                              window.location.reload();
-                            }
-                          });
-                        }, 1000),
-                      );
+                onClick={() => {
+                  void (async () => {
+                    if (session?.user?.isAnonymous) {
+                      if (!isCloning) {
+                        setCloning(true);
+                        useTasks.getState().addTask('signIn', 'Opening browser');
+                        const id = await trpc.sessions.startClone.mutate();
+                        void openExternal(`${webUrl}/#/app/${id}`);
+                        void useTasks.getState().updateTask('signIn', 50, 'Sign in to continue');
+                        setCloneInterval(
+                          setInterval(() => {
+                            void trpc.sessions.finalizeClone.query({ id }).then(async (res) => {
+                              if (res) {
+                                await useTasks.getState().removeTask('signIn');
+                                clearInterval(cloneInterval);
+                                window.location.reload();
+                              }
+                            });
+                          }, 1000),
+                        );
+                      } else {
+                        setCloning(false);
+                        clearInterval(cloneInterval);
+                      }
                     } else {
-                      setCloning(false);
-                      clearInterval(cloneInterval);
+                      void openExternal(`${webUrl}`);
                     }
-                  } else {
-                    await openExternal(`${webUrl}`);
-                  }
+                  })();
                 }}
               >
                 {isCloning ? 'Cancel' : 'Open Browser'}
@@ -224,11 +229,13 @@ export default function Drawers({
                 variant="default"
                 fullWidth
                 mt={10}
-                onClick={async () => {
-                  useTasks.getState().addTask('signOut', 'Signing out');
-                  await auth.signOut();
-                  await useTasks.getState().removeTask('signOut');
-                  window.location.reload();
+                onClick={() => {
+                  void (async () => {
+                    useTasks.getState().addTask('signOut', 'Signing out');
+                    await auth.signOut();
+                    await useTasks.getState().removeTask('signOut');
+                    window.location.reload();
+                  })();
                 }}
               >
                 Sign Out
@@ -240,9 +247,11 @@ export default function Drawers({
                 <Button
                   color="red"
                   fullWidth
-                  onClick={async () => {
-                    await deleteUser();
-                    window.location.reload();
+                  onClick={() => {
+                    void (async () => {
+                      await deleteUser();
+                      window.location.reload();
+                    })();
                   }}
                 >
                   Confirm
@@ -252,7 +261,7 @@ export default function Drawers({
           )}
         </Stack>
       </Drawer>
-      <Drawer opened={settingsDrawer[0]} onClose={settingsDrawer[1].close} title="Settings">
+      <Drawer opened={settingsOpened} onClose={closeSettings} title="Settings">
         <Tabs defaultValue="general">
           <Tabs.List mb="lg">
             <Tabs.Tab value="general" leftSection={<Icon icon="lucide:settings-2" height={18} />}>
@@ -274,12 +283,12 @@ export default function Drawers({
                   defaultValue={instruction}
                   autosize
                   onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-                  onBlur={async (e) => {
+                  onBlur={(e) => {
                     if (e.target.value === instruction) return;
                     if (e.target.value) {
-                      await editInstruction(index, e.target.value);
+                      void editInstruction(index, e.target.value);
                     } else {
-                      await removeInstruction(index);
+                      void removeInstruction(index);
                     }
                   }}
                   leftSection={
@@ -290,8 +299,8 @@ export default function Drawers({
                   rightSection={
                     <ActionIcon
                       variant="subtle"
-                      onClick={async () => {
-                        await removeInstruction(index);
+                      onClick={() => {
+                        void removeInstruction(index);
                       }}
                     >
                       <Icon icon="lucide:trash" height={18} />
@@ -304,15 +313,20 @@ export default function Drawers({
                   key="add"
                   autosize
                   label="Instruction"
-                  styles={{ ...consumeLabel, ...{ input: { paddingTop: 25 } } }}
+                  styles={{
+                    ...(consumeLabel as Record<string, unknown>),
+                    ...{ input: { paddingTop: 25 } },
+                  }}
                   placeholder="Keep responses short."
                   onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-                  onBlur={async (e) => {
-                    if (!e.target.value) return;
-                    setAddingInstruction(true);
-                    await addInstruction(e.target.value);
-                    setAddingInstruction(false);
-                    e.target.value = '';
+                  onBlur={(e) => {
+                    void (async () => {
+                      if (!e.target.value) return;
+                      setAddingInstruction(true);
+                      await addInstruction(e.target.value);
+                      setAddingInstruction(false);
+                      e.target.value = '';
+                    })();
                   }}
                   disabled={addingInstruction}
                 />
@@ -348,8 +362,8 @@ export default function Drawers({
                 <Button
                   variant="gradient"
                   fullWidth
-                  onClick={async () => {
-                    await setEmbeddingConfig(embedChange ?? undefined);
+                  onClick={() => {
+                    void setEmbeddingConfig(embedChange ?? undefined);
                     closeEmbedding();
                   }}
                   mt="lg"
@@ -371,8 +385,8 @@ export default function Drawers({
                   styles={consumeLabel}
                   optional
                   configValue={getMemoryConfig()}
-                  onConfigChange={async (value) => {
-                    await setMemoryConfig(value ?? undefined);
+                  onConfigChange={(value) => {
+                    void setMemoryConfig(value ?? undefined);
                   }}
                   feature={'generate'}
                   disabled={!getEmbeddingConfig()}
@@ -390,8 +404,8 @@ export default function Drawers({
                 <CheckboxCard
                   p="xs"
                   checked={getUseEmbeddingSearch()}
-                  onChange={async (value) => {
-                    await setUseEmbeddingSearch(value);
+                  onChange={(value) => {
+                    void setUseEmbeddingSearch(value);
                   }}
                   disabled={!getEmbeddingConfig()}
                   style={{ cursor: !getEmbeddingConfig() ? 'not-allowed' : 'pointer' }}
@@ -414,9 +428,9 @@ export default function Drawers({
                   allowDeselect={false}
                   data={themes}
                   value={getTheme()}
-                  onChange={async (value) => {
+                  onChange={(value) => {
                     if (!value) return;
-                    await setTheme(value);
+                    void setTheme(value);
                   }}
                 ></Select>
               </Tooltip>
@@ -427,9 +441,9 @@ export default function Drawers({
                   allowDeselect={false}
                   data={codeThemes(getTheme())}
                   value={getCodeTheme()}
-                  onChange={async (value) => {
+                  onChange={(value) => {
                     if (!value) return;
-                    await setCodeTheme(value);
+                    void setCodeTheme(value);
                   }}
                   ref={codeThemeRef}
                 />
@@ -438,7 +452,7 @@ export default function Drawers({
           </Tabs.Panel>
           <Tabs.Panel value="apiKeys">
             <Stack>
-              <Text size="sm">Chat</Text>
+              <Text size="sm">Models</Text>
               {ProviderSettings(chatProviders)}
               <Space />
               <Text size="sm">Search</Text>

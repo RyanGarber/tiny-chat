@@ -1,7 +1,9 @@
 {
   "compilerOptions": {
-    "module": "esnext",
-    "target": "esnext",
+    "module": "nodenext",
+    /* Bundler mode */
     "moduleResolution": "nodenext"
-  }
+  },
+  "include": ["src"],
+  "extends": "../../tsconfig.base.json"
 }

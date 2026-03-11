@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useState } from 'react';
 import { useDebouncedValue } from '@mantine/hooks';
 import {
@@ -41,7 +42,7 @@ export default function Sidebar() {
         void setCurrentChat(location.slice(1) || null, false);
       }
     }
-  }, [location, isSessionPending, session?.user?.id]);
+  }, [location, isSessionPending, session?.user.id, session?.user]);
 
   const closeAfter = (action?: () => void) => {
     action?.();
@@ -56,14 +57,15 @@ export default function Sidebar() {
   const [spotlightActions, setSpotlightActions] = useState<SpotlightActionData[]>([]); // TODO - SpotlightActionGroup
 
   useEffect(() => {
-    if (!(debouncedQuery.trim()?.length >= 3)) {
-      setSpotlightActions([]);
-      return;
-    }
-
     let cancelled = false;
-    (async () => {
+    void (async () => {
+      if (!(debouncedQuery.trim()?.length >= 3)) {
+        setSpotlightActions([]);
+        return;
+      }
+
       if (cancelled) return;
+
       const results = await trpc.chats.search.mutate({
         text: debouncedQuery,
         config: getUseEmbeddingSearch() ? getEmbeddingConfig() : undefined,
@@ -79,7 +81,7 @@ export default function Sidebar() {
             return true;
           })
           .map((r) => ({
-            id: r.id,
+            id: r.id as string,
             label: scrubText(r.chatTitle, 50),
             description: snippetText(scrubText(extractText(r.data)), debouncedQuery),
             onClick: () => closeAfter(() => void setCurrentChat(r.chatId)), // TODO - scroll to chat
@@ -162,7 +164,7 @@ export default function Sidebar() {
             ) : (
               <NavLink
                 key={folder.id}
-                label={folder.title || 'Generating...'}
+                label={folder.title ?? 'Generating...'}
                 leftSection={folder.chats.length}
                 defaultOpened={true}
               >
@@ -198,7 +200,7 @@ export default function Sidebar() {
                   <Icon icon="lucide:circle-user" height={18} />
                 )
               }
-              onClick={account[1].open}
+              onClick={account}
               bdrs="md"
             />
             <NavLink
@@ -211,7 +213,7 @@ export default function Sidebar() {
                 </Group>
               }
               leftSection={<Icon icon="lucide:settings" height={18} />}
-              onClick={settings[1].open}
+              onClick={settings}
               bdrs="md"
             />
           </>
@@ -239,7 +241,7 @@ export default function Sidebar() {
         </Tooltip>
       </Stack>
       <Drawers
-        buttons={(account, settings) => (
+        buttons={(openAccount, openSettings) => (
           <Stack align="center" gap={5}>
             <Tooltip
               label={!session?.user || session.user.isAnonymous ? 'Sign In' : 'Account'}
@@ -251,7 +253,7 @@ export default function Sidebar() {
                 size={32}
                 c="dimmed"
                 className="nav-link-like"
-                onClick={account[1].open}
+                onClick={openAccount}
               >
                 {session?.user?.image ? (
                   <Avatar src={session.user.image} size={18} />
@@ -266,7 +268,7 @@ export default function Sidebar() {
                 size={32}
                 c="dimmed"
                 className="nav-link-like"
-                onClick={settings[1].open}
+                onClick={openSettings}
               >
                 <Icon icon="lucide:settings" height={18} />
               </ActionIcon>

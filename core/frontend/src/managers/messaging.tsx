@@ -8,10 +8,9 @@ import { deserialize } from '@/slate/serializer.tsx';
 import { alert, extractText, scrubText, trpc } from '@/utils.ts';
 import { useProviders } from '@/managers/providers.tsx';
 import { useLayout } from '@/managers/layout.tsx';
-import { type MessageOmitted, zConfig, type zData } from '@tiny-chat/core-backend/types';
+import { type MessageOmitted, zConfig, type zData } from '@tiny-chat/core-backend/src/types.ts';
 import { Author } from '@tiny-chat/core-backend/generated/prisma/enums.ts';
 import { readLocalStorageValue } from '@mantine/hooks';
-import { useEmbeddings } from '@/managers/embeddings.tsx';
 import { useTasks } from './tasks';
 
 type CustomEditor = BaseEditor & ReactEditor & HistoryEditor;
@@ -70,7 +69,7 @@ export const useMessaging = create(
     },
 
     setData: async (data: zData) => {
-      const { editor, clearText, addFiles } = get();
+      const { editor, clearText } = get();
       if (!editor) return;
 
       clearText();
@@ -83,7 +82,7 @@ export const useMessaging = create(
           new File([await (await fetch(file.url)).blob()], file.name!, { type: file.mime }),
         );
       }
-      addFiles(...files);
+      set({ files });
     },
 
     files: [],
@@ -107,7 +106,7 @@ export const useMessaging = create(
     },
 
     editing: null,
-    setEditing: async (value) => {
+    setEditing: (value) => {
       const { setConfig, setInsertingAfter, editor, setData } = get();
       if (!editor) return;
 
@@ -139,7 +138,7 @@ export const useMessaging = create(
       useChats.setState({ temporary: false, incognito: false });
       setEditing(null);
       setInsertingAfter(null);
-      setData([]);
+      void setData([]);
     },
 
     scrollRequested: 0,
@@ -221,7 +220,6 @@ export const useMessaging = create(
       } finally {
         setInputDisabled(false);
         useProviders.setState({ abortController: null });
-        void useEmbeddings.getState().updateEmbeddings();
       }
     },
 
@@ -229,9 +227,9 @@ export const useMessaging = create(
       setInputDisabled(true);
       useTasks.getState().addTask('deleteMessagePair', 'Deleting message');
       await trpc.messages.delete.mutate({ id: messageId });
-      useTasks.getState().updateTask('deleteMessagePair', 33);
+      void useTasks.getState().updateTask('deleteMessagePair', 33);
       await useChats.getState().fetchFolders(false);
-      useTasks.getState().updateTask('deleteMessagePair', 66);
+      void useTasks.getState().updateTask('deleteMessagePair', 66);
       await useChats.getState().fetchMessages(false);
       await useTasks.getState().removeTask('deleteMessagePair');
       setInputDisabled(false);
@@ -247,15 +245,15 @@ function setInputDisabled(disabled: boolean) {
 
 export function reloadConfig() {
   const { setConfig } = useMessaging.getState();
-  let { messages } = useChats.getState();
-  let sorted = [...messages].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  const { messages } = useChats.getState();
+  const sorted = [...messages].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   if (sorted.length) {
     console.log("Found messages in chat; loading last message's config:", sorted[0].config);
     setConfig(sorted[0].config);
     return;
   }
   console.log('No messages in chat; trying fallback configs');
-  let lastConfigString = readLocalStorageValue<string>({ key: 'config', sync: true });
+  const lastConfigString = readLocalStorageValue<string>({ key: 'config', sync: true });
   const lastConfig = lastConfigString ? zConfig.parse(JSON.parse(lastConfigString)) : null;
   const fallbackService = useProviders.getState().chatProviders.find((s) => s.models.length > 0);
   try {

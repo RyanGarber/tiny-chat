@@ -1,6 +1,7 @@
 {
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit"
+    "source.fixAll.eslint": "explicit",
+    "source.fixAll.prettier": "explicit"
   },
   "eslint.validate": [
     "typescript"
@@ -12,5 +13,6 @@
   },
   "rust-analyzer.cargo.buildScripts.enable": true,
   "rust-analyzer.procMacro.enable": true,
-  "typescript.preferences.importModuleSpecifier": "non-relative"
+  "js/ts.validate.enabled": true,
+  "js/ts.preferences.preferTypeOnlyAutoImports": true
 }

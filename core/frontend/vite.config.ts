@@ -4,7 +4,7 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 
 const host = process.env.TAURI_DEV_HOST;
 
-export default defineConfig(async () => ({
+export default defineConfig(() => ({
   base: './',
   plugins: [react(), tsconfigPaths()],
   clearScreen: false,
@@ -25,6 +25,7 @@ export default defineConfig(async () => ({
             if (module.startsWith('highlight.js')) return 'vendor-hljs';
             if (module.startsWith('@google')) return 'vendor-google';
             if (module.startsWith('openai')) return 'vendor-openai';
+            if (module.startsWith('@anthropic')) return 'vendor-anthropic';
             return 'vendor-core';
           }
         },

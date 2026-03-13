@@ -59,7 +59,7 @@ export const ModelName = {
   Chat: 'Chat',
   Message: 'Message',
   Memory: 'Memory',
-  Task: 'Task'
+  Action: 'Action'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -182,7 +182,6 @@ export const MemoryScalarFieldEnum = {
   userId: 'userId',
   folderId: 'folderId',
   chatId: 'chatId',
-  messageId: 'messageId',
   config: 'config',
   fact: 'fact',
   category: 'category',
@@ -190,25 +189,25 @@ export const MemoryScalarFieldEnum = {
   evidence: 'evidence',
   confidence: 'confidence',
   createdAt: 'createdAt',
-  active: 'active'
+  messageId: 'messageId'
 } as const
 
 export type MemoryScalarFieldEnum = (typeof MemoryScalarFieldEnum)[keyof typeof MemoryScalarFieldEnum]
 
 
-export const TaskScalarFieldEnum = {
+export const ActionScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   folderId: 'folderId',
   chatId: 'chatId',
-  messageId: 'messageId',
   schedule: 'schedule',
   config: 'config',
   data: 'data',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  messageId: 'messageId'
 } as const
 
-export type TaskScalarFieldEnum = (typeof TaskScalarFieldEnum)[keyof typeof TaskScalarFieldEnum]
+export type ActionScalarFieldEnum = (typeof ActionScalarFieldEnum)[keyof typeof ActionScalarFieldEnum]
 
 
 export const SortOrder = {

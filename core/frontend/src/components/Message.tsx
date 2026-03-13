@@ -137,7 +137,7 @@ export default function Message({ message, opacity }: { message: MessageData; op
                   </Tooltip>
                   {message.author === Author.MODEL && (
                     <Text size="xs" c="dimmed">
-                      <span style={{ padding: '0 5px' }}>&middot;</span>
+                      <span style={{ padding: '0 10px 0 5px' }}>&middot;</span>
                       {message.config.model}
                     </Text>
                   )}

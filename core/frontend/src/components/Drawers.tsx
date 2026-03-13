@@ -45,8 +45,6 @@ export default function Drawers({
     addInstruction,
     editInstruction,
     removeInstruction,
-    getMemoryConfig,
-    setMemoryConfig,
     getEmbeddingConfig,
     setEmbeddingConfig,
     getUseEmbeddingSearch,
@@ -122,7 +120,7 @@ export default function Drawers({
   const [cloneInterval, setCloneInterval] = useState<NodeJS.Timeout>();
 
   const ProviderSettings = (providers: { name: string; settings: string[] }[]) => (
-    <>
+    <Stack>
       {providers
         .filter((s) => s.settings.length)
         .map((service) => (
@@ -156,7 +154,7 @@ export default function Drawers({
             </Stack>
           </Box>
         ))}
-    </>
+    </Stack>
   );
 
   return (
@@ -333,6 +331,9 @@ export default function Drawers({
               </Tooltip>
               <Space />
               <Text size="sm">Features</Text>
+              <Text size="xs" c="dimmed">
+                Adding an embedding model enables memory, smart search, and more.
+              </Text>
               <Tooltip label="Model that generates embeddings" color="gray" position="right">
                 <ModelSelect
                   label="Embedding Model"
@@ -371,27 +372,6 @@ export default function Drawers({
                   Confirm
                 </Button>
               </Modal>
-              <Tooltip
-                label={
-                  getEmbeddingConfig()
-                    ? 'Model that decides new memories'
-                    : 'Requires embedding model'
-                }
-                color="gray"
-                position="right"
-              >
-                <ModelSelect
-                  label="Memory Model"
-                  styles={consumeLabel}
-                  optional
-                  configValue={getMemoryConfig()}
-                  onConfigChange={(value) => {
-                    void setMemoryConfig(value ?? undefined);
-                  }}
-                  feature={'generate'}
-                  disabled={!getEmbeddingConfig()}
-                />
-              </Tooltip>
               <Tooltip
                 label={
                   getEmbeddingConfig()

@@ -18,6 +18,7 @@ import embeddings from './routes/embeddings.ts';
 import messages from './routes/messages.ts';
 import sessions from './routes/sessions.ts';
 import providers from './routes/providers.ts';
+import actions from './routes/actions.ts';
 import generateHandler from './generate.ts';
 
 config({ path: resolve(import.meta.dirname, '../../../.env') });
@@ -40,6 +41,7 @@ const trpc = router({
   messages,
   sessions,
   providers,
+  actions,
 });
 export type tRPC = typeof trpc;
 
@@ -135,7 +137,7 @@ export const auth = betterAuth({
           where: { userId: anonymousUser.user.id },
           data: { userId: newUser.user.id },
         });
-        await globalThis.prisma.task.updateMany({
+        await globalThis.prisma.action.updateMany({
           where: { userId: anonymousUser.user.id },
           data: { userId: newUser.user.id },
         });

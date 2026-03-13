@@ -1,7 +1,6 @@
-import { type CustomTool } from './index.ts';
+import { type CustomTool, type ToolContext } from './index.ts';
 import { z } from 'zod';
 import { searchProviders } from '../providers/search/index.ts';
-import type { Session } from '../server.ts';
 
 const zSearchWeb = z.object({
   query: z.string().describe('The search query to use for web search'),
@@ -13,7 +12,7 @@ const SearchWeb = {
     'Search the web for information. Use this tool to find up-to-date information on any topic.',
   parameters: zSearchWeb.toJSONSchema(),
   schema: zSearchWeb,
-  run: async ({ session, params }) => {
+  run: async ({ session }, params) => {
     return await searchProviders[0].search(session, params.query, 5);
   },
 } satisfies CustomTool<typeof zSearchWeb>;
@@ -28,7 +27,7 @@ const ViewWeb = {
     'View the content of a webpage. Use this tool when you need information from webpage and search results or training knowledge do not suffice.',
   parameters: zViewWeb.toJSONSchema(),
   schema: zViewWeb,
-  run: async ({ params }) => {
+  run: async (_, params) => {
     const response = await fetch(`https://r.jina.ai/${params.url}`);
     if (!response.ok) {
       throw new Error(`Failed: ${response.status} ${response.statusText}`);
@@ -37,9 +36,8 @@ const ViewWeb = {
   },
 } satisfies CustomTool<typeof zViewWeb>;
 
-export default function tools(session: Session) {
+export default function tools({ session }: ToolContext) {
   const searchProvider = searchProviders[0];
-  console.log('tools()', session.user.settings);
   if (!session.user.settings.providers?.[searchProvider.name]) {
     return [ViewWeb];
   }

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { reloadConfig, useMessaging } from '@/managers/messaging.tsx';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { trpc } from '@/utils.ts';
-import { Chat } from '@tiny-chat/core-backend/generated/prisma/client.ts';
+import { Action, Chat } from '@tiny-chat/core-backend/generated/prisma/client.ts';
 import { MessageOmitted } from '@tiny-chat/core-backend/src/types.ts';
 import { FolderListData } from '@tiny-chat/core-backend/src/routes/folders.ts';
 import { navigate } from 'wouter/use-hash-location';
@@ -15,7 +15,8 @@ interface Chats {
   folders: FolderListData[];
   fetchFolders: (showProgress?: boolean) => Promise<void>;
   messages: MessageOmitted[];
-  fetchMessages: (showProgress?: boolean) => Promise<void>;
+  actions: Action[];
+  fetchChat: (showProgress?: boolean) => Promise<void>;
 
   currentChat: Chat | null;
   setCurrentChat: (id: string | null, pushState?: boolean, showProgress?: boolean) => Promise<void>;
@@ -49,15 +50,17 @@ export const useChats = create(
       if (showProgress) await useTasks.getState().removeTask('fetchFolders');
     },
     messages: [],
-    fetchMessages: async (showProgress = true) => {
+    actions: [],
+    fetchChat: async (showProgress = true) => {
       const { currentChat } = get();
-      if (showProgress) useTasks.getState().addTask('fetchMessages', 'Loading messages');
+      if (showProgress) useTasks.getState().addTask('fetchChat', 'Loading chat');
       const messages = currentChat
         ? await trpc.messages.list.query({ chatId: currentChat.id })
         : [];
-      set({ messages });
-      console.log('Messages:', messages);
-      if (showProgress) await useTasks.getState().removeTask('fetchMessages');
+      const actions = currentChat ? await trpc.actions.list.query({ chatId: currentChat.id }) : [];
+      console.log('Messages:', messages, 'Actions:', actions);
+      set({ messages, actions });
+      if (showProgress) await useTasks.getState().removeTask('fetchChat');
     },
 
     currentChat: null,
@@ -72,7 +75,7 @@ export const useChats = create(
       useMessaging.getState().reset();
       set({ currentChat: chat });
       if (showProgress) nprogress.set(50);
-      await get().fetchMessages(false);
+      await get().fetchChat(false);
       useMessaging.getState().requestScrollToBottom();
       if (showProgress) nprogress.complete();
       if (pushState) reloadConfig();

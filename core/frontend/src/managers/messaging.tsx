@@ -151,8 +151,7 @@ export const useMessaging = create(
 
     sendMessage: async (data) => {
       const { config, truncating, reset, editing, setData } = get();
-      const { setCurrentChat, fetchFolders, fetchMessages, temporary, incognito } =
-        useChats.getState();
+      const { setCurrentChat, fetchFolders, fetchChat, temporary, incognito } = useChats.getState();
       let currentChat = useChats.getState().currentChat;
       if (!config) return;
 
@@ -191,7 +190,7 @@ export const useMessaging = create(
       }
       await fetchFolders(false);
       if (!currentChat) await setCurrentChat(message.chatId, true, false);
-      else await fetchMessages(false);
+      else await fetchChat(false);
 
       reloadConfig();
       currentChat = useChats.getState().currentChat!;
@@ -230,7 +229,7 @@ export const useMessaging = create(
       void useTasks.getState().updateTask('deleteMessagePair', 33);
       await useChats.getState().fetchFolders(false);
       void useTasks.getState().updateTask('deleteMessagePair', 66);
-      await useChats.getState().fetchMessages(false);
+      await useChats.getState().fetchChat(false);
       await useTasks.getState().removeTask('deleteMessagePair');
       setInputDisabled(false);
     },

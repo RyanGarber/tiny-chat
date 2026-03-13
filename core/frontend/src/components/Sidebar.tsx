@@ -38,7 +38,7 @@ export default function Sidebar() {
     if (isSessionPending || !session?.user) return;
     if (window.location.hash.length < 2) window.location.hash = '#/';
     if (!window.location.hash.startsWith('#/app/')) {
-      if (currentChat?.id ?? '' !== location.slice(1)) {
+      if ((currentChat?.id ?? '') !== location.slice(1)) {
         void setCurrentChat(location.slice(1) || null, false);
       }
     }

@@ -39,13 +39,12 @@ export type MemoryMinAggregateOutputType = {
   userId: string | null
   folderId: string | null
   chatId: string | null
-  messageId: string | null
   fact: string | null
   category: $Enums.MemoryCategory | null
   stability: $Enums.MemoryStability | null
   confidence: number | null
   createdAt: Date | null
-  active: boolean | null
+  messageId: string | null
 }
 
 export type MemoryMaxAggregateOutputType = {
@@ -53,13 +52,12 @@ export type MemoryMaxAggregateOutputType = {
   userId: string | null
   folderId: string | null
   chatId: string | null
-  messageId: string | null
   fact: string | null
   category: $Enums.MemoryCategory | null
   stability: $Enums.MemoryStability | null
   confidence: number | null
   createdAt: Date | null
-  active: boolean | null
+  messageId: string | null
 }
 
 export type MemoryCountAggregateOutputType = {
@@ -67,7 +65,6 @@ export type MemoryCountAggregateOutputType = {
   userId: number
   folderId: number
   chatId: number
-  messageId: number
   config: number
   fact: number
   category: number
@@ -75,7 +72,7 @@ export type MemoryCountAggregateOutputType = {
   evidence: number
   confidence: number
   createdAt: number
-  active: number
+  messageId: number
   _all: number
 }
 
@@ -93,13 +90,12 @@ export type MemoryMinAggregateInputType = {
   userId?: true
   folderId?: true
   chatId?: true
-  messageId?: true
   fact?: true
   category?: true
   stability?: true
   confidence?: true
   createdAt?: true
-  active?: true
+  messageId?: true
 }
 
 export type MemoryMaxAggregateInputType = {
@@ -107,13 +103,12 @@ export type MemoryMaxAggregateInputType = {
   userId?: true
   folderId?: true
   chatId?: true
-  messageId?: true
   fact?: true
   category?: true
   stability?: true
   confidence?: true
   createdAt?: true
-  active?: true
+  messageId?: true
 }
 
 export type MemoryCountAggregateInputType = {
@@ -121,7 +116,6 @@ export type MemoryCountAggregateInputType = {
   userId?: true
   folderId?: true
   chatId?: true
-  messageId?: true
   config?: true
   fact?: true
   category?: true
@@ -129,7 +123,7 @@ export type MemoryCountAggregateInputType = {
   evidence?: true
   confidence?: true
   createdAt?: true
-  active?: true
+  messageId?: true
   _all?: true
 }
 
@@ -222,9 +216,8 @@ export type MemoryGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalA
 export type MemoryGroupByOutputType = {
   id: string
   userId: string
-  folderId: string
-  chatId: string
-  messageId: string
+  folderId: string | null
+  chatId: string | null
   config: runtime.JsonValue
   fact: string
   category: $Enums.MemoryCategory
@@ -232,7 +225,7 @@ export type MemoryGroupByOutputType = {
   evidence: string[]
   confidence: number
   createdAt: Date
-  active: boolean
+  messageId: string | null
   _count: MemoryCountAggregateOutputType | null
   _avg: MemoryAvgAggregateOutputType | null
   _sum: MemorySumAggregateOutputType | null
@@ -261,9 +254,8 @@ export type MemoryWhereInput = {
   NOT?: Prisma.MemoryWhereInput | Prisma.MemoryWhereInput[]
   id?: Prisma.StringFilter<"Memory"> | string
   userId?: Prisma.StringFilter<"Memory"> | string
-  folderId?: Prisma.StringFilter<"Memory"> | string
-  chatId?: Prisma.StringFilter<"Memory"> | string
-  messageId?: Prisma.StringFilter<"Memory"> | string
+  folderId?: Prisma.StringNullableFilter<"Memory"> | string | null
+  chatId?: Prisma.StringNullableFilter<"Memory"> | string | null
   config?: Prisma.JsonFilter<"Memory">
   fact?: Prisma.StringFilter<"Memory"> | string
   category?: Prisma.EnumMemoryCategoryFilter<"Memory"> | $Enums.MemoryCategory
@@ -271,19 +263,18 @@ export type MemoryWhereInput = {
   evidence?: Prisma.StringNullableListFilter<"Memory">
   confidence?: Prisma.FloatFilter<"Memory"> | number
   createdAt?: Prisma.DateTimeFilter<"Memory"> | Date | string
-  active?: Prisma.BoolFilter<"Memory"> | boolean
-  chat?: Prisma.XOR<Prisma.ChatScalarRelationFilter, Prisma.ChatWhereInput>
-  folder?: Prisma.XOR<Prisma.FolderScalarRelationFilter, Prisma.FolderWhereInput>
-  message?: Prisma.XOR<Prisma.MessageScalarRelationFilter, Prisma.MessageWhereInput>
+  messageId?: Prisma.StringNullableFilter<"Memory"> | string | null
+  chat?: Prisma.XOR<Prisma.ChatNullableScalarRelationFilter, Prisma.ChatWhereInput> | null
+  folder?: Prisma.XOR<Prisma.FolderNullableScalarRelationFilter, Prisma.FolderWhereInput> | null
+  message?: Prisma.XOR<Prisma.MessageNullableScalarRelationFilter, Prisma.MessageWhereInput> | null
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }
 
 export type MemoryOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  folderId?: Prisma.SortOrder
-  chatId?: Prisma.SortOrder
-  messageId?: Prisma.SortOrder
+  folderId?: Prisma.SortOrderInput | Prisma.SortOrder
+  chatId?: Prisma.SortOrderInput | Prisma.SortOrder
   config?: Prisma.SortOrder
   fact?: Prisma.SortOrder
   category?: Prisma.SortOrder
@@ -291,7 +282,7 @@ export type MemoryOrderByWithRelationInput = {
   evidence?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  active?: Prisma.SortOrder
+  messageId?: Prisma.SortOrderInput | Prisma.SortOrder
   chat?: Prisma.ChatOrderByWithRelationInput
   folder?: Prisma.FolderOrderByWithRelationInput
   message?: Prisma.MessageOrderByWithRelationInput
@@ -304,9 +295,8 @@ export type MemoryWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.MemoryWhereInput[]
   NOT?: Prisma.MemoryWhereInput | Prisma.MemoryWhereInput[]
   userId?: Prisma.StringFilter<"Memory"> | string
-  folderId?: Prisma.StringFilter<"Memory"> | string
-  chatId?: Prisma.StringFilter<"Memory"> | string
-  messageId?: Prisma.StringFilter<"Memory"> | string
+  folderId?: Prisma.StringNullableFilter<"Memory"> | string | null
+  chatId?: Prisma.StringNullableFilter<"Memory"> | string | null
   config?: Prisma.JsonFilter<"Memory">
   fact?: Prisma.StringFilter<"Memory"> | string
   category?: Prisma.EnumMemoryCategoryFilter<"Memory"> | $Enums.MemoryCategory
@@ -314,19 +304,18 @@ export type MemoryWhereUniqueInput = Prisma.AtLeast<{
   evidence?: Prisma.StringNullableListFilter<"Memory">
   confidence?: Prisma.FloatFilter<"Memory"> | number
   createdAt?: Prisma.DateTimeFilter<"Memory"> | Date | string
-  active?: Prisma.BoolFilter<"Memory"> | boolean
-  chat?: Prisma.XOR<Prisma.ChatScalarRelationFilter, Prisma.ChatWhereInput>
-  folder?: Prisma.XOR<Prisma.FolderScalarRelationFilter, Prisma.FolderWhereInput>
-  message?: Prisma.XOR<Prisma.MessageScalarRelationFilter, Prisma.MessageWhereInput>
+  messageId?: Prisma.StringNullableFilter<"Memory"> | string | null
+  chat?: Prisma.XOR<Prisma.ChatNullableScalarRelationFilter, Prisma.ChatWhereInput> | null
+  folder?: Prisma.XOR<Prisma.FolderNullableScalarRelationFilter, Prisma.FolderWhereInput> | null
+  message?: Prisma.XOR<Prisma.MessageNullableScalarRelationFilter, Prisma.MessageWhereInput> | null
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }, "id">
 
 export type MemoryOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  folderId?: Prisma.SortOrder
-  chatId?: Prisma.SortOrder
-  messageId?: Prisma.SortOrder
+  folderId?: Prisma.SortOrderInput | Prisma.SortOrder
+  chatId?: Prisma.SortOrderInput | Prisma.SortOrder
   config?: Prisma.SortOrder
   fact?: Prisma.SortOrder
   category?: Prisma.SortOrder
@@ -334,7 +323,7 @@ export type MemoryOrderByWithAggregationInput = {
   evidence?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  active?: Prisma.SortOrder
+  messageId?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.MemoryCountOrderByAggregateInput
   _avg?: Prisma.MemoryAvgOrderByAggregateInput
   _max?: Prisma.MemoryMaxOrderByAggregateInput
@@ -348,9 +337,8 @@ export type MemoryScalarWhereWithAggregatesInput = {
   NOT?: Prisma.MemoryScalarWhereWithAggregatesInput | Prisma.MemoryScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Memory"> | string
   userId?: Prisma.StringWithAggregatesFilter<"Memory"> | string
-  folderId?: Prisma.StringWithAggregatesFilter<"Memory"> | string
-  chatId?: Prisma.StringWithAggregatesFilter<"Memory"> | string
-  messageId?: Prisma.StringWithAggregatesFilter<"Memory"> | string
+  folderId?: Prisma.StringNullableWithAggregatesFilter<"Memory"> | string | null
+  chatId?: Prisma.StringNullableWithAggregatesFilter<"Memory"> | string | null
   config?: Prisma.JsonWithAggregatesFilter<"Memory">
   fact?: Prisma.StringWithAggregatesFilter<"Memory"> | string
   category?: Prisma.EnumMemoryCategoryWithAggregatesFilter<"Memory"> | $Enums.MemoryCategory
@@ -358,7 +346,7 @@ export type MemoryScalarWhereWithAggregatesInput = {
   evidence?: Prisma.StringNullableListFilter<"Memory">
   confidence?: Prisma.FloatWithAggregatesFilter<"Memory"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Memory"> | Date | string
-  active?: Prisma.BoolWithAggregatesFilter<"Memory"> | boolean
+  messageId?: Prisma.StringNullableWithAggregatesFilter<"Memory"> | string | null
 }
 
 export type MemoryCreateInput = {
@@ -370,19 +358,17 @@ export type MemoryCreateInput = {
   evidence?: Prisma.MemoryCreateevidenceInput | string[]
   confidence: number
   createdAt?: Date | string
-  active?: boolean
-  chat: Prisma.ChatCreateNestedOneWithoutMemoriesInput
-  folder: Prisma.FolderCreateNestedOneWithoutMemoriesInput
-  message: Prisma.MessageCreateNestedOneWithoutMemoriesInput
+  chat?: Prisma.ChatCreateNestedOneWithoutMemoriesInput
+  folder?: Prisma.FolderCreateNestedOneWithoutMemoriesInput
+  message?: Prisma.MessageCreateNestedOneWithoutMemoriesInput
   user: Prisma.UserCreateNestedOneWithoutMemoriesInput
 }
 
 export type MemoryUncheckedCreateInput = {
   id: string
   userId: string
-  folderId: string
-  chatId: string
-  messageId: string
+  folderId?: string | null
+  chatId?: string | null
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   fact: string
   category: $Enums.MemoryCategory
@@ -390,7 +376,7 @@ export type MemoryUncheckedCreateInput = {
   evidence?: Prisma.MemoryCreateevidenceInput | string[]
   confidence: number
   createdAt?: Date | string
-  active?: boolean
+  messageId?: string | null
 }
 
 export type MemoryUpdateInput = {
@@ -402,19 +388,17 @@ export type MemoryUpdateInput = {
   evidence?: Prisma.MemoryUpdateevidenceInput | string[]
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  chat?: Prisma.ChatUpdateOneRequiredWithoutMemoriesNestedInput
-  folder?: Prisma.FolderUpdateOneRequiredWithoutMemoriesNestedInput
-  message?: Prisma.MessageUpdateOneRequiredWithoutMemoriesNestedInput
+  chat?: Prisma.ChatUpdateOneWithoutMemoriesNestedInput
+  folder?: Prisma.FolderUpdateOneWithoutMemoriesNestedInput
+  message?: Prisma.MessageUpdateOneWithoutMemoriesNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutMemoriesNestedInput
 }
 
 export type MemoryUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  folderId?: Prisma.StringFieldUpdateOperationsInput | string
-  chatId?: Prisma.StringFieldUpdateOperationsInput | string
-  messageId?: Prisma.StringFieldUpdateOperationsInput | string
+  folderId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chatId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   fact?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.EnumMemoryCategoryFieldUpdateOperationsInput | $Enums.MemoryCategory
@@ -422,15 +406,14 @@ export type MemoryUncheckedUpdateInput = {
   evidence?: Prisma.MemoryUpdateevidenceInput | string[]
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type MemoryCreateManyInput = {
   id: string
   userId: string
-  folderId: string
-  chatId: string
-  messageId: string
+  folderId?: string | null
+  chatId?: string | null
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   fact: string
   category: $Enums.MemoryCategory
@@ -438,7 +421,7 @@ export type MemoryCreateManyInput = {
   evidence?: Prisma.MemoryCreateevidenceInput | string[]
   confidence: number
   createdAt?: Date | string
-  active?: boolean
+  messageId?: string | null
 }
 
 export type MemoryUpdateManyMutationInput = {
@@ -450,15 +433,13 @@ export type MemoryUpdateManyMutationInput = {
   evidence?: Prisma.MemoryUpdateevidenceInput | string[]
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type MemoryUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  folderId?: Prisma.StringFieldUpdateOperationsInput | string
-  chatId?: Prisma.StringFieldUpdateOperationsInput | string
-  messageId?: Prisma.StringFieldUpdateOperationsInput | string
+  folderId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chatId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   fact?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.EnumMemoryCategoryFieldUpdateOperationsInput | $Enums.MemoryCategory
@@ -466,7 +447,7 @@ export type MemoryUncheckedUpdateManyInput = {
   evidence?: Prisma.MemoryUpdateevidenceInput | string[]
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type MemoryListRelationFilter = {
@@ -492,7 +473,6 @@ export type MemoryCountOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   folderId?: Prisma.SortOrder
   chatId?: Prisma.SortOrder
-  messageId?: Prisma.SortOrder
   config?: Prisma.SortOrder
   fact?: Prisma.SortOrder
   category?: Prisma.SortOrder
@@ -500,7 +480,7 @@ export type MemoryCountOrderByAggregateInput = {
   evidence?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  active?: Prisma.SortOrder
+  messageId?: Prisma.SortOrder
 }
 
 export type MemoryAvgOrderByAggregateInput = {
@@ -512,13 +492,12 @@ export type MemoryMaxOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   folderId?: Prisma.SortOrder
   chatId?: Prisma.SortOrder
-  messageId?: Prisma.SortOrder
   fact?: Prisma.SortOrder
   category?: Prisma.SortOrder
   stability?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  active?: Prisma.SortOrder
+  messageId?: Prisma.SortOrder
 }
 
 export type MemoryMinOrderByAggregateInput = {
@@ -526,13 +505,12 @@ export type MemoryMinOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   folderId?: Prisma.SortOrder
   chatId?: Prisma.SortOrder
-  messageId?: Prisma.SortOrder
   fact?: Prisma.SortOrder
   category?: Prisma.SortOrder
   stability?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  active?: Prisma.SortOrder
+  messageId?: Prisma.SortOrder
 }
 
 export type MemorySumOrderByAggregateInput = {
@@ -741,17 +719,15 @@ export type MemoryCreateWithoutUserInput = {
   evidence?: Prisma.MemoryCreateevidenceInput | string[]
   confidence: number
   createdAt?: Date | string
-  active?: boolean
-  chat: Prisma.ChatCreateNestedOneWithoutMemoriesInput
-  folder: Prisma.FolderCreateNestedOneWithoutMemoriesInput
-  message: Prisma.MessageCreateNestedOneWithoutMemoriesInput
+  chat?: Prisma.ChatCreateNestedOneWithoutMemoriesInput
+  folder?: Prisma.FolderCreateNestedOneWithoutMemoriesInput
+  message?: Prisma.MessageCreateNestedOneWithoutMemoriesInput
 }
 
 export type MemoryUncheckedCreateWithoutUserInput = {
   id: string
-  folderId: string
-  chatId: string
-  messageId: string
+  folderId?: string | null
+  chatId?: string | null
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   fact: string
   category: $Enums.MemoryCategory
@@ -759,7 +735,7 @@ export type MemoryUncheckedCreateWithoutUserInput = {
   evidence?: Prisma.MemoryCreateevidenceInput | string[]
   confidence: number
   createdAt?: Date | string
-  active?: boolean
+  messageId?: string | null
 }
 
 export type MemoryCreateOrConnectWithoutUserInput = {
@@ -794,9 +770,8 @@ export type MemoryScalarWhereInput = {
   NOT?: Prisma.MemoryScalarWhereInput | Prisma.MemoryScalarWhereInput[]
   id?: Prisma.StringFilter<"Memory"> | string
   userId?: Prisma.StringFilter<"Memory"> | string
-  folderId?: Prisma.StringFilter<"Memory"> | string
-  chatId?: Prisma.StringFilter<"Memory"> | string
-  messageId?: Prisma.StringFilter<"Memory"> | string
+  folderId?: Prisma.StringNullableFilter<"Memory"> | string | null
+  chatId?: Prisma.StringNullableFilter<"Memory"> | string | null
   config?: Prisma.JsonFilter<"Memory">
   fact?: Prisma.StringFilter<"Memory"> | string
   category?: Prisma.EnumMemoryCategoryFilter<"Memory"> | $Enums.MemoryCategory
@@ -804,7 +779,7 @@ export type MemoryScalarWhereInput = {
   evidence?: Prisma.StringNullableListFilter<"Memory">
   confidence?: Prisma.FloatFilter<"Memory"> | number
   createdAt?: Prisma.DateTimeFilter<"Memory"> | Date | string
-  active?: Prisma.BoolFilter<"Memory"> | boolean
+  messageId?: Prisma.StringNullableFilter<"Memory"> | string | null
 }
 
 export type MemoryCreateWithoutFolderInput = {
@@ -816,17 +791,15 @@ export type MemoryCreateWithoutFolderInput = {
   evidence?: Prisma.MemoryCreateevidenceInput | string[]
   confidence: number
   createdAt?: Date | string
-  active?: boolean
-  chat: Prisma.ChatCreateNestedOneWithoutMemoriesInput
-  message: Prisma.MessageCreateNestedOneWithoutMemoriesInput
+  chat?: Prisma.ChatCreateNestedOneWithoutMemoriesInput
+  message?: Prisma.MessageCreateNestedOneWithoutMemoriesInput
   user: Prisma.UserCreateNestedOneWithoutMemoriesInput
 }
 
 export type MemoryUncheckedCreateWithoutFolderInput = {
   id: string
   userId: string
-  chatId: string
-  messageId: string
+  chatId?: string | null
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   fact: string
   category: $Enums.MemoryCategory
@@ -834,7 +807,7 @@ export type MemoryUncheckedCreateWithoutFolderInput = {
   evidence?: Prisma.MemoryCreateevidenceInput | string[]
   confidence: number
   createdAt?: Date | string
-  active?: boolean
+  messageId?: string | null
 }
 
 export type MemoryCreateOrConnectWithoutFolderInput = {
@@ -872,17 +845,15 @@ export type MemoryCreateWithoutChatInput = {
   evidence?: Prisma.MemoryCreateevidenceInput | string[]
   confidence: number
   createdAt?: Date | string
-  active?: boolean
-  folder: Prisma.FolderCreateNestedOneWithoutMemoriesInput
-  message: Prisma.MessageCreateNestedOneWithoutMemoriesInput
+  folder?: Prisma.FolderCreateNestedOneWithoutMemoriesInput
+  message?: Prisma.MessageCreateNestedOneWithoutMemoriesInput
   user: Prisma.UserCreateNestedOneWithoutMemoriesInput
 }
 
 export type MemoryUncheckedCreateWithoutChatInput = {
   id: string
   userId: string
-  folderId: string
-  messageId: string
+  folderId?: string | null
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   fact: string
   category: $Enums.MemoryCategory
@@ -890,7 +861,7 @@ export type MemoryUncheckedCreateWithoutChatInput = {
   evidence?: Prisma.MemoryCreateevidenceInput | string[]
   confidence: number
   createdAt?: Date | string
-  active?: boolean
+  messageId?: string | null
 }
 
 export type MemoryCreateOrConnectWithoutChatInput = {
@@ -928,17 +899,16 @@ export type MemoryCreateWithoutMessageInput = {
   evidence?: Prisma.MemoryCreateevidenceInput | string[]
   confidence: number
   createdAt?: Date | string
-  active?: boolean
-  chat: Prisma.ChatCreateNestedOneWithoutMemoriesInput
-  folder: Prisma.FolderCreateNestedOneWithoutMemoriesInput
+  chat?: Prisma.ChatCreateNestedOneWithoutMemoriesInput
+  folder?: Prisma.FolderCreateNestedOneWithoutMemoriesInput
   user: Prisma.UserCreateNestedOneWithoutMemoriesInput
 }
 
 export type MemoryUncheckedCreateWithoutMessageInput = {
   id: string
   userId: string
-  folderId: string
-  chatId: string
+  folderId?: string | null
+  chatId?: string | null
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   fact: string
   category: $Enums.MemoryCategory
@@ -946,7 +916,6 @@ export type MemoryUncheckedCreateWithoutMessageInput = {
   evidence?: Prisma.MemoryCreateevidenceInput | string[]
   confidence: number
   createdAt?: Date | string
-  active?: boolean
 }
 
 export type MemoryCreateOrConnectWithoutMessageInput = {
@@ -977,9 +946,8 @@ export type MemoryUpdateManyWithWhereWithoutMessageInput = {
 
 export type MemoryCreateManyUserInput = {
   id: string
-  folderId: string
-  chatId: string
-  messageId: string
+  folderId?: string | null
+  chatId?: string | null
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   fact: string
   category: $Enums.MemoryCategory
@@ -987,7 +955,7 @@ export type MemoryCreateManyUserInput = {
   evidence?: Prisma.MemoryCreateevidenceInput | string[]
   confidence: number
   createdAt?: Date | string
-  active?: boolean
+  messageId?: string | null
 }
 
 export type MemoryUpdateWithoutUserInput = {
@@ -999,17 +967,15 @@ export type MemoryUpdateWithoutUserInput = {
   evidence?: Prisma.MemoryUpdateevidenceInput | string[]
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  chat?: Prisma.ChatUpdateOneRequiredWithoutMemoriesNestedInput
-  folder?: Prisma.FolderUpdateOneRequiredWithoutMemoriesNestedInput
-  message?: Prisma.MessageUpdateOneRequiredWithoutMemoriesNestedInput
+  chat?: Prisma.ChatUpdateOneWithoutMemoriesNestedInput
+  folder?: Prisma.FolderUpdateOneWithoutMemoriesNestedInput
+  message?: Prisma.MessageUpdateOneWithoutMemoriesNestedInput
 }
 
 export type MemoryUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  folderId?: Prisma.StringFieldUpdateOperationsInput | string
-  chatId?: Prisma.StringFieldUpdateOperationsInput | string
-  messageId?: Prisma.StringFieldUpdateOperationsInput | string
+  folderId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chatId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   fact?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.EnumMemoryCategoryFieldUpdateOperationsInput | $Enums.MemoryCategory
@@ -1017,14 +983,13 @@ export type MemoryUncheckedUpdateWithoutUserInput = {
   evidence?: Prisma.MemoryUpdateevidenceInput | string[]
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type MemoryUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  folderId?: Prisma.StringFieldUpdateOperationsInput | string
-  chatId?: Prisma.StringFieldUpdateOperationsInput | string
-  messageId?: Prisma.StringFieldUpdateOperationsInput | string
+  folderId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chatId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   fact?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.EnumMemoryCategoryFieldUpdateOperationsInput | $Enums.MemoryCategory
@@ -1032,14 +997,13 @@ export type MemoryUncheckedUpdateManyWithoutUserInput = {
   evidence?: Prisma.MemoryUpdateevidenceInput | string[]
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type MemoryCreateManyFolderInput = {
   id: string
   userId: string
-  chatId: string
-  messageId: string
+  chatId?: string | null
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   fact: string
   category: $Enums.MemoryCategory
@@ -1047,7 +1011,7 @@ export type MemoryCreateManyFolderInput = {
   evidence?: Prisma.MemoryCreateevidenceInput | string[]
   confidence: number
   createdAt?: Date | string
-  active?: boolean
+  messageId?: string | null
 }
 
 export type MemoryUpdateWithoutFolderInput = {
@@ -1059,17 +1023,15 @@ export type MemoryUpdateWithoutFolderInput = {
   evidence?: Prisma.MemoryUpdateevidenceInput | string[]
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  chat?: Prisma.ChatUpdateOneRequiredWithoutMemoriesNestedInput
-  message?: Prisma.MessageUpdateOneRequiredWithoutMemoriesNestedInput
+  chat?: Prisma.ChatUpdateOneWithoutMemoriesNestedInput
+  message?: Prisma.MessageUpdateOneWithoutMemoriesNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutMemoriesNestedInput
 }
 
 export type MemoryUncheckedUpdateWithoutFolderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  chatId?: Prisma.StringFieldUpdateOperationsInput | string
-  messageId?: Prisma.StringFieldUpdateOperationsInput | string
+  chatId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   fact?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.EnumMemoryCategoryFieldUpdateOperationsInput | $Enums.MemoryCategory
@@ -1077,14 +1039,13 @@ export type MemoryUncheckedUpdateWithoutFolderInput = {
   evidence?: Prisma.MemoryUpdateevidenceInput | string[]
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type MemoryUncheckedUpdateManyWithoutFolderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  chatId?: Prisma.StringFieldUpdateOperationsInput | string
-  messageId?: Prisma.StringFieldUpdateOperationsInput | string
+  chatId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   fact?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.EnumMemoryCategoryFieldUpdateOperationsInput | $Enums.MemoryCategory
@@ -1092,14 +1053,13 @@ export type MemoryUncheckedUpdateManyWithoutFolderInput = {
   evidence?: Prisma.MemoryUpdateevidenceInput | string[]
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type MemoryCreateManyChatInput = {
   id: string
   userId: string
-  folderId: string
-  messageId: string
+  folderId?: string | null
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   fact: string
   category: $Enums.MemoryCategory
@@ -1107,7 +1067,7 @@ export type MemoryCreateManyChatInput = {
   evidence?: Prisma.MemoryCreateevidenceInput | string[]
   confidence: number
   createdAt?: Date | string
-  active?: boolean
+  messageId?: string | null
 }
 
 export type MemoryUpdateWithoutChatInput = {
@@ -1119,17 +1079,15 @@ export type MemoryUpdateWithoutChatInput = {
   evidence?: Prisma.MemoryUpdateevidenceInput | string[]
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  folder?: Prisma.FolderUpdateOneRequiredWithoutMemoriesNestedInput
-  message?: Prisma.MessageUpdateOneRequiredWithoutMemoriesNestedInput
+  folder?: Prisma.FolderUpdateOneWithoutMemoriesNestedInput
+  message?: Prisma.MessageUpdateOneWithoutMemoriesNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutMemoriesNestedInput
 }
 
 export type MemoryUncheckedUpdateWithoutChatInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  folderId?: Prisma.StringFieldUpdateOperationsInput | string
-  messageId?: Prisma.StringFieldUpdateOperationsInput | string
+  folderId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   fact?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.EnumMemoryCategoryFieldUpdateOperationsInput | $Enums.MemoryCategory
@@ -1137,14 +1095,13 @@ export type MemoryUncheckedUpdateWithoutChatInput = {
   evidence?: Prisma.MemoryUpdateevidenceInput | string[]
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type MemoryUncheckedUpdateManyWithoutChatInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  folderId?: Prisma.StringFieldUpdateOperationsInput | string
-  messageId?: Prisma.StringFieldUpdateOperationsInput | string
+  folderId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   fact?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.EnumMemoryCategoryFieldUpdateOperationsInput | $Enums.MemoryCategory
@@ -1152,14 +1109,14 @@ export type MemoryUncheckedUpdateManyWithoutChatInput = {
   evidence?: Prisma.MemoryUpdateevidenceInput | string[]
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type MemoryCreateManyMessageInput = {
   id: string
   userId: string
-  folderId: string
-  chatId: string
+  folderId?: string | null
+  chatId?: string | null
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   fact: string
   category: $Enums.MemoryCategory
@@ -1167,7 +1124,6 @@ export type MemoryCreateManyMessageInput = {
   evidence?: Prisma.MemoryCreateevidenceInput | string[]
   confidence: number
   createdAt?: Date | string
-  active?: boolean
 }
 
 export type MemoryUpdateWithoutMessageInput = {
@@ -1179,17 +1135,16 @@ export type MemoryUpdateWithoutMessageInput = {
   evidence?: Prisma.MemoryUpdateevidenceInput | string[]
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  chat?: Prisma.ChatUpdateOneRequiredWithoutMemoriesNestedInput
-  folder?: Prisma.FolderUpdateOneRequiredWithoutMemoriesNestedInput
+  chat?: Prisma.ChatUpdateOneWithoutMemoriesNestedInput
+  folder?: Prisma.FolderUpdateOneWithoutMemoriesNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutMemoriesNestedInput
 }
 
 export type MemoryUncheckedUpdateWithoutMessageInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  folderId?: Prisma.StringFieldUpdateOperationsInput | string
-  chatId?: Prisma.StringFieldUpdateOperationsInput | string
+  folderId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chatId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   fact?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.EnumMemoryCategoryFieldUpdateOperationsInput | $Enums.MemoryCategory
@@ -1197,14 +1152,13 @@ export type MemoryUncheckedUpdateWithoutMessageInput = {
   evidence?: Prisma.MemoryUpdateevidenceInput | string[]
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type MemoryUncheckedUpdateManyWithoutMessageInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  folderId?: Prisma.StringFieldUpdateOperationsInput | string
-  chatId?: Prisma.StringFieldUpdateOperationsInput | string
+  folderId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chatId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   fact?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.EnumMemoryCategoryFieldUpdateOperationsInput | $Enums.MemoryCategory
@@ -1212,7 +1166,6 @@ export type MemoryUncheckedUpdateManyWithoutMessageInput = {
   evidence?: Prisma.MemoryUpdateevidenceInput | string[]
   confidence?: Prisma.FloatFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 
@@ -1222,7 +1175,6 @@ export type MemorySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   userId?: boolean
   folderId?: boolean
   chatId?: boolean
-  messageId?: boolean
   config?: boolean
   fact?: boolean
   category?: boolean
@@ -1230,10 +1182,10 @@ export type MemorySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   evidence?: boolean
   confidence?: boolean
   createdAt?: boolean
-  active?: boolean
-  chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
-  message?: boolean | Prisma.MessageDefaultArgs<ExtArgs>
+  messageId?: boolean
+  chat?: boolean | Prisma.Memory$chatArgs<ExtArgs>
+  folder?: boolean | Prisma.Memory$folderArgs<ExtArgs>
+  message?: boolean | Prisma.Memory$messageArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["memory"]>
 
@@ -1242,7 +1194,6 @@ export type MemorySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   userId?: boolean
   folderId?: boolean
   chatId?: boolean
-  messageId?: boolean
   config?: boolean
   fact?: boolean
   category?: boolean
@@ -1250,10 +1201,10 @@ export type MemorySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   evidence?: boolean
   confidence?: boolean
   createdAt?: boolean
-  active?: boolean
-  chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
-  message?: boolean | Prisma.MessageDefaultArgs<ExtArgs>
+  messageId?: boolean
+  chat?: boolean | Prisma.Memory$chatArgs<ExtArgs>
+  folder?: boolean | Prisma.Memory$folderArgs<ExtArgs>
+  message?: boolean | Prisma.Memory$messageArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["memory"]>
 
@@ -1262,7 +1213,6 @@ export type MemorySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   userId?: boolean
   folderId?: boolean
   chatId?: boolean
-  messageId?: boolean
   config?: boolean
   fact?: boolean
   category?: boolean
@@ -1270,10 +1220,10 @@ export type MemorySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   evidence?: boolean
   confidence?: boolean
   createdAt?: boolean
-  active?: boolean
-  chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
-  message?: boolean | Prisma.MessageDefaultArgs<ExtArgs>
+  messageId?: boolean
+  chat?: boolean | Prisma.Memory$chatArgs<ExtArgs>
+  folder?: boolean | Prisma.Memory$folderArgs<ExtArgs>
+  message?: boolean | Prisma.Memory$messageArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["memory"]>
 
@@ -1282,7 +1232,6 @@ export type MemorySelectScalar = {
   userId?: boolean
   folderId?: boolean
   chatId?: boolean
-  messageId?: boolean
   config?: boolean
   fact?: boolean
   category?: boolean
@@ -1290,43 +1239,42 @@ export type MemorySelectScalar = {
   evidence?: boolean
   confidence?: boolean
   createdAt?: boolean
-  active?: boolean
+  messageId?: boolean
 }
 
-export type MemoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "folderId" | "chatId" | "messageId" | "config" | "fact" | "category" | "stability" | "evidence" | "confidence" | "createdAt" | "active", ExtArgs["result"]["memory"]>
+export type MemoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "folderId" | "chatId" | "config" | "fact" | "category" | "stability" | "evidence" | "confidence" | "createdAt" | "messageId", ExtArgs["result"]["memory"]>
 export type MemoryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
-  message?: boolean | Prisma.MessageDefaultArgs<ExtArgs>
+  chat?: boolean | Prisma.Memory$chatArgs<ExtArgs>
+  folder?: boolean | Prisma.Memory$folderArgs<ExtArgs>
+  message?: boolean | Prisma.Memory$messageArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type MemoryIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
-  message?: boolean | Prisma.MessageDefaultArgs<ExtArgs>
+  chat?: boolean | Prisma.Memory$chatArgs<ExtArgs>
+  folder?: boolean | Prisma.Memory$folderArgs<ExtArgs>
+  message?: boolean | Prisma.Memory$messageArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type MemoryIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
-  message?: boolean | Prisma.MessageDefaultArgs<ExtArgs>
+  chat?: boolean | Prisma.Memory$chatArgs<ExtArgs>
+  folder?: boolean | Prisma.Memory$folderArgs<ExtArgs>
+  message?: boolean | Prisma.Memory$messageArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 
 export type $MemoryPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Memory"
   objects: {
-    chat: Prisma.$ChatPayload<ExtArgs>
-    folder: Prisma.$FolderPayload<ExtArgs>
-    message: Prisma.$MessagePayload<ExtArgs>
+    chat: Prisma.$ChatPayload<ExtArgs> | null
+    folder: Prisma.$FolderPayload<ExtArgs> | null
+    message: Prisma.$MessagePayload<ExtArgs> | null
     user: Prisma.$UserPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     userId: string
-    folderId: string
-    chatId: string
-    messageId: string
+    folderId: string | null
+    chatId: string | null
     config: runtime.JsonValue
     fact: string
     category: $Enums.MemoryCategory
@@ -1334,7 +1282,7 @@ export type $MemoryPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     evidence: string[]
     confidence: number
     createdAt: Date
-    active: boolean
+    messageId: string | null
   }, ExtArgs["result"]["memory"]>
   composites: {}
 }
@@ -1729,9 +1677,9 @@ readonly fields: MemoryFieldRefs;
  */
 export interface Prisma__MemoryClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  chat<T extends Prisma.ChatDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ChatDefaultArgs<ExtArgs>>): Prisma.Prisma__ChatClient<runtime.Types.Result.GetResult<Prisma.$ChatPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  folder<T extends Prisma.FolderDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FolderDefaultArgs<ExtArgs>>): Prisma.Prisma__FolderClient<runtime.Types.Result.GetResult<Prisma.$FolderPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  message<T extends Prisma.MessageDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.MessageDefaultArgs<ExtArgs>>): Prisma.Prisma__MessageClient<runtime.Types.Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  chat<T extends Prisma.Memory$chatArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Memory$chatArgs<ExtArgs>>): Prisma.Prisma__ChatClient<runtime.Types.Result.GetResult<Prisma.$ChatPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  folder<T extends Prisma.Memory$folderArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Memory$folderArgs<ExtArgs>>): Prisma.Prisma__FolderClient<runtime.Types.Result.GetResult<Prisma.$FolderPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  message<T extends Prisma.Memory$messageArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Memory$messageArgs<ExtArgs>>): Prisma.Prisma__MessageClient<runtime.Types.Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1766,7 +1714,6 @@ export interface MemoryFieldRefs {
   readonly userId: Prisma.FieldRef<"Memory", 'String'>
   readonly folderId: Prisma.FieldRef<"Memory", 'String'>
   readonly chatId: Prisma.FieldRef<"Memory", 'String'>
-  readonly messageId: Prisma.FieldRef<"Memory", 'String'>
   readonly config: Prisma.FieldRef<"Memory", 'Json'>
   readonly fact: Prisma.FieldRef<"Memory", 'String'>
   readonly category: Prisma.FieldRef<"Memory", 'MemoryCategory'>
@@ -1774,7 +1721,7 @@ export interface MemoryFieldRefs {
   readonly evidence: Prisma.FieldRef<"Memory", 'String[]'>
   readonly confidence: Prisma.FieldRef<"Memory", 'Float'>
   readonly createdAt: Prisma.FieldRef<"Memory", 'DateTime'>
-  readonly active: Prisma.FieldRef<"Memory", 'Boolean'>
+  readonly messageId: Prisma.FieldRef<"Memory", 'String'>
 }
     
 
@@ -2168,6 +2115,63 @@ export type MemoryDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * Limit how many Memories to delete.
    */
   limit?: number
+}
+
+/**
+ * Memory.chat
+ */
+export type Memory$chatArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Chat
+   */
+  select?: Prisma.ChatSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Chat
+   */
+  omit?: Prisma.ChatOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ChatInclude<ExtArgs> | null
+  where?: Prisma.ChatWhereInput
+}
+
+/**
+ * Memory.folder
+ */
+export type Memory$folderArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Folder
+   */
+  select?: Prisma.FolderSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Folder
+   */
+  omit?: Prisma.FolderOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.FolderInclude<ExtArgs> | null
+  where?: Prisma.FolderWhereInput
+}
+
+/**
+ * Memory.message
+ */
+export type Memory$messageArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Message
+   */
+  select?: Prisma.MessageSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Message
+   */
+  omit?: Prisma.MessageOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.MessageInclude<ExtArgs> | null
+  where?: Prisma.MessageWhereInput
 }
 
 /**

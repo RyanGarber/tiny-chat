@@ -1,15 +1,11 @@
 import { z } from 'zod';
-import { type CustomTool } from './index.ts';
+import { type CustomTool, type ToolContext } from './index.ts';
 import { getMemorySearch } from '../routes/embeddings.ts';
 import { embed } from '../embed.ts';
 import { MemoryCategory, MemoryStability } from '../../generated/prisma/enums.ts';
 import { createId } from '@paralleldrive/cuid2';
 import { type Session } from '../server.ts';
 import { type Memory } from '../../generated/prisma/client.ts';
-
-const zEvidence = z
-  .union([z.string(), z.array(z.string())])
-  .describe('Quotes or paraphrases from the current conversation that justify the update.');
 
 const zAddMemory = z.object({
   fact: z
@@ -27,13 +23,15 @@ const zAddMemory = z.object({
     .describe(
       'How long this fact is expected to remain true: SHORT_TERM (days to weeks, e.g. current task), MEDIUM_TERM (weeks to months, e.g. active project), LONG_TERM (months to years, e.g. job, language preference).',
     ),
-  evidence: zEvidence,
+  evidence: z
+    .union([z.string(), z.array(z.string())])
+    .describe('Quotes or paraphrases from the current conversation that justify the update.'),
   confidence: z
     .number()
     .min(0)
     .max(1)
     .describe(
-      'Confidence that this fact is accurate and worth storing, from 0 to 1. Use 0.9+ only for explicitly stated facts. Use 0.6-0.8 for strong implications. Do not save below 0.5.',
+      'Confidence that this fact is accurate and worth storing, from 0 to 1. Use 0.9+ only for explicitly stated facts. Use 0.6-0.8 for strong implications. Use 0.5 or below for weak implications or guesses.',
     ),
 });
 
@@ -43,7 +41,7 @@ const AddMemory = {
     'Add a new memory about the user. Use this tool to provide relevant information about the user that the agent can reference in future interactions. The fact should be self-contained and understandable without any conversation context.',
   parameters: zAddMemory.toJSONSchema(),
   schema: zAddMemory,
-  run: async ({ session, message, params }) => {
+  run: async ({ session, message }, params) => {
     const memory = await globalThis.prisma.memory.create({
       data: {
         id: createId(),
@@ -73,10 +71,11 @@ const zUpdateMemory = z.object({
     .describe(
       'The corrected, self-contained statement replacing the old one. Write in third person.',
     ),
-  stability: z
-    .enum(MemoryStability)
-    .describe('Updated stability if it has changed: SHORT_TERM, MEDIUM_TERM, or LONG_TERM.'),
-  evidence: zEvidence,
+  category: z.enum(MemoryCategory).describe('Updated category if it has changed.'),
+  stability: z.enum(MemoryStability).describe('Updated stability if it has changed.'),
+  evidence: z
+    .union([z.string(), z.array(z.string())])
+    .describe('Quotes or paraphrases from the current conversation that justify the update.'),
   confidence: z
     .number()
     .min(0)
@@ -92,12 +91,10 @@ const UpdateMemory = {
     'Overwrite an existing memory when the user provides new information that contradicts or refines a known fact. Use the exact memory ID shown in your context. Prefer updating over adding a duplicate.',
   parameters: zUpdateMemory.toJSONSchema(),
   schema: zUpdateMemory,
-  run: async ({ session, message, params }) => {
+  run: async ({ session, message }, params) => {
     return await globalThis.prisma.$transaction(async (tx) => {
-      const oldMemory = await tx.memory.update({
-        // TODO - confirm this fails if memory doesn't belong to user
+      await tx.memory.delete({
         where: { id: params.id, userId: message.userId },
-        data: { active: false },
       });
 
       const memory = await tx.memory.create({
@@ -109,7 +106,7 @@ const UpdateMemory = {
           message: { connect: { id: message.id } },
           config: message.config,
           fact: params.fact,
-          category: oldMemory.category,
+          category: params.category,
           stability: params.stability,
           evidence: typeof params.evidence === 'string' ? [params.evidence] : params.evidence,
           confidence: params.confidence,
@@ -138,10 +135,9 @@ const DeleteMemory = {
     'Remove a memory that the user has explicitly retracted, that has become clearly outdated, or that was saved in error. Do not delete memories just because they seem old — only delete when there is a clear reason.',
   parameters: zDeleteMemory.toJSONSchema(),
   schema: zDeleteMemory,
-  run: async ({ message, params }) => {
-    await globalThis.prisma.memory.update({
+  run: async ({ message }, params) => {
+    await globalThis.prisma.memory.delete({
       where: { id: params.id, userId: message.userId },
-      data: { active: false },
     });
 
     return { success: true };
@@ -168,7 +164,7 @@ const SearchMemory = {
     'Retrieve relevant facts about the user from long-term memory. Call this before answering any question that depends on personal context — preferences, projects, skills, or constraints. Prefer a specific query over a broad one.',
   parameters: zSearchMemory.toJSONSchema(),
   schema: zSearchMemory,
-  run: async ({ session, params }) => {
+  run: async ({ session }, params) => {
     const embeddings = await embed(session, [params.query]);
     if (!embeddings) {
       console.warn('Failed to generate embedding for query');
@@ -189,7 +185,7 @@ async function embedMemory(session: Session, memory: Memory) {
   console.log('Saved embedding for memory', memory.id);
 }
 
-export default function tools(session: Session) {
+export default function tools({ session, chat }: ToolContext) {
   if (!session.user.settings.embeddingConfig) return [];
-  return [AddMemory, UpdateMemory, DeleteMemory, SearchMemory];
+  return chat && !chat.incognito ? [AddMemory, UpdateMemory, DeleteMemory, SearchMemory] : [];
 }

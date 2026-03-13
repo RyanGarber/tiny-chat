@@ -189,13 +189,16 @@ const filter = (text: string) => {
   });
 
   text = text.replace(
-    /(?<![\\$a-zA-Z\d])\$[ \t]?(?![{\d])((?:[^$\\\n]|\\.)+?)[ \t]?\$(?!\$)/g,
+    /(?<![\\$a-zA-Z\d])\$[ \t]?((?:[^$\\\n]|\\.)+?)[ \t]?\$(?!\$)/g,
     (match, inner: string) => {
       const trimmed = inner.trim();
       if (!trimmed) return match;
 
-      // Allow digit-leading matches only if they contain a LaTeX command
+      // Reject digit-leading content with no LaTeX chars (e.g. $20k, $500)
       if (/^\d/.test(trimmed) && !LATEX_CHAR_RE.test(trimmed)) return match;
+
+      // Reject ${ template literals
+      if (trimmed.startsWith('{')) return match;
 
       return '`' + MATH_MARKER + trimmed + '`';
     },
@@ -230,9 +233,9 @@ const filter = (text: string) => {
 };
 
 export const Markdown = memo(
-  ({ source, style }: { source: string; style?: CSSProperties }) => {
+  ({ source, style, maw }: { source: string; style?: CSSProperties; maw?: number }) => {
     return (
-      <Typography style={{ overflowWrap: 'break-word', ...style }}>
+      <Typography style={{ overflowWrap: 'break-word', ...style }} maw={maw}>
         <ReactMarkdown skipHtml remarkPlugins={[RemarkGfm, RemarkBreaks]} components={components}>
           {filter(source)}
         </ReactMarkdown>

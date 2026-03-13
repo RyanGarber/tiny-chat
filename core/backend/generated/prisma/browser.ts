@@ -58,7 +58,7 @@ export type Message = Prisma.MessageModel
  */
 export type Memory = Prisma.MemoryModel
 /**
- * Model Task
+ * Model Action
  * 
  */
-export type Task = Prisma.TaskModel
+export type Action = Prisma.ActionModel

@@ -4,10 +4,15 @@ import {
   ActionIcon,
   Badge,
   Box,
+  Card,
   Divider,
+  Group,
   Image,
   Portal,
+  RadioCard,
+  RadioIndicator,
   Stack,
+  Text,
   ThemeIcon,
   Transition,
 } from '@mantine/core';
@@ -16,10 +21,12 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { applyHljsTheme, extractText } from '@/utils.ts';
 import { MessageOmitted, zDataPart } from '@tiny-chat/core-backend/src/types.ts';
 import { useSettings } from '@/managers/settings.tsx';
+import { useProviders } from '@/managers/providers.tsx';
 import { Markdown } from '@/components/Markdown.tsx';
 import { Author } from '@tiny-chat/core-backend/generated/prisma/enums.ts';
 import MessageBodyPopover from '@/components/MessageBodyPopover.tsx';
 import { Icon } from '@iconify/react';
+import { zAskUser } from '@tiny-chat/core-backend/src/tools/user.ts';
 
 function useStreamedLength(fullLength: number, isGenerating: boolean): number {
   const [displayedLength, setDisplayedLength] = useState(fullLength);
@@ -162,7 +169,7 @@ function ToolPopover({
       }
       dropdown={
         <Markdown
-          style={{ maxWidth: containerWidth - 15 }}
+          maw={containerWidth - 15}
           source={`#### Input\n\`\`\`json\n${input}\n\`\`\`\n\n#### Output\n\`\`\`json\n${output}\n\`\`\``}
         />
       }
@@ -189,6 +196,7 @@ export default function MessageBodyContent({
   const { shadow } = useLayout();
   const { addQuote } = useMessaging();
   const { getCodeTheme } = useSettings();
+  const { continueToolCall } = useProviders();
   void applyHljsTheme(getCodeTheme());
 
   const container = useRef<HTMLDivElement>(null);
@@ -218,11 +226,6 @@ export default function MessageBodyContent({
       scrollElRef.current.scrollTop = scrollElRef.current.scrollHeight;
     }
   }, [streamedLength, isGenerating]);
-
-  if (message.author === Author.USER)
-    return (
-      <Markdown source={extractText(message.data)} style={{ maxWidth: containerWidth - 40 }} />
-    ); // TODO - eskms - bruh
 
   const selection = useTextSelection();
   const selectedTextRef = useRef('');
@@ -267,6 +270,12 @@ export default function MessageBodyContent({
     ).trim();
     if (text) addQuote(message, text);
   };
+
+  if (message.author === Author.USER) {
+    return (
+      <Markdown source={extractText(message.data)} style={{ maxWidth: containerWidth - 40 }} />
+    );
+  }
 
   // Render parts
   let textOffset = 0;
@@ -327,6 +336,31 @@ export default function MessageBodyContent({
         renderedParts.push(
           <ToolPopover key={i} call={part} result={result} containerWidth={containerWidth} />,
         );
+        if (part.name === 'ask_user' && !result) {
+          const ask = zAskUser.parse(part.args) as { question: string; answers: string[] };
+          renderedParts.push(
+            <Card key={`${i}a`} mb={10}>
+              <Stack gap="xs">
+                <Text>{ask.question}</Text>
+                {ask.answers.map((answer, index) => (
+                  <RadioCard
+                    key={index}
+                    p="xs"
+                    checked={false}
+                    onClick={() => {
+                      void continueToolCall(message.id, part.id, part.name, answer);
+                    }}
+                  >
+                    <Group wrap="nowrap" align="flex-start">
+                      <RadioIndicator />
+                      <Text size="sm">{answer}</Text>
+                    </Group>
+                  </RadioCard>
+                ))}
+              </Stack>
+            </Card>,
+          );
+        }
       }
     } else if (part.type === 'abort') {
       renderedParts.push(
@@ -354,8 +388,7 @@ export default function MessageBodyContent({
           {(styles) => (
             <ActionIcon
               variant="gradient"
-              size={26}
-              radius="xl"
+              size={32}
               style={{
                 position: 'fixed',
                 top: rect.top - 30,

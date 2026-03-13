@@ -31,9 +31,10 @@ export const Debug: ModelProvider = {
         type: 'data',
         value: {
           type: 'toolCall',
-          name: 'search_memory',
+          name: 'ask_user',
           args: {
-            query: 'the meaning of life',
+            question: 'What to do?',
+            answers: ['Nothing', 'Just wait', 'Panic'],
           },
           id: 'debug-tool-call',
         },

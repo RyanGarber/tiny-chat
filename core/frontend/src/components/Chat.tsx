@@ -20,6 +20,7 @@ import { Input } from '@/components/Input.tsx';
 import { auth, extractText, scrubText } from '@/utils.ts';
 import Attachments from '@/components/Attachments.tsx';
 import { Icon } from '@iconify/react';
+import Actions from '@/components/Actions.tsx';
 
 const SCROLL_BOTTOM_THRESHOLD = 80;
 
@@ -223,23 +224,30 @@ export default function Chat() {
     return () => observer.disconnect();
   }, []);
 
+  // TODO - this kinda yughhhhhhhhhh
+  const messageOpacities = new Map<string, number>();
   let hasHitEdit = false;
-  const getMessageOpacity = (message: { id: string }) => {
-    if (!editing && !insertingAfter) return 1;
-    if (message.id === editing?.id) {
+  for (const message of messages) {
+    if (!editing && !insertingAfter) {
+      messageOpacities.set(message.id, 1);
+    } else if (message.id === editing?.id) {
       hasHitEdit = true;
-      return 1;
+      messageOpacities.set(message.id, 1);
+    } else if (!hasHitEdit || !truncating) {
+      messageOpacities.set(message.id, 0.5);
+    } else {
+      messageOpacities.set(message.id, 0.1);
     }
-    return hasHitEdit && truncating ? 0.1 : 0.5;
-  };
+  }
 
   const isNewChat = currentChat === null && !isInitializing;
   const isTemporary = temporary || currentChat?.temporary;
   const isIncognito = incognito || currentChat?.incognito;
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (isNewChat) setHasBeenNewChat(true);
+    if (isNewChat) {
+      setTimeout(() => setHasBeenNewChat(true)); // TODO - even more yughhhhhhhhhhhh (see eslint when removing the timeout)
+    }
   }, [isNewChat]);
 
   const topbar = (fixed: boolean) => {
@@ -400,14 +408,20 @@ export default function Chat() {
             >
               {topbar(false)}
               <Stack pt={10} px={20} m="0 auto" maw={860} gap={10}>
-                {!isInitializing &&
-                  messages.map((message) => (
-                    <Message
-                      key={message.id}
-                      message={message}
-                      opacity={getMessageOpacity(message)}
-                    />
-                  ))}
+                {!isInitializing && (
+                  <>
+                    {messages.map((message) => (
+                      <Message
+                        key={message.id}
+                        message={message}
+                        opacity={messageOpacities.get(message.id)!}
+                      />
+                    ))}
+                    <Box mb={20}>
+                      <Actions />
+                    </Box>
+                  </>
+                )}
               </Stack>
             </ScrollArea>
             <div

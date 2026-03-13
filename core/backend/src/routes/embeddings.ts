@@ -28,8 +28,7 @@ export default router({
         const memories = await tx.$queryRaw<(Memory & { embedding: string })[]>`SELECT *
         FROM memory
         WHERE "userId" = ${ctx.session.user.id}
-          AND embedding IS NOT NULL
-          AND active`;
+          AND embedding IS NOT NULL`;
 
         const query = combineVectorsWeighted(
           context,
@@ -59,9 +58,11 @@ export default router({
     }),
 
   fixMissing: procedure.mutation(async ({ ctx }) => {
-    const messages = await globalThis.prisma.$queryRaw<
-      Message[]
-    >`SELECT * FROM message WHERE "userId" = ${ctx.session.user.id} AND embedding IS NULL`;
+    const messages = (
+      await globalThis.prisma.$queryRaw<
+        Message[]
+      >`SELECT * FROM message WHERE "userId" = ${ctx.session.user.id} AND embedding IS NULL`
+    ).filter((m) => texts(zData.parse(m.data)).trim().length);
 
     let messagesDone = 0;
     for (let i = 0; i < messages.length; i += 100) {
@@ -144,8 +145,7 @@ export async function getMemorySearch(
           FROM memory
           WHERE "userId" = ${session.user.id}
             AND embedding IS NOT NULL
-            AND category IN (${Prisma.join(category ?? Object.values(MemoryCategory))})
-            AND active`
+            AND category IN (${Prisma.join(category ?? Object.values(MemoryCategory))})`
       ).map((m) => ({
         value: m as Memory,
         embedding: JSON.parse(m.embedding) as number[],

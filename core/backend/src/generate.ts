@@ -44,7 +44,7 @@ export default async function chatHandler(req: IncomingMessage, res: ServerRespo
       },
     });
 
-    // Fix up the context so that tool results are split into separate messages with the correct author
+    // Prefer persisted rows when IDs are present, then normalize mixed tool results into separate turns.
     for (const item of input.context) {
       const messageData = messageDatas.find((m) => m.id === item.id);
       if (messageData) {
@@ -53,6 +53,15 @@ export default async function chatHandler(req: IncomingMessage, res: ServerRespo
         context.push(item as MessageUnomitted);
       }
     }
+
+    context.splice(0, context.length, ...splitToolResults(context));
+
+    const chatId = context.find((m) => m.chatId)?.chatId;
+    const chat = chatId
+      ? await globalThis.prisma.chat.findUniqueOrThrow({
+          where: { id: chatId },
+        })
+      : undefined;
 
     // Agentic loop: keep generating until the model stops calling tools
     while (true) {
@@ -65,7 +74,7 @@ export default async function chatHandler(req: IncomingMessage, res: ServerRespo
         context,
         input.config,
         controller.signal,
-        tools(session),
+        tools({ session, message, chat, input }),
       );
 
       const modelMessage = { ...message, author: Author.MODEL, data: [] } as MessageUnomitted;
@@ -92,7 +101,7 @@ export default async function chatHandler(req: IncomingMessage, res: ServerRespo
       for (const part of toolCalls) {
         if (part.type !== 'toolCall') continue;
 
-        const tool = tools(session).find((t) => t.name === part.name);
+        const tool = tools({ session, message, chat, input }).find((t) => t.name === part.name);
         if (!tool) {
           console.warn(`Called tool '${part.name}' does not exist`);
           userMessage.data.push({
@@ -105,9 +114,17 @@ export default async function chatHandler(req: IncomingMessage, res: ServerRespo
           continue;
         }
 
+        if (tool.needsUserInput) {
+          console.log(
+            `Called tool '${part.name}' requires user input, skipping execution and waiting for next turn`,
+          );
+          controller.abort('Tool requires user input');
+          break;
+        }
+
         try {
-          const validated = tool.schema.parse(part.args);
-          const value = await tool.run({ session, message: message, params: validated });
+          const params = tool.schema.parse(part.args);
+          const value = await tool.run({ session, message: message, chat, input }, params);
           userMessage.data.push({ type: 'toolResult', id: part.id, name: part.name, value });
         } catch (e: any) {
           console.warn(`Called tool '${part.name}' threw error:`, e);
@@ -119,6 +136,11 @@ export default async function chatHandler(req: IncomingMessage, res: ServerRespo
             value: e.message ?? String(e),
           });
         }
+      }
+
+      if (controller.signal.aborted) {
+        console.log('Aborting generation loop:', controller.signal.reason);
+        break;
       }
 
       // Emit the tool results to the client so the UI can display them

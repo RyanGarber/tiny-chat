@@ -123,6 +123,7 @@ export const zGenerateInput = z.object({
   instruction: z.string(),
   context: z.array(z.object({ id: z.cuid2().optional(), author: z.enum(Author), data: zData })),
   config: zConfig,
+  timezone: z.string(),
 });
 export type zGenerateInput = z.infer<typeof zGenerateInput>;
 

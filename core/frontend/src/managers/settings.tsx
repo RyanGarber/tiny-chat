@@ -2,9 +2,9 @@ import { z } from 'zod';
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { auth, hljsThemeNames, trpc } from '@/utils.ts';
-import { useProviders } from '@/managers/providers.tsx';
 import { zConfig } from '@tiny-chat/core-backend/src/types.ts';
 import { useTasks } from '@/managers/tasks.tsx';
+import { useProviders } from '@/managers/providers.tsx';
 
 export const zProviders = z.record(z.string(), z.any()).optional();
 export const zSettings = z
@@ -56,11 +56,8 @@ interface Settings {
   getCodeTheme: () => string;
   setCodeTheme: (value: string) => Promise<void>;
 
-  getProviderSetting: (service: string, key: string) => string | undefined;
-  setProviderSetting: (service: string, key: string, value: string | undefined) => Promise<void>;
-
-  providerErrors: Record<string, string | null>;
-  getProviderError: (service: string) => string | null;
+  getProviderSetting: (name: string, key: string) => string | undefined;
+  setProviderSetting: (name: string, key: string, value: string | undefined) => Promise<void>;
 }
 
 export const useSettings = create(
@@ -180,31 +177,9 @@ export const useSettings = create(
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       else delete providers[name]?.[key];
       await get().setSettings({ providers }, false);
-      if (useProviders.getState().chatProviders.find((p) => p.name === name)) {
-        void useTasks.getState().updateTask('setProviderSetting', 50);
-        try {
-          const models = await trpc.providers.getChatModels.query({ service: name });
-          const count = models.length;
-          void useTasks
-            .getState()
-            .updateTask('setProviderSetting', 75, `${count} model${count === 1 ? '' : 's'} added`);
-          set({ providerErrors: { ...get().providerErrors, [name]: null } });
-        } catch (e: unknown) {
-          set({
-            providerErrors: {
-              ...get().providerErrors,
-              [name]: (e as Error).message ?? 'Provider error',
-            },
-          });
-        }
-        await useProviders.getState().updateProviders();
-      }
+      await useTasks.getState().updateTask('setProviderSetting', 50);
+      await useProviders.getState().updateProviders();
       await useTasks.getState().removeTask('setProviderSetting');
-    },
-
-    providerErrors: {},
-    getProviderError: (service) => {
-      return get().providerErrors[service] ?? null;
     },
   })),
 );

@@ -4,9 +4,17 @@ import { procedure, router } from '../index.ts';
 import { createForChat } from './folders.ts';
 import { Author, type Message as PrismaMessage } from '../../generated/prisma/client.ts';
 import { type MessageCreateInput } from '../../generated/prisma/models.ts';
-import { type MessageOmission, texts, wrapMessage, zConfig, zData, zMetadata } from '../types.ts';
+import {
+  type MessageOmission,
+  type MessageUnomitted,
+  texts,
+  wrapMessage,
+  zConfig,
+  zData,
+  zMetadata,
+} from '../types.ts';
 import { embed } from '../embed.ts';
-import { type Session } from '../server.ts';
+import { type User } from '../server.ts';
 
 export default router({
   create: procedure
@@ -80,7 +88,7 @@ export default router({
         }
       });
 
-      await embedMessage(ctx.session, message);
+      await embedMessage(ctx.session.user, message);
 
       return wrapMessage(message);
     }),
@@ -119,7 +127,7 @@ export default router({
         });
       });
 
-      await embedMessage(ctx.session, message);
+      await embedMessage(ctx.session.user, message);
 
       return wrapMessage(message);
     }),
@@ -191,12 +199,12 @@ export function reorder(messages: PrismaMessage[]) {
   return sorted;
 }
 
-export async function embedMessage(session: Session, message: PrismaMessage) {
+export async function embedMessage(user: User, message: PrismaMessage | MessageUnomitted) {
   let embedding: number[][] | null = null;
 
   const text = texts(zData.parse(message.data));
   if (text.trim().length) {
-    embedding = await embed(session, [text]);
+    embedding = await embed(user, [text]);
     if (!embedding) {
       console.warn('Failed to generate embedding for message:', message.id);
     }
@@ -205,5 +213,6 @@ export async function embedMessage(session: Session, message: PrismaMessage) {
   await globalThis.prisma
     .$executeRaw`UPDATE message SET embedding = ${embedding ? JSON.stringify(embedding[0]) : null}::vector WHERE id = ${message.id}`;
 
-  console.log('Saved embedding for message', message.id);
+  console.log('Generated embedding for message', message.id);
+  return embedding ? embedding[0] : null;
 }

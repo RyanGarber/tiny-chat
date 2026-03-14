@@ -1,5 +1,5 @@
 import { Brave } from './brave.ts';
-import { type Session } from '../../server.ts';
+import { type User } from '../../server.ts';
 
 export interface SearchResult {
   title: string;
@@ -10,7 +10,8 @@ export interface SearchResult {
 export interface SearchProvider {
   name: string;
   settings: string[];
-  search: (session: Session, query: string, maxResults: number) => Promise<SearchResult[]>;
+  check: (user: User) => Promise<boolean>;
+  search: (user: User, query: string, maxResults: number) => Promise<SearchResult[]>;
 }
 
 export const searchProviders: SearchProvider[] = [Brave];

@@ -23,7 +23,11 @@ import { codeThemes, themes, useSettings } from '@/managers/settings.tsx';
 import { auth, consumeLabel, hashText, openExternal, trpc, webUrl } from '@/utils.ts';
 import { useDisclosure } from '@mantine/hooks';
 import { useLayout } from '@/managers/layout.tsx';
-import { zConfig } from '@tiny-chat/core-backend/src/types.ts';
+import {
+  ChatProviderStatus,
+  SearchProviderStatus,
+  zConfig,
+} from '@tiny-chat/core-backend/src/types.ts';
 import ModelSelect from '@/components/ModelSelect.tsx';
 import { useTasks } from '@/managers/tasks.tsx';
 import { Icon } from '@iconify/react';
@@ -55,7 +59,6 @@ export default function Drawers({
     setCodeTheme,
     getProviderSetting,
     setProviderSetting,
-    getProviderError,
   } = useSettings();
   const { chatProviders, searchProviders } = useProviders();
   const { setGestureBlock, setDrawerCloser } = useLayout();
@@ -119,15 +122,15 @@ export default function Drawers({
 
   const [cloneInterval, setCloneInterval] = useState<NodeJS.Timeout>();
 
-  const ProviderSettings = (providers: { name: string; settings: string[] }[]) => (
+  const ProviderSettings = (providers: (ChatProviderStatus | SearchProviderStatus)[]) => (
     <Stack>
       {providers
         .filter((s) => s.settings.length)
-        .map((service) => (
+        .map((provider) => (
           <Box
-            key={service.name}
+            key={provider.name}
             style={
-              getProviderError(service.name)
+              provider.error
                 ? {
                     border: '1px solid var(--mantine-color-red-6)',
                     borderRadius: 'var(--mantine-radius-md)',
@@ -136,18 +139,18 @@ export default function Drawers({
                 : undefined
             }
           >
-            <Text size="sm">{service.name}</Text>
+            <Text size="sm">{provider.name}</Text>
             <Stack mt={5}>
-              {service.settings.map((s) => (
+              {provider.settings.map((s) => (
                 <TextInput
-                  key={service.name + s}
+                  key={provider.name + s}
                   label={s}
                   styles={consumeLabel}
-                  defaultValue={getProviderSetting(service.name, s) ?? ''}
+                  defaultValue={getProviderSetting(provider.name, s) ?? ''}
                   onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
                   onBlur={(e) => {
-                    if (e.target.value === (getProviderSetting(service.name, s) ?? '')) return;
-                    void setProviderSetting(service.name, s, e.target.value);
+                    if (e.target.value === (getProviderSetting(provider.name, s) ?? '')) return;
+                    void setProviderSetting(provider.name, s, e.target.value);
                   }}
                 />
               ))}

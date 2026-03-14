@@ -1,19 +1,29 @@
 import type { Model, zGenerateOutput } from '../../types.ts';
-import type { ModelProvider } from './index.ts';
+import type { ChatProvider } from './index.ts';
 
-export const Debug: ModelProvider = {
+export const Debug: ChatProvider = {
   name: 'debug',
   settings: [],
 
   // eslint-disable-next-line @typescript-eslint/require-await
   async getModels(_session) {
-    return [{ name: 'tool-sim', features: ['generate' as const], args: [] } satisfies Model];
+    return [
+      { name: 'tool-sim', features: ['generate' as const], args: [] } satisfies Model,
+      { name: 'text-sim', features: ['generate' as const], args: [] } satisfies Model,
+    ];
   },
 
   async *generate(_session, _instruction, context, _config, _abortSignal, _tools) {
     const data: zGenerateOutput[] = [];
 
-    console.log(_tools);
+    if (_config.model === 'text-sim') {
+      data.push({
+        type: 'data',
+        value: { type: 'text', value: 'This is a text generation simulation.' },
+      });
+      yield data[data.length - 1];
+      return;
+    }
 
     const result = context[context.length - 1].data.find((p) => p.type === 'toolResult');
     if (!result) {

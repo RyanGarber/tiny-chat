@@ -130,13 +130,22 @@ export const useTasks = create<Tasks>((set, get) => ({
 
     const { addTask, updateTask, removeTask } = get();
 
-    addTask('fix-embeddings', 'Generating embeddings');
     const result = await trpc.embeddings.fixMissing.mutate();
+    if (result.messages.total === 0 && result.memories.total === 0) return;
+
+    addTask('fix-embeddings', 'Generating embeddings');
     const failed =
       result.messages.total + result.memories.total - result.messages.fixed - result.memories.fixed;
     if (failed > 0) {
       void updateTask('fix-embeddings', 100, `${failed} could not be generated`);
       await new Promise((resolve) => setTimeout(resolve, 5000));
+    } else {
+      void updateTask(
+        'fix-embeddings',
+        100,
+        `${result.messages.fixed + result.memories.fixed} embeddings generated`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
     await removeTask('fix-embeddings');
   },

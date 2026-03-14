@@ -1,6 +1,6 @@
-import type { MessageUnomitted, zData, zGenerateOutput } from '../../types.ts';
+import type { ContextItem, zData, zGenerateOutput } from '../../types.ts';
 import { zMetadata } from '../../types.ts';
-import { type ModelProvider, SettingsError } from './index.ts';
+import { type ChatProvider, SettingsError } from './index.ts';
 import { Author } from '../../../generated/prisma/enums.ts';
 import { Anthropic } from '@anthropic-ai/sdk';
 import type {
@@ -14,17 +14,17 @@ import type {
   ToolResultBlockParam,
   ToolUseBlockParam,
 } from '@anthropic-ai/sdk/resources';
-import type { CustomTool } from '../../tools/index.ts';
+import type { ToolCall } from '../../tools/index.ts';
 import { splitToolResults } from '../../generate.ts';
 
-export const AnthropicAI: ModelProvider = {
+export const AnthropicAI: ChatProvider = {
   name: 'anthropic-ai',
   settings: ['apiKey'],
 
-  async getModels(session) {
-    if (!session?.user?.settings?.providers?.[this.name].apiKey) return [];
+  async getModels(user) {
+    if (!user?.settings?.providers?.[this.name].apiKey) return [];
 
-    const client = getClient(session.user.settings.providers[this.name]);
+    const client = getClient(user.settings.providers[this.name]);
 
     return (await client.models.list()).data.map((m) => ({
       name: m.id,
@@ -36,10 +36,10 @@ export const AnthropicAI: ModelProvider = {
     }));
   },
 
-  async *generate(session, instruction, context, config, abortSignal, tools?) {
-    if (!session.user.settings.providers[this.name].apiKey) throw new SettingsError();
+  async *generate(user, instructions, context, config, abortSignal, tools?) {
+    if (!user.settings.providers[this.name].apiKey) throw new SettingsError();
 
-    const client = getClient(session.user.settings.providers[this.name]);
+    const client = getClient(user.settings.providers[this.name]);
 
     console.log('Calling Claude');
 
@@ -47,7 +47,7 @@ export const AnthropicAI: ModelProvider = {
     const params: MessageCreateParamsStreaming = {
       model: config.model,
       stream: true,
-      system: instruction,
+      system: instructions,
       messages: toSdkMessages(context),
       max_tokens: config.args?.tokens ? parseInt(config.args?.tokens as string) : 1000,
       temperature: (config.args?.temperature as number) ?? 1,
@@ -77,7 +77,7 @@ function toSdkContent(data: zData): ContentBlockParam[] {
     }
     if (part.type === 'file') {
       const mime = part.mime ?? part.url.slice(5, part.url.indexOf(';'));
-      const b64 = part.url.slice(part.url.indexOf(',') + 1);
+      const base64 = part.url.slice(part.url.indexOf(',') + 1);
       if (part.url.startsWith('data:image/')) {
         return [
           {
@@ -85,7 +85,7 @@ function toSdkContent(data: zData): ContentBlockParam[] {
             source: {
               type: 'base64',
               media_type: mime as any,
-              data: b64,
+              data: base64,
             },
           } satisfies ImageBlockParam,
         ];
@@ -94,7 +94,7 @@ function toSdkContent(data: zData): ContentBlockParam[] {
       return [
         {
           type: 'document',
-          source: { type: 'base64', media_type: mime as any, data: b64 },
+          source: { type: 'base64', media_type: mime as any, data: base64 },
           ...(part.name ? { title: part.name } : {}),
         } satisfies DocumentBlockParam,
       ];
@@ -123,10 +123,10 @@ function toSdkContent(data: zData): ContentBlockParam[] {
   });
 }
 
-function toSdkMessages(context: MessageUnomitted[]): MessageParam[] {
-  return context.map((m) => ({
-    role: m.author === Author.USER ? ('user' as const) : ('assistant' as const),
-    content: toSdkContent(m.data),
+function toSdkMessages(context: ContextItem[]): MessageParam[] {
+  return context.map((message) => ({
+    role: message.author === Author.USER ? ('user' as const) : ('assistant' as const),
+    content: toSdkContent(message.data),
   }));
 }
 
@@ -182,10 +182,10 @@ async function* fromSdkStream(
   yield { type: 'special', value: { type: 'metadata', value: zMetadata.parse(events) } };
 }
 
-function toSdkTools(tools: CustomTool[]): Tool[] {
-  return tools.map((t) => ({
-    name: t.name,
-    description: t.description,
-    input_schema: t.parameters as Tool['input_schema'],
+function toSdkTools(tools: ToolCall[]): Tool[] {
+  return tools.map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    input_schema: tool.parameters as Tool['input_schema'],
   }));
 }

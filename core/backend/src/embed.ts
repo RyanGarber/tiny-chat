@@ -1,20 +1,20 @@
 import { z } from 'zod';
 import { zConfig } from './types.ts';
-import type { Session } from './server.ts';
-import { chatProviders } from './providers/model/index.ts';
+import type { User } from './server.ts';
+import { chatProviders } from './providers/chat/index.ts';
 
-export async function embed(session: Session, texts: string[]) {
-  const config = getEmbedConfig(session);
+export async function embed(user: User, texts: string[]) {
+  const config = getEmbedConfig(user);
   if (!config) return null;
 
-  const service = chatProviders.find((s) => s.name === config.service);
-  if (!service) return null;
+  const provider = chatProviders.find((s) => s.name === config.provider);
+  if (!provider) return null;
 
-  return service.embed(session, texts, config);
+  return provider.embed(user, texts, config);
 }
 
-export function getEmbedConfig(session: Session) {
-  const config = zConfig.safeParse(session.user.settings?.embeddingConfig);
+export function getEmbedConfig(user: User) {
+  const config = zConfig.safeParse(user.settings?.embeddingConfig);
   if (!config.success) {
     return undefined;
   }

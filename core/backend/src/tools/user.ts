@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { CustomTool, ToolContext } from './index.ts';
+import type { ToolCall, ToolContext } from './index.ts';
 
 export const zAskUser = z.object({
   question: z.string().describe('The question to ask the user.'),
@@ -18,9 +18,9 @@ const AskUser = {
   run: async () => {
     return new Promise<void>((r) => r());
   },
-} satisfies CustomTool<typeof zAskUser>;
+} satisfies ToolCall<typeof zAskUser>;
 
-export default function tools({ session }: ToolContext) {
-  if (!session.user.settings.embeddingConfig) return [];
-  return [AskUser];
+export default function tools({ user, generateInput }: ToolContext) {
+  if (!user.settings.embeddingConfig) return [];
+  return generateInput.userInput ? [AskUser] : [];
 }

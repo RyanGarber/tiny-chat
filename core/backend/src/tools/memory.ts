@@ -1,10 +1,10 @@
 import { z } from 'zod';
-import { type CustomTool, type ToolContext } from './index.ts';
+import { type ToolCall, type ToolContext } from './index.ts';
 import { getMemorySearch } from '../routes/embeddings.ts';
 import { embed } from '../embed.ts';
 import { MemoryCategory, MemoryStability } from '../../generated/prisma/enums.ts';
 import { createId } from '@paralleldrive/cuid2';
-import { type Session } from '../server.ts';
+import { type User } from '../server.ts';
 import { type Memory } from '../../generated/prisma/client.ts';
 
 const zAddMemory = z.object({
@@ -41,7 +41,9 @@ const AddMemory = {
     'Add a new memory about the user. Use this tool to provide relevant information about the user that the agent can reference in future interactions. The fact should be self-contained and understandable without any conversation context.',
   parameters: zAddMemory.toJSONSchema(),
   schema: zAddMemory,
-  run: async ({ session, message }, params) => {
+  run: async ({ user, message }, params) => {
+    if (!message.id) return;
+
     const memory = await globalThis.prisma.memory.create({
       data: {
         id: createId(),
@@ -58,11 +60,11 @@ const AddMemory = {
       },
     });
 
-    await embedMemory(session, memory);
+    await embedMemory(user, memory);
 
     return { success: true };
   },
-} satisfies CustomTool<typeof zAddMemory>;
+} satisfies ToolCall<typeof zAddMemory>;
 
 const zUpdateMemory = z.object({
   id: z.cuid2().describe('The exact ID of the memory to update, as shown in your memory context.'),
@@ -91,7 +93,9 @@ const UpdateMemory = {
     'Overwrite an existing memory when the user provides new information that contradicts or refines a known fact. Use the exact memory ID shown in your context. Prefer updating over adding a duplicate.',
   parameters: zUpdateMemory.toJSONSchema(),
   schema: zUpdateMemory,
-  run: async ({ session, message }, params) => {
+  run: async ({ user, message }, params) => {
+    if (!message.id) return;
+
     return await globalThis.prisma.$transaction(async (tx) => {
       await tx.memory.delete({
         where: { id: params.id, userId: message.userId },
@@ -113,12 +117,12 @@ const UpdateMemory = {
         },
       });
 
-      await embedMemory(session, memory);
+      await embedMemory(user, memory);
 
       return { success: true };
     });
   },
-} satisfies CustomTool<typeof zUpdateMemory>;
+} satisfies ToolCall<typeof zUpdateMemory>;
 
 const zDeleteMemory = z.object({
   id: z.cuid2().describe('The exact ID of the memory to delete, as shown in your memory context.'),
@@ -136,13 +140,15 @@ const DeleteMemory = {
   parameters: zDeleteMemory.toJSONSchema(),
   schema: zDeleteMemory,
   run: async ({ message }, params) => {
+    if (!message.id) return;
+
     await globalThis.prisma.memory.delete({
       where: { id: params.id, userId: message.userId },
     });
 
     return { success: true };
   },
-} satisfies CustomTool<typeof zDeleteMemory>;
+} satisfies ToolCall<typeof zDeleteMemory>;
 
 const zSearchMemory = z.object({
   query: z
@@ -164,18 +170,20 @@ const SearchMemory = {
     'Retrieve relevant facts about the user from long-term memory. Call this before answering any question that depends on personal context — preferences, projects, skills, or constraints. Prefer a specific query over a broad one.',
   parameters: zSearchMemory.toJSONSchema(),
   schema: zSearchMemory,
-  run: async ({ session }, params) => {
-    const embeddings = await embed(session, [params.query]);
+  run: async ({ message, user }, params) => {
+    if (!message.id) return;
+
+    const embeddings = await embed(user, [params.query]);
     if (!embeddings) {
       console.warn('Failed to generate embedding for query');
       return;
     }
-    return await getMemorySearch(session, embeddings[0], params.category);
+    return await getMemorySearch(user, embeddings[0], params.category);
   },
-} satisfies CustomTool<typeof zSearchMemory>;
+} satisfies ToolCall<typeof zSearchMemory>;
 
-async function embedMemory(session: Session, memory: Memory) {
-  const embeddings = await embed(session, [memory.fact]);
+async function embedMemory(user: User, memory: Memory) {
+  const embeddings = await embed(user, [memory.fact]);
   if (!embeddings) {
     console.warn('Failed to generate embedding for memory:', memory.id);
     return;
@@ -185,7 +193,7 @@ async function embedMemory(session: Session, memory: Memory) {
   console.log('Saved embedding for memory', memory.id);
 }
 
-export default function tools({ session, chat }: ToolContext) {
-  if (!session.user.settings.embeddingConfig) return [];
+export default function tools({ user, chat }: ToolContext) {
+  if (!user.settings.embeddingConfig) return [];
   return chat && !chat.incognito ? [AddMemory, UpdateMemory, DeleteMemory, SearchMemory] : [];
 }

@@ -201,10 +201,12 @@ export const ActionScalarFieldEnum = {
   folderId: 'folderId',
   chatId: 'chatId',
   schedule: 'schedule',
+  timezone: 'timezone',
   config: 'config',
   data: 'data',
   createdAt: 'createdAt',
-  messageId: 'messageId'
+  messageId: 'messageId',
+  lastRanAt: 'lastRanAt'
 } as const
 
 export type ActionScalarFieldEnum = (typeof ActionScalarFieldEnum)[keyof typeof ActionScalarFieldEnum]

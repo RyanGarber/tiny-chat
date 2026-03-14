@@ -1,20 +1,20 @@
-import type { CustomTool, ToolContext } from './index.ts';
+import type { ToolCall, ToolContext } from './index.ts';
 import { z } from 'zod';
 import rrule from 'rrule';
 import { createId } from '@paralleldrive/cuid2';
 import { texts, zData } from '../types.ts';
 
-function getOffsetMinutes(tzid: string): number {
+function getOffsetMinutes(timezone: string): number {
   const now = new Date();
   const utc = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
-  const local = new Date(now.toLocaleString('en-US', { timeZone: tzid }));
+  const local = new Date(now.toLocaleString('en-US', { timeZone: timezone }));
   return (local.getTime() - utc.getTime()) / 60000;
 }
 
-function toUTC(schedule: string, tzid: string): string {
+function toUTC(schedule: string, timezone: string): string {
   const rule = rrule.RRule.fromString(schedule);
   const options = { ...rule.origOptions };
-  const offset = getOffsetMinutes(tzid);
+  const offset = getOffsetMinutes(timezone);
 
   if (options.byhour !== undefined) {
     const hours = Array.isArray(options.byhour) ? options.byhour : [options.byhour];
@@ -51,9 +51,9 @@ const AddAction = {
     'A prompt to send in this chat on a recurring basis. Use when the user wants regular updates.',
   parameters: zAddAction.toJSONSchema(),
   schema: zAddAction,
-  run: async ({ chat, message, input }, params) => {
-    if (!chat) throw new Error('Must run in a chat');
-    const schedule = toUTC(params.schedule, input.timezone);
+  run: async ({ message, generateInput }, params) => {
+    if (!message.id) return;
+    const schedule = toUTC(params.schedule, generateInput.timezone);
     await globalThis.prisma.action.create({
       data: {
         id: createId(),
@@ -64,11 +64,12 @@ const AddAction = {
         config: message.config,
         data: [{ type: 'text', value: params.prompt }] satisfies zData,
         schedule,
+        timezone: generateInput.timezone,
       },
     });
     return { success: true };
   },
-} satisfies CustomTool<typeof zAddAction>;
+} satisfies ToolCall<typeof zAddAction>;
 
 const zUpdateAction = z.object({
   id: z.cuid2().describe('The exact ID of the action to update.'),
@@ -85,8 +86,9 @@ const UpdateAction = {
     'Update an existing action. Use this when the user requests an action to be modified.',
   parameters: zUpdateAction.toJSONSchema(),
   schema: zUpdateAction,
-  run: async ({ message, input }, params) => {
-    const schedule = toUTC(params.schedule, input.timezone);
+  run: async ({ message, generateInput }, params) => {
+    if (!message.id) return;
+    const schedule = toUTC(params.schedule, generateInput.timezone);
     await globalThis.prisma.action.update({
       where: {
         id: params.id,
@@ -95,11 +97,12 @@ const UpdateAction = {
       data: {
         data: [{ type: 'text', value: params.prompt }] satisfies zData,
         schedule,
+        timezone: generateInput.timezone,
       },
     });
     return { success: true };
   },
-} satisfies CustomTool<typeof zUpdateAction>;
+} satisfies ToolCall<typeof zUpdateAction>;
 
 const zDeleteAction = z.object({
   id: z.cuid2().describe('The exact ID of the action to delete.'),
@@ -112,12 +115,13 @@ const DeleteAction = {
   parameters: zDeleteAction.toJSONSchema(),
   schema: zDeleteAction,
   run: async ({ message }, params) => {
+    if (!message.id) return;
     await globalThis.prisma.action.delete({
       where: { id: params.id, userId: message.userId },
     });
     return { success: true };
   },
-} satisfies CustomTool<typeof zDeleteAction>;
+} satisfies ToolCall<typeof zDeleteAction>;
 
 const zListActions = z.object({});
 
@@ -127,14 +131,15 @@ const ListActions = {
   parameters: zListActions.toJSONSchema(),
   schema: zListActions,
   run: async ({ message }) => {
+    if (!message.id) return;
     return (
       await globalThis.prisma.action.findMany({
         where: { userId: message.userId },
       })
     ).map((a) => `[${a.id}] ${texts(zData.parse(a.data))} (${a.schedule})`);
   },
-} satisfies CustomTool<typeof zListActions>;
+} satisfies ToolCall<typeof zListActions>;
 
-export default function tools(_: ToolContext) {
-  return [AddAction, UpdateAction, DeleteAction, ListActions];
+export default function tools({ chat }: ToolContext) {
+  return chat ? [AddAction, UpdateAction, DeleteAction, ListActions] : [];
 }

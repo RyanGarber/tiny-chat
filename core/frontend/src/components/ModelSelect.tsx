@@ -29,12 +29,12 @@ export default function ModelSelect({
           .sort((a, b) => a.name.localeCompare(b.name))
           .map((m) => ({
             label: m.name,
-            value: JSON.stringify({ service: s.name, model: m.name } satisfies zConfig),
+            value: JSON.stringify({ provider: s.name, model: m.name } satisfies zConfig),
           })),
       }))}
       value={
         configValue
-          ? JSON.stringify({ service: configValue.service, model: configValue.model })
+          ? JSON.stringify({ provider: configValue.provider, model: configValue.model })
           : null
       }
       onChange={(v) => onConfigChange(v ? zConfig.parse(JSON.parse(v)) : null)}

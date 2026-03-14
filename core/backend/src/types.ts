@@ -30,15 +30,18 @@ export interface ChatProviderStatus {
   name: string;
   settings: string[];
   models: Model[];
+  error?: string;
 }
 
 export interface SearchProviderStatus {
   name: string;
   settings: string[];
+  available: boolean;
+  error?: string;
 }
 
 export const zConfig = z.object({
-  service: z.string(),
+  provider: z.string(),
   model: z.string(),
   args: z.any().optional(),
   schema: z.any().optional(),
@@ -86,13 +89,6 @@ export const zDataPart = z.discriminatedUnion('type', [
   }),
 ]);
 
-export function texts(data: zData) {
-  return data
-    .filter((p) => p.type === 'text')
-    .map((p) => p.value)
-    .join(' ');
-}
-
 export type zDataPart = z.infer<typeof zDataPart>;
 
 export const zData = z.array(zDataPart);
@@ -120,10 +116,11 @@ export const zSpecialPart = z.discriminatedUnion('type', [
 export type zSpecialPart = z.infer<typeof zSpecialPart>;
 
 export const zGenerateInput = z.object({
-  instruction: z.string(),
-  context: z.array(z.object({ id: z.cuid2().optional(), author: z.enum(Author), data: zData })),
+  context: z.array(z.object({ id: z.cuid2().nullable(), author: z.enum(Author), data: zData })),
   config: zConfig,
   timezone: z.string(),
+  userInput: z.boolean(),
+  overrideInstructions: z.string().optional(),
 });
 export type zGenerateInput = z.infer<typeof zGenerateInput>;
 
@@ -150,6 +147,8 @@ export interface MessageOmission {
 
 export type MessageOmitted = Omit<MessageUnomitted, 'metadata'>;
 
+export type ContextItem = MessageUnomitted | { id: null; author: Author; data: zData };
+
 export function wrapMessage(message: Message): MessageOmitted {
   return {
     ...message,
@@ -161,4 +160,70 @@ export function wrapMessage(message: Message): MessageOmitted {
       generating: false,
     },
   };
+}
+
+export function wrapMessageUnomitted(message: Message): MessageUnomitted {
+  return {
+    ...message,
+    config: zConfig.parse(message.config),
+    data: zData.parse(message.data),
+    metadata: zMetadata.parse(message.metadata),
+    state: {
+      any: false,
+      thinking: false,
+      generating: false,
+    },
+  };
+}
+
+export function texts(data: zData) {
+  return data
+    .filter((p) => p.type === 'text')
+    .map((p) => p.value)
+    .join(' ');
+}
+
+export function normalizeText(text: string) {
+  const lines = text.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].trim().length && !/^\[(user|assistant)/.exec(lines[i].trim())) {
+      return text;
+    }
+    if (/^\[(user|assistant)/.exec(lines[i].trim())) {
+      for (let j = i + 1; j < lines.length; j++) {
+        if (lines[j].trim().length && !/^\[(user|assistant)/.exec(lines[j].trim())) {
+          return lines.slice(j).join('\n');
+        }
+      }
+    }
+  }
+  return text;
+}
+
+export function snippetText(text: string, query: string, window = 160): string {
+  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const lower = text.toLowerCase();
+  let matchIndex = -1;
+  for (const term of terms) {
+    const idx = lower.indexOf(term);
+    if (idx !== -1) {
+      matchIndex = idx;
+      break;
+    }
+  }
+  if (matchIndex === -1) return text.length > window ? text.slice(0, window) + '…' : text;
+  const half = Math.floor(window / 2);
+  let start = Math.max(0, matchIndex - half);
+  let end = Math.min(text.length, matchIndex + half);
+  // Snap to nearest word boundaries
+  if (start > 0) {
+    const i = text.indexOf(' ', start);
+    if (i !== -1 && i < matchIndex) start = i + 1;
+  }
+  if (end < text.length) {
+    const i = text.lastIndexOf(' ', end);
+    if (i !== -1 && i > matchIndex) end = i;
+  }
+  const snippet = text.slice(start, end).trim();
+  return (start > 0 ? '…' : '') + snippet + (end < text.length ? '…' : '');
 }

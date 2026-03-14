@@ -1,4 +1,12 @@
-import type { MessageUnomitted, Model, ModelArg, zConfig, zData, zDataPart, zGenerateOutput, } from '../../types.ts';
+import type {
+  ContextItem,
+  Model,
+  ModelArg,
+  zConfig,
+  zData,
+  zDataPart,
+  zGenerateOutput,
+} from '../../types.ts';
 import { zMetadata } from '../../types.ts';
 import OpenAI, { APIUserAbortError } from 'openai';
 import type {
@@ -14,16 +22,16 @@ import {
   type ChatCompletionTool,
 } from 'openai/resources/chat/completions';
 import { Author } from '../../../generated/prisma/enums.ts';
-import { type ModelProvider, SettingsError } from './index.ts';
-import type { CustomTool } from '../../tools/index.ts';
+import { type ChatProvider, SettingsError } from './index.ts';
+import type { ToolCall } from '../../tools/index.ts';
 import { splitToolResults } from '../../generate.ts';
 
-export const MicrosoftFoundry: ModelProvider = {
+export const MicrosoftFoundry: ChatProvider = {
   name: 'microsoft-foundry',
   settings: ['resourceId', 'projectId', 'apiKey'],
 
-  async getModels(session) {
-    const settings = session?.user?.settings?.providers?.[this.name];
+  async getModels(user) {
+    const settings = user.settings.providers?.[this.name];
     if (!settings?.resourceId || !settings?.projectId || !settings?.apiKey) return [];
 
     const deployments = await fetch(
@@ -34,10 +42,6 @@ export const MicrosoftFoundry: ModelProvider = {
     const json = (await deployments.json()) as {
       value: { name: string; capabilities: Record<string, unknown> }[];
     };
-    console.log(
-      'gpt-5.3-chat capabilities:',
-      json.value.find((d: any) => d.name === 'gpt-5.3-chat')?.capabilities,
-    );
 
     return json.value.map((d) => {
       const args: ModelArg[] = [
@@ -61,8 +65,8 @@ export const MicrosoftFoundry: ModelProvider = {
     });
   },
 
-  async *generate(session, instruction, context, config, abortSignal, tools?) {
-    const settings = session.user.settings.providers[this.name];
+  async *generate(user, instruction, context, config, abortSignal, tools?) {
+    const settings = user.settings.providers[this.name];
     if (!settings.resourceId || !settings.projectId || !settings.apiKey) throw new SettingsError();
 
     const client = getClient(settings);
@@ -126,7 +130,7 @@ function toResponsesContent(data: zData, author: Author): ResponseInputContent[]
 }
 
 function toResponsesInput(
-  context: MessageUnomitted[],
+  context: ContextItem[],
   instruction: string,
   config: zConfig,
 ): ResponseInputItem[] {
@@ -138,17 +142,17 @@ function toResponsesInput(
     },
   ];
 
-  for (const m of context) {
-    const isSameModel = m.config?.model === config.model;
+  for (const message of context) {
+    const isSameModel = message.id && message.config?.model === config.model;
 
-    if (m.author === Author.MODEL) {
+    if (message.author === Author.MODEL) {
       // Reconstruct reasoning items from thoughts with ids (only if same model)
       if (isSameModel) {
-        const thoughtsWithId = m.data.filter((p) => p.type === 'thought' && p.id);
+        const thoughtsWithId = message.data.filter((p) => p.type === 'thought' && p.id);
         for (const thought of thoughtsWithId) {
           if (thought.type !== 'thought' || !thought.id) continue;
           // Find the matching reasoning item in metadata
-          const reasoningEvent = (m.metadata ?? [])
+          const reasoningEvent = (message.metadata ?? [])
             .flat()
             .find(
               (e: any) =>
@@ -168,8 +172,8 @@ function toResponsesInput(
       }
 
       // Emit tool calls as top-level function_call items
-      const toolCalls = m.data.filter((p) => p.type === 'toolCall');
-      const rest = m.data.filter((p) => p.type !== 'toolCall' && p.type !== 'thought');
+      const toolCalls = message.data.filter((p) => p.type === 'toolCall');
+      const rest = message.data.filter((p) => p.type !== 'toolCall' && p.type !== 'thought');
 
       if (rest.length) {
         items.push({
@@ -180,7 +184,6 @@ function toResponsesInput(
       }
 
       for (const part of toolCalls) {
-        if (part.type !== 'toolCall') continue;
         items.push({
           type: 'function_call',
           call_id: part.id,
@@ -190,15 +193,17 @@ function toResponsesInput(
       }
     } else {
       // User message — may contain tool results and regular content
-      const toolResults = m.data.filter((p) => p.type === 'toolResult');
-      const rest = m.data.filter((p) => p.type !== 'toolResult');
+      const toolResults = message.data.filter((p) => p.type === 'toolResult');
+      const rest = message.data.filter((p) => p.type !== 'toolResult');
 
-      for (const part of toolResults) {
-        if (part.type !== 'toolResult') continue;
+      for (const toolResult of toolResults) {
         items.push({
           type: 'function_call_output',
-          call_id: part.id,
-          output: typeof part.value === 'string' ? part.value : JSON.stringify(part.value),
+          call_id: toolResult.id,
+          output:
+            typeof toolResult.value === 'string'
+              ? toolResult.value
+              : JSON.stringify(toolResult.value),
         });
       }
 
@@ -226,9 +231,9 @@ function toCompletionsContent(data: zData): ChatCompletionContentPart[] {
       }
       // Non-image files: extract text content or describe the attachment
       const mime = part.mime ?? part.url.slice(5, part.url.indexOf(';'));
-      const b64 = part.url.slice(part.url.indexOf(',') + 1);
+      const base64 = part.url.slice(part.url.indexOf(',') + 1);
       if (mime.startsWith('text/')) {
-        const text = Buffer.from(b64, 'base64').toString('utf-8');
+        const text = Buffer.from(base64, 'base64').toString('utf-8');
         return [{ type: 'text', text: `[File: ${part.name ?? 'attachment'}]\n${text}` }];
       }
       return [{ type: 'text', text: `[Attached file: ${part.name ?? 'attachment'} (${mime})]` }];
@@ -238,15 +243,15 @@ function toCompletionsContent(data: zData): ChatCompletionContentPart[] {
 }
 
 function toCompletionsMessages(
-  context: MessageUnomitted[],
+  context: ContextItem[],
   instruction: string,
 ): ChatCompletionMessageParam[] {
   const messages: ChatCompletionMessageParam[] = [{ role: 'system', content: instruction }];
 
-  for (const m of context) {
-    if (m.author === Author.USER) {
+  for (const message of context) {
+    if (message.author === Author.USER) {
       // Collect tool results and regular content separately
-      const toolResults = m.data.filter(
+      const toolResults = message.data.filter(
         (
           p,
         ): p is Extract<
@@ -256,14 +261,17 @@ function toCompletionsMessages(
           }
         > => p.type === 'toolResult',
       );
-      const rest = m.data.filter((p) => p.type !== 'toolResult');
+      const rest = message.data.filter((p) => p.type !== 'toolResult');
 
       if (toolResults.length) {
-        for (const tr of toolResults) {
+        for (const toolResult of toolResults) {
           messages.push({
             role: 'tool',
-            tool_call_id: tr.id,
-            content: typeof tr.value === 'string' ? tr.value : JSON.stringify(tr.value),
+            tool_call_id: toolResult.id,
+            content:
+              typeof toolResult.value === 'string'
+                ? toolResult.value
+                : JSON.stringify(toolResult.value),
           });
         }
       }
@@ -272,7 +280,7 @@ function toCompletionsMessages(
       }
     } else {
       // Assistant message — may contain tool_calls
-      const toolCalls = m.data.filter(
+      const toolCalls = message.data.filter(
         (
           p,
         ): p is Extract<
@@ -282,34 +290,34 @@ function toCompletionsMessages(
           }
         > => p.type === 'toolCall',
       );
-      const rest = m.data.filter((p) => p.type !== 'toolCall');
-      const assistantMsg: ChatCompletionMessageParam = {
+      const rest = message.data.filter((p) => p.type !== 'toolCall');
+      const modelMessage: ChatCompletionMessageParam = {
         role: 'assistant',
         content: toCompletionsContent(rest) as any,
         ...(toolCalls.length
           ? {
-              tool_calls: toolCalls.map((p) => ({
-                id: p.id,
+              tool_calls: toolCalls.map((toolCall) => ({
+                id: toolCall.id,
                 type: 'function' as const,
-                function: { name: p.name, arguments: JSON.stringify(p.args ?? {}) },
+                function: { name: toolCall.name, arguments: JSON.stringify(toolCall.args ?? {}) },
               })),
             }
           : {}),
       };
-      messages.push(assistantMsg);
+      messages.push(modelMessage);
     }
   }
 
   return messages;
 }
 
-function toCompletionsTools(tools: CustomTool[]): ChatCompletionTool[] {
-  return tools.map((t) => ({
+function toCompletionsTools(tools: ToolCall[]): ChatCompletionTool[] {
+  return tools.map((tool) => ({
     type: 'function' as const,
     function: {
-      name: t.name,
-      description: t.description,
-      parameters: t.parameters,
+      name: tool.name,
+      description: tool.description,
+      parameters: tool.parameters,
     },
   }));
 }
@@ -439,10 +447,10 @@ async function* fromResponsesStream(
 async function* generateCompletions(
   client: OpenAI,
   instruction: string,
-  context: MessageUnomitted[],
+  context: ContextItem[],
   config: zConfig,
   abortSignal: AbortSignal,
-  tools?: CustomTool[],
+  tools?: ToolCall[],
 ): AsyncGenerator<zGenerateOutput> {
   const stream = await client.chat.completions.create(
     {
@@ -479,13 +487,18 @@ async function* fromCompletionsStream(stream: AsyncIterable<any>): AsyncGenerato
           yield { type: 'data', value: { type: 'thought', value: currentThought } };
           currentThought = '';
         }
-        for (const tc of delta.tool_calls) {
-          if (!toolCallAccum[tc.index]) {
-            toolCallAccum[tc.index] = { id: tc.id ?? '', name: tc.function?.name ?? '', args: '' };
+        for (const toolCall of delta.tool_calls) {
+          if (!toolCallAccum[toolCall.index]) {
+            toolCallAccum[toolCall.index] = {
+              id: toolCall.id ?? '',
+              name: toolCall.function?.name ?? '',
+              args: '',
+            };
           }
-          if (tc.id) toolCallAccum[tc.index].id = tc.id;
-          if (tc.function?.name) toolCallAccum[tc.index].name = tc.function.name;
-          if (tc.function?.arguments) toolCallAccum[tc.index].args += tc.function.arguments;
+          if (toolCall.id) toolCallAccum[toolCall.index].id = toolCall.id;
+          if (toolCall.function?.name) toolCallAccum[toolCall.index].name = toolCall.function.name;
+          if (toolCall.function?.arguments)
+            toolCallAccum[toolCall.index].args += toolCall.function.arguments;
         }
       }
 
@@ -518,12 +531,12 @@ async function* fromCompletionsStream(stream: AsyncIterable<any>): AsyncGenerato
   yield { type: 'special', value: { type: 'metadata', value: zMetadata.parse(chunks) } };
 }
 
-function toResponsesTools(tools: CustomTool[]): FunctionTool[] {
-  return tools.map((t) => ({
+function toResponsesTools(tools: ToolCall[]): FunctionTool[] {
+  return tools.map((tool) => ({
     type: 'function' as const,
-    name: t.name,
-    description: t.description,
-    parameters: t.parameters as FunctionTool['parameters'],
+    name: tool.name,
+    description: tool.description,
+    parameters: tool.parameters as FunctionTool['parameters'],
     strict: null,
   }));
 }
@@ -531,10 +544,10 @@ function toResponsesTools(tools: CustomTool[]): FunctionTool[] {
 async function* generateResponses(
   client: OpenAI,
   instruction: string,
-  context: MessageUnomitted[],
+  context: ContextItem[],
   config: zConfig,
   abortSignal: AbortSignal,
-  tools?: CustomTool[],
+  tools?: ToolCall[],
 ): AsyncGenerator<zGenerateOutput> {
   if (config.schema) instruction += '\n\nSchema: ' + JSON.stringify(config.schema);
 

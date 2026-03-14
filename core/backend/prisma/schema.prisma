@@ -167,11 +167,13 @@ model Action {
   folderId  String
   chatId    String
   schedule  String
+  timezone  String
   config    Json
   data      Json
   createdAt DateTime               @default(now())
   embedding Unsupported("vector")?
   messageId String
+  lastRanAt DateTime?
   chat      Chat                   @relation(fields: [chatId], references: [id], onDelete: Cascade, map: "task_chatId_fkey")
   folder    Folder                 @relation(fields: [folderId], references: [id], onDelete: Cascade, map: "task_folderId_fkey")
   message   Message                @relation(fields: [messageId], references: [id], onDelete: Cascade, map: "task_messageId_fkey")

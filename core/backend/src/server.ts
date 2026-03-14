@@ -20,6 +20,7 @@ import sessions from './routes/sessions.ts';
 import providers from './routes/providers.ts';
 import actions from './routes/actions.ts';
 import generateHandler from './generate.ts';
+import onTick from './actions.ts';
 
 config({ path: resolve(import.meta.dirname, '../../../.env') });
 
@@ -153,7 +154,7 @@ export const auth = betterAuth({
 
 const authHandler = toNodeHandler(auth);
 
-export type Session = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
+export type User = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>['user'];
 
 const server = createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', req.headers.origin ?? process.env.VITE_BACKEND_URL!);
@@ -183,6 +184,13 @@ const server = createServer((req, res) => {
 });
 
 if (import.meta.main) {
+  const tick = async () => {
+    await onTick();
+    setTimeout(() => void tick(), 5 * 1000);
+  };
+  void tick();
+  console.log('Actions worker started');
+
   console.log(`Backend listening at ${await internalIpV4()}:${process.env.VITE_BACKEND_PORT}`);
   server.listen(process.env.VITE_BACKEND_PORT);
 }

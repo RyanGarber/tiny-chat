@@ -1,37 +1,42 @@
-import { Box, Group, Skeleton, Stack, Text } from '@mantine/core';
+import { Box, Group, Skeleton, Stack } from '@mantine/core';
 import { useElementSize } from '@mantine/hooks';
-import { MessageOmitted } from '@tiny-chat/core-backend/src/types';
+import { MessageOmitted, texts } from '@tiny-chat/core-backend/src/types';
 import MessageBodyContent from '@/components/MessageBodyContent.tsx';
 import { useLayout } from '@/managers/layout.tsx';
-import { useChats } from '@/managers/chats.tsx';
 import Attachments from '@/components/Attachments.tsx';
 import { Author } from '@tiny-chat/core-backend/generated/prisma/enums.ts';
 import { Icon } from '@iconify/react';
+import { CSSProperties } from 'react';
 
-export default function MessageBody({ message }: { message: MessageOmitted }) {
+export default function MessageBody({
+  message,
+  style,
+}: {
+  message: MessageOmitted;
+  style?: CSSProperties;
+}) {
   const { shadow } = useLayout();
-  const { messages } = useChats();
 
   const { ref: containerRef, width: containerWidth } = useElementSize();
 
   if (message.author === Author.USER) {
-    const config = messages[messages.findIndex((m) => m.id === message.id) + 1]?.config;
     const files = message.data.filter((p) => p.type === 'file');
     return (
-      <Group w="100%" justify="end" ref={containerRef}>
+      <Group w="100%" justify="end" ref={containerRef} style={style}>
         <Stack gap={5} w="fit-content">
-          {config && (
-            <Group gap={5} c="dimmed">
-              <Icon icon="lucide:forward" height={14} />
-              <Text size="xs">{config.model}</Text>
-            </Group>
+          {texts(message.data).trim().length > 0 && (
+            <Box px={20} py={10} bdrs="lg" className="user-message" style={{ boxShadow: shadow }}>
+              <MessageBodyContent message={message} containerWidth={containerWidth} />
+            </Box>
           )}
-
-          <Box px={20} py={10} bdrs="lg" className="user-message" style={{ boxShadow: shadow }}>
-            <MessageBodyContent message={message} containerWidth={containerWidth} />
-          </Box>
           {files.length !== 0 && (
-            <Group gap={5} c="dimmed" mb={-30} style={{ zIndex: 'var(--mantine-z-index-app' }}>
+            <Group
+              gap={5}
+              c="dimmed"
+              mt={15}
+              mb={texts(message.data).trim().length > 0 ? -45 : 0}
+              style={{ zIndex: 'var(--mantine-z-index-app' }}
+            >
               <Icon icon="lucide:paperclip" height={18} />
               <Attachments
                 list={files.map((f) => ({ name: f.name, mime: f.mime, url: f.url }))}
@@ -51,11 +56,12 @@ export default function MessageBody({ message }: { message: MessageOmitted }) {
     <Box
       w="100%"
       ref={containerRef}
-      style={
-        message.state.any && !message.state.generating
+      style={{
+        ...style,
+        ...(message.state.any && !message.state.generating
           ? { display: 'flex', gap: 10, justifyContent: 'center' }
-          : {}
-      }
+          : {}),
+      }}
     >
       {showContent ? (
         <>

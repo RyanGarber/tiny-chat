@@ -20,6 +20,7 @@
     "pg": "^8.18.0",
     "rrule": "^2.8.1",
     "superjson": "^2.2.6",
+    "timeago.js": "^4.0.2",
     "zod": "^4.3.6"
   },
   "devDependencies": {

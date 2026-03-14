@@ -1,4 +1,4 @@
-import { type CustomTool, type ToolContext } from './index.ts';
+import { type ToolCall, type ToolContext } from './index.ts';
 import { z } from 'zod';
 import { searchProviders } from '../providers/search/index.ts';
 
@@ -12,10 +12,10 @@ const SearchWeb = {
     'Search the web for information. Use this tool to find up-to-date information on any topic.',
   parameters: zSearchWeb.toJSONSchema(),
   schema: zSearchWeb,
-  run: async ({ session }, params) => {
-    return await searchProviders[0].search(session, params.query, 5);
+  run: async ({ user }, params) => {
+    return await searchProviders[0].search(user, params.query, 5);
   },
-} satisfies CustomTool<typeof zSearchWeb>;
+} satisfies ToolCall<typeof zSearchWeb>;
 
 const zViewWeb = z.object({
   url: z.url().describe('The URL of the webpage to view'),
@@ -34,11 +34,11 @@ const ViewWeb = {
     }
     return await response.text();
   },
-} satisfies CustomTool<typeof zViewWeb>;
+} satisfies ToolCall<typeof zViewWeb>;
 
-export default function tools({ session }: ToolContext) {
+export default function tools({ user }: ToolContext) {
   const searchProvider = searchProviders[0];
-  if (!session.user.settings.providers?.[searchProvider.name]) {
+  if (!user.settings.providers?.[searchProvider.name]) {
     return [ViewWeb];
   }
   return [SearchWeb, ViewWeb];

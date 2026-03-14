@@ -252,14 +252,30 @@ export function reloadConfig() {
     return;
   }
   console.log('No messages in chat; trying fallback configs');
-  const lastConfigString = readLocalStorageValue<string>({ key: 'config', sync: true });
+  let lastConfigString = readLocalStorageValue<string>({ key: 'config', sync: true });
+  try {
+    if (typeof lastConfigString !== 'string') {
+      lastConfigString = JSON.stringify(lastConfigString);
+    }
+  } catch {
+    // I have zero fucking clue how the config value became an object
+    // ESLint literally says it CANNOT be a string
+    // It has NEVER been a string
+    // But here we are, with it becoming a string after I call "setItem(lastConfigString)"
+    // Fuck JavaScript. Fuck TypeScript. Fuck ESLint. Fuck you all
+  }
+  if (lastConfigString.includes('"service"')) {
+    lastConfigString = lastConfigString.replace('"service"', '"provider"');
+    localStorage.setItem('config', lastConfigString);
+    console.log('Migrated old config format to new format');
+  }
   const lastConfig = lastConfigString ? zConfig.parse(JSON.parse(lastConfigString)) : null;
-  const fallbackService = useProviders.getState().chatProviders.find((s) => s.models.length > 0);
+  const fallbackProvider = useProviders.getState().chatProviders.find((s) => s.models.length > 0);
   try {
     setConfig(
       lastConfig ?? {
-        service: fallbackService!.name,
-        model: fallbackService!.models[0].name,
+        provider: fallbackProvider!.name,
+        model: fallbackProvider!.models[0].name,
       },
     );
     console.log(
@@ -267,11 +283,11 @@ export function reloadConfig() {
       lastConfig,
       '(last config:',
       lastConfig,
-      ', fallback service:',
-      fallbackService,
+      ', fallback provider:',
+      fallbackProvider,
       ')',
     );
   } catch {
-    console.warn('Failed to load config or fall back to default service');
+    console.warn('Failed to load config or fall back to default provider');
   }
 }

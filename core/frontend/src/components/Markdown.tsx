@@ -8,6 +8,7 @@ import { CodeHighlight } from '@mantine/code-highlight';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import { Icon } from '@iconify/react';
+import { normalizeText } from '@tiny-chat/core-backend/src/types.ts';
 
 const STREAMING_MARKER = '\uE000';
 const MATH_MARKER = '\uE001';
@@ -148,10 +149,7 @@ const components: Components = {
 const LATEX_CHAR_RE = /[\\^_{}]|\\[a-zA-Z]/;
 
 const filter = (text: string) => {
-  if (/^\[(user|assistant)/.exec(text.split('\n')[0])) {
-    text = text.slice(text.indexOf('\n') + 1);
-    if (!text.split('\n')[0].trim().length) text = text.slice(text.indexOf('\n') + 1);
-  }
+  text = normalizeText(text);
 
   text = text.replace(/((?:^::>:: .*$\n?)+)/gm, (block) =>
     block.replace(/^::>:: (.*)$/gm, '> ::>:: $1'),

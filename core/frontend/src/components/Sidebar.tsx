@@ -19,11 +19,12 @@ import { useLayout } from '@/managers/layout.tsx';
 import SidebarChat from '@/components/SidebarChat.tsx';
 import { useChats } from '@/managers/chats.tsx';
 import { useLocation } from 'wouter';
-import { auth, extractText, scrubText, snippetText, trpc } from '@/utils.ts';
+import { auth, extractText, scrubText, trpc } from '@/utils.ts';
 import Drawers from '@/components/Drawers.tsx';
 import { useSettings } from '@/managers/settings.tsx';
 import { Icon } from '@iconify/react';
 import { version } from '../../../../apps/tauri/tauri.conf.json';
+import { snippetText } from '@tiny-chat/core-backend/src/types.ts';
 
 export default function Sidebar() {
   const { folders, currentChat, setCurrentChat, temporary, setTemporary, incognito, setIncognito } =

@@ -4,7 +4,7 @@ import { createId } from '@paralleldrive/cuid2';
 import { reorder } from './messages.ts';
 import { zConfig, zData, zMetadata } from '../types.ts';
 import minisearch, { type SearchResult } from 'minisearch';
-import { chatProviders } from '../providers/model/index.ts';
+import { chatProviders } from '../providers/chat/index.ts';
 import { getMostRelevant } from '../embed.ts';
 
 export default router({
@@ -163,9 +163,9 @@ export default router({
 
       let embedding: number[] = [];
       if (input.config) {
-        const service = chatProviders.find((s) => s.name === input.config?.service);
-        if (service) {
-          embedding = (await service.embed(ctx.session, [input.text], input.config))[0];
+        const provider = chatProviders.find((s) => s.name === input.config?.provider);
+        if (provider) {
+          embedding = (await provider.embed(ctx.session.user, [input.text], input.config))[0];
         }
       }
 

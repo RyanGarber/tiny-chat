@@ -22,7 +22,7 @@ import {
   Text,
 } from '@mantine/core';
 import { CSSProperties, useCallback, useLayoutEffect, useRef, useState } from 'react';
-import { Editable, ReactEditor, Slate } from 'slate-react';
+import { Editable, ReactEditor, RenderElementProps, RenderLeafProps, Slate } from 'slate-react';
 import { serialize } from '@/slate/serializer.tsx';
 import { useProviders } from '@/managers/providers.tsx';
 import { useLayout } from '@/managers/layout.tsx';
@@ -30,6 +30,7 @@ import { useLocalStorage } from '@mantine/hooks';
 import { DropzoneFullScreen } from '@mantine/dropzone';
 import ModelSelect from '@/components/ModelSelect.tsx';
 import { Icon } from '@iconify/react';
+import { NodeEntry } from 'slate';
 
 export function Input(props: InputWrapperProps) {
   const { setEditor, config, setConfig, addFiles } = useMessaging();
@@ -78,7 +79,7 @@ export function Input(props: InputWrapperProps) {
 
   const args =
     chatProviders
-      .find((s) => s.name === config?.service)
+      .find((s) => s.name === config?.provider)
       ?.models.find((m) => m.name === config?.model)?.args ?? [];
 
   const setArg = (name: string, value: unknown) => {
@@ -326,9 +327,9 @@ export function Input(props: InputWrapperProps) {
               onValueChange={resetMultiline}
             >
               <Editable
-                renderElement={useCallback(renderElement, [])} // TODO - eskms - ughhhhhhh
-                renderLeaf={useCallback(renderLeaf, [])}
-                decorate={useCallback(decorate, [])}
+                renderElement={useCallback((props: RenderElementProps) => renderElement(props), [])} // TODO - eskms - ughhhhhhh
+                renderLeaf={useCallback((props: RenderLeafProps) => renderLeaf(props), [])}
+                decorate={useCallback((entry: NodeEntry) => decorate(entry), [])}
                 onKeyDown={onKeyDown}
                 onFocus={() => setIsMessaging(true)}
                 onBlur={() => setIsMessaging(false)}

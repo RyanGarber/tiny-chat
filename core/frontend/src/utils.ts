@@ -7,11 +7,10 @@ import { createAuthClient } from 'better-auth/react';
 import { anonymousClient, inferAdditionalFields } from 'better-auth/client/plugins';
 import superjson from 'superjson';
 import { auth as serverAuth } from '@tiny-chat/core-backend/src/server.ts';
-import { zData, zGenerateInput, zGenerateOutput } from '@tiny-chat/core-backend/src/types.ts';
+import { normalizeText, zData, zGenerateInput, zGenerateOutput, } from '@tiny-chat/core-backend/src/types.ts';
 import { notifications } from '@mantine/notifications';
 import { CodeHighlightAdapter } from '@mantine/code-highlight';
 import hljs from 'highlight.js';
-import { useProviders } from '@/managers/providers.tsx';
 
 declare global {
   interface Window {
@@ -115,40 +114,8 @@ export function getTextFromChildren(children: ReactNode): string {
     .join('\n');
 }
 
-export function snippetText(text: string, query: string, window = 160): string {
-  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const lower = text.toLowerCase();
-  let matchIndex = -1;
-  for (const term of terms) {
-    const idx = lower.indexOf(term);
-    if (idx !== -1) {
-      matchIndex = idx;
-      break;
-    }
-  }
-  if (matchIndex === -1) return text.length > window ? text.slice(0, window) + '…' : text;
-  const half = Math.floor(window / 2);
-  let start = Math.max(0, matchIndex - half);
-  let end = Math.min(text.length, matchIndex + half);
-  // Snap to nearest word boundaries
-  if (start > 0) {
-    const i = text.indexOf(' ', start);
-    if (i !== -1 && i < matchIndex) start = i + 1;
-  }
-  if (end < text.length) {
-    const i = text.lastIndexOf(' ', end);
-    if (i !== -1 && i > matchIndex) end = i;
-  }
-  const snippet = text.slice(start, end).trim();
-  return (start > 0 ? '…' : '') + snippet + (end < text.length ? '…' : '');
-}
-
 export function scrubText(text: string, maxLength = -1): string {
-  if (/^\[(user|assistant)/.exec(text.split('\n')[0])) {
-    text = text.slice(text.indexOf('\n') + 1);
-    if (!text.split('\n')[0].trim().length) text = text.slice(text.indexOf('\n') + 1);
-  }
-  text = text
+  text = normalizeText(text)
     .replace(/::model=[^:]+::/g, '') // Remove quote model tags
     .replace(/::>::\s?(.*)/g, '$1') // Remove quote markers
     .replace(/!\[.*?]\(.*?\)/g, '') // Remove images
@@ -282,21 +249,7 @@ export async function* generate(input: zGenerateInput, signal?: AbortSignal) {
     ? `http://${__TAURI_DEV_HOST__ ?? 'localhost'}:${import.meta.env.VITE_BACKEND_PORT}/@/generate`
     : `${import.meta.env.VITE_BACKEND_URL}/@/generate`;
 
-  const args =
-    useProviders
-      .getState()
-      .chatProviders.find((s) => s.name === input.config.service)
-      ?.models.find((m) => m.name === input.config.model)?.args ?? [];
-  console.log('Args:', args);
-  const inputArgs = (input.config.args ?? {}) as Record<string, unknown>;
-  for (const arg of args) {
-    if (inputArgs?.[arg.name] === undefined) {
-      console.log(`Using default value for arg ${arg.name}:`, arg.default);
-      if (input.config.args === undefined) input.config.args = {};
-      inputArgs[arg.name] = arg.default;
-    }
-  }
-  input.config.args = inputArgs;
+  console.log(`Timezone: ${input.timezone}`);
 
   const response = await fetch(url, {
     method: 'POST',
@@ -321,7 +274,7 @@ export async function* generate(input: zGenerateInput, signal?: AbortSignal) {
     buffer = lines.pop()!;
 
     for (const line of lines) {
-      console.log(line);
+      console.debug('Received:', line);
       if (line.startsWith('data: ')) {
         yield zGenerateOutput.parse(JSON.parse(line.slice(6)));
       }

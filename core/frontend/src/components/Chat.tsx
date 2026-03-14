@@ -516,6 +516,7 @@ export default function Chat() {
                       list={[{ name: file.name, mime: file.type, url: URL.createObjectURL(file) }]}
                       width={inputMaxWidth}
                       maxHeight={chatContainerHeight}
+                      size={22}
                     />
                   }
                   onDelete={() => removeFile(file)}

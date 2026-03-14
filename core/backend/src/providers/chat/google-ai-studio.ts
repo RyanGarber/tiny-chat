@@ -1,11 +1,4 @@
-import type {
-  MessageUnomitted,
-  Model,
-  ModelArg,
-  zConfig,
-  zData,
-  zGenerateOutput,
-} from '../../types.ts';
+import type { ContextItem, Model, ModelArg, zConfig, zData, zGenerateOutput } from '../../types.ts';
 import { zMetadata } from '../../types.ts';
 import {
   type Content,
@@ -16,28 +9,28 @@ import {
   ThinkingLevel,
 } from '@google/genai';
 import { Author } from '../../../generated/prisma/enums.ts';
-import { type ModelProvider, SettingsError } from './index.ts';
-import type { CustomTool } from '../../tools/index.ts';
+import { type ChatProvider, SettingsError } from './index.ts';
+import type { ToolCall } from '../../tools/index.ts';
 
-export const GoogleAIStudio: ModelProvider = {
+export const GoogleAIStudio: ChatProvider = {
   name: 'google-ai-studio',
   settings: ['apiKey'],
 
-  async getModels(session) {
-    if (!session?.user?.settings?.providers?.[this.name].apiKey) return [];
+  async getModels(user) {
+    if (!user?.settings?.providers?.[this.name].apiKey) return [];
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${session.user.settings.providers[this.name].apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${user.settings.providers[this.name].apiKey}`,
     );
 
     const json = (await response.json()) as {
       models: { name: string; supportedGenerationMethods: string[] }[];
     };
 
-    return json.models.map((m) => {
+    return json.models.map((model) => {
       const args: ModelArg[] = [
         { name: 'temperature', type: 'range', min: 0, max: 2, step: 0.05, default: 1 },
-        ...(m.name.includes('gemini-2.5')
+        ...(model.name.includes('gemini-2.5')
           ? [
               {
                 name: 'thinking',
@@ -47,7 +40,7 @@ export const GoogleAIStudio: ModelProvider = {
               } as ModelArg,
             ]
           : []),
-        ...(m.name.includes('gemini-3')
+        ...(model.name.includes('gemini-3')
           ? [
               {
                 name: 'thinking',
@@ -59,22 +52,22 @@ export const GoogleAIStudio: ModelProvider = {
           : []),
       ];
       return {
-        name: m.name.split('/')[m.name.split('/').length - 1],
+        name: model.name.split('/')[model.name.split('/').length - 1],
         features: [
-          ...(m.supportedGenerationMethods.includes('generateContent')
+          ...(model.supportedGenerationMethods.includes('generateContent')
             ? ['generate' as const]
             : []),
-          ...(m.supportedGenerationMethods.includes('embedContent') ? ['embed' as const] : []),
+          ...(model.supportedGenerationMethods.includes('embedContent') ? ['embed' as const] : []),
         ],
         args,
       } satisfies Model;
     });
   },
 
-  async *generate(session, instruction, context, config, abortSignal, tools?) {
-    if (!session.user.settings.providers[this.name].apiKey) throw new SettingsError();
+  async *generate(user, instructions, context, config, abortSignal, tools?) {
+    if (!user.settings.providers?.[this.name]?.apiKey) throw new SettingsError();
 
-    const client = new GoogleGenAI({ apiKey: session.user.settings.providers[this.name].apiKey });
+    const client = new GoogleGenAI({ apiKey: user.settings.providers[this.name].apiKey });
 
     const params: SendMessageParameters = {
       message: toSdkContent(context[context.length - 1], config).parts!,
@@ -96,7 +89,7 @@ export const GoogleAIStudio: ModelProvider = {
     }
 
     if (config.model.startsWith('gemini-') && !config.model.includes('-image')) {
-      params.config.systemInstruction = instruction;
+      params.config.systemInstruction = instructions;
       params.config.thinkingConfig = { includeThoughts: true };
       params.config.tools = [
         //{googleSearch: {}, codeExecution: {}}, - TODO - disabling search+code just for a model that can't send a GOD DAMN TOOL ARG?!
@@ -123,7 +116,7 @@ export const GoogleAIStudio: ModelProvider = {
     } else {
       // Models without system instruction support: inject into first message's history
       console.log("Model doesn't support system instructions; injecting into history");
-      (context[0].data as zData).unshift({ type: 'text', value: instruction });
+      (context[0].data as zData).unshift({ type: 'text', value: instructions });
     }
 
     const stream = await client.chats
@@ -136,10 +129,10 @@ export const GoogleAIStudio: ModelProvider = {
     yield* fromSdkStream(stream);
   },
 
-  async embed(session, texts, config) {
-    if (!session.user.settings.providers[this.name].apiKey) return [];
+  async embed(user, texts, config) {
+    if (!user.settings?.providers?.[this.name]?.apiKey) return [];
 
-    const client = new GoogleGenAI({ apiKey: session.user.settings.providers[this.name].apiKey });
+    const client = new GoogleGenAI({ apiKey: user.settings.providers[this.name].apiKey });
 
     const response = await client.models.embedContent({
       model: config.model,
@@ -164,16 +157,16 @@ function stripUnsupportedFields(schema: any): any {
   );
 }
 
-function toSdkTools(tools: CustomTool[]): FunctionDeclaration[] {
-  return tools.map((t) => ({
-    name: t.name,
-    description: t.description,
-    parameters: stripUnsupportedFields(t.parameters),
+function toSdkTools(tools: ToolCall[]): FunctionDeclaration[] {
+  return tools.map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    parameters: stripUnsupportedFields(tool.parameters),
   }));
 }
 
-function toSdkContent(message: MessageUnomitted, config: zConfig): Content {
-  const isSameModel = message.config?.model === config.model;
+function toSdkContent(message: ContextItem, config: zConfig): Content {
+  const isSameModel = message.id && message.config.model === config.model;
   return {
     role: message.author === Author.USER ? 'user' : 'model',
     parts: message.data.flatMap((part): Part[] => {
@@ -192,10 +185,10 @@ function toSdkContent(message: MessageUnomitted, config: zConfig): Content {
       }
       if (part.type === 'file') {
         const mime = part.mime ?? part.url.slice(5, part.url.indexOf(';'));
-        const b64 = part.url.split(';base64,')[1] ?? part.url.slice(part.url.indexOf(',') + 1);
-        return [{ inlineData: { mimeType: mime, data: b64 } }];
+        const base64 = part.url.split(';base64,')[1] ?? part.url.slice(part.url.indexOf(',') + 1);
+        return [{ inlineData: { mimeType: mime, data: base64 } }];
       }
-      if (part.type === 'toolCall') {
+      if (part.type === 'toolCall' && message.id) {
         const match = message.metadata
           .flat()
           .find(

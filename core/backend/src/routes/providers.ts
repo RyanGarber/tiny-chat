@@ -1,25 +1,17 @@
 import { z } from 'zod';
 import { procedure, router } from '../index.ts';
-import { chatProviders } from '../providers/model/index.ts';
+import { chatProviders } from '../providers/chat/index.ts';
 import { type ChatProviderStatus, type SearchProviderStatus, zConfig } from '../types.ts';
 import { searchProviders } from '../providers/search/index.ts';
 import { embed } from '../embed.ts';
 
 export default router({
-  getChatModels: procedure
-    .input(z.object({ service: z.string() }))
-    .query(async ({ ctx, input }) => {
-      const provider = chatProviders.find((s) => s.name === input.service);
-      if (!provider) throw new Error(`Chat provider "${input.service}" not found`);
-      return provider.getModels(ctx.session);
-    }),
-
-  listProviders: procedure.query(async ({ ctx }) => {
+  list: procedure.query(async ({ ctx }) => {
     const chat: ChatProviderStatus[] = [];
 
     for (const provider of chatProviders) {
       try {
-        const models = await provider.getModels(ctx.session);
+        const models = await provider.getModels(ctx.session.user);
         chat.push({
           name: provider.name,
           settings: provider.settings,
@@ -31,15 +23,30 @@ export default router({
           name: provider.name,
           settings: provider.settings,
           models: [],
+          error: (e as Error).message ?? (e as Error).name ?? 'Unknown',
         });
       }
     }
 
     const search: SearchProviderStatus[] = [];
 
-    search.push(
-      ...searchProviders.map((provider) => ({ name: provider.name, settings: provider.settings })),
-    );
+    for (const provider of searchProviders) {
+      try {
+        search.push({
+          name: provider.name,
+          settings: provider.settings,
+          available: await provider.check(ctx.session.user),
+        });
+      } catch (e) {
+        console.error(`Failed to test search provider ${provider.name}:`, e);
+        search.push({
+          name: provider.name,
+          settings: provider.settings,
+          available: false,
+          error: (e as Error).message ?? (e as Error).name ?? 'Unknown',
+        });
+      }
+    }
 
     return { chat, search };
   }),
@@ -47,6 +54,6 @@ export default router({
   embed: procedure
     .input(z.object({ texts: z.array(z.string()), config: zConfig }))
     .mutation(async ({ ctx, input }) => {
-      return embed(ctx.session, input.texts);
+      return embed(ctx.session.user, input.texts);
     }),
 });

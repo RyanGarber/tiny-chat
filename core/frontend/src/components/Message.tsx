@@ -65,7 +65,7 @@ export default function Message({ message, opacity }: { message: MessageData; op
           <MessageBody message={message} style={fade} />
           <Box w="100%">
             <Group gap={0} justify={message.author === Author.USER ? 'end' : 'space-between'}>
-              <Group gap={0} style={fade}>
+              <Group gap={0} style={{ ...fade, zIndex: 'calc(var(--mantine-z-index-app))' }}>
                 {message.author === Author.USER && (
                   <Group c="dimmed" gap={5}>
                     <Icon icon="lucide:send" height={14} />

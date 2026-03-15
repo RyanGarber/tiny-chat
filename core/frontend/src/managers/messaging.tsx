@@ -264,7 +264,7 @@ export function reloadConfig() {
     // But here we are, with it becoming a string after I call "setItem(lastConfigString)"
     // Fuck JavaScript. Fuck TypeScript. Fuck ESLint. Fuck you all
   }
-  if (lastConfigString.includes('"service"')) {
+  if (lastConfigString?.includes('"service"')) {
     lastConfigString = lastConfigString.replace('"service"', '"provider"');
     localStorage.setItem('config', lastConfigString);
     console.log('Migrated old config format to new format');

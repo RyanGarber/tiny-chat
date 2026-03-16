@@ -25,6 +25,7 @@
     "@tiny-chat/core-backend": "workspace:*",
     "@trpc/client": "^11.10.0",
     "@trpc/react-query": "^11.10.0",
+    "@types/hast": "^3.0.4",
     "@types/katex": "^0.16.8",
     "@use-gesture/react": "^10.3.1",
     "better-auth": "^1.4.18",
@@ -41,6 +42,8 @@
     "slate-react": "^0.123.0",
     "superjson": "^2.2.6",
     "timeago.js": "^4.0.2",
+    "unified": "^11.0.5",
+    "unist-util-visit": "^5.1.0",
     "wouter": "^3.9.0",
     "zod": "^4.3.6",
     "zustand": "^5.0.10"

@@ -1,6 +1,6 @@
 import { Select, SelectProps } from '@mantine/core';
 import { ModelFeature, zConfig } from '@tiny-chat/core-backend/src/types.ts';
-import { useProviders } from '@/managers/providers.tsx';
+import { useProviders } from '@/stores/providers.tsx';
 
 interface ModelSelectProps extends SelectProps {
   feature: ModelFeature;

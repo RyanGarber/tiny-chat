@@ -15,6 +15,7 @@ import {
 } from '../types.ts';
 import { embed } from '../embed.ts';
 import { type User } from '../server.ts';
+import logfile from '../logfile.ts';
 
 export default router({
   create: procedure
@@ -110,9 +111,18 @@ export default router({
 
         if (input.truncate) {
           console.log(`Truncating messages after ${input.id}`);
-          await tx.message.deleteMany({
-            where: { previousId: input.id, userId: ctx.session.user.id },
+          let message = await tx.message.findUniqueOrThrow({
+            where: { id: input.id, userId: ctx.session.user.id },
+            include: { next: true },
           });
+          while (message.next) {
+            const nextMessage = await tx.message.findUniqueOrThrow({
+              where: { id: message.next.id, userId: ctx.session.user.id },
+              include: { next: true },
+            });
+            await tx.message.delete({ where: { id: nextMessage.id } });
+            message = nextMessage;
+          }
         }
 
         return tx.message.update({
@@ -206,13 +216,13 @@ export async function embedMessage(user: User, message: PrismaMessage | MessageU
   if (text.trim().length) {
     embedding = await embed(user, [text]);
     if (!embedding) {
-      console.warn('Failed to generate embedding for message:', message.id);
+      logfile('Failed to generate embedding for message:', message.id);
     }
   }
 
   await globalThis.prisma
     .$executeRaw`UPDATE message SET embedding = ${embedding ? JSON.stringify(embedding[0]) : null}::vector WHERE id = ${message.id}`;
 
-  console.log('Generated embedding for message', message.id);
+  logfile('Generated embedding for message', message.id);
   return embedding ? embedding[0] : null;
 }

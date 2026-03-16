@@ -1,5 +1,18 @@
-import { Button, FloatingPosition, Popover, ScrollAreaAutosize, Typography } from '@mantine/core';
+import { Icon } from '@iconify/react';
+import {
+  Badge,
+  Box,
+  Button,
+  FloatingPosition,
+  Popover,
+  ScrollAreaAutosize,
+  Stack,
+  ThemeIcon,
+  Typography,
+} from '@mantine/core';
+import { zDataPart } from '@tiny-chat/core-backend/src/types';
 import { ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Markdown } from './Markdown';
 
 export default function MessageBodyPopover({
   width,
@@ -109,5 +122,91 @@ export default function MessageBodyPopover({
         </ScrollAreaAutosize>
       </Popover.Dropdown>
     </Popover>
+  );
+}
+
+export function ThoughtGroupPopover({
+  thoughts,
+  isThinkingActive,
+  containerWidth,
+}: {
+  thoughts: string[];
+  isThinkingActive: boolean;
+  containerWidth: number;
+}) {
+  return (
+    <MessageBodyPopover
+      width={containerWidth + 20}
+      defaultOpened={isThinkingActive}
+      autoscroll={true}
+      button={
+        <>
+          <ThemeIcon variant="transparent" size={22} mr={5}>
+            <Icon icon="lucide:brain" height={18} />
+          </ThemeIcon>
+          {isThinkingActive ? 'Thinking' : 'Thought'}
+        </>
+      }
+      dropdown={
+        <Stack>
+          {thoughts.map((thought, index) => (
+            <Box
+              key={index}
+              py={10}
+              pl={20}
+              style={{
+                borderLeft: '2px solid var(--mantine-color-default-border)',
+              }}
+            >
+              <Markdown style={{ maxWidth: containerWidth - 15 }} source={thought} />
+            </Box>
+          ))}
+        </Stack>
+      }
+    />
+  );
+}
+
+export function ToolCallPopover({
+  call,
+  result,
+  containerWidth,
+}: {
+  call: Extract<zDataPart, { type: 'toolCall' }>;
+  result?: Extract<zDataPart, { type: 'toolResult' }>;
+  containerWidth: number;
+}) {
+  const input = call.args ? JSON.stringify(call.args, null, 2).replace(/`/g, '\\`') : '/* empty */';
+  const output = result?.value
+    ? JSON.stringify(result.value, null, 2).replace(/`/g, '\\`')
+    : '/* empty */';
+  return (
+    <MessageBodyPopover
+      width={containerWidth + 20}
+      defaultOpened={result === null}
+      button={
+        <>
+          <ThemeIcon variant="transparent" size={22} mr={5}>
+            <Icon icon="lucide:braces" height={18} />
+          </ThemeIcon>
+          {!result ? 'Using' : 'Used'}
+          <Badge
+            variant="light"
+            ml={4}
+            size="xs"
+            style={{ cursor: 'pointer' }}
+            c={result?.error ? 'red' : undefined}
+          >
+            {call.name}
+          </Badge>
+        </>
+      }
+      dropdown={
+        <Markdown
+          maw={containerWidth - 15}
+          source={`#### Input\n\`\`\`json\n${input}\n\`\`\`\n\n#### Output\n\`\`\`json\n${output}\n\`\`\``}
+        />
+      }
+    />
   );
 }

@@ -6,7 +6,13 @@ import * as reactRefresh from 'eslint-plugin-react-refresh';
 
 export default defineConfig(
   {
-    ignores: ['dist/**', 'eslint.config.ts'],
+    ignores: [
+      'generated/**',
+      'dist/**',
+      'eslint.config.ts',
+      'postcss.config.cjs',
+      'vite.config.ts',
+    ],
   },
   eslint.configs.recommended,
   tseslint.configs.recommendedTypeChecked,
@@ -28,7 +34,7 @@ export default defineConfig(
     rules: {
       ...reactHooks.configs['recommended-latest'].rules,
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
-      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     },
   },

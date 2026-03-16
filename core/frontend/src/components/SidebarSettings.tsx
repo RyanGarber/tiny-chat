@@ -4,7 +4,6 @@ import {
   Button,
   CheckboxCard,
   CheckboxIndicator,
-  Divider,
   Drawer,
   Group,
   Modal,
@@ -18,33 +17,26 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { JSX, useEffect, useRef, useState } from 'react';
-import { useProviders } from '@/managers/providers.tsx';
-import { codeThemes, themes, useSettings } from '@/managers/settings.tsx';
-import { auth, consumeLabel, hashText, openExternal, trpc, webUrl } from '@/utils.ts';
+import { useProviders } from '@/stores/providers.tsx';
+import { codeThemes, themes, useSettings } from '@/stores/settings.tsx';
+import { hashText } from '@/utils/text';
+import { consumeLabel } from '@/utils/ui';
 import { useDisclosure } from '@mantine/hooks';
-import { useLayout } from '@/managers/layout.tsx';
+import { useLayout } from '@/stores/layout.tsx';
 import {
   ChatProviderStatus,
   SearchProviderStatus,
   zConfig,
 } from '@tiny-chat/core-backend/src/types.ts';
 import ModelSelect from '@/components/ModelSelect.tsx';
-import { useTasks } from '@/managers/tasks.tsx';
 import { Icon } from '@iconify/react';
 
-export default function Drawers({
-  buttons,
+export default function SidebarSettings({
+  children,
 }: {
-  buttons: (account: () => void, settings: () => void) => JSX.Element;
+  children: (open: () => void) => JSX.Element;
 }) {
-  const [isCloning, setCloning] = useState(false);
-
   const {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    accounts,
-    linkAccount,
-    unlinkAccount,
-    deleteUser,
     getInstructions,
     addInstruction,
     editInstruction,
@@ -60,67 +52,31 @@ export default function Drawers({
     getProviderSetting,
     setProviderSetting,
   } = useSettings();
+
   const { chatProviders, searchProviders } = useProviders();
   const { setGestureBlock, setDrawerCloser } = useLayout();
 
-  const { data: session } = auth.useSession();
-
   const codeThemeRef = useRef<HTMLInputElement>(null);
 
-  const provider = (id: string, name: string, icon: JSX.Element) => (
-    <Group justify="space-between">
-      <Group gap={5}>
-        {icon}
-        <Text>{name}</Text>
-      </Group>
-      {/* eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-explicit-any */}
-      {accounts.find((account: any) => account.providerId === id) ? (
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        accounts.length === 1 ? (
-          <Tooltip label="Must have one account" color="gray">
-            <Button variant="light" onClick={() => void unlinkAccount(id)} disabled>
-              Unlink
-            </Button>
-          </Tooltip>
-        ) : (
-          <Button variant="light" onClick={() => void unlinkAccount(id)}>
-            Unlink
-          </Button>
-        )
-      ) : (
-        <Button variant="default" onClick={() => void linkAccount(id)}>
-          Link
-        </Button>
-      )}
-    </Group>
-  );
-
-  const [accountsOpened, { open: openAccounts, close: closeAccounts }] = useDisclosure(false);
-  const [settingsOpened, { open: openSettings, close: closeSettings }] = useDisclosure(false);
+  const [opened, { open, close }] = useDisclosure(false);
 
   const [addingInstruction, setAddingInstruction] = useState(false);
   const [embedChange, setEmbedChange] = useState<zConfig | null>(null);
-  const [isEmbedConfirmOpen, { open: openEmbedConfirm, close: closeEmbedding }] = useDisclosure();
-  const [isDeleteOpen, { open: openDelete, close: closeDelete }] = useDisclosure(false);
+  const [isEmbedConfirmOpen, { open: openEmbedConfirm, close: closeEmbedding }] =
+    useDisclosure(false);
 
   // Modals fully block swipe gestures
   useEffect(() => {
-    setGestureBlock(isDeleteOpen || isEmbedConfirmOpen);
-  }, [isDeleteOpen, isEmbedConfirmOpen, setGestureBlock]);
+    setGestureBlock(isEmbedConfirmOpen);
+  }, [isEmbedConfirmOpen, setGestureBlock]);
 
   // Drawers intercept swipe-to-close so it closes the drawer before the sidebar
   useEffect(() => {
-    if (accountsOpened) {
-      setDrawerCloser(closeAccounts);
-    } else if (settingsOpened) {
-      setDrawerCloser(closeSettings);
-    } else {
-      setDrawerCloser(null);
+    if (opened) {
+      setDrawerCloser(close);
+      return () => setDrawerCloser(null);
     }
-    return () => setDrawerCloser(null);
-  }, [accountsOpened, closeAccounts, settingsOpened, closeSettings, setDrawerCloser]);
-
-  const [cloneInterval, setCloneInterval] = useState<NodeJS.Timeout>();
+  }, [opened, close, setDrawerCloser]);
 
   const ProviderSettings = (providers: (ChatProviderStatus | SearchProviderStatus)[]) => (
     <Stack>
@@ -162,107 +118,8 @@ export default function Drawers({
 
   return (
     <>
-      {buttons(openAccounts, openSettings)}
-      <Drawer
-        opened={accountsOpened}
-        onClose={closeAccounts}
-        title={session?.user && !session.user.isAnonymous ? 'Account' : 'Sign In'}
-      >
-        <Stack>
-          {window.__TAURI__ ? (
-            <>
-              {isCloning ? (
-                <Text size="sm">Waiting for you to sign in...</Text>
-              ) : (
-                <Text c="dimmed" size="sm">
-                  Use the web to manage your account.
-                </Text>
-              )}
-              <Button
-                variant="default"
-                fullWidth
-                onClick={() => {
-                  void (async () => {
-                    if (session?.user?.isAnonymous) {
-                      if (!isCloning) {
-                        setCloning(true);
-                        useTasks.getState().addTask('signIn', 'Opening browser');
-                        const id = await trpc.sessions.startClone.mutate();
-                        void openExternal(`${webUrl}/#/app/${id}`);
-                        void useTasks.getState().updateTask('signIn', 50, 'Sign in to continue');
-                        setCloneInterval(
-                          setInterval(() => {
-                            void trpc.sessions.finalizeClone.query({ id }).then(async (res) => {
-                              if (res) {
-                                await useTasks.getState().removeTask('signIn');
-                                clearInterval(cloneInterval);
-                                window.location.reload();
-                              }
-                            });
-                          }, 1000),
-                        );
-                      } else {
-                        setCloning(false);
-                        clearInterval(cloneInterval);
-                      }
-                    } else {
-                      void openExternal(`${webUrl}`);
-                    }
-                  })();
-                }}
-              >
-                {isCloning ? 'Cancel' : 'Open Browser'}
-              </Button>
-            </>
-          ) : (
-            <>
-              <Text c="dimmed" size="sm">
-                Link an account to save chats and settings.
-              </Text>
-              {provider('google', 'Google', <Icon icon="lucide:chromium" />)}
-              {provider('github', 'GitHub', <Icon icon="lucide:github" />)}
-            </>
-          )}
-          {session?.user && !session.user.isAnonymous && (
-            <>
-              <Divider />
-              <Button
-                variant="default"
-                fullWidth
-                mt={10}
-                onClick={() => {
-                  void (async () => {
-                    useTasks.getState().addTask('signOut', 'Signing out');
-                    await auth.signOut();
-                    await useTasks.getState().removeTask('signOut');
-                    window.location.reload();
-                  })();
-                }}
-              >
-                Sign Out
-              </Button>
-              <Button variant="outline" color="red" fullWidth mt={10} onClick={openDelete}>
-                Delete Account
-              </Button>
-              <Modal opened={isDeleteOpen} onClose={closeDelete} title="Delete Account">
-                <Button
-                  color="red"
-                  fullWidth
-                  onClick={() => {
-                    void (async () => {
-                      await deleteUser();
-                      window.location.reload();
-                    })();
-                  }}
-                >
-                  Confirm
-                </Button>
-              </Modal>
-            </>
-          )}
-        </Stack>
-      </Drawer>
-      <Drawer opened={settingsOpened} onClose={closeSettings} title="Settings">
+      {children(open)}
+      <Drawer opened={opened} onClose={close} title="Settings">
         <Tabs defaultValue="general">
           <Tabs.List mb="lg">
             <Tabs.Tab value="general" leftSection={<Icon icon="lucide:settings-2" height={18} />}>
@@ -277,7 +134,12 @@ export default function Drawers({
           </Tabs.List>
           <Tabs.Panel value="general">
             <Stack>
-              <Text size="sm">Instructions</Text>
+              <Box>
+                <Text size="sm">Instructions</Text>
+                <Text size="xs" c="dimmed">
+                  Shapes model responses
+                </Text>
+              </Box>
               {getInstructions().map((instruction, index) => (
                 <Textarea
                   key={hashText(index + instruction)}
@@ -333,10 +195,12 @@ export default function Drawers({
                 />
               </Tooltip>
               <Space />
-              <Text size="sm">Features</Text>
-              <Text size="xs" c="dimmed">
-                Adding an embedding model enables memory, smart search, and more.
-              </Text>
+              <Box>
+                <Text size="sm">Embeddings</Text>
+                <Text size="xs" c="dimmed">
+                  Enables memory and smart search
+                </Text>
+              </Box>
               <Tooltip label="Model that generates embeddings" color="gray" position="right">
                 <ModelSelect
                   label="Embedding Model"
@@ -403,7 +267,12 @@ export default function Drawers({
           </Tabs.Panel>
           <Tabs.Panel value="appearance">
             <Stack>
-              <Text size="sm">Themes</Text>
+              <Box>
+                <Text size="sm">Themes</Text>
+                <Text size="xs" c="dimmed">
+                  Changes the look of the app
+                </Text>
+              </Box>
               <Tooltip label="Styles the app" color="gray" position="right">
                 <Select
                   label="App Theme"
@@ -435,10 +304,20 @@ export default function Drawers({
           </Tabs.Panel>
           <Tabs.Panel value="apiKeys">
             <Stack>
-              <Text size="sm">Models</Text>
+              <Box>
+                <Text size="sm">Models</Text>
+                <Text size="xs" c="dimmed">
+                  Handles chats and embeddings
+                </Text>
+              </Box>
               {ProviderSettings(chatProviders)}
               <Space />
-              <Text size="sm">Search</Text>
+              <Box>
+                <Text size="sm">Search</Text>
+                <Text size="xs" c="dimmed">
+                  Enables models to search the web
+                </Text>
+              </Box>
               {ProviderSettings(searchProviders)}
             </Stack>
           </Tabs.Panel>

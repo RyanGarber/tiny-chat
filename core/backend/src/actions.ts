@@ -6,6 +6,7 @@ import { wrapMessageUnomitted, zConfig, zData } from './types.ts';
 import { embedMessage, reorder } from './routes/messages.ts';
 import { Author } from '../generated/prisma/enums.ts';
 import { createId } from '@paralleldrive/cuid2';
+import logfile from './logfile.ts';
 
 export default async function onTick() {
   const actions = await globalThis.prisma.action.findMany();
@@ -23,7 +24,14 @@ export default async function onTick() {
         action.schedule.includes('DTSTART') ? {} : { dtstart: startAt },
       );
 
-      const nextRunAt = schedule.after(startAt, false);
+      // For the first run, use an inclusive boundary (startAt - 1ms) so that
+      // a one-time action whose single occurrence sits exactly at createdAt
+      // (the embedded DTSTART) is not missed by the exclusive after() search.
+      // For subsequent runs keep it exclusive to prevent re-firing.
+      const searchFrom = !action.lastRanAt
+        ? new Date(startAt.getTime() - 1)
+        : startAt;
+      const nextRunAt = schedule.after(searchFrom, false);
 
       if (nextRunAt && nextRunAt <= now) {
         const user = (await globalThis.prisma.user.findUniqueOrThrow({
@@ -69,11 +77,11 @@ export default async function onTick() {
           }
           if (event.type === 'special' && event.value.type === 'metadata') {
             metadata.push(event.value.value);
-            console.log('Got metadata for action', action.id);
+            logfile('Got metadata for action', action.id);
           }
         }
 
-        console.log('Generation complete for action', action.id, { data });
+        logfile('Generation complete for action', action.id, { data });
 
         const userMessage = await globalThis.prisma.message.create({
           data: {
@@ -112,7 +120,7 @@ export default async function onTick() {
         await embedMessage(user, modelMessage);
       }
     } catch (e) {
-      console.error(`Error running action ${action.id}:`, e);
+      logfile(`Error running action ${action.id}:`, e);
       await globalThis.prisma.action.update({
         where: { id: action.id },
         data: { lastRanAt: now }, // TODO - better error handling

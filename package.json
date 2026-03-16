@@ -12,7 +12,10 @@
     "build:tauri:android": "dotenv -- pnpm --filter @tiny-chat/apps-tauri run tauri android build",
     "build:web": "dotenv -- pnpm --filter @tiny-chat/core-frontend run build",
     "open:tauri:ios": "dotenv -- concurrently -k \"pnpm --filter @tiny-chat/core-backend run dev -- --host\" \"node tools/wait-for-backend.ts && pnpm --filter @tiny-chat/apps-tauri run tauri ios dev -- --host --open\"",
-    "open:tauri:android": "dotenv -- concurrently -k \"pnpm --filter @tiny-chat/core-backend run dev -- --host\" \"node tools/wait-for-backend.ts && pnpm --filter @tiny-chat/apps-tauri run tauri android dev -- --host --open\""
+    "open:tauri:android": "dotenv -- concurrently -k \"pnpm --filter @tiny-chat/core-backend run dev -- --host\" \"node tools/wait-for-backend.ts && pnpm --filter @tiny-chat/apps-tauri run tauri android dev -- --host --open\"",
+    "lint:frontend": "pnpm --filter @tiny-chat/core-frontend exec eslint .",
+    "lint:backend": "pnpm --filter @tiny-chat/core-backend exec eslint .",
+    "lint": "pnpm lint:frontend && pnpm lint:backend"
   },
   "devDependencies": {
     "@types/wait-on": "^5.3.4",

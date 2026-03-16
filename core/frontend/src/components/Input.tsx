@@ -1,4 +1,4 @@
-import { useMessaging } from '@/managers/messaging.tsx';
+import { useMessaging } from '@/stores/messaging.tsx';
 import { setupEditor } from '@/slate/setup.tsx';
 import { onKeyDown, onSend } from '@/slate/events.tsx';
 import { decorate, renderElement, renderLeaf } from '@/slate/renderer.tsx';
@@ -24,8 +24,8 @@ import {
 import { CSSProperties, useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { Editable, ReactEditor, RenderElementProps, RenderLeafProps, Slate } from 'slate-react';
 import { serialize } from '@/slate/serializer.tsx';
-import { useProviders } from '@/managers/providers.tsx';
-import { useLayout } from '@/managers/layout.tsx';
+import { useProviders } from '@/stores/providers.tsx';
+import { useLayout } from '@/stores/layout.tsx';
 import { useLocalStorage } from '@mantine/hooks';
 import { DropzoneFullScreen } from '@mantine/dropzone';
 import ModelSelect from '@/components/ModelSelect.tsx';
@@ -74,8 +74,7 @@ export function Input(props: InputWrapperProps) {
     return () => observer.disconnect();
   }, []);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_, updateSavedConfig] = useLocalStorage<string>({ key: 'config' });
+  const [, updateSavedConfig] = useLocalStorage<string>({ key: 'config' });
 
   const args =
     chatProviders
@@ -85,9 +84,9 @@ export function Input(props: InputWrapperProps) {
   const setArg = (name: string, value: unknown) => {
     if (!config) return;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    config.args = { ...config.args, [name]: value };
-    setConfig(config);
-    updateSavedConfig(JSON.stringify(config));
+    const newConfig = { ...config, args: { ...config.args, [name]: value } };
+    setConfig(newConfig);
+    updateSavedConfig(JSON.stringify(newConfig));
   };
 
   const captureScreenshot = useCallback(async () => {
@@ -334,6 +333,7 @@ export function Input(props: InputWrapperProps) {
                 onFocus={() => setIsMessaging(true)}
                 onBlur={() => setIsMessaging(false)}
                 readOnly={isMessagingDisabled}
+                autoCapitalize="sentences"
               ></Editable>
             </Slate>
           </ScrollAreaAutosize>

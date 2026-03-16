@@ -12,7 +12,7 @@ import App from '@/App.tsx';
 import { Router } from 'wouter';
 import { useHashLocation } from 'wouter/use-hash-location';
 
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <Router hook={useHashLocation}>
       <App />

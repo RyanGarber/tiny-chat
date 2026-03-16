@@ -32,7 +32,14 @@ function toUTC(schedule: string, timezone: string): string {
   }
 
   if (options.dtstart) {
+    // Model provided a local-time DTSTART; shift to UTC.
     options.dtstart = new Date(options.dtstart.getTime() - offset * 60000);
+  } else if (options.count !== undefined && options.count !== null) {
+    // Finite (COUNT-limited) action: embed a UTC DTSTART so the backend
+    // always uses the embedded value and never re-creates a fresh dtstart on
+    // each tick (which would make COUNT=1 repeat indefinitely).
+    // Date.now() is already UTC — no offset adjustment needed here.
+    options.dtstart = new Date();
   }
 
   return new rrule.RRule(options).toString();

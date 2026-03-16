@@ -9,10 +9,10 @@ import {
   useMantineTheme,
 } from '@mantine/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Task, useTasks } from '@/managers/tasks.tsx';
+import { Task, useTasks } from '@/stores/tasks.tsx';
 import { useDisclosure } from '@mantine/hooks';
 import { format } from 'timeago.js';
-import { useLayout } from '@/managers/layout.tsx';
+import { useLayout } from '@/stores/layout.tsx';
 
 interface DisplayedTask extends Task {
   /** Whether this task is in its removal animation / hold phase */

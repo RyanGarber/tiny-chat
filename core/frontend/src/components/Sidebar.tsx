@@ -15,13 +15,15 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { Spotlight, spotlight, SpotlightActionData } from '@mantine/spotlight';
-import { useLayout } from '@/managers/layout.tsx';
+import { useLayout } from '@/stores/layout.tsx';
 import SidebarChat from '@/components/SidebarChat.tsx';
-import { useChats } from '@/managers/chats.tsx';
+import { useChats } from '@/stores/chats.tsx';
 import { useLocation } from 'wouter';
-import { auth, extractText, scrubText, trpc } from '@/utils.ts';
-import Drawers from '@/components/Drawers.tsx';
-import { useSettings } from '@/managers/settings.tsx';
+import { auth, trpc } from '@/utils/api';
+import { extractText, scrubText } from '@/utils/text';
+import SidebarAccount from '@/components/SidebarAccount';
+import SidebarSettings from '@/components/SidebarSettings';
+import { useSettings } from '@/stores/settings.tsx';
 import { Icon } from '@iconify/react';
 import { version } from '../../../../apps/tauri/tauri.conf.json';
 import { snippetText } from '@tiny-chat/core-backend/src/types.ts';
@@ -185,41 +187,43 @@ export default function Sidebar() {
         </Stack>
       </ScrollArea>
       <Divider my="sm" />
-      <Drawers
-        buttons={(account, settings) => (
-          <>
-            <NavLink
-              label={
-                !session?.user || session.user.isAnonymous
-                  ? 'Sign In'
-                  : session.user.name.split(' ')[0]
-              }
-              leftSection={
-                session?.user?.image ? (
-                  <Avatar src={session.user.image} size={18} />
-                ) : (
-                  <Icon icon="lucide:circle-user" height={18} />
-                )
-              }
-              onClick={account}
-              bdrs="md"
-            />
-            <NavLink
-              label={
-                <Group justify="space-between">
-                  Settings
-                  <Text size="sm" c="dimmed" pr={5}>
-                    v{version}
-                  </Text>
-                </Group>
-              }
-              leftSection={<Icon icon="lucide:settings" height={18} />}
-              onClick={settings}
-              bdrs="md"
-            />
-          </>
+      <SidebarAccount>
+        {(openAccount) => (
+          <NavLink
+            label={
+              !session?.user || session.user.isAnonymous
+                ? 'Sign In'
+                : session.user.name.split(' ')[0]
+            }
+            leftSection={
+              session?.user?.image ? (
+                <Avatar src={session.user.image} size={18} />
+              ) : (
+                <Icon icon="lucide:circle-user" height={18} />
+              )
+            }
+            onClick={openAccount}
+            bdrs="md"
+          />
         )}
-      />
+      </SidebarAccount>
+      <SidebarSettings>
+        {(openSettings) => (
+          <NavLink
+            label={
+              <Group justify="space-between">
+                Settings
+                <Text size="sm" c="dimmed" pr={5}>
+                  v{version}
+                </Text>
+              </Group>
+            }
+            leftSection={<Icon icon="lucide:settings" height={18} />}
+            onClick={openSettings}
+            bdrs="md"
+          />
+        )}
+      </SidebarSettings>
     </>
   );
 
@@ -241,9 +245,9 @@ export default function Sidebar() {
           </ActionIcon>
         </Tooltip>
       </Stack>
-      <Drawers
-        buttons={(openAccount, openSettings) => (
-          <Stack align="center" gap={5}>
+      <Stack align="center" gap={5}>
+        <SidebarAccount>
+          {(openAccount) => (
             <Tooltip
               label={!session?.user || session.user.isAnonymous ? 'Sign In' : 'Account'}
               position="right"
@@ -263,6 +267,10 @@ export default function Sidebar() {
                 )}
               </ActionIcon>
             </Tooltip>
+          )}
+        </SidebarAccount>
+        <SidebarSettings>
+          {(openSettings) => (
             <Tooltip label="Settings" position="right" color="gray">
               <ActionIcon
                 variant="subtle"
@@ -274,9 +282,9 @@ export default function Sidebar() {
                 <Icon icon="lucide:settings" height={18} />
               </ActionIcon>
             </Tooltip>
-          </Stack>
-        )}
-      />
+          )}
+        </SidebarSettings>
+      </Stack>
     </Stack>
   );
 

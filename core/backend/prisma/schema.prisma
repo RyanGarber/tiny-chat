@@ -125,7 +125,7 @@ model Message {
   memories   Memory[]
   chat       Chat                   @relation(fields: [chatId], references: [id], onDelete: Cascade)
   folder     Folder                 @relation(fields: [folderId], references: [id], onDelete: Cascade)
-  previous   Message?               @relation("Chat", fields: [previousId], references: [id], onDelete: Cascade)
+  previous   Message?               @relation("Chat", fields: [previousId], references: [id])
   next       Message?               @relation("Chat")
   user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
 

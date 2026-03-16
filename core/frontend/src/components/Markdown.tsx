@@ -1,5 +1,6 @@
 import { CSSProperties, Fragment, memo } from 'react';
-import { getTextFromChildren, openExternal, takeStringOutOfNodeAndChildren } from '@/utils.ts';
+import { getTextFromChildren, takeStringOutOfNodeAndChildren } from '@/utils/text';
+import { openExternal } from '@/utils/ui';
 import ReactMarkdown, { Components } from 'react-markdown';
 import { Blockquote, Group, ScrollArea, Text, ThemeIcon, Typography } from '@mantine/core';
 import RemarkGfm from 'remark-gfm';
@@ -9,6 +10,72 @@ import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import { Icon } from '@iconify/react';
 import { normalizeText } from '@tiny-chat/core-backend/src/types.ts';
+import { visit, SKIP } from 'unist-util-visit';
+import type { Plugin } from 'unified';
+import type { Root, Element, Text as HastText } from 'hast';
+
+const rehypeStreamFade: Plugin<[], Root> = () => {
+  return (tree) => {
+    let totalLength = 0;
+    visit(tree, 'text', (node: HastText) => {
+      totalLength += node.value.length;
+    });
+
+    if (totalLength === 0) return;
+
+    const animateChars = 15;
+    const startIndex = Math.max(0, totalLength - animateChars);
+
+    let currentIndex = 0;
+
+    visit(tree, 'text', (node: HastText, index, parent) => {
+      if (!parent || typeof index !== 'number') return;
+      
+      const nodeStart = currentIndex;
+      const nodeLength = node.value.length;
+      const nodeEnd = nodeStart + nodeLength;
+      currentIndex += nodeLength;
+
+      if (nodeEnd <= startIndex) return;
+
+      const staticLength = Math.max(0, startIndex - nodeStart);
+      const staticStr = node.value.slice(0, staticLength);
+      const animatedStr = node.value.slice(staticLength);
+
+      const newNodes: (HastText | Element)[] = [];
+      if (staticStr) {
+        newNodes.push({ type: 'text', value: staticStr });
+      }
+
+      for (let i = 0; i < animatedStr.length; i++) {
+        const char = animatedStr[i];
+        if (char.trim() === '') {
+          const last = newNodes[newNodes.length - 1];
+          if (last && last.type === 'text') {
+            last.value += char;
+          } else {
+            newNodes.push({ type: 'text', value: char });
+          }
+          continue;
+        }
+
+        const globalCharIndex = nodeStart + staticLength + i;
+        newNodes.push({
+          type: 'element',
+          tagName: 'span',
+          properties: {
+            className: ['stream-char-fade'],
+            key: `char-fade-${globalCharIndex}`,
+          },
+          children: [{ type: 'text', value: char }],
+        });
+      }
+
+      parent.children.splice(index, 1, ...newNodes);
+      return [SKIP, index + newNodes.length];
+    });
+  };
+};
 
 const STREAMING_MARKER = '\uE000';
 const MATH_MARKER = '\uE001';
@@ -231,14 +298,19 @@ const filter = (text: string) => {
 };
 
 export const Markdown = memo(
-  ({ source, style, maw }: { source: string; style?: CSSProperties; maw?: number }) => {
+  ({ source, style, maw, isGenerating }: { source: string; style?: CSSProperties; maw?: number; isGenerating?: boolean }) => {
     return (
       <Typography style={{ overflowWrap: 'break-word', ...style }} maw={maw}>
-        <ReactMarkdown skipHtml remarkPlugins={[RemarkGfm, RemarkBreaks]} components={components}>
+        <ReactMarkdown 
+          skipHtml 
+          remarkPlugins={[RemarkGfm, RemarkBreaks]} 
+          rehypePlugins={isGenerating ? [rehypeStreamFade] : []}
+          components={components}
+        >
           {filter(source)}
         </ReactMarkdown>
       </Typography>
     );
   },
-  (prev, next) => prev.source === next.source && prev.style === next.style,
+  (prev, next) => prev.source === next.source && prev.style === next.style && prev.isGenerating === next.isGenerating,
 );

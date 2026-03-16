@@ -17,17 +17,58 @@ export default defineConfig(() => ({
       output: {
         manualChunks(id: string) {
           const path = id.split('/');
-          const module = path[path.indexOf('node_modules') + 1];
-          if (path.includes('node_modules')) {
-            //if (module.startsWith('react')) return 'vendor-react';
-            if (module.startsWith('slate')) return 'vendor-slate';
-            if (module.startsWith('@mantine')) return 'vendor-mantine';
-            if (module.startsWith('highlight.js')) return 'vendor-hljs';
-            if (module.startsWith('@google')) return 'vendor-google';
-            if (module.startsWith('openai')) return 'vendor-openai';
-            if (module.startsWith('@anthropic')) return 'vendor-anthropic';
-            return 'vendor-core';
+          const i = path.lastIndexOf('node_modules');
+          if (i === -1) return undefined;
+
+          const isScoped = path[i + 1]?.startsWith('@');
+          const module = isScoped ? `${path[i + 1]}/${path[i + 2]}` : path[i + 1];
+
+          if (module === 'react' || module === 'react-dom' || module === 'scheduler') {
+            return 'vendor-react';
           }
+
+          if (module?.startsWith('slate')) return 'vendor-slate';
+          if (module?.startsWith('@mantine')) return 'vendor-mantine';
+          if (module?.startsWith('highlight.js')) return 'vendor-hljs';
+          if (module === 'katex') return 'vendor-katex';
+          if (module?.startsWith('@tauri-apps')) return 'vendor-tauri';
+
+          if (
+            module === 'react-markdown' ||
+            module?.startsWith('remark') ||
+            module?.startsWith('rehype') ||
+            module?.startsWith('unified') ||
+            module?.startsWith('micromark') ||
+            module?.startsWith('mdast') ||
+            module?.startsWith('hast') ||
+            module?.startsWith('vfile') ||
+            module?.startsWith('unist') ||
+            module?.startsWith('property-information') ||
+            module === 'html-url-attributes' ||
+            module === 'zwitch' ||
+            module === 'bail' ||
+            module === 'extend' ||
+            module === 'trough' ||
+            module === 'is-plain-obj' ||
+            module === 'comma-separated-tokens' ||
+            module === 'space-separated-tokens' ||
+            module === 'stringify-entities' ||
+            module === 'character-entities' ||
+            module === 'devlop'
+          ) {
+            return 'vendor-markdown';
+          }
+
+          if (
+            module?.startsWith('@trpc') ||
+            module?.startsWith('@tanstack') ||
+            module === 'superjson' ||
+            module === 'zod'
+          ) {
+            return 'vendor-data';
+          }
+
+          return 'vendor-misc';
         },
       },
     },

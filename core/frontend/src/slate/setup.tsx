@@ -1,4 +1,4 @@
-import { useMessaging } from '@/managers/messaging.tsx';
+import { useMessaging } from '@/stores/messaging.tsx';
 import { BaseElement, BaseText, createEditor, Editor, Transforms } from 'slate';
 import { withHistory } from 'slate-history';
 import { withReact } from 'slate-react';

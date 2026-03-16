@@ -292,14 +292,17 @@ Relevant memories of the user across all chats:
 
 ${memories.length ? memories.map((m) => `- ${m}`).join('\n') : '- (none)'}
 
-## Tools
+## Actions
 
 Actions allow for prompts to be sent automatically on a recurring schedule.
 If the user asks for regular updates on a topic, use the add_action tool to create an action for it.
 If regular updates would be useful for a topic, but the user hasn't asked yet, ask proactively if they'd like an action created.
 
+
+## Memories
+
 When the user shares information that could improve future chats, store it as memory even if it was mentioned only once.
-When unsure, prefer storing the memory with an appropriate confidence score rather than skipping it entirely.
+IMPORTANT: Save anything that could be usefBul in the future, even if it's not obvious now. When unsure, prefer storing the memory with an appropriate confidence score rather than skipping it entirely.
 When discussing code, pay special attention to the user's tech stack, environment, architectural decisions, and pain points.
 SHORT_TERM and MEDIUM_TERM memories are encouraged for active conversations, experiments, or temporary workflows.
 Use search_memory to find more when it could improve the response.` +

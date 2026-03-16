@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { useSettings } from '@/managers/settings.tsx';
-import { trpc } from '@/utils.ts';
+import { useSettings } from '@/stores/settings.tsx';
+import { trpc } from '@/utils/api';
 
 export interface TaskOptions {
   crawlSpeed: number;

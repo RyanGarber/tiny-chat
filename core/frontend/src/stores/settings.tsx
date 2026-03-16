@@ -1,10 +1,11 @@
 import { z } from 'zod';
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import { auth, hljsThemeNames, trpc } from '@/utils.ts';
+import { auth, trpc } from '@/utils/api';
+import { hljsThemeNames } from '@/utils/highlight';
 import { zConfig } from '@tiny-chat/core-backend/src/types.ts';
-import { useTasks } from '@/managers/tasks.tsx';
-import { useProviders } from '@/managers/providers.tsx';
+import { useTasks } from '@/stores/tasks.tsx';
+import { useProviders } from '@/stores/providers.tsx';
 
 export const zProviders = z.record(z.string(), z.any()).optional();
 export const zSettings = z

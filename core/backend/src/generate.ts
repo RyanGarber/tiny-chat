@@ -16,6 +16,7 @@ import { Author, type Chat } from '../generated/prisma/client.ts';
 import { tools } from './tools/index.ts';
 import { getMemoryContext } from './routes/embeddings.ts';
 import { format } from 'timeago.js';
+import logfile from './logfile.ts';
 
 export default async function generateHandler(req: IncomingMessage, res: ServerResponse) {
   try {
@@ -99,7 +100,8 @@ export async function* generate(
   // Agentic loop: keep generating until the model stops calling tools
   while (true) {
     const message = context[context.length - 1];
-    console.log('Starting turn for message:', message);
+
+    logfile('Starting turn for message:', message);
     const stream = provider.generate(
       user,
       instructions,
@@ -112,16 +114,21 @@ export async function* generate(
     const modelMessage = { ...message, author: Author.MODEL, data: [] } as MessageUnomitted;
     const userMessage = { ...message, author: Author.USER, data: [] } as MessageUnomitted;
 
-    for await (const event of stream) {
-      yield event;
+    try {
+      for await (const event of stream) {
+        yield event;
 
-      if (event.type === 'data') {
-        modelMessage.data.push(event.value);
-      }
+        if (event.type === 'data') {
+          modelMessage.data.push(event.value);
+        }
 
-      if (event.type === 'special' && event.value.type === 'metadata') {
-        modelMessage.metadata = event.value.value; // to push Gemini thoughtSignature into next pass
+        if (event.type === 'special' && event.value.type === 'metadata') {
+          modelMessage.metadata = event.value.value; // to push Gemini thoughtSignature into next pass
+        }
       }
+    } catch (e: any) {
+      logfile('Error during generation:', e);
+      throw e;
     }
 
     // Find any tool calls in this pass
@@ -136,7 +143,7 @@ export async function* generate(
         (t) => t.name === part.name,
       );
       if (!tool) {
-        console.warn(`Tool '${part.name}' does not exist`);
+        logfile(`Tool '${part.name}' does not exist`);
         userMessage.data.push({
           type: 'toolResult',
           id: part.id,
@@ -148,21 +155,21 @@ export async function* generate(
       }
 
       if (tool.needsUserInput) {
-        console.log(`Tool '${part.name}' requires user input, ending turn`);
+        logfile(`Tool '${part.name}' requires user input, ending turn`);
         controller.abort('Tool requires user input');
         break;
       }
 
       try {
         const params = tool.schema.parse(part.args);
-        console.log(`Tool '${part.name}' called, running with args:`, params);
+        logfile(`Tool '${part.name}' called, running with args:`, params);
         const value = await tool.run(
           { user, message: message, chat, generateInput: input },
           params,
         );
         userMessage.data.push({ type: 'toolResult', id: part.id, name: part.name, value });
       } catch (e: any) {
-        console.warn(`Tool '${part.name}' threw an error:`, e);
+        logfile(`Tool '${part.name}' threw an error:`, e);
         userMessage.data.push({
           type: 'toolResult',
           id: part.id,
@@ -174,13 +181,13 @@ export async function* generate(
     }
 
     if (controller.signal.aborted) {
-      console.log('Aborting generation loop:', controller.signal.reason);
+      logfile('Aborting generation loop:', controller.signal.reason);
       break;
     }
 
     // Emit the tool results to the client so the UI can display them
     for (const part of userMessage.data) {
-      console.log(
+      logfile(
         `Tool '${(part as Extract<zDataPart, { type: 'toolResult' }>).name}' finished with result:`,
         part,
       );
@@ -302,7 +309,7 @@ If regular updates would be useful for a topic, but the user hasn't asked yet, a
 ## Memories
 
 When the user shares information that could improve future chats, store it as memory even if it was mentioned only once.
-IMPORTANT: Save anything that could be usefBul in the future, even if it's not obvious now. When unsure, prefer storing the memory with an appropriate confidence score rather than skipping it entirely.
+Save anything that could be useful in the future, even if it's not obvious now. When unsure, prefer storing the memory with an appropriate confidence score rather than skipping it entirely.
 When discussing code, pay special attention to the user's tech stack, environment, architectural decisions, and pain points.
 SHORT_TERM and MEDIUM_TERM memories are encouraged for active conversations, experiments, or temporary workflows.
 Use search_memory to find more when it could improve the response.` +

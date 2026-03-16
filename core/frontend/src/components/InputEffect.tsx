@@ -1,6 +1,6 @@
 import { ActionIcon, Box, Group } from '@mantine/core';
 import { ReactNode } from 'react';
-import { useLayout } from '@/managers/layout.tsx';
+import { useLayout } from '@/stores/layout.tsx';
 import { Icon } from '@iconify/react';
 
 export default function InputEffect({

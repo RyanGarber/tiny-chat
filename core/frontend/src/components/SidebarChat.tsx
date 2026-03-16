@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLayout } from '@/managers/layout.tsx';
-import { ActionIcon, Button, Menu, Modal, NavLink, NavLinkProps, TextInput } from '@mantine/core';
+import { useLayout } from '@/stores/layout.tsx';
+import { ActionIcon, Button, Menu, Modal, NavLink, NavLinkProps, TextInput, Indicator } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { useChats } from '@/managers/chats.tsx';
+import { useChats } from '@/stores/chats.tsx';
 import { Chat } from '@tiny-chat/core-backend/generated/prisma/client.ts';
 import { Icon } from '@iconify/react';
 
-export default function SidebarChat({ chat, props }: { chat: Chat; props: NavLinkProps }) {
-  const { currentChat, renameChat, deleteChat } = useChats();
+export default function SidebarChat({ chat, props }: { chat: Chat & { updatedAt?: Date }; props: NavLinkProps }) {
+  const { currentChat, renameChat, deleteChat, clientLastViewedAt } = useChats();
   const { isMobile, setGestureBlock } = useLayout();
 
   const [title, setTitle] = useState<string | null>(null);
@@ -34,12 +34,17 @@ export default function SidebarChat({ chat, props }: { chat: Chat; props: NavLin
   const navLinkRef = useRef<HTMLAnchorElement>(null);
   const [isOpen, setOpen] = useState(false);
   const active = currentChat?.id === chat.id;
+  const hasUpdates = chat.updatedAt && chat.updatedAt.getTime() > (clientLastViewedAt[chat.id] ?? 0) && !active;
 
   return (
     <>
       <NavLink
         key={chat.id}
-        label={chat.title ?? 'Generating...'}
+        label={
+          <Indicator inline size={8} disabled={!hasUpdates} offset={-2} color="blue">
+            {chat.title ?? 'Generating...'}
+          </Indicator>
+        }
         variant="filled"
         active={active}
         ref={navLinkRef}

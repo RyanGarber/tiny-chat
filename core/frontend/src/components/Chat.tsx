@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   ActionIcon,
   Box,
@@ -12,17 +12,18 @@ import {
   Transition,
 } from '@mantine/core';
 import Message from '@/components/Message.tsx';
-import { useMessaging } from '@/managers/messaging.tsx';
-import { useLayout } from '@/managers/layout.tsx';
+import { useMessaging } from '@/stores/messaging.tsx';
+import { useLayout } from '@/stores/layout.tsx';
 import InputEffect from '@/components/InputEffect.tsx';
-import { useChats } from '@/managers/chats.tsx';
+import { useChats } from '@/stores/chats.tsx';
 import { Input } from '@/components/Input.tsx';
-import { auth, extractText, scrubText } from '@/utils.ts';
+import { auth } from '@/utils/api';
+import { extractText, scrubText } from '@/utils/text';
 import Attachments from '@/components/Attachments.tsx';
 import { Icon } from '@iconify/react';
 import Actions from '@/components/Actions.tsx';
-
-const SCROLL_BOTTOM_THRESHOLD = 80;
+import { useAutoScroll } from '@/hooks/useAutoScroll.ts';
+import { useElementHeight } from '@/hooks/useElementHeight.ts';
 
 export default function Chat() {
   const {
@@ -60,124 +61,14 @@ export default function Chat() {
 
   const { data: session } = auth.useSession();
 
-  const messagesViewportRef = useRef<HTMLDivElement>(null);
-  const isAtBottomRef = useRef(true);
-  const smoothScrollVersionRef = useRef(0);
-  const isSmoothScrollingRef = useRef(false);
-
-  const [hasBeenNewChat, setHasBeenNewChat] = useState(false);
-
-  const checkIsAtBottom = useCallback(() => {
-    const el = messagesViewportRef.current;
-    if (!el) return true;
-    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    return distanceFromBottom <= SCROLL_BOTTOM_THRESHOLD;
-  }, []);
-
-  const scrollToBottom = useCallback(
-    (behavior: ScrollBehavior = 'instant') => {
-      const el = messagesViewportRef.current;
-      if (!el) return;
-      if (behavior === 'smooth') {
-        const version = ++smoothScrollVersionRef.current;
-        isSmoothScrollingRef.current = true;
-        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-        const onEnd = () => {
-          // Ignore stale callbacks from cancelled animations
-          if (smoothScrollVersionRef.current !== version) return;
-          isSmoothScrollingRef.current = false;
-          isAtBottomRef.current = checkIsAtBottom();
-        };
-        el.addEventListener('scrollend', onEnd, { once: true });
-        setTimeout(onEnd, 600);
-      } else {
-        el.scrollTop = el.scrollHeight;
-      }
-    },
-    [checkIsAtBottom],
-  );
-
-  const [isAtBottom, setIsAtBottom] = useState(true);
-
-  const handleScroll = useCallback(() => {
-    const atBottom = checkIsAtBottom();
-    isAtBottomRef.current = atBottom;
-    setIsAtBottom(atBottom);
-  }, [checkIsAtBottom]);
-
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-
-    let prevHeight = vv.height;
-
-    const onResize = () => {
-      const el = messagesViewportRef.current;
-      if (!el) return;
-
-      const newHeight = vv.height;
-      const delta = prevHeight - newHeight;
-      prevHeight = newHeight;
-
-      if (Math.abs(delta) < 1) return;
-
-      if (isAtBottomRef.current) el.scrollTop = el.scrollHeight;
-      else if (delta > 0) el.scrollTop += delta;
-    };
-
-    vv.addEventListener('resize', onResize);
-    return () => vv.removeEventListener('resize', onResize);
-  }, [scrollToBottom]);
-
-  // Immediately disengage autoscroll on any intentional upward scroll gesture
-  useEffect(() => {
-    const el = messagesViewportRef.current;
-    if (!el) return;
-
-    const isScrollable = () => el.scrollHeight > el.clientHeight + 1;
-
-    const onWheel = (e: WheelEvent) => {
-      if (e.deltaY < 0 && isAtBottomRef.current && isScrollable()) {
-        isAtBottomRef.current = false;
-        setIsAtBottom(false);
-      }
-    };
-
-    let touchStartY = 0;
-    const onTouchStart = (e: TouchEvent) => {
-      touchStartY = e.touches[0].clientY;
-    };
-    const onTouchMove = (e: TouchEvent) => {
-      const deltaY = touchStartY - e.touches[0].clientY;
-      if (deltaY < 0 && isAtBottomRef.current && isScrollable()) {
-        isAtBottomRef.current = false;
-        setIsAtBottom(false);
-      }
-    };
-
-    el.addEventListener('wheel', onWheel, { passive: true });
-    el.addEventListener('touchstart', onTouchStart, { passive: true });
-    el.addEventListener('touchmove', onTouchMove, { passive: true });
-    return () => {
-      el.removeEventListener('wheel', onWheel);
-      el.removeEventListener('touchstart', onTouchStart);
-      el.removeEventListener('touchmove', onTouchMove);
-    };
-  }, []);
-
-  const lastMessageData = messages[messages.length - 1]?.data;
-  useLayoutEffect(() => {
-    if (isAtBottomRef.current) {
-      scrollToBottom();
-    }
-  }, [messages, lastMessageData, scrollToBottom]);
-
-  useEffect(() => {
-    if (scrollRequested > 0 && !isInitializing) {
-      isAtBottomRef.current = true;
-      scrollToBottom('smooth');
-    }
-  }, [scrollRequested, scrollToBottom, isInitializing]);
+  const {
+    viewportRef: messagesViewportRef,
+    isAtBottom,
+    scrollToBottom,
+  } = useAutoScroll({
+    scrollRequested,
+    isInitializing,
+  });
 
   const inputMaxWidth = 860;
   const inputRef = useRef<HTMLDivElement>(null);
@@ -197,32 +88,10 @@ export default function Chat() {
     return () => observer.disconnect();
   }, [getSidebarWidth]);
 
-  const inputEffectsRef = useRef<HTMLDivElement>(null);
-  const [inputEffectsHeight, setInputEffectsHeight] = useState(0);
+  const { ref: inputEffectsRef, height: inputEffectsHeight } = useElementHeight();
+  const { ref: chatContainerRef, height: chatContainerHeight } = useElementHeight(600);
 
-  useLayoutEffect(() => {
-    const handleResize = () => {
-      setInputEffectsHeight(inputEffectsRef.current?.clientHeight ?? 0);
-    };
-    const observer = new ResizeObserver(() => handleResize());
-    if (inputEffectsRef.current) observer.observe(inputEffectsRef.current);
-    handleResize();
-    return () => observer.disconnect();
-  }, []);
-
-  const chatContainerRef = useRef<HTMLDivElement>(null);
-  const [chatContainerHeight, setChatContainerHeight] = useState(600);
-
-  useLayoutEffect(() => {
-    const el = chatContainerRef.current;
-    if (!el) return;
-    const observer = new ResizeObserver(() => {
-      setChatContainerHeight(el.clientHeight);
-    });
-    observer.observe(el);
-    setChatContainerHeight(el.clientHeight);
-    return () => observer.disconnect();
-  }, []);
+  const [hasBeenNewChat, setHasBeenNewChat] = useState(false);
 
   // TODO - this kinda yughhhhhhhhhh
   const messageOpacities = new Map<string, number>();
@@ -262,7 +131,7 @@ export default function Chat() {
         gap={5}
         display={isMobile ? undefined : 'none'}
         style={{
-          zIndex: 'var(--mantine-z-index-app)',
+          zIndex: 'calc(var(--mantine-z-index-app) + 1)',
           backgroundColor: 'color-mix(in srgb, var(--mantine-color-body), transparent 15%)',
           backdropFilter: 'blur(5px)',
           boxShadow: shadow,
@@ -352,6 +221,8 @@ export default function Chat() {
                 gridArea: '1 / 1',
                 opacity: !temporary ? 1 : 0,
                 transition: 'opacity 300ms ease',
+                willChange: 'opacity',
+                pointerEvents: !temporary ? 'auto' : 'none',
               }}
             >
               <ThemeIcon variant="light" size={48} radius="xl">
@@ -368,6 +239,8 @@ export default function Chat() {
                 gridArea: '1 / 1',
                 opacity: temporary ? 1 : 0,
                 transition: 'opacity 300ms ease',
+                willChange: 'opacity',
+                pointerEvents: temporary ? 'auto' : 'none',
               }}
             >
               <ThemeIcon variant="light" color="gray" size={48} radius="xl">
@@ -398,7 +271,6 @@ export default function Chat() {
           <>
             <ScrollArea
               viewportRef={messagesViewportRef}
-              onScrollPositionChange={handleScroll}
               h="100%"
               styles={{
                 scrollbar: {
@@ -457,7 +329,6 @@ export default function Chat() {
                 ...styles,
               }}
               onClick={() => {
-                isAtBottomRef.current = true;
                 scrollToBottom('smooth');
               }}
             >

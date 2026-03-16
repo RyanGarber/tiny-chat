@@ -1,4 +1,4 @@
-import { useMessaging } from '@/managers/messaging.tsx';
+import { useMessaging } from '@/stores/messaging.tsx';
 import { BaseElement, BaseText, Descendant, Text } from 'slate';
 
 const QUOTE_PREFIX = '::>:: ';

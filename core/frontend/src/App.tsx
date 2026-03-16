@@ -4,17 +4,19 @@ import { NavigationProgress } from '@mantine/nprogress';
 import { useDrag } from '@use-gesture/react';
 import Chat from '@/components/Chat.tsx';
 import Sidebar from '@/components/Sidebar.tsx';
-import { useLayout } from '@/managers/layout.tsx';
-import { useChats } from '@/managers/chats.tsx';
-import { useProviders } from '@/managers/providers.tsx';
-import { auth, hljsAdapter, trpc, useViewport } from '@/utils.ts';
+import { useLayout } from '@/stores/layout.tsx';
+import { useChats } from '@/stores/chats.tsx';
+import { useProviders } from '@/stores/providers.tsx';
+import { auth, trpc } from '@/utils/api';
+import { hljsAdapter } from '@/utils/highlight';
+import { useViewport } from '@/utils/ui';
 import { Notifications } from '@mantine/notifications';
-import { useSettings } from '@/managers/settings.tsx';
+import { useSettings } from '@/stores/settings.tsx';
 import { CodeHighlightAdapterProvider } from '@mantine/code-highlight';
 import { cssResolver, theme } from '@/theme.tsx';
 import { modals, ModalsProvider } from '@mantine/modals';
 import Tasks from '@/components/Tasks.tsx';
-import { useTasks } from '@/managers/tasks.tsx';
+import { useTasks } from '@/stores/tasks.tsx';
 
 export default function App() {
   const {
@@ -122,9 +124,10 @@ export default function App() {
   );
 
   const viewport = useViewport();
+  const colorScheme = useSettings((s) => s.getTheme()) as 'light' | 'dark' | undefined;
   return (
     <MantineProvider
-      forceColorScheme={useSettings.getState().getTheme() as 'light' | 'dark' | undefined}
+      forceColorScheme={colorScheme}
       theme={theme}
       cssVariablesResolver={cssResolver}
     >

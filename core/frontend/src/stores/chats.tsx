@@ -1,16 +1,18 @@
 import { create } from 'zustand';
-import { reloadConfig, useMessaging } from '@/managers/messaging.tsx';
+import { useMessaging } from '@/stores/messaging.tsx';
 import { subscribeWithSelector } from 'zustand/middleware';
-import { trpc } from '@/utils.ts';
+import { reloadConfig } from '@/managers/configuration';
+import { trpc } from '@/utils/api';
 import { Action, Chat } from '@tiny-chat/core-backend/generated/prisma/client.ts';
 import { MessageOmitted } from '@tiny-chat/core-backend/src/types.ts';
 import { FolderListData } from '@tiny-chat/core-backend/src/routes/folders.ts';
 import { navigate } from 'wouter/use-hash-location';
 import { nprogress } from '@mantine/nprogress';
-import { useTasks } from '@/managers/tasks.tsx';
+import { useTasks } from '@/stores/tasks.tsx';
 
 interface Chats {
   init: () => Promise<void>;
+  lastActivityDate: number;
 
   folders: FolderListData[];
   fetchFolders: (showProgress?: boolean) => Promise<void>;
@@ -20,6 +22,9 @@ interface Chats {
 
   currentChat: Chat | null;
   setCurrentChat: (id: string | null, pushState?: boolean, showProgress?: boolean) => Promise<void>;
+
+  initialLoadComplete: boolean;
+  clientLastViewedAt: Record<string, number>;
 
   renameChat: (id: string, title: string) => Promise<void>;
   cloneChat: (messageId: string) => Promise<void>;
@@ -34,19 +39,50 @@ interface Chats {
 
 export const useChats = create(
   subscribeWithSelector<Chats>((set, get) => ({
+    lastActivityDate: 0,
     init: async () => {
       await get().fetchFolders();
+      setInterval(async () => {
+        try {
+          const current = await trpc.folders.lastActivity.query();
+          const { lastActivityDate, fetchFolders } = get();
+          if (lastActivityDate === 0) {
+            set({ lastActivityDate: current });
+            return;
+          }
+          if (current > lastActivityDate) {
+            set({ lastActivityDate: current });
+            await fetchFolders(false);
+          }
+        } catch (e) {
+          console.error("Failed to poll last activity", e);
+        }
+      }, 1000 * 10);
     },
 
     folders: [],
+    initialLoadComplete: false,
+    clientLastViewedAt: {},
     fetchFolders: async (showProgress = true) => {
       if (showProgress) useTasks.getState().addTask('fetchFolders', 'Loading chats');
       const chats = await trpc.folders.list.query();
-      const { currentChat } = get();
+      const { currentChat, initialLoadComplete, clientLastViewedAt } = get();
+      
+      const newClientLastViewedAt = { ...clientLastViewedAt };
+      for (const folder of chats) {
+        for (const chat of folder.chats) {
+          if (newClientLastViewedAt[chat.id] === undefined) {
+             newClientLastViewedAt[chat.id] = initialLoadComplete ? 0 : chat.updatedAt.getTime();
+          }
+        }
+      }
+
       set({
         currentChat: currentChat ? await trpc.chats.find.query({ id: currentChat.id }) : null,
+        folders: chats,
+        clientLastViewedAt: newClientLastViewedAt,
+        initialLoadComplete: true,
       });
-      set({ folders: chats });
       if (showProgress) await useTasks.getState().removeTask('fetchFolders');
     },
     messages: [],
@@ -73,7 +109,13 @@ export const useChats = create(
       }
       if (pushState) navigate(id ? `/${id}` : '/');
       useMessaging.getState().reset();
-      set({ currentChat: chat });
+      
+      const updates: Partial<Chats> = { currentChat: chat };
+      if (id) {
+        updates.clientLastViewedAt = { ...get().clientLastViewedAt, [id]: Date.now() };
+      }
+      set(updates);
+      
       if (showProgress) nprogress.set(50);
       await get().fetchChat(false);
       useMessaging.getState().requestScrollToBottom();

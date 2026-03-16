@@ -1,10 +1,11 @@
 import { KeyboardEvent } from 'react';
-import { useLayout } from '@/managers/layout.tsx';
-import { useMessaging } from '@/managers/messaging.tsx';
+import { useLayout } from '@/stores/layout.tsx';
+import { useMessaging } from '@/stores/messaging.tsx';
 import { serialize } from '@/slate/serializer.tsx';
 import { zDataPart } from '@tiny-chat/core-backend/src/types.ts';
 import { Editor, Path, Text, Transforms } from 'slate';
 import { tokenize } from '@/slate/tokenizer.tsx';
+import { sendMessage } from '@/managers/sending.ts';
 
 type MarkSyntax = 'bold' | 'italic' | 'code';
 
@@ -152,7 +153,7 @@ function toggleMark(syntax: MarkSyntax) {
 }
 
 export async function onSend() {
-  const { editor, files, sendMessage, setData } = useMessaging.getState();
+  const { editor, files, setData } = useMessaging.getState();
   if (!editor) return;
 
   const text = serialize();

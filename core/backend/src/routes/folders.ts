@@ -52,14 +52,39 @@ export default router({
     // dirty dirty dirty (see above comment)
     for (const folder of folders) {
       for (const chat of folder.chats) {
+        (chat as any).updatedAt = new Date(
+          Math.max(
+            chat.createdAt.getTime(),
+            ...chat.messages.map((item) => item.createdAt.getTime()),
+          ),
+        );
         delete (chat as any).messages;
       }
     }
-    return folders as FolderListData[];
+    return folders as unknown as FolderListData[];
+  }),
+
+  lastActivity: procedure.query(async ({ ctx }) => {
+    const latestMessage = await ctx.prisma.message.findFirst({
+      where: { userId: ctx.session.user.id },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    });
+    const latestChat = await ctx.prisma.chat.findFirst({
+      where: { userId: ctx.session.user.id },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    });
+    return Math.max(
+      latestMessage?.createdAt.getTime() ?? 0,
+      latestChat?.createdAt.getTime() ?? 0,
+    );
   }),
 });
 
-export type FolderListData = FolderGetPayload<{ include: { chats: true } }>;
+export type FolderListData = Omit<FolderGetPayload<{ include: { chats: true } }>, 'chats'> & {
+  chats: (FolderGetPayload<{ include: { chats: true } }>['chats'][0] & { updatedAt: Date })[];
+};
 
 export async function createForChat(
   userId: string,

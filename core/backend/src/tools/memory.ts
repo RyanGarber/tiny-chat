@@ -96,12 +96,12 @@ const UpdateMemory = {
   run: async ({ user, message }, params) => {
     if (!message.id) return;
 
-    return await globalThis.prisma.$transaction(async (tx) => {
+    const memory = await globalThis.prisma.$transaction(async (tx) => {
       await tx.memory.delete({
         where: { id: params.id, userId: message.userId },
       });
 
-      const memory = await tx.memory.create({
+      return await tx.memory.create({
         data: {
           id: createId(),
           user: { connect: { id: message.userId } },
@@ -116,11 +116,11 @@ const UpdateMemory = {
           confidence: params.confidence,
         },
       });
-
-      await embedMemory(user, memory);
-
-      return { success: true };
     });
+
+    await embedMemory(user, memory);
+
+    return { success: true };
   },
 } satisfies ToolCall<typeof zUpdateMemory>;
 

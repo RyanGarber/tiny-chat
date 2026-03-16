@@ -11,6 +11,7 @@ declare module 'slate' {
     strikethrough?: boolean;
     heading?: number;
     link?: boolean;
+    syntax?: boolean;
   }
 
   interface BaseRange {

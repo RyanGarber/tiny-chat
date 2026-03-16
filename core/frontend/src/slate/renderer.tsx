@@ -1,7 +1,7 @@
-import { useMessaging } from '@/managers/messaging.tsx';
+import { useMessaging } from '@/stores/messaging.tsx';
 import { ActionIcon, Blockquote, Box, Group, Text as MantineText } from '@mantine/core';
 import { BaseText, Node, Range, Text, Transforms } from 'slate';
-import { ReactEditor, RenderElementProps } from 'slate-react';
+import { ReactEditor, RenderElementProps, RenderLeafProps } from 'slate-react';
 import { tokenize } from '@/slate/tokenizer.tsx';
 import { Icon } from '@iconify/react';
 
@@ -49,6 +49,7 @@ export function renderElement(props: RenderElementProps) {
       return (
         <p
           {...props.attributes}
+          autoCapitalize="sentences"
           style={{
             ...(props.element.hidden && {
               height: 1,
@@ -61,10 +62,10 @@ export function renderElement(props: RenderElementProps) {
   }
 }
 
-export function renderLeaf(props: any) {
-  // TODO eskms - kms
-
-  let { attributes, children, leaf } = props;
+export function renderLeaf(props: RenderLeafProps) {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  let { children } = props;
+  const { attributes, leaf } = props;
 
   if (leaf.bold) {
     children = <strong>{children}</strong>;

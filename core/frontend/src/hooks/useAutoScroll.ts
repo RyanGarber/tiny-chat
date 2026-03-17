@@ -60,26 +60,40 @@ export function useAutoScroll({
       scrollRafIdRef.current = null;
     }
 
+    let idleFrames = 0;
+    let prevScrollHeight = el.scrollHeight;
+
     const step = () => {
       if (!isAtBottomRef.current) {
         scrollRafIdRef.current = null;
         return;
       }
 
-      const targetTop = el.scrollHeight - el.clientHeight;
+      const currentScrollHeight = el.scrollHeight;
+      const targetTop = currentScrollHeight - el.clientHeight;
       const currentTop = el.scrollTop;
       const diff = targetTop - currentTop;
 
       if (diff > 1) {
+        idleFrames = 0;
         // Smooth approach: move 30% of remaining distance, at least 2px
         const move = Math.max(Math.ceil(diff * 0.3), 2);
         el.scrollTop = Math.min(currentTop + move, targetTop);
+      } else {
+        // We're at the bottom. Check if content is still growing.
+        if (currentScrollHeight === prevScrollHeight) {
+          idleFrames++;
+          // Exit after 3 idle frames — ResizeObserver will restart us if needed
+          if (idleFrames >= 3) {
+            scrollRafIdRef.current = null;
+            return;
+          }
+        } else {
+          idleFrames = 0;
+        }
       }
-      // No else: don't write scrollTop when already at bottom — avoids
-      // spurious scroll events that could interfere with isScrollingUp detection.
 
-      // Keep the loop alive every frame as long as we're stickied.
-      // This ensures we never miss content growth while the loop was in flight.
+      prevScrollHeight = currentScrollHeight;
       scrollRafIdRef.current = requestAnimationFrame(step);
     };
 

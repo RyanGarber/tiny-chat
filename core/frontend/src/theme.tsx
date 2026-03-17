@@ -7,8 +7,8 @@ export const darkPalette: MantineColorsTuple = [
   '#636570', // [3]
   '#494B56', // [4]
   '#393B44', // [5]  subtle borders
-  '#2C2D35', // [6]  surface / card background
-  '#222329', // [7]  body / AppShell background
+  '#20242c', // [6]  surface / card background
+  '#1b1d23', // [7]  body / AppShell background
   '#1A1B20', // [8]
   '#141418', // [9]  deepest
 ];

@@ -21,8 +21,10 @@ import providers from './routes/providers.ts';
 import actions from './routes/actions.ts';
 import generateHandler from './generate.ts';
 import onTick from './actions.ts';
+import { initLogs } from './logs.ts';
 
 config({ path: resolve(import.meta.dirname, '../../../.env') });
+if (import.meta.main) initLogs(undefined, true);
 
 if (import.meta.main && !globalThis.prisma) {
   globalThis.prisma = new PrismaClient({

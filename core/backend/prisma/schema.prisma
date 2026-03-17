@@ -125,7 +125,7 @@ model Message {
   memories   Memory[]
   chat       Chat                   @relation(fields: [chatId], references: [id], onDelete: Cascade)
   folder     Folder                 @relation(fields: [folderId], references: [id], onDelete: Cascade)
-  previous   Message?               @relation("Chat", fields: [previousId], references: [id])
+  previous   Message?               @relation("Chat", fields: [previousId], references: [id], onDelete: SetNull)
   next       Message?               @relation("Chat")
   user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -149,9 +149,9 @@ model Memory {
   createdAt  DateTime               @default(now())
   embedding  Unsupported("vector")?
   messageId  String?
-  chat       Chat?                  @relation(fields: [chatId], references: [id])
-  folder     Folder?                @relation(fields: [folderId], references: [id])
-  message    Message?               @relation(fields: [messageId], references: [id])
+  chat       Chat?                  @relation(fields: [chatId], references: [id], onDelete: SetNull)
+  folder     Folder?                @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  message    Message?               @relation(fields: [messageId], references: [id], onDelete: SetNull)
   user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -171,12 +171,12 @@ model Action {
   data      Json
   createdAt DateTime               @default(now())
   embedding Unsupported("vector")?
-  messageId String
+  messageId String?
   lastRanAt DateTime?
   timezone  String
-  chat      Chat                   @relation(fields: [chatId], references: [id], onDelete: Cascade, map: "task_chatId_fkey")
-  folder    Folder                 @relation(fields: [folderId], references: [id], onDelete: Cascade, map: "task_folderId_fkey")
-  message   Message                @relation(fields: [messageId], references: [id], onDelete: Cascade, map: "task_messageId_fkey")
+  chat      Chat                   @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  folder    Folder                 @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  message   Message?               @relation(fields: [messageId], references: [id], onDelete: SetNull)
   user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade, map: "task_userId_fkey")
 
   @@index([chatId], map: "task_chatId_idx")

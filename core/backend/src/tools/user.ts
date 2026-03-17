@@ -15,7 +15,8 @@ const AskUser = {
   parameters: zAskUser.toJSONSchema(),
   schema: zAskUser,
   needsUserInput: true,
-  run: async () => {
+  run: async ({ generateInput }) => {
+    if (!generateInput.userInput) throw new Error('Cannot use tool in this context');
     return new Promise<void>((r) => r());
   },
 } satisfies ToolCall<typeof zAskUser>;

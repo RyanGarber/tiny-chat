@@ -29,6 +29,7 @@ export default function Chat() {
   const {
     currentChat,
     setCurrentChat,
+    updatedChats,
     messages,
     temporary,
     setTemporary,
@@ -109,7 +110,7 @@ export default function Chat() {
     }
   }
 
-  const isNewChat = currentChat === null && !isInitializing;
+  const isNewChat = !currentChat && !isInitializing;
   const isTemporary = temporary || currentChat?.temporary;
   const isIncognito = incognito || currentChat?.incognito;
 
@@ -308,34 +309,62 @@ export default function Chat() {
           </>
         )}
 
-        {/* Scroll-to-bottom button — visible when autoscroll is paused */}
-        <Transition
-          mounted={!isAtBottom && !isNewChat}
-          transition="slide-up"
-          duration={200}
-          timingFunction="ease"
+        <Group
+          gap={5}
+          style={{
+            position: 'absolute',
+            bottom: inputEffectsHeight + 16,
+            right: 20,
+            zIndex: 'calc(var(--mantine-z-index-app) + 1)',
+          }}
         >
-          {(styles) => (
-            <ActionIcon
-              variant="filled"
-              radius="xl"
-              size="lg"
-              style={{
-                position: 'absolute',
-                bottom: inputEffectsHeight + 16,
-                right: 20,
-                zIndex: 'calc(var(--mantine-z-index-app) + 1)',
-                boxShadow: shadow,
-                ...styles,
-              }}
-              onClick={() => {
-                scrollToBottom('smooth');
-              }}
-            >
-              <Icon icon="lucide:chevrons-down" height={18} />
-            </ActionIcon>
-          )}
-        </Transition>
+          <Transition
+            mounted={!isNewChat && !!currentChat && updatedChats.includes(currentChat.id)}
+            transition="pop"
+            duration={200}
+            timingFunction="ease"
+          >
+            {(styles) => (
+              <ActionIcon
+                variant="filled"
+                radius="xl"
+                size="lg"
+                style={{
+                  boxShadow: shadow,
+                  ...styles,
+                }}
+                onClick={() => {
+                  void setCurrentChat(currentChat!.id, false, true);
+                }}
+              >
+                <Icon icon="lucide:refresh-cw" height={18} />
+              </ActionIcon>
+            )}
+          </Transition>
+          <Transition
+            mounted={!isAtBottom && !isNewChat}
+            transition="slide-up"
+            duration={200}
+            timingFunction="ease"
+          >
+            {(styles) => (
+              <ActionIcon
+                variant="filled"
+                radius="xl"
+                size="lg"
+                style={{
+                  boxShadow: shadow,
+                  ...styles,
+                }}
+                onClick={() => {
+                  scrollToBottom('smooth');
+                }}
+              >
+                <Icon icon="lucide:chevrons-down" height={18} />
+              </ActionIcon>
+            )}
+          </Transition>
+        </Group>
 
         {/* InputEffects overlay — sits at the bottom of the scroll area */}
         <Group

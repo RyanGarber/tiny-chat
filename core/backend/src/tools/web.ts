@@ -30,9 +30,10 @@ const ViewWeb = {
   run: async (_, params) => {
     const response = await fetch(`https://r.jina.ai/${params.url}`);
     if (!response.ok) {
-      throw new Error(`Failed: ${response.status} ${response.statusText}`);
+      console.error({ status: response.status, url: params.url }, await response.text());
+      throw new Error('Failed to fetch webpage content');
     }
-    return await response.text();
+    await response.text();
   },
 } satisfies ToolCall<typeof zViewWeb>;
 

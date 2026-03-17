@@ -15,7 +15,6 @@ import {
 } from '../types.ts';
 import { embed } from '../embed.ts';
 import { type User } from '../server.ts';
-import logfile from '../logfile.ts';
 
 export default router({
   create: procedure
@@ -146,14 +145,38 @@ export default router({
     const message = await ctx.prisma.message.findUniqueOrThrow({
       where: { id: input.id, userId: ctx.session.user.id },
       include: {
-        previous: true,
-        next: true,
+        previous: { include: { previous: true } },
+        next: { include: { next: true } },
         folder: { include: { chats: true, messages: true } },
         chat: { include: { messages: true } },
       },
     });
 
     const where = { OR: [{ id: message.id }] };
+
+    let linkPrevious = message.previous?.id;
+    let linkNext = message.next?.id;
+
+    if (message.previous && message.author === Author.MODEL) {
+      where.OR.push({ id: message.previous.id });
+      linkPrevious = message.previous.previous?.id;
+    }
+    if (message.next && message.author === Author.USER) {
+      where.OR.push({ id: message.next.id });
+      linkNext = message.next.next?.id;
+    }
+
+    if (linkPrevious && linkNext) {
+      await ctx.prisma.message.update({
+        where: { id: linkPrevious },
+        data: { next: { connect: { id: linkNext } } },
+      });
+      await ctx.prisma.message.update({
+        where: { id: linkNext },
+        data: { previous: { connect: { id: linkPrevious } } },
+      });
+    }
+
     if (message.author === Author.USER && message.next) where.OR.push({ id: message.next.id });
     else if (message.author === Author.MODEL && message.previous)
       where.OR.push({ id: message.previous.id });
@@ -216,13 +239,13 @@ export async function embedMessage(user: User, message: PrismaMessage | MessageU
   if (text.trim().length) {
     embedding = await embed(user, [text]);
     if (!embedding) {
-      logfile('Failed to generate embedding for message:', message.id);
+      console.warn('Failed to generate embedding for message:', message.id);
     }
   }
 
   await globalThis.prisma
     .$executeRaw`UPDATE message SET embedding = ${embedding ? JSON.stringify(embedding[0]) : null}::vector WHERE id = ${message.id}`;
 
-  logfile('Generated embedding for message', message.id);
+  console.log('Generated embedding for message', message.id);
   return embedding ? embedding[0] : null;
 }

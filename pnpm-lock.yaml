@@ -130,6 +130,9 @@ importers:
 
   core/frontend:
     dependencies:
+      '@gfazioli/mantine-json-tree':
+        specifier: ^2.0.2
+        version: 2.0.2(@mantine/core@8.3.16(@mantine/hooks@8.3.16(react@19.2.4))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(@mantine/hooks@8.3.16(react@19.2.4))(@tabler/icons-react@3.40.0(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@mantine/carousel':
         specifier: ^8.3.15
         version: 8.3.16(@mantine/core@8.3.16(@mantine/hooks@8.3.16(react@19.2.4))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(@mantine/hooks@8.3.16(react@19.2.4))(embla-carousel-react@8.6.0(react@19.2.4))(embla-carousel@8.6.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -725,6 +728,15 @@ packages:
   '@floating-ui/utils@0.2.11':
     resolution: {integrity: sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==}
 
+  '@gfazioli/mantine-json-tree@2.0.2':
+    resolution: {integrity: sha512-HBqWZUsQHkiInEAvDneofZNiPr2NjiB01xRq62HJXv/Ho5TAX3+f+mYAb2AmKAOGUlK3ywPvU6+Wolh3YC2dag==}
+    peerDependencies:
+      '@mantine/core': '>=7.0.0'
+      '@mantine/hooks': '>=7.0.0'
+      '@tabler/icons-react': ^3.34.0
+      react: ^18.x || ^19.x
+      react-dom: ^18.x || ^19.x
+
   '@google/genai@1.44.0':
     resolution: {integrity: sha512-kRt9ZtuXmz+tLlcNntN/VV4LRdpl6ZOu5B1KbfNgfR65db15O6sUQcwnwLka8sT/V6qysD93fWrgJHF2L7dA9A==}
     engines: {node: '>=20.0.0'}
@@ -1143,6 +1155,14 @@ packages:
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
+
+  '@tabler/icons-react@3.40.0':
+    resolution: {integrity: sha512-oO5+6QCnna4a//mYubx4euZfECtzQZFDGsDMIdzZUhbdyBCT+3bRVFBPueGIcemWld4Vb/0UQ39C/cmGfGylAg==}
+    peerDependencies:
+      react: '>= 16'
+
+  '@tabler/icons@3.40.0':
+    resolution: {integrity: sha512-V/Q4VgNPKubRTiLdmWjV/zscYcj5IIk+euicUtaVVqF6luSC9rDngYWgST5/yh3Mrg/mYUwRv1YVTk71Jp0twQ==}
 
   '@tanstack/query-core@5.90.20':
     resolution: {integrity: sha512-OMD2HLpNouXEfZJWcKeVKUgQ5n+n3A2JFmBaScpNDUqSrQSjiveC7dKMe53uJUg1nDG16ttFPz2xfilz6i2uVg==}
@@ -3974,6 +3994,14 @@ snapshots:
 
   '@floating-ui/utils@0.2.11': {}
 
+  '@gfazioli/mantine-json-tree@2.0.2(@mantine/core@8.3.16(@mantine/hooks@8.3.16(react@19.2.4))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(@mantine/hooks@8.3.16(react@19.2.4))(@tabler/icons-react@3.40.0(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+    dependencies:
+      '@mantine/core': 8.3.16(@mantine/hooks@8.3.16(react@19.2.4))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@mantine/hooks': 8.3.16(react@19.2.4)
+      '@tabler/icons-react': 3.40.0(react@19.2.4)
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+
   '@google/genai@1.44.0':
     dependencies:
       google-auth-library: 10.6.1
@@ -4346,6 +4374,13 @@ snapshots:
     optional: true
 
   '@standard-schema/spec@1.1.0': {}
+
+  '@tabler/icons-react@3.40.0(react@19.2.4)':
+    dependencies:
+      '@tabler/icons': 3.40.0
+      react: 19.2.4
+
+  '@tabler/icons@3.40.0': {}
 
   '@tanstack/query-core@5.90.20': {}
 

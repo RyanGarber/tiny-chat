@@ -4,27 +4,25 @@ import { subscribeWithSelector } from 'zustand/middleware';
 import { reloadConfig } from '@/managers/configuration';
 import { trpc } from '@/utils/api';
 import { Action, Chat } from '@tiny-chat/core-backend/generated/prisma/client.ts';
-import { MessageOmitted } from '@tiny-chat/core-backend/src/types.ts';
-import { FolderListData } from '@tiny-chat/core-backend/src/routes/folders.ts';
+import { getNextRunAt, MessageOmitted } from '@tiny-chat/core-backend/src/types.ts';
 import { navigate } from 'wouter/use-hash-location';
 import { nprogress } from '@mantine/nprogress';
 import { useTasks } from '@/stores/tasks.tsx';
+import { getLastChatActivity } from '@/utils/ui.ts';
 
 interface Chats {
   init: () => Promise<void>;
-  lastActivityDate: number;
 
-  folders: FolderListData[];
-  fetchFolders: (showProgress?: boolean) => Promise<void>;
-  messages: MessageOmitted[];
-  actions: Action[];
+  folders: Awaited<ReturnType<typeof trpc.folders.list.query>>;
+  fetchFolders: (showProgress?: boolean, showActivity?: boolean) => Promise<void>;
+
+  lastActivityMax: number;
+  lastChatActivity: Record<string, number>;
+  updatedChats: string[];
+
   fetchChat: (showProgress?: boolean) => Promise<void>;
-
   currentChat: Chat | null;
   setCurrentChat: (id: string | null, pushState?: boolean, showProgress?: boolean) => Promise<void>;
-
-  initialLoadComplete: boolean;
-  clientLastViewedAt: Record<string, number>;
 
   renameChat: (id: string, title: string) => Promise<void>;
   cloneChat: (messageId: string) => Promise<void>;
@@ -35,92 +33,126 @@ interface Chats {
 
   incognito: boolean;
   setIncognito: (incognito: boolean) => Promise<void>;
+
+  messages: MessageOmitted[];
+  actions: (Action & { nextRunAt: Date | null })[];
 }
 
 export const useChats = create(
   subscribeWithSelector<Chats>((set, get) => ({
-    lastActivityDate: 0,
     init: async () => {
       await get().fetchFolders();
-      setInterval(async () => {
-        try {
-          const current = await trpc.folders.lastActivity.query();
-          const { lastActivityDate, fetchFolders } = get();
-          if (lastActivityDate === 0) {
-            set({ lastActivityDate: current });
-            return;
+      setInterval(() => {
+        void (async () => {
+          try {
+            const activityMax = await trpc.folders.lastActivityMax.query();
+            const { lastActivityMax, fetchFolders } = get();
+            if (lastActivityMax === -1) {
+              set({ lastActivityMax: activityMax });
+              return;
+            }
+            if (activityMax > lastActivityMax) {
+              console.log(`New chat activity detected (${lastActivityMax} -> ${activityMax}`);
+              set({ lastActivityMax: activityMax });
+              await fetchFolders(false, true);
+            }
+          } catch (e) {
+            console.error('Failed to poll last activity', e);
           }
-          if (current > lastActivityDate) {
-            set({ lastActivityDate: current });
-            await fetchFolders(false);
-          }
-        } catch (e) {
-          console.error("Failed to poll last activity", e);
-        }
+        })();
       }, 1000 * 10);
     },
 
     folders: [],
-    initialLoadComplete: false,
-    clientLastViewedAt: {},
-    fetchFolders: async (showProgress = true) => {
+    fetchFolders: async (showProgress = true, showActivity = false) => {
       if (showProgress) useTasks.getState().addTask('fetchFolders', 'Loading chats');
-      const chats = await trpc.folders.list.query();
-      const { currentChat, initialLoadComplete, clientLastViewedAt } = get();
-      
-      const newClientLastViewedAt = { ...clientLastViewedAt };
-      for (const folder of chats) {
-        for (const chat of folder.chats) {
-          if (newClientLastViewedAt[chat.id] === undefined) {
-             newClientLastViewedAt[chat.id] = initialLoadComplete ? 0 : chat.updatedAt.getTime();
+      const folders = await trpc.folders.list.query();
+      const { currentChat } = get();
+
+      console.log('Fetched folders:', folders);
+
+      if (showActivity) {
+        for (const chat of folders.flatMap((f) => f.chats)) {
+          const lastActivity = getLastChatActivity(chat);
+          if (lastActivity !== get().lastChatActivity[chat.id]) {
+            console.log(`New activity in chat ${chat.id}, marking updated`);
+            set({ updatedChats: [...get().updatedChats.filter((c) => c !== chat.id), chat.id] });
+            set({ lastChatActivity: { ...get().lastChatActivity, [chat.id]: lastActivity } });
           }
+        }
+      } else {
+        for (const chat of folders.flatMap((f) => f.chats)) {
+          set({
+            lastChatActivity: { ...get().lastChatActivity, [chat.id]: getLastChatActivity(chat) },
+          });
         }
       }
 
       set({
         currentChat: currentChat ? await trpc.chats.find.query({ id: currentChat.id }) : null,
-        folders: chats,
-        clientLastViewedAt: newClientLastViewedAt,
-        initialLoadComplete: true,
+        folders: folders,
       });
       if (showProgress) await useTasks.getState().removeTask('fetchFolders');
     },
-    messages: [],
-    actions: [],
+
+    lastActivityMax: -1,
+    lastChatActivity: {},
+    updatedChats: [],
+
     fetchChat: async (showProgress = true) => {
-      const { currentChat } = get();
+      const { currentChat, lastChatActivity } = get();
+
       if (showProgress) useTasks.getState().addTask('fetchChat', 'Loading chat');
+
       const messages = currentChat
         ? await trpc.messages.list.query({ chatId: currentChat.id })
         : [];
       const actions = currentChat ? await trpc.actions.list.query({ chatId: currentChat.id }) : [];
       console.log('Messages:', messages, 'Actions:', actions);
-      set({ messages, actions });
+
+      set({
+        messages,
+        actions: await Promise.all(
+          actions.map(async (a) => ({
+            ...a,
+            nextRunAt: await getNextRunAt(a),
+          })),
+        ),
+        ...(currentChat
+          ? {
+              lastChatActivity: {
+                ...lastChatActivity,
+                [currentChat.id]: getLastChatActivity({ ...currentChat, messages }),
+              },
+              updatedChats: get().updatedChats.filter((c) => c !== currentChat.id),
+            }
+          : {}),
+      });
+
       if (showProgress) await useTasks.getState().removeTask('fetchChat');
     },
 
     currentChat: null,
     setCurrentChat: async (id, pushState = true, showProgress = true) => {
       if (showProgress) nprogress.start();
+
       const chat = await trpc.chats.find.query({ id: id! });
       if (id && !chat) {
         if (showProgress) nprogress.complete();
         return;
       }
+
       if (pushState) navigate(id ? `/${id}` : '/');
       useMessaging.getState().reset();
-      
-      const updates: Partial<Chats> = { currentChat: chat };
-      if (id) {
-        updates.clientLastViewedAt = { ...get().clientLastViewedAt, [id]: Date.now() };
-      }
-      set(updates);
-      
+      set({ currentChat: chat });
+
       if (showProgress) nprogress.set(50);
+
       await get().fetchChat(false);
       useMessaging.getState().requestScrollToBottom();
-      if (showProgress) nprogress.complete();
       if (pushState) reloadConfig();
+
+      if (showProgress) nprogress.complete();
     },
 
     renameChat: async (id, name) => {
@@ -172,5 +204,8 @@ export const useChats = create(
       if (currentChat) await setCurrentChat(null);
       set({ incognito });
     },
+
+    messages: [],
+    actions: [],
   })),
 );

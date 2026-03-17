@@ -441,11 +441,6 @@ export type MessageMinOrderByAggregateInput = {
   createdAt?: Prisma.SortOrder
 }
 
-export type MessageScalarRelationFilter = {
-  is?: Prisma.MessageWhereInput
-  isNot?: Prisma.MessageWhereInput
-}
-
 export type MessageCreateNestedManyWithoutUserInput = {
   create?: Prisma.XOR<Prisma.MessageCreateWithoutUserInput, Prisma.MessageUncheckedCreateWithoutUserInput> | Prisma.MessageCreateWithoutUserInput[] | Prisma.MessageUncheckedCreateWithoutUserInput[]
   connectOrCreate?: Prisma.MessageCreateOrConnectWithoutUserInput | Prisma.MessageCreateOrConnectWithoutUserInput[]
@@ -646,10 +641,12 @@ export type MessageCreateNestedOneWithoutActionInput = {
   connect?: Prisma.MessageWhereUniqueInput
 }
 
-export type MessageUpdateOneRequiredWithoutActionNestedInput = {
+export type MessageUpdateOneWithoutActionNestedInput = {
   create?: Prisma.XOR<Prisma.MessageCreateWithoutActionInput, Prisma.MessageUncheckedCreateWithoutActionInput>
   connectOrCreate?: Prisma.MessageCreateOrConnectWithoutActionInput
   upsert?: Prisma.MessageUpsertWithoutActionInput
+  disconnect?: Prisma.MessageWhereInput | boolean
+  delete?: Prisma.MessageWhereInput | boolean
   connect?: Prisma.MessageWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.MessageUpdateToOneWithWhereWithoutActionInput, Prisma.MessageUpdateWithoutActionInput>, Prisma.MessageUncheckedUpdateWithoutActionInput>
 }

@@ -54,7 +54,11 @@ export function useAutoScroll({
     const el = viewportRef.current;
     if (!el) return;
 
-    if (scrollRafIdRef.current !== null) return;
+    // Cancel any existing loop so we always have the freshest state
+    if (scrollRafIdRef.current !== null) {
+      cancelAnimationFrame(scrollRafIdRef.current);
+      scrollRafIdRef.current = null;
+    }
 
     const step = () => {
       if (!isAtBottomRef.current) {
@@ -66,18 +70,16 @@ export function useAutoScroll({
       const currentTop = el.scrollTop;
       const diff = targetTop - currentTop;
 
-      if (diff <= 1) {
-        el.scrollTop = targetTop;
-        scrollRafIdRef.current = null;
-        isAtBottomRef.current = true;
-        setIsAtBottom(true);
-        return;
+      if (diff > 1) {
+        // Smooth approach: move 30% of remaining distance, at least 2px
+        const move = Math.max(Math.ceil(diff * 0.3), 2);
+        el.scrollTop = Math.min(currentTop + move, targetTop);
       }
+      // No else: don't write scrollTop when already at bottom — avoids
+      // spurious scroll events that could interfere with isScrollingUp detection.
 
-      // Smooth approach: move 30% of remaining distance, at least 2px
-      const move = Math.max(Math.ceil(diff * 0.3), 2);
-      el.scrollTop += move;
-
+      // Keep the loop alive every frame as long as we're stickied.
+      // This ensures we never miss content growth while the loop was in flight.
       scrollRafIdRef.current = requestAnimationFrame(step);
     };
 
@@ -88,18 +90,21 @@ export function useAutoScroll({
     (behavior: ScrollBehavior = 'instant') => {
       const el = viewportRef.current;
       if (!el) return;
-      
+
       isAtBottomRef.current = true;
       setIsAtBottom(true);
-      
+
       if (behavior === 'smooth') {
         animateScrollToBottom();
       } else {
+        // Cancel any running animation, then jump instantly
         if (scrollRafIdRef.current !== null) {
           cancelAnimationFrame(scrollRafIdRef.current);
           scrollRafIdRef.current = null;
         }
         el.scrollTop = el.scrollHeight;
+        // Restart the loop so we stay locked if content keeps growing
+        animateScrollToBottom();
       }
     },
     [animateScrollToBottom],
@@ -210,10 +215,10 @@ export function useAutoScroll({
     return () => observer.disconnect();
   }, [animateScrollToBottom]);
 
-  // Respond to explicit scroll-to-bottom
+  // Respond to explicit scroll-to-bottom (e.g. after sending a message)
   useEffect(() => {
     if (scrollRequested > 0 && !isInitializing) {
-      setTimeout(() => scrollToBottom('smooth'), 0);
+      queueMicrotask(() => scrollToBottom('smooth'));
     }
   }, [scrollRequested, scrollToBottom, isInitializing]);
 

@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { auth, toHeaders, type User } from './server.ts';
 import type { zGenerateOutput } from './types.ts';
+import { getNextRunAt } from './types.ts';
 import {
   type ContextItem,
   type MessageUnomitted,
@@ -16,7 +17,6 @@ import { Author, type Chat } from '../generated/prisma/client.ts';
 import { tools } from './tools/index.ts';
 import { getMemoryContext } from './routes/embeddings.ts';
 import { format } from 'timeago.js';
-import logfile from './logfile.ts';
 
 export default async function generateHandler(req: IncomingMessage, res: ServerResponse) {
   try {
@@ -101,7 +101,7 @@ export async function* generate(
   while (true) {
     const message = context[context.length - 1];
 
-    logfile('Starting turn for message:', message);
+    console.log('Starting turn for message:', message);
     const stream = provider.generate(
       user,
       instructions,
@@ -127,7 +127,7 @@ export async function* generate(
         }
       }
     } catch (e: any) {
-      logfile('Error during generation:', e);
+      console.log('Error during generation:', e);
       throw e;
     }
 
@@ -143,7 +143,7 @@ export async function* generate(
         (t) => t.name === part.name,
       );
       if (!tool) {
-        logfile(`Tool '${part.name}' does not exist`);
+        console.log(`Tool '${part.name}' does not exist`);
         userMessage.data.push({
           type: 'toolResult',
           id: part.id,
@@ -155,21 +155,21 @@ export async function* generate(
       }
 
       if (tool.needsUserInput) {
-        logfile(`Tool '${part.name}' requires user input, ending turn`);
+        console.log(`Tool '${part.name}' requires user input, ending turn`);
         controller.abort('Tool requires user input');
         break;
       }
 
       try {
         const params = tool.schema.parse(part.args);
-        logfile(`Tool '${part.name}' called, running with args:`, params);
+        console.log(`Tool '${part.name}' called, running with args:`, params);
         const value = await tool.run(
           { user, message: message, chat, generateInput: input },
           params,
         );
         userMessage.data.push({ type: 'toolResult', id: part.id, name: part.name, value });
       } catch (e: any) {
-        logfile(`Tool '${part.name}' threw an error:`, e);
+        console.warn(`Tool '${part.name}' threw an error:`, e);
         userMessage.data.push({
           type: 'toolResult',
           id: part.id,
@@ -181,13 +181,13 @@ export async function* generate(
     }
 
     if (controller.signal.aborted) {
-      logfile('Aborting generation loop:', controller.signal.reason);
+      console.warn('Aborting generation loop:', controller.signal.reason);
       break;
     }
 
     // Emit the tool results to the client so the UI can display them
     for (const part of userMessage.data) {
-      logfile(
+      console.log(
         `Tool '${(part as Extract<zDataPart, { type: 'toolResult' }>).name}' finished with result:`,
         part,
       );
@@ -293,7 +293,19 @@ Critical: Do not include the [assistant:model=...] label in your response.
 
 The user's scheduled actions in this chat:
 
-${actions.length ? actions.map((a) => `- [${a.id}] ${texts(zData.parse(a.data))} (${a.schedule})`).join('\n') : '- (none)'}
+${
+  actions.length
+    ? (
+        await Promise.all(
+          actions.flatMap(async (a) =>
+            (await getNextRunAt(a))
+              ? [`- [${a.id}] ${texts(zData.parse(a.data))} (${a.schedule})`]
+              : [],
+          ),
+        )
+      ).join('\n')
+    : '- (none)'
+}
 
 Relevant memories of the user across all chats:
 
@@ -304,7 +316,6 @@ ${memories.length ? memories.map((m) => `- ${m}`).join('\n') : '- (none)'}
 Actions allow for prompts to be sent automatically on a recurring schedule.
 If the user asks for regular updates on a topic, use the add_action tool to create an action for it.
 If regular updates would be useful for a topic, but the user hasn't asked yet, ask proactively if they'd like an action created.
-
 
 ## Memories
 
@@ -326,6 +337,7 @@ ${userInstructions.join('\n')}`
   console.log(
     'Built context:',
     context
+      .filter((m) => m.data.some((d) => d.type === 'text' && d.value.trim() !== ''))
       .map(
         (m) =>
           `<${m.author}> ${texts(m.data)

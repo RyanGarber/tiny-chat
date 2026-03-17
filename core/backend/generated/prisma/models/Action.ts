@@ -184,7 +184,7 @@ export type ActionGroupByOutputType = {
   config: runtime.JsonValue
   data: runtime.JsonValue
   createdAt: Date
-  messageId: string
+  messageId: string | null
   lastRanAt: Date | null
   timezone: string
   _count: ActionCountAggregateOutputType | null
@@ -219,12 +219,12 @@ export type ActionWhereInput = {
   config?: Prisma.JsonFilter<"Action">
   data?: Prisma.JsonFilter<"Action">
   createdAt?: Prisma.DateTimeFilter<"Action"> | Date | string
-  messageId?: Prisma.StringFilter<"Action"> | string
+  messageId?: Prisma.StringNullableFilter<"Action"> | string | null
   lastRanAt?: Prisma.DateTimeNullableFilter<"Action"> | Date | string | null
   timezone?: Prisma.StringFilter<"Action"> | string
   chat?: Prisma.XOR<Prisma.ChatScalarRelationFilter, Prisma.ChatWhereInput>
   folder?: Prisma.XOR<Prisma.FolderScalarRelationFilter, Prisma.FolderWhereInput>
-  message?: Prisma.XOR<Prisma.MessageScalarRelationFilter, Prisma.MessageWhereInput>
+  message?: Prisma.XOR<Prisma.MessageNullableScalarRelationFilter, Prisma.MessageWhereInput> | null
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }
 
@@ -237,7 +237,7 @@ export type ActionOrderByWithRelationInput = {
   config?: Prisma.SortOrder
   data?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  messageId?: Prisma.SortOrder
+  messageId?: Prisma.SortOrderInput | Prisma.SortOrder
   lastRanAt?: Prisma.SortOrderInput | Prisma.SortOrder
   timezone?: Prisma.SortOrder
   chat?: Prisma.ChatOrderByWithRelationInput
@@ -258,12 +258,12 @@ export type ActionWhereUniqueInput = Prisma.AtLeast<{
   config?: Prisma.JsonFilter<"Action">
   data?: Prisma.JsonFilter<"Action">
   createdAt?: Prisma.DateTimeFilter<"Action"> | Date | string
-  messageId?: Prisma.StringFilter<"Action"> | string
+  messageId?: Prisma.StringNullableFilter<"Action"> | string | null
   lastRanAt?: Prisma.DateTimeNullableFilter<"Action"> | Date | string | null
   timezone?: Prisma.StringFilter<"Action"> | string
   chat?: Prisma.XOR<Prisma.ChatScalarRelationFilter, Prisma.ChatWhereInput>
   folder?: Prisma.XOR<Prisma.FolderScalarRelationFilter, Prisma.FolderWhereInput>
-  message?: Prisma.XOR<Prisma.MessageScalarRelationFilter, Prisma.MessageWhereInput>
+  message?: Prisma.XOR<Prisma.MessageNullableScalarRelationFilter, Prisma.MessageWhereInput> | null
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }, "id">
 
@@ -276,7 +276,7 @@ export type ActionOrderByWithAggregationInput = {
   config?: Prisma.SortOrder
   data?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  messageId?: Prisma.SortOrder
+  messageId?: Prisma.SortOrderInput | Prisma.SortOrder
   lastRanAt?: Prisma.SortOrderInput | Prisma.SortOrder
   timezone?: Prisma.SortOrder
   _count?: Prisma.ActionCountOrderByAggregateInput
@@ -296,7 +296,7 @@ export type ActionScalarWhereWithAggregatesInput = {
   config?: Prisma.JsonWithAggregatesFilter<"Action">
   data?: Prisma.JsonWithAggregatesFilter<"Action">
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Action"> | Date | string
-  messageId?: Prisma.StringWithAggregatesFilter<"Action"> | string
+  messageId?: Prisma.StringNullableWithAggregatesFilter<"Action"> | string | null
   lastRanAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Action"> | Date | string | null
   timezone?: Prisma.StringWithAggregatesFilter<"Action"> | string
 }
@@ -311,7 +311,7 @@ export type ActionCreateInput = {
   timezone: string
   chat: Prisma.ChatCreateNestedOneWithoutActionInput
   folder: Prisma.FolderCreateNestedOneWithoutActionInput
-  message: Prisma.MessageCreateNestedOneWithoutActionInput
+  message?: Prisma.MessageCreateNestedOneWithoutActionInput
   user: Prisma.UserCreateNestedOneWithoutActionInput
 }
 
@@ -324,7 +324,7 @@ export type ActionUncheckedCreateInput = {
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  messageId: string
+  messageId?: string | null
   lastRanAt?: Date | string | null
   timezone: string
 }
@@ -339,7 +339,7 @@ export type ActionUpdateInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   chat?: Prisma.ChatUpdateOneRequiredWithoutActionNestedInput
   folder?: Prisma.FolderUpdateOneRequiredWithoutActionNestedInput
-  message?: Prisma.MessageUpdateOneRequiredWithoutActionNestedInput
+  message?: Prisma.MessageUpdateOneWithoutActionNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutActionNestedInput
 }
 
@@ -352,7 +352,7 @@ export type ActionUncheckedUpdateInput = {
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  messageId?: Prisma.StringFieldUpdateOperationsInput | string
+  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
 }
@@ -366,7 +366,7 @@ export type ActionCreateManyInput = {
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  messageId: string
+  messageId?: string | null
   lastRanAt?: Date | string | null
   timezone: string
 }
@@ -390,7 +390,7 @@ export type ActionUncheckedUpdateManyInput = {
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  messageId?: Prisma.StringFieldUpdateOperationsInput | string
+  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
 }
@@ -621,7 +621,7 @@ export type ActionCreateWithoutUserInput = {
   timezone: string
   chat: Prisma.ChatCreateNestedOneWithoutActionInput
   folder: Prisma.FolderCreateNestedOneWithoutActionInput
-  message: Prisma.MessageCreateNestedOneWithoutActionInput
+  message?: Prisma.MessageCreateNestedOneWithoutActionInput
 }
 
 export type ActionUncheckedCreateWithoutUserInput = {
@@ -632,7 +632,7 @@ export type ActionUncheckedCreateWithoutUserInput = {
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  messageId: string
+  messageId?: string | null
   lastRanAt?: Date | string | null
   timezone: string
 }
@@ -675,7 +675,7 @@ export type ActionScalarWhereInput = {
   config?: Prisma.JsonFilter<"Action">
   data?: Prisma.JsonFilter<"Action">
   createdAt?: Prisma.DateTimeFilter<"Action"> | Date | string
-  messageId?: Prisma.StringFilter<"Action"> | string
+  messageId?: Prisma.StringNullableFilter<"Action"> | string | null
   lastRanAt?: Prisma.DateTimeNullableFilter<"Action"> | Date | string | null
   timezone?: Prisma.StringFilter<"Action"> | string
 }
@@ -689,7 +689,7 @@ export type ActionCreateWithoutFolderInput = {
   lastRanAt?: Date | string | null
   timezone: string
   chat: Prisma.ChatCreateNestedOneWithoutActionInput
-  message: Prisma.MessageCreateNestedOneWithoutActionInput
+  message?: Prisma.MessageCreateNestedOneWithoutActionInput
   user: Prisma.UserCreateNestedOneWithoutActionInput
 }
 
@@ -701,7 +701,7 @@ export type ActionUncheckedCreateWithoutFolderInput = {
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  messageId: string
+  messageId?: string | null
   lastRanAt?: Date | string | null
   timezone: string
 }
@@ -741,7 +741,7 @@ export type ActionCreateWithoutChatInput = {
   lastRanAt?: Date | string | null
   timezone: string
   folder: Prisma.FolderCreateNestedOneWithoutActionInput
-  message: Prisma.MessageCreateNestedOneWithoutActionInput
+  message?: Prisma.MessageCreateNestedOneWithoutActionInput
   user: Prisma.UserCreateNestedOneWithoutActionInput
 }
 
@@ -753,7 +753,7 @@ export type ActionUncheckedCreateWithoutChatInput = {
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  messageId: string
+  messageId?: string | null
   lastRanAt?: Date | string | null
   timezone: string
 }
@@ -844,7 +844,7 @@ export type ActionCreateManyUserInput = {
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  messageId: string
+  messageId?: string | null
   lastRanAt?: Date | string | null
   timezone: string
 }
@@ -859,7 +859,7 @@ export type ActionUpdateWithoutUserInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   chat?: Prisma.ChatUpdateOneRequiredWithoutActionNestedInput
   folder?: Prisma.FolderUpdateOneRequiredWithoutActionNestedInput
-  message?: Prisma.MessageUpdateOneRequiredWithoutActionNestedInput
+  message?: Prisma.MessageUpdateOneWithoutActionNestedInput
 }
 
 export type ActionUncheckedUpdateWithoutUserInput = {
@@ -870,7 +870,7 @@ export type ActionUncheckedUpdateWithoutUserInput = {
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  messageId?: Prisma.StringFieldUpdateOperationsInput | string
+  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
 }
@@ -883,7 +883,7 @@ export type ActionUncheckedUpdateManyWithoutUserInput = {
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  messageId?: Prisma.StringFieldUpdateOperationsInput | string
+  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
 }
@@ -896,7 +896,7 @@ export type ActionCreateManyFolderInput = {
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  messageId: string
+  messageId?: string | null
   lastRanAt?: Date | string | null
   timezone: string
 }
@@ -910,7 +910,7 @@ export type ActionUpdateWithoutFolderInput = {
   lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   chat?: Prisma.ChatUpdateOneRequiredWithoutActionNestedInput
-  message?: Prisma.MessageUpdateOneRequiredWithoutActionNestedInput
+  message?: Prisma.MessageUpdateOneWithoutActionNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutActionNestedInput
 }
 
@@ -922,7 +922,7 @@ export type ActionUncheckedUpdateWithoutFolderInput = {
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  messageId?: Prisma.StringFieldUpdateOperationsInput | string
+  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
 }
@@ -935,7 +935,7 @@ export type ActionUncheckedUpdateManyWithoutFolderInput = {
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  messageId?: Prisma.StringFieldUpdateOperationsInput | string
+  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
 }
@@ -948,7 +948,7 @@ export type ActionCreateManyChatInput = {
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  messageId: string
+  messageId?: string | null
   lastRanAt?: Date | string | null
   timezone: string
 }
@@ -962,7 +962,7 @@ export type ActionUpdateWithoutChatInput = {
   lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   folder?: Prisma.FolderUpdateOneRequiredWithoutActionNestedInput
-  message?: Prisma.MessageUpdateOneRequiredWithoutActionNestedInput
+  message?: Prisma.MessageUpdateOneWithoutActionNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutActionNestedInput
 }
 
@@ -974,7 +974,7 @@ export type ActionUncheckedUpdateWithoutChatInput = {
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  messageId?: Prisma.StringFieldUpdateOperationsInput | string
+  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
 }
@@ -987,7 +987,7 @@ export type ActionUncheckedUpdateManyWithoutChatInput = {
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  messageId?: Prisma.StringFieldUpdateOperationsInput | string
+  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
 }
@@ -1060,7 +1060,7 @@ export type ActionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   timezone?: boolean
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
   folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
-  message?: boolean | Prisma.MessageDefaultArgs<ExtArgs>
+  message?: boolean | Prisma.Action$messageArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["action"]>
 
@@ -1078,7 +1078,7 @@ export type ActionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   timezone?: boolean
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
   folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
-  message?: boolean | Prisma.MessageDefaultArgs<ExtArgs>
+  message?: boolean | Prisma.Action$messageArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["action"]>
 
@@ -1096,7 +1096,7 @@ export type ActionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   timezone?: boolean
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
   folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
-  message?: boolean | Prisma.MessageDefaultArgs<ExtArgs>
+  message?: boolean | Prisma.Action$messageArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["action"]>
 
@@ -1118,19 +1118,19 @@ export type ActionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
 export type ActionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
   folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
-  message?: boolean | Prisma.MessageDefaultArgs<ExtArgs>
+  message?: boolean | Prisma.Action$messageArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type ActionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
   folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
-  message?: boolean | Prisma.MessageDefaultArgs<ExtArgs>
+  message?: boolean | Prisma.Action$messageArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type ActionIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
   folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
-  message?: boolean | Prisma.MessageDefaultArgs<ExtArgs>
+  message?: boolean | Prisma.Action$messageArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 
@@ -1139,7 +1139,7 @@ export type $ActionPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
   objects: {
     chat: Prisma.$ChatPayload<ExtArgs>
     folder: Prisma.$FolderPayload<ExtArgs>
-    message: Prisma.$MessagePayload<ExtArgs>
+    message: Prisma.$MessagePayload<ExtArgs> | null
     user: Prisma.$UserPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -1151,7 +1151,7 @@ export type $ActionPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     config: runtime.JsonValue
     data: runtime.JsonValue
     createdAt: Date
-    messageId: string
+    messageId: string | null
     lastRanAt: Date | null
     timezone: string
   }, ExtArgs["result"]["action"]>
@@ -1550,7 +1550,7 @@ export interface Prisma__ActionClient<T, Null = never, ExtArgs extends runtime.T
   readonly [Symbol.toStringTag]: "PrismaPromise"
   chat<T extends Prisma.ChatDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ChatDefaultArgs<ExtArgs>>): Prisma.Prisma__ChatClient<runtime.Types.Result.GetResult<Prisma.$ChatPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   folder<T extends Prisma.FolderDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FolderDefaultArgs<ExtArgs>>): Prisma.Prisma__FolderClient<runtime.Types.Result.GetResult<Prisma.$FolderPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  message<T extends Prisma.MessageDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.MessageDefaultArgs<ExtArgs>>): Prisma.Prisma__MessageClient<runtime.Types.Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  message<T extends Prisma.Action$messageArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Action$messageArgs<ExtArgs>>): Prisma.Prisma__MessageClient<runtime.Types.Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1985,6 +1985,25 @@ export type ActionDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * Limit how many Actions to delete.
    */
   limit?: number
+}
+
+/**
+ * Action.message
+ */
+export type Action$messageArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Message
+   */
+  select?: Prisma.MessageSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Message
+   */
+  omit?: Prisma.MessageOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.MessageInclude<ExtArgs> | null
+  where?: Prisma.MessageWhereInput
 }
 
 /**

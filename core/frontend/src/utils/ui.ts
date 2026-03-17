@@ -1,5 +1,6 @@
 import { notifications } from '@mantine/notifications';
 import { useEffect, useRef, useState } from 'react';
+import { trpc } from '@/utils/api.ts';
 
 export const consumeLabel = {
   root: {
@@ -69,4 +70,13 @@ export function useViewport() {
   }, []);
 
   return { height, containerRef };
+}
+
+export function getLastChatActivity(
+  chat: Awaited<ReturnType<typeof trpc.folders.list.query>>[number]['chats'][number],
+) {
+  return Math.max(
+    chat.createdAt.getTime(),
+    ...(chat.messages as { createdAt: Date }[]).map((m) => m.createdAt.getTime()),
+  );
 }

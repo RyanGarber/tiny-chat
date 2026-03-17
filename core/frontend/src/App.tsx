@@ -127,8 +127,8 @@ export default function App() {
   const colorScheme = useSettings((s) => s.getTheme()) as 'light' | 'dark' | undefined;
   return (
     <MantineProvider
-      forceColorScheme={colorScheme}
       theme={theme}
+      forceColorScheme={colorScheme}
       cssVariablesResolver={cssResolver}
     >
       <ModalsProvider>

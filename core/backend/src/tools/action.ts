@@ -59,7 +59,7 @@ const AddAction = {
   run: async ({ message, generateInput }, params) => {
     if (!message.id) throw new Error('Cannot use tool in this context');
     const schedule = toUTC(params.schedule, generateInput.timezone);
-    await globalThis.prisma.action.create({
+    const action = await globalThis.prisma.action.create({
       data: {
         id: createId(),
         user: { connect: { id: message.userId } },
@@ -72,7 +72,7 @@ const AddAction = {
         timezone: generateInput.timezone,
       },
     });
-    return { success: true };
+    return { success: true, actionId: action.id };
   },
 } satisfies ToolCall<typeof zAddAction>;
 
@@ -94,7 +94,7 @@ const UpdateAction = {
   run: async ({ message, generateInput }, params) => {
     if (!message.id) throw new Error('Cannot use tool in this context');
     const schedule = toUTC(params.schedule, generateInput.timezone);
-    await globalThis.prisma.action.update({
+    const action = await globalThis.prisma.action.update({
       where: {
         id: params.id,
         userId: message.userId,
@@ -105,7 +105,7 @@ const UpdateAction = {
         timezone: generateInput.timezone,
       },
     });
-    return { success: true };
+    return { success: true, actionId: action.id };
   },
 } satisfies ToolCall<typeof zUpdateAction>;
 

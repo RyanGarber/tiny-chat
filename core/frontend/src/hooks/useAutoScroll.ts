@@ -1,6 +1,7 @@
 import { RefObject, useCallback, useEffect, useRef, useState } from 'react';
 
 const SCROLL_BOTTOM_THRESHOLD = 80;
+const SCROLL_REENGAGE_THRESHOLD = 2;
 
 /**
  * Manages autoscroll behavior for a vertically-scrolling container.
@@ -28,40 +29,50 @@ export function useAutoScroll({
   const viewportRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef(true);
   const scrollRafIdRef = useRef<number | null>(null);
+  const scrollSessionRef = useRef(0);
 
   const [isAtBottom, setIsAtBottom] = useState(true);
 
-  const checkIsAtBottom = useCallback(() => {
+  const getDistanceFromBottom = useCallback(() => {
     const el = viewportRef.current;
-    if (!el) return true;
-    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    return distanceFromBottom <= SCROLL_BOTTOM_THRESHOLD;
+    if (!el) return 0;
+    return el.scrollHeight - el.scrollTop - el.clientHeight;
   }, []);
 
-  const disengage = useCallback(() => {
+  const checkIsAtBottom = useCallback(
+    (threshold = SCROLL_BOTTOM_THRESHOLD) => {
+      return getDistanceFromBottom() <= threshold;
+    },
+    [getDistanceFromBottom],
+  );
+
+  const cancelScrollLoop = useCallback(() => {
+    scrollSessionRef.current += 1;
     if (scrollRafIdRef.current !== null) {
       cancelAnimationFrame(scrollRafIdRef.current);
       scrollRafIdRef.current = null;
     }
+  }, []);
+
+  const disengage = useCallback(() => {
+    cancelScrollLoop();
     const el = viewportRef.current;
     if (isAtBottomRef.current && el && el.scrollHeight > el.clientHeight + 1) {
       isAtBottomRef.current = false;
       setIsAtBottom(false);
     }
-  }, []);
+  }, [cancelScrollLoop]);
 
   const animateScrollToBottom = useCallback(() => {
     const el = viewportRef.current;
     if (!el) return;
 
     // Cancel any existing loop so we always have the freshest state
-    if (scrollRafIdRef.current !== null) {
-      cancelAnimationFrame(scrollRafIdRef.current);
-      scrollRafIdRef.current = null;
-    }
+    cancelScrollLoop();
+    const session = scrollSessionRef.current;
 
     const step = () => {
-      if (!isAtBottomRef.current) {
+      if (!isAtBottomRef.current || session !== scrollSessionRef.current) {
         scrollRafIdRef.current = null;
         return;
       }
@@ -74,14 +85,11 @@ export function useAutoScroll({
         const move = Math.max(Math.ceil(diff * 0.3), 2);
         el.scrollTop = Math.min(currentTop + move, targetTop);
       }
-      // Don't write scrollTop when already at bottom to avoid spurious scroll events.
-      // Loop stays alive perpetually — the cost is negligible (~5 comparisons/frame)
-      // and it guarantees we never miss content growth between ResizeObserver fires.
       scrollRafIdRef.current = requestAnimationFrame(step);
     };
 
     scrollRafIdRef.current = requestAnimationFrame(step);
-  }, []);
+  }, [cancelScrollLoop]);
 
   const scrollToBottom = useCallback(
     (behavior: ScrollBehavior = 'instant') => {
@@ -95,16 +103,13 @@ export function useAutoScroll({
         animateScrollToBottom();
       } else {
         // Cancel any running animation, then jump instantly
-        if (scrollRafIdRef.current !== null) {
-          cancelAnimationFrame(scrollRafIdRef.current);
-          scrollRafIdRef.current = null;
-        }
+        cancelScrollLoop();
         el.scrollTop = el.scrollHeight;
         // Restart the loop so we stay locked if content keeps growing
         animateScrollToBottom();
       }
     },
-    [animateScrollToBottom],
+    [animateScrollToBottom, cancelScrollLoop],
   );
 
   // Native scroll listener tracking manual upward scrolls
@@ -119,14 +124,16 @@ export function useAutoScroll({
       const isScrollingUp = currentScrollTop < prevScrollTop;
       prevScrollTop = currentScrollTop;
 
-      const atBottom = checkIsAtBottom();
+      const atBottom = checkIsAtBottom(SCROLL_REENGAGE_THRESHOLD);
 
       // Upward scroll ALWAYS disengages, even within the 80px threshold.
       // This prevents the loop from fighting the user's scroll-up gesture.
       if (isScrollingUp) {
         disengage();
       } else if (atBottom && !isAtBottomRef.current) {
-        // Only re-engage when scrolling DOWN and reaching the bottom
+        // Only re-engage when scrolling DOWN and actually reaching the bottom.
+        // Using the looser "near bottom" threshold here can immediately undo a
+        // user's small upward scroll and make the viewport feel sticky.
         isAtBottomRef.current = true;
         setIsAtBottom(true);
       }
@@ -216,7 +223,12 @@ export function useAutoScroll({
   // Respond to explicit scroll-to-bottom (e.g. after sending a message)
   useEffect(() => {
     if (scrollRequested > 0 && !isInitializing) {
-      queueMicrotask(() => scrollToBottom('smooth'));
+      const session = scrollSessionRef.current;
+      queueMicrotask(() => {
+        if (session === scrollSessionRef.current) {
+          scrollToBottom('smooth');
+        }
+      });
     }
   }, [scrollRequested, scrollToBottom, isInitializing]);
 

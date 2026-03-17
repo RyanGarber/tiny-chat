@@ -62,7 +62,7 @@ const AddMemory = {
 
     await embedMemory(user, memory);
 
-    return { success: true };
+    return { success: true, memoryId: memory.id };
   },
 } satisfies ToolCall<typeof zAddMemory>;
 
@@ -120,7 +120,7 @@ const UpdateMemory = {
 
     await embedMemory(user, memory);
 
-    return { success: true };
+    return { success: true, memoryId: memory.id };
   },
 } satisfies ToolCall<typeof zUpdateMemory>;
 

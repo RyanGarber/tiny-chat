@@ -159,6 +159,8 @@ export async function* generate(
       if (tool.needsUserInput) {
         console.log(`Tool '${part.name}' requires user input, will end turn`);
         needsUserInput = true;
+        continue; // TODO - user input should be requested during tool run
+        // TODO - tool results should probably be collected?
       }
 
       try {

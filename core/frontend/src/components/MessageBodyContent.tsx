@@ -2,14 +2,14 @@ import { useLayout } from '@/stores/layout.tsx';
 import { useMessaging } from '@/stores/messaging.tsx';
 import {
   ActionIcon,
+  Autocomplete,
   Box,
   Card,
+  ColorInput,
   Divider,
-  Group,
   Image,
+  NumberInput,
   Portal,
-  RadioCard,
-  RadioIndicator,
   Stack,
   Text,
   Transition,
@@ -25,8 +25,14 @@ import { Markdown } from '@/components/Markdown.tsx';
 import { Author } from '@tiny-chat/core-backend/generated/prisma/enums.ts';
 import { ThoughtGroupPopover, ToolCallPopover } from '@/components/MessageBodyPopover.tsx';
 import { Icon } from '@iconify/react';
-import { zAskUser } from '@tiny-chat/core-backend/src/tools/user.ts';
+import {
+  zAskColor,
+  zAskDatetime,
+  zAskNumber,
+  zAskQuestion,
+} from '@tiny-chat/core-backend/src/tools/ask.ts';
 import { useStreamedLength } from '@/hooks/useStreamedLength.ts';
+import { DatePicker, DateTimePicker, TimePicker } from '@mantine/dates';
 
 export default function MessageBodyContent({
   message,
@@ -160,30 +166,79 @@ export default function MessageBodyContent({
         renderedParts.push(
           <ToolCallPopover key={i} call={part} result={result} containerWidth={containerWidth} />,
         );
-        if (part.name === 'ask_user' && !result) {
-          const ask = zAskUser.parse(part.args) as { question: string; answers: string[] };
-          renderedParts.push(
-            <Card key={`${i}a`} mb={10}>
-              <Stack gap="xs">
-                <Text>{ask.question}</Text>
-                {ask.answers.map((answer, index) => (
-                  <RadioCard
-                    key={index}
-                    p="xs"
-                    checked={false}
-                    onClick={() => {
-                      void continueToolCall(message.id, part.id, part.name, answer);
+        if (!result) {
+          if (part.name === 'ask_question') {
+            const ask = zAskQuestion.parse(part.args);
+            renderedParts.push(
+              <Card key={`${i}a`} mb={10}>
+                <Stack gap="xs">
+                  <Text>{ask.question}</Text>
+                  <Autocomplete
+                    data={ask.suggestions}
+                    onChange={(value) => {
+                      void continueToolCall(message.id, part.id, part.name, value);
                     }}
-                  >
-                    <Group wrap="nowrap" align="flex-start">
-                      <RadioIndicator />
-                      <Text size="sm">{answer}</Text>
-                    </Group>
-                  </RadioCard>
-                ))}
-              </Stack>
-            </Card>,
-          );
+                  />
+                </Stack>
+              </Card>,
+            );
+          } else if (part.name === 'ask_color') {
+            const ask = zAskColor.parse(part.args);
+            renderedParts.push(
+              <Card key={`${i}a`} mb={10}>
+                <Stack gap="xs">
+                  <Text>{ask.question}</Text>
+                  <ColorInput
+                    onChange={(value) => {
+                      void continueToolCall(message.id, part.id, part.name, value);
+                    }}
+                  />
+                </Stack>
+              </Card>,
+            );
+          } else if (part.name === 'ask_number') {
+            const ask = zAskNumber.parse(part.args);
+            renderedParts.push(
+              <Card key={`${i}a`} mb={10}>
+                <Stack gap="xs">
+                  <Text>{ask.question}</Text>
+                  <NumberInput
+                    onChange={(value) => {
+                      void continueToolCall(message.id, part.id, part.name, value);
+                    }}
+                  />
+                </Stack>
+              </Card>,
+            );
+          } else if (part.name === 'ask_datetime') {
+            const ask = zAskDatetime.parse(part.args);
+            renderedParts.push(
+              <Card key={`${i}a`} mb={10}>
+                <Stack gap="xs">
+                  <Text>{ask.question}</Text>
+                  {ask.date && ask.time ? (
+                    <DateTimePicker
+                      onChange={(value) => {
+                        void continueToolCall(message.id, part.id, part.name, value);
+                      }}
+                    />
+                  ) : ask.date ? (
+                    <DatePicker
+                      onChange={(value) => {
+                        void continueToolCall(message.id, part.id, part.name, value);
+                      }}
+                    />
+                  ) : (
+                    <TimePicker
+                      onChange={(value) => {
+                        void continueToolCall(message.id, part.id, part.name, value);
+                      }}
+                    />
+                  )}
+                </Stack>
+              </Card>,
+            );
+          }
         }
       }
     } else if (part.type === 'abort') {

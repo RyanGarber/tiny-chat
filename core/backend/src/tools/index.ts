@@ -5,7 +5,7 @@ import type { Chat } from '../../generated/prisma/client.ts';
 import web from './web.ts';
 import memory from './memory.ts';
 import chat from './chat.ts';
-import user from './user.ts';
+import ask from './ask.ts';
 import action from './action.ts';
 
 export interface ToolContext {
@@ -30,7 +30,7 @@ export function tools(context: ToolContext) {
     ...web(context),
     ...memory(context),
     ...chat(context),
-    ...user(context),
+    ...ask(context),
     ...action(context),
   ] as ToolCall[];
 }

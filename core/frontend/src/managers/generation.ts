@@ -125,7 +125,6 @@ async function runGeneration({
   let lastFlush = 0;
   const flush = async () => {
     useChats.setState({ messages: [...useChats.getState().messages] });
-    reply = useChats.getState().messages.find((m) => m.id === reply.id) as MessageUnomitted;
     await new Promise<void>((r) => setTimeout(r, 0));
     lastFlush = performance.now();
   };

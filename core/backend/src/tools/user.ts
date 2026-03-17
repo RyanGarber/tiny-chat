@@ -11,7 +11,7 @@ export const zAskUser = z.object({
 const AskUser = {
   name: 'ask_user',
   description:
-    'Ask the user a question and wait for their response. Use this when additional information would improve the quality of the response. Cannot be used in parallel with other tools or in a tool chain.',
+    'Ask the user a question and wait for their response. Use this any time additional information would improve the quality of the response.',
   parameters: zAskUser.toJSONSchema(),
   schema: zAskUser,
   needsUserInput: true,

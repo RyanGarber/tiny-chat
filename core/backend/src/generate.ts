@@ -136,6 +136,8 @@ export async function* generate(
     if (!toolCalls.length) break;
 
     // Execute each tool and collect results
+    let needsUserInput = false;
+
     for (const part of toolCalls) {
       if (part.type !== 'toolCall') continue;
 
@@ -155,9 +157,8 @@ export async function* generate(
       }
 
       if (tool.needsUserInput) {
-        console.log(`Tool '${part.name}' requires user input, ending turn`);
-        controller.abort('Tool requires user input');
-        break;
+        console.log(`Tool '${part.name}' requires user input, will end turn`);
+        needsUserInput = true;
       }
 
       try {
@@ -178,11 +179,11 @@ export async function* generate(
           value: e.message ?? String(e),
         });
       }
-    }
 
-    if (controller.signal.aborted) {
-      console.warn('Aborting generation loop:', controller.signal.reason);
-      break;
+      if (controller.signal.aborted) {
+        console.warn('Aborting generation loop:', controller.signal.reason);
+        break;
+      }
     }
 
     // Emit the tool results to the client so the UI can display them
@@ -192,6 +193,17 @@ export async function* generate(
         part,
       );
       yield { type: 'data', value: part };
+    }
+
+    if (needsUserInput) {
+      console.log('Ending turn to wait for user input');
+      controller.abort('Tool requires user input');
+      break;
+    }
+
+    if (controller.signal.aborted) {
+      console.warn('Aborting generation loop:', controller.signal.reason);
+      break;
     }
 
     // Append the assistant turn and the tool results as a user turn, then loop

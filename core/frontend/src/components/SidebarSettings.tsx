@@ -30,6 +30,7 @@ import {
 } from '@tiny-chat/core-backend/src/types.ts';
 import ModelSelect from '@/components/ModelSelect.tsx';
 import { Icon } from '@iconify/react';
+import Console from '@/components/Console.tsx';
 
 export default function SidebarSettings({
   children,
@@ -116,10 +117,24 @@ export default function SidebarSettings({
     </Stack>
   );
 
+  const [consoleOpened, { open: openConsole, close: closeConsole }] = useDisclosure(false);
+
   return (
     <>
       {children(open)}
-      <Drawer opened={opened} onClose={close} title="Settings">
+      <Console opened={consoleOpened} onClose={closeConsole} />
+      <Drawer
+        opened={opened}
+        onClose={close}
+        title={
+          <Group gap={5}>
+            Settings{' '}
+            <ActionIcon variant="transparent" c="dimmed" onClick={openConsole}>
+              <Icon icon="lucide:logs" />
+            </ActionIcon>
+          </Group>
+        }
+      >
         <Tabs defaultValue="general">
           <Tabs.List mb="lg">
             <Tabs.Tab value="general" leftSection={<Icon icon="lucide:settings-2" height={18} />}>

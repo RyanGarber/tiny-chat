@@ -4,6 +4,7 @@ import '@mantine/notifications/styles.css';
 import '@mantine/spotlight/styles.css';
 import '@mantine/nprogress/styles.css';
 import '@mantine/carousel/styles.css';
+import '@gfazioli/mantine-json-tree/styles.css';
 import '@/main.css';
 
 import React from 'react';
@@ -11,6 +12,10 @@ import ReactDOM from 'react-dom/client';
 import App from '@/App.tsx';
 import { Router } from 'wouter';
 import { useHashLocation } from 'wouter/use-hash-location';
+import { initLogs } from '@tiny-chat/core-backend/src/logs.ts';
+import { useLogs } from '@/stores/logs.tsx';
+
+initLogs(useLogs.getState().writeLog, false);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

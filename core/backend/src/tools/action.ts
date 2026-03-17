@@ -2,17 +2,18 @@ import type { ToolCall, ToolContext } from './index.ts';
 import { z } from 'zod';
 import rrule from 'rrule';
 import { createId } from '@paralleldrive/cuid2';
-import { texts, zData } from '../types.ts';
+import { getNextRunAt, texts, zData } from '../types.ts';
 
 function getOffsetMinutes(timezone: string): number {
   const now = new Date();
   const utc = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
   const local = new Date(now.toLocaleString('en-US', { timeZone: timezone }));
-  return (local.getTime() - utc.getTime()) / 60000;
+  return (local.getTime() - utc.getTime()) / (60 * 1000);
 }
 
 function toUTC(schedule: string, timezone: string): string {
   const rule = rrule.RRule.fromString(schedule);
+
   const options = { ...rule.origOptions };
   const offset = getOffsetMinutes(timezone);
 
@@ -31,17 +32,14 @@ function toUTC(schedule: string, timezone: string): string {
     }
   }
 
-  if (options.dtstart) {
-    // Model provided a local-time DTSTART; shift to UTC.
-    options.dtstart = new Date(options.dtstart.getTime() - offset * 60000);
-  } else if (options.count !== undefined && options.count !== null) {
-    // Finite (COUNT-limited) action: embed a UTC DTSTART so the backend
-    // always uses the embedded value and never re-creates a fresh dtstart on
-    // each tick (which would make COUNT=1 repeat indefinitely).
-    // Date.now() is already UTC — no offset adjustment needed here.
-    options.dtstart = new Date();
-  }
+  options.dtstart = options.dtstart
+    ? new Date(options.dtstart.getTime() - offset * 60000)
+    : new Date();
 
+  console.log(
+    `Parsing schedule ${schedule} (currently ${new Date().toString()})`,
+    `(dtstart ${rule.origOptions.dtstart?.toString()} -> [+/- ${offset} minutes] -> ${options.dtstart.toString()})`,
+  );
   return new rrule.RRule(options).toString();
 }
 
@@ -49,7 +47,7 @@ const zAddAction = z.object({
   prompt: z.string().describe('The prompt to send when the action runs.'),
   schedule: z
     .string()
-    .describe("The action's RRule schedule. Write as the user says; do not include timezone."),
+    .describe("The action's RRule (RFC 5545) schedule. Do not convert - use local time."),
 });
 
 const AddAction = {
@@ -59,7 +57,7 @@ const AddAction = {
   parameters: zAddAction.toJSONSchema(),
   schema: zAddAction,
   run: async ({ message, generateInput }, params) => {
-    if (!message.id) return;
+    if (!message.id) throw new Error('Cannot use tool in this context');
     const schedule = toUTC(params.schedule, generateInput.timezone);
     await globalThis.prisma.action.create({
       data: {
@@ -83,7 +81,7 @@ const zUpdateAction = z.object({
   prompt: z.string().describe('The new prompt for the action to send.'),
   schedule: z
     .string()
-    .describe("The action's RRule schedule. Write as the user says; do not include timezone."),
+    .describe("The action's RRule (RFC 5545) schedule. Do not convert - use local time."),
   reason: z.string().describe('The reason for the update.'),
 });
 
@@ -94,7 +92,7 @@ const UpdateAction = {
   parameters: zUpdateAction.toJSONSchema(),
   schema: zUpdateAction,
   run: async ({ message, generateInput }, params) => {
-    if (!message.id) return;
+    if (!message.id) throw new Error('Cannot use tool in this context');
     const schedule = toUTC(params.schedule, generateInput.timezone);
     await globalThis.prisma.action.update({
       where: {
@@ -122,7 +120,7 @@ const DeleteAction = {
   parameters: zDeleteAction.toJSONSchema(),
   schema: zDeleteAction,
   run: async ({ message }, params) => {
-    if (!message.id) return;
+    if (!message.id) throw new Error('Cannot use tool in this context');
     await globalThis.prisma.action.delete({
       where: { id: params.id, userId: message.userId },
     });
@@ -138,12 +136,15 @@ const ListActions = {
   parameters: zListActions.toJSONSchema(),
   schema: zListActions,
   run: async ({ message }) => {
-    if (!message.id) return;
-    return (
-      await globalThis.prisma.action.findMany({
-        where: { userId: message.userId },
-      })
-    ).map((a) => `[${a.id}] ${texts(zData.parse(a.data))} (${a.schedule})`);
+    if (!message.id) throw new Error('Cannot use tool in this context');
+    return await Promise.all(
+      (await globalThis.prisma.action.findMany({ where: { userId: message.userId } })).flatMap(
+        async (a) =>
+          (await getNextRunAt(a))
+            ? [`[${a.id}] ${texts(zData.parse(a.data))} (${a.schedule})`]
+            : [],
+      ),
+    );
   },
 } satisfies ToolCall<typeof zListActions>;
 

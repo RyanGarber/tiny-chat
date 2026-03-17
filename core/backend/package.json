@@ -2,7 +2,7 @@
   "name": "@tiny-chat/core-backend",
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/server.ts -- --dev --",
+    "dev": "node --watch --watch-preserve-output src/server.ts -- --dev --",
     "start": "node src/server.ts"
   },
   "dependencies": {

@@ -1,6 +1,6 @@
 import { createId } from '@paralleldrive/cuid2';
 import { procedure, router } from '../index.ts';
-import { type FolderGetPayload, type MessageCreateInput } from '../../generated/prisma/models.ts';
+import { type MessageCreateInput } from '../../generated/prisma/models.ts';
 
 export default router({
   list: procedure.query(async ({ ctx }) => {
@@ -48,43 +48,23 @@ export default router({
           return bLatest - aLatest;
         });
       });
-
-    // dirty dirty dirty (see above comment)
-    for (const folder of folders) {
-      for (const chat of folder.chats) {
-        (chat as any).updatedAt = new Date(
-          Math.max(
-            chat.createdAt.getTime(),
-            ...chat.messages.map((item) => item.createdAt.getTime()),
-          ),
-        );
-        delete (chat as any).messages;
-      }
-    }
-    return folders as unknown as FolderListData[];
+    return folders;
   }),
 
-  lastActivity: procedure.query(async ({ ctx }) => {
-    const latestMessage = await ctx.prisma.message.findFirst({
-      where: { userId: ctx.session.user.id },
-      orderBy: { createdAt: 'desc' },
-      select: { createdAt: true },
-    });
+  lastActivityMax: procedure.query(async ({ ctx }) => {
     const latestChat = await ctx.prisma.chat.findFirst({
-      where: { userId: ctx.session.user.id },
+      where: { userId: ctx.session.user.id, temporary: false },
       orderBy: { createdAt: 'desc' },
       select: { createdAt: true },
     });
-    return Math.max(
-      latestMessage?.createdAt.getTime() ?? 0,
-      latestChat?.createdAt.getTime() ?? 0,
-    );
+    const latestMessage = await ctx.prisma.message.findFirst({
+      where: { userId: ctx.session.user.id, chat: { temporary: false } },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    });
+    return Math.max(latestChat?.createdAt.getTime() ?? 0, latestMessage?.createdAt.getTime() ?? 0);
   }),
 });
-
-export type FolderListData = Omit<FolderGetPayload<{ include: { chats: true } }>, 'chats'> & {
-  chats: (FolderGetPayload<{ include: { chats: true } }>['chats'][0] & { updatedAt: Date })[];
-};
 
 export async function createForChat(
   userId: string,

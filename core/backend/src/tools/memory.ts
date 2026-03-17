@@ -42,7 +42,7 @@ const AddMemory = {
   parameters: zAddMemory.toJSONSchema(),
   schema: zAddMemory,
   run: async ({ user, message }, params) => {
-    if (!message.id) return;
+    if (!message.id) throw new Error('Cannot use tool in this context');
 
     const memory = await globalThis.prisma.memory.create({
       data: {
@@ -94,14 +94,14 @@ const UpdateMemory = {
   parameters: zUpdateMemory.toJSONSchema(),
   schema: zUpdateMemory,
   run: async ({ user, message }, params) => {
-    if (!message.id) return;
+    if (!message.id) throw new Error('Cannot use tool in this context');
 
     const memory = await globalThis.prisma.$transaction(async (tx) => {
       await tx.memory.delete({
         where: { id: params.id, userId: message.userId },
       });
 
-      return await tx.memory.create({
+      return tx.memory.create({
         data: {
           id: createId(),
           user: { connect: { id: message.userId } },
@@ -140,7 +140,7 @@ const DeleteMemory = {
   parameters: zDeleteMemory.toJSONSchema(),
   schema: zDeleteMemory,
   run: async ({ message }, params) => {
-    if (!message.id) return;
+    if (!message.id) throw new Error('Cannot use tool in this context');
 
     await globalThis.prisma.memory.delete({
       where: { id: params.id, userId: message.userId },
@@ -171,12 +171,11 @@ const SearchMemory = {
   parameters: zSearchMemory.toJSONSchema(),
   schema: zSearchMemory,
   run: async ({ message, user }, params) => {
-    if (!message.id) return;
+    if (!message.id) throw new Error('Cannot add memories from this message');
 
     const embeddings = await embed(user, [params.query]);
     if (!embeddings) {
-      console.warn('Failed to generate embedding for query');
-      return;
+      throw new Error('Failed to generate embedding for query');
     }
     return await getMemorySearch(user, embeddings[0], params.category);
   },

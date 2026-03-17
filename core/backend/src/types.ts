@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { Action } from '../generated/prisma/client.ts';
 import { type Message } from '../generated/prisma/client.ts';
 import { Author } from '../generated/prisma/enums.ts';
 
@@ -226,4 +227,12 @@ export function snippetText(text: string, query: string, window = 160): string {
   }
   const snippet = text.slice(start, end).trim();
   return (start > 0 ? '…' : '') + snippet + (end < text.length ? '…' : '');
+}
+
+export async function getNextRunAt(action: Action) {
+  const RRule = (await import('rrule')).default?.RRule ?? (await import('rrule')).RRule;
+  const schedule = RRule.fromString(action.schedule);
+  const startAt = schedule.options.dtstart;
+  const searchFrom = action.lastRanAt ?? new Date(startAt.getTime() - 1);
+  return schedule.after(searchFrom, false);
 }

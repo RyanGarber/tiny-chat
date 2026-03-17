@@ -15,10 +15,7 @@ const SearchChats = {
   schema: zSearchChats,
   run: async ({ user }, params) => {
     const embeddings = await embed(user, [params.query]);
-    if (!embeddings) {
-      console.warn('Failed to generate embedding for query');
-      return;
-    }
+    if (!embeddings) throw new Error('Failed to generate embedding for query');
 
     const messages = (
       await globalThis.prisma.$queryRaw<(Message & { embedding: string })[]>`

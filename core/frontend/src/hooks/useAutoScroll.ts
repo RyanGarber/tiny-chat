@@ -1,7 +1,8 @@
-import { RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import { RefCallback, useCallback, useEffect, useRef, useState } from 'react';
 
 const SCROLL_BOTTOM_THRESHOLD = 80;
 const SCROLL_REENGAGE_THRESHOLD = 2;
+const PROGRAMMATIC_SCROLL_GUARD_MS = 800;
 
 /**
  * Manages autoscroll behavior for a vertically-scrolling container.
@@ -22,19 +23,29 @@ export function useAutoScroll({
   /** While true, skip scroll-requested handling */
   isInitializing: boolean;
 }): {
-  viewportRef: RefObject<HTMLDivElement | null>;
+  viewportRef: RefCallback<HTMLDivElement>;
   isAtBottom: boolean;
   scrollToBottom: (behavior?: ScrollBehavior) => void;
 } {
-  const viewportRef = useRef<HTMLDivElement>(null);
+  const viewportNodeRef = useRef<HTMLDivElement | null>(null);
   const isAtBottomRef = useRef(true);
+  const isNearBottomRef = useRef(true);
   const scrollRafIdRef = useRef<number | null>(null);
   const scrollSessionRef = useRef(0);
+  const lastHandledScrollRequestRef = useRef(0);
+  const suppressScrollDisengageUntilRef = useRef(0);
 
   const [isAtBottom, setIsAtBottom] = useState(true);
+  const [viewportEl, setViewportEl] = useState<HTMLDivElement | null>(null);
+
+  const viewportRef = useCallback<RefCallback<HTMLDivElement>>((node) => {
+    if (viewportNodeRef.current === node) return;
+    viewportNodeRef.current = node;
+    setViewportEl(node);
+  }, []);
 
   const getDistanceFromBottom = useCallback(() => {
-    const el = viewportRef.current;
+    const el = viewportNodeRef.current;
     if (!el) return 0;
     return el.scrollHeight - el.scrollTop - el.clientHeight;
   }, []);
@@ -46,6 +57,13 @@ export function useAutoScroll({
     [getDistanceFromBottom],
   );
 
+  const syncNearBottomState = useCallback((nearBottom: boolean) => {
+    if (isNearBottomRef.current !== nearBottom) {
+      isNearBottomRef.current = nearBottom;
+      setIsAtBottom(nearBottom);
+    }
+  }, []);
+
   const cancelScrollLoop = useCallback(() => {
     scrollSessionRef.current += 1;
     if (scrollRafIdRef.current !== null) {
@@ -56,15 +74,15 @@ export function useAutoScroll({
 
   const disengage = useCallback(() => {
     cancelScrollLoop();
-    const el = viewportRef.current;
+    const el = viewportNodeRef.current;
     if (isAtBottomRef.current && el && el.scrollHeight > el.clientHeight + 1) {
       isAtBottomRef.current = false;
-      setIsAtBottom(false);
     }
-  }, [cancelScrollLoop]);
+    syncNearBottomState(checkIsAtBottom());
+  }, [cancelScrollLoop, checkIsAtBottom, syncNearBottomState]);
 
   const animateScrollToBottom = useCallback(() => {
-    const el = viewportRef.current;
+    const el = viewportNodeRef.current;
     if (!el) return;
 
     // Cancel any existing loop so we always have the freshest state
@@ -93,11 +111,12 @@ export function useAutoScroll({
 
   const scrollToBottom = useCallback(
     (behavior: ScrollBehavior = 'instant') => {
-      const el = viewportRef.current;
+      const el = viewportNodeRef.current;
       if (!el) return;
 
       isAtBottomRef.current = true;
-      setIsAtBottom(true);
+      syncNearBottomState(true);
+      suppressScrollDisengageUntilRef.current = performance.now() + PROGRAMMATIC_SCROLL_GUARD_MS;
 
       if (behavior === 'smooth') {
         animateScrollToBottom();
@@ -109,12 +128,12 @@ export function useAutoScroll({
         animateScrollToBottom();
       }
     },
-    [animateScrollToBottom, cancelScrollLoop],
+    [animateScrollToBottom, cancelScrollLoop, syncNearBottomState],
   );
 
   // Native scroll listener tracking manual upward scrolls
   useEffect(() => {
-    const el = viewportRef.current;
+    const el = viewportEl;
     if (!el) return;
 
     let prevScrollTop = el.scrollTop;
@@ -124,23 +143,31 @@ export function useAutoScroll({
       const isScrollingUp = currentScrollTop < prevScrollTop;
       prevScrollTop = currentScrollTop;
 
+      const nearBottom = checkIsAtBottom();
       const atBottom = checkIsAtBottom(SCROLL_REENGAGE_THRESHOLD);
+      const suppressDisengage =
+        performance.now() < suppressScrollDisengageUntilRef.current && isAtBottomRef.current;
+
+      syncNearBottomState(nearBottom);
 
       // Upward scroll ALWAYS disengages, even within the 80px threshold.
       // This prevents the loop from fighting the user's scroll-up gesture.
-      if (isScrollingUp) {
+      if (isScrollingUp && !suppressDisengage) {
         disengage();
       } else if (atBottom && !isAtBottomRef.current) {
         // Only re-engage when scrolling DOWN and actually reaching the bottom.
         // Using the looser "near bottom" threshold here can immediately undo a
         // user's small upward scroll and make the viewport feel sticky.
         isAtBottomRef.current = true;
-        setIsAtBottom(true);
+      }
+
+      if (atBottom) {
+        suppressScrollDisengageUntilRef.current = 0;
       }
     };
     el.addEventListener('scroll', onScroll, { passive: true });
     return () => el.removeEventListener('scroll', onScroll);
-  }, [checkIsAtBottom, disengage]);
+  }, [viewportEl, checkIsAtBottom, disengage, syncNearBottomState]);
 
   // Compensate for visual viewport resizing
   useEffect(() => {
@@ -150,7 +177,7 @@ export function useAutoScroll({
     let prevHeight = vv.height;
 
     const onResize = () => {
-      const el = viewportRef.current;
+      const el = viewportNodeRef.current;
       if (!el) return;
 
       const newHeight = vv.height;
@@ -169,11 +196,14 @@ export function useAutoScroll({
 
   // Gesture listeners to immediately engage manual scroll handling
   useEffect(() => {
-    const el = viewportRef.current;
+    const el = viewportEl;
     if (!el) return;
 
     const onWheel = (e: WheelEvent) => {
-      if (e.deltaY < 0) disengage();
+      if (e.deltaY < 0) {
+        suppressScrollDisengageUntilRef.current = 0;
+        disengage();
+      }
     };
 
     let touchStartY = 0;
@@ -182,7 +212,10 @@ export function useAutoScroll({
     };
     const onTouchMove = (e: TouchEvent) => {
       const deltaY = touchStartY - e.touches[0].clientY;
-      if (deltaY < 0) disengage();
+      if (deltaY < 0) {
+        suppressScrollDisengageUntilRef.current = 0;
+        disengage();
+      }
     };
 
     el.addEventListener('wheel', onWheel, { passive: true });
@@ -193,11 +226,11 @@ export function useAutoScroll({
       el.removeEventListener('touchstart', onTouchStart);
       el.removeEventListener('touchmove', onTouchMove);
     };
-  }, [disengage]);
+  }, [viewportEl, disengage]);
 
   // Auto-scroll natively when content height changes
   useEffect(() => {
-    const el = viewportRef.current;
+    const el = viewportEl;
     if (!el) return;
     const contentEl = el.firstElementChild;
     if (!contentEl) return;
@@ -211,26 +244,28 @@ export function useAutoScroll({
 
       if (delta > 0 && isAtBottomRef.current) {
         isAtBottomRef.current = true;
-        setIsAtBottom(true);
+        syncNearBottomState(true);
         animateScrollToBottom();
       }
     });
 
     observer.observe(contentEl);
     return () => observer.disconnect();
-  }, [animateScrollToBottom]);
+  }, [viewportEl, animateScrollToBottom, syncNearBottomState]);
 
   // Respond to explicit scroll-to-bottom (e.g. after sending a message)
   useEffect(() => {
-    if (scrollRequested > 0 && !isInitializing) {
+    if (!viewportEl || isInitializing) return;
+    if (scrollRequested > lastHandledScrollRequestRef.current) {
+      lastHandledScrollRequestRef.current = scrollRequested;
       const session = scrollSessionRef.current;
       queueMicrotask(() => {
-        if (session === scrollSessionRef.current) {
+        if (session === scrollSessionRef.current && viewportNodeRef.current === viewportEl) {
           scrollToBottom('smooth');
         }
       });
     }
-  }, [scrollRequested, scrollToBottom, isInitializing]);
+  }, [viewportEl, scrollRequested, scrollToBottom, isInitializing]);
 
   return {
     viewportRef,

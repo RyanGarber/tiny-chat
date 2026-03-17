@@ -60,40 +60,23 @@ export function useAutoScroll({
       scrollRafIdRef.current = null;
     }
 
-    let idleFrames = 0;
-    let prevScrollHeight = el.scrollHeight;
-
     const step = () => {
       if (!isAtBottomRef.current) {
         scrollRafIdRef.current = null;
         return;
       }
 
-      const currentScrollHeight = el.scrollHeight;
-      const targetTop = currentScrollHeight - el.clientHeight;
+      const targetTop = el.scrollHeight - el.clientHeight;
       const currentTop = el.scrollTop;
       const diff = targetTop - currentTop;
 
       if (diff > 1) {
-        idleFrames = 0;
-        // Smooth approach: move 30% of remaining distance, at least 2px
         const move = Math.max(Math.ceil(diff * 0.3), 2);
         el.scrollTop = Math.min(currentTop + move, targetTop);
-      } else {
-        // We're at the bottom. Check if content is still growing.
-        if (currentScrollHeight === prevScrollHeight) {
-          idleFrames++;
-          // Exit after 3 idle frames — ResizeObserver will restart us if needed
-          if (idleFrames >= 3) {
-            scrollRafIdRef.current = null;
-            return;
-          }
-        } else {
-          idleFrames = 0;
-        }
       }
-
-      prevScrollHeight = currentScrollHeight;
+      // Don't write scrollTop when already at bottom to avoid spurious scroll events.
+      // Loop stays alive perpetually — the cost is negligible (~5 comparisons/frame)
+      // and it guarantees we never miss content growth between ResizeObserver fires.
       scrollRafIdRef.current = requestAnimationFrame(step);
     };
 
@@ -138,13 +121,14 @@ export function useAutoScroll({
 
       const atBottom = checkIsAtBottom();
 
-      if (atBottom) {
-        if (!isAtBottomRef.current) {
-          isAtBottomRef.current = true;
-          setIsAtBottom(true);
-        }
-      } else if (isScrollingUp) {
+      // Upward scroll ALWAYS disengages, even within the 80px threshold.
+      // This prevents the loop from fighting the user's scroll-up gesture.
+      if (isScrollingUp) {
         disengage();
+      } else if (atBottom && !isAtBottomRef.current) {
+        // Only re-engage when scrolling DOWN and reaching the bottom
+        isAtBottomRef.current = true;
+        setIsAtBottom(true);
       }
     };
     el.addEventListener('scroll', onScroll, { passive: true });

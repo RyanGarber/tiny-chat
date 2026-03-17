@@ -28,7 +28,8 @@ export default defineConfig(() => ({
           }
 
           if (module?.startsWith('slate')) return 'vendor-slate';
-          if (module?.startsWith('@mantine')) return 'vendor-mantine';
+          if (module?.startsWith('@mantine') || module === '@gfazioli/mantine-json-tree')
+            return 'vendor-mantine';
           if (module?.startsWith('highlight.js')) return 'vendor-hljs';
           if (module === 'katex') return 'vendor-katex';
           if (module?.startsWith('@tauri-apps')) return 'vendor-tauri';
@@ -71,6 +72,7 @@ export default defineConfig(() => ({
           return 'vendor-misc';
         },
       },
+      external: ['fs', 'path', 'os'],
     },
     chunkSizeWarningLimit: 1000,
   },

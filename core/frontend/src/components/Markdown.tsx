@@ -30,7 +30,7 @@ const rehypeStreamFade: Plugin<[], Root> = () => {
 
     visit(tree, 'text', (node: HastText, index, parent) => {
       if (!parent || typeof index !== 'number') return;
-      
+
       const nodeStart = currentIndex;
       const nodeLength = node.value.length;
       const nodeEnd = nodeStart + nodeLength;
@@ -51,7 +51,7 @@ const rehypeStreamFade: Plugin<[], Root> = () => {
         const char = animatedStr[i];
         if (char.trim() === '') {
           const last = newNodes[newNodes.length - 1];
-          if (last && last.type === 'text') {
+          if (last?.type === 'text') {
             last.value += char;
           } else {
             newNodes.push({ type: 'text', value: char });
@@ -265,6 +265,11 @@ const filter = (text: string) => {
       // Reject ${ template literals
       if (trimmed.startsWith('{')) return match;
 
+      // Reject if content starts with a ticker-like pattern: 2–5 uppercase letters
+      // e.g. $CURI...$SPOT gets captured with content starting "CURI short is..."
+      if (/^[A-Z]{2,5}(?:\s|[^a-zA-Z]|$)/.test(trimmed) && !LATEX_CHAR_RE.test(trimmed))
+        return match;
+
       return '`' + MATH_MARKER + trimmed + '`';
     },
   );
@@ -298,12 +303,22 @@ const filter = (text: string) => {
 };
 
 export const Markdown = memo(
-  ({ source, style, maw, isGenerating }: { source: string; style?: CSSProperties; maw?: number; isGenerating?: boolean }) => {
+  ({
+    source,
+    style,
+    maw,
+    isGenerating,
+  }: {
+    source: string;
+    style?: CSSProperties;
+    maw?: number;
+    isGenerating?: boolean;
+  }) => {
     return (
       <Typography style={{ overflowWrap: 'break-word', ...style }} maw={maw}>
-        <ReactMarkdown 
-          skipHtml 
-          remarkPlugins={[RemarkGfm, RemarkBreaks]} 
+        <ReactMarkdown
+          skipHtml
+          remarkPlugins={[RemarkGfm, RemarkBreaks]}
           rehypePlugins={isGenerating ? [rehypeStreamFade] : []}
           components={components}
         >
@@ -312,5 +327,8 @@ export const Markdown = memo(
       </Typography>
     );
   },
-  (prev, next) => prev.source === next.source && prev.style === next.style && prev.isGenerating === next.isGenerating,
+  (prev, next) =>
+    prev.source === next.source &&
+    prev.style === next.style &&
+    prev.isGenerating === next.isGenerating,
 );

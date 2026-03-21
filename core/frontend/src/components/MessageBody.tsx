@@ -1,4 +1,4 @@
-import { Box, Group, Skeleton, Stack } from '@mantine/core';
+import { Box, Group, Loader, Stack } from '@mantine/core';
 import { useElementSize } from '@mantine/hooks';
 import { MessageOmitted, texts } from '@tiny-chat/core-backend/src/types';
 import MessageBodyContent from '@/components/MessageBodyContent.tsx';
@@ -15,7 +15,7 @@ const MessageBody = memo(
     const { ref: containerRef, width: containerWidth } = useElementSize();
 
     if (message.author === Author.USER) {
-      const files = message.data.filter((p) => p.type === 'file');
+      const uploads = message.data.filter((p) => p.type === 'upload');
       return (
         <Group w="100%" justify="end" ref={containerRef} style={style}>
           <Stack gap={5} w="fit-content">
@@ -24,7 +24,7 @@ const MessageBody = memo(
                 <MessageBodyContent message={message} containerWidth={containerWidth} />
               </Box>
             )}
-            {files.length !== 0 && (
+            {uploads.length !== 0 && (
               <Group
                 gap={5}
                 c="dimmed"
@@ -34,7 +34,7 @@ const MessageBody = memo(
               >
                 <Icon icon="lucide:paperclip" height={18} />
                 <Attachments
-                  list={files.map((f) => ({ name: f.name, mime: f.mime, url: f.url }))}
+                  list={uploads.map((u) => ({ name: u.name, image: u.thumbnail }))}
                   width={containerWidth}
                 />
               </Group>
@@ -44,29 +44,13 @@ const MessageBody = memo(
       );
     } // no thinking or generating for user messages
 
-    const hasRenderedParts = message.data.length > 0;
-    const showContent = !message.state.any || message.state.generating || hasRenderedParts;
-
     return (
-      <Box
-        w="100%"
-        ref={containerRef}
-        style={{
-          ...style,
-          ...(message.state.any && !message.state.generating
-            ? { display: 'flex', gap: 10, justifyContent: 'center' }
-            : {}),
-        }}
-      >
-        {showContent ? (
-          <>
-            <MessageBodyContent message={message} containerWidth={containerWidth} />
-          </>
-        ) : (
-          <div style={{ flex: 1 }}>
-            <Skeleton height={10} radius="md" />
-            <Skeleton height={10} width="70%" mt={10} mb={20} radius="md" />
-          </div>
+      <Box w="100%" ref={containerRef} style={style}>
+        <MessageBodyContent message={message} containerWidth={containerWidth} />
+        {message.state.any && (
+          <Box pt={message.data.length > 0 ? 'sm' : 0} pb="xs">
+            <Loader size="sm" type="dots" color="dimmed" />
+          </Box>
         )}
       </Box>
     );

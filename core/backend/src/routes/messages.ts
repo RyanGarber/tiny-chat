@@ -13,7 +13,7 @@ import {
   zData,
   zMetadata,
 } from '../types.ts';
-import { embed } from '../embed.ts';
+import { embed } from '../utils/embed.ts';
 import { type User } from '../server.ts';
 
 export default router({
@@ -31,35 +31,35 @@ export default router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const message = await ctx.prisma.$transaction(async (tx) => {
-        const self: Partial<MessageCreateInput> = {
-          id: createId(),
-          user: { connect: { id: ctx.session.user.id } },
-          author: input.author,
-          config: input.config,
-          data: input.data,
-          metadata: input.metadata,
-          previous: input.previousId ? { connect: { id: input.previousId } } : undefined,
-        };
+      const self: Partial<MessageCreateInput> = {
+        id: createId(),
+        user: { connect: { id: ctx.session.user.id } },
+        author: input.author,
+        config: input.config,
+        data: input.data,
+        metadata: input.metadata,
+        previous: input.previousId ? { connect: { id: input.previousId } } : undefined,
+      };
 
-        if (input.chatId) {
-          const chat = await tx.chat.findUniqueOrThrow({
-            where: { id: input.chatId, userId: ctx.session.user.id },
-          });
+      let message;
 
-          if (input.temporary && !chat.temporary) throw new Error('Chat cannot be made temporary');
-          if (input.incognito && !chat.incognito) throw new Error('Chat cannot be made incognito');
+      if (input.chatId) {
+        const chat = await ctx.prisma.chat.findUniqueOrThrow({
+          where: { id: input.chatId, userId: ctx.session.user.id },
+        });
 
+        if (input.temporary && !chat.temporary) throw new Error('Chat cannot be made temporary');
+        if (input.incognito && !chat.incognito) throw new Error('Chat cannot be made incognito');
+
+        message = await ctx.prisma.$transaction(async (tx) => {
           if (input.previousId) {
-            await tx.message.updateMany({
+            await ctx.prisma.message.updateMany({
               where: { previousId: input.previousId },
               data: { previousId: null },
             });
           } else {
-            const lastMessage = await tx.message.findFirstOrThrow({
-              where: { chatId: chat.id, next: null },
-            });
-            (self as any).previous = { connect: { id: lastMessage.id } };
+            const messages = reorder(await tx.message.findMany({ where: { chatId: chat.id } }));
+            (self as any).previous = { connect: { id: messages[messages.length - 1].id } };
           }
 
           (self as any).folder = { connect: { id: chat.folderId } };
@@ -76,17 +76,17 @@ export default router({
           }
 
           return message;
-        } else {
-          return (
-            await createForChat(
-              ctx.session.user.id,
-              input.temporary ?? false,
-              input.incognito ?? false,
-              self as MessageCreateInput,
-            )
-          ).chats[0].messages[0];
-        }
-      });
+        });
+      } else {
+        message = (
+          await createForChat(
+            ctx.session.user.id,
+            input.temporary ?? false,
+            input.incognito ?? false,
+            self as MessageCreateInput,
+          )
+        ).chats[0].messages[0];
+      }
 
       await embedMessage(ctx.session.user, message);
 

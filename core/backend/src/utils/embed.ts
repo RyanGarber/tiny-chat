@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { zConfig } from './types.ts';
-import type { User } from './server.ts';
-import { chatProviders } from './providers/chat/index.ts';
+import { zConfig } from '../types.ts';
+import type { User } from '../server.ts';
+import { chatProviders } from '../providers/chat/index.ts';
 
 export async function embed(user: User, texts: string[]) {
   const config = getEmbedConfig(user);

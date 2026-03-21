@@ -217,6 +217,8 @@ export type UserWhereInput = {
   memories?: Prisma.MemoryListRelationFilter
   messages?: Prisma.MessageListRelationFilter
   sessions?: Prisma.SessionListRelationFilter
+  uploads?: Prisma.UploadListRelationFilter
+  files?: Prisma.FileListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -236,6 +238,8 @@ export type UserOrderByWithRelationInput = {
   memories?: Prisma.MemoryOrderByRelationAggregateInput
   messages?: Prisma.MessageOrderByRelationAggregateInput
   sessions?: Prisma.SessionOrderByRelationAggregateInput
+  uploads?: Prisma.UploadOrderByRelationAggregateInput
+  files?: Prisma.FileOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -258,6 +262,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   memories?: Prisma.MemoryListRelationFilter
   messages?: Prisma.MessageListRelationFilter
   sessions?: Prisma.SessionListRelationFilter
+  uploads?: Prisma.UploadListRelationFilter
+  files?: Prisma.FileListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -307,6 +313,8 @@ export type UserCreateInput = {
   memories?: Prisma.MemoryCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadCreateNestedManyWithoutUserInput
+  files?: Prisma.FileCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -326,6 +334,8 @@ export type UserUncheckedCreateInput = {
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadUncheckedCreateNestedManyWithoutUserInput
+  files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -345,6 +355,8 @@ export type UserUpdateInput = {
   memories?: Prisma.MemoryUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -364,6 +376,8 @@ export type UserUncheckedUpdateInput = {
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUncheckedUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -559,6 +573,34 @@ export type UserUpdateOneRequiredWithoutActionNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutActionInput, Prisma.UserUpdateWithoutActionInput>, Prisma.UserUncheckedUpdateWithoutActionInput>
 }
 
+export type UserCreateNestedOneWithoutUploadsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutUploadsInput, Prisma.UserUncheckedCreateWithoutUploadsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutUploadsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutUploadsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutUploadsInput, Prisma.UserUncheckedCreateWithoutUploadsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutUploadsInput
+  upsert?: Prisma.UserUpsertWithoutUploadsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutUploadsInput, Prisma.UserUpdateWithoutUploadsInput>, Prisma.UserUncheckedUpdateWithoutUploadsInput>
+}
+
+export type UserCreateNestedOneWithoutFilesInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutFilesInput, Prisma.UserUncheckedCreateWithoutFilesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutFilesInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutFilesNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutFilesInput, Prisma.UserUncheckedCreateWithoutFilesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutFilesInput
+  upsert?: Prisma.UserUpsertWithoutFilesInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutFilesInput, Prisma.UserUpdateWithoutFilesInput>, Prisma.UserUncheckedUpdateWithoutFilesInput>
+}
+
 export type UserCreateWithoutSessionsInput = {
   id: string
   name: string
@@ -575,6 +617,8 @@ export type UserCreateWithoutSessionsInput = {
   folders?: Prisma.FolderCreateNestedManyWithoutUserInput
   memories?: Prisma.MemoryCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadCreateNestedManyWithoutUserInput
+  files?: Prisma.FileCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutSessionsInput = {
@@ -593,6 +637,8 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadUncheckedCreateNestedManyWithoutUserInput
+  files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutSessionsInput = {
@@ -627,6 +673,8 @@ export type UserUpdateWithoutSessionsInput = {
   folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSessionsInput = {
@@ -645,6 +693,8 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUncheckedUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutAccountsInput = {
@@ -663,6 +713,8 @@ export type UserCreateWithoutAccountsInput = {
   memories?: Prisma.MemoryCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadCreateNestedManyWithoutUserInput
+  files?: Prisma.FileCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutAccountsInput = {
@@ -681,6 +733,8 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadUncheckedCreateNestedManyWithoutUserInput
+  files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutAccountsInput = {
@@ -715,6 +769,8 @@ export type UserUpdateWithoutAccountsInput = {
   memories?: Prisma.MemoryUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAccountsInput = {
@@ -733,6 +789,8 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUncheckedUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutFoldersInput = {
@@ -751,6 +809,8 @@ export type UserCreateWithoutFoldersInput = {
   memories?: Prisma.MemoryCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadCreateNestedManyWithoutUserInput
+  files?: Prisma.FileCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutFoldersInput = {
@@ -769,6 +829,8 @@ export type UserUncheckedCreateWithoutFoldersInput = {
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadUncheckedCreateNestedManyWithoutUserInput
+  files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutFoldersInput = {
@@ -803,6 +865,8 @@ export type UserUpdateWithoutFoldersInput = {
   memories?: Prisma.MemoryUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutFoldersInput = {
@@ -821,6 +885,8 @@ export type UserUncheckedUpdateWithoutFoldersInput = {
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUncheckedUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutChatsInput = {
@@ -839,6 +905,8 @@ export type UserCreateWithoutChatsInput = {
   memories?: Prisma.MemoryCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadCreateNestedManyWithoutUserInput
+  files?: Prisma.FileCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutChatsInput = {
@@ -857,6 +925,8 @@ export type UserUncheckedCreateWithoutChatsInput = {
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadUncheckedCreateNestedManyWithoutUserInput
+  files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutChatsInput = {
@@ -891,6 +961,8 @@ export type UserUpdateWithoutChatsInput = {
   memories?: Prisma.MemoryUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutChatsInput = {
@@ -909,6 +981,8 @@ export type UserUncheckedUpdateWithoutChatsInput = {
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUncheckedUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutMessagesInput = {
@@ -927,6 +1001,8 @@ export type UserCreateWithoutMessagesInput = {
   folders?: Prisma.FolderCreateNestedManyWithoutUserInput
   memories?: Prisma.MemoryCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadCreateNestedManyWithoutUserInput
+  files?: Prisma.FileCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutMessagesInput = {
@@ -945,6 +1021,8 @@ export type UserUncheckedCreateWithoutMessagesInput = {
   folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadUncheckedCreateNestedManyWithoutUserInput
+  files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutMessagesInput = {
@@ -979,6 +1057,8 @@ export type UserUpdateWithoutMessagesInput = {
   folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutMessagesInput = {
@@ -997,6 +1077,8 @@ export type UserUncheckedUpdateWithoutMessagesInput = {
   folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUncheckedUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutMemoriesInput = {
@@ -1015,6 +1097,8 @@ export type UserCreateWithoutMemoriesInput = {
   folders?: Prisma.FolderCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadCreateNestedManyWithoutUserInput
+  files?: Prisma.FileCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutMemoriesInput = {
@@ -1033,6 +1117,8 @@ export type UserUncheckedCreateWithoutMemoriesInput = {
   folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadUncheckedCreateNestedManyWithoutUserInput
+  files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutMemoriesInput = {
@@ -1067,6 +1153,8 @@ export type UserUpdateWithoutMemoriesInput = {
   folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutMemoriesInput = {
@@ -1085,6 +1173,8 @@ export type UserUncheckedUpdateWithoutMemoriesInput = {
   folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUncheckedUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutActionInput = {
@@ -1103,6 +1193,8 @@ export type UserCreateWithoutActionInput = {
   memories?: Prisma.MemoryCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadCreateNestedManyWithoutUserInput
+  files?: Prisma.FileCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutActionInput = {
@@ -1121,6 +1213,8 @@ export type UserUncheckedCreateWithoutActionInput = {
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadUncheckedCreateNestedManyWithoutUserInput
+  files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutActionInput = {
@@ -1155,6 +1249,8 @@ export type UserUpdateWithoutActionInput = {
   memories?: Prisma.MemoryUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutActionInput = {
@@ -1173,6 +1269,200 @@ export type UserUncheckedUpdateWithoutActionInput = {
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUncheckedUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutUploadsInput = {
+  id: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  isAnonymous?: boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  action?: Prisma.ActionCreateNestedManyWithoutUserInput
+  chats?: Prisma.ChatCreateNestedManyWithoutUserInput
+  folders?: Prisma.FolderCreateNestedManyWithoutUserInput
+  memories?: Prisma.MemoryCreateNestedManyWithoutUserInput
+  messages?: Prisma.MessageCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  files?: Prisma.FileCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutUploadsInput = {
+  id: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  isAnonymous?: boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  action?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
+  chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
+  folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
+  memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutUserInput
+  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutUploadsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutUploadsInput, Prisma.UserUncheckedCreateWithoutUploadsInput>
+}
+
+export type UserUpsertWithoutUploadsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutUploadsInput, Prisma.UserUncheckedUpdateWithoutUploadsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutUploadsInput, Prisma.UserUncheckedCreateWithoutUploadsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutUploadsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutUploadsInput, Prisma.UserUncheckedUpdateWithoutUploadsInput>
+}
+
+export type UserUpdateWithoutUploadsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  action?: Prisma.ActionUpdateManyWithoutUserNestedInput
+  chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
+  folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
+  memories?: Prisma.MemoryUpdateManyWithoutUserNestedInput
+  messages?: Prisma.MessageUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutUploadsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  action?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
+  chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
+  folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
+  memories?: Prisma.MemoryUncheckedUpdateManyWithoutUserNestedInput
+  messages?: Prisma.MessageUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutFilesInput = {
+  id: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  isAnonymous?: boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  action?: Prisma.ActionCreateNestedManyWithoutUserInput
+  chats?: Prisma.ChatCreateNestedManyWithoutUserInput
+  folders?: Prisma.FolderCreateNestedManyWithoutUserInput
+  memories?: Prisma.MemoryCreateNestedManyWithoutUserInput
+  messages?: Prisma.MessageCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutFilesInput = {
+  id: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  isAnonymous?: boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  action?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
+  chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
+  folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
+  memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutUserInput
+  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutFilesInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutFilesInput, Prisma.UserUncheckedCreateWithoutFilesInput>
+}
+
+export type UserUpsertWithoutFilesInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutFilesInput, Prisma.UserUncheckedUpdateWithoutFilesInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutFilesInput, Prisma.UserUncheckedCreateWithoutFilesInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutFilesInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutFilesInput, Prisma.UserUncheckedUpdateWithoutFilesInput>
+}
+
+export type UserUpdateWithoutFilesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  action?: Prisma.ActionUpdateManyWithoutUserNestedInput
+  chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
+  folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
+  memories?: Prisma.MemoryUpdateManyWithoutUserNestedInput
+  messages?: Prisma.MessageUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutFilesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  action?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
+  chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
+  folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
+  memories?: Prisma.MemoryUncheckedUpdateManyWithoutUserNestedInput
+  messages?: Prisma.MessageUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUncheckedUpdateManyWithoutUserNestedInput
 }
 
 
@@ -1188,6 +1478,8 @@ export type UserCountOutputType = {
   memories: number
   messages: number
   sessions: number
+  uploads: number
+  files: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1198,6 +1490,8 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   memories?: boolean | UserCountOutputTypeCountMemoriesArgs
   messages?: boolean | UserCountOutputTypeCountMessagesArgs
   sessions?: boolean | UserCountOutputTypeCountSessionsArgs
+  uploads?: boolean | UserCountOutputTypeCountUploadsArgs
+  files?: boolean | UserCountOutputTypeCountFilesArgs
 }
 
 /**
@@ -1259,6 +1553,20 @@ export type UserCountOutputTypeCountSessionsArgs<ExtArgs extends runtime.Types.E
   where?: Prisma.SessionWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountUploadsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.UploadWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountFilesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.FileWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1277,6 +1585,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   memories?: boolean | Prisma.User$memoriesArgs<ExtArgs>
   messages?: boolean | Prisma.User$messagesArgs<ExtArgs>
   sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
+  uploads?: boolean | Prisma.User$uploadsArgs<ExtArgs>
+  files?: boolean | Prisma.User$filesArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -1325,6 +1635,8 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   memories?: boolean | Prisma.User$memoriesArgs<ExtArgs>
   messages?: boolean | Prisma.User$messagesArgs<ExtArgs>
   sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
+  uploads?: boolean | Prisma.User$uploadsArgs<ExtArgs>
+  files?: boolean | Prisma.User$filesArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1340,6 +1652,8 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     memories: Prisma.$MemoryPayload<ExtArgs>[]
     messages: Prisma.$MessagePayload<ExtArgs>[]
     sessions: Prisma.$SessionPayload<ExtArgs>[]
+    uploads: Prisma.$UploadPayload<ExtArgs>[]
+    files: Prisma.$FilePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1752,6 +2066,8 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   memories<T extends Prisma.User$memoriesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$memoriesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MemoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   messages<T extends Prisma.User$messagesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$messagesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   sessions<T extends Prisma.User$sessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$sessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  uploads<T extends Prisma.User$uploadsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$uploadsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UploadPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  files<T extends Prisma.User$filesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$filesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FilePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2343,6 +2659,54 @@ export type User$sessionsArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   take?: number
   skip?: number
   distinct?: Prisma.SessionScalarFieldEnum | Prisma.SessionScalarFieldEnum[]
+}
+
+/**
+ * User.uploads
+ */
+export type User$uploadsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Upload
+   */
+  select?: Prisma.UploadSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Upload
+   */
+  omit?: Prisma.UploadOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UploadInclude<ExtArgs> | null
+  where?: Prisma.UploadWhereInput
+  orderBy?: Prisma.UploadOrderByWithRelationInput | Prisma.UploadOrderByWithRelationInput[]
+  cursor?: Prisma.UploadWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.UploadScalarFieldEnum | Prisma.UploadScalarFieldEnum[]
+}
+
+/**
+ * User.files
+ */
+export type User$filesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the File
+   */
+  select?: Prisma.FileSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the File
+   */
+  omit?: Prisma.FileOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.FileInclude<ExtArgs> | null
+  where?: Prisma.FileWhereInput
+  orderBy?: Prisma.FileOrderByWithRelationInput | Prisma.FileOrderByWithRelationInput[]
+  cursor?: Prisma.FileWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.FileScalarFieldEnum | Prisma.FileScalarFieldEnum[]
 }
 
 /**

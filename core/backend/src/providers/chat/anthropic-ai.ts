@@ -5,7 +5,6 @@ import { Author } from '../../../generated/prisma/enums.ts';
 import { Anthropic } from '@anthropic-ai/sdk';
 import type {
   ContentBlockParam,
-  DocumentBlockParam,
   ImageBlockParam,
   MessageCreateParamsStreaming,
   MessageParam,
@@ -15,7 +14,7 @@ import type {
   ToolUseBlockParam,
 } from '@anthropic-ai/sdk/resources';
 import type { ToolCall } from '../../tools/index.ts';
-import { splitToolResults } from '../../generate.ts';
+import { splitToolResults } from '../../endpoints/generate.ts';
 
 export const AnthropicAI: ChatProvider = {
   name: 'anthropic-ai',
@@ -75,28 +74,25 @@ function toSdkContent(data: zData): ContentBlockParam[] {
     if (part.type === 'text') {
       return [{ type: 'text', text: part.value } satisfies TextBlockParam];
     }
-    if (part.type === 'file') {
-      const mime = part.mime ?? part.url.slice(5, part.url.indexOf(';'));
-      const base64 = part.url.slice(part.url.indexOf(',') + 1);
-      if (part.url.startsWith('data:image/')) {
+    if (part.type === 'inputFile') {
+      if (part.mime?.startsWith('image/')) {
         return [
           {
             type: 'image',
             source: {
               type: 'base64',
-              media_type: mime as any,
-              data: base64,
+              media_type: part.mime as any,
+              data: part.data,
             },
           } satisfies ImageBlockParam,
         ];
       }
-      // Non-image files: use document block
+      // Non-image files: insert as text
       return [
         {
-          type: 'document',
-          source: { type: 'base64', media_type: mime as any, data: base64 },
-          ...(part.name ? { title: part.name } : {}),
-        } satisfies DocumentBlockParam,
+          type: 'text',
+          text: Buffer.from(part.data, 'base64').toString('utf-8'),
+        } satisfies ContentBlockParam,
       ];
     }
     if (part.type === 'toolCall') {

@@ -24,7 +24,7 @@ import {
 import { Author } from '../../../generated/prisma/enums.ts';
 import { type ChatProvider, SettingsError } from './index.ts';
 import type { ToolCall } from '../../tools/index.ts';
-import { splitToolResults } from '../../generate.ts';
+import { splitToolResults } from '../../endpoints/generate.ts';
 
 export const MicrosoftFoundry: ChatProvider = {
   name: 'microsoft-foundry',
@@ -35,7 +35,7 @@ export const MicrosoftFoundry: ChatProvider = {
     if (!settings?.resourceId || !settings?.projectId || !settings?.apiKey) return [];
 
     const deployments = await fetch(
-      `https://${settings.resourceId}.services.ai.azure.com/api/projects/${settings.projectId}/deployments?api-version=v1`,
+      `https://${encodeURIComponent(settings.resourceId as string)}.services.ai.azure.com/api/projects/${encodeURIComponent(settings.projectId as string)}/deployments?api-version=v1`,
       { headers: { Authorization: `Bearer ${settings.apiKey}` } },
     );
 
@@ -106,22 +106,21 @@ function toResponsesContent(data: zData, author: Author): ResponseInputContent[]
         },
       ];
     }
-    if (part.type === 'file') {
-      if (part.url.startsWith('data:image/')) {
+    if (part.type === 'inputFile') {
+      if (part.mime.startsWith('image/')) {
         return [
           {
             type: 'input_image',
             detail: 'auto',
-            image_url: part.url,
+            image_url: `data:${part.mime};base64,${part.data}`,
           },
         ];
       }
       // Non-image files: pass as inline file
       return [
         {
-          type: 'input_file' as any,
-          filename: part.name ?? 'attachment',
-          file_data: part.url,
+          type: 'input_text',
+          text: Buffer.from(part.data, 'base64').toString('utf-8'),
         },
       ];
     }
@@ -225,18 +224,26 @@ function toCompletionsContent(data: zData): ChatCompletionContentPart[] {
     if (part.type === 'text') {
       return [{ type: 'text', text: part.value }];
     }
-    if (part.type === 'file') {
-      if (part.url.startsWith('data:image/')) {
-        return [{ type: 'image_url', image_url: { url: part.url, detail: 'auto' } }];
+    if (part.type === 'inputFile') {
+      if (part.mime.startsWith('image/')) {
+        return [
+          {
+            type: 'image_url',
+            image_url: { url: `data:${part.mime};base64,${part.data}`, detail: 'auto' },
+          },
+        ];
       }
       // Non-image files: extract text content or describe the attachment
-      const mime = part.mime ?? part.url.slice(5, part.url.indexOf(';'));
-      const base64 = part.url.slice(part.url.indexOf(',') + 1);
-      if (mime.startsWith('text/')) {
-        const text = Buffer.from(base64, 'base64').toString('utf-8');
+      if (part.mime.startsWith('text/')) {
+        const text = Buffer.from(part.data, 'base64').toString('utf-8');
         return [{ type: 'text', text: `[File: ${part.name ?? 'attachment'}]\n${text}` }];
       }
-      return [{ type: 'text', text: `[Attached file: ${part.name ?? 'attachment'} (${mime})]` }];
+      return [
+        {
+          type: 'text',
+          text: Buffer.from(part.data, 'base64').toString('utf-8'),
+        },
+      ];
     }
     return [];
   });
@@ -398,7 +405,7 @@ async function* fromResponsesStream(
       } else if (chunk.type === 'response.image_generation_call.in_progress') {
         yield {
           type: 'data',
-          value: { type: 'file', name: chunk.item_id, url: '/placeholder.png', inline: true },
+          value: { type: 'outputFile', name: chunk.item_id, url: '/placeholder.png' },
         };
       } else if (chunk.type === 'response.image_generation_call.partial_image') {
         yield {

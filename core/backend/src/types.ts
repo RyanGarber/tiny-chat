@@ -62,11 +62,22 @@ export const zDataPart = z.discriminatedUnion('type', [
     hidden: z.boolean().optional(),
   }),
   z.object({
-    type: z.literal('file'),
+    type: z.literal('outputFile'),
     name: z.string().optional(),
     mime: z.string().optional(),
     url: z.string(),
-    inline: z.boolean().optional(),
+  }),
+  z.object({
+    type: z.literal('upload'),
+    id: z.cuid2(),
+    name: z.string(),
+    thumbnail: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal('inputFile'),
+    name: z.string().optional(),
+    mime: z.string(),
+    data: z.base64(),
   }),
   z.object({
     type: z.literal('toolCall'),
@@ -204,19 +215,24 @@ export function normalizeText(text: string) {
 export function snippetText(text: string, query: string, window = 160): string {
   const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const lower = text.toLowerCase();
+
   let matchIndex = -1;
   for (const term of terms) {
-    const idx = lower.indexOf(term);
-    if (idx !== -1) {
-      matchIndex = idx;
+    const index = lower.indexOf(term);
+    if (index !== -1) {
+      matchIndex = index;
       break;
     }
   }
+
+  if (window <= 0) return text;
+
   if (matchIndex === -1) return text.length > window ? text.slice(0, window) + '…' : text;
+
   const half = Math.floor(window / 2);
+
   let start = Math.max(0, matchIndex - half);
   let end = Math.min(text.length, matchIndex + half);
-  // Snap to nearest word boundaries
   if (start > 0) {
     const i = text.indexOf(' ', start);
     if (i !== -1 && i < matchIndex) start = i + 1;
@@ -225,6 +241,7 @@ export function snippetText(text: string, query: string, window = 160): string {
     const i = text.lastIndexOf(' ', end);
     if (i !== -1 && i > matchIndex) end = i;
   }
+
   const snippet = text.slice(start, end).trim();
   return (start > 0 ? '…' : '') + snippet + (end < text.length ? '…' : '');
 }
@@ -235,4 +252,68 @@ export async function getNextRunAt(action: Action) {
   const startAt = schedule.options.dtstart;
   const searchFrom = action.lastRanAt ?? new Date(startAt.getTime() - 1);
   return schedule.after(searchFrom, false);
+}
+
+export const MAX_FILE_SIZE = 50 * 1024 * 1024;
+
+export const zUploadOutput = z.array(z.custom<Extract<zDataPart, { type: 'upload' }>>());
+
+export type zUploadOutput = z.infer<typeof zUploadOutput>;
+
+export function shouldEmbed(mime?: string, extension?: string) {
+  if (!mime && !extension) return false;
+  const ext = extension?.toLowerCase();
+  const mimeInfo = mime?.toLowerCase();
+  return (
+    [
+      'ts',
+      'tsx',
+      'js',
+      'jsx',
+      'mjs',
+      'cjs',
+      'json',
+      'yaml',
+      'yml',
+      'toml',
+      'xml',
+      'svg',
+      'md',
+      'mdx',
+      'txt',
+      'csv',
+      'html',
+      'css',
+      'scss',
+      'sass',
+      'less',
+      'py',
+      'rb',
+      'go',
+      'rs',
+      'java',
+      'kt',
+      'swift',
+      'c',
+      'cpp',
+      'h',
+      'sh',
+      'bash',
+      'zsh',
+      'fish',
+      'env',
+      'gitignore',
+      'dockerfile',
+    ].includes(ext ?? '') ||
+    [
+      'application/json',
+      'application/xml',
+      'text/plain',
+      'text/markdown',
+      'text/csv',
+      'text/html',
+      'text/css',
+      'text/javascript',
+    ].includes(mimeInfo ?? '')
+  );
 }

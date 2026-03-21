@@ -86,3 +86,13 @@ export type Memory = Prisma.MemoryModel
  * 
  */
 export type Action = Prisma.ActionModel
+/**
+ * Model Upload
+ * 
+ */
+export type Upload = Prisma.UploadModel
+/**
+ * Model File
+ * 
+ */
+export type File = Prisma.FileModel

@@ -38,8 +38,8 @@ export default function Chat() {
   } = useChats();
 
   const {
-    files,
-    removeFile,
+    uploads,
+    removeUpload,
     editing,
     setEditing,
     truncating,
@@ -409,18 +409,18 @@ export default function Chat() {
                   onDelete={() => setInsertingAfter(null)}
                 />
               )}
-              {files.map((file) => (
+              {uploads.map((file, i) => (
                 <InputEffect
                   content={
                     <Attachments
-                      list={[{ name: file.name, mime: file.type, url: URL.createObjectURL(file) }]}
+                      list={[{ name: file.name, image: file.thumbnail }]}
                       width={inputMaxWidth}
                       maxHeight={chatContainerHeight}
                       size={22}
                     />
                   }
-                  onDelete={() => removeFile(file)}
-                  key={file.name}
+                  onDelete={() => removeUpload(i)}
+                  key={i}
                 />
               ))}
             </Group>

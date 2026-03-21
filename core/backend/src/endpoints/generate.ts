@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import { auth, toHeaders, type User } from './server.ts';
-import type { zGenerateOutput } from './types.ts';
-import { getNextRunAt } from './types.ts';
+import { auth, toHeaders, type User } from '../server.ts';
+import type { zGenerateOutput } from '../types.ts';
+import { getNextRunAt } from '../types.ts';
 import {
   type ContextItem,
   type MessageUnomitted,
@@ -11,12 +11,14 @@ import {
   zData,
   type zDataPart,
   zGenerateInput,
-} from './types.ts';
-import { chatProviders } from './providers/chat/index.ts';
-import { Author, type Chat } from '../generated/prisma/client.ts';
-import { tools } from './tools/index.ts';
-import { getMemoryContext } from './routes/embeddings.ts';
+} from '../types.ts';
+import { chatProviders } from '../providers/chat/index.ts';
+import { Author, type Chat } from '../../generated/prisma/client.ts';
+import { tools } from '../tools/index.ts';
+import { getMemoryContext, getQueryEmbedding } from '../routes/embeddings.ts';
 import { format } from 'timeago.js';
+import type { File } from '../../generated/prisma/client.ts';
+import { searchFiles } from '../tools/file.ts';
 
 export default async function generateHandler(req: IncomingMessage, res: ServerResponse) {
   try {
@@ -108,7 +110,7 @@ export async function* generate(
       context,
       input.config,
       controller.signal,
-      tools({ user, message, chat, generateInput: input }),
+      tools({ user, chat, message, messages: baseContext, generateInput: input }),
     );
 
     const modelMessage = { ...message, author: Author.MODEL, data: [] } as MessageUnomitted;
@@ -141,7 +143,7 @@ export async function* generate(
     for (const part of toolCalls) {
       if (part.type !== 'toolCall') continue;
 
-      const tool = tools({ user, message, chat, generateInput: input }).find(
+      const tool = tools({ user, chat, message, messages: baseContext, generateInput: input }).find(
         (t) => t.name === part.name,
       );
       if (!tool) {
@@ -167,7 +169,7 @@ export async function* generate(
         const params = tool.schema.parse(part.args);
         console.log(`Tool '${part.name}' called, running with args:`, params);
         const value = await tool.run(
-          { user, message: message, chat, generateInput: input },
+          { user, chat, message: message, messages: baseContext, generateInput: input },
           params,
         );
         userMessage.data.push({ type: 'toolResult', id: part.id, name: part.name, value });
@@ -190,10 +192,7 @@ export async function* generate(
 
     // Emit the tool results to the client so the UI can display them
     for (const part of userMessage.data) {
-      console.log(
-        `Tool '${(part as Extract<zDataPart, { type: 'toolResult' }>).name}' finished with result:`,
-        part,
-      );
+      console.log(`Tool '${(part as Extract<zDataPart, { type: 'toolResult' }>).name}' succeeded`);
       yield { type: 'data', value: part };
     }
 
@@ -229,57 +228,141 @@ async function buildGenerateInput(
       })
     : [];
 
-  const context: ContextItem[] = messages.map((m, i) => {
-    let isFirstText = true;
-    let fileNumber = 1;
-    return {
-      ...m,
-      data: m.data.flatMap((d): zDataPart[] => {
-        if (d.type === 'file') {
-          return [{ type: 'text', value: `Attached file #${fileNumber++} (${d.name}):` }, d];
+  console.log('Handling message with data:', messages[messages.length - 1]?.data);
+
+  const context: ContextItem[] = await Promise.all(
+    messages.map(async (m, i) => {
+      let isFirstText = true;
+
+      const uploadFiles: Record<string, File[]> = {};
+      const uploadFileContexts: Record<string, string> = {};
+      for (const upload of m.data.filter(
+        (d): d is Extract<zDataPart, { type: 'upload' }> => d.type === 'upload',
+      )) {
+        uploadFiles[upload.id] = await globalThis.prisma.file.findMany({
+          where: { uploadId: upload.id },
+        });
+        const query = await getQueryEmbedding(user, messages);
+        if (query) {
+          uploadFileContexts[upload.id] = await searchFiles(
+            [m],
+            query.query,
+            query.queryEmbedding,
+            -1,
+            5,
+          );
         }
-        if (d.type === 'text') {
-          let value = normalizeText(d.value).replace(/((?:^::>:: .*$\n?)+)/gm, (block) => {
-            const lines = block
-              .trim()
-              .split('\n')
-              .map((l) => l.replace(/^::>:: /, ''));
-            let referencedModel = '';
-            let contentLines = lines;
-            if (lines[0].startsWith('::model=') && lines[0].endsWith('::')) {
-              referencedModel = lines[0].slice('::model='.length, -2);
-              contentLines = lines.slice(1);
+      }
+
+      return {
+        ...m,
+        data: m.data.flatMap((p): zDataPart[] => {
+          if (p.type === 'upload') {
+            console.log(
+              `Handling upload '${p.name}' with ID ${p.id} and ${uploadFiles[p.id]?.length ?? 0} file(s)`,
+            );
+            if (uploadFiles[p.id]?.length === 1) {
+              return [
+                { type: 'text', value: `Uploaded file (${p.name}):` },
+                {
+                  type: 'inputFile',
+                  name: uploadFiles[p.id][0].path[0],
+                  mime: uploadFiles[p.id][0].mime,
+                  data: Buffer.from(uploadFiles[p.id][0].data).toString('base64'),
+                },
+              ];
+            } else if (uploadFiles[p.id]?.length) {
+              const buildFileTreeMarkdown = (files: (typeof uploadFiles)[string]) => {
+                const tree: Record<string, unknown> = {};
+
+                for (const file of files) {
+                  let node = tree;
+                  for (let i = 0; i < file.path.length - 1; i++) {
+                    const segment = file.path[i];
+                    node[segment] ??= {};
+                    node = node[segment] as Record<string, unknown>;
+                  }
+                  const filename = file.path[file.path.length - 1];
+                  node[filename] = null; // leaf = file
+                }
+
+                const renderTree = (node: Record<string, unknown>, prefix = ''): string => {
+                  const entries = Object.entries(node);
+                  return entries
+                    .map(([name, children], i) => {
+                      const isLast = i === entries.length - 1;
+                      const connector = isLast ? '└── ' : '├── ';
+                      const childPrefix = prefix + (isLast ? '    ' : '│   ');
+                      if (children === null) {
+                        return `${prefix}${connector}${name}`;
+                      }
+                      const subtree = renderTree(children as Record<string, unknown>, childPrefix);
+                      return `${prefix}${connector}${name}/\n${subtree}`;
+                    })
+                    .join('\n');
+                };
+
+                return '```\n' + renderTree(tree) + '\n```';
+              };
+              const treeMarkdown = buildFileTreeMarkdown(uploadFiles[p.id]);
+              console.log(
+                'File context:',
+                uploadFileContexts[p.id]
+                  .split('---')
+                  .map((c) => c.trim().slice(0, 1000))
+                  .join('\n\n---\n\n'),
+              );
+              return [
+                {
+                  type: 'text',
+                  value: `Uploaded files (${p.name}):\n${treeMarkdown}\n\n---${uploadFileContexts[p.id]}`,
+                },
+              ];
             }
-            const prefix = referencedModel ? `Earlier, ${referencedModel} said:\n` : '';
-            return prefix + contentLines.map((l) => `> ${l}`).join('\n') + '\n';
-          });
-          if (isFirstText && m.id) {
-            let heading;
-            if (m.author === Author.USER) {
-              heading = `[user]\n`;
-              if (i !== 0) {
-                const previous = messages[i - 1];
-                if (previous.id) {
-                  const delay = format(previous.createdAt, undefined, {
-                    relativeDate: m.createdAt,
-                  }).replace(' ago', '');
-                  if (delay !== 'just now') {
-                    heading += `[Conversation timing: ${delay} ${delay.endsWith('s') ? 'have' : 'has'} passed since the last message.]\n`;
+          }
+          if (p.type === 'text') {
+            let value = normalizeText(p.value).replace(/((?:^::>:: .*$\n?)+)/gm, (block) => {
+              const lines = block
+                .trim()
+                .split('\n')
+                .map((l) => l.replace(/^::>:: /, ''));
+              let referencedModel = '';
+              let contentLines = lines;
+              if (lines[0].startsWith('::model=') && lines[0].endsWith('::')) {
+                referencedModel = lines[0].slice('::model='.length, -2);
+                contentLines = lines.slice(1);
+              }
+              const prefix = referencedModel ? `Earlier, ${referencedModel} said:\n` : '';
+              return prefix + contentLines.map((l) => `> ${l}`).join('\n') + '\n';
+            });
+            if (isFirstText && m.id) {
+              let heading;
+              if (m.author === Author.USER) {
+                heading = `[user]\n`;
+                if (i !== 0) {
+                  const previous = messages[i - 1];
+                  if (previous.id) {
+                    const delay = format(previous.createdAt, undefined, {
+                      relativeDate: m.createdAt,
+                    }).replace(' ago', '');
+                    if (delay !== 'just now') {
+                      heading += `[Conversation timing: ${delay} ${delay.endsWith('s') ? 'have' : 'has'} passed since the last message.]\n`;
+                    }
                   }
                 }
+              } else {
+                heading = `[assistant:model=${m.config.model}]\n`;
               }
-            } else {
-              heading = `[assistant:model=${m.config.model}]\n`;
+              value = heading + '\n' + value;
+              isFirstText = false;
             }
-            value = heading + '\n' + value;
-            isFirstText = false;
+            return [{ ...p, value }];
           }
-          return [{ ...d, value }];
-        }
-        return [d];
-      }),
-    };
-  });
+          return [p];
+        }),
+      };
+    }),
+  );
 
   context.splice(0, context.length, ...splitToolResults(context));
 

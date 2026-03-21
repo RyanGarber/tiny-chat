@@ -65,7 +65,7 @@ export async function sendMessage(data: zData) {
   } catch (e) {
     alert('error', 'Failed to create message');
     if (message) await deleteMessagePair(message.id);
-    await setData(data);
+    setData(data);
     throw e; // rethrow for logging
   }
 
@@ -91,7 +91,7 @@ export async function sendMessage(data: zData) {
   } catch (e) {
     alert('error', 'Failed to run model');
     await deleteMessagePair(message.id);
-    await setData(data);
+    setData(data);
     throw e; // rethrow for logging
   } finally {
     setInputDisabled(false);

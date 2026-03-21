@@ -156,7 +156,9 @@ async function runGeneration({
           (reply.metadata as zMetadata[]).push(event.value.value);
         } else if (event.value.type === 'fileUpdate') {
           const fileName = event.value.name;
-          const file = reply.data.filter((p) => p.type === 'file').find((p) => p.name === fileName);
+          const file = reply.data
+            .filter((p) => p.type === 'outputFile')
+            .find((p) => p.name === fileName);
           if (file) {
             console.log(
               'Updating URL of file:',
@@ -171,7 +173,8 @@ async function runGeneration({
               'Updated file (local):',
               file.url,
               '(global):',
-              reply.data.filter((p) => p.type === 'file').find((p) => p.name === fileName)?.url,
+              reply.data.filter((p) => p.type === 'outputFile').find((p) => p.name === fileName)
+                ?.url,
             );
           }
         }

@@ -18,18 +18,18 @@ interface IconEntry {
   icon: string;
 }
 
-const mimeIconEntries: IconEntry[] = [
-  { test: /html|css|js|ts|java|python|cpp/, icon: 'file-braces-corner' },
+const fileIcons: IconEntry[] = [
+  { test: /html|css|js|ts|java|kt|py|cpp|json|ya?ml]/, icon: 'file-braces-corner' },
   { test: /zip|tar|archive/, icon: 'file-archive' },
   { test: /mp3|wav|ogg|aac/, icon: 'file-volume' },
   { test: /mp4|mov|webm/, icon: 'file-video-camera' },
   { test: /csv/, icon: 'file-chart-line' },
-  { test: /word|text\/plain/, icon: 'file-text' },
-  { test: /powerpoint|presentation|pdf/, icon: 'file-image' },
+  { test: /doc|dox|txt/, icon: 'file-text' },
+  { test: /ppt|pptx|pdf/, icon: 'file-image' },
 ];
 
-function getIcon(mime: string | undefined, iconSize: number) {
-  const entry = mimeIconEntries.find((e) => e.test.test(mime ?? ''));
+function getIcon(name: string | undefined, iconSize: number) {
+  const entry = fileIcons.find((e) => e.test.test(name ?? ''));
   return <Icon icon={`lucide:${entry?.icon ?? 'file'}`} height={iconSize} />;
 }
 
@@ -39,7 +39,7 @@ export default function Attachments({
   width,
   maxHeight,
 }: {
-  list: { name?: string; mime?: string; url: string }[];
+  list: { name?: string; image?: string }[];
   size?: number;
   width?: number | string;
   maxHeight?: number;
@@ -71,14 +71,14 @@ export default function Attachments({
                 <Avatar
                   radius="xl"
                   size={size}
-                  src={a.mime?.startsWith('image/') ? a.url : null}
+                  src={a.image ?? null}
                   bd="2px solid var(--mantine-color-default-border)"
                   onClick={() => {
                     setSlide(i);
                     setCurrentSlide(i);
                   }}
                 >
-                  {getIcon(a.mime, size * 0.6)}
+                  {getIcon(a.name, size * 0.6)}
                 </Avatar>
               </Tooltip>
             ))}
@@ -102,11 +102,11 @@ export default function Attachments({
                 <Stack h="100%">
                   <Center p={5}></Center>
                   <Stack flex={1} justify="center" mih={0} style={{ overflow: 'hidden' }}>
-                    {a.mime?.startsWith('image/') ? (
-                      <Image src={a.url} fit="contain" h="100%" w="100%" />
+                    {a.image ? (
+                      <Image src={a.image} fit="contain" h="100%" w="100%" />
                     ) : (
                       <Card withBorder h={200}>
-                        <Center h="100%">{getIcon(a.mime, 64)}</Center>
+                        <Center h="100%">{getIcon(a.name, 64)}</Center>
                       </Card>
                     )}
                   </Stack>

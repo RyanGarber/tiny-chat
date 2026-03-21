@@ -19,9 +19,12 @@ import messages from './routes/messages.ts';
 import sessions from './routes/sessions.ts';
 import providers from './routes/providers.ts';
 import actions from './routes/actions.ts';
-import generateHandler from './generate.ts';
-import onTick from './actions.ts';
-import { initLogs } from './logs.ts';
+import uploads from './routes/uploads.ts';
+import github from './routes/github.ts';
+import generateHandler from './endpoints/generate.ts';
+import uploadHandler from './endpoints/upload.ts';
+import onTick from './worker.ts';
+import { initLogs } from './utils/logs.ts';
 
 config({ path: resolve(import.meta.dirname, '../../../.env') });
 if (import.meta.main) initLogs(undefined, true);
@@ -45,6 +48,8 @@ const trpc = router({
   sessions,
   providers,
   actions,
+  uploads,
+  github,
 });
 export type tRPC = typeof trpc;
 
@@ -177,6 +182,8 @@ const server = createServer((req, res) => {
     trpcHandler(req, res);
   } else if (req.url?.startsWith(process.env.VITE_BACKEND_PATH_AUTH!)) {
     void authHandler(req, res);
+  } else if (req.url?.startsWith('/@/upload')) {
+    void uploadHandler(req, res);
   } else if (req.url?.startsWith('/@/generate')) {
     void generateHandler(req, res);
   } else {

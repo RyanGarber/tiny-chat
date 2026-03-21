@@ -29,7 +29,7 @@ function getWordBounds(text: string, offset: number): { start: number; end: numb
 
 function toggleMark(syntax: MarkSyntax) {
   const { editor } = useMessaging.getState();
-  if (!editor || !editor.selection) return;
+  if (!editor?.selection) return;
 
   const markers = syntax === 'bold' ? '**' : syntax === 'italic' ? '*' : '`';
   const markerLen = markers.length;
@@ -152,26 +152,14 @@ function toggleMark(syntax: MarkSyntax) {
   }
 }
 
-export async function onSend() {
-  const { editor, files, setData } = useMessaging.getState();
+export function onSend() {
+  const { editor, uploads, setData } = useMessaging.getState();
   if (!editor) return;
 
   const text = serialize();
 
-  const data: zDataPart[] = [];
-  for (const file of files) {
-    const reader = new FileReader();
-    await new Promise((resolve) => {
-      reader.onload = () => resolve(reader.result);
-      reader.readAsDataURL(file);
-    });
-    data.push({
-      type: 'file',
-      name: file.name,
-      mime: file.type,
-      url: reader.result as string,
-    });
-  }
+  const data: zDataPart[] = [...uploads];
+
   if (text.trim().length) data.push({ type: 'text', value: text });
 
   if (!data.length) return;

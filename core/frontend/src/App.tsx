@@ -123,7 +123,7 @@ export default function App() {
     { axis: 'x', filterTaps: true },
   );
 
-  const viewport = useViewport();
+  const { height: viewportHeight, containerRef } = useViewport();
   const colorScheme = useSettings((s) => s.getTheme()) as 'light' | 'dark' | undefined;
   return (
     <MantineProvider
@@ -136,7 +136,7 @@ export default function App() {
           <Tasks />
           <NavigationProgress />
           <Notifications position="bottom-right" />
-          <Box pos="relative" h={viewport.height} ref={viewport.containerRef}>
+          <Box pos="relative" h={viewportHeight} ref={containerRef}>
             <LoadingOverlay visible={isInitializing} zIndex={1000} overlayProps={{ blur: 2 }} />
             <AppShell
               withBorder={false}
@@ -146,8 +146,8 @@ export default function App() {
                 collapsed: { desktop: false, mobile: !isSidebarOpen },
               }}
               style={{
-                height: `${viewport.height}px`,
-                maxHeight: `${viewport.height}px`,
+                height: `${viewportHeight}px`,
+                maxHeight: `${viewportHeight}px`,
                 overflow: 'hidden',
                 //*REVERT?* transform: `translateY(${viewport.offsetTop}px)`,
               }}
@@ -197,8 +197,8 @@ export default function App() {
               </AppShell.Navbar>
               <AppShell.Main
                 style={{
-                  height: `${viewport.height}px`,
-                  maxHeight: `${viewport.height}px`,
+                  height: `${viewportHeight}px`,
+                  maxHeight: `${viewportHeight}px`,
                   minHeight: 0,
                   overflow: 'hidden',
                 }}

@@ -1,7 +1,7 @@
 import { ScrollArea, Text, Stack, Modal, ModalProps, Group, ActionIcon } from '@mantine/core';
 import { useLogs } from '../stores/logs.tsx';
 import { Icon } from '@iconify/react';
-import { Level } from '@tiny-chat/core-backend/src/logs.ts';
+import { Level } from '@tiny-chat/core-backend/src/utils/logs.ts';
 import { JsonTree } from '@gfazioli/mantine-json-tree';
 
 export default function Console({ opened, onClose }: Pick<ModalProps, 'opened' | 'onClose'>) {

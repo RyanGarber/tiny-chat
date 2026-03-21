@@ -7,11 +7,13 @@ import memory from './memory.ts';
 import chat from './chat.ts';
 import ask from './ask.ts';
 import action from './action.ts';
+import file from './file.ts';
 
 export interface ToolContext {
   user: User;
   chat?: Chat;
   message: ContextItem;
+  messages: ContextItem[];
   generateInput: zGenerateInput;
 }
 
@@ -32,5 +34,6 @@ export function tools(context: ToolContext) {
     ...chat(context),
     ...ask(context),
     ...action(context),
+    ...file(context),
   ] as ToolCall[];
 }

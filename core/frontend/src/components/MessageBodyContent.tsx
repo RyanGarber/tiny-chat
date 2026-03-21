@@ -140,7 +140,7 @@ export default function MessageBodyContent({
       }
       textOffset += part.value.length;
       if (displayedLength < textOffset) break; // still streaming this segment
-    } else if (part.type === 'file' && part.mime?.startsWith('image/') && part.inline) {
+    } else if (part.type === 'outputFile' && part.mime?.startsWith('image/')) {
       // Show the image as soon as all text before it has been revealed
       if (displayedLength >= textOffset) {
         renderedParts.push(
@@ -250,12 +250,8 @@ export default function MessageBodyContent({
 
   return (
     <>
-      <Box ref={container} className={isGenerating ? 'is-streaming' : ''} w="100%">
+      <Box ref={container} w="100%">
         {renderedParts}
-        {/* Standalone cursor shown before the first characters arrive */}
-        {isGenerating && renderedParts.length === 0 && (
-          <span className="streaming-cursor-standalone">▋</span>
-        )}
       </Box>
       <Portal target={document.body}>
         <Transition

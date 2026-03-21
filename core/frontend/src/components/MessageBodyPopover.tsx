@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   FloatingPosition,
+  Loader,
   Popover,
   ScrollAreaAutosize,
   Stack,
@@ -145,6 +146,7 @@ export function ThoughtGroupPopover({
             <Icon icon="lucide:brain" height={18} />
           </ThemeIcon>
           {isThinkingActive ? 'Thinking' : 'Thought'}
+          {isThinkingActive && <Loader ml={8} size={12} type="dots" color="currentColor" />}
         </>
       }
       dropdown={
@@ -183,7 +185,7 @@ export function ToolCallPopover({
   return (
     <MessageBodyPopover
       width={containerWidth + 20}
-      defaultOpened={result === null}
+      defaultOpened={!result}
       button={
         <>
           <ThemeIcon variant="transparent" size={22} mr={5}>
@@ -199,6 +201,7 @@ export function ToolCallPopover({
           >
             {call.name}
           </Badge>
+          {!result && <Loader ml={8} size={12} type="dots" color="currentColor" />}
         </>
       }
       dropdown={

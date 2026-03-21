@@ -13,7 +13,7 @@ import ReactDOM from 'react-dom/client';
 import App from '@/App.tsx';
 import { Router } from 'wouter';
 import { useHashLocation } from 'wouter/use-hash-location';
-import { initLogs } from '@tiny-chat/core-backend/src/logs.ts';
+import { initLogs } from '@tiny-chat/core-backend/src/utils/logs.ts';
 import { useLogs } from '@/stores/logs.tsx';
 
 initLogs(useLogs.getState().writeLog, false);

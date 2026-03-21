@@ -59,7 +59,9 @@ export const ModelName = {
   Chat: 'Chat',
   Message: 'Message',
   Memory: 'Memory',
-  Action: 'Action'
+  Action: 'Action',
+  Upload: 'Upload',
+  File: 'File'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -210,6 +212,30 @@ export const ActionScalarFieldEnum = {
 } as const
 
 export type ActionScalarFieldEnum = (typeof ActionScalarFieldEnum)[keyof typeof ActionScalarFieldEnum]
+
+
+export const UploadScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  name: 'name',
+  thumbnail: 'thumbnail',
+  createdAt: 'createdAt'
+} as const
+
+export type UploadScalarFieldEnum = (typeof UploadScalarFieldEnum)[keyof typeof UploadScalarFieldEnum]
+
+
+export const FileScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  uploadId: 'uploadId',
+  path: 'path',
+  mime: 'mime',
+  data: 'data',
+  createdAt: 'createdAt'
+} as const
+
+export type FileScalarFieldEnum = (typeof FileScalarFieldEnum)[keyof typeof FileScalarFieldEnum]
 
 
 export const SortOrder = {

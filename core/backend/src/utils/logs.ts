@@ -16,21 +16,21 @@ export function initLogs(write?: LogWrite, writeToDisk = false) {
   for (const level of levels) {
     const original = console[level].bind(console);
 
-    console[level] = (...data: unknown[]) => {
+    const replaced = (...data: unknown[]) => {
       const time = new Date().toISOString().split('T')[1].split('.')[0];
 
-      original(...data);
       write?.(time, level, ...data);
 
       if (writeToDisk) {
         void (async () => {
-          const { appendFile, existsSync } = await import('fs');
+          const { appendFile, existsSync, mkdirSync } = await import('fs');
           const { resolve } = await import('path');
           const { tmpdir } = await import('os');
 
           const date = new Date().toISOString().split('T')[0];
-          const file = resolve(tmpdir(), `${date}.tiny-chat.log`);
-          if (!existsSync(file)) console.log('Logging to', file);
+          const file = resolve(tmpdir(), `tiny-chat/${date}.log`);
+          mkdirSync(resolve(tmpdir(), 'tiny-chat'), { recursive: true });
+          if (!existsSync(file)) original('Logging to', file);
 
           data = data.map((d) => {
             return typeof d === 'object' && d !== null ? JSON.stringify(d) : d;
@@ -42,5 +42,23 @@ export function initLogs(write?: LogWrite, writeToDisk = false) {
         })();
       }
     };
+
+    console[level] = (...data: unknown[]) => {
+      original(...data);
+      replaced(...data);
+    };
+
+    if (level === 'error') {
+      if (typeof window !== 'undefined') {
+        window?.addEventListener('error', (e) => replaced('Uncaught error:', e));
+        window?.addEventListener('unhandledrejection', (e) =>
+          replaced('Uncaught rejection:', e.reason),
+        );
+      }
+
+      if (typeof process !== 'undefined') {
+        process?.on('uncaughtException', (e) => replaced('Uncaught exception:', e));
+      }
+    }
   }
 }

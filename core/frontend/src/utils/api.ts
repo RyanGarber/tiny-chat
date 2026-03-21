@@ -17,6 +17,10 @@ export const webUrl = import.meta.env.DEV
   ? `http://${__TAURI_DEV_HOST__ ?? 'localhost'}:${import.meta.env.VITE_WEB_PORT}`
   : import.meta.env.VITE_WEB_URL;
 
+export const backendUrl = import.meta.env.DEV
+  ? `http://${__TAURI_DEV_HOST__ ?? 'localhost'}:${import.meta.env.VITE_BACKEND_PORT}`
+  : import.meta.env.VITE_BACKEND_URL;
+
 export const trpc = createTRPCClient<tRPC>({
   links: [
     httpLink({

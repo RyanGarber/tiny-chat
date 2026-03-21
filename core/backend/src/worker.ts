@@ -1,4 +1,4 @@
-import { generate } from './generate.ts';
+import { generate } from './endpoints/generate.ts';
 import type { User } from './server.ts';
 import { type ContextItem, getNextRunAt, texts, type zMetadata } from './types.ts';
 import { wrapMessageUnomitted, zConfig, zData } from './types.ts';
@@ -24,6 +24,7 @@ export default async function onTick() {
         where: { id: action.userId },
       })) as User;
       user.settings = JSON.parse(user.settings as unknown as string) as User['settings'];
+
       const messages = reorder(
         await globalThis.prisma.message.findMany({
           where: { chatId: action.chatId },

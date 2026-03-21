@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { ToolCall, ToolContext } from './index.ts';
-import { embed, getMostRelevant } from '../embed.ts';
+import { embed, getMostRelevant } from '../utils/embed.ts';
 import { type Message } from '../../generated/prisma/client.ts';
 import { snippetText, texts, zData } from '../types.ts';
 
@@ -18,13 +18,15 @@ const SearchChats = {
     if (!embeddings) throw new Error('Failed to generate embedding for query');
 
     const messages = (
-      await globalThis.prisma.$queryRaw<(Message & { embedding: string })[]>`
+      await globalThis.prisma.$queryRaw<(Message & { embedding?: string })[]>`
       SELECT * FROM message WHERE "userId" = ${user.id}`
     ).filter((m) => texts(zData.parse(m.data)).trim().length);
 
     const relevant = getMostRelevant(
       embeddings[0],
-      messages.map((m) => ({ value: m, embedding: JSON.parse(m.embedding) })),
+      messages.flatMap((m) =>
+        m.embedding ? [{ value: m, embedding: JSON.parse(m.embedding) }] : [],
+      ),
     );
 
     return {

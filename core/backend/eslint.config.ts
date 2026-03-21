@@ -4,7 +4,7 @@ import tseslint from 'typescript-eslint';
 
 export default defineConfig(
   {
-    ignores: ['dist/**', 'eslint.config.ts', 'prisma.config.ts', 'pm2.config.cjs'],
+    ignores: ['dist/**', 'generated/**', 'eslint.config.ts', 'prisma.config.ts', 'pm2.config.cjs'],
   },
   eslint.configs.recommended,
   tseslint.configs.recommendedTypeChecked,

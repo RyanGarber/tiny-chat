@@ -3,7 +3,7 @@ import { procedure, router } from '../index.ts';
 import { chatProviders } from '../providers/chat/index.ts';
 import { type ChatProviderStatus, type SearchProviderStatus, zConfig } from '../types.ts';
 import { searchProviders } from '../providers/search/index.ts';
-import { embed } from '../embed.ts';
+import { embed } from '../utils/embed.ts';
 
 export default router({
   list: procedure.query(async ({ ctx }) => {

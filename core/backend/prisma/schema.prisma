@@ -24,6 +24,8 @@ model User {
   memories      Memory[]
   messages      Message[]
   sessions      Session[]
+  uploads       Upload[]
+  files         File[]
 
   @@map("user")
 }
@@ -184,6 +186,36 @@ model Action {
   @@index([messageId], map: "task_messageId_idx")
   @@index([userId], map: "task_userId_idx")
   @@map("action")
+}
+
+model Upload {
+  id        String   @id
+  userId    String
+  name      String
+  files     File[]
+  thumbnail String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("upload")
+}
+
+model File {
+  id        String                 @id
+  userId    String
+  uploadId  String
+  path      String[]
+  mime      String
+  data      Bytes
+  embedding Unsupported("vector")?
+  createdAt DateTime               @default(now())
+  user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  upload    Upload                 @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([uploadId])
+  @@map("file")
 }
 
 enum Author {

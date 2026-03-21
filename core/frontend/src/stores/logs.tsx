@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import { Level, LogWrite } from '@tiny-chat/core-backend/src/logs.ts';
+import { Level, LogWrite } from '@tiny-chat/core-backend/src/utils/logs.ts';
 
 interface Logs {
   logs: { time: string; level: Level; data: unknown[] }[];

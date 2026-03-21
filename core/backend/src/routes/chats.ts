@@ -5,7 +5,7 @@ import { reorder } from './messages.ts';
 import { zConfig, zData, zMetadata } from '../types.ts';
 import minisearch, { type SearchResult } from 'minisearch';
 import { chatProviders } from '../providers/chat/index.ts';
-import { getMostRelevant } from '../embed.ts';
+import { getMostRelevant } from '../utils/embed.ts';
 
 export default router({
   find: procedure.input(z.object({ id: z.cuid2().nullable() })).query(async ({ ctx, input }) => {

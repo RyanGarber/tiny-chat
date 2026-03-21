@@ -6,6 +6,8 @@ allowBuilds:
   esbuild: true
   prisma: true
   protobufjs: true
+  sharp: true
+  tesseract.js: true
 allowedDeprecatedVersions:
   glob: "*"
   'node-domexception': "*"

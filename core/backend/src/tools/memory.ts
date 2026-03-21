@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { type ToolCall, type ToolContext } from './index.ts';
 import { getMemorySearch } from '../routes/embeddings.ts';
-import { embed } from '../embed.ts';
+import { embed } from '../utils/embed.ts';
 import { MemoryCategory, MemoryStability } from '../../generated/prisma/enums.ts';
 import { createId } from '@paralleldrive/cuid2';
 import { type User } from '../server.ts';

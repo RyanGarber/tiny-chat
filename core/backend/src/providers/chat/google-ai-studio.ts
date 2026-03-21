@@ -20,7 +20,7 @@ export const GoogleAIStudio: ChatProvider = {
     if (!user?.settings?.providers?.[this.name].apiKey) return [];
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${user.settings.providers[this.name].apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(user.settings.providers[this.name].apiKey as string)}`,
     );
 
     const json = (await response.json()) as {
@@ -183,10 +183,8 @@ function toSdkContent(message: ContextItem, config: zConfig): Content {
           },
         ];
       }
-      if (part.type === 'file') {
-        const mime = part.mime ?? part.url.slice(5, part.url.indexOf(';'));
-        const base64 = part.url.split(';base64,')[1] ?? part.url.slice(part.url.indexOf(',') + 1);
-        return [{ inlineData: { mimeType: mime, data: base64 } }];
+      if (part.type === 'inputFile') {
+        return [{ inlineData: { mimeType: part.mime, data: part.data } }];
       }
       if (part.type === 'toolCall' && message.id) {
         const match = message.metadata
@@ -246,11 +244,10 @@ async function* fromSdkStream(stream: AsyncIterable<any>): AsyncGenerator<zGener
           yield {
             type: 'data',
             value: {
-              type: 'file',
+              type: 'outputFile',
               name: part.inlineData.displayName,
               mime: part.inlineData.mimeType,
               url: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`,
-              inline: true,
             },
           };
         }

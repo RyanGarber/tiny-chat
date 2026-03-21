@@ -31,13 +31,17 @@ import { DropzoneFullScreen } from '@mantine/dropzone';
 import ModelSelect from '@/components/ModelSelect.tsx';
 import { Icon } from '@iconify/react';
 import { NodeEntry } from 'slate';
+import GitHub from '@/components/GitHub.tsx';
+
+import { uploadFiles } from '@/managers/uploading.ts';
 
 export function Input(props: InputWrapperProps) {
-  const { setEditor, config, setConfig, addFiles } = useMessaging();
+  const { setEditor, config, setConfig, isUploading } = useMessaging();
   const { chatProviders, abortController } = useProviders();
   const { shadow, setIsMessaging, isMessagingDisabled } = useLayout();
 
   const [isMultiline, setMultiline] = useState(false);
+  const [githubModalOpen, setGithubModalOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const leftSectionRef = useRef<HTMLDivElement>(null);
   const rightSectionRef = useRef<HTMLDivElement>(null);
@@ -110,13 +114,13 @@ export function Input(props: InputWrapperProps) {
         if (blob) {
           const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
           const file = new File([blob], `screenshot-${timestamp}.png`, { type: 'image/png' });
-          addFiles(file);
+          void uploadFiles([file]);
         }
       }, 'image/png');
     } catch (e) {
       console.error('Failed to capture screenshot:', e);
     }
-  }, [addFiles]);
+  }, []);
 
   const resetMultiline = useCallback(() => {
     if (!serialize().length) setMultiline(false);
@@ -125,13 +129,13 @@ export function Input(props: InputWrapperProps) {
   const leftActionContent = (
     <Menu position="top-start" transitionProps={{ transition: 'fade-up' }}>
       <Menu.Target>
-        <ActionIcon variant="subtle" size={32} disabled={isMessagingDisabled}>
+        <ActionIcon variant="subtle" size={32} disabled={isMessagingDisabled || isUploading}>
           <Icon icon="lucide:paperclip" height={18} />
-          <DropzoneFullScreen onDrop={(files) => addFiles(...files)} /> {/* TODO - not any */}
+          <DropzoneFullScreen onDrop={(files) => void uploadFiles(files)} />
         </ActionIcon>
       </Menu.Target>
       <Menu.Dropdown style={{ boxShadow: shadow }}>
-        <FileButton onChange={(files) => addFiles(...files)} multiple>
+        <FileButton onChange={(files) => void uploadFiles(files)} multiple disabled={isUploading}>
           {(props) => (
             <Menu.Item
               {...props}
@@ -143,6 +147,14 @@ export function Input(props: InputWrapperProps) {
           )}
         </FileButton>
         <Menu.Item
+          disabled={isUploading}
+          leftSection={<Icon icon="lucide:github" height={18} />}
+          onClick={() => setGithubModalOpen(true)}
+        >
+          Repository
+        </Menu.Item>
+        <Menu.Item
+          disabled={isUploading}
           leftSection={<Icon icon="lucide:screen-share" height={18} />}
           onClick={() => void captureScreenshot()}
         >
@@ -275,6 +287,7 @@ export function Input(props: InputWrapperProps) {
 
   return (
     <>
+      <GitHub opened={githubModalOpen} onClose={() => setGithubModalOpen(false)} />
       <InputWrapper {...props}>
         <InputBase
           component="div"

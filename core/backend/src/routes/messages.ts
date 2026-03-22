@@ -44,16 +44,16 @@ export default router({
       let message;
 
       if (input.chatId) {
-        const chat = await ctx.prisma.chat.findUniqueOrThrow({
+        const chat = await globalThis.prisma.chat.findUniqueOrThrow({
           where: { id: input.chatId, userId: ctx.session.user.id },
         });
 
         if (input.temporary && !chat.temporary) throw new Error('Chat cannot be made temporary');
         if (input.incognito && !chat.incognito) throw new Error('Chat cannot be made incognito');
 
-        message = await ctx.prisma.$transaction(async (tx) => {
+        message = await globalThis.prisma.$transaction(async (tx) => {
           if (input.previousId) {
-            await ctx.prisma.message.updateMany({
+            await globalThis.prisma.message.updateMany({
               where: { previousId: input.previousId },
               data: { previousId: null },
             });
@@ -105,7 +105,7 @@ export default router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const message = await ctx.prisma.$transaction(async (tx) => {
+      const message = await globalThis.prisma.$transaction(async (tx) => {
         console.log(`Editing message ${input.id} (truncate: ${input.truncate})`);
 
         if (input.truncate) {
@@ -142,7 +142,7 @@ export default router({
     }),
 
   delete: procedure.input(z.object({ id: z.cuid2() })).mutation(async ({ ctx, input }) => {
-    const message = await ctx.prisma.message.findUniqueOrThrow({
+    const message = await globalThis.prisma.message.findUniqueOrThrow({
       where: { id: input.id, userId: ctx.session.user.id },
       include: {
         previous: { include: { previous: true } },
@@ -167,11 +167,11 @@ export default router({
     }
 
     if (linkPrevious && linkNext) {
-      await ctx.prisma.message.update({
+      await globalThis.prisma.message.update({
         where: { id: linkPrevious },
         data: { next: { connect: { id: linkNext } } },
       });
-      await ctx.prisma.message.update({
+      await globalThis.prisma.message.update({
         where: { id: linkNext },
         data: { previous: { connect: { id: linkPrevious } } },
       });
@@ -182,16 +182,16 @@ export default router({
       where.OR.push({ id: message.previous.id });
 
     if (message.folder.messages.length <= 2)
-      await ctx.prisma.folder.delete({ where: { id: message.folderId } });
+      await globalThis.prisma.folder.delete({ where: { id: message.folderId } });
     else if (message.chat.messages.length <= 2)
-      await ctx.prisma.chat.delete({ where: { id: message.chatId } });
-    else await ctx.prisma.message.deleteMany({ where });
+      await globalThis.prisma.chat.delete({ where: { id: message.chatId } });
+    else await globalThis.prisma.message.deleteMany({ where });
   }),
 
   list: procedure.input(z.object({ chatId: z.cuid2() })).query(async ({ ctx, input }) => {
     return reorder(
       (
-        await ctx.prisma.message.findMany({
+        await globalThis.prisma.message.findMany({
           where: { chatId: input.chatId, userId: ctx.session.user.id },
           omit: { metadata: true },
         })
@@ -204,7 +204,7 @@ export default router({
     .query(async ({ ctx, input }): Promise<Map<string, MessageOmission>> => {
       return new Map(
         (
-          await ctx.prisma.message.findMany({
+          await globalThis.prisma.message.findMany({
             where: { id: { in: input.ids }, userId: ctx.session.user.id },
             select: { id: true, metadata: true },
           })

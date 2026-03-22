@@ -27,7 +27,7 @@ export default router({
     if (!clone.userId) return false;
     console.log(`Clone ${input.id} finalized, ${ctx.session.user.id} is now ${clone.userId}`);
     clones.splice(clones.indexOf(clone), 1);
-    await ctx.prisma.session.update({
+    await globalThis.prisma.session.update({
       where: { id: ctx.session.session.id },
       data: { user: { connect: { id: clone.userId } } },
     });

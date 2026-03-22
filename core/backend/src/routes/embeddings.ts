@@ -3,8 +3,9 @@ import { Author, MemoryCategory, MemoryStability } from '../../generated/prisma/
 import { combineVectorsWeighted, embed, getMostRelevant } from '../utils/embed.ts';
 import { type Memory, type Message, Prisma } from '../../generated/prisma/client.ts';
 import { type User } from '../server.ts';
-import { type ContextItem, shouldEmbed, texts, zData } from '../types.ts';
+import { type ContextItem, texts, zData } from '../types.ts';
 import { embedMessage } from './messages.ts';
+import { embedGitHubFile } from '../utils/consts.ts';
 
 export default router({
   fixMissing: procedure.mutation(async ({ ctx }) => {
@@ -85,7 +86,7 @@ export default router({
       FROM file
       WHERE "userId" = ${ctx.session.user.id}
         AND embedding IS NULL`
-    ).filter((f) => shouldEmbed(f.mime, f.path.slice(-1)[0].split('.').slice(-1)[0]));
+    ).filter((f) => embedGitHubFile(f.path.join('/')));
 
     for (let i = 0; i < files.length; i += 100) {
       console.log('Trying to embed:', files[i]);
@@ -98,17 +99,15 @@ export default router({
         console.warn('Failed to generate embeddings for batch starting with file:', batch[0].id);
         continue;
       }
-      await globalThis.prisma.$transaction(async (tx) => {
-        for (let j = 0; j < batch.length; j++) {
-          const embedding = embeddings?.[j];
-          if (embedding) {
-            await tx.$executeRaw`UPDATE file
-                                 SET embedding = ${JSON.stringify(embedding)}::vector
-                                 WHERE id = ${batch[j].id}`;
-            filesDone++;
-          }
+      for (let j = 0; j < batch.length; j++) {
+        const embedding = embeddings?.[j];
+        if (embedding) {
+          await globalThis.prisma.$executeRaw`UPDATE file
+                               SET embedding = ${JSON.stringify(embedding)}::vector
+                               WHERE id = ${batch[j].id}`;
+          filesDone++;
         }
-      });
+      }
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 

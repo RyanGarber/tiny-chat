@@ -1,6 +1,7 @@
 import { type ToolCall, type ToolContext } from './index.ts';
 import { z } from 'zod';
 import { searchProviders } from '../providers/search/index.ts';
+import { createHash } from 'crypto';
 
 const zSearchWeb = z.object({
   query: z.string().describe('The search query to use for web search'),
@@ -13,7 +14,11 @@ const SearchWeb = {
   parameters: zSearchWeb.toJSONSchema(),
   schema: zSearchWeb,
   run: async ({ user }, params) => {
-    return await searchProviders[0].search(user, params.query, 5);
+    const results = await searchProviders[0].search(user, params.query, 5);
+    return results.map((r) => ({
+      ...r,
+      id: createHash('sha256').update(r.source).digest('hex').slice(0, 6),
+    }));
   },
 } satisfies ToolCall<typeof zSearchWeb>;
 

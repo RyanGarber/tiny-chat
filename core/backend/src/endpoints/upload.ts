@@ -8,8 +8,8 @@ import type { zUploadOutput } from '../types.ts';
 import { shouldEmbed } from '../types.ts';
 import { MAX_FILE_SIZE } from '../types.ts';
 import sharp from 'sharp';
-import { parseOffice } from 'officeparser';
 import { embed } from '../utils/embed.ts';
+import { MarkItDown } from 'markitdown-ts';
 
 export default async function uploadHandler(req: IncomingMessage, res: ServerResponse) {
   const session = await auth.api.getSession({ headers: toHeaders(req.headers) });
@@ -65,10 +65,12 @@ export default async function uploadHandler(req: IncomingMessage, res: ServerRes
                 mime.includes('ms-excel') ||
                 mime.includes('ms-powerpoint')
               ) {
-                const parsed = await parseOffice(data);
-                data = Buffer.from(JSON.stringify(parsed));
-                text = parsed.toText();
-                mime = 'application/json';
+                const parsed = await new MarkItDown().convertBuffer(data, {
+                  file_extension: info.filename.split('.').slice(-1)[0],
+                });
+                data = Buffer.from(parsed!.markdown);
+                text = parsed!.markdown;
+                mime = 'text/plain';
                 console.log(`Extracted text length: ${text.length} characters`);
               }
 

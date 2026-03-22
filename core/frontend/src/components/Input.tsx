@@ -305,9 +305,7 @@ export function Input(props: InputWrapperProps) {
             input: {
               padding: 0,
               wordBreak: 'break-word',
-              zIndex: 'var(--mantine-z-index-app)',
-              backgroundColor: 'color-mix(in srgb, var(--mantine-color-body), transparent 15%)',
-              backdropFilter: 'blur(5px)',
+              zIndex: 'var(--tc-surface)',
             },
             section: {
               display: 'flex',

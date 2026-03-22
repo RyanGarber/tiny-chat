@@ -4,6 +4,7 @@ import {
   type MessageOmitted,
   type MessageUnomitted,
   type zConfig,
+  zDataPart,
   zMetadata,
 } from '@tiny-chat/core-backend/src/types.ts';
 import { Author } from '@tiny-chat/core-backend/generated/prisma/enums.ts';
@@ -43,6 +44,40 @@ export async function handleMessage(messageId: string) {
   }
 }
 
+export function alignToolResults(data: zDataPart[]): zDataPart[] {
+  const toolCalls = data.filter((p) => p.type === 'toolCall');
+  const results = data.filter((p) => p.type === 'toolResult');
+
+  // Nothing to align
+  if (!toolCalls.length || !results.length) return data;
+
+  const sortedResults: zDataPart[] = [];
+  const usedResultIndices = new Set<number>();
+
+  // 1. Match results to calls in exact order, consuming them to handle duplicate IDs safely
+  for (const call of toolCalls) {
+    const matchIndex = results.findIndex((r, i) => r.id === call.id && !usedResultIndices.has(i));
+    if (matchIndex !== -1) {
+      sortedResults.push(results[matchIndex]);
+      usedResultIndices.add(matchIndex);
+    }
+  }
+
+  // 2. Append any leftover/unmatched results (in case the model hallucinated a result ID)
+  results.forEach((r, i) => {
+    if (!usedResultIndices.has(i)) sortedResults.push(r);
+  });
+
+  // 3. Rebuild the data array strictly in place
+  let resultCounter = 0;
+  return data.map((part) => {
+    if (part.type === 'toolResult') {
+      return sortedResults[resultCounter++];
+    }
+    return part;
+  });
+}
+
 export async function continueToolCall(
   messageId: string,
   toolCallId: string,
@@ -70,17 +105,34 @@ export async function continueToolCall(
   const omissions = await trpc.messages.listOmissions.query({ ids: messages.map((m) => m.id) });
   const targetMetadata = zMetadata.parse(omissions.get(target.id)?.metadata);
 
-  // Persist the user selection into the existing assistant message before resuming generation.
+  // 1. Combine the new result and strictly align the array
+  const newData = [
+    ...target.data,
+    { type: 'toolResult', id: toolCallId, name: toolName, value } as zDataPart,
+  ];
+  const alignedData = alignToolResults(newData);
+
+  // 2. Count calls vs results
+  const toolCallsCount = alignedData.filter((p) => p.type === 'toolCall').length;
+  const toolResultsCount = alignedData.filter((p) => p.type === 'toolResult').length;
+
+  // Persist the user selection into the existing assistant message
   await trpc.messages.edit.mutate({
     id: target.id,
     author: target.author,
     config: target.config,
-    data: [...target.data, { type: 'toolResult', id: toolCallId, name: toolName, value }],
+    data: alignedData,
     metadata: targetMetadata,
     truncate: false,
   });
 
   await useChats.getState().fetchChat(false);
+
+  // 3. If there are still unanswered tools, stop here and wait for the user!
+  if (toolResultsCount < toolCallsCount) {
+    console.log(`Waiting for more tool inputs (${toolResultsCount}/${toolCallsCount})`);
+    return;
+  }
 
   const reply = useChats.getState().messages.find((m) => m.id === target.id) as MessageUnomitted;
   reply.metadata = targetMetadata;

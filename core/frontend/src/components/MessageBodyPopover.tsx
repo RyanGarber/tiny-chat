@@ -172,10 +172,12 @@ export function ThoughtGroupPopover({
 export function ToolCallPopover({
   call,
   result,
+  defaultOpened,
   containerWidth,
 }: {
   call: Extract<zDataPart, { type: 'toolCall' }>;
   result?: Extract<zDataPart, { type: 'toolResult' }>;
+  defaultOpened?: boolean;
   containerWidth: number;
 }) {
   const input = call.args ? JSON.stringify(call.args, null, 2).replace(/`/g, '\\`') : '/* empty */';
@@ -185,7 +187,7 @@ export function ToolCallPopover({
   return (
     <MessageBodyPopover
       width={containerWidth + 20}
-      defaultOpened={!result}
+      defaultOpened={defaultOpened && !result}
       button={
         <>
           <ThemeIcon variant="transparent" size={22} mr={5}>

@@ -5,7 +5,7 @@ import { type MessageCreateInput } from '../../generated/prisma/models.ts';
 export default router({
   list: procedure.query(async ({ ctx }) => {
     // TODO move ordering to 'lastActivity' column?
-    const folders = await ctx.prisma.folder.findMany({
+    const folders = await globalThis.prisma.folder.findMany({
       where: { userId: ctx.session.user.id, chats: { some: { temporary: false } } },
       include: {
         chats: {
@@ -52,12 +52,12 @@ export default router({
   }),
 
   lastActivityMax: procedure.query(async ({ ctx }) => {
-    const latestChat = await ctx.prisma.chat.findFirst({
+    const latestChat = await globalThis.prisma.chat.findFirst({
       where: { userId: ctx.session.user.id, temporary: false },
       orderBy: { createdAt: 'desc' },
       select: { createdAt: true },
     });
-    const latestMessage = await ctx.prisma.message.findFirst({
+    const latestMessage = await globalThis.prisma.message.findFirst({
       where: { userId: ctx.session.user.id, chat: { temporary: false } },
       orderBy: { createdAt: 'desc' },
       select: { createdAt: true },

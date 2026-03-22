@@ -10,7 +10,7 @@ import { getMostRelevant } from '../utils/embed.ts';
 export default router({
   find: procedure.input(z.object({ id: z.cuid2().nullable() })).query(async ({ ctx, input }) => {
     if (!input.id) return null;
-    return ctx.prisma.chat.findUnique({
+    return globalThis.prisma.chat.findUnique({
       where: { id: input.id, userId: ctx.session.user.id },
     });
   }),
@@ -18,11 +18,11 @@ export default router({
   edit: procedure
     .input(z.object({ id: z.cuid2(), title: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const chat = await ctx.prisma.chat.findUniqueOrThrow({
+      const chat = await globalThis.prisma.chat.findUniqueOrThrow({
         where: { id: input.id, userId: ctx.session.user.id },
         select: { title: true, folder: { select: { id: true, title: true } } },
       });
-      await ctx.prisma.chat.update({
+      await globalThis.prisma.chat.update({
         where: { id: input.id },
         data: {
           title: input.title,
@@ -36,12 +36,12 @@ export default router({
   clone: procedure
     .input(z.object({ id: z.cuid2(), untilMessageId: z.cuid2(), title: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const chat = await ctx.prisma.chat.findUniqueOrThrow({
+      const chat = await globalThis.prisma.chat.findUniqueOrThrow({
         where: { id: input.id, userId: ctx.session.user.id },
         include: { folder: { include: { chats: true } } },
       });
       let messages = reorder(
-        await ctx.prisma.message.findMany({
+        await globalThis.prisma.message.findMany({
           where: { chatId: input.id },
         }),
       );
@@ -65,7 +65,7 @@ export default router({
       });
 
       if (chat.folder.chats.length === 1) {
-        await ctx.prisma.folder.update({
+        await globalThis.prisma.folder.update({
           where: { id: chat.folderId },
           data: {
             title: chat.title,
@@ -73,7 +73,7 @@ export default router({
         });
       }
 
-      return ctx.prisma.chat.create({
+      return globalThis.prisma.chat.create({
         data: {
           id: createId(),
           user: { connect: { id: chat.userId } },
@@ -96,26 +96,26 @@ export default router({
     }),
 
   delete: procedure.input(z.object({ id: z.cuid2() })).mutation(async ({ ctx, input }) => {
-    const chat = await ctx.prisma.chat.findUniqueOrThrow({
+    const chat = await globalThis.prisma.chat.findUniqueOrThrow({
       where: { id: input.id, userId: ctx.session.user.id },
       include: { folder: { include: { chats: true } } },
     });
     if (chat.folder.chats.length === 1)
-      await ctx.prisma.folder.delete({ where: { id: chat.folderId } });
-    else await ctx.prisma.chat.delete({ where: { id: input.id } });
+      await globalThis.prisma.folder.delete({ where: { id: chat.folderId } });
+    else await globalThis.prisma.chat.delete({ where: { id: input.id } });
   }),
 
   search: procedure
     .input(z.object({ text: z.string().min(1), config: zConfig.optional() }))
     .mutation(async ({ ctx, input }) => {
       const messages = (
-        await ctx.prisma.message.findMany({
+        await globalThis.prisma.message.findMany({
           where: { userId: ctx.session.user.id, chat: { temporary: { equals: false } } },
           include: { chat: { select: { title: true } }, folder: { select: { title: true } } },
         })
       ).map((m) => ({ ...m, embedding: null as number[] | null }));
 
-      const embeddings = await ctx.prisma.$queryRaw<
+      const embeddings = await globalThis.prisma.$queryRaw<
         {
           id: string;
           embedding: string;

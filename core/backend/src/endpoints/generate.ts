@@ -1,7 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { auth, toHeaders, type User } from '../server.ts';
 import type { zGenerateOutput } from '../types.ts';
-import { getNextRunAt } from '../types.ts';
 import {
   type ContextItem,
   type MessageUnomitted,
@@ -15,10 +14,11 @@ import {
 import { chatProviders } from '../providers/chat/index.ts';
 import { Author, type Chat } from '../../generated/prisma/client.ts';
 import { tools } from '../tools/index.ts';
-import { getMemoryContext, getQueryEmbedding } from '../routes/embeddings.ts';
+import { getQueryEmbedding } from '../routes/embeddings.ts';
 import { format } from 'timeago.js';
 import type { File } from '../../generated/prisma/client.ts';
 import { searchFiles } from '../tools/file.ts';
+import { generateInstructions } from '../utils/consts.ts';
 
 export default async function generateHandler(req: IncomingMessage, res: ServerResponse) {
   try {
@@ -220,14 +220,6 @@ async function buildGenerateInput(
   overrideInstructions?: string,
   chat?: Chat,
 ) {
-  const memories = chat && !chat.incognito ? await getMemoryContext(user, messages) : [];
-
-  const actions = chat
-    ? await globalThis.prisma.action.findMany({
-        where: { chatId: chat.id },
-      })
-    : [];
-
   console.log('Handling message with data:', messages[messages.length - 1]?.data);
 
   const context: ContextItem[] = await Promise.all(
@@ -366,70 +358,7 @@ async function buildGenerateInput(
 
   context.splice(0, context.length, ...splitToolResults(context));
 
-  // TODO - use XML? (multiline rrules, better model inference, etc)
-  const userInstructions = chat && !chat.incognito ? user.settings.instructions : [];
-  const defaultInstructions =
-    `Formatting re-enabled.
-
-## Instructions
-
-Today's date is ${new Date().toLocaleDateString()}. For time-sensitive topics (news, software, etc.), search rather than relying on training data.
-Always take conversation timing into account. Do not assume the chat is continuous. Consider whether the user's intent has changed between messages.
-
-Render responses in Markdown — use headers, tables, lists, and code blocks where helpful. Use LaTeX for math. Keep paragraphs short.
-
-## Identity
-
-This conversation may include responses from multiple AI models. Your model name is "${config.model}".
-Only messages labeled [assistant:model=${config.model}] were written by you. Other assistant messages were written by different models that may have different knowledge and capabilities.
-When referencing past assistant messages, always use the model name - do not say "I" if it wasn't "${config.model}". Critique past assistant messages from your own perspective when appropriate.
-
-Critical: Do not include the [assistant:model=...] label in your response.
-
-## Context
-
-The user's scheduled actions in this chat:
-
-${
-  actions.length
-    ? (
-        await Promise.all(
-          actions.flatMap(async (a) =>
-            (await getNextRunAt(a))
-              ? [`- [${a.id}] ${texts(zData.parse(a.data))} (${a.schedule})`]
-              : [],
-          ),
-        )
-      ).join('\n')
-    : '- (none)'
-}
-
-Relevant memories of the user across all chats:
-
-${memories.length ? memories.map((m) => `- ${m}`).join('\n') : '- (none)'}
-
-## Actions
-
-Actions allow for prompts to be sent automatically on a recurring schedule.
-If the user asks for regular updates on a topic, use the add_action tool to create an action for it.
-If regular updates would be useful for a topic, but the user hasn't asked yet, ask proactively if they'd like an action created.
-
-## Memories
-
-When the user shares information that could improve future chats, store it as memory even if it was mentioned only once.
-Save anything that could be useful in the future, even if it's not obvious now. When unsure, prefer storing the memory with an appropriate confidence score rather than skipping it entirely.
-When discussing code, pay special attention to the user's tech stack, environment, architectural decisions, and pain points.
-SHORT_TERM and MEDIUM_TERM memories are encouraged for active conversations, experiments, or temporary workflows.
-Use search_memory to find more when it could improve the response.` +
-    (userInstructions?.length
-      ? `
-
-## User
-
-The user provided the following instructions:
-
-${userInstructions.join('\n')}`
-      : '');
+  const defaultInstructions = await generateInstructions(user, context, config, chat);
 
   console.log(
     'Built context:',

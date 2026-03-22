@@ -2,6 +2,7 @@ import { Brave } from './brave.ts';
 import { type User } from '../../server.ts';
 
 export interface SearchResult {
+  id: string;
   title: string;
   source: string;
   content: string;

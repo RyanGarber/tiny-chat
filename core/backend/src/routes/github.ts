@@ -8,6 +8,7 @@ import { createId } from '@paralleldrive/cuid2';
 import { fileTypeFromBuffer } from 'file-type';
 import type { zDataPart } from '../types.ts';
 import { includeGitHubFile } from '../utils/consts.ts';
+import { auth } from '../server.ts';
 
 interface GitHubRepo {
   id: number;
@@ -21,16 +22,21 @@ interface GitHubRepo {
 }
 
 async function getGithubToken(userId: string): Promise<string> {
-  const account = await globalThis.prisma.account.findFirst({
-    where: { userId, providerId: 'github' },
+  const result = await auth.api.getAccessToken({
+    body: {
+      providerId: 'github',
+      userId,
+    },
   });
-  if (!account?.accessToken) {
+
+  if (!result?.accessToken) {
     throw new TRPCError({
       code: 'UNAUTHORIZED',
-      message: 'GitHub not linked',
+      message: 'No linked GitHub found',
     });
   }
-  return account.accessToken;
+
+  return result.accessToken;
 }
 
 export default router({
@@ -129,7 +135,7 @@ export default router({
 
       console.log(`Unzipped ${Object.keys(unzipped).length} file(s) from repo`);
 
-      const upload = await ctx.prisma.upload.create({
+      const upload = await globalThis.prisma.upload.create({
         data: {
           id: createId(),
           user: { connect: { id: userId } },
@@ -141,7 +147,7 @@ export default router({
         Object.entries(unzipped)
           .filter(([path]) => includeGitHubFile(path))
           .map(async ([path, content]) =>
-            ctx.prisma.file.create({
+            globalThis.prisma.file.create({
               data: {
                 id: createId(),
                 user: { connect: { id: userId } },
@@ -168,7 +174,7 @@ export default router({
             continue;
           }
           console.log(`Generated embeddings for files ${i}-${i2}`);
-          await ctx.prisma.$transaction(async (tx) => {
+          await globalThis.prisma.$transaction(async (tx) => {
             for (let j = 0; j < embeddings.length; j++) {
               await tx.$executeRaw`UPDATE file SET embedding = ${JSON.stringify(embeddings[j])}::vector WHERE id = ${files[i + j].id}`;
             }

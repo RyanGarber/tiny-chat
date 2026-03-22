@@ -2,7 +2,8 @@ import { z } from 'zod';
 import type { ToolCall, ToolContext } from './index.ts';
 import { embed, getMostRelevant } from '../utils/embed.ts';
 import { type File, Prisma } from '../../generated/prisma/client.ts';
-import { type ContextItem, shouldEmbed, snippetText } from '../types.ts';
+import { type ContextItem, snippetText } from '../types.ts';
+import { embedGitHubFile } from '../utils/consts.ts';
 
 function uploads(context: ContextItem[]) {
   return context.flatMap((m) => m.data.filter((d) => d.type === 'upload').map((u) => u.id));
@@ -97,7 +98,7 @@ const GrepFiles: ToolCall<typeof zGrepFiles> = {
           uploadId: { in: uploads(context.messages) },
         },
       })
-    ).filter((f) => shouldEmbed(f.mime, f.path.slice(-1)[0].split('.').slice(-1)[0]));
+    ).filter((f) => embedGitHubFile(f.path.join('/')));
 
     const matches: string[] = [];
     for (const file of files) {

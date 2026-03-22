@@ -73,7 +73,7 @@ const trpcContext = async ({ req, res }: { req: IncomingMessage; res: ServerResp
       message: `Not authenticated. Headers: ${JSON.stringify(req.headers)}`,
     });
   }
-  return { req, res, session, prisma };
+  return { req, res, session };
 };
 export type tRPCContext = Awaited<ReturnType<typeof trpcContext>>;
 

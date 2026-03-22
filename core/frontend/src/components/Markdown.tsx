@@ -1,8 +1,19 @@
-import { CSSProperties, Fragment, memo } from 'react';
+import { CSSProperties, Fragment, memo, useMemo } from 'react';
 import { getTextFromChildren, takeStringOutOfNodeAndChildren } from '@/utils/text';
 import { openExternal } from '@/utils/ui';
 import ReactMarkdown, { Components } from 'react-markdown';
-import { Blockquote, Group, ScrollArea, Text, ThemeIcon, Typography } from '@mantine/core';
+import {
+  Blockquote,
+  Group,
+  ScrollArea,
+  Text,
+  ThemeIcon,
+  Tooltip,
+  Stack,
+  Anchor,
+  Pill,
+  Typography,
+} from '@mantine/core';
 import RemarkGfm from 'remark-gfm';
 import RemarkBreaks from 'remark-breaks';
 import { CodeHighlight } from '@mantine/code-highlight';
@@ -13,6 +24,7 @@ import { normalizeText } from '@tiny-chat/core-backend/src/types.ts';
 import { visit, SKIP } from 'unist-util-visit';
 import type { Plugin } from 'unified';
 import type { Root, Element, Text as HastText } from 'hast';
+import { SearchResult } from '@tiny-chat/core-backend/src/providers/search';
 
 const rehypeStreamFade: Plugin<[], Root> = () => {
   return (tree) => {
@@ -94,7 +106,7 @@ const renderKatex = (math: string, displayMode: boolean): string | null => {
   }
 };
 
-const components: Components = {
+const components = (webSearchResults: SearchResult[] = []): Components => ({
   blockquote: (node) => {
     const text = getTextFromChildren(node.children);
 
@@ -149,6 +161,75 @@ const components: Components = {
 
     return <Blockquote>{node.children}</Blockquote>;
   },
+  a: (props) => {
+    if ((props as { ['data-footnote-ref']?: string })['data-footnote-ref']) {
+      const footnoteId = props.href?.replace('#user-content-fn-', '') ?? '';
+      const citation = webSearchResults.find((c) => c.id === footnoteId);
+      if (!citation) {
+        return (
+          <Pill
+            style={{
+              cursor: 'pointer',
+              fontSize: '0.7em',
+              margin: '0 2px',
+              display: 'inline-flex',
+            }}
+          >
+            ?
+          </Pill>
+        );
+      }
+
+      return (
+        <Tooltip
+          label={
+            <Stack gap="xs" maw={300}>
+              <Text size="sm" fw={500} lineClamp={2}>
+                {citation.title}
+              </Text>
+              <Anchor size="xs" href={citation.source} target="_blank" lineClamp={1}>
+                {citation.source}
+              </Anchor>
+            </Stack>
+          }
+          multiline
+          color="dark"
+          position="bottom"
+          bg="var(--tc-surface)"
+          bd="1px solid var(--mantine-color-default-border)"
+          p="md"
+        >
+          <Pill
+            size="xs"
+            style={{
+              cursor: 'pointer',
+              fontSize: '0.7em',
+              margin: '0 2px',
+              display: 'inline-flex',
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              void openExternal(citation.source);
+            }}
+          >
+            {citation.title.length > 20 ? citation.title.slice(0, 17) + '…' : citation.title}
+          </Pill>
+        </Tooltip>
+      );
+    }
+    return (
+      <a
+        href={props.href}
+        onClick={(e) => {
+          if (!props.href) return;
+          e.preventDefault();
+          void openExternal(props.href);
+        }}
+      >
+        {props.children}
+      </a>
+    );
+  },
   code: (node) => {
     // eslint-disable-next-line @typescript-eslint/no-base-to-string
     const rawCode = String(node.children ?? '');
@@ -197,26 +278,23 @@ const components: Components = {
       </ScrollArea>
     );
   },
-  a: (node) => {
-    return (
-      <a
-        href={node.href}
-        onClick={(e) => {
-          if (!node.href) return;
-          e.preventDefault();
-          void openExternal(node.href);
-        }}
-      >
-        {node.children}
-      </a>
-    );
-  },
-};
+});
 
 const LATEX_CHAR_RE = /[\\^_{}]|\\[a-zA-Z]/;
 
 const filter = (text: string) => {
   text = normalizeText(text);
+
+  // Split combined citations like [^s1-2, s2-1] into separate ones like [^s1-2][^s2-1]
+  text = text.replace(/\[\^([^\]]+)]/g, (match, content: string) => {
+    if (content.includes(',')) {
+      return content
+        .split(',')
+        .map((c) => `[^${c.trim()}]`)
+        .join('');
+    }
+    return match;
+  });
 
   text = text.replace(/((?:^::>:: .*$\n?)+)/gm, (block) =>
     block.replace(/^::>:: (.*)$/gm, '> ::>:: $1'),
@@ -314,21 +392,41 @@ export const Markdown = memo(
     style,
     maw,
     isGenerating,
+    webSearchResults,
   }: {
     source: string;
     style?: CSSProperties;
     maw?: number;
     isGenerating?: boolean;
+    webSearchResults?: SearchResult[];
   }) => {
+    const sourceWithCitations = useMemo(() => {
+      if (!webSearchResults?.length) return source;
+      const footnotes = webSearchResults.map((c) => `[^${c.id}]: ${c.source}`).join('\n');
+      return `${source}\n\n${footnotes}`;
+    }, [source, webSearchResults]);
+
     return (
       <Typography style={{ overflowWrap: 'break-word', ...style }} maw={maw}>
         <ReactMarkdown
           skipHtml
           remarkPlugins={[RemarkGfm, RemarkBreaks]}
           rehypePlugins={isGenerating ? [rehypeStreamFade] : []}
-          components={components}
+          components={{
+            ...components(webSearchResults),
+            // Hide citation section/footer
+            section: (props) => {
+              if ('data-footnotes' in props) {
+                return null;
+              }
+              return <section {...props} />;
+            },
+            footer: () => {
+              return null;
+            },
+          }}
         >
-          {filter(source)}
+          {filter(sourceWithCitations)}
         </ReactMarkdown>
       </Typography>
     );
@@ -336,5 +434,6 @@ export const Markdown = memo(
   (prev, next) =>
     prev.source === next.source &&
     prev.style === next.style &&
-    prev.isGenerating === next.isGenerating,
+    prev.isGenerating === next.isGenerating &&
+    prev.webSearchResults === next.webSearchResults, // Compare reference is enough for tool results
 );

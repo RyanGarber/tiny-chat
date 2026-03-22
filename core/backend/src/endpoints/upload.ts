@@ -4,12 +4,11 @@ import busboy from 'busboy';
 import { auth, toHeaders } from '../server.ts';
 import { fileTypeFromBuffer } from 'file-type';
 import { buffer } from 'stream/consumers';
-import type { zUploadOutput } from '../types.ts';
-import { shouldEmbed } from '../types.ts';
-import { MAX_FILE_SIZE } from '../types.ts';
+import { type zUploadOutput, MAX_FILE_SIZE } from '../types.ts';
 import sharp from 'sharp';
 import { embed } from '../utils/embed.ts';
 import { MarkItDown } from 'markitdown-ts';
+import { embedGitHubFile } from '../utils/consts.ts';
 
 export default async function uploadHandler(req: IncomingMessage, res: ServerResponse) {
   const session = await auth.api.getSession({ headers: toHeaders(req.headers) });
@@ -95,7 +94,7 @@ export default async function uploadHandler(req: IncomingMessage, res: ServerRes
 
               uploaded.push({ type: 'upload', id: upload.id, name: info.filename, thumbnail });
 
-              if (shouldEmbed(mime, info.filename.split('.').slice(-1)[0])) {
+              if (embedGitHubFile(info.filename)) {
                 const textToEmbed = text ?? new TextDecoder().decode(data);
                 const embeddings = await embed(session.user, [textToEmbed]);
                 if (!embeddings) {

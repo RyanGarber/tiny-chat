@@ -2,7 +2,7 @@ import { useLayout } from '@/stores/layout.tsx';
 import { useMessaging } from '@/stores/messaging.tsx';
 import { ActionIcon, Box, Divider, Image, Portal, Transition } from '@mantine/core';
 import { useTextSelection } from '@mantine/hooks';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { applyHljsTheme } from '@/utils/highlight';
 import { extractText } from '@/utils/text';
 import { MessageOmitted, zDataPart } from '@tiny-chat/core-backend/src/types.ts';
@@ -13,6 +13,7 @@ import { ThoughtGroupPopover, ToolCallPopover } from '@/components/MessageBodyPo
 import { Icon } from '@iconify/react';
 import { useStreamedLength } from '@/hooks/useStreamedLength.ts';
 import Ask from '@/components/Ask.tsx';
+import { SearchResult } from '@tiny-chat/core-backend/src/providers/search';
 
 export default function MessageBodyContent({
   message,
@@ -77,6 +78,17 @@ export default function MessageBodyContent({
     if (text) addQuote(message, text);
   };
 
+  const webSearchResults = useMemo(
+    () =>
+      (
+        message.data.filter(
+          (p): p is Extract<zDataPart, { type: 'toolResult' }> =>
+            p.type === 'toolResult' && p.name === 'search_web' && !p.error,
+        ) as { value: SearchResult[] }[]
+      ).flatMap((p) => p.value),
+    [message.data],
+  );
+
   if (message.author === Author.USER) {
     return (
       <Markdown source={extractText(message.data)} style={{ maxWidth: containerWidth - 40 }} />
@@ -112,7 +124,9 @@ export default function MessageBodyContent({
       if (displayedLength <= textOffset) break;
       if (part.value.trim() !== '') {
         const visibleText = part.value.slice(0, displayedLength - textOffset);
-        renderedParts.push(<Markdown key={i} source={visibleText} />);
+        renderedParts.push(
+          <Markdown key={i} source={visibleText} webSearchResults={webSearchResults} />,
+        );
       }
       textOffset += part.value.length;
       if (displayedLength < textOffset) break; // still streaming this segment

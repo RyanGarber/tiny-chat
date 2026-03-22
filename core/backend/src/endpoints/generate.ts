@@ -382,7 +382,7 @@ Render responses in Markdown — use headers, tables, lists, and code blocks whe
 
 This conversation may include responses from multiple AI models. Your model name is "${config.model}".
 Only messages labeled [assistant:model=${config.model}] were written by you. Other assistant messages were written by different models that may have different knowledge and capabilities.
-When referencing past assistant messages, always use the model name - do not say "I". Critique past assistant messages from your own perspective when appropriate.
+When referencing past assistant messages, always use the model name - do not say "I" if it wasn't "${config.model}". Critique past assistant messages from your own perspective when appropriate.
 
 Critical: Do not include the [assistant:model=...] label in your response.
 
@@ -455,18 +455,28 @@ export function splitToolResults(context: ContextItem[]) {
   for (const original of context) {
     const parts = zData.parse(original.data);
     const message = { ...original, data: [] } as MessageUnomitted;
+
     for (const part of parts) {
-      if (part.type === 'toolResult' && message.data.find((p) => p.type !== 'toolResult')) {
+      const isCurrentToolResult = part.type === 'toolResult';
+      const hasToolResult = message.data.some((p) => p.type === 'toolResult');
+      const hasNonToolResult = message.data.some((p) => p.type !== 'toolResult');
+
+      // If transitioning between toolResult and non-toolResult blocks, push and reset
+      if ((isCurrentToolResult && hasNonToolResult) || (!isCurrentToolResult && hasToolResult)) {
         messages.push({ ...message });
         message.data = [];
-        message.author = Author.USER;
       }
-      if (part.type !== 'toolResult' && message.data.find((p) => p.type === 'toolResult')) {
-        messages.push({ ...message });
-        message.data = [];
-        message.author = Author.MODEL;
-      }
+
       message.data.push(part);
+
+      // Correctly assign the author for the current block
+      if (isCurrentToolResult) {
+        message.author = Author.USER;
+      } else if (part.type === 'toolCall') {
+        message.author = Author.MODEL;
+      } else {
+        message.author = original.author;
+      }
     }
     if (message.data.length) messages.push(message);
   }

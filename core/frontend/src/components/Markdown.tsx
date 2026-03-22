@@ -234,10 +234,16 @@ const filter = (text: string) => {
     return `\x00${CODE_MARKER}${codeBlocks.length - 1}\x00`;
   });
 
-  // Step 2: Display math — $$...$$ (block, possibly multiline)
+  // Step 2: Display math — $$...$$
+  // Block form: $$ alone on line → fenced math block
   text = text.replace(
     /^[ \t]*\$\$([\s\S]*?)\$\$[ \t]*$/gm,
     (_, inner: string) => '```math\n' + inner.trim() + '\n```',
+  );
+  // Inline form: $$ with trailing content on same line → inline math marker
+  text = text.replace(
+    /\$\$((?:[^$]|\$(?!\$))+?)\$\$/g,
+    (_, inner: string) => '`' + MATH_MARKER + inner.trim() + '`',
   );
 
   // Step 3: Display math — \[...\] (block, possibly multiline)
@@ -259,8 +265,8 @@ const filter = (text: string) => {
       const trimmed = inner.trim();
       if (!trimmed) return match;
 
-      // Reject digit-leading content with no LaTeX chars (e.g. $20k, $500)
-      if (/^\d/.test(trimmed) && !LATEX_CHAR_RE.test(trimmed)) return match;
+      // Reject digit content with no LaTeX chars (e.g. $20k, $500)
+      if (/^\d[\d,.]*[a-zA-Z]+$/.test(trimmed)) return match;
 
       // Reject ${ template literals
       if (trimmed.startsWith('{')) return match;

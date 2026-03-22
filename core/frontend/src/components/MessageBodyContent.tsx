@@ -1,38 +1,18 @@
 import { useLayout } from '@/stores/layout.tsx';
 import { useMessaging } from '@/stores/messaging.tsx';
-import {
-  ActionIcon,
-  Autocomplete,
-  Box,
-  Card,
-  ColorInput,
-  Divider,
-  Image,
-  NumberInput,
-  Portal,
-  Stack,
-  Text,
-  Transition,
-} from '@mantine/core';
+import { ActionIcon, Box, Divider, Image, Portal, Transition } from '@mantine/core';
 import { useTextSelection } from '@mantine/hooks';
 import React, { useEffect, useRef } from 'react';
 import { applyHljsTheme } from '@/utils/highlight';
 import { extractText } from '@/utils/text';
 import { MessageOmitted, zDataPart } from '@tiny-chat/core-backend/src/types.ts';
 import { useSettings } from '@/stores/settings.tsx';
-import { continueToolCall } from '@/managers/generation';
 import { Markdown } from '@/components/Markdown.tsx';
 import { Author } from '@tiny-chat/core-backend/generated/prisma/enums.ts';
 import { ThoughtGroupPopover, ToolCallPopover } from '@/components/MessageBodyPopover.tsx';
 import { Icon } from '@iconify/react';
-import {
-  zAskColor,
-  zAskDatetime,
-  zAskNumber,
-  zAskQuestion,
-} from '@tiny-chat/core-backend/src/tools/ask.ts';
 import { useStreamedLength } from '@/hooks/useStreamedLength.ts';
-import { DatePicker, DateTimePicker, TimePicker } from '@mantine/dates';
+import Ask from '@/components/Ask.tsx';
 
 export default function MessageBodyContent({
   message,
@@ -61,13 +41,9 @@ export default function MessageBodyContent({
   const selectedTextRef = useRef('');
 
   const isNodeInContainer = (node: Node | null): boolean => {
-    if (!node || !container.current) return false;
-    let current: Node | null = node;
-    while (current) {
-      if (current === container.current) return true;
-      current = current.parentNode;
-    }
-    return false;
+    if (!node) return false;
+    const element = node.nodeType === 3 ? node.parentElement : (node as Element);
+    return !!element?.closest(`[data-message-id="${message.id}"]`);
   };
 
   const isSelected =
@@ -151,94 +127,30 @@ export default function MessageBodyContent({
       }
     } else if (part.type === 'toolCall') {
       if (displayedLength >= textOffset) {
-        const firstResult = message.data
-          .filter((_, j) => j > i)
-          .find((p) => p.type === 'toolResult');
-        const matchingResults = message.data.filter(
-          (p) => p.type === 'toolResult' && p.name === part.name && p.id === part.id,
-        ) as Extract<
-          zDataPart,
-          {
-            type: 'toolResult';
-          }
-        >[];
-        const result = matchingResults.length === 1 ? matchingResults[0] : firstResult;
+        const result = message.data.find((p) => p.type === 'toolResult' && p.id === part.id) as
+          | Extract<zDataPart, { type: 'toolResult' }>
+          | undefined;
+
         renderedParts.push(
-          <ToolCallPopover key={i} call={part} result={result} containerWidth={containerWidth} />,
+          <ToolCallPopover
+            key={i}
+            call={part}
+            result={result}
+            defaultOpened={!part.name.startsWith('ask_')}
+            containerWidth={containerWidth}
+          />,
         );
-        if (!result) {
-          if (part.name === 'ask_question') {
-            const ask = zAskQuestion.parse(part.args);
-            renderedParts.push(
-              <Card key={`${i}a`} mb={10}>
-                <Stack gap="xs">
-                  <Text>{ask.question}</Text>
-                  <Autocomplete
-                    data={ask.suggestions}
-                    onChange={(value) => {
-                      void continueToolCall(message.id, part.id, part.name, value);
-                    }}
-                  />
-                </Stack>
-              </Card>,
-            );
-          } else if (part.name === 'ask_color') {
-            const ask = zAskColor.parse(part.args);
-            renderedParts.push(
-              <Card key={`${i}a`} mb={10}>
-                <Stack gap="xs">
-                  <Text>{ask.question}</Text>
-                  <ColorInput
-                    onChange={(value) => {
-                      void continueToolCall(message.id, part.id, part.name, value);
-                    }}
-                  />
-                </Stack>
-              </Card>,
-            );
-          } else if (part.name === 'ask_number') {
-            const ask = zAskNumber.parse(part.args);
-            renderedParts.push(
-              <Card key={`${i}a`} mb={10}>
-                <Stack gap="xs">
-                  <Text>{ask.question}</Text>
-                  <NumberInput
-                    onChange={(value) => {
-                      void continueToolCall(message.id, part.id, part.name, value);
-                    }}
-                  />
-                </Stack>
-              </Card>,
-            );
-          } else if (part.name === 'ask_datetime') {
-            const ask = zAskDatetime.parse(part.args);
-            renderedParts.push(
-              <Card key={`${i}a`} mb={10}>
-                <Stack gap="xs">
-                  <Text>{ask.question}</Text>
-                  {ask.date && ask.time ? (
-                    <DateTimePicker
-                      onChange={(value) => {
-                        void continueToolCall(message.id, part.id, part.name, value);
-                      }}
-                    />
-                  ) : ask.date ? (
-                    <DatePicker
-                      onChange={(value) => {
-                        void continueToolCall(message.id, part.id, part.name, value);
-                      }}
-                    />
-                  ) : (
-                    <TimePicker
-                      onChange={(value) => {
-                        void continueToolCall(message.id, part.id, part.name, value);
-                      }}
-                    />
-                  )}
-                </Stack>
-              </Card>,
-            );
-          }
+
+        if (part.name.startsWith('ask_')) {
+          renderedParts.push(
+            <Ask
+              key={`${i}-ask`}
+              message={message}
+              part={part}
+              result={result}
+              containerWidth={containerWidth}
+            />,
+          );
         }
       }
     } else if (part.type === 'abort') {
@@ -250,7 +162,7 @@ export default function MessageBodyContent({
 
   return (
     <>
-      <Box ref={container} w="100%">
+      <Box ref={container} w="100%" data-message-id={message.id}>
         {renderedParts}
       </Box>
       <Portal target={document.body}>

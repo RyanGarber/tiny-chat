@@ -7,6 +7,7 @@ import { embed } from '../utils/embed.ts';
 import { createId } from '@paralleldrive/cuid2';
 import { fileTypeFromBuffer } from 'file-type';
 import type { zDataPart } from '../types.ts';
+import { includeGitHubFile } from '../utils/consts.ts';
 
 interface GitHubRepo {
   id: number;
@@ -128,7 +129,7 @@ export default router({
 
       console.log(`Unzipped ${Object.keys(unzipped).length} file(s) from repo`);
 
-      const upload = await prisma.upload.create({
+      const upload = await ctx.prisma.upload.create({
         data: {
           id: createId(),
           user: { connect: { id: userId } },
@@ -137,18 +138,20 @@ export default router({
       });
 
       const files = await Promise.all(
-        Object.entries(unzipped).map(async ([path, content]) =>
-          prisma.file.create({
-            data: {
-              id: createId(),
-              user: { connect: { id: userId } },
-              upload: { connect: { id: upload.id } },
-              path: path.split('/').slice(1),
-              mime: (await fileTypeFromBuffer(content))?.mime ?? 'application/octet-stream',
-              data: new Uint8Array(content),
-            },
-          }),
-        ),
+        Object.entries(unzipped)
+          .filter(([path]) => includeGitHubFile(path))
+          .map(async ([path, content]) =>
+            ctx.prisma.file.create({
+              data: {
+                id: createId(),
+                user: { connect: { id: userId } },
+                upload: { connect: { id: upload.id } },
+                path: path.split('/').slice(1),
+                mime: (await fileTypeFromBuffer(content))?.mime ?? 'application/octet-stream',
+                data: new Uint8Array(content),
+              },
+            }),
+          ),
       );
 
       console.log(`Saved ${files.length} file(s) to database, starting embedding...`);

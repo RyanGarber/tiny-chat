@@ -11,6 +11,7 @@ allowBuilds:
 allowedDeprecatedVersions:
   glob: "*"
   'node-domexception': "*"
+  'whatwg-encoding': "*"
 peerDependencyRules:
   allowedVersions:
     'eslint-plugin-react-hooks>eslint': '10'

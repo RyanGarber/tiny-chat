@@ -285,6 +285,11 @@ const LATEX_CHAR_RE = /[\\^_{}]|\\[a-zA-Z]/;
 const filter = (text: string) => {
   text = normalizeText(text);
 
+  // Normalize [[^id1],[^id2]] into [^id1],[^id2]
+  text = text.replace(/\[((?:\[\^[^\]]+],?\s*)+)]/g, (_, content: string) => {
+    return content.replace(/(\[\^[^\]]+]),?\s*/g, '$1');
+  });
+
   // Split combined citations like [^s1-2, s2-1] into separate ones like [^s1-2][^s2-1]
   text = text.replace(/\[\^([^\]]+)]/g, (match, content: string) => {
     if (content.includes(',')) {

@@ -7,8 +7,9 @@ import { embed } from '../utils/embed.ts';
 import { createId } from '@paralleldrive/cuid2';
 import { fileTypeFromBuffer } from 'file-type';
 import type { zDataPart } from '../types.ts';
-import { includeGitHubFile } from '../utils/consts.ts';
+import { embedGitHubFile, includeGitHubFile } from '../utils/consts.ts';
 import { auth } from '../server.ts';
+import { type File, Prisma } from '../../generated/prisma/client.ts';
 
 interface GitHubRepo {
   id: number;
@@ -92,6 +93,8 @@ export default router({
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid characters' });
       }
 
+      const uploadName = `GitHub: ${input.owner}/${input.repo} @ ${input.branch}`;
+
       console.log(
         `https://api.github.com/repos/${input.owner}/${input.repo}/zipball/${input.branch}`,
       );
@@ -135,57 +138,134 @@ export default router({
 
       console.log(`Unzipped ${Object.keys(unzipped).length} file(s) from repo`);
 
-      const upload = await globalThis.prisma.upload.create({
-        data: {
-          id: createId(),
-          user: { connect: { id: userId } },
-          name: `GitHub: ${input.owner}/${input.repo} @ ${input.branch}`,
-        },
+      const existingUpload = await globalThis.prisma.upload.findFirst({
+        where: { userId, name: uploadName },
+        include: { files: true },
       });
 
-      const files = await Promise.all(
-        Object.entries(unzipped)
-          .filter(([path]) => includeGitHubFile(path))
-          .map(async ([path, content]) =>
-            globalThis.prisma.file.create({
-              data: {
-                id: createId(),
-                user: { connect: { id: userId } },
-                upload: { connect: { id: upload.id } },
-                path: path.split('/').slice(1),
-                mime: (await fileTypeFromBuffer(content))?.mime ?? 'application/octet-stream',
-                data: new Uint8Array(content),
-              },
-            }),
-          ),
+      const uploadId = existingUpload?.id ?? createId();
+      if (!existingUpload) {
+        await globalThis.prisma.upload.create({
+          data: {
+            id: uploadId,
+            user: { connect: { id: userId } },
+            name: uploadName,
+          },
+        });
+      } else {
+        await globalThis.prisma.upload.update({
+          where: { id: uploadId },
+          data: {
+            createdAt: new Date(),
+          },
+        });
+      }
+
+      const zipFiles = Object.entries(unzipped).filter(([path]) => includeGitHubFile(path));
+      const existingFilesMap = new Map(
+        existingUpload?.files.map((f) => [f.path.join('/'), f]) ?? [],
       );
 
-      console.log(`Saved ${files.length} file(s) to database, starting embedding...`);
+      const toCreate: { path: string[]; mime: string; data: Uint8Array }[] = [];
+      const toUpdate: { id: string; data: Uint8Array; mime: string }[] = [];
+      const processedPaths = new Set<string>();
+
+      for (const [rawPath, content] of zipFiles) {
+        const pathParts = rawPath.split('/').slice(1);
+        const pathKey = pathParts.join('/');
+        processedPaths.add(pathKey);
+
+        const existingFile = existingFilesMap.get(pathKey);
+        const mime = (await fileTypeFromBuffer(content))?.mime ?? 'application/octet-stream';
+
+        if (!existingFile) {
+          toCreate.push({ path: pathParts, mime, data: content });
+        } else {
+          // Compare binary data
+          const isChanged =
+            Buffer.compare(Buffer.from(existingFile.data), Buffer.from(content)) !== 0;
+          if (isChanged) {
+            toUpdate.push({ id: existingFile.id, data: content, mime });
+          }
+        }
+      }
+
+      const toDelete =
+        existingUpload?.files
+          .filter((f) => !processedPaths.has(f.path.join('/')))
+          .map((f) => f.id) ?? [];
+
+      console.log(
+        `Incremental sync: ${toCreate.length} to create, ${toUpdate.length} to update, ${toDelete.length} to delete`,
+      );
+
+      await globalThis.prisma.$transaction([
+        ...toCreate.map((f) =>
+          globalThis.prisma.file.create({
+            data: {
+              id: createId(),
+              userId,
+              uploadId,
+              path: f.path,
+              mime: f.mime,
+              data: new Uint8Array(f.data),
+            },
+          }),
+        ),
+        ...toUpdate.map((f) =>
+          globalThis.prisma.file.update({
+            where: { id: f.id },
+            data: {
+              data: new Uint8Array(f.data),
+              mime: f.mime,
+            },
+          }),
+        ),
+        ...toDelete.map((id) =>
+          globalThis.prisma.file.delete({
+            where: { id },
+          }),
+        ),
+      ]);
+
+      if (toUpdate.length > 0) {
+        await globalThis.prisma
+          .$executeRaw`UPDATE file SET embedding = NULL WHERE id IN (${Prisma.join(toUpdate.map((u) => u.id))})`;
+      }
+
+      const allFiles = (
+        await globalThis.prisma.$queryRaw<
+          File[]
+        >`SELECT id, path, data FROM file WHERE "uploadId" = ${uploadId} AND embedding IS NULL`
+      ).filter((f) => embedGitHubFile(f.path.join('/')));
+
+      console.log(`Starting embedding for ${allFiles.length} files...`);
       void (async () => {
-        for (let i = 0; i < files.length; i += 100) {
-          console.log(`Generating embeddings for files ${i}-${Math.min(i + 100, files.length)}`);
-          const i2 = Math.min(i + 100, files.length);
+        for (let i = 0; i < allFiles.length; i += 100) {
+          const chunk = allFiles.slice(i, i + 100);
+          console.log(`Generating embeddings for files ${i}-${i + chunk.length}`);
           const embeddings = await embed(
             ctx.session.user,
-            files.slice(i, i2).map((f) => new TextDecoder().decode(f.data)),
+            chunk.map((f) => new TextDecoder().decode(f.data)),
           );
           if (!embeddings) {
-            console.log(`Failed to generate embeddings for files ${i}-${i2}`);
+            console.log(`Failed to generate embeddings for chunk starting at ${i}`);
             continue;
           }
-          console.log(`Generated embeddings for files ${i}-${i2}`);
-          await globalThis.prisma.$transaction(async (tx) => {
-            for (let j = 0; j < embeddings.length; j++) {
-              await tx.$executeRaw`UPDATE file SET embedding = ${JSON.stringify(embeddings[j])}::vector WHERE id = ${files[i + j].id}`;
-            }
-          });
+          await globalThis.prisma.$transaction(
+            embeddings.map(
+              (emb, j) =>
+                globalThis.prisma
+                  .$executeRaw`UPDATE file SET embedding = ${JSON.stringify(emb)}::vector WHERE id = ${chunk[j].id}`,
+            ),
+          );
         }
       })();
 
       return {
         type: 'upload',
-        id: upload.id,
-        name: upload.name,
+        id: uploadId,
+        name: uploadName,
       } satisfies Extract<zDataPart, { type: 'upload' }>;
     }),
 });

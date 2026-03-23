@@ -7,7 +7,6 @@ import {
   Box,
   Button,
   Divider,
-  FileButton,
   InputBase,
   InputWrapper,
   InputWrapperProps,
@@ -27,13 +26,14 @@ import { serialize } from '@/slate/serializer.tsx';
 import { useProviders } from '@/stores/providers.tsx';
 import { useLayout } from '@/stores/layout.tsx';
 import { useLocalStorage } from '@mantine/hooks';
-import { DropzoneFullScreen } from '@mantine/dropzone';
 import ModelSelect from '@/components/ModelSelect.tsx';
 import { Icon } from '@iconify/react';
 import { NodeEntry } from 'slate';
-import GitHub from '@/components/GitHub.tsx';
-
-import { uploadFiles } from '@/managers/uploading.ts';
+import Upload, {
+  FileMenuItem,
+  RepositoryMenuItem,
+  ScreenshotMenuItem,
+} from '@/components/Upload.tsx';
 
 export function Input(props: InputWrapperProps) {
   const { setEditor, config, setConfig, isUploading } = useMessaging();
@@ -41,7 +41,8 @@ export function Input(props: InputWrapperProps) {
   const { shadow, setIsMessaging, isMessagingDisabled } = useLayout();
 
   const [isMultiline, setMultiline] = useState(false);
-  const [githubModalOpen, setGithubModalOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadTab, setUploadTab] = useState<'file' | 'repo'>('file');
   const scrollRef = useRef<HTMLDivElement>(null);
   const leftSectionRef = useRef<HTMLDivElement>(null);
   const rightSectionRef = useRef<HTMLDivElement>(null);
@@ -93,35 +94,6 @@ export function Input(props: InputWrapperProps) {
     updateSavedConfig(JSON.stringify(newConfig));
   };
 
-  const captureScreenshot = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-      const video = document.createElement('video');
-      video.srcObject = stream;
-      await new Promise<void>((resolve) => {
-        video.onloadedmetadata = () => resolve();
-      });
-      await video.play();
-
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx!.drawImage(video, 0, 0);
-      stream.getTracks().forEach((track) => track.stop());
-
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-          const file = new File([blob], `screenshot-${timestamp}.png`, { type: 'image/png' });
-          void uploadFiles([file]);
-        }
-      }, 'image/png');
-    } catch (e) {
-      console.error('Failed to capture screenshot:', e);
-    }
-  }, []);
-
   const resetMultiline = useCallback(() => {
     if (!serialize().length) setMultiline(false);
   }, [setMultiline]);
@@ -131,35 +103,24 @@ export function Input(props: InputWrapperProps) {
       <Menu.Target>
         <ActionIcon variant="subtle" size={32} disabled={isMessagingDisabled || isUploading}>
           <Icon icon="lucide:paperclip" height={18} />
-          <DropzoneFullScreen onDrop={(files) => void uploadFiles(files)} />
         </ActionIcon>
       </Menu.Target>
       <Menu.Dropdown style={{ boxShadow: shadow }}>
-        <FileButton onChange={(files) => void uploadFiles(files)} multiple disabled={isUploading}>
-          {(props) => (
-            <Menu.Item
-              {...props}
-              leftSection={<Icon icon="lucide:file" height={18} />}
-              closeMenuOnClick={false}
-            >
-              File
-            </Menu.Item>
-          )}
-        </FileButton>
-        <Menu.Item
+        <FileMenuItem
+          onClick={() => {
+            setUploadTab('file');
+            setUploadOpen(true);
+          }}
           disabled={isUploading}
-          leftSection={<Icon icon="lucide:github" height={18} />}
-          onClick={() => setGithubModalOpen(true)}
-        >
-          Repository
-        </Menu.Item>
-        <Menu.Item
+        />
+        <RepositoryMenuItem
+          onClick={() => {
+            setUploadTab('repo');
+            setUploadOpen(true);
+          }}
           disabled={isUploading}
-          leftSection={<Icon icon="lucide:screen-share" height={18} />}
-          onClick={() => void captureScreenshot()}
-        >
-          Screenshot
-        </Menu.Item>
+        />
+        <ScreenshotMenuItem disabled={isUploading} />
       </Menu.Dropdown>
     </Menu>
   );
@@ -287,7 +248,12 @@ export function Input(props: InputWrapperProps) {
 
   return (
     <>
-      <GitHub opened={githubModalOpen} onClose={() => setGithubModalOpen(false)} />
+      <Upload
+        opened={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+        tab={uploadTab}
+        onTabChange={setUploadTab}
+      />
       <InputWrapper {...props}>
         <InputBase
           component="div"

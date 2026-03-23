@@ -492,12 +492,14 @@ export const Markdown = memo(
   }) => {
     const { memories, actions } = usePersistence();
     const sourceWithCitations = useMemo(() => {
-      if (!webSearchResults?.length) return source;
-      let footnotes = webSearchResults.map((c) => `[^${c.id}]: ${c.source}`).join('\n') + '\n';
-      footnotes += memories.map((m) => `[^${m.id}]: ${m.fact}`).join('\n') + '\n';
-      footnotes += actions.map((a) => `[^${a.id}]: ${a.schedule}`).join('\n') + '\n';
-      console.log('Generated footnotes:\n', footnotes);
-      return `${source}\n\n${footnotes}`;
+      let footnotes = '';
+      if (webSearchResults?.length)
+        footnotes += '\n' + webSearchResults.map((c) => `[^${c.id}]: ${c.source}`).join('\n');
+      if (memories.length)
+        footnotes += '\n' + memories.map((m) => `[^${m.id}]: ${m.fact}`).join('\n');
+      if (actions.length)
+        footnotes += '\n' + actions.map((a) => `[^${a.id}]: ${a.schedule}`).join('\n');
+      return footnotes.length ? `${source}\n${footnotes}` : source;
     }, [source, webSearchResults, memories, actions]);
 
     const contextValue = useMemo(

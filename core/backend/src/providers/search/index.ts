@@ -12,7 +12,7 @@ export interface SearchProvider {
   name: string;
   settings: string[];
   check: (user: User) => Promise<boolean>;
-  search: (user: User, query: string, maxResults: number) => Promise<SearchResult[]>;
+  search: (user: User, query: string, maxResults: number) => Promise<Omit<SearchResult, 'id'>[]>;
 }
 
 export const searchProviders: SearchProvider[] = [Brave];

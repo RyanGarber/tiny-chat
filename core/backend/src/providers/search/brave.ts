@@ -1,4 +1,4 @@
-import { type SearchProvider, type SearchResult } from './index.ts';
+import { type SearchProvider } from './index.ts';
 import { type User } from '../../server.ts';
 
 export const Brave: SearchProvider = {
@@ -34,15 +34,10 @@ export const Brave: SearchProvider = {
       throw new Error(`Failed: ${response.status} ${response.statusText}`);
     }
     const data = (await response.json()) as { grounding?: { generic?: any[] } };
-    return (
-      data.grounding?.generic?.map(
-        (result) =>
-          ({
-            title: result.title,
-            source: result.url,
-            content: result.snippets.join('\n---\n'),
-          }) satisfies SearchResult,
-      ) ?? []
-    );
+    return (data.grounding?.generic?.map((result) => ({
+      title: result.title,
+      source: result.url,
+      content: result.snippets.join('\n---\n'),
+    })) ?? []) satisfies Awaited<ReturnType<SearchProvider['search']>>;
   },
 };

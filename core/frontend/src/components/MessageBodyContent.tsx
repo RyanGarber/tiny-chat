@@ -1,5 +1,6 @@
 import { useLayout } from '@/stores/layout.tsx';
 import { useMessaging } from '@/stores/messaging.tsx';
+import { useChats } from '@/stores/chats.tsx';
 import { ActionIcon, Box, Divider, Image, Portal, Transition } from '@mantine/core';
 import { useTextSelection } from '@mantine/hooks';
 import React, { useEffect, useMemo, useRef } from 'react';
@@ -78,16 +79,25 @@ export default function MessageBodyContent({
     if (text) addQuote(message, text);
   };
 
-  const webSearchResults = useMemo(
-    () =>
+  const { messages } = useChats();
+  const webSearchResults = useMemo(() => {
+    const results = messages.flatMap((m) =>
       (
-        message.data.filter(
+        m.data.filter(
           (p): p is Extract<zDataPart, { type: 'toolResult' }> =>
             p.type === 'toolResult' && p.name === 'search_web' && !p.error,
         ) as { value: SearchResult[] }[]
       ).flatMap((p) => p.value),
-    [message.data],
-  );
+    );
+
+    // Deduplicate by ID
+    const seen = new Set<string>();
+    return results.filter((r) => {
+      if (seen.has(r.id)) return false;
+      seen.add(r.id);
+      return true;
+    });
+  }, [messages]);
 
   if (message.author === Author.USER) {
     return (

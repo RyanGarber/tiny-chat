@@ -105,8 +105,12 @@ const GrepFiles: ToolCall<typeof zGrepFiles> = {
       const text = Buffer.from(file.data).toString('utf-8');
       const lines = text.split('\n');
       lines.forEach((line, index) => {
-        if (line.includes(params.query)) {
-          matches.push(`File: ${file.path.join('/')}\nLine ${index + 1}: ${line}`);
+        if (new RegExp(params.query, 'i').test(line)) {
+          let snippet = '';
+          if (lines[index - 1]) snippet += lines[index - 1] + '\n';
+          snippet += line + '\n';
+          if (lines[index + 1]) snippet += lines[index + 1] + '\n';
+          matches.push(`File: ${file.path.join('/')}\nLine: ${index + 1}:\n\n${snippet}`);
         }
       });
     }

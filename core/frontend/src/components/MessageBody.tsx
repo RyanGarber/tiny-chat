@@ -30,7 +30,6 @@ const MessageBody = memo(
                 c="dimmed"
                 mt={15}
                 mb={texts(message.data).trim().length > 0 ? -45 : 0}
-                style={{ zIndex: 'var(--mantine-z-index-app' }}
               >
                 <Icon icon="lucide:paperclip" height={18} />
                 <Attachments

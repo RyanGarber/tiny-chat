@@ -5,7 +5,6 @@ export default router({
   list: procedure.query(async ({ ctx }) => {
     return globalThis.prisma.upload.findMany({
       where: { userId: ctx.session.user.id },
-      include: { files: true },
     });
   }),
 

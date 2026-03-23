@@ -74,8 +74,8 @@ function FileTab({ onClose }: { onClose: () => void }) {
       .then((data) => {
         if (!mounted) return;
         // Filter out GitHub uploads
-        const files = data.filter((u) => !u.name.startsWith('GitHub: '));
-        const sorted = files.sort(
+        const uploads = data.filter((u) => !u.name.startsWith('GitHub: '));
+        const sorted = uploads.sort(
           (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         );
         setHistory(sorted as unknown as UploadWithDate[]);

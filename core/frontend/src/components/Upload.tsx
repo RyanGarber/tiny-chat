@@ -29,7 +29,7 @@ const handleDelete = async (id: string, e: MouseEvent, refresh: () => void) => {
   e.stopPropagation();
   try {
     useTasks.getState().addTask('deleteUpload', 'Deleting upload');
-    await trpc.uploads.delete.mutate({ id });
+    await trpc.persistence.deleteUpload.mutate({ id });
     refresh();
     void useTasks.getState().removeTask('deleteUpload');
   } catch (err) {
@@ -69,7 +69,7 @@ function FileTab({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     let mounted = true;
     (() => setLoading(true))();
-    trpc.uploads.list
+    trpc.persistence.listUploads
       .query()
       .then((data) => {
         if (!mounted) return;
@@ -220,7 +220,7 @@ function RepoTab({ onClose }: { onClose: () => void }) {
       });
 
     // Fetch previously cloned repos
-    trpc.uploads.list
+    trpc.persistence.listUploads
       .query()
       .then((data) => {
         if (mounted) {

@@ -10,6 +10,7 @@ import {
 import { Author } from '@tiny-chat/core-backend/generated/prisma/enums.ts';
 import { generate } from '@/utils/generate';
 import { trpc } from '@/utils/api';
+import { usePersistence } from '@/stores/persistence.tsx';
 
 export async function handleMessage(messageId: string) {
   const { currentChat, messages } = useChats.getState();
@@ -286,4 +287,6 @@ async function publish(prepared: MessageUnomitted) {
     truncate: false,
   });
   await useChats.getState().fetchChat(false);
+  await usePersistence.getState().fetchActions();
+  await usePersistence.getState().fetchMemories();
 }

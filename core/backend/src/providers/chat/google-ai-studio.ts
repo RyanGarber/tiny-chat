@@ -171,7 +171,32 @@ function toSdkContent(message: ContextItem, config: zConfig): Content {
     role: message.author === Author.USER ? 'user' : 'model',
     parts: message.data.flatMap((part): Part[] => {
       if (part.type === 'text') {
-        return [{ text: part.value }];
+        const youtubeRegex =
+          /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtube\.com\/shorts\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/g;
+        const parts: Part[] = [];
+        let lastIndex = 0;
+        let match;
+
+        while ((match = youtubeRegex.exec(part.value)) !== null) {
+          const textBefore = part.value.substring(lastIndex, match.index);
+          if (textBefore) {
+            parts.push({ text: textBefore });
+          }
+          parts.push({
+            fileData: {
+              mimeType: 'video/mp4',
+              fileUri: match[0],
+            },
+          });
+          lastIndex = youtubeRegex.lastIndex;
+        }
+
+        const textAfter = part.value.substring(lastIndex);
+        if (textAfter) {
+          parts.push({ text: textAfter });
+        }
+
+        return parts.length > 0 ? parts : [{ text: part.value }];
       }
       if (part.type === 'thought' && isSameModel) {
         const match = message.metadata.flat().find((p) => p.thought && p.thoughtSignature);

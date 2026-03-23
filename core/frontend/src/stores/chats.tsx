@@ -3,8 +3,8 @@ import { useMessaging } from '@/stores/messaging.tsx';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { reloadConfig } from '@/managers/configuration';
 import { trpc } from '@/utils/api';
-import { Action, Chat } from '@tiny-chat/core-backend/generated/prisma/client.ts';
-import { getNextRunAt, MessageOmitted } from '@tiny-chat/core-backend/src/types.ts';
+import { Chat } from '@tiny-chat/core-backend/generated/prisma/client.ts';
+import { MessageOmitted } from '@tiny-chat/core-backend/src/types.ts';
 import { navigate } from 'wouter/use-hash-location';
 import { nprogress } from '@mantine/nprogress';
 import { useTasks } from '@/stores/tasks.tsx';
@@ -35,7 +35,6 @@ interface Chats {
   setIncognito: (incognito: boolean) => Promise<void>;
 
   messages: MessageOmitted[];
-  actions: (Action & { nextRunAt: Date | null })[];
 }
 
 export const useChats = create(
@@ -107,17 +106,10 @@ export const useChats = create(
       const messages = currentChat
         ? await trpc.messages.list.query({ chatId: currentChat.id })
         : [];
-      const actions = currentChat ? await trpc.actions.list.query({ chatId: currentChat.id }) : [];
-      console.log('Messages:', messages, 'Actions:', actions);
+      console.log('Messages:', messages);
 
       set({
         messages,
-        actions: await Promise.all(
-          actions.map(async (a) => ({
-            ...a,
-            nextRunAt: await getNextRunAt(a),
-          })),
-        ),
         ...(currentChat
           ? {
               lastChatActivity: {
@@ -206,6 +198,5 @@ export const useChats = create(
     },
 
     messages: [],
-    actions: [],
   })),
 );

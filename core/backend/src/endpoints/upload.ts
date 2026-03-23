@@ -45,7 +45,7 @@ export default async function uploadHandler(req: IncomingMessage, res: ServerRes
 
               if (mime.startsWith('image/')) {
                 mime = 'image/webp';
-                data = await sharp(data, { failOn: 'none' })
+                data = await sharp(data, { failOn: 'none', animated: true })
                   .resize(2048, 2048, { fit: 'inside', withoutEnlargement: true })
                   .webp({ quality: 80 })
                   .toBuffer();

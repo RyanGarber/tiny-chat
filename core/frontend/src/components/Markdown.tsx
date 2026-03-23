@@ -1,5 +1,5 @@
-import { CSSProperties, Fragment, memo, useMemo } from 'react';
-import { getTextFromChildren, takeStringOutOfNodeAndChildren } from '@/utils/text';
+import { CSSProperties, Fragment, memo, useMemo, createContext, useContext } from 'react';
+import { getTextFromChildren, scrubText, takeStringOutOfNodeAndChildren } from '@/utils/text';
 import { openExternal } from '@/utils/ui';
 import ReactMarkdown, { Components } from 'react-markdown';
 import {
@@ -20,11 +20,17 @@ import { CodeHighlight } from '@mantine/code-highlight';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import { Icon } from '@iconify/react';
-import { normalizeText } from '@tiny-chat/core-backend/src/types.ts';
+import { normalizeText, texts, zData } from '@tiny-chat/core-backend/src/types.ts';
 import { visit, SKIP } from 'unist-util-visit';
 import type { Plugin } from 'unified';
 import type { Root, Element, Text as HastText } from 'hast';
 import { SearchResult } from '@tiny-chat/core-backend/src/providers/search';
+import { usePersistence } from '@/stores/persistence.tsx';
+import { format } from 'timeago.js';
+
+const MarkdownContext = createContext<{ webSearchResults: SearchResult[] }>({
+  webSearchResults: [],
+});
 
 const rehypeStreamFade: Plugin<[], Root> = () => {
   return (tree) => {
@@ -106,80 +112,71 @@ const renderKatex = (math: string, displayMode: boolean): string | null => {
   }
 };
 
-const components = (webSearchResults: SearchResult[] = []): Components => ({
-  blockquote: (node) => {
-    const text = getTextFromChildren(node.children);
+const BlockquoteRenderer: Components['blockquote'] = (node) => {
+  const text = getTextFromChildren(node.children);
 
-    if (text.trim().startsWith(WRITING_MARKER)) {
-      return (
-        <Blockquote
-          icon={
-            <ThemeIcon variant="transparent" color="dimmed">
-              <Icon icon="lucide:pencil-line" height={18} />
-            </ThemeIcon>
-          }
-        >
-          {takeStringOutOfNodeAndChildren(node.children, WRITING_MARKER)}
+  if (text.trim().startsWith(WRITING_MARKER)) {
+    return (
+      <Blockquote
+        icon={
+          <ThemeIcon variant="transparent" color="dimmed">
+            <Icon icon="lucide:pencil-line" height={18} />
+          </ThemeIcon>
+        }
+      >
+        {takeStringOutOfNodeAndChildren(node.children, WRITING_MARKER)}
+      </Blockquote>
+    );
+  }
+
+  if (text.trim().startsWith('::>:: ')) {
+    const lines = text.split('\n');
+    let modelName = '';
+    let contentLines = lines;
+
+    const firstContent = lines[0].replace(/^::>::\s?/, '');
+    if (firstContent.startsWith('::model=') && firstContent.endsWith('::')) {
+      modelName = firstContent.slice('::model='.length, -2);
+      contentLines = lines.slice(1);
+    }
+
+    return (
+      <>
+        {modelName && (
+          <Group gap={5} c="dimmed" mb={4}>
+            <Icon
+              icon="lucide:message-square-quote"
+              height={14}
+              style={{ transform: 'scale(-1,1)' }}
+            />
+            <Text size="xs">{modelName}</Text>
+          </Group>
+        )}
+        <Blockquote className="ignore-typography" mb="var(--mantine-spacing-lg)">
+          {contentLines.map((line, index) => (
+            <Fragment key={index}>
+              {line.replace(/^::>::\s?/gm, '')}
+              {index < contentLines.length - 1 && <br />}
+            </Fragment>
+          ))}
         </Blockquote>
-      );
-    }
+      </>
+    );
+  }
 
-    if (text.trim().startsWith('::>:: ')) {
-      const lines = text.split('\n');
-      let modelName = '';
-      let contentLines = lines;
+  return <Blockquote>{node.children}</Blockquote>;
+};
 
-      const firstContent = lines[0].replace(/^::>::\s?/, '');
-      if (firstContent.startsWith('::model=') && firstContent.endsWith('::')) {
-        modelName = firstContent.slice('::model='.length, -2);
-        contentLines = lines.slice(1);
-      }
+const LinkRenderer: Components['a'] = (props) => {
+  const { webSearchResults } = useContext(MarkdownContext);
+  if ((props as { ['data-footnote-ref']?: string })['data-footnote-ref']) {
+    const footnoteId = props.href?.replace('#user-content-fn-', '') ?? '';
 
-      return (
-        <>
-          {modelName && (
-            <Group gap={5} c="dimmed" mb={4}>
-              <Icon
-                icon="lucide:message-square-quote"
-                height={14}
-                style={{ transform: 'scale(-1,1)' }}
-              />
-              <Text size="xs">{modelName}</Text>
-            </Group>
-          )}
-          <Blockquote className="ignore-typography" mb="var(--mantine-spacing-lg)">
-            {contentLines.map((line, index) => (
-              <Fragment key={index}>
-                {line.replace(/^::>::\s?/gm, '')}
-                {index < contentLines.length - 1 && <br />}
-              </Fragment>
-            ))}
-          </Blockquote>
-        </>
-      );
-    }
+    const citation = webSearchResults.find((c) => c.id === footnoteId);
+    const memory = usePersistence.getState().memories.find((m) => m.id === footnoteId);
+    const action = usePersistence.getState().actions.find((a) => a.id === footnoteId);
 
-    return <Blockquote>{node.children}</Blockquote>;
-  },
-  a: (props) => {
-    if ((props as { ['data-footnote-ref']?: string })['data-footnote-ref']) {
-      const footnoteId = props.href?.replace('#user-content-fn-', '') ?? '';
-      const citation = webSearchResults.find((c) => c.id === footnoteId);
-      if (!citation) {
-        return (
-          <Pill
-            style={{
-              cursor: 'pointer',
-              fontSize: '0.7em',
-              margin: '0 2px',
-              display: 'inline-flex',
-            }}
-          >
-            ?
-          </Pill>
-        );
-      }
-
+    if (citation) {
       return (
         <Tooltip
           label={
@@ -216,69 +213,157 @@ const components = (webSearchResults: SearchResult[] = []): Components => ({
           </Pill>
         </Tooltip>
       );
+    } else if (memory) {
+      return (
+        <Tooltip
+          label={
+            <Stack gap="xs" maw={300}>
+              <Text size="sm" fw={500} lineClamp={2}>
+                {memory.fact}
+              </Text>
+              <Text size="xs" c="dimmed">
+                Learned {format(memory.createdAt)}
+              </Text>
+            </Stack>
+          }
+          multiline
+          color="dark"
+          position="bottom"
+          bg="var(--tc-surface)"
+          bd="1px solid var(--mantine-color-default-border)"
+          p="md"
+        >
+          <Pill
+            size="xs"
+            style={{
+              cursor: 'default',
+              fontSize: '0.7em',
+              margin: '0 2px',
+              display: 'inline-flex',
+            }}
+          >
+            🧠
+          </Pill>
+        </Tooltip>
+      );
+    } else if (action?.nextRunAt) {
+      return (
+        <Tooltip
+          label={
+            <Stack gap="xs" maw={300}>
+              <Text size="sm" fw={500} lineClamp={2}>
+                {scrubText(texts(action.data as zData))}
+              </Text>
+              <Text size="xs" c="dimmed">
+                {format(action.nextRunAt)}
+              </Text>
+            </Stack>
+          }
+          multiline
+          color="dark"
+          position="bottom"
+          bg="var(--tc-surface)"
+          bd="1px solid var(--mantine-color-default-border)"
+          p="md"
+        >
+          <Pill
+            size="xs"
+            style={{
+              cursor: 'default',
+              fontSize: '0.7em',
+              margin: '0 2px',
+              display: 'inline-flex',
+            }}
+          >
+            ⚡
+          </Pill>
+        </Tooltip>
+      );
     }
-    return (
-      <a
-        href={props.href}
-        onClick={(e) => {
-          if (!props.href) return;
-          e.preventDefault();
-          void openExternal(props.href);
-        }}
-      >
-        {props.children}
-      </a>
-    );
-  },
-  code: (node) => {
-    // eslint-disable-next-line @typescript-eslint/no-base-to-string
-    const rawCode = String(node.children ?? '');
+  }
+  return (
+    <a
+      href={props.href}
+      onClick={(e) => {
+        if (!props.href) return;
+        e.preventDefault();
+        void openExternal(props.href);
+      }}
+    >
+      {props.children}
+    </a>
+  );
+};
 
-    // Display math — converted from $$...$$ by filter()
-    if (node.className === 'language-math') {
-      const html = renderKatex(rawCode.trim(), true);
-      if (html) return <span className="math-display" dangerouslySetInnerHTML={{ __html: html }} />;
-      return <pre>{rawCode}</pre>;
-    }
+const CodeRenderer: Components['code'] = memo((node) => {
+  // eslint-disable-next-line @typescript-eslint/no-base-to-string
+  const rawCode = String(node.children ?? '');
 
-    // Inline math — converted from $...$ by filter()
-    if (!node.className && rawCode.startsWith(MATH_MARKER)) {
-      const math = rawCode.slice(MATH_MARKER.length);
-      const html = renderKatex(math, false);
-      if (html) return <span className="math-inline" dangerouslySetInnerHTML={{ __html: html }} />;
-      return <code>{math}</code>;
-    }
+  // Display math — converted from $$...$$ by filter()
+  if (node.className === 'language-math') {
+    const html = renderKatex(rawCode.trim(), true);
+    if (html) return <span className="math-display" dangerouslySetInnerHTML={{ __html: html }} />;
+    return <pre>{rawCode}</pre>;
+  }
 
-    const isStreaming = rawCode.includes(STREAMING_MARKER);
-    const code = (isStreaming ? rawCode.replace(STREAMING_MARKER, '') : rawCode).trimEnd();
+  // Inline math — converted from $...$ by filter()
+  if (!node.className && rawCode.startsWith(MATH_MARKER)) {
+    const math = rawCode.slice(MATH_MARKER.length);
+    const html = renderKatex(math, false);
+    if (html) return <span className="math-inline" dangerouslySetInnerHTML={{ __html: html }} />;
+    return <code>{math}</code>;
+  }
 
-    if (!node.className) {
-      return <code>{code}</code>;
-    }
+  const isStreaming = rawCode.includes(STREAMING_MARKER);
+  const code = (isStreaming ? rawCode.replace(STREAMING_MARKER, '') : rawCode).trimEnd();
 
-    if (isStreaming) {
-      return <pre style={{ padding: 25, maxHeight: 180, overflow: 'hidden' }}>{code}</pre>;
-    }
+  if (!node.className) {
+    return <code>{code}</code>;
+  }
 
-    return (
-      <div className="code-fade-in">
-        <CodeHighlight
-          code={code}
-          language={node.className?.replace('language-', '')}
-          withExpandButton={code.split('\n').length >= 8}
-          defaultExpanded={code.split('\n').length < 8}
-        />
-      </div>
-    );
-  },
-  table: (node) => {
-    return (
-      <ScrollArea scrollbars="x" type="always">
-        <table>{node.children}</table>
-      </ScrollArea>
-    );
-  },
+  if (isStreaming) {
+    return <pre style={{ padding: 25, maxHeight: 180, overflow: 'hidden' }}>{code}</pre>;
+  }
+
+  return (
+    <div className="code-fade-in">
+      <CodeHighlight
+        code={code}
+        language={node.className?.replace('language-', '')}
+        withExpandButton={code.split('\n').length >= 8}
+        defaultExpanded={code.split('\n').length < 8}
+      />
+    </div>
+  );
 });
+
+const TableRenderer: Components['table'] = (node) => {
+  return (
+    <ScrollArea scrollbars="x" type="always">
+      <table>{node.children}</table>
+    </ScrollArea>
+  );
+};
+
+const SectionRenderer: Components['section'] = (props) => {
+  if ('data-footnotes' in props) {
+    return null;
+  }
+  return <section {...props} />;
+};
+
+const FooterRenderer: Components['footer'] = () => {
+  return null;
+};
+
+const markdownComponents: Components = {
+  blockquote: BlockquoteRenderer,
+  a: LinkRenderer,
+  code: CodeRenderer,
+  table: TableRenderer,
+  section: SectionRenderer,
+  footer: FooterRenderer,
+};
 
 const LATEX_CHAR_RE = /[\\^_{}]|\\[a-zA-Z]/;
 
@@ -405,35 +490,34 @@ export const Markdown = memo(
     isGenerating?: boolean;
     webSearchResults?: SearchResult[];
   }) => {
+    const { memories, actions } = usePersistence();
     const sourceWithCitations = useMemo(() => {
       if (!webSearchResults?.length) return source;
-      const footnotes = webSearchResults.map((c) => `[^${c.id}]: ${c.source}`).join('\n');
+      let footnotes = webSearchResults.map((c) => `[^${c.id}]: ${c.source}`).join('\n') + '\n';
+      footnotes += memories.map((m) => `[^${m.id}]: ${m.fact}`).join('\n') + '\n';
+      footnotes += actions.map((a) => `[^${a.id}]: ${a.schedule}`).join('\n') + '\n';
+      console.log('Generated footnotes:\n', footnotes);
       return `${source}\n\n${footnotes}`;
-    }, [source, webSearchResults]);
+    }, [source, webSearchResults, memories, actions]);
+
+    const contextValue = useMemo(
+      () => ({ webSearchResults: webSearchResults ?? [] }),
+      [webSearchResults],
+    );
 
     return (
-      <Typography style={{ overflowWrap: 'break-word', ...style }} maw={maw}>
-        <ReactMarkdown
-          skipHtml
-          remarkPlugins={[RemarkGfm, RemarkBreaks]}
-          rehypePlugins={isGenerating ? [rehypeStreamFade] : []}
-          components={{
-            ...components(webSearchResults),
-            // Hide citation section/footer
-            section: (props) => {
-              if ('data-footnotes' in props) {
-                return null;
-              }
-              return <section {...props} />;
-            },
-            footer: () => {
-              return null;
-            },
-          }}
-        >
-          {filter(sourceWithCitations)}
-        </ReactMarkdown>
-      </Typography>
+      <MarkdownContext.Provider value={contextValue}>
+        <Typography style={{ overflowWrap: 'break-word', ...style }} maw={maw}>
+          <ReactMarkdown
+            skipHtml
+            remarkPlugins={[RemarkGfm, RemarkBreaks]}
+            rehypePlugins={isGenerating ? [rehypeStreamFade] : []}
+            components={markdownComponents}
+          >
+            {filter(sourceWithCitations)}
+          </ReactMarkdown>
+        </Typography>
+      </MarkdownContext.Provider>
     );
   },
   (prev, next) =>

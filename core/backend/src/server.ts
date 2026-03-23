@@ -19,7 +19,7 @@ import messages from './routes/messages.ts';
 import sessions from './routes/sessions.ts';
 import providers from './routes/providers.ts';
 import actions from './routes/actions.ts';
-import uploads from './routes/uploads.ts';
+import persistence from './routes/persistence.ts';
 import github from './routes/github.ts';
 import generateHandler from './endpoints/generate.ts';
 import uploadHandler from './endpoints/upload.ts';
@@ -48,7 +48,7 @@ const trpc = router({
   sessions,
   providers,
   actions,
-  uploads,
+  persistence,
   github,
 });
 export type tRPC = typeof trpc;

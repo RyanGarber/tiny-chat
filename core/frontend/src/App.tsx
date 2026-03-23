@@ -17,6 +17,7 @@ import { cssResolver, theme } from '@/theme.tsx';
 import { modals, ModalsProvider } from '@mantine/modals';
 import Tasks from '@/components/Tasks.tsx';
 import { useTasks } from '@/stores/tasks.tsx';
+import { usePersistence } from '@/stores/persistence.tsx';
 
 export default function App() {
   const {
@@ -69,6 +70,7 @@ export default function App() {
           uninit.push(useTasks.getState().init()); // init first so updates always work
           await useProviders.getState().init();
           await useChats.getState().init();
+          await usePersistence.getState().init();
         } catch (e: unknown) {
           modals.open({
             children: (

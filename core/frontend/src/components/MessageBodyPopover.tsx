@@ -113,6 +113,7 @@ export default function MessageBodyPopover({
           ref={buttonRef}
           onClick={() => setOpened(!opened)}
           my={10}
+          style={{ display: 'inline-flex', verticalAlign: 'middle' }}
         >
           {button}
         </Button>
@@ -138,7 +139,7 @@ export function ThoughtGroupPopover({
   return (
     <MessageBodyPopover
       width={containerWidth + 20}
-      defaultOpened={isThinkingActive}
+      //defaultOpened={isThinkingActive}
       autoscroll={true}
       button={
         <>
@@ -172,22 +173,22 @@ export function ThoughtGroupPopover({
 export function ToolCallPopover({
   call,
   result,
-  defaultOpened,
   containerWidth,
 }: {
   call: Extract<zDataPart, { type: 'toolCall' }>;
   result?: Extract<zDataPart, { type: 'toolResult' }>;
-  defaultOpened?: boolean;
   containerWidth: number;
 }) {
-  const input = call.args ? JSON.stringify(call.args, null, 2).replace(/`/g, '\\`') : '/* empty */';
+  const input = call.args
+    ? JSON.stringify(call.args, null, 2).replace(/`/g, '\\`')
+    : '/* no input */';
   const output = result?.value
     ? JSON.stringify(result.value, null, 2).replace(/`/g, '\\`')
-    : '/* empty */';
+    : '/* no output */';
   return (
     <MessageBodyPopover
       width={containerWidth + 20}
-      defaultOpened={defaultOpened && !result}
+      //defaultOpened={!call.name.startsWith("ask_") && !result}
       button={
         <>
           <ThemeIcon variant="transparent" size={22} mr={5}>

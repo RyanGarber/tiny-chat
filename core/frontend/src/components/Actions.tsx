@@ -6,9 +6,12 @@ import { zData } from '@tiny-chat/core-backend/src/types.ts';
 import { format } from 'timeago.js';
 import { Action } from '@tiny-chat/core-backend/generated/prisma/client.ts';
 import { useEffect, useState } from 'react';
+import { usePersistence } from '@/stores/persistence.tsx';
 
 export default function Actions() {
-  const { actions } = useChats();
+  const { currentChat } = useChats();
+  const { actions: allActions } = usePersistence();
+  const actions = allActions.filter((a) => a.chatId === currentChat?.id);
 
   const [, tick] = useState(0);
 

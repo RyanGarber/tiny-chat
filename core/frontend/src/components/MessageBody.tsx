@@ -45,12 +45,22 @@ const MessageBody = memo(
 
     return (
       <Box w="100%" ref={containerRef} style={style}>
-        <MessageBodyContent message={message} containerWidth={containerWidth} />
-        {message.state.any && (
-          <Box pt={message.data.length > 0 ? 'sm' : 0} pb="xs">
-            <Loader size="sm" type="dots" color="dimmed" />
-          </Box>
-        )}
+        <Box display="inline">
+          <MessageBodyContent message={message} containerWidth={containerWidth} />
+          {message.state.any &&
+            !message.data.some((p, index) => {
+              const isLast = index === message.data.length - 1;
+              return (
+                (p.type === 'thought' && message.state.thinking && isLast) ||
+                (p.type === 'toolCall' &&
+                  !message.data.some((pr) => pr.type === 'toolResult' && pr.id === p.id))
+              );
+            }) && (
+              <Box component="span" pt={message.data.length > 0 ? 'sm' : 0} pb="xs" display="inline-block" style={{ verticalAlign: 'middle' }}>
+                <Loader size="sm" type="dots" color="dimmed" />
+              </Box>
+            )}
+        </Box>
       </Box>
     );
   },

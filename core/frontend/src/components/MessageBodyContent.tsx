@@ -156,13 +156,7 @@ export default function MessageBodyContent({
           | undefined;
 
         renderedParts.push(
-          <ToolCallPopover
-            key={i}
-            call={part}
-            result={result}
-            defaultOpened={!part.name.startsWith('ask_')}
-            containerWidth={containerWidth}
-          />,
+          <ToolCallPopover key={i} call={part} result={result} containerWidth={containerWidth} />,
         );
 
         if (part.name.startsWith('ask_')) {
@@ -186,7 +180,7 @@ export default function MessageBodyContent({
 
   return (
     <>
-      <Box ref={container} w="100%" data-message-id={message.id}>
+      <Box ref={container} w="100%" data-message-id={message.id} display="inline">
         {renderedParts}
       </Box>
       <Portal target={document.body}>

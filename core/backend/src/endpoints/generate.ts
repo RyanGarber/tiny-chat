@@ -241,7 +241,7 @@ async function buildGenerateInput(
             query.query,
             query.queryEmbedding,
             -1,
-            5,
+            3,
           );
         }
       }

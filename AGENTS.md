@@ -26,9 +26,8 @@
 - Mobile build (Android): `pnpm build:tauri:android`
 - Web build (Vite): `pnpm build:web`
 - Lint: `pnpm lint` (or `pnpm lint:frontend`, `pnpm lint:backend`)
-- Backend standalone: `pnpm --filter @tiny-chat/core-backend dev`
-  - uses `node --watch src/server.ts -- --dev --` (see `core/backend/package.json`).
-- Helper: `tools/wait-for-backend.ts` waits on `http://localhost:$VITE_BACKEND_PORT`.
+- Backend standalone: `pnpm dev:backend`
+- Helper: `scripts/wait-for-backend.ts` waits on `http://localhost:$VITE_BACKEND_PORT`.
 
 ## Runtime configuration / env contracts
 - Root scripts run under `dotenv -- ...` so `.env` at repo root is expected.

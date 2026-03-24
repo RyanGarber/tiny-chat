@@ -16,11 +16,18 @@ const MessageBody = memo(
 
     if (message.author === Author.USER) {
       const uploads = message.data.filter((p) => p.type === 'upload');
+      const hasText = texts(message.data).trim().length > 0;
       return (
         <Group w="100%" justify="end" ref={containerRef} style={style}>
           <Stack gap={5} w="fit-content">
-            {texts(message.data).trim().length > 0 && (
-              <Box px={20} py={10} bdrs="lg" className="user-message" style={{ boxShadow: shadow }}>
+            {hasText && (
+              <Box
+                px={20}
+                py={10}
+                bdrs="lg"
+                className="user-message"
+                style={{ boxShadow: shadow, alignSelf: 'flex-end' }}
+              >
                 <MessageBodyContent message={message} containerWidth={containerWidth} />
               </Box>
             )}
@@ -29,7 +36,9 @@ const MessageBody = memo(
                 gap={5}
                 c="dimmed"
                 mt={15}
-                mb={texts(message.data).trim().length > 0 ? -45 : 0}
+                mb={hasText ? -45 : 0}
+                pr={hasText ? 200 : 0}
+                style={{ alignSelf: 'flex-start' }}
               >
                 <Icon icon="lucide:paperclip" height={18} />
                 <Attachments
@@ -56,7 +65,13 @@ const MessageBody = memo(
                   !message.data.some((pr) => pr.type === 'toolResult' && pr.id === p.id))
               );
             }) && (
-              <Box component="span" pt={message.data.length > 0 ? 'sm' : 0} pb="xs" display="inline-block" style={{ verticalAlign: 'middle' }}>
+              <Box
+                component="span"
+                pt={message.data.length > 0 ? 'sm' : 0}
+                pb="xs"
+                display="inline-block"
+                style={{ verticalAlign: 'middle' }}
+              >
                 <Loader size="sm" type="dots" color="dimmed" />
               </Box>
             )}

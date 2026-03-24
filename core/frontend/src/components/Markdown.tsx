@@ -433,8 +433,8 @@ const filter = (text: string) => {
       const trimmed = inner.trim();
       if (!trimmed) return match;
 
-      // Reject digit content with no LaTeX chars (e.g. $20k, $500)
-      if (/^\d[\d,.]*[a-zA-Z]+$/.test(trimmed)) return match;
+      // Reject digit content with no LaTeX chars
+      if (/^\d[\d,.]*(\s|$)/.test(trimmed)) return match;
 
       // Reject ${ template literals
       if (trimmed.startsWith('{')) return match;
@@ -499,7 +499,17 @@ export const Markdown = memo(
         footnotes += '\n' + memories.map((m) => `[^${m.id}]: ${m.fact}`).join('\n');
       if (actions.length)
         footnotes += '\n' + actions.map((a) => `[^${a.id}]: ${a.schedule}`).join('\n');
-      return footnotes.length ? `${source}\n${footnotes}` : source;
+
+      if (footnotes.length) {
+        let adjustedSource = source;
+        const backticks = (adjustedSource.match(/```/g) ?? []).length;
+        if (backticks % 2 !== 0) {
+          adjustedSource = adjustedSource + STREAMING_MARKER + '\n```';
+        }
+        return `${adjustedSource}\n${footnotes}`;
+      }
+
+      return source;
     }, [source, webSearchResults, memories, actions]);
 
     const contextValue = useMemo(

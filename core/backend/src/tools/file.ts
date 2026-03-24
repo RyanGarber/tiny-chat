@@ -33,19 +33,47 @@ const ReadFile: ToolCall<typeof zReadFile> = {
   },
 };
 
-const zSearchFiles = z.object({ query: z.string() });
+const zSearchFiles = z.object({ query: z.string(), mode: z.enum(['semantic', 'regex']) });
 
 const SearchFiles: ToolCall<typeof zSearchFiles> = {
   name: 'search_files',
-  description: 'Semantically search the uploaded files to find relevant code snippets or files.',
+  description: 'Search the uploaded files to find relevant snippets.',
   parameters: zSearchFiles.toJSONSchema(),
   schema: zSearchFiles,
   run: async (context, params) => {
-    const queryEmbeddings = await embed(context.user, [params.query]);
-    if (!queryEmbeddings?.[0]) {
-      return 'Failed to generate embedding for query.';
+    if (params.mode === 'semantic') {
+      const queryEmbeddings = await embed(context.user, [params.query]);
+      if (!queryEmbeddings?.[0]) {
+        return 'Failed to generate embedding for query.';
+      }
+      return searchFiles(context.messages, params.query, queryEmbeddings[0]);
+    } else if (params.mode === 'regex') {
+      const files = (
+        await globalThis.prisma.file.findMany({
+          where: {
+            uploadId: { in: uploads(context.messages) },
+          },
+        })
+      ).filter((f) => embedGitHubFile(f.path.join('/')));
+
+      const matches: string[] = [];
+      for (const file of files) {
+        const text = Buffer.from(file.data).toString('utf-8');
+        const lines = text.split('\n');
+        lines.forEach((line) => {
+          const query = new RegExp(params.query, 'i');
+          if (query.test(line)) {
+            matches.push(`File: ${file.path.join('/')}\n\n${snippetText(line, query, 1000)}`);
+          }
+        });
+      }
+
+      if (!matches.length) {
+        return 'No matches found.';
+      }
+
+      return matches.join('\n\n---\n\n');
     }
-    return searchFiles(context.messages, params.query, queryEmbeddings[0]);
   },
 };
 
@@ -59,8 +87,7 @@ export async function searchFiles(
   const files = await globalThis.prisma.$queryRaw<(File & { embedding: string })[]>`
         SELECT * FROM file
         WHERE "uploadId" IN (${Prisma.join(uploads(context))})
-          AND embedding IS NOT NULL
-      `;
+          AND embedding IS NOT NULL`;
 
   const candidates = files.map((f) => ({
     value: f,
@@ -78,53 +105,13 @@ export async function searchFiles(
       const file = res.value as File;
       const text = Buffer.from(file.data).toString('utf-8');
       const snippet = snippetText(text, query, snippetWindow ?? 1000);
-      return `File: ${file.path.join('/')}\nRelevance Score: ${res.score.toFixed(3)}\nSnippet:\n${snippet}`;
+      return `File: ${file.path.join('/')}\nRelevance Score: ${res.score.toFixed(3)}\n\n${snippet}`;
     })
     .join('\n\n---\n\n');
 }
 
-const zGrepFiles = z.object({ query: z.string() });
-
-const GrepFiles: ToolCall<typeof zGrepFiles> = {
-  name: 'grep_files',
-  description:
-    'Perform a keyword search across the contents of the uploaded files. Provide a specific keyword or phrase to search for.',
-  parameters: zGrepFiles.toJSONSchema(),
-  schema: zGrepFiles,
-  run: async (context, params) => {
-    const files = (
-      await globalThis.prisma.file.findMany({
-        where: {
-          uploadId: { in: uploads(context.messages) },
-        },
-      })
-    ).filter((f) => embedGitHubFile(f.path.join('/')));
-
-    const matches: string[] = [];
-    for (const file of files) {
-      const text = Buffer.from(file.data).toString('utf-8');
-      const lines = text.split('\n');
-      lines.forEach((line, index) => {
-        if (new RegExp(params.query, 'i').test(line)) {
-          let snippet = '';
-          if (lines[index - 1]) snippet += lines[index - 1] + '\n';
-          snippet += line + '\n';
-          if (lines[index + 1]) snippet += lines[index + 1] + '\n';
-          matches.push(`File: ${file.path.join('/')}\nLine: ${index + 1}:\n\n${snippet}`);
-        }
-      });
-    }
-
-    if (!matches.length) {
-      return 'No matches found.';
-    }
-
-    return matches.join('\n\n---\n\n');
-  },
-};
-
 export default function tools(context: ToolContext): ToolCall[] {
   console.log(`Available uploads in context: ${uploads(context.messages).join(', ')}`);
   if (!uploads(context.messages).length) return [];
-  return [ReadFile, SearchFiles, GrepFiles];
+  return [ReadFile, SearchFiles];
 }

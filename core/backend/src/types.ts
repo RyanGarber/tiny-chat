@@ -212,27 +212,56 @@ export function normalizeText(text: string) {
   return text;
 }
 
-export function snippetText(text: string, query: string, window = 160): string {
-  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+export function snippetText(text: string, query: string | RegExp, window = 160): string {
   const lower = text.toLowerCase();
 
-  let matchIndex = -1;
+  if (query instanceof RegExp) {
+    const match = query.exec(text) ?? query.exec(lower);
+    if (!match) return text.length > window ? text.slice(0, window) + '…' : text;
+    return extractSnippet(text, match.index, window);
+  }
+
+  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (!terms.length) return text.length > window ? text.slice(0, window) + '…' : text;
+
+  // Collect all match positions for all terms
+  const hits: number[] = [];
   for (const term of terms) {
-    const index = lower.indexOf(term);
-    if (index !== -1) {
-      matchIndex = index;
-      break;
+    let from = 0;
+    while (true) {
+      const i = lower.indexOf(term, from);
+      if (i === -1) break;
+      hits.push(i);
+      from = i + 1;
     }
   }
 
+  if (!hits.length) return text.length > window ? text.slice(0, window) + '…' : text;
+
+  // Find the window start position that covers the most hits
+  hits.sort((a, b) => a - b);
+  let bestStart = hits[0];
+  let bestCount = 0;
+  for (let i = 0; i < hits.length; i++) {
+    const windowEnd = hits[i] + window;
+    let count = 0;
+    for (let j = i; j < hits.length && hits[j] < windowEnd; j++) count++;
+    if (count > bestCount) {
+      bestCount = count;
+      bestStart = hits[i];
+    }
+  }
+
+  return extractSnippet(text, bestStart, window);
+}
+
+function extractSnippet(text: string, matchIndex: number, window: number): string {
   if (window <= 0) return text;
 
-  if (matchIndex === -1) return text.length > window ? text.slice(0, window) + '…' : text;
-
   const half = Math.floor(window / 2);
-
   let start = Math.max(0, matchIndex - half);
   let end = Math.min(text.length, matchIndex + half);
+
   if (start > 0) {
     const i = text.indexOf(' ', start);
     if (i !== -1 && i < matchIndex) start = i + 1;

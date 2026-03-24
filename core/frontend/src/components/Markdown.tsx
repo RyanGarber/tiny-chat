@@ -434,7 +434,7 @@ const filter = (text: string) => {
       if (!trimmed) return match;
 
       // Reject digit content with no LaTeX chars
-      if (/^\d[\d,.]*(\s|$)/.test(trimmed)) return match;
+      if (/^\d[\d,.]*\s/.test(trimmed) && !LATEX_CHAR_RE.test(trimmed)) return match;
 
       // Reject ${ template literals
       if (trimmed.startsWith('{')) return match;

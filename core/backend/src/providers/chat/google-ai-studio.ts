@@ -172,7 +172,7 @@ function toSdkContent(message: ContextItem, config: zConfig): Content {
     parts: message.data.flatMap((part): Part[] => {
       if (part.type === 'text') {
         const youtubeRegex =
-          /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtube\.com\/shorts\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/g;
+          /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtube\.com\/shorts\/|youtu\.be\/)/g;
         const parts: Part[] = [];
         let lastIndex = 0;
         let match;

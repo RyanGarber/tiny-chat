@@ -58,7 +58,6 @@ export default async function uploadHandler(req: IncomingMessage, res: ServerRes
                   `Optimized image size: ${data.length} bytes; thumbnail size: ${thumbnail.length} characters`,
                 );
               } else if (
-                mime === 'application/pdf' ||
                 mime.includes('officedocument') ||
                 mime.includes('msword') ||
                 mime.includes('ms-excel') ||

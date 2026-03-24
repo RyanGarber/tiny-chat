@@ -1,4 +1,4 @@
-import waitOn from 'wait-on';
+import * as waitOn from 'wait-on';
 
 console.log(`Waiting for backend...`);
 

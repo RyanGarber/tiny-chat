@@ -14,6 +14,7 @@ export default async function onTick() {
     try {
       const nextRunAt = await getNextRunAt(action);
       if (!nextRunAt || nextRunAt > now) continue;
+      console.log('Running action', action.id, 'scheduled for', nextRunAt);
 
       await globalThis.prisma.action.update({
         where: { id: action.id },

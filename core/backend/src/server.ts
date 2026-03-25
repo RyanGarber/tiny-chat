@@ -193,13 +193,14 @@ const server = createServer((req, res) => {
 });
 
 if (import.meta.main) {
-  const tick = async () => {
-    await onTick();
-    setTimeout(() => void tick(), 5 * 1000);
-  };
-  void tick();
-  console.log('Actions worker started');
-
-  console.log(`Backend listening at ${await internalIpV4()}:${process.env.VITE_BACKEND_PORT}`);
-  server.listen(process.env.VITE_BACKEND_PORT);
+  const ipv4 = await internalIpV4();
+  server.listen(process.env.VITE_BACKEND_PORT, () => {
+    console.log(`Backend listening at ${ipv4}:${process.env.VITE_BACKEND_PORT}`);
+    const tick = async () => {
+      await onTick();
+      setTimeout(() => void tick(), 5 * 1000);
+    };
+    void tick();
+    console.log('Actions worker running');
+  });
 }

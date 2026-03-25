@@ -58,7 +58,10 @@ export function initLogs(write?: LogWrite, writeToDisk = false) {
       }
 
       if (typeof process !== 'undefined') {
-        process?.on('uncaughtException', (e) => replaced('Uncaught exception:', e));
+        process?.on('uncaughtException', (e) => {
+          replaced('Uncaught exception:', e);
+          process.exit(1);
+        });
       }
     }
   }

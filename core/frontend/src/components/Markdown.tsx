@@ -446,13 +446,13 @@ const filter = (text: string) => {
   });
 
   // Step 5: Inline math — $...$ (conservative fallback for non-compliant model output)
-  const MATH_SIGNAL_RE = /[\\^_{}]|[+\-*/=<>[\]]|\d[^$]*[a-zA-Z]|[a-zA-Z][^$]*\d/;
+  const LATEX_ONLY_RE = /\\[a-zA-Z]|\\[^a-zA-Z]|[_{}]|\^(?!\[)/;
   text = text.replace(
-    /(?<![\\$a-zA-Z\d])\$((?:[^$\\\n]|\\.)+?)\$(?!\$)/g,
+    /(?<![\\$a-zA-Z\d])\$((?:[^$\\\n[\]]|\\.)+?)\$(?!\$)/g,
     (match, inner: string) => {
       const trimmed = inner.trim();
       if (!trimmed) return match;
-      if (!MATH_SIGNAL_RE.test(trimmed)) return match;
+      if (!LATEX_ONLY_RE.test(trimmed)) return match;
       return '`' + MATH_MARKER + trimmed + '`';
     },
   );
@@ -541,7 +541,11 @@ export const Markdown = memo(
         if (!knownIds.has(m[1])) orphans.add(m[1]);
       }
       if (orphans.size) {
-        footnotes += '\n' + Array.from(orphans).map((id) => `[^${id}]: unknown`).join('\n');
+        footnotes +=
+          '\n' +
+          Array.from(orphans)
+            .map((id) => `[^${id}]: unknown`)
+            .join('\n');
       }
 
       if (footnotes.length) {

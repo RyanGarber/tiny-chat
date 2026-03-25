@@ -12,21 +12,22 @@ import {
   Typography,
 } from '@mantine/core';
 import { zDataPart } from '@tiny-chat/core-backend/src/types';
-import { ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Markdown } from './Markdown';
+import { useAutoScroll } from '@/hooks/useAutoScroll.ts';
 
 export default function MessageBodyPopover({
   width,
   button,
   dropdown,
   defaultOpened,
-  autoscroll,
+  defaultBottom,
 }: {
   width: number | string;
   button: ReactNode;
   dropdown: ReactNode;
   defaultOpened?: boolean;
-  autoscroll?: boolean;
+  defaultBottom?: boolean;
 }) {
   const [opened, setOpened] = useState(defaultOpened);
 
@@ -34,22 +35,18 @@ export default function MessageBodyPopover({
   const [position, setPosition] = useState<FloatingPosition>('bottom');
 
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const scrollRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     (() => setOpened(defaultOpened ?? false))();
   }, [defaultOpened]);
 
-  useLayoutEffect(() => {
-    if (defaultOpened && opened && scrollRef.current && autoscroll) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [dropdown, defaultOpened, opened, autoscroll]);
+  const { viewportRef, scrollToBottom } = useAutoScroll({
+    scrollRequested: 0,
+    isInitializing: false,
+  });
 
-  useLayoutEffect(() => {
-    if (!defaultOpened && scrollRef.current) {
-      scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, [defaultOpened]);
+  useEffect(() => {
+    if (opened && defaultBottom) scrollToBottom('smooth');
+  }, [opened, defaultBottom, scrollToBottom]);
 
   useEffect(() => {
     const updatePosition = () => {
@@ -119,7 +116,7 @@ export default function MessageBodyPopover({
         </Button>
       </Popover.Target>
       <Popover.Dropdown>
-        <ScrollAreaAutosize mah={maxHeight} viewportRef={scrollRef}>
+        <ScrollAreaAutosize mah={maxHeight} viewportRef={viewportRef}>
           <Typography style={{ overflowWrap: 'break-word' }}>{dropdown}</Typography>
         </ScrollAreaAutosize>
       </Popover.Dropdown>
@@ -140,7 +137,7 @@ export function ThoughtGroupPopover({
     <MessageBodyPopover
       width={containerWidth + 20}
       //defaultOpened={isThinkingActive}
-      autoscroll={true}
+      defaultBottom={true}
       button={
         <>
           <ThemeIcon variant="transparent" size={22} mr={5}>
@@ -189,6 +186,7 @@ export function ToolCallPopover({
     <MessageBodyPopover
       width={containerWidth + 20}
       //defaultOpened={!call.name.startsWith("ask_") && !result}
+      defaultBottom={true}
       button={
         <>
           <ThemeIcon variant="transparent" size={22} mr={5}>

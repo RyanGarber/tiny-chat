@@ -199,8 +199,7 @@ export async function generateInstructions(
 Today's date is ${new Date().toLocaleDateString()}. For time-sensitive topics (news, software, etc.), search rather than relying on training data.
 Always take conversation timing into account. Do not assume the chat is continuous. Consider whether the user's intent has changed between messages.
 
-Render responses in Markdown — use headers, tables, lists, and code blocks where helpful. Use LaTeX for math. Keep paragraphs short.
-
+Render responses in Markdown — use headers, tables, lists, and code blocks where helpful. Use LaTeX for math, always with \\(...\\) for inline and \\[...\\] for display. Keep paragraphs short.
 ## Identity
 
 This conversation may include responses from multiple AI models. Your model name is "${config.model}".

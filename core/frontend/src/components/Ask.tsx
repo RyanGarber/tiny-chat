@@ -20,6 +20,8 @@ import {
 import { DatePicker, DateTimePicker, DateValue, TimePicker } from '@mantine/dates';
 import { MessageOmitted, zDataPart } from '@tiny-chat/core-backend/src/types.ts';
 import { Icon } from '@iconify/react';
+import ReactMarkdown from 'react-markdown';
+import remarkBreaks from 'remark-breaks';
 
 export default function Ask({
   message,
@@ -33,7 +35,7 @@ export default function Ask({
 }) {
   const [value, setValue] = useState<unknown>(undefined);
 
-  let question: ReactNode;
+  let question = '';
   let answers: ReactNode;
   if (part.name === 'ask_question') {
     const ask = zAskQuestion.parse(part.args);
@@ -69,7 +71,11 @@ export default function Ask({
   return (
     <Card mb={10} withBorder>
       <Stack gap="xs">
-        <Text fw={500}>{question}</Text>
+        <Box my={-20}>
+          <ReactMarkdown skipHtml remarkPlugins={[remarkBreaks]}>
+            {question}
+          </ReactMarkdown>
+        </Box>
         {!result ? (
           <Group gap="xs">
             <Box flex={1}>{answers}</Box>

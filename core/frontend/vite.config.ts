@@ -72,7 +72,7 @@ export default defineConfig(() => ({
           return 'vendor-misc';
         },
       },
-      external: ['fs', 'path', 'os'],
+      external: ['fs', 'path', 'os', 'util'],
     },
     chunkSizeWarningLimit: 1000,
   },

@@ -26,6 +26,7 @@ export function initLogs(write?: LogWrite, writeToDisk = false) {
           const { appendFile, existsSync, mkdirSync } = await import('fs');
           const { resolve } = await import('path');
           const { tmpdir } = await import('os');
+          const { inspect } = await import('util');
 
           const date = new Date().toISOString().split('T')[0];
           const file = resolve(tmpdir(), `tiny-chat/${date}.log`);
@@ -33,7 +34,7 @@ export function initLogs(write?: LogWrite, writeToDisk = false) {
           if (!existsSync(file)) original('Logging to', file);
 
           data = data.map((d) => {
-            return typeof d === 'object' && d !== null ? JSON.stringify(d) : d;
+            return typeof d === 'object' && d !== null ? inspect(d) : d;
           });
 
           appendFile(file, `[${time}] ${level.toUpperCase()}: ${data.join(' ')}\n`, (err) => {

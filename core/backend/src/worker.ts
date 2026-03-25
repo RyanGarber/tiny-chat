@@ -23,7 +23,6 @@ export default async function onTick() {
       const user = (await globalThis.prisma.user.findUniqueOrThrow({
         where: { id: action.userId },
       })) as User;
-      user.settings = JSON.parse(user.settings as unknown as string) as User['settings'];
 
       const messages = reorder(
         await globalThis.prisma.message.findMany({
@@ -42,7 +41,6 @@ export default async function onTick() {
           data: zData.parse(action.data),
           metadata: [],
           previous: { connect: { id: messages[messages.length - 1]?.id } },
-          createdAt: new Date(0),
         },
       });
 

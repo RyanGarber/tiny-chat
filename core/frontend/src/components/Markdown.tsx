@@ -279,6 +279,31 @@ const LinkRenderer: Components['a'] = (props) => {
           </Pill>
         </Tooltip>
       );
+    } else {
+      return (
+        <Tooltip
+          label={footnoteId}
+          color="dark"
+          position="bottom"
+          bg="var(--tc-surface)"
+          bd="1px solid var(--mantine-color-default-border)"
+          p="xs"
+        >
+          <Pill
+            size="xs"
+            style={{
+              cursor: 'help',
+              fontSize: '0.7em',
+              margin: '0 2px',
+              display: 'inline-flex',
+            }}
+          >
+            <Text span c="dimmed">
+              ?
+            </Text>
+          </Pill>
+        </Tooltip>
+      );
     }
   }
   return (
@@ -402,16 +427,10 @@ const filter = (text: string) => {
     return `\x00${CODE_MARKER}${codeBlocks.length - 1}\x00`;
   });
 
-  // Step 2: Display math — $$...$$
-  // Block form: $$ alone on line → fenced math block
+  // Step 2: Display math — $$...$$ (block only, must be alone on line)
   text = text.replace(
     /^[ \t]*\$\$([\s\S]*?)\$\$[ \t]*$/gm,
     (_, inner: string) => '```math\n' + inner.trim() + '\n```',
-  );
-  // Inline form: $$ with trailing content on same line → inline math marker
-  text = text.replace(
-    /\$\$((?:[^$]|\$(?!\$))+?)\$\$/g,
-    (_, inner: string) => '`' + MATH_MARKER + inner.trim() + '`',
   );
 
   // Step 3: Display math — \[...\] (block, possibly multiline)
@@ -421,29 +440,19 @@ const filter = (text: string) => {
   );
 
   // Step 4: Inline math — \(...\)
-  // Allow any content that isn't a newline; filter false positives via LATEX_CHAR_RE
   text = text.replace(/\\\(([^\n]*?)\\\)/g, (match, inner: string) => {
     if (!LATEX_CHAR_RE.test(inner)) return match;
     return '`' + MATH_MARKER + inner.trim() + '`';
   });
 
+  // Step 5: Inline math — $...$ (conservative fallback for non-compliant model output)
+  const MATH_SIGNAL_RE = /[\\^_{}]|[+\-*/=<>[\]]|\d[^$]*[a-zA-Z]|[a-zA-Z][^$]*\d/;
   text = text.replace(
-    /(?<![\\$a-zA-Z\d])\$[ \t]?((?:[^$\\\n]|\\.)+?)[ \t]?\$(?!\$)/g,
+    /(?<![\\$a-zA-Z\d])\$((?:[^$\\\n]|\\.)+?)\$(?!\$)/g,
     (match, inner: string) => {
       const trimmed = inner.trim();
       if (!trimmed) return match;
-
-      // Reject digit content with no LaTeX chars
-      if (/^\d[\d,.]*\s/.test(trimmed) && !LATEX_CHAR_RE.test(trimmed)) return match;
-
-      // Reject ${ template literals
-      if (trimmed.startsWith('{')) return match;
-
-      // Reject if content starts with a ticker-like pattern: 2–5 uppercase letters
-      // e.g. $CURI...$SPOT gets captured with content starting "CURI short is..."
-      if (/^[A-Z]{2,5}(?:\s|[^a-zA-Z]|$)/.test(trimmed) && !LATEX_CHAR_RE.test(trimmed))
-        return match;
-
+      if (!MATH_SIGNAL_RE.test(trimmed)) return match;
       return '`' + MATH_MARKER + trimmed + '`';
     },
   );
@@ -493,12 +502,47 @@ export const Markdown = memo(
     const { memories, actions } = usePersistence();
     const sourceWithCitations = useMemo(() => {
       let footnotes = '';
-      if (webSearchResults?.length)
-        footnotes += '\n' + webSearchResults.map((c) => `[^${c.id}]: ${c.source}`).join('\n');
-      if (memories.length)
-        footnotes += '\n' + memories.map((m) => `[^${m.id}]: ${m.fact}`).join('\n');
-      if (actions.length)
-        footnotes += '\n' + actions.map((a) => `[^${a.id}]: ${a.schedule}`).join('\n');
+      const knownIds = new Set<string>();
+
+      if (webSearchResults?.length) {
+        footnotes +=
+          '\n' +
+          webSearchResults
+            .map((c) => {
+              knownIds.add(c.id);
+              return `[^${c.id}]: ${c.source}`;
+            })
+            .join('\n');
+      }
+      if (memories.length) {
+        footnotes +=
+          '\n' +
+          memories
+            .map((m) => {
+              knownIds.add(m.id);
+              return `[^${m.id}]: ${m.fact}`;
+            })
+            .join('\n');
+      }
+      if (actions.length) {
+        footnotes +=
+          '\n' +
+          actions
+            .map((a) => {
+              knownIds.add(a.id);
+              return `[^${a.id}]: ${a.schedule}`;
+            })
+            .join('\n');
+      }
+
+      const matches = source.matchAll(/\[\^(\w{3,30})]/g);
+      const orphans = new Set<string>();
+      for (const m of matches) {
+        if (!knownIds.has(m[1])) orphans.add(m[1]);
+      }
+      if (orphans.size) {
+        footnotes += '\n' + Array.from(orphans).map((id) => `[^${id}]: unknown`).join('\n');
+      }
 
       if (footnotes.length) {
         let adjustedSource = source;

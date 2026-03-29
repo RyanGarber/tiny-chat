@@ -45,15 +45,12 @@ function toUTC(schedule: string, timezone: string): string {
 
 const zAddAction = z.object({
   prompt: z.string().describe('The prompt to send when the action runs.'),
-  schedule: z
-    .string()
-    .describe("The action's RRule (RFC 5545) schedule. Do not convert - use local time."),
+  schedule: z.string().describe('An RRule (RFC 5545) schedule. Do not convert - use local time.'),
 });
 
 const AddAction = {
   name: 'add_action',
-  description:
-    'A prompt to send in this chat on a recurring basis. Use when the user wants regular updates.',
+  description: 'Schedule a prompt to send to a model.',
   parameters: zAddAction.toJSONSchema(),
   schema: zAddAction,
   run: async ({ message, generateInput }, params) => {
@@ -77,18 +74,14 @@ const AddAction = {
 } satisfies ToolCall<typeof zAddAction>;
 
 const zUpdateAction = z.object({
-  id: z.cuid2().describe('The exact ID of the action to update.'),
-  prompt: z.string().describe('The new prompt for the action to send.'),
-  schedule: z
-    .string()
-    .describe("The action's RRule (RFC 5545) schedule. Do not convert - use local time."),
-  reason: z.string().describe('The reason for the update.'),
+  id: z.cuid2().describe('The ID of the action to update.'),
+  prompt: z.string().describe('The prompt to send when the action runs.'),
+  schedule: z.string().describe('An RRule (RFC 5545) schedule. Do not convert - use local time.'),
 });
 
 const UpdateAction = {
   name: 'update_action',
-  description:
-    'Update an existing action. Use this when the user requests an action to be modified.',
+  description: 'Update an existing action.',
   parameters: zUpdateAction.toJSONSchema(),
   schema: zUpdateAction,
   run: async ({ message, generateInput }, params) => {
@@ -110,13 +103,12 @@ const UpdateAction = {
 } satisfies ToolCall<typeof zUpdateAction>;
 
 const zDeleteAction = z.object({
-  id: z.cuid2().describe('The exact ID of the action to delete.'),
-  reason: z.string().describe('The reason for the deletion.'),
+  id: z.cuid2().describe('The ID of the action to delete.'),
 });
 
 const DeleteAction = {
   name: 'delete_action',
-  description: 'Delete an existing action. Use this when the user requests deletion.',
+  description: 'Delete an existing action.',
   parameters: zDeleteAction.toJSONSchema(),
   schema: zDeleteAction,
   run: async ({ message }, params) => {
@@ -132,7 +124,7 @@ const zListActions = z.object({});
 
 const ListActions = {
   name: 'list_actions',
-  description: 'List all actions the user has across all chats.',
+  description: "List the user's actions.",
   parameters: zListActions.toJSONSchema(),
   schema: zListActions,
   run: async ({ message }) => {

@@ -63,13 +63,18 @@ export default async function uploadHandler(req: IncomingMessage, res: ServerRes
                 mime.includes('ms-excel') ||
                 mime.includes('ms-powerpoint')
               ) {
-                const parsed = await new MarkItDown().convertBuffer(data, {
-                  file_extension: info.filename.split('.').slice(-1)[0],
-                });
-                data = Buffer.from(parsed!.markdown);
-                text = parsed!.markdown;
-                mime = 'text/plain';
-                console.log(`Extracted text length: ${text.length} characters`);
+                try {
+                  const parsed = await new MarkItDown().convertBuffer(data, {
+                    file_extension: info.filename.slice(info.filename.lastIndexOf('.')),
+                  });
+                  data = Buffer.from(parsed!.markdown);
+                  text = parsed!.markdown;
+                  mime = 'text/plain';
+                  console.log(`Extracted text:`, text);
+                } catch (e) {
+                  console.error(e);
+                  throw e;
+                }
               }
 
               const upload = await prisma.upload.create({

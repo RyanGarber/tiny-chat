@@ -4,13 +4,12 @@ import { searchProviders } from '../providers/search/index.ts';
 import { createHash } from 'crypto';
 
 const zSearchWeb = z.object({
-  query: z.string().describe('The search query to use for web search'),
+  query: z.string(),
 });
 
 const SearchWeb = {
   name: 'search_web',
-  description:
-    'Search the web for information. Use this tool to find up-to-date information on any topic.',
+  description: 'Search the web.',
   parameters: zSearchWeb.toJSONSchema(),
   schema: zSearchWeb,
   run: async ({ user }, params) => {
@@ -23,13 +22,12 @@ const SearchWeb = {
 } satisfies ToolCall<typeof zSearchWeb>;
 
 const zViewWeb = z.object({
-  url: z.url().describe('The URL of the webpage to view'),
+  url: z.url(),
 });
 
 const ViewWeb = {
   name: 'view_web',
-  description:
-    'View the content of a webpage. Use this tool when you need information from webpage and search results or training knowledge do not suffice.',
+  description: 'View a webpage.',
   parameters: zViewWeb.toJSONSchema(),
   schema: zViewWeb,
   run: async (_, params) => {

@@ -1,9 +1,11 @@
 import type { AISdkProvider } from './index.ts';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import type { Model, ModelArg } from '../../../types.ts';
+import type { Model } from '../../../types.ts';
+import { getCommonArgs } from '../../../utils/consts.ts';
 
 export const GoogleGenerativeAIProvider: AISdkProvider = {
-  name: 'google-generative-ai',
+  name: 'google-ai-studio',
+  settings: ['apiKey'],
   getClient(user) {
     if (!user?.settings?.providers?.['google-ai-studio']?.apiKey) return null;
     return createGoogleGenerativeAI({
@@ -24,35 +26,30 @@ export const GoogleGenerativeAIProvider: AISdkProvider = {
     };
 
     return json.models.map((model) => {
-      const args: ModelArg[] = [
-        { name: 'temperature', type: 'range', min: 0, max: 2, step: 0.05, default: 1 },
-        ...(model.name.includes('gemini-2.5')
-          ? [
-              {
-                name: 'thinking',
-                type: 'list',
-                values: ['off', 'low', 'medium', 'high', 'auto'],
-                default: 'auto',
-              } as ModelArg,
-            ]
-          : []),
-        ...(model.name.includes('gemini-3')
-          ? [
-              {
-                name: 'thinking',
-                type: 'list',
-                values: ['minimal', 'low', 'medium', 'high', 'auto'],
-                default: 'auto',
-              } as ModelArg,
-            ]
-          : []),
-      ];
+      const args = getCommonArgs(2);
+      if (model.name.includes('gemini-2.5')) {
+        args.push({
+          name: 'thinking-budget',
+          type: 'list',
+          values: ['auto', '0', '2500', '5000', '7500', '10000'],
+          default: 'auto',
+        });
+      }
+      if (model.name.includes('gemini-3')) {
+        args.push({
+          name: 'thinking',
+          type: 'list',
+          values: ['minimal', 'low', 'medium', 'high'],
+          default: 'medium',
+        });
+      }
       return {
         name: model.name.split('/').slice(-1)[0],
         features: [
           ...(model.supportedGenerationMethods.includes('generateContent')
             ? ['generate' as const]
             : []),
+          ...(model.name.includes('gemini') ? ['toolCall' as const] : []),
           ...(model.supportedGenerationMethods.includes('embedContent') ? ['embed' as const] : []),
         ],
         args,

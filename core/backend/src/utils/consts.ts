@@ -1,6 +1,6 @@
 import type { Chat } from '../../generated/prisma/client.ts';
 import type { User } from '../server.ts';
-import type { zConfig } from '../types.ts';
+import type { ModelArg, zConfig } from '../types.ts';
 import { type ContextItem, getNextRunAt, texts, zData } from '../types.ts';
 import { getMemoryContext } from '../routes/embeddings.ts';
 
@@ -170,6 +170,31 @@ const GITHUB_EMBED = [
   '.zsh',
   '.fish',
 ];
+
+export function getCommonArgs(maxTemperature = 2): ModelArg[] {
+  return [
+    {
+      type: 'range',
+      name: 'max-tokens',
+      min: 500,
+      max: 10000,
+      step: 500,
+      default: 2500,
+    },
+    ...(maxTemperature
+      ? [
+          {
+            type: 'range',
+            name: 'temperature',
+            min: 0,
+            max: maxTemperature,
+            step: 0.05,
+            default: 1,
+          } satisfies ModelArg,
+        ]
+      : []),
+  ];
+}
 
 export function embedGitHubFile(path: string) {
   return GITHUB_EMBED.some((extension) => path.toLowerCase().endsWith(extension));

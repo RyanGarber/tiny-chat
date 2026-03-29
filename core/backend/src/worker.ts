@@ -1,4 +1,4 @@
-import { generate } from './endpoints/generate.ts';
+import { generate } from './services/generate.ts';
 import type { User } from './server.ts';
 import { type ContextItem, getNextRunAt, texts, type zMetadata } from './types.ts';
 import { wrapMessageUnomitted, zConfig, zData } from './types.ts';

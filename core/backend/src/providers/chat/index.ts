@@ -1,7 +1,9 @@
 import { Debug } from './debug.ts';
-import { GoogleAIStudio } from './google-ai-studio.ts';
-import { MicrosoftFoundry } from './microsoft-foundry.ts';
-import { AnthropicAI } from './anthropic-ai.ts';
+import { wrap } from './ai-sdk/index.ts';
+import { GoogleGenerativeAIProvider } from './ai-sdk/google-generative-ai.ts';
+import { AnthropicProvider } from './ai-sdk/anthropic.ts';
+import { OpenAIProvider } from './ai-sdk/openai.ts';
+import { AzureProvider } from './ai-sdk/azure.ts';
 import type { ContextItem, Model, zConfig, zGenerateOutput } from '../../types.ts';
 import type { ToolCall } from '../../tools/index.ts';
 import { type User } from '../../server.ts';
@@ -23,4 +25,10 @@ export interface ChatProvider {
   embed: (user: User, texts: string[], config: zConfig) => Promise<number[][]>;
 }
 
-export const chatProviders: ChatProvider[] = [Debug, GoogleAIStudio, MicrosoftFoundry, AnthropicAI];
+export const chatProviders: ChatProvider[] = [
+  Debug,
+  wrap(GoogleGenerativeAIProvider),
+  wrap(AnthropicProvider),
+  wrap(OpenAIProvider),
+  wrap(AzureProvider),
+];

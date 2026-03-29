@@ -159,33 +159,36 @@ export async function getMemoryContext(user: User, context: ContextItem[]): Prom
         WHERE "userId" = ${user.id}
           AND embedding IS NOT NULL`;
 
-  const output = memories.filter((m) => m.stability === MemoryStability.LONG_TERM);
-
   if (embeddings.length) {
     const query = (await getQueryEmbedding(user, context))?.queryEmbedding;
     if (query) {
-      output.push(
+      return prepareMemories([
+        ...getMostRelevant(
+          query,
+          memories
+            .filter((m) => m.stability === MemoryStability.LONG_TERM)
+            .map((m) => ({ value: m as Memory, embedding: JSON.parse(m.embedding) as number[] })),
+          { maxCount: 10 },
+        ).map((r) => r.value as Memory & { embedding: string }),
         ...getMostRelevant(
           query,
           memories
             .filter((m) => m.stability === MemoryStability.MEDIUM_TERM)
             .map((m) => ({ value: m as Memory, embedding: JSON.parse(m.embedding) as number[] })),
-          { maxCount: 10 },
+          { maxCount: 5 },
         ).map((r) => r.value as Memory & { embedding: string }),
-      );
-      output.push(
         ...getMostRelevant(
           query,
           memories
             .filter((m) => m.stability === MemoryStability.SHORT_TERM)
             .map((m) => ({ value: m as Memory, embedding: JSON.parse(m.embedding) as number[] })),
-          { maxCount: 5 },
+          { maxCount: 3 },
         ).map((r) => r.value as Memory & { embedding: string }),
-      );
+      ]);
     }
   }
 
-  return prepareMemories(output);
+  return [];
 }
 
 export async function getMemorySearch(
@@ -215,7 +218,7 @@ export async function getMemorySearch(
   );
 }
 
-function prepareMemories(memories: Memory[]) {
+export function prepareMemories(memories: Memory[]) {
   const prepared: string[] = [];
   for (const memory of memories) {
     prepared.push(`[${memory.id}] ${memory.category}: ${memory.fact}`);

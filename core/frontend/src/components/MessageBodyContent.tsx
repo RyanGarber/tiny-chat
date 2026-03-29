@@ -173,7 +173,12 @@ export default function MessageBodyContent({
       }
     } else if (part.type === 'abort') {
       renderedParts.push(
-        <Divider key={i} label="Stopped" size="md" styles={{ label: { fontSize: 14 } }} />,
+        <Divider
+          key={i}
+          label={`Stopped (${part.reason})`}
+          size="md"
+          styles={{ label: { fontSize: 14 } }}
+        />,
       );
     }
   }

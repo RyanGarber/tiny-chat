@@ -4,8 +4,7 @@ import { createId } from '@paralleldrive/cuid2';
 import { reorder } from './messages.ts';
 import { zConfig, zData, zMetadata } from '../types.ts';
 import minisearch, { type SearchResult } from 'minisearch';
-import { chatProviders } from '../providers/chat/index.ts';
-import { getMostRelevant } from '../utils/embed.ts';
+import { embed, getMostRelevant } from '../utils/embed.ts';
 
 export default router({
   find: procedure.input(z.object({ id: z.cuid2().nullable() })).query(async ({ ctx, input }) => {
@@ -115,6 +114,7 @@ export default router({
         })
       ).map((m) => ({ ...m, embedding: null as number[] | null }));
 
+      console.log(`Searching for "${input.text}" across ${messages.length} messages`);
       const embeddings = await globalThis.prisma.$queryRaw<
         {
           id: string;
@@ -161,25 +161,21 @@ export default router({
         chatTitle: string;
       })[];
 
-      let embedding: number[] = [];
-      if (input.config) {
-        const provider = chatProviders.find((s) => s.name === input.config?.provider);
-        if (provider) {
-          embedding = (await provider.embed(ctx.session.user, [input.text], input.config))[0];
-        }
-      }
+      console.log('Embedding query');
+      const queryEmbeddings = await embed(ctx.session.user, [input.text]);
+      console.log('Embedding done');
 
       const messagesWithEmbeddings = mappedMessages.filter(
         (m) => m.embedding && m.embedding.length > 0,
       );
-      const useVectorSearch = embedding.length && messagesWithEmbeddings.length > 0;
+      const useVectorSearch = queryEmbeddings && messagesWithEmbeddings.length > 0;
 
       if (!useVectorSearch) {
         return textResults;
       }
 
       const vectorResults = getMostRelevant(
-        embedding,
+        queryEmbeddings[0],
         messagesWithEmbeddings.map((m) => ({ value: m, embedding: m.embedding! })),
         { maxCount: 50 },
       );

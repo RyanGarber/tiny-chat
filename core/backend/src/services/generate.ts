@@ -44,10 +44,13 @@ export default async function generateHandler(req: IncomingMessage, res: ServerR
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
+    res.socket?.setNoDelay(true);
+    res.flushHeaders();
 
     const generation = generate(session.user, input, controller);
     for await (const event of generation) {
       res.write(`data: ${JSON.stringify(event)}\n\n`);
+      await new Promise<void>((resolve) => setImmediate(resolve));
     }
   } catch (e: any) {
     console.trace('Error during generation:', e);
@@ -240,7 +243,6 @@ async function buildGenerateInput(
             [m],
             query.query,
             query.queryEmbedding,
-            -1,
             3,
           );
         }

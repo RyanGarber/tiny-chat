@@ -162,7 +162,9 @@ async function runGeneration({
   config: zConfig;
 }) {
   const abortController = new AbortController();
-  abortController.signal.addEventListener('abort', () => reply.data.push({ type: 'abort' }));
+  abortController.signal.addEventListener('abort', () =>
+    reply.data.push({ type: 'abort', reason: 'user' }),
+  );
   useProviders.setState({ abortController });
 
   const stream = generate(

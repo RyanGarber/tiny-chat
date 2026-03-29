@@ -5,16 +5,17 @@ import { type File, Prisma } from '../../generated/prisma/client.ts';
 import { type ContextItem, snippetText } from '../types.ts';
 import { embedGitHubFile } from '../utils/consts.ts';
 
+const SNIPPET_WINDOW = 2500;
+
 function uploads(context: ContextItem[]) {
   return context.flatMap((m) => m.data.filter((d) => d.type === 'upload').map((u) => u.id));
 }
 
-const zReadFile = z.object({ path: z.string() });
+const zReadFile = z.object({ path: z.string().describe('The path as seen in the tree.') });
 
 const ReadFile: ToolCall<typeof zReadFile> = {
   name: 'read_file',
-  description:
-    'Read the contents of a specific file that was uploaded. Provide the exact path as shown in the file tree.',
+  description: 'Read the contents of an uploaded file.',
   parameters: zReadFile.toJSONSchema(),
   schema: zReadFile,
   run: async (context, params) => {
@@ -37,7 +38,7 @@ const zSearchFiles = z.object({ query: z.string(), mode: z.enum(['semantic', 're
 
 const SearchFiles: ToolCall<typeof zSearchFiles> = {
   name: 'search_files',
-  description: 'Search the uploaded files to find relevant snippets.',
+  description: 'Search contents across all uploaded files.',
   parameters: zSearchFiles.toJSONSchema(),
   schema: zSearchFiles,
   run: async (context, params) => {
@@ -63,7 +64,9 @@ const SearchFiles: ToolCall<typeof zSearchFiles> = {
         lines.forEach((line) => {
           const query = new RegExp(params.query, 'i');
           if (query.test(line)) {
-            matches.push(`File: ${file.path.join('/')}\n\n${snippetText(line, query, 1000)}`);
+            matches.push(
+              `File: ${file.path.join('/')}\n\n${snippetText(text, query, SNIPPET_WINDOW)}`,
+            );
           }
         });
       }
@@ -81,7 +84,6 @@ export async function searchFiles(
   context: ContextItem[],
   query: string,
   queryEmbedding: number[],
-  snippetWindow?: number,
   maxCount?: number,
 ) {
   const files = await globalThis.prisma.$queryRaw<(File & { embedding: string })[]>`
@@ -104,7 +106,7 @@ export async function searchFiles(
     .map((res) => {
       const file = res.value as File;
       const text = Buffer.from(file.data).toString('utf-8');
-      const snippet = snippetText(text, query, snippetWindow ?? 1000);
+      const snippet = snippetText(text, query, SNIPPET_WINDOW);
       return `File: ${file.path.join('/')}\nRelevance Score: ${res.score.toFixed(3)}\n\n${snippet}`;
     })
     .join('\n\n---\n\n');

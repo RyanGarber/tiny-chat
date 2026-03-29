@@ -3,7 +3,7 @@ import type { Action } from '../generated/prisma/client.ts';
 import { type Message } from '../generated/prisma/client.ts';
 import { Author } from '../generated/prisma/enums.ts';
 
-export type ModelFeature = 'generate' | 'embed';
+export type ModelFeature = 'generate' | 'embed' | 'toolCall';
 
 export type ModelArg =
   | {
@@ -94,6 +94,8 @@ export const zDataPart = z.discriminatedUnion('type', [
   }),
   z.object({
     type: z.literal('abort'),
+    reason: z.enum(['user', 'content', 'length', 'other']),
+    details: z.string().optional(),
   }),
   z.object({
     type: z.literal('other'),

@@ -210,7 +210,7 @@ export async function generateInstructions(
 
   const actions = chat
     ? await globalThis.prisma.action.findMany({
-        where: { chatId: chat.id },
+        where: { userId: chat.userId },
       })
     : [];
 
@@ -233,7 +233,7 @@ When referencing past assistant messages, always use the model name - do not say
 
 ## Context
 
-The user's scheduled actions in this chat:
+The user's scheduled actions:
 
 ${
   actions.length
@@ -249,28 +249,31 @@ ${
     : '- (none)'
 }
 
-Relevant memories of the user across all chats:
+Relevant memories of the user:
 
 ${memories.length ? memories.map((m) => `- ${m}`).join('\n') : '- (none)'}
 
 ## Actions
 
-Actions allow for prompts to be sent automatically on a recurring schedule.
-If the user asks for regular updates on a topic, use the add_action tool to create an action for it.
-If regular updates would be useful for a topic, but the user hasn't asked yet, ask proactively if they'd like an action created.
+Actions allow for prompts to be sent to models automatically on a specific schedule.
+If the user asks to be kept up-to-date on a topic, use the add_action tool to create an action for it.
+If regular updates would be useful for a topic, but the user hasn't asked, ask proactively if they'd like to be kept up-to-date and create an action if so.
 
 ## Memories
 
-When the user shares information that could improve future chats, store it as memory even if it was mentioned only once.
-Save anything that could be useful in the future, even if it's not obvious now. When unsure, prefer storing the memory with an appropriate confidence score rather than skipping it entirely.
-When discussing code, pay special attention to the user's tech stack, environment, architectural decisions, and pain points.
-Do not bring up or make connections to a memory unless it is directly relevant to the current conversation.
+Any time the user shares information that could improve future chats, store it as memory, even if it was only mentioned once.
+Add anything that could be useful in the future, even if it's not obvious at the moment.
+If unsure whether something is worth remembering, ask the user if they'd like it remembered, and add it if they say yes.
+
+## Citations
+
+When referencing *existing* actions, memories, or search_web results, *always* cite your sources using footnotes like [^id] (matching the id *exactly*).
+Do NOT use simple [^1] indices; only use the explicit [^id] IDs provided in the results.
 
 ## Important
-
-When adding *new* actions or memories, don't just describe them in text; *always* call the tools.
-When referencing *existing* actions, memories, or search_web results, *always* cite your sources using footnotes like [^id] (matching the id *exactly*).
-Do NOT use simple [^1] indices; only use the explicit [^id] IDs provided in the results.` +
+Do not bring up or make connections to a memory unless it is directly relevant to the current conversation.
+If you say you will remember something, or will do something in the future, call the appropriate add_memory or add_action tool.
+When asking the user a question, always use the appropriate \`reply_\` tool instead of writing the question in text.` +
     (userInstructions?.length
       ? `
 

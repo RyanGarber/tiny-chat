@@ -1,74 +1,74 @@
 import { z } from 'zod';
 import type { ToolCall, ToolContext } from './index.ts';
 
-export const zAskQuestion = z.object({
+export const zReplyQuestion = z.object({
   question: z.string(),
   suggestions: z.array(z.string()).optional().describe('A list autocomplete suggestions.'),
 });
 
-const AskQuestion = {
-  name: 'ask_question',
+const ReplyQuestion = {
+  name: 'reply_question',
   description: 'Ask the user a question mid-response.',
-  parameters: zAskQuestion.toJSONSchema(),
-  schema: zAskQuestion,
+  parameters: zReplyQuestion.toJSONSchema(),
+  schema: zReplyQuestion,
   needsUserInput: true,
   run: async ({ generateInput }) => {
     if (!generateInput.userInput) throw new Error('Cannot use tool in this context');
     return new Promise<void>((r) => r());
   },
-} satisfies ToolCall<typeof zAskQuestion>;
+} satisfies ToolCall<typeof zReplyQuestion>;
 
-export const zAskColor = z.object({
+export const zReplyColor = z.object({
   question: z.string(),
 });
 
-const AskColor = {
-  name: 'ask_color',
+const ReplyColor = {
+  name: 'reply_color',
   description: 'Ask the user for a color mid-response.',
-  parameters: zAskColor.toJSONSchema(),
-  schema: zAskColor,
+  parameters: zReplyColor.toJSONSchema(),
+  schema: zReplyColor,
   needsUserInput: true,
   run: async ({ generateInput }) => {
     if (!generateInput.userInput) throw new Error('Cannot use tool in this context');
     return new Promise<void>((r) => r());
   },
-} satisfies ToolCall<typeof zAskColor>;
+} satisfies ToolCall<typeof zReplyColor>;
 
-export const zAskNumber = z.object({
+export const zReplyNumber = z.object({
   question: z.string(),
 });
 
-const AskNumber = {
-  name: 'ask_number',
-  description: 'Ask the user for a number mid-response.',
-  parameters: zAskNumber.toJSONSchema(),
-  schema: zAskNumber,
+const ReplyNumber = {
+  name: 'reply_number',
+  description: 'Ask the user to reply with a number.',
+  parameters: zReplyNumber.toJSONSchema(),
+  schema: zReplyNumber,
   needsUserInput: true,
   run: async ({ generateInput }) => {
     if (!generateInput.userInput) throw new Error('Cannot use tool in this context');
     return new Promise<void>((r) => r());
   },
-} satisfies ToolCall<typeof zAskNumber>;
+} satisfies ToolCall<typeof zReplyNumber>;
 
-export const zAskDatetime = z.object({
+export const zReplyDatetime = z.object({
   question: z.string(),
   date: z.boolean().describe('Request a date.'),
   time: z.boolean().describe('Request a time.'),
 });
 
-const AskDatetime = {
-  name: 'ask_datetime',
-  description: 'Ask the user a date/time mid-response.',
-  parameters: zAskDatetime.toJSONSchema(),
-  schema: zAskDatetime,
+const ReplyDatetime = {
+  name: 'reply_datetime',
+  description: 'Ask the user to reply with a date and/or time.',
+  parameters: zReplyDatetime.toJSONSchema(),
+  schema: zReplyDatetime,
   needsUserInput: true,
   run: async ({ generateInput }) => {
     if (!generateInput.userInput) throw new Error('Cannot use tool in this context');
     return new Promise<void>((r) => r());
   },
-} satisfies ToolCall<typeof zAskDatetime>;
+} satisfies ToolCall<typeof zReplyDatetime>;
 
 export default function tools({ user, generateInput }: ToolContext) {
   if (!user.settings.embeddingConfig) return [];
-  return generateInput.userInput ? [AskQuestion, AskColor, AskNumber, AskDatetime] : [];
+  return generateInput.userInput ? [ReplyQuestion, ReplyColor, ReplyNumber, ReplyDatetime] : [];
 }

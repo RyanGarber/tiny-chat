@@ -5,7 +5,7 @@ import type { Chat } from '../../generated/prisma/client.ts';
 import web from './web.ts';
 import memory from './memory.ts';
 import chat from './chat.ts';
-import ask from './ask.ts';
+import reply from './reply.ts';
 import action from './action.ts';
 import file from './file.ts';
 
@@ -29,11 +29,11 @@ export interface ToolCall<T extends z.ZodType = z.ZodType> {
 
 export function tools(context: ToolContext) {
   return [
-    ...web(context),
+    ...reply(context),
     ...memory(context),
-    ...chat(context),
-    ...ask(context),
     ...action(context),
+    ...web(context),
     ...file(context),
+    ...chat(context),
   ] as ToolCall[];
 }

@@ -1,11 +1,11 @@
 import { continueToolCall } from '@/managers/generation.ts';
 import { ReactNode, useState } from 'react';
 import {
-  zAskColor,
-  zAskDatetime,
-  zAskNumber,
-  zAskQuestion,
-} from '@tiny-chat/core-backend/src/tools/ask.ts';
+  zReplyColor,
+  zReplyDatetime,
+  zReplyNumber,
+  zReplyQuestion,
+} from '@tiny-chat/core-backend/src/tools/reply.ts';
 import {
   ActionIcon,
   Autocomplete,
@@ -38,7 +38,7 @@ export default function Ask({
   let question = '';
   let answers: ReactNode;
   if (part.name === 'ask_question') {
-    const ask = zAskQuestion.parse(part.args);
+    const ask = zReplyQuestion.parse(part.args);
     question = ask.question;
     answers = (
       <Autocomplete
@@ -48,15 +48,15 @@ export default function Ask({
       />
     );
   } else if (part.name === 'ask_color') {
-    const ask = zAskColor.parse(part.args);
+    const ask = zReplyColor.parse(part.args);
     question = ask.question;
     answers = <ColorInput value={value as string | undefined} onChange={setValue} />;
   } else if (part.name === 'ask_number') {
-    const ask = zAskNumber.parse(part.args);
+    const ask = zReplyNumber.parse(part.args);
     question = ask.question;
     answers = <NumberInput value={value as string | number | undefined} onChange={setValue} />;
   } else if (part.name === 'ask_datetime') {
-    const ask = zAskDatetime.parse(part.args);
+    const ask = zReplyDatetime.parse(part.args);
     question = ask.question;
     answers =
       ask.date && ask.time ? (

@@ -61,7 +61,7 @@ export default function Tasks() {
       if (task.animTarget === undefined && !task.removeResolve) {
         setDisplayed((prev) =>
           prev[id]
-            ? { ...prev, [id]: { ...prev[id], name: task.name, details: task.details } }
+            ? { ...prev, [id]: { ...prev[id], name: task.name, message: task.details } }
             : prev,
         );
         continue;
@@ -76,7 +76,7 @@ export default function Tasks() {
         if (displayed.animTarget === target && animFramesRef.current[id]) {
           setDisplayed((prev) =>
             prev[id]
-              ? { ...prev, [id]: { ...prev[id], name: task.name, details: task.details } }
+              ? { ...prev, [id]: { ...prev[id], name: task.name, message: task.details } }
               : prev,
           );
           continue;
@@ -100,7 +100,7 @@ export default function Tasks() {
                 [id]: {
                   ...prev[id],
                   name: task.name,
-                  details: task.details,
+                  message: task.details,
                   animTarget: target,
                   removing: isRemoval,
                 },

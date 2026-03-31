@@ -11,20 +11,15 @@ import { type zData } from '@tiny-chat/core-backend/src/types.ts';
 import { Author } from '@tiny-chat/core-backend/generated/prisma/enums.ts';
 import { handleMessage } from '@/managers/generation';
 
-function setInputDisabled(disabled: boolean) {
-  const { isMessagingDisabled, setMessagingDisabled } = useLayout.getState();
-  if (isMessagingDisabled === disabled) return;
-  setMessagingDisabled(disabled);
-}
-
 export async function sendMessage(data: zData) {
+  const { setMessagingDisable } = useLayout.getState();
   const { config, truncating, reset, editing, setData } = useMessaging.getState();
   const { setCurrentChat, fetchFolders, fetchChat, temporary, incognito } = useChats.getState();
   let currentChat = useChats.getState().currentChat;
   if (!config) return;
 
   useTasks.getState().addTask('sending', 'Preparing message');
-  setInputDisabled(true);
+  setMessagingDisable('sendMessage', true);
   reset();
   // Clear chat-level flags that reset() used to handle via cross-store call
   useChats.setState({ temporary: false, incognito: false });
@@ -66,6 +61,7 @@ export async function sendMessage(data: zData) {
     alert('error', 'Failed to create message');
     if (message) await deleteMessagePair(message.id);
     setData(data);
+    setMessagingDisable('sendMessage', false);
     throw e; // rethrow for logging
   }
 
@@ -94,13 +90,14 @@ export async function sendMessage(data: zData) {
     setData(data);
     throw e; // rethrow for logging
   } finally {
-    setInputDisabled(false);
     useProviders.setState({ abortController: null });
+    setMessagingDisable('sendMessage', false);
   }
 }
 
 export async function deleteMessagePair(messageId: string) {
-  setInputDisabled(true);
+  const { setMessagingDisable } = useLayout.getState();
+  setMessagingDisable('deleteMessagePair', true);
   useTasks.getState().addTask('deleteMessagePair', 'Deleting message');
   await trpc.messages.delete.mutate({ id: messageId });
   void useTasks.getState().updateTask('deleteMessagePair', 33);
@@ -108,5 +105,5 @@ export async function deleteMessagePair(messageId: string) {
   void useTasks.getState().updateTask('deleteMessagePair', 66);
   await useChats.getState().fetchChat(false);
   await useTasks.getState().removeTask('deleteMessagePair');
-  setInputDisabled(false);
+  setMessagingDisable('deleteMessagePair', false);
 }

@@ -22,8 +22,8 @@ interface Layout {
   isMessaging: boolean;
   setIsMessaging: (value: boolean) => void;
 
-  isMessagingDisabled: boolean;
-  setMessagingDisabled: (value: boolean) => void;
+  messagingDisables: Set<string>;
+  setMessagingDisable: (id: string, value: boolean) => void;
 
   shadow: string;
 }
@@ -63,8 +63,14 @@ export const useLayout = create(
       isMessaging: false,
       setIsMessaging: (value: boolean) => set({ isMessaging: value }),
 
-      isMessagingDisabled: false,
-      setMessagingDisabled: (value: boolean) => set({ isMessagingDisabled: value }),
+      messagingDisables: new Set<string>(),
+      setMessagingDisable: (id: string, value: boolean) => {
+        const { messagingDisables } = get();
+        if (value === messagingDisables.has(id)) return;
+        if (value) messagingDisables.add(id);
+        else messagingDisables.delete(id);
+        set({ messagingDisables });
+      },
 
       shadow: 'rgba(0, 0, 0, 0.2) 2px 0px 15px',
     };

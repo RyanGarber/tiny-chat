@@ -68,7 +68,13 @@ export const useTasks = create<Tasks>((set, get) => ({
     set({
       tasks: {
         ...get().tasks,
-        [id]: { id, name, details, progress, options: { crawlSpeed: 5, crawlMax: 50, ...options } },
+        [id]: {
+          id,
+          name,
+          details,
+          progress,
+          options: { crawlSpeed: 5, crawlMax: 50, ...options },
+        },
       },
     });
   },

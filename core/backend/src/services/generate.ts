@@ -54,7 +54,12 @@ export default async function generateHandler(req: IncomingMessage, res: ServerR
     }
   } catch (e: any) {
     console.trace('Error during generation:', e);
-    res.write(`error: ${JSON.stringify({ stack: e.stack, message: e.message })}\n\n`);
+    // Write an error part so the frontend can display it inline
+    const errorEvent = {
+      type: 'data',
+      value: { type: 'abort', reason: 'error', message: e.message ?? String(e), details: e.stack },
+    } satisfies zGenerateOutput;
+    res.write(`data: ${JSON.stringify(errorEvent)}\n\n`);
   } finally {
     res.end();
   }
@@ -94,13 +99,7 @@ export async function* generate(
       })
     : undefined;
 
-  const { context, instructions } = await buildGenerateInput(
-    user,
-    baseContext,
-    await useConfigDefaults(user, input.config),
-    input.overrideInstructions,
-    chat,
-  );
+  const { context, instructions } = await buildGenerateInput(user, input, baseContext, chat);
 
   // Agentic loop: keep generating until the model stops calling tools
   while (true) {
@@ -132,8 +131,22 @@ export async function* generate(
         }
       }
     } catch (e: any) {
-      console.log('Error during generation:', e);
-      throw e;
+      console.error('Error during generation stream:', e);
+      yield {
+        type: 'data',
+        value: {
+          type: 'abort',
+          reason: 'error',
+          message: e.message ?? String(e),
+          details: e.stack,
+        },
+      } satisfies zGenerateOutput;
+      modelMessage.data.push({
+        type: 'abort',
+        reason: 'error',
+        message: e.message ?? String(e),
+        details: e.stack,
+      });
     }
 
     // Find any tool calls in this pass
@@ -218,11 +231,11 @@ export async function* generate(
 
 async function buildGenerateInput(
   user: User,
+  input: zGenerateInput,
   messages: ContextItem[],
-  config: zConfig,
-  overrideInstructions?: string,
   chat?: Chat,
 ) {
+  const config = await useConfigDefaults(user, input.config);
   console.log('Handling message with data:', messages[messages.length - 1]?.data);
 
   const context: ContextItem[] = await Promise.all(
@@ -326,7 +339,9 @@ async function buildGenerateInput(
                 referencedModel = lines[0].slice('::model='.length, -2);
                 contentLines = lines.slice(1);
               }
-              const prefix = referencedModel ? `Earlier, ${referencedModel} said:\n` : '';
+              const prefix = referencedModel
+                ? `Earlier, ${referencedModel === input.config.model ? 'you' : referencedModel} said:\n`
+                : '';
               return prefix + contentLines.map((l) => `> ${l}`).join('\n') + '\n';
             });
             if (isFirstText && m.id) {
@@ -360,7 +375,13 @@ async function buildGenerateInput(
 
   context.splice(0, context.length, ...splitToolResults(context));
 
-  const defaultInstructions = await generateInstructions(user, context, config, chat);
+  const defaultInstructions = await generateInstructions(
+    user,
+    context,
+    config,
+    chat,
+    input.timezone,
+  );
 
   console.log(
     'Built context:',
@@ -375,10 +396,10 @@ async function buildGenerateInput(
       )
       .join('\n'),
     'And instructions:',
-    overrideInstructions ?? defaultInstructions,
+    input.overrideInstructions ?? defaultInstructions,
   );
 
-  return { context, instructions: overrideInstructions ?? defaultInstructions };
+  return { context, instructions: input.overrideInstructions ?? defaultInstructions };
 }
 
 export function splitToolResults(context: ContextItem[]) {

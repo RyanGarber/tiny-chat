@@ -8,8 +8,6 @@ import type { ContextItem, Model, zConfig, zGenerateOutput } from '../../types.t
 import type { ToolCall } from '../../tools/index.ts';
 import { type User } from '../../server.ts';
 
-export class SettingsError extends Error {}
-
 export interface ChatProvider {
   name: string;
   settings: string[];

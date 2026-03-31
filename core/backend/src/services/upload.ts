@@ -44,19 +44,24 @@ export default async function uploadHandler(req: IncomingMessage, res: ServerRes
               console.log(`Received ${data.length} bytes of ${mime}`);
 
               if (mime.startsWith('image/')) {
-                mime = 'image/webp';
-                data = await sharp(data, { failOn: 'none', animated: true })
-                  .resize(2048, 2048, { fit: 'inside', withoutEnlargement: true })
-                  .webp({ quality: 80 })
-                  .toBuffer();
-                thumbnail = `data:${mime};base64,${await sharp(data, { failOn: 'none' })
-                  .resize(512, 512, { fit: 'inside', withoutEnlargement: true })
-                  .webp({ quality: 80 })
-                  .toBuffer()
-                  .then((buf) => buf.toString('base64'))}`;
-                console.log(
-                  `Optimized image size: ${data.length} bytes; thumbnail size: ${thumbnail.length} characters`,
-                );
+                try {
+                  mime = 'image/webp';
+                  data = await sharp(data, { failOn: 'none', animated: true })
+                    .resize(2048, 2048, { fit: 'inside', withoutEnlargement: true })
+                    .webp({ quality: 80 })
+                    .toBuffer();
+                  thumbnail = `data:${mime};base64,${await sharp(data, { failOn: 'none' })
+                    .resize(512, 512, { fit: 'inside', withoutEnlargement: true })
+                    .webp({ quality: 80 })
+                    .toBuffer()
+                    .then((buf) => buf.toString('base64'))}`;
+                  console.log(
+                    `Optimized image size: ${data.length} bytes; thumbnail size: ${thumbnail.length} characters`,
+                  );
+                } catch (e) {
+                  console.error(e);
+                  throw e;
+                }
               } else if (
                 mime.includes('officedocument') ||
                 mime.includes('msword') ||

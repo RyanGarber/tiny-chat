@@ -30,15 +30,6 @@
             </PendingDiffInfo>
           </value>
         </entry>
-        <entry key="$PROJECT_DIR$/core/backend/src/providers/chat/index.ts">
-          <value>
-            <PendingDiffInfo>
-              <option name="filePath" value="$PROJECT_DIR$/core/backend/src/providers/chat/index.ts" />
-              <option name="originalContent" value="import { Debug } from './debug.ts';&#10;import { AISdkProvider, wrap } from './ai-sdk/index.ts';&#10;import { GoogleGenerativeAIProvider } from './ai-sdk/google-generative-ai.ts';&#10;import { AnthropicProvider } from './ai-sdk/anthropic.ts';&#10;import { OpenAIProvider } from './ai-sdk/openai.ts';&#10;import { AzureProvider } from './ai-sdk/azure.ts';&#10;import type { ContextItem, Model, zConfig, zGenerateOutput } from '../../types.ts';&#10;import type { ToolCall } from '../../tools/index.ts';&#10;import { type User } from '../../server.ts';&#10;&#10;export class SettingsError extends Error {}&#10;&#10;export interface ChatProvider {&#10;  name: string;&#10;  settings: string[];&#10;  getModels: (user: User) =&gt; Promise&lt;Model[]&gt;;&#10;  generate: (&#10;    user: User,&#10;    instructions: string,&#10;    context: ContextItem[],&#10;    config: zConfig,&#10;    abortSignal: AbortSignal,&#10;    tools: ToolCall[],&#10;  ) =&gt; AsyncGenerator&lt;zGenerateOutput&gt;;&#10;  embed: (user: User, texts: string[], config: zConfig) =&gt; Promise&lt;number[][]&gt;;&#10;}&#10;&#10;export const chatProviders: ChatProvider[] = [&#10;  Debug,&#10;  wrap(GoogleGenerativeAIProvider),&#10;  wrap(AnthropicProvider),&#10;  wrap(OpenAIProvider),&#10;  wrap(AzureProvider),&#10;  AISdkProvider,&#10;];&#10;" />
-              <option name="updatedContent" value="import { Debug } from './debug.ts';&#10;import { wrap } from './ai-sdk/index.ts';&#10;import { GoogleGenerativeAIProvider } from './ai-sdk/google-generative-ai.ts';&#10;import { AnthropicProvider } from './ai-sdk/anthropic.ts';&#10;import { OpenAIProvider } from './ai-sdk/openai.ts';&#10;import { AzureProvider } from './ai-sdk/azure.ts';&#10;import type { ContextItem, Model, zConfig, zGenerateOutput } from '../../types.ts';&#10;import type { ToolCall } from '../../tools/index.ts';&#10;import { type User } from '../../server.ts';&#10;&#10;export class SettingsError extends Error {}&#10;&#10;export interface ChatProvider {&#10;  name: string;&#10;  settings: string[];&#10;  getModels: (user: User) =&gt; Promise&lt;Model[]&gt;;&#10;  generate: (&#10;    user: User,&#10;    instructions: string,&#10;    context: ContextItem[],&#10;    config: zConfig,&#10;    abortSignal: AbortSignal,&#10;    tools: ToolCall[],&#10;  ) =&gt; AsyncGenerator&lt;zGenerateOutput&gt;;&#10;  embed: (user: User, texts: string[], config: zConfig) =&gt; Promise&lt;number[][]&gt;;&#10;}&#10;&#10;export const chatProviders: ChatProvider[] = [&#10;  Debug,&#10;  wrap(GoogleGenerativeAIProvider),&#10;  wrap(AnthropicProvider),&#10;  wrap(OpenAIProvider),&#10;  wrap(AzureProvider),&#10;];" />
-            </PendingDiffInfo>
-          </value>
-        </entry>
         <entry key="/generate (snapshot).ts">
           <value>
             <PendingDiffInfo>

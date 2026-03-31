@@ -9,6 +9,7 @@ import { navigate } from 'wouter/use-hash-location';
 import { nprogress } from '@mantine/nprogress';
 import { useTasks } from '@/stores/tasks.tsx';
 import { getLastChatActivity } from '@/utils/ui.ts';
+import { useLayout } from '@/stores/layout.tsx';
 
 interface Chats {
   init: () => Promise<void>;
@@ -107,6 +108,16 @@ export const useChats = create(
         ? await trpc.messages.list.query({ chatId: currentChat.id })
         : [];
       console.log('Messages:', messages);
+
+      const totalToolCalls = messages.reduce((sum, msg) => {
+        const toolCalls = msg.data.filter((m) => m.type === 'toolCall').length;
+        return sum + toolCalls;
+      }, 0);
+      const totalToolResults = messages.reduce((sum, msg) => {
+        const toolResults = msg.data.filter((m) => m.type === 'toolResult').length;
+        return sum + toolResults;
+      }, 0);
+      useLayout.getState().setMessagingDisable('toolResults', totalToolResults < totalToolCalls);
 
       set({
         messages,

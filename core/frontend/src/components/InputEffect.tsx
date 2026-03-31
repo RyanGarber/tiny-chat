@@ -10,7 +10,7 @@ export default function InputEffect({
   content: ReactNode;
   onDelete: () => void;
 }) {
-  const { shadow, isMessagingDisabled } = useLayout();
+  const { shadow, messagingDisables } = useLayout();
   return (
     <Group
       className="input-effect"
@@ -21,10 +21,15 @@ export default function InputEffect({
       w="fit-content"
       bdrs={10}
       fz={14}
-      opacity={isMessagingDisabled ? 0.5 : 1}
+      opacity={messagingDisables.size > 0 ? 0.5 : 1}
       style={{ boxShadow: shadow, pointerEvents: 'auto' }}
     >
-      <ActionIcon size={20} variant="subtle" onClick={onDelete} disabled={isMessagingDisabled}>
+      <ActionIcon
+        size={20}
+        variant="subtle"
+        onClick={onDelete}
+        disabled={messagingDisables.size > 0}
+      >
         <Icon icon="lucide:x" height={18} />
       </ActionIcon>
       <Box>{content}</Box>

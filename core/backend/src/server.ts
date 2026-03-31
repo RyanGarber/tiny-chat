@@ -101,7 +101,7 @@ export const auth = betterAuth({
     },
     additionalFields: {
       settings: {
-        type: 'json',
+        type: 'string' as unknown as 'json',
         required: true,
         defaultValue: {},
       },
@@ -126,7 +126,6 @@ export const auth = betterAuth({
         );
         await globalThis.prisma.user.update({
           where: { id: newUser.user.id },
-
           data: { settings: { ...anonymousUser.user.settings, ...newUser.user.settings } },
         });
         await globalThis.prisma.folder.updateMany({

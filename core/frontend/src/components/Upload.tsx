@@ -151,7 +151,12 @@ function FileTab({ onClose }: { onClose: () => void }) {
                   cursor: 'pointer',
                 }}
                 onClick={() => {
-                  addUploads(file);
+                  addUploads({
+                    type: 'upload',
+                    id: file.id,
+                    name: file.name,
+                    thumbnail: file.thumbnail ?? undefined,
+                  });
                   onClose();
                 }}
               >

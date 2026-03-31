@@ -176,10 +176,10 @@ export function getCommonArgs(maxTemperature = 2): ModelArg[] {
     {
       type: 'range',
       name: 'max-tokens',
-      min: 500,
-      max: 10000,
-      step: 500,
-      default: 2500,
+      min: 2500,
+      max: 50000,
+      step: 2500,
+      default: 10000,
     },
     ...(maxTemperature
       ? [
@@ -205,6 +205,7 @@ export async function generateInstructions(
   messages: ContextItem[],
   config: zConfig,
   chat?: Chat,
+  timezone?: string,
 ) {
   const memories = chat && !chat.incognito ? await getMemoryContext(user, messages) : [];
 
@@ -216,12 +217,19 @@ export async function generateInstructions(
 
   const userInstructions = chat && !chat.incognito ? user.settings.instructions : [];
 
+  const date = new Date().toLocaleString('en-US', {
+    timeZone: timezone ?? 'UTC',
+    dateStyle: 'long',
+    timeStyle: 'short',
+  });
+
   return (
     `Formatting re-enabled.
 
 ## Instructions
 
-Today's date is ${new Date().toLocaleDateString()}. For time-sensitive topics (news, software, etc.), search rather than relying on training data.
+It is currently ${date}. Always consider ${date} the date and time. Never convert to UTC when calling tools.
+For time-sensitive topics (news, software, etc.), search rather than relying on training data.
 Always take conversation timing into account. Do not assume the chat is continuous. Consider whether the user's intent has changed between messages.
 
 Render responses in Markdown — use headers, tables, lists, and code blocks where helpful. Use LaTeX for math, always with \\(...\\) for inline and \\[...\\] for display. Keep paragraphs short.
@@ -267,13 +275,13 @@ If unsure whether something is worth remembering, ask the user if they'd like it
 
 ## Citations
 
-When referencing *existing* actions, memories, or search_web results, *always* cite your sources using footnotes like [^id] (matching the id *exactly*).
-Do NOT use simple [^1] indices; only use the explicit [^id] IDs provided in the results.
+When referencing existing actions, memories, or search_web results, always cite your sources using footnotes like [^id] (matching the ID shown exactly).
+Do NOT use simple [^1] indices; only use the explicit [^id] IDs provided in context or in the results.
 
 ## Important
 Do not bring up or make connections to a memory unless it is directly relevant to the current conversation.
 If you say you will remember something, or will do something in the future, call the appropriate add_memory or add_action tool.
-When asking the user a question, always use the appropriate \`reply_\` tool instead of writing the question in text.` +
+When asking the user a question, always use the appropriate \`reply_\` tool instead of writing the question in text. Do not call the tool and write the question in text as well - only call the tool.` +
     (userInstructions?.length
       ? `
 

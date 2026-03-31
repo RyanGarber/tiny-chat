@@ -94,8 +94,9 @@ export const zDataPart = z.discriminatedUnion('type', [
   }),
   z.object({
     type: z.literal('abort'),
-    reason: z.enum(['user', 'content', 'length', 'other']),
-    details: z.string().optional(),
+    reason: z.enum(['user', 'content', 'length', 'error', 'other']),
+    message: z.string().optional(),
+    details: z.any().optional(),
   }),
   z.object({
     type: z.literal('other'),

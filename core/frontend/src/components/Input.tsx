@@ -38,7 +38,7 @@ import Upload, {
 export function Input(props: InputWrapperProps) {
   const { setEditor, config, setConfig, isUploading } = useMessaging();
   const { chatProviders, abortController } = useProviders();
-  const { shadow, setIsMessaging, isMessagingDisabled } = useLayout();
+  const { shadow, setIsMessaging, messagingDisables } = useLayout();
 
   const [isMultiline, setMultiline] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -101,7 +101,7 @@ export function Input(props: InputWrapperProps) {
   const leftActionContent = (
     <Menu position="top-start" transitionProps={{ transition: 'fade-up' }}>
       <Menu.Target>
-        <ActionIcon variant="subtle" size={32} disabled={isMessagingDisabled || isUploading}>
+        <ActionIcon variant="subtle" size={32} disabled={messagingDisables.size > 0 || isUploading}>
           <Icon icon="lucide:paperclip" height={18} />
         </ActionIcon>
       </Menu.Target>
@@ -203,7 +203,7 @@ export function Input(props: InputWrapperProps) {
         size={32}
         onClick={abortController !== null ? () => abortController.abort() : onSend}
         disabled={
-          isMessagingDisabled && (abortController === null || abortController.signal.aborted)
+          messagingDisables.size > 0 && (abortController === null || abortController.signal.aborted)
         }
       >
         {abortController !== null ? (
@@ -259,7 +259,7 @@ export function Input(props: InputWrapperProps) {
           component="div"
           multiline
           pointer
-          disabled={isMessagingDisabled}
+          disabled={messagingDisables.size > 0}
           leftSection={leftActions}
           rightSection={rightActions}
           style={{
@@ -292,7 +292,7 @@ export function Input(props: InputWrapperProps) {
               paddingTop: 5,
               paddingBottom: 5,
               minHeight: 'var(--input-height)',
-              cursor: isMessagingDisabled ? 'not-allowed' : 'text',
+              cursor: messagingDisables.size > 0 ? 'not-allowed' : 'text',
               transition: 'padding-left 200ms ease, padding-right 200ms ease',
             }}
             onClick={() => ReactEditor.focus(editor)}
@@ -309,7 +309,7 @@ export function Input(props: InputWrapperProps) {
                 onKeyDown={onKeyDown}
                 onFocus={() => setIsMessaging(true)}
                 onBlur={() => setIsMessaging(false)}
-                readOnly={isMessagingDisabled}
+                readOnly={messagingDisables.size > 0}
                 autoCapitalize="sentences"
               ></Editable>
             </Slate>

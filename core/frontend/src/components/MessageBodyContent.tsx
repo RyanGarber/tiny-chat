@@ -1,7 +1,7 @@
 import { useLayout } from '@/stores/layout.tsx';
 import { useMessaging } from '@/stores/messaging.tsx';
 import { useChats } from '@/stores/chats.tsx';
-import { ActionIcon, Box, Divider, Image, Portal, Transition } from '@mantine/core';
+import { ActionIcon, Alert, Box, Group, Image, Portal, Text, Transition } from '@mantine/core';
 import { useTextSelection } from '@mantine/hooks';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { applyHljsTheme } from '@/utils/highlight';
@@ -15,6 +15,7 @@ import { Icon } from '@iconify/react';
 import { useStreamedLength } from '@/hooks/useStreamedLength.ts';
 import Ask from '@/components/Ask.tsx';
 import { SearchResult } from '@tiny-chat/core-backend/src/providers/search';
+import { sendMessage } from '@/managers/sending.ts';
 
 export default function MessageBodyContent({
   message,
@@ -159,7 +160,7 @@ export default function MessageBodyContent({
           <ToolCallPopover key={i} call={part} result={result} containerWidth={containerWidth} />,
         );
 
-        if (part.name.startsWith('ask_')) {
+        if (part.name.startsWith('reply_')) {
           renderedParts.push(
             <Ask
               key={`${i}-ask`}
@@ -173,12 +174,28 @@ export default function MessageBodyContent({
       }
     } else if (part.type === 'abort') {
       renderedParts.push(
-        <Divider
+        <Alert
           key={i}
-          label={`Stopped (${part.reason})`}
-          size="md"
-          styles={{ label: { fontSize: 14 } }}
-        />,
+          color={part.reason === 'error' ? 'red' : 'gray'}
+          variant="light"
+          title={part.reason === 'error' ? 'Error' : 'Stopped'}
+          icon={<Icon icon="lucide:circle-x" />}
+          my={4}
+        >
+          <Group justify="space-between">
+            <Text>{part.message ?? `Response ended due to ${part.reason}.`}</Text>
+            <ActionIcon
+              variant="subtle"
+              onClick={() => {
+                const { setEditing } = useMessaging.getState();
+                setEditing(message);
+                void sendMessage(message.data);
+              }}
+            >
+              <Icon icon="lucide:rotate-ccw" />
+            </ActionIcon>
+          </Group>
+        </Alert>,
       );
     }
   }

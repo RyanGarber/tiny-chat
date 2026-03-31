@@ -37,7 +37,7 @@ export default function Ask({
 
   let question = '';
   let answers: ReactNode;
-  if (part.name === 'ask_question') {
+  if (part.name === 'reply_question') {
     const ask = zReplyQuestion.parse(part.args);
     question = ask.question;
     answers = (
@@ -47,15 +47,15 @@ export default function Ask({
         onChange={setValue}
       />
     );
-  } else if (part.name === 'ask_color') {
+  } else if (part.name === 'reply_color') {
     const ask = zReplyColor.parse(part.args);
     question = ask.question;
     answers = <ColorInput value={value as string | undefined} onChange={setValue} />;
-  } else if (part.name === 'ask_number') {
+  } else if (part.name === 'reply_number') {
     const ask = zReplyNumber.parse(part.args);
     question = ask.question;
     answers = <NumberInput value={value as string | number | undefined} onChange={setValue} />;
-  } else if (part.name === 'ask_datetime') {
+  } else if (part.name === 'reply_datetime') {
     const ask = zReplyDatetime.parse(part.args);
     question = ask.question;
     answers =
@@ -81,14 +81,17 @@ export default function Ask({
             <Box flex={1}>{answers}</Box>
             <ActionIcon
               variant="filled"
-              onClick={() => void continueToolCall(message.id, part.id, part.name, value)}
+              onClick={() =>
+                void continueToolCall(message.id, part.id, part.name, { user_response: value })
+              }
             >
               <Icon icon="lucide:check" />
             </ActionIcon>
           </Group>
         ) : (
           <Text c="dimmed" fs="italic">
-            {String(result.value)}
+            {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access */}
+            {String(result.value.user_response)}
           </Text>
         )}
       </Stack>

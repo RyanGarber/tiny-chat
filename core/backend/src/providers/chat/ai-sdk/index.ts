@@ -66,7 +66,6 @@ export const AISdkProvider: ChatProvider = {
 
   async *generate(user, instructions, context, config, abortSignal, tools) {
     let client: Partial<Provider> | null = null;
-    let providerName = '';
     let supportsToolCall = false;
 
     // Find the internal provider that has this model
@@ -75,15 +74,17 @@ export const AISdkProvider: ChatProvider = {
       const model = models.find((m) => m.name === config.model);
       if (model) {
         client = provider.getClient(user);
-        providerName = provider.name;
         supportsToolCall = model.features.includes('toolCall');
         break;
       }
     }
 
-    if (!client) throw new Error(`Provider not found or not configured for model ${config.model}`);
-    if (!client.languageModel?.(config.model))
-      throw new Error(`Model ${config.model} not found in provider ${providerName}`);
+    if (!client) {
+      throw new Error(`No available model named '${config.model}'`);
+    }
+    if (!client.languageModel?.(config.model)) {
+      throw new Error(`Model '${config.model}' is not a language model`);
+    }
 
     const sdkData: TextStreamPart<any>[] = [];
     const rawData: any[] = [];
@@ -161,17 +162,35 @@ export const AISdkProvider: ChatProvider = {
               if (part.type === 'text') {
                 return [{ type: 'text', text: part.value }] satisfies TextPart[];
               } else if (part.type === 'toolCall') {
-                const match = m.id
-                  ? m.metadata
-                      .flat()
-                      .find(
-                        (p) =>
-                          p.functionCall?.name === part.name &&
-                          p.functionCall?.id === part.id &&
-                          p.thoughtSignature,
-                      )
-                  : null;
+                // find ai-sdk thoughtSignature
+                console.log('Looking for thoughtSignature for tool call', part.name, part.id);
+                let match;
+                if (m.id) {
+                  for (const entry of m.metadata) {
+                    for (const sdkPart of entry.sdkData ?? []) {
+                      if (
+                        sdkPart.type === 'tool-call' &&
+                        sdkPart.toolCallId === part.id &&
+                        sdkPart.toolName === part.name
+                      ) {
+                        match = sdkPart.providerMetadata?.google?.thoughtSignature;
+                        console.log(
+                          'Found thoughtSignature for tool call',
+                          part.name,
+                          part.id,
+                          match,
+                        );
+                      }
+                    }
+                  }
+                }
 
+                console.log('[TOOL CALL]', {
+                  toolCallId: part.id,
+                  toolName: part.name,
+                  input: part.args,
+                  thoughtSignature: match,
+                });
                 return [
                   {
                     type: 'tool-call',
@@ -285,10 +304,9 @@ export const AISdkProvider: ChatProvider = {
         } satisfies zGenerateOutput;
       } else if (chunk.type === 'raw') {
         rawData.push(chunk.rawValue);
-      } else if (
-        (chunk.type === 'finish' && chunk.finishReason === 'error') ||
-        chunk.type === 'error'
-      ) {
+      }
+
+      if (chunk.type === 'finish' || chunk.type === 'error') {
         yield {
           type: 'special',
           value: {
@@ -303,9 +321,12 @@ export const AISdkProvider: ChatProvider = {
             ],
           },
         };
-        if (chunk.type === 'finish')
-          throw new Error(`[${chunk.finishReason}] ${chunk.rawFinishReason}`);
-        else throw new Error(JSON.stringify(chunk.error));
+      }
+
+      if (chunk.type === 'finish' && chunk.finishReason === 'error') {
+        throw new Error(chunk.rawFinishReason ?? 'Unknown error');
+      } else if (chunk.type === 'error') {
+        throw chunk.error;
       } else if (
         chunk.type === 'finish' &&
         (chunk.finishReason === 'length' ||

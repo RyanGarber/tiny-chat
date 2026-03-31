@@ -19,28 +19,47 @@ export async function handleMessage(messageId: string) {
   const config = messages.find((m) => m.id === messageId)!.config;
   console.log('Running model with config:', config);
 
+  await runLoop(messages, messageId, async (message, index) => {
+    const reply = await prepare(message.id, config);
+    reply.state.any = true;
+    useChats.setState({ messages: useChats.getState().messages });
+    console.log(`Replying to message ${message.id} using config`, reply.config);
+    await runGeneration({
+      reply,
+      context: messages.slice(0, index + 1),
+      config,
+    });
+    return reply;
+  });
+}
+
+async function runLoop(
+  messages: MessageOmitted[],
+  messageId: string,
+  run: (message: MessageOmitted, index: number) => Promise<MessageUnomitted>,
+) {
   let isPostTarget = false;
+  console.log(
+    '[LOOP] Messages: ',
+    messages.map((m) => m.id),
+    'Target:',
+    messageId,
+  );
   for (let i = 0; i < messages.length; i++) {
     if (messages[i].author !== Author.USER) continue;
 
     const isTarget = messages[i].id === messageId;
     if (isTarget) isPostTarget = true;
 
+    console.log(`[LOOP] Processing message ${messages[i].id} (postTarget: ${isPostTarget})`);
     if (isPostTarget) {
-      const reply = await prepare(messages[i].id, config);
-
-      reply.state.any = true;
-      useChats.setState({ messages: useChats.getState().messages });
-      console.log(
-        `Replying to message ${messages[i].id} using ${isTarget ? 'config' : 'its existing settings'}`,
-        reply.config,
-      );
-
-      await runGeneration({
-        reply,
-        context: messages.slice(0, i + 1),
-        config,
-      });
+      const reply = await run(messages[i], i);
+      const toolCallsCount = reply.data.filter((p) => p.type === 'toolCall').length;
+      const toolResultsCount = reply.data.filter((p) => p.type === 'toolResult').length;
+      if (toolResultsCount < toolCallsCount) {
+        console.log('Unanswered tool calls in reply, stopping loop to wait for user input');
+        break;
+      }
     }
   }
 }
@@ -103,7 +122,7 @@ export async function continueToolCall(
   );
   if (alreadyAnswered) return;
 
-  const omissions = await trpc.messages.listOmissions.query({ ids: messages.map((m) => m.id) });
+  const omissions = await trpc.messages.listOmissions.query({ ids: [target.id] });
   const targetMetadata = zMetadata.parse(omissions.get(target.id)?.metadata);
 
   // 1. Combine the new result and strictly align the array
@@ -137,18 +156,28 @@ export async function continueToolCall(
 
   const reply = useChats.getState().messages.find((m) => m.id === target.id) as MessageUnomitted;
   reply.metadata = targetMetadata;
-  reply.state.any = true;
   reply.state.thinking = false;
   useChats.setState({ messages: [...useChats.getState().messages] });
 
   const refreshedMessages = useChats.getState().messages;
   const refreshedIndex = refreshedMessages.findIndex((m) => m.id === target.id);
-  if (refreshedIndex < 0) return;
+  if (refreshedIndex < 1) return;
 
-  await runGeneration({
-    reply,
-    context: refreshedMessages.slice(0, refreshedIndex + 1),
-    config: reply.config,
+  const userMessage = refreshedMessages[refreshedIndex - 1];
+
+  await runLoop(refreshedMessages, userMessage.id, async (message, index) => {
+    const thisReply =
+      message.id === userMessage.id
+        ? (refreshedMessages[refreshedIndex] as MessageUnomitted)
+        : await prepare(message.id, message.config);
+    thisReply.state.any = true;
+    useChats.setState({ messages: useChats.getState().messages });
+    await runGeneration({
+      reply: thisReply,
+      context: refreshedMessages.slice(0, index + 1),
+      config: thisReply.config,
+    });
+    return thisReply;
   });
 }
 
@@ -184,8 +213,6 @@ async function runGeneration({
     lastFlush = performance.now();
   };
 
-  let error: unknown = null;
-
   try {
     let hasText = false;
     for await (const event of stream) {
@@ -208,6 +235,7 @@ async function runGeneration({
         }
       } else if (event.type === 'special') {
         if (event.value.type === 'metadata') {
+          console.log('Received metadata from backend:', event.value.value);
           (reply.metadata as zMetadata[]).push(event.value.value);
         } else if (event.value.type === 'fileUpdate') {
           const fileName = event.value.name;
@@ -242,7 +270,7 @@ async function runGeneration({
   } catch (e: unknown) {
     // @ts-expect-error ts is fucking stupid
     if (e.name === 'AbortError') console.warn('Stream aborted');
-    else error = e;
+    else throw e;
   } finally {
     useProviders.setState({ abortController: null });
 
@@ -250,7 +278,6 @@ async function runGeneration({
     await publish(reply);
     console.log('Published reply:', reply);
   }
-  if (error) throw error as Error;
 }
 
 async function prepare(previousId: string, config: zConfig): Promise<MessageUnomitted> {

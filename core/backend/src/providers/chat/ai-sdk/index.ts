@@ -24,6 +24,7 @@ import { type Model, type zGenerateOutput } from '../../../types.ts';
 import { type User } from '../../../server.ts';
 import type { OpenAIResponsesProviderOptions } from '@ai-sdk/azure';
 import type { GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
+import type { AnthropicProviderOptions } from '@ai-sdk/anthropic';
 
 export interface AISdkProvider {
   name: string;
@@ -115,7 +116,16 @@ export const AISdkProvider: ChatProvider = {
                       : undefined,
                 }
               : undefined,
+          responseModalities: ['TEXT', 'IMAGE'],
         } satisfies GoogleGenerativeAIProviderOptions,
+        anthropic: {
+          thinking:
+            config.args?.thinking === 'adaptive' || config.args?.thinking === 'disabled'
+              ? { type: config.args.thinking }
+              : config.args?.thinking
+                ? { type: 'enabled', budgetTokens: parseInt(config.args.thinking as string) }
+                : undefined,
+        } satisfies AnthropicProviderOptions,
       },
       tools: supportsToolCall
         ? Object.fromEntries(
@@ -282,6 +292,16 @@ export const AISdkProvider: ChatProvider = {
           type: 'data',
           value: { type: 'text', value: chunk.text },
         } satisfies zGenerateOutput;
+      } else if (chunk.type === 'file') {
+        yield {
+          type: 'data',
+          value: {
+            type: 'outputFile',
+            // TODO - name needed for fileUpdate (openai)
+            mime: chunk.file.mediaType,
+            data: chunk.file.base64,
+          },
+        };
       } else if (chunk.type === 'tool-call') {
         yield {
           type: 'data',

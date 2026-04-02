@@ -446,13 +446,24 @@ const filter = (text: string) => {
   });
 
   // Step 5: Inline math — $...$ (conservative fallback for non-compliant model output)
-  const LATEX_ONLY_RE = /\\[a-zA-Z]|\\[^a-zA-Z]|[_{}]|\^(?!\[)/;
   text = text.replace(
     /(?<![\\$a-zA-Z\d])\$((?:[^$\\\n[\]]|\\.)+?)\$(?!\$)/g,
     (match, inner: string) => {
       const trimmed = inner.trim();
       if (!trimmed) return match;
-      if (!LATEX_ONLY_RE.test(trimmed)) return match;
+      if (/^[a-zA-Z]$/.test(trimmed)) return '`' + MATH_MARKER + trimmed + '`';
+
+      // Must pass at least one of these to be treated as math:
+      const hasMathStructure =
+        // Has explicit LaTeX: \frac, ^2, a_n, {}, etc.
+        /[\\^_{}]/.test(trimmed) ||
+        // Has math operator with spacing or between operands: 15 / 45, 10 + 30, x = 4
+        /[\d\w]\s*[+\-*/=]\s*[\d\w(]/.test(trimmed) ||
+        // Is a pure number (integer or decimal), nothing else: 15, 15.25
+        /^-?\d+(\.\d+)?$/.test(trimmed);
+
+      if (!hasMathStructure) return match;
+
       return '`' + MATH_MARKER + trimmed + '`';
     },
   );

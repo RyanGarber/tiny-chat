@@ -247,17 +247,17 @@ async function runGeneration({
               'Updating URL of file:',
               file.name,
               'from URL:',
-              file.url,
+              file.data,
               'to:',
-              event.value.url,
+              event.value.data,
             );
-            file.url = event.value.url;
+            file.data = event.value.data;
             console.log(
               'Updated file (local):',
-              file.url,
+              file.data,
               '(global):',
               reply.data.filter((p) => p.type === 'outputFile').find((p) => p.name === fileName)
-                ?.url,
+                ?.data,
             );
           }
         }

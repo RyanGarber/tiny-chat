@@ -184,14 +184,13 @@ export const useChats = create(
     deleteChat: async (id) => {
       const { currentChat, setCurrentChat, fetchFolders } = get();
       console.log(`Deleting chat ${id}`);
-      const isCurrent = id === currentChat?.id;
-      if (isCurrent) useTasks.getState().addTask('deleteChat', 'Deleting chat');
+      useTasks.getState().addTask('deleteChat', 'Deleting chat');
       await trpc.chats.delete.mutate({ id: id });
-      if (isCurrent) await useTasks.getState().updateTask('deleteChat', 33);
+      await useTasks.getState().updateTask('deleteChat', 33);
       await fetchFolders(false);
-      if (isCurrent) await useTasks.getState().updateTask('deleteChat', 66);
+      await useTasks.getState().updateTask('deleteChat', 66);
       if (currentChat?.id === id) await setCurrentChat(null, true, false);
-      if (isCurrent) await useTasks.getState().removeTask('deleteChat');
+      await useTasks.getState().removeTask('deleteChat');
     },
 
     temporary: false,

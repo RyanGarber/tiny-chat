@@ -30,6 +30,7 @@
     "@types/hast": "^3.0.4",
     "@types/katex": "^0.16.8",
     "@use-gesture/react": "^10.3.1",
+    "@vidstack/react": "^1.12.13",
     "better-auth": "^1.5.5",
     "dayjs": "^1.11.20",
     "highlight.js": "^11.11.1",

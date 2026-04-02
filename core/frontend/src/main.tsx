@@ -6,6 +6,9 @@ import '@mantine/nprogress/styles.css';
 import '@mantine/carousel/styles.css';
 import '@mantine/dates/styles.css';
 import '@gfazioli/mantine-json-tree/styles.css';
+import '@vidstack/react/player/styles/default/theme.css';
+import '@vidstack/react/player/styles/default/layouts/audio.css';
+import '@vidstack/react/player/styles/default/layouts/video.css';
 import '@/main.css';
 
 import React from 'react';

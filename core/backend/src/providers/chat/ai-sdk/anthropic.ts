@@ -23,10 +23,27 @@ export const AnthropicProvider: AISdkProvider = {
     const models = await client.models.list();
 
     return models.data.map((m) => {
+      const args = getCommonArgs(1);
+      if (m.id.includes('claude-4.5')) {
+        args.push({
+          name: 'thinking',
+          type: 'list' as const,
+          values: ['disabled', '2500', '5000', '7500', '10000'],
+          default: '2500',
+        });
+      }
+      if (m.id.includes('claude-4.6')) {
+        args.push({
+          name: 'thinking',
+          type: 'list' as const,
+          values: ['disabled', 'adaptive'],
+          default: 'adaptive',
+        });
+      }
       return {
         name: m.id,
         features: ['generate' as const, 'toolCall' as const],
-        args: getCommonArgs(1),
+        args,
       } satisfies Model;
     });
   },

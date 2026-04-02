@@ -64,8 +64,8 @@ export const zDataPart = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('outputFile'),
     name: z.string().optional(),
-    mime: z.string().optional(),
-    url: z.string(),
+    mime: z.string(),
+    data: z.base64(),
   }),
   z.object({
     type: z.literal('upload'),
@@ -120,7 +120,7 @@ export const zSpecialPart = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('fileUpdate'),
     name: z.string(),
-    url: z.string(),
+    data: z.base64(),
   }),
   z.object({
     type: z.literal('metadata'),

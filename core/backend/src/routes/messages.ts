@@ -105,35 +105,35 @@ export default router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const message = await globalThis.prisma.$transaction(async (tx) => {
-        console.log(`Editing message ${input.id} (truncate: ${input.truncate})`);
+      console.log(`Editing message ${input.id} (truncate: ${input.truncate})`);
 
-        if (input.truncate) {
-          console.log(`Truncating messages after ${input.id}`);
-          let message = await tx.message.findUniqueOrThrow({
-            where: { id: input.id, userId: ctx.session.user.id },
+      if (input.truncate) {
+        console.log(`Truncating messages after ${input.id}`);
+        let message = await globalThis.prisma.message.findUniqueOrThrow({
+          where: { id: input.id, userId: ctx.session.user.id },
+          include: { next: true },
+        });
+        const toDelete: string[] = [];
+        while (message.next) {
+          const nextMessage = await globalThis.prisma.message.findUniqueOrThrow({
+            where: { id: message.next.id, userId: ctx.session.user.id },
             include: { next: true },
           });
-          while (message.next) {
-            const nextMessage = await tx.message.findUniqueOrThrow({
-              where: { id: message.next.id, userId: ctx.session.user.id },
-              include: { next: true },
-            });
-            await tx.message.delete({ where: { id: nextMessage.id } });
-            message = nextMessage;
-          }
+          toDelete.push(nextMessage.id);
+          message = nextMessage;
         }
+        await globalThis.prisma.message.deleteMany({ where: { id: { in: toDelete } } });
+      }
 
-        return tx.message.update({
-          where: { id: input.id, userId: ctx.session.user.id },
-          data: {
-            author: input.author,
-            config: input.config,
-            data: input.data,
-            metadata: input.metadata,
-            createdAt: new Date(),
-          },
-        });
+      const message = await globalThis.prisma.message.update({
+        where: { id: input.id, userId: ctx.session.user.id },
+        data: {
+          author: input.author,
+          config: input.config,
+          data: input.data,
+          metadata: input.metadata,
+          createdAt: new Date(),
+        },
       });
 
       await embedMessage(ctx.session.user, message);

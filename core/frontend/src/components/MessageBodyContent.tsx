@@ -16,6 +16,12 @@ import { useStreamedLength } from '@/hooks/useStreamedLength.ts';
 import Ask from '@/components/Ask.tsx';
 import { SearchResult } from '@tiny-chat/core-backend/src/providers/search';
 import { sendMessage } from '@/managers/sending.ts';
+import { MediaPlayer, MediaProvider } from '@vidstack/react';
+import {
+  DefaultAudioLayout,
+  defaultLayoutIcons,
+  DefaultVideoLayout,
+} from '@vidstack/react/player/layouts/default';
 
 export default function MessageBodyContent({
   message,
@@ -35,7 +41,7 @@ export default function MessageBodyContent({
 
   const { shadow } = useLayout();
   const { addQuote } = useMessaging();
-  const { getCodeTheme } = useSettings();
+  const { getTheme, getCodeTheme } = useSettings();
   void applyHljsTheme(getCodeTheme());
 
   const container = useRef<HTMLDivElement>(null);
@@ -141,14 +147,48 @@ export default function MessageBodyContent({
       }
       textOffset += part.value.length;
       if (displayedLength < textOffset) break; // still streaming this segment
-    } else if (part.type === 'outputFile' && part.mime?.startsWith('image/')) {
-      // Show the image as soon as all text before it has been revealed
-      if (displayedLength >= textOffset) {
-        renderedParts.push(
-          <Image key={i} src={part.url} alt={part.name} radius="md" maw="100%" w="auto" my={4} />,
-        );
-      } else {
-        break;
+    } else if (part.type === 'outputFile') {
+      if (part.mime?.startsWith('image/')) {
+        // Show the image as soon as all text before it has been revealed
+        if (displayedLength >= textOffset) {
+          renderedParts.push(
+            <Image
+              key={i}
+              src={`data:${part.mime};base64,${part.data}`}
+              alt={part.name}
+              radius="md"
+              maw="100%"
+              w="auto"
+              my={4}
+            />,
+          );
+        } else {
+          break;
+        }
+      } else if (part.mime?.startsWith('audio/') || part.mime?.startsWith('video/')) {
+        if (displayedLength >= textOffset) {
+          renderedParts.push(
+            <MediaPlayer
+              key={i}
+              title={part.name}
+              src={`data:${part.mime};base64,${part.data}`}
+              crossOrigin
+              playsInline
+            >
+              <MediaProvider></MediaProvider>
+              <DefaultAudioLayout
+                icons={defaultLayoutIcons}
+                colorScheme={getTheme() as 'dark' | 'light'}
+              />
+              <DefaultVideoLayout
+                icons={defaultLayoutIcons}
+                colorScheme={getTheme() as 'dark' | 'light'}
+              />
+            </MediaPlayer>,
+          );
+        } else {
+          break;
+        }
       }
     } else if (part.type === 'toolCall') {
       if (displayedLength >= textOffset) {

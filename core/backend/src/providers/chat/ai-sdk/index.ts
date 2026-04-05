@@ -279,14 +279,23 @@ export const AISdkProvider: ChatProvider = {
       abortSignal,
     });
 
+    let thoughtContinued = false;
     for await (const chunk of stream.fullStream) {
       console.log('[AI-SDK]', chunk);
       sdkData.push(chunk);
       if (chunk.type === 'reasoning-delta') {
         yield {
           type: 'data',
-          value: { type: 'thought', value: chunk.text },
+          value: {
+            type: 'thought',
+            value: chunk.text,
+            ...(thoughtContinued ? { continued: true } : {}),
+          },
         } satisfies zGenerateOutput;
+        thoughtContinued = true;
+      }
+      if (chunk.type === 'reasoning-end') {
+        thoughtContinued = false;
       } else if (chunk.type === 'text-delta') {
         yield {
           type: 'data',

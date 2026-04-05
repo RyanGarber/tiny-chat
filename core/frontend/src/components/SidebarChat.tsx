@@ -59,7 +59,7 @@ export default function SidebarChat({
       >
         <NavLink
           key={chat.id}
-          label={chat.title ?? 'Generating...'}
+          label={chat.title ?? 'Sending...'}
           variant="filled"
           active={active}
           ref={navLinkRef}

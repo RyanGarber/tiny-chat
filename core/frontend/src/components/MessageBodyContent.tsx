@@ -15,13 +15,14 @@ import { Icon } from '@iconify/react';
 import { useStreamedLength } from '@/hooks/useStreamedLength.ts';
 import Ask from '@/components/Ask.tsx';
 import { SearchResult } from '@tiny-chat/core-backend/src/providers/search';
-import { sendMessage } from '@/managers/sending.ts';
 import { MediaPlayer, MediaProvider } from '@vidstack/react';
 import {
   DefaultAudioLayout,
   defaultLayoutIcons,
   DefaultVideoLayout,
 } from '@vidstack/react/player/layouts/default';
+import { handleMessage } from '@/managers/generation.ts';
+import { useProviders } from '@/stores/providers.tsx';
 
 export default function MessageBodyContent({
   message,
@@ -227,9 +228,16 @@ export default function MessageBodyContent({
             <ActionIcon
               variant="subtle"
               onClick={() => {
-                const { setEditing } = useMessaging.getState();
-                setEditing(message);
-                void sendMessage(message.data);
+                void (async () => {
+                  const { setMessagingDisable } = useLayout.getState();
+                  try {
+                    setMessagingDisable('resendMessage', true);
+                    await handleMessage(message.previousId!);
+                  } finally {
+                    setMessagingDisable('resendMessage', false);
+                    useProviders.setState({ abortController: null });
+                  }
+                })();
               }}
             >
               <Icon icon="lucide:rotate-ccw" />

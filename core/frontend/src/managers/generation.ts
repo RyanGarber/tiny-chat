@@ -227,11 +227,13 @@ async function runGeneration({
           const last = reply.data[reply.data.length - 1];
           if (last?.type === 'text') last.value += event.value.value;
           else reply.data.push(event.value);
+        } else if (event.value.type === 'thought') {
+          reply.state.thinking = true;
+          const last = reply.data[reply.data.length - 1];
+          if (last?.type === 'thought' && event.value.continued) last.value += event.value.value;
+          else reply.data.push(event.value);
         } else {
           reply.data.push(event.value);
-          if (event.value.type === 'thought') {
-            reply.state.thinking = true;
-          }
         }
       } else if (event.type === 'special') {
         if (event.value.type === 'metadata') {

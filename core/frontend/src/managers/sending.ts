@@ -18,7 +18,7 @@ export async function sendMessage(data: zData) {
   let currentChat = useChats.getState().currentChat;
   if (!config) return;
 
-  useTasks.getState().addTask('sending', 'Preparing message');
+  useTasks.getState().addTask('sending', 'Sending message');
   setMessagingDisable('sendMessage', true);
   reset();
   // Clear chat-level flags that reset() used to handle via cross-store call
@@ -58,7 +58,7 @@ export async function sendMessage(data: zData) {
     if (!currentChat) await setCurrentChat(message.chatId, true, false);
     else await fetchChat(false);
   } catch (e) {
-    alert('error', 'Failed to create message');
+    alert('error', 'Failed to send message');
     if (message) await deleteMessagePair(message.id);
     setData(data);
     setMessagingDisable('sendMessage', false);

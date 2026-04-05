@@ -167,7 +167,7 @@ export default function Sidebar() {
             ) : (
               <NavLink
                 key={folder.id}
-                label={folder.title ?? 'Generating...'}
+                label={folder.title ?? 'Sending...'}
                 leftSection={folder.chats.length}
                 defaultOpened={true}
               >

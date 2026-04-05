@@ -229,8 +229,9 @@ export async function generateInstructions(
 ## Instructions
 
 It is currently ${date}. Always consider ${date} the date and time. Never convert to UTC when calling tools.
-For time-sensitive topics (news, software, etc.), search rather than relying on training data.
 Always take conversation timing into account. Do not assume the chat is continuous. Consider whether the user's intent has changed between messages.
+For information that does not change often, such as historical facts, scientific principles, or general knowledge, you can rely on your training data.
+For information that does change often, such as news, current events, and coding, always search the web to get the most up-to-date information.
 
 Render responses in Markdown — use headers, tables, lists, and code blocks where helpful. Use LaTeX for math, always with \\(...\\) for inline and \\[...\\] for display. Keep paragraphs short.
 ## Identity

@@ -392,7 +392,7 @@ const markdownComponents: Components = {
 
 const LATEX_CHAR_RE = /[\\^_{}]|\\[a-zA-Z]/;
 
-const filter = (text: string, webSearchResults: SearchResult[]) => {
+const filter = (text: string, citationIds: Set<string>) => {
   text = normalizeText(text);
 
   text = text.replace(/\[(\^*[^[\]]+)]/g, (match, inner: string) => {
@@ -400,7 +400,7 @@ const filter = (text: string, webSearchResults: SearchResult[]) => {
     const ids = inner
       .split(',')
       .map((segment) => segment.replace(/^\^+/, '').trim())
-      .filter((id) => webSearchResults.map((r) => r.id).includes(id));
+      .filter((id) => citationIds.has(id));
 
     if (ids.length === 0) return match; // Not a citation bracket, leave it alone
     return ids.map((id) => `[^${id}]`).join('');
@@ -506,7 +506,8 @@ export const Markdown = memo(
     webSearchResults?: SearchResult[];
   }) => {
     const { memories, actions } = usePersistence();
-    const sourceWithCitations = useMemo(() => {
+
+    const { sourceWithCitations, knownIds } = useMemo(() => {
       let footnotes = '';
       const knownIds = new Set<string>();
 
@@ -560,10 +561,10 @@ export const Markdown = memo(
         if (backticks % 2 !== 0) {
           adjustedSource = adjustedSource + STREAMING_MARKER + '\n```';
         }
-        return `${adjustedSource}\n${footnotes}`;
+        return { sourceWithCitations: `${adjustedSource}\n${footnotes}`, knownIds };
       }
 
-      return source;
+      return { sourceWithCitations: source, knownIds };
     }, [source, webSearchResults, memories, actions]);
 
     const contextValue = useMemo(
@@ -580,7 +581,7 @@ export const Markdown = memo(
             rehypePlugins={isGenerating ? [rehypeStreamFade] : []}
             components={markdownComponents}
           >
-            {filter(sourceWithCitations, webSearchResults ?? [])}
+            {filter(sourceWithCitations, knownIds)}
           </ReactMarkdown>
         </Typography>
       </MarkdownContext.Provider>

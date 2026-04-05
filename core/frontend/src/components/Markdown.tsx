@@ -411,6 +411,12 @@ const filter = (text: string) => {
     return match;
   });
 
+  // Normalize [^^id] into [^id]
+  text = text.replace(/\[\^+([^\]]+)]/g, '[^$1]');
+
+  // Fix missing ^ for 24-character IDs (TODO - verify valid id before blindly transforming)
+  text = text.replace(/(\s)\[([a-zA-Z0-9]{6}|[a-zA-Z0-9]{24})]([\s.,:?!])/g, '$1[^$2]$3');
+
   text = text.replace(/((?:^::>:: .*$\n?)+)/gm, (block) =>
     block.replace(/^::>:: (.*)$/gm, '> ::>:: $1'),
   );

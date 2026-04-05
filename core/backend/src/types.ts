@@ -54,6 +54,7 @@ export const zDataPart = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('thought'),
     id: z.string().optional(),
+    continued: z.boolean().optional(),
     value: z.string(),
   }),
   z.object({

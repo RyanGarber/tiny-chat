@@ -392,30 +392,19 @@ const markdownComponents: Components = {
 
 const LATEX_CHAR_RE = /[\\^_{}]|\\[a-zA-Z]/;
 
-const filter = (text: string) => {
+const filter = (text: string, webSearchResults: SearchResult[]) => {
   text = normalizeText(text);
 
-  // Normalize [[^id1],[^id2]] into [^id1],[^id2]
-  text = text.replace(/\[((?:\[\^[^\]]+],?\s*)+)]/g, (_, content: string) => {
-    return content.replace(/(\[\^[^\]]+]),?\s*/g, '$1');
+  text = text.replace(/\[(\^*[^[\]]+)]/g, (match, inner: string) => {
+    // Strip all leading carets from each comma-separated segment, then check for valid IDs
+    const ids = inner
+      .split(',')
+      .map((segment) => segment.replace(/^\^+/, '').trim())
+      .filter((id) => webSearchResults.map((r) => r.id).includes(id));
+
+    if (ids.length === 0) return match; // Not a citation bracket, leave it alone
+    return ids.map((id) => `[^${id}]`).join('');
   });
-
-  // Split combined citations like [^s1-2, s2-1] into separate ones like [^s1-2][^s2-1]
-  text = text.replace(/\[\^([^\]]+)]/g, (match, content: string) => {
-    if (content.includes(',')) {
-      return content
-        .split(',')
-        .map((c) => `[^${c.trim()}]`)
-        .join('');
-    }
-    return match;
-  });
-
-  // Normalize [^^id] into [^id]
-  text = text.replace(/\[\^+([^\]]+)]/g, '[^$1]');
-
-  // Fix missing ^ for 24-character IDs (TODO - verify valid id before blindly transforming)
-  text = text.replace(/(\s)\[([a-zA-Z0-9]{6}|[a-zA-Z0-9]{24})]([\s.,:?!])/g, '$1[^$2]$3');
 
   text = text.replace(/((?:^::>:: .*$\n?)+)/gm, (block) =>
     block.replace(/^::>:: (.*)$/gm, '> ::>:: $1'),
@@ -591,7 +580,7 @@ export const Markdown = memo(
             rehypePlugins={isGenerating ? [rehypeStreamFade] : []}
             components={markdownComponents}
           >
-            {filter(sourceWithCitations)}
+            {filter(sourceWithCitations, webSearchResults ?? [])}
           </ReactMarkdown>
         </Typography>
       </MarkdownContext.Provider>

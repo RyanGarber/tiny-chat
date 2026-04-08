@@ -99,9 +99,13 @@ export const AISdkProvider: ChatProvider = {
         // TODO - move to generic provider hook
         openai: {
           reasoningEffort: config.args?.reasoning,
+          reasoningSummary: 'auto',
+          include: ['reasoning.encrypted_content'],
         } satisfies OpenAIResponsesProviderOptions,
         azure: {
           reasoningEffort: config.args?.reasoning,
+          reasoningSummary: 'auto',
+          include: ['reasoning.encrypted_content'],
         } satisfies OpenAIResponsesProviderOptions,
         google: {
           thinkingConfig:

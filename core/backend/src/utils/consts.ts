@@ -209,11 +209,12 @@ export async function generateInstructions(
 ) {
   const memories = chat && !chat.incognito ? await getMemoryContext(user, messages) : [];
 
-  const actions = chat
-    ? await globalThis.prisma.action.findMany({
-        where: { userId: chat.userId },
-      })
-    : [];
+  const actions =
+    chat && !chat.incognito
+      ? await globalThis.prisma.action.findMany({
+          where: { userId: chat.userId },
+        })
+      : [];
 
   const userInstructions = chat && !chat.incognito ? user.settings.instructions : [];
 

@@ -248,9 +248,46 @@ export default function MessageBodyContent({
     }
   }
 
+  // Stale message check: if a prior model message has a newer createdAt than this message
+  const isStale =
+    !message.state.any &&
+    messages.some(
+      (m) =>
+        m.author === Author.MODEL &&
+        messages.indexOf(m) < messages.indexOf(message) &&
+        new Date(m.createdAt).getTime() > new Date(message.createdAt).getTime(),
+    );
+
   return (
     <>
       <Box ref={container} w="100%" data-message-id={message.id} display="inline">
+        {isStale && (
+          <Alert variant="light" mb="lg">
+            <Group justify="space-between">
+              <Group>
+                <Icon icon="lucide:alert-circle" />
+                <Text>Edits in the chat may change this response</Text>
+              </Group>
+              <ActionIcon
+                variant="subtle"
+                onClick={() => {
+                  void (async () => {
+                    const { setMessagingDisable } = useLayout.getState();
+                    try {
+                      setMessagingDisable('resendMessage', true);
+                      await handleMessage(message.previousId!);
+                    } finally {
+                      setMessagingDisable('resendMessage', false);
+                      useProviders.setState({ abortController: null });
+                    }
+                  })();
+                }}
+              >
+                <Icon icon="lucide:rotate-ccw" />
+              </ActionIcon>
+            </Group>
+          </Alert>
+        )}
         {renderedParts}
       </Box>
       <Portal target={document.body}>

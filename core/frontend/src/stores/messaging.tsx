@@ -45,6 +45,10 @@ interface Messaging {
 
   scrollRequested: number;
   requestScrollToBottom: () => void;
+
+  scrollMessageId: string | null;
+  scrollMessageRequested: number;
+  requestScrollToMessage: (id: string) => void;
 }
 
 export const useMessaging = create(
@@ -138,6 +142,11 @@ export const useMessaging = create(
 
     scrollRequested: 0,
     requestScrollToBottom: () => set({ scrollRequested: get().scrollRequested + 1 }),
+
+    scrollMessageId: null,
+    scrollMessageRequested: 0,
+    requestScrollToMessage: (id) =>
+      set({ scrollMessageId: id, scrollMessageRequested: get().scrollMessageRequested + 1 }),
 
     config: null,
     setConfig: (value) => {

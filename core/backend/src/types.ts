@@ -127,6 +127,10 @@ export const zSpecialPart = z.discriminatedUnion('type', [
     type: z.literal('metadata'),
     value: zMetadata,
   }),
+  z.object({
+    type: z.literal('replyId'),
+    value: z.string(),
+  }),
 ]);
 
 export type zSpecialPart = z.infer<typeof zSpecialPart>;
@@ -139,6 +143,23 @@ export const zGenerateInput = z.object({
   overrideInstructions: z.string().optional(),
 });
 export type zGenerateInput = z.infer<typeof zGenerateInput>;
+
+export const zGenerateMessageInput = z.object({
+  messageId: z.cuid2(),
+  timezone: z.string(),
+  userInput: z.boolean(),
+  overrideInstructions: z.string().optional(),
+});
+export type zGenerateMessageInput = z.infer<typeof zGenerateMessageInput>;
+
+export const zContinueToolCallInput = z.object({
+  messageId: z.cuid2(),
+  toolCallId: z.string(),
+  toolName: z.string(),
+  value: z.any(),
+  timezone: z.string(),
+});
+export type zContinueToolCallInput = z.infer<typeof zContinueToolCallInput>;
 
 export const zGenerateOutput = z.discriminatedUnion('type', [
   z.object({ type: z.literal('data'), value: zDataPart }),

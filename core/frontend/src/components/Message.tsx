@@ -54,7 +54,7 @@ const Message = memo(
     };
 
     return (
-      <div>
+      <div data-message-id={message.id}>
         <div
           style={{
             display: 'flex',

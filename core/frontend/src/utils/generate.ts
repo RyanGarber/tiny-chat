@@ -1,13 +1,19 @@
-import { zGenerateInput, zGenerateOutput } from '@tiny-chat/core-backend/src/types.ts';
+import { zGenerateOutput } from '@tiny-chat/core-backend/src/types.ts';
 
 declare const __TAURI_DEV_HOST__: string | undefined;
 
-export async function* generate(input: zGenerateInput, signal?: AbortSignal) {
-  const url = import.meta.env.DEV
-    ? `http://${__TAURI_DEV_HOST__ ?? 'localhost'}:${import.meta.env.VITE_BACKEND_PORT}/@/generate`
-    : `${import.meta.env.VITE_BACKEND_URL}/@/generate`;
+function getBaseUrl() {
+  return import.meta.env.DEV
+    ? `http://${__TAURI_DEV_HOST__ ?? 'localhost'}:${import.meta.env.VITE_BACKEND_PORT}`
+    : (import.meta.env.VITE_BACKEND_URL as string);
+}
 
-  console.log(`Timezone: ${input.timezone}`);
+export async function* generate(
+  path: string,
+  input: Record<string, unknown>,
+  signal?: AbortSignal,
+) {
+  const url = `${getBaseUrl()}${path}`;
 
   const response = await fetch(url, {
     method: 'POST',

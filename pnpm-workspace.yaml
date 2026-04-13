@@ -12,6 +12,8 @@ allowedDeprecatedVersions:
   glob: "*"
   'node-domexception': "*"
   'whatwg-encoding': "*"
+patchedDependencies:
+  '@ai-sdk/google': patches/@ai-sdk__google.patch
 peerDependencyRules:
   allowedVersions:
     'eslint-plugin-react-hooks>eslint': '10'

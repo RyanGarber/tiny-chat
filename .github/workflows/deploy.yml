@@ -53,6 +53,7 @@ jobs:
           cp package.json deploy/
           cp pnpm-lock.yaml deploy/
           cp pnpm-workspace.yaml deploy/
+          cp -r patches deploy/patches
           mkdir deploy/core
           cp -r core/backend deploy/core/backend
           mkdir deploy/apps

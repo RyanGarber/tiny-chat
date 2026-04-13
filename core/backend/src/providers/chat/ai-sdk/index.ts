@@ -42,15 +42,19 @@ const PROVIDER_NAMESPACES = ['google', 'vertex', 'openai', 'azure'] as const;
  * For Gemini: looks for `thoughtSignature` on reasoning-start/reasoning-delta/reasoning-end parts.
  * For OpenAI/Azure: looks for `reasoningEncryptedContent` on reasoning-start parts.
  */
-function extractReasoningProviderOptions(metadata: any[]): Record<string, any> | undefined {
+function extractReasoningProviderOptions(
+  metadata: any[],
+  id: string | undefined,
+): Record<string, any> | undefined {
   if (!metadata?.length) return undefined;
 
   for (const entry of metadata) {
     for (const sdkPart of entry.sdkData ?? []) {
       if (
-        sdkPart.type === 'reasoning-start' ||
-        sdkPart.type === 'reasoning-delta' ||
-        sdkPart.type === 'reasoning-end'
+        (sdkPart.type === 'reasoning-start' ||
+          sdkPart.type === 'reasoning-delta' ||
+          sdkPart.type === 'reasoning-end') &&
+        (!id || sdkPart.providerMetadata?.openai?.itemId === id)
       ) {
         if (!sdkPart.providerMetadata) continue;
         for (const ns of PROVIDER_NAMESPACES) {
@@ -184,7 +188,7 @@ export const AISdkProvider: ChatProvider = {
                       : undefined,
                 }
               : undefined,
-          responseModalities: ['TEXT', 'IMAGE'],
+          responseModalities: ['TEXT', 'IMAGE', 'AUDIO'],
         } satisfies GoogleGenerativeAIProviderOptions,
         anthropic: {
           thinking:
@@ -235,6 +239,7 @@ export const AISdkProvider: ChatProvider = {
         // 2. Assistant turns (and Tool Calls) -> CoreAssistantMessage
         if (m.author === Author.MODEL || isToolCall) {
           const metadata = m.id ? m.metadata : [];
+          console.log('[TEST} METADATA:', metadata);
           return {
             role: 'assistant',
             content: m.data.flatMap((part): Exclude<AssistantContent, string> => {
@@ -242,7 +247,8 @@ export const AISdkProvider: ChatProvider = {
                 return [{ type: 'text', text: part.value }] satisfies TextPart[];
               } else if (part.type === 'thought') {
                 // Extract providerMetadata from the sdkData reasoning parts
-                const providerOptions = extractReasoningProviderOptions(metadata);
+                const providerOptions = extractReasoningProviderOptions(metadata, part.id);
+                console.log('Thought providerOptions:', providerOptions);
                 return [
                   {
                     type: 'reasoning',
@@ -257,7 +263,7 @@ export const AISdkProvider: ChatProvider = {
                   part.id,
                   part.name,
                 );
-                console.log('providerOptions', providerOptions);
+                console.log('Tool Call providerOptions:', providerOptions);
                 return [
                   {
                     type: 'tool-call',
@@ -341,6 +347,7 @@ export const AISdkProvider: ChatProvider = {
           value: {
             type: 'thought',
             value: chunk.text,
+            id: (chunk.providerMetadata?.openai?.itemId as string) ?? undefined,
             ...(thoughtContinued ? { continued: true } : {}),
           },
         } satisfies zGenerateOutput;

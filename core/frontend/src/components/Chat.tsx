@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   ActionIcon,
   Box,
@@ -47,6 +47,8 @@ export default function Chat() {
     insertingAfter,
     setInsertingAfter,
     scrollRequested,
+    scrollMessageId,
+    scrollMessageRequested,
   } = useMessaging();
 
   const {
@@ -70,6 +72,16 @@ export default function Chat() {
     scrollRequested,
     isInitializing,
   });
+
+  // Keep a stable ref to the viewport DOM node for imperative scroll-to-message
+  const viewportNodeRef = useRef<HTMLDivElement | null>(null);
+  const stableViewportRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      viewportNodeRef.current = node;
+      messagesViewportRef(node);
+    },
+    [messagesViewportRef],
+  );
 
   const inputMaxWidth = 860;
   const inputRef = useRef<HTMLDivElement>(null);
@@ -119,6 +131,17 @@ export default function Chat() {
       setTimeout(() => setHasBeenNewChat(true)); // TODO - even more yughhhhhhhhhhhh (see eslint when removing the timeout)
     }
   }, [isNewChat]);
+
+  // Scroll a specific message into view when requested
+  useEffect(() => {
+    if (!scrollMessageId) return;
+    const viewport = viewportNodeRef.current;
+    if (!viewport) return;
+    const el = viewport.querySelector(`[data-message-id="${scrollMessageId}"]`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scrollMessageRequested]);
 
   const topbar = (fixed: boolean) => {
     return (
@@ -271,7 +294,7 @@ export default function Chat() {
         {!isNewChat && (
           <>
             <ScrollArea
-              viewportRef={messagesViewportRef}
+              viewportRef={stableViewportRef}
               h="100%"
               styles={{
                 scrollbar: {

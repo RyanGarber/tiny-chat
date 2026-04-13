@@ -21,7 +21,7 @@ import providers from './routes/providers.ts';
 import actions from './routes/actions.ts';
 import persistence from './routes/persistence.ts';
 import github from './routes/github.ts';
-import generateHandler from './services/generate.ts';
+import generateHandler, { continueHandler } from './services/generate.ts';
 import uploadHandler from './services/upload.ts';
 import onTick from './worker.ts';
 import { initLogs } from './utils/logs.ts';
@@ -183,6 +183,8 @@ const server = createServer((req, res) => {
     void authHandler(req, res);
   } else if (req.url?.startsWith('/@/upload')) {
     void uploadHandler(req, res);
+  } else if (req.url?.startsWith('/@/generate/continue')) {
+    void continueHandler(req, res);
   } else if (req.url?.startsWith('/@/generate')) {
     void generateHandler(req, res);
   } else {

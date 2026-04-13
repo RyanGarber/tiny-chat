@@ -11,7 +11,10 @@ import { type zData } from '@tiny-chat/core-backend/src/types.ts';
 import { Author } from '@tiny-chat/core-backend/generated/prisma/enums.ts';
 import { handleMessage } from '@/managers/generation';
 
-export async function sendMessage(data: zData) {
+export async function sendMessage(
+  data: zData,
+  onCreated?: (id: string) => void,
+) {
   const { setMessagingDisable } = useLayout.getState();
   const { config, truncating, reset, editing, setData } = useMessaging.getState();
   const { setCurrentChat, fetchFolders, fetchChat, temporary, incognito } = useChats.getState();
@@ -57,6 +60,7 @@ export async function sendMessage(data: zData) {
     await fetchFolders(false);
     if (!currentChat) await setCurrentChat(message.chatId, true, false);
     else await fetchChat(false);
+    onCreated?.(message.id);
   } catch (e) {
     alert('error', 'Failed to send message');
     if (message) await deleteMessagePair(message.id);

@@ -1,8 +1,8 @@
-import { generate } from './services/generate.ts';
+import { generate, generateStream, persistReply } from './services/generate.ts';
 import type { User } from './server.ts';
 import { type ContextItem, getNextRunAt, texts, type zMetadata } from './types.ts';
 import { wrapMessageUnomitted, zConfig, zData } from './types.ts';
-import { embedMessage, reorder } from './routes/messages.ts';
+import { reorder } from './routes/messages.ts';
 import { Author } from '../generated/prisma/enums.ts';
 import { createId } from '@paralleldrive/cuid2';
 
@@ -58,47 +58,38 @@ export default async function onTick() {
         controller,
       );
 
-      const data: zData = [];
-      const metadata: zMetadata = [];
-      for await (const event of generation) {
-        if (event.type === 'data') {
-          if (event.value.type === 'text') {
-            const last = data[data.length - 1];
-            if (last?.type === 'text') last.value += event.value.value;
-            else data.push(event.value);
-          } else {
-            data.push(event.value);
-          }
-        }
-        if (event.type === 'special' && event.value.type === 'metadata') {
-          metadata.push(event.value.value);
-          console.log('Got metadata for action', action.id);
-        }
-      }
-
-      console.log('Generation complete for action', action.id, texts(action.data as zData));
-
-      const modelMessage = await globalThis.prisma.message.create({
+      const replyId = createId();
+      await globalThis.prisma.message.create({
         data: {
-          id: createId(),
+          id: replyId,
           user: { connect: { id: action.userId } },
           folder: { connect: { id: action.folderId } },
           chat: { connect: { id: action.chatId } },
           config: zConfig.parse(action.config),
           author: Author.MODEL,
-          data,
-          metadata,
+          data: [],
+          metadata: [],
           previous: { connect: { id: userMessage.id } },
         },
       });
+
+      const data: zData = [];
+      const metadata: zMetadata = [];
+
+      // Consume the generation stream using shared accumulation (discard events since no SSE client)
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      for await (const _event of generateStream(generation, data, metadata)) {
+        // Worker has no SSE client; we just accumulate
+      }
+
+      console.log('Generation complete for action', action.id, texts(action.data as zData));
 
       await globalThis.prisma.message.update({
         where: { id: userMessage.id },
         data: { createdAt: new Date() },
       });
 
-      await embedMessage(user, userMessage);
-      await embedMessage(user, modelMessage);
+      await persistReply(user, replyId, data, metadata, userMessage.id);
     } catch (e) {
       console.error(`Error running action ${action.id}:`, e);
     }

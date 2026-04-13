@@ -1,6 +1,7 @@
 import { KeyboardEvent } from 'react';
 import { useLayout } from '@/stores/layout.tsx';
 import { useMessaging } from '@/stores/messaging.tsx';
+import { useChats } from '@/stores/chats.tsx';
 import { serialize } from '@/slate/serializer.tsx';
 import { zDataPart } from '@tiny-chat/core-backend/src/types.ts';
 import { Editor, Path, Text, Transforms } from 'slate';
@@ -166,8 +167,15 @@ export function onSend() {
 
   console.log('Sending message:', data);
 
-  useMessaging.getState().requestScrollToBottom();
-  void sendMessage(data);
+  void sendMessage(data, (createdId) => {
+    const { messages } = useChats.getState();
+    const isLast = messages.length === 0 || messages[messages.length - 1].id === createdId;
+    if (isLast) {
+      useMessaging.getState().requestScrollToBottom();
+    } else {
+      useMessaging.getState().requestScrollToMessage(createdId);
+    }
+  });
   void setData([]);
 }
 

@@ -33,6 +33,70 @@ export interface AISdkProvider {
   getModels: (user: User) => Promise<Model[]>;
 }
 
+/** Provider namespace keys we look for in providerMetadata */
+const PROVIDER_NAMESPACES = ['google', 'vertex', 'openai', 'azure'] as const;
+
+/**
+ * Extract providerOptions for a ReasoningPart from persisted sdkData.
+ *
+ * For Gemini: looks for `thoughtSignature` on reasoning-start/reasoning-delta/reasoning-end parts.
+ * For OpenAI/Azure: looks for `reasoningEncryptedContent` on reasoning-start parts.
+ */
+function extractReasoningProviderOptions(metadata: any[]): Record<string, any> | undefined {
+  if (!metadata?.length) return undefined;
+
+  for (const entry of metadata) {
+    for (const sdkPart of entry.sdkData ?? []) {
+      if (
+        sdkPart.type === 'reasoning-start' ||
+        sdkPart.type === 'reasoning-delta' ||
+        sdkPart.type === 'reasoning-end'
+      ) {
+        if (!sdkPart.providerMetadata) continue;
+        for (const ns of PROVIDER_NAMESPACES) {
+          const meta = sdkPart.providerMetadata[ns];
+          if (meta && (meta.thoughtSignature || meta.reasoningEncryptedContent)) {
+            return { [ns]: meta };
+          }
+        }
+      }
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Extract providerOptions for a ToolCallPart from persisted sdkData.
+ *
+ * Matches by toolCallId + toolName and pulls providerMetadata (e.g. Gemini thoughtSignature).
+ */
+function extractToolCallProviderOptions(
+  metadata: any[],
+  toolCallId: string,
+  toolName: string,
+): Record<string, any> | undefined {
+  if (!metadata?.length) return undefined;
+
+  for (const entry of metadata) {
+    for (const sdkPart of entry.sdkData ?? []) {
+      if (
+        sdkPart.type === 'tool-call' &&
+        sdkPart.toolCallId === toolCallId &&
+        sdkPart.toolName === toolName &&
+        sdkPart.providerMetadata
+      ) {
+        for (const ns of PROVIDER_NAMESPACES) {
+          const meta = sdkPart.providerMetadata[ns];
+          if (meta) {
+            return { [ns]: meta };
+          }
+        }
+      }
+    }
+  }
+  return undefined;
+}
+
 export function wrap(internal: AISdkProvider): ChatProvider {
   return {
     name: internal.name,
@@ -170,53 +234,37 @@ export const AISdkProvider: ChatProvider = {
 
         // 2. Assistant turns (and Tool Calls) -> CoreAssistantMessage
         if (m.author === Author.MODEL || isToolCall) {
+          const metadata = m.id ? m.metadata : [];
           return {
             role: 'assistant',
             content: m.data.flatMap((part): Exclude<AssistantContent, string> => {
               if (part.type === 'text') {
                 return [{ type: 'text', text: part.value }] satisfies TextPart[];
+              } else if (part.type === 'thought') {
+                // Extract providerMetadata from the sdkData reasoning parts
+                const providerOptions = extractReasoningProviderOptions(metadata);
+                return [
+                  {
+                    type: 'reasoning',
+                    text: part.value,
+                    ...(providerOptions ? { providerOptions } : {}),
+                  },
+                ];
               } else if (part.type === 'toolCall') {
-                // find ai-sdk thoughtSignature
-                console.log('Looking for thoughtSignature for tool call', part.name, part.id);
-                let match;
-                if (m.id) {
-                  for (const entry of m.metadata) {
-                    for (const sdkPart of entry.sdkData ?? []) {
-                      if (
-                        sdkPart.type === 'tool-call' &&
-                        sdkPart.toolCallId === part.id &&
-                        sdkPart.toolName === part.name
-                      ) {
-                        match = sdkPart.providerMetadata?.google?.thoughtSignature;
-                        console.log(
-                          'Found thoughtSignature for tool call',
-                          part.name,
-                          part.id,
-                          match,
-                        );
-                      }
-                    }
-                  }
-                }
-
-                console.log('[TOOL CALL]', {
-                  toolCallId: part.id,
-                  toolName: part.name,
-                  input: part.args,
-                  thoughtSignature: match,
-                });
+                // Extract providerMetadata from the matching tool-call sdkData part
+                const providerOptions = extractToolCallProviderOptions(
+                  metadata,
+                  part.id,
+                  part.name,
+                );
+                console.log('providerOptions', providerOptions);
                 return [
                   {
                     type: 'tool-call',
                     toolCallId: part.id,
                     toolName: part.name,
                     input: part.args,
-                    providerOptions: {
-                      google: {
-                        thoughtSignature:
-                          match?.thoughtSignature ?? 'skip_thought_signature_validator',
-                      },
-                    },
+                    ...(providerOptions ? { providerOptions } : {}),
                   } satisfies ToolCallPart,
                 ];
               }

@@ -5,6 +5,29 @@ import { trpc } from '@/utils/api';
 import { reloadConfig } from '@/managers/configuration';
 import { useTasks } from '@/stores/tasks.tsx';
 
+interface ProvidersCache {
+  chat: ChatProviderStatus[];
+  search: SearchProviderStatus[];
+}
+
+function readProvidersCache(): ProvidersCache | null {
+  try {
+    const raw = localStorage.getItem('providers');
+    if (!raw) return null;
+    return JSON.parse(raw) as ProvidersCache;
+  } catch {
+    return null;
+  }
+}
+
+function writeProvidersCache(data: ProvidersCache): void {
+  try {
+    localStorage.setItem('providers', JSON.stringify(data));
+  } catch {
+    // storage quota exceeded or unavailable – ignore
+  }
+}
+
 interface Providers {
   init: () => Promise<void>;
 
@@ -18,6 +41,12 @@ interface Providers {
 export const useProviders = create(
   subscribeWithSelector<Providers>((set, get) => ({
     init: async () => {
+      const cached = readProvidersCache();
+      if (cached) {
+        set({ chatProviders: cached.chat, searchProviders: cached.search });
+        reloadConfig();
+        return;
+      }
       await get().updateProviders();
     },
 
@@ -38,6 +67,7 @@ export const useProviders = create(
         );
 
       console.log('Updated providers:', providers);
+      writeProvidersCache({ chat: providers.chat, search: providers.search });
       set({ chatProviders: providers.chat, searchProviders: providers.search });
       reloadConfig();
 

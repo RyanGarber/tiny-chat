@@ -1,6 +1,6 @@
 import { Debug } from './debug.ts';
 import { wrap } from './ai-sdk/index.ts';
-import { GoogleGenerativeAIProvider } from './ai-sdk/google-generative-ai.ts';
+import { GoogleProvider } from './ai-sdk/google.ts';
 import { AnthropicProvider } from './ai-sdk/anthropic.ts';
 import { OpenAIProvider } from './ai-sdk/openai.ts';
 import { AzureProvider } from './ai-sdk/azure.ts';
@@ -25,7 +25,7 @@ export interface ChatProvider {
 
 export const chatProviders: ChatProvider[] = [
   Debug,
-  wrap(GoogleGenerativeAIProvider),
+  wrap(GoogleProvider),
   wrap(AnthropicProvider),
   wrap(OpenAIProvider),
   wrap(AzureProvider),

@@ -3,21 +3,26 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import type { Model } from '../../../types.ts';
 import { getCommonArgs } from '../../../utils/consts.ts';
 
-export const GoogleGenerativeAIProvider: AISdkProvider = {
-  name: 'google-ai-studio',
+export const GoogleProvider: AISdkProvider = {
+  name: 'google',
   settings: ['apiKey'],
   getClient(user) {
-    if (!user?.settings?.providers?.['google-ai-studio']?.apiKey) return null;
+    if (!user?.settings?.providers?.google?.apiKey) return null;
     return createGoogleGenerativeAI({
-      apiKey: user.settings.providers['google-ai-studio'].apiKey as string,
+      apiKey: user.settings.providers.google.apiKey as string,
     });
   },
+  getLanguageModel(user, id) {
+    const client = this.getClient(user) as ReturnType<typeof createGoogleGenerativeAI>;
+    if (!client) return null;
+    return client.languageModel(id);
+  },
   async getModels(user) {
-    if (!user?.settings?.providers?.['google-ai-studio']?.apiKey) return [];
+    if (!user?.settings?.providers?.google?.apiKey) return [];
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(
-        user.settings.providers['google-ai-studio'].apiKey as string,
+        user.settings.providers.google.apiKey as string,
       )}`,
     );
 

@@ -54,7 +54,7 @@ export default function SidebarSettings({
     setProviderSetting,
   } = useSettings();
 
-  const { chatProviders, searchProviders } = useProviders();
+  const { chatProviders, searchProviders, updateProviders } = useProviders();
   const { setGestureBlock, setDrawerCloser } = useLayout();
 
   const codeThemeRef = useRef<HTMLInputElement>(null);
@@ -319,12 +319,17 @@ export default function SidebarSettings({
           </Tabs.Panel>
           <Tabs.Panel value="apiKeys">
             <Stack>
-              <Box>
-                <Text size="sm">Models</Text>
-                <Text size="xs" c="dimmed">
-                  Handles chats and embeddings
-                </Text>
-              </Box>
+              <Group justify="space-between">
+                <Box>
+                  <Text size="sm">Models</Text>
+                  <Text size="xs" c="dimmed">
+                    Handles chats and embeddings
+                  </Text>
+                </Box>
+                <ActionIcon variant="transparent" c="dimmed" onClick={() => void updateProviders()}>
+                  <Icon icon="lucide:rotate-ccw" />
+                </ActionIcon>
+              </Group>
               {ProviderSettings(chatProviders)}
               <Space />
               <Box>

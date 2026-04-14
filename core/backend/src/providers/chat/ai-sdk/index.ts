@@ -1,5 +1,5 @@
 import type { ChatProvider } from '../index.ts';
-import { GoogleGenerativeAIProvider } from './google-generative-ai.ts';
+import { GoogleProvider } from './google.ts';
 import { AnthropicProvider } from './anthropic.ts';
 import { OpenAIProvider } from './openai.ts';
 import { AzureProvider } from './azure.ts';
@@ -8,6 +8,7 @@ import type {
   AssistantModelMessage,
   FilePart,
   ImagePart,
+  LanguageModel,
   ModelMessage,
   Provider,
   TextPart,
@@ -30,6 +31,7 @@ export interface AISdkProvider {
   name: string;
   settings: string[];
   getClient: (user: User) => Partial<Provider> | null;
+  getLanguageModel: (user: User, id: string) => LanguageModel | null;
   getModels: (user: User) => Promise<Model[]>;
 }
 
@@ -120,7 +122,7 @@ export function wrap(internal: AISdkProvider): ChatProvider {
   };
 }
 
-const providers = [GoogleGenerativeAIProvider, AnthropicProvider, OpenAIProvider, AzureProvider];
+const providers = [GoogleProvider, AnthropicProvider, OpenAIProvider, AzureProvider];
 
 export const AISdkProvider: ChatProvider = {
   name: 'ai-sdk',
@@ -134,7 +136,7 @@ export const AISdkProvider: ChatProvider = {
   },
 
   async *generate(user, instructions, context, config, abortSignal, tools) {
-    let client: Partial<Provider> | null = null;
+    let languageModel: LanguageModel | null = null;
     let supportsToolCall = false;
 
     // Find the internal provider that has this model
@@ -142,24 +144,21 @@ export const AISdkProvider: ChatProvider = {
       const models = await provider.getModels(user);
       const model = models.find((m) => m.name === config.model);
       if (model) {
-        client = provider.getClient(user);
+        languageModel = provider.getLanguageModel(user, config.model);
         supportsToolCall = model.features.includes('toolCall');
         break;
       }
     }
 
-    if (!client) {
+    if (!languageModel) {
       throw new Error(`No available model named '${config.model}'`);
-    }
-    if (!client.languageModel?.(config.model)) {
-      throw new Error(`Model '${config.model}' is not a language model`);
     }
 
     const sdkData: TextStreamPart<any>[] = [];
     const rawData: any[] = [];
 
     const stream = streamText({
-      model: client.languageModel(config.model),
+      model: languageModel,
       system: instructions,
       maxOutputTokens: config.args?.['max-tokens'],
       temperature: config.args?.temperature as number,

@@ -5,17 +5,22 @@ import type { Model } from '../../../types.ts';
 import { getCommonArgs } from '../../../utils/consts.ts';
 
 export const AnthropicProvider: AISdkProvider = {
-  name: 'anthropic-ai',
+  name: 'anthropic',
   settings: ['apiKey'],
   getClient(user) {
-    const apiKey = user?.settings?.providers?.['anthropic-ai']?.apiKey;
+    const apiKey = user?.settings?.providers?.anthropic?.apiKey;
     if (!apiKey) return null;
     return createAnthropic({
       apiKey: apiKey as string,
     });
   },
+  getLanguageModel(user, id) {
+    const client = this.getClient(user) as ReturnType<typeof createAnthropic>;
+    if (!client) return null;
+    return client.languageModel(id);
+  },
   async getModels(user) {
-    const apiKey = user?.settings?.providers?.['anthropic-ai']?.apiKey;
+    const apiKey = user?.settings?.providers?.anthropic?.apiKey;
     if (!apiKey) return [];
 
     const client = new Anthropic({ apiKey: apiKey as string });

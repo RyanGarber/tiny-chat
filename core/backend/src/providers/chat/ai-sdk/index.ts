@@ -26,6 +26,7 @@ import { type User } from '../../../server.ts';
 import type { OpenAIResponsesProviderOptions } from '@ai-sdk/azure';
 import type { GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
 import type { AnthropicProviderOptions } from '@ai-sdk/anthropic';
+import { AWSProvider } from './aws.ts';
 
 export interface AISdkProvider {
   name: string;
@@ -36,7 +37,7 @@ export interface AISdkProvider {
 }
 
 /** Provider namespace keys we look for in providerMetadata */
-const PROVIDER_NAMESPACES = ['google', 'vertex', 'openai', 'azure'] as const;
+const PROVIDER_NAMESPACES = ['google', 'vertex', 'openai', 'azure', 'aws'] as const;
 
 /**
  * Extract providerOptions for a ReasoningPart from persisted sdkData.
@@ -122,7 +123,7 @@ export function wrap(internal: AISdkProvider): ChatProvider {
   };
 }
 
-const providers = [GoogleProvider, AnthropicProvider, OpenAIProvider, AzureProvider];
+const providers = [GoogleProvider, AnthropicProvider, OpenAIProvider, AzureProvider, AWSProvider];
 
 export const AISdkProvider: ChatProvider = {
   name: 'ai-sdk',
@@ -142,6 +143,11 @@ export const AISdkProvider: ChatProvider = {
     // Find the internal provider that has this model
     for (const provider of providers) {
       const models = await provider.getModels(user);
+      console.log(
+        '[AI-SDK] Available models for provider',
+        provider.name,
+        models.map((m) => m.name),
+      );
       const model = models.find((m) => m.name === config.model);
       if (model) {
         languageModel = provider.getLanguageModel(user, config.model);
@@ -187,7 +193,9 @@ export const AISdkProvider: ChatProvider = {
                       : undefined,
                 }
               : undefined,
-          responseModalities: ['TEXT', 'IMAGE', 'AUDIO'],
+          responseModalities: config.model.includes('gemini-2')
+            ? ['TEXT']
+            : ['TEXT', 'IMAGE', 'AUDIO'],
         } satisfies GoogleGenerativeAIProviderOptions,
         anthropic: {
           thinking:

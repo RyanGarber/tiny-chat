@@ -7,6 +7,7 @@ import { AzureProvider } from './ai-sdk/azure.ts';
 import type { ContextItem, Model, zConfig, zGenerateOutput } from '../../types.ts';
 import type { ToolCall } from '../../tools/index.ts';
 import { type User } from '../../server.ts';
+import { AWSProvider } from './ai-sdk/aws.ts';
 
 export interface ChatProvider {
   name: string;
@@ -29,4 +30,5 @@ export const chatProviders: ChatProvider[] = [
   wrap(AnthropicProvider),
   wrap(OpenAIProvider),
   wrap(AzureProvider),
+  wrap(AWSProvider),
 ];

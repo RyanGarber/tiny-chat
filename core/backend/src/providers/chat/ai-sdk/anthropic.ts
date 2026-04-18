@@ -1,12 +1,14 @@
-import type { AISdkProvider } from './index.ts';
+import type { AISdkSubprovider } from './index.ts';
+import type { AnthropicProviderOptions } from '@ai-sdk/anthropic';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { Anthropic } from '@anthropic-ai/sdk';
 import type { Model } from '../../../types.ts';
-import { getCommonArgs } from '../../../utils/consts.ts';
+import { AnthropicFamily } from '../../../families/anthropic.ts';
 
-export const AnthropicProvider: AISdkProvider = {
+export const AnthropicProvider: AISdkSubprovider = {
   name: 'anthropic',
   settings: ['apiKey'],
+
   getClient(user) {
     const apiKey = user?.settings?.providers?.anthropic?.apiKey;
     if (!apiKey) return null;
@@ -14,11 +16,26 @@ export const AnthropicProvider: AISdkProvider = {
       apiKey: apiKey as string,
     });
   },
-  getLanguageModel(user, id) {
+
+  getClientModel(user, id) {
     const client = this.getClient(user) as ReturnType<typeof createAnthropic>;
     if (!client) return null;
     return client.languageModel(id);
   },
+
+  getClientOptions(_user, config) {
+    return {
+      anthropic: {
+        thinking:
+          config.args?.thinking === 'adaptive' || config.args?.thinking === 'disabled'
+            ? { type: config.args.thinking }
+            : config.args?.thinking
+              ? { type: 'enabled', budgetTokens: parseInt(config.args.thinking as string) }
+              : undefined,
+      } satisfies AnthropicProviderOptions,
+    };
+  },
+
   async getModels(user) {
     const apiKey = user?.settings?.providers?.anthropic?.apiKey;
     if (!apiKey) return [];
@@ -28,27 +45,10 @@ export const AnthropicProvider: AISdkProvider = {
     const models = await client.models.list();
 
     return models.data.map((m) => {
-      const args = getCommonArgs(1);
-      if (m.id.includes('claude-4.5')) {
-        args.push({
-          name: 'thinking',
-          type: 'list' as const,
-          values: ['disabled', '2500', '5000', '7500', '10000'],
-          default: '2500',
-        });
-      }
-      if (m.id.includes('claude-4.6')) {
-        args.push({
-          name: 'thinking',
-          type: 'list' as const,
-          values: ['disabled', 'adaptive'],
-          default: 'adaptive',
-        });
-      }
       return {
         name: m.id,
         features: ['generate' as const, 'toolCall' as const],
-        args,
+        args: AnthropicFamily.getArgs(m.id),
       } satisfies Model;
     });
   },

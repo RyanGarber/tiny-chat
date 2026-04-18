@@ -1,22 +1,48 @@
-import type { AISdkProvider } from './index.ts';
+import type { AISdkSubprovider } from './index.ts';
+import type { GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import type { Model } from '../../../types.ts';
-import { getCommonArgs } from '../../../utils/consts.ts';
+import { GoogleFamily } from '../../../families/google.ts';
 
-export const GoogleProvider: AISdkProvider = {
+export const GoogleProvider: AISdkSubprovider = {
   name: 'google',
   settings: ['apiKey'],
+
   getClient(user) {
     if (!user?.settings?.providers?.google?.apiKey) return null;
     return createGoogleGenerativeAI({
       apiKey: user.settings.providers.google.apiKey as string,
     });
   },
-  getLanguageModel(user, id) {
+
+  getClientModel(user, id) {
     const client = this.getClient(user) as ReturnType<typeof createGoogleGenerativeAI>;
     if (!client) return null;
     return client.languageModel(id);
   },
+
+  getClientOptions(_user, config) {
+    return {
+      google: {
+        thinkingConfig:
+          config.args?.thinking ||
+          (config.args?.['thinking-budget'] && config.args['thinking-budget'] !== 'auto')
+            ? {
+                includeThoughts: true,
+                thinkingLevel: config.args?.thinking,
+                thinkingBudget:
+                  config.args?.['thinking-budget'] && config.args['thinking-budget'] !== 'auto'
+                    ? parseInt(config.args['thinking-budget'] as string)
+                    : undefined,
+              }
+            : undefined,
+        responseModalities: config.model.includes('gemini-3')
+          ? ['TEXT', 'IMAGE', 'AUDIO']
+          : undefined,
+      } satisfies GoogleGenerativeAIProviderOptions,
+    };
+  },
+
   async getModels(user) {
     if (!user?.settings?.providers?.google?.apiKey) return [];
 
@@ -31,33 +57,16 @@ export const GoogleProvider: AISdkProvider = {
     };
 
     return json.models.map((model) => {
-      const args = getCommonArgs(2);
-      if (model.name.includes('gemini-2.5')) {
-        args.push({
-          name: 'thinking-budget',
-          type: 'list',
-          values: ['auto', '0', '2500', '5000', '7500', '10000'],
-          default: 'auto',
-        });
-      }
-      if (model.name.includes('gemini-3')) {
-        args.push({
-          name: 'thinking',
-          type: 'list',
-          values: ['minimal', 'low', 'medium', 'high'],
-          default: 'medium',
-        });
-      }
       return {
         name: model.name.split('/').slice(-1)[0],
         features: [
           ...(model.supportedGenerationMethods.includes('generateContent')
-            ? ['generate' as const]
+            ? ['generate' as const, 'toolCall' as const]
             : []),
-          ...(model.name.includes('gemini') ? ['toolCall' as const] : []),
+          //...(model.name.includes('gemini') ? ['toolCall' as const] : []),
           ...(model.supportedGenerationMethods.includes('embedContent') ? ['embed' as const] : []),
         ],
-        args,
+        args: GoogleFamily.getArgs(model.name),
       } satisfies Model;
     });
   },

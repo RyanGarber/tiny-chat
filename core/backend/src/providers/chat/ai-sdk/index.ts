@@ -21,23 +21,21 @@ import type {
 } from 'ai';
 import { embedMany, streamText, type Tool } from 'ai';
 import { Author } from '../../../../generated/prisma/enums.ts';
-import { type Model, type zGenerateOutput } from '../../../types.ts';
+import { type Model, type zConfig, type zGenerateOutput } from '../../../types.ts';
 import { type User } from '../../../server.ts';
-import type { OpenAIResponsesProviderOptions } from '@ai-sdk/azure';
-import type { GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
-import type { AnthropicProviderOptions } from '@ai-sdk/anthropic';
 import { AWSProvider } from './aws.ts';
 
-export interface AISdkProvider {
+export interface AISdkSubprovider {
   name: string;
   settings: string[];
   getClient: (user: User) => Partial<Provider> | null;
-  getLanguageModel: (user: User, id: string) => LanguageModel | null;
+  getClientModel: (user: User, id: string) => LanguageModel | null;
+  getClientOptions: (user: User, config: zConfig) => Record<string, any> | undefined;
   getModels: (user: User) => Promise<Model[]>;
 }
 
 /** Provider namespace keys we look for in providerMetadata */
-const PROVIDER_NAMESPACES = ['google', 'vertex', 'openai', 'azure', 'aws'] as const;
+const PROVIDER_NAMESPACES = ['google', 'vertex', 'openai', 'azure', 'bedrock'] as const;
 
 /**
  * Extract providerOptions for a ReasoningPart from persisted sdkData.
@@ -47,23 +45,26 @@ const PROVIDER_NAMESPACES = ['google', 'vertex', 'openai', 'azure', 'aws'] as co
  */
 function extractReasoningProviderOptions(
   metadata: any[],
-  id: string | undefined,
+  index: number,
 ): Record<string, any> | undefined {
   if (!metadata?.length) return undefined;
 
+  let i = 0;
   for (const entry of metadata) {
-    for (const sdkPart of entry.sdkData ?? []) {
+    for (const sdkPart of entry) {
       if (
-        (sdkPart.type === 'reasoning-start' ||
-          sdkPart.type === 'reasoning-delta' ||
-          sdkPart.type === 'reasoning-end') &&
-        (!id || sdkPart.providerMetadata?.openai?.itemId === id)
+        sdkPart.type === 'reasoning-start' ||
+        sdkPart.type === 'reasoning-delta' ||
+        sdkPart.type === 'reasoning-end'
       ) {
         if (!sdkPart.providerMetadata) continue;
         for (const ns of PROVIDER_NAMESPACES) {
           const meta = sdkPart.providerMetadata[ns];
-          if (meta && (meta.thoughtSignature || meta.reasoningEncryptedContent)) {
-            return { [ns]: meta };
+          if (meta && (meta.signature || meta.thoughtSignature || meta.reasoningEncryptedContent)) {
+            if (i === index) {
+              return { [ns]: meta };
+            }
+            i++;
           }
         }
       }
@@ -85,7 +86,7 @@ function extractToolCallProviderOptions(
   if (!metadata?.length) return undefined;
 
   for (const entry of metadata) {
-    for (const sdkPart of entry.sdkData ?? []) {
+    for (const sdkPart of entry) {
       if (
         sdkPart.type === 'tool-call' &&
         sdkPart.toolCallId === toolCallId &&
@@ -104,7 +105,7 @@ function extractToolCallProviderOptions(
   return undefined;
 }
 
-export function wrap(internal: AISdkProvider): ChatProvider {
+export function wrap(internal: AISdkSubprovider): ChatProvider {
   return {
     name: internal.name,
     settings: internal.settings,
@@ -137,75 +138,35 @@ export const AISdkProvider: ChatProvider = {
   },
 
   async *generate(user, instructions, context, config, abortSignal, tools) {
-    let languageModel: LanguageModel | null = null;
+    let subprovider: AISdkSubprovider | null = null;
+    let clientModel: LanguageModel | null = null;
     let supportsToolCall = false;
 
     // Find the internal provider that has this model
     for (const provider of providers) {
       const models = await provider.getModels(user);
-      console.log(
-        '[AI-SDK] Available models for provider',
-        provider.name,
-        models.map((m) => m.name),
-      );
+      // TODO - cache
       const model = models.find((m) => m.name === config.model);
       if (model) {
-        languageModel = provider.getLanguageModel(user, config.model);
+        subprovider = provider;
+        clientModel = provider.getClientModel(user, config.model);
         supportsToolCall = model.features.includes('toolCall');
         break;
       }
     }
 
-    if (!languageModel) {
+    if (!clientModel) {
       throw new Error(`No available model named '${config.model}'`);
     }
 
     const sdkData: TextStreamPart<any>[] = [];
-    const rawData: any[] = [];
 
     const stream = streamText({
-      model: languageModel,
+      model: clientModel,
       system: instructions,
       maxOutputTokens: config.args?.['max-tokens'],
       temperature: config.args?.temperature as number,
-      providerOptions: {
-        // TODO - move to generic provider hook
-        openai: {
-          reasoningEffort: config.args?.reasoning,
-          reasoningSummary: 'auto',
-          include: ['reasoning.encrypted_content'],
-        } satisfies OpenAIResponsesProviderOptions,
-        azure: {
-          reasoningEffort: config.args?.reasoning,
-          reasoningSummary: 'auto',
-          include: ['reasoning.encrypted_content'],
-        } satisfies OpenAIResponsesProviderOptions,
-        google: {
-          thinkingConfig:
-            config.args?.thinking ||
-            (config.args?.['thinking-budget'] && config.args['thinking-budget'] !== 'auto')
-              ? {
-                  includeThoughts: true,
-                  thinkingLevel: config.args?.thinking,
-                  thinkingBudget:
-                    config.args?.['thinking-budget'] && config.args['thinking-budget'] !== 'auto'
-                      ? parseInt(config.args['thinking-budget'] as string)
-                      : undefined,
-                }
-              : undefined,
-          responseModalities: config.model.includes('gemini-2')
-            ? ['TEXT']
-            : ['TEXT', 'IMAGE', 'AUDIO'],
-        } satisfies GoogleGenerativeAIProviderOptions,
-        anthropic: {
-          thinking:
-            config.args?.thinking === 'adaptive' || config.args?.thinking === 'disabled'
-              ? { type: config.args.thinking }
-              : config.args?.thinking
-                ? { type: 'enabled', budgetTokens: parseInt(config.args.thinking as string) }
-                : undefined,
-        } satisfies AnthropicProviderOptions,
-      },
+      providerOptions: subprovider?.getClientOptions(user, config),
       tools: supportsToolCall
         ? Object.fromEntries(
             tools.map((tool) => [
@@ -246,7 +207,6 @@ export const AISdkProvider: ChatProvider = {
         // 2. Assistant turns (and Tool Calls) -> CoreAssistantMessage
         if (m.author === Author.MODEL || isToolCall) {
           const metadata = m.id ? m.metadata : [];
-          console.log('[TEST} METADATA:', metadata);
           return {
             role: 'assistant',
             content: m.data.flatMap((part): Exclude<AssistantContent, string> => {
@@ -254,8 +214,9 @@ export const AISdkProvider: ChatProvider = {
                 return [{ type: 'text', text: part.value }] satisfies TextPart[];
               } else if (part.type === 'thought') {
                 // Extract providerMetadata from the sdkData reasoning parts
-                const providerOptions = extractReasoningProviderOptions(metadata, part.id);
-                console.log('Thought providerOptions:', providerOptions);
+                // TODO - store metadata in part itself to avoid this index-based lookup
+                const index = m.data.filter((p) => p.type === 'thought').indexOf(part);
+                const providerOptions = extractReasoningProviderOptions(metadata, index);
                 return [
                   {
                     type: 'reasoning',
@@ -397,8 +358,6 @@ export const AISdkProvider: ChatProvider = {
             value: chunk.output,
           },
         } satisfies zGenerateOutput;
-      } else if (chunk.type === 'raw') {
-        rawData.push(chunk.rawValue);
       }
 
       if (chunk.type === 'finish' || chunk.type === 'error') {
@@ -406,14 +365,7 @@ export const AISdkProvider: ChatProvider = {
           type: 'special',
           value: {
             type: 'metadata',
-            value: [
-              {
-                rawData,
-                sdkData,
-                finishReason: chunk.type === 'finish' ? chunk.finishReason : undefined,
-                rawFinishReason: chunk.type === 'finish' ? chunk.rawFinishReason : undefined,
-              },
-            ],
+            value: sdkData,
           },
         };
       }

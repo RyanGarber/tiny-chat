@@ -3,7 +3,7 @@ import type { ToolCall, ToolContext } from './index.ts';
 
 export const zReplyQuestion = z.object({
   question: z.string(),
-  suggestions: z.array(z.string()).optional().describe('A list autocomplete suggestions.'),
+  suggestions: z.array(z.string()).default([]).describe('A list of autocomplete suggestions.'),
 });
 
 const ReplyQuestion = {

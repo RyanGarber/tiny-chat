@@ -84,11 +84,6 @@ export default async function onTick() {
 
       console.log('Generation complete for action', action.id, texts(action.data as zData));
 
-      await globalThis.prisma.message.update({
-        where: { id: userMessage.id },
-        data: { createdAt: new Date() },
-      });
-
       await persistReply(user, replyId, data, metadata, userMessage.id);
     } catch (e) {
       console.error(`Error running action ${action.id}:`, e);

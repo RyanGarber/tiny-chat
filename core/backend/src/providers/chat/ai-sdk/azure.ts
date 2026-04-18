@@ -1,14 +1,18 @@
-import type { AISdkProvider } from './index.ts';
+import type { AISdkSubprovider } from './index.ts';
 import { createAzure } from '@ai-sdk/azure';
 import type { Model } from '../../../types.ts';
-import { getCommonArgs } from '../../../utils/consts.ts';
 import { createAnthropic } from '@ai-sdk/anthropic';
+import { AnthropicProvider } from './anthropic.ts';
+import { OpenAIProvider } from './openai.ts';
+import { AnthropicFamily } from '../../../families/anthropic.ts';
+import { OpenAIFamily } from '../../../families/openai.ts';
 
 const useResponses = (id: string) => ['gpt-', 'o1', 'o3', 'o4'].some((m) => id.includes(m));
 
-export const AzureProvider: AISdkProvider = {
+export const AzureProvider: AISdkSubprovider = {
   name: 'azure',
   settings: ['resourceId', 'projectId', 'apiKey'],
+
   getClient(user) {
     const settings = user?.settings?.providers?.azure;
     if (!settings?.resourceId || !settings?.apiKey) return null;
@@ -17,7 +21,8 @@ export const AzureProvider: AISdkProvider = {
       apiKey: settings.apiKey as string,
     });
   },
-  getLanguageModel(user, id) {
+
+  getClientModel(user, id) {
     const client = this.getClient(user) as ReturnType<typeof createAzure>;
     if (!client) return null;
 
@@ -32,6 +37,15 @@ export const AzureProvider: AISdkProvider = {
     if (!useResponses(id)) return client.chat(id); // force completions api
     return client.languageModel(id);
   },
+
+  getClientOptions(user, config) {
+    if (config.model.includes('claude-')) {
+      AnthropicProvider.getClientOptions(user, config);
+    }
+
+    return OpenAIProvider.getClientOptions(user, config);
+  },
+
   async getModels(user) {
     const settings = user?.settings?.providers?.azure;
     if (!settings?.resourceId || !settings?.projectId || !settings?.apiKey) return [];
@@ -50,53 +64,19 @@ export const AzureProvider: AISdkProvider = {
 
       return json.value.map((d) => {
         if (d.name.includes('claude-')) {
-          const args = getCommonArgs(1);
-          if (d.name.includes('claude-4.5')) {
-            args.push({
-              name: 'thinking',
-              type: 'list' as const,
-              values: ['disabled', '2500', '5000', '7500', '10000'],
-              default: '2500',
-            });
-          }
-          if (d.name.includes('claude-4.6')) {
-            args.push({
-              name: 'thinking',
-              type: 'list' as const,
-              values: ['disabled', 'adaptive'],
-              default: 'adaptive',
-            });
-          }
           return {
             name: d.name,
             features: ['generate' as const, 'toolCall' as const],
-            args,
+            args: AnthropicFamily.getArgs(d.name),
           } satisfies Model;
         }
 
-        const reasoning =
-          d.name.includes('gpt-5') ||
-          d.name.includes('gpt-4o') ||
-          d.name.includes('o1') ||
-          d.name.includes('o3') ||
-          d.name.includes('o4');
-
-        const args = getCommonArgs(reasoning ? -1 : 2);
-        if (reasoning) {
-          args.push({
-            name: 'reasoning',
-            type: 'list' as const,
-            values: ['low', 'medium', 'high'],
-            default: 'medium',
-          });
-        }
         return {
           name: d.name,
-          features: [
-            ...(useResponses(d.name) ? ['generate' as const, 'toolCall' as const] : []),
-            'embed' as const,
-          ],
-          args,
+          features: useResponses(d.name)
+            ? ['generate' as const, 'toolCall' as const]
+            : ['generate' as const],
+          args: OpenAIFamily.getArgs(d.name),
         } satisfies Model;
       });
     } catch (e) {

@@ -1,8 +1,10 @@
-import type { AISdkProvider } from './index.ts';
-import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
+import type { AISdkSubprovider } from './index.ts';
+import { type BedrockProviderOptions, createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 import type { Model } from '../../../types.ts';
-import { getCommonArgs } from '../../../utils/consts.ts';
 import { BedrockClient, ListFoundationModelsCommand } from '@aws-sdk/client-bedrock';
+import { AnthropicFamily } from '../../../families/anthropic.ts';
+import { AnthropicProvider } from './anthropic.ts';
+import { AmazonFamily } from '../../../families/amazon.ts';
 
 const INFERENCE_PROFILES: Record<string, string> = {
   'amazon.nova-2-lite-v1:0': 'global.amazon.nova-2-lite-v1:0',
@@ -16,9 +18,10 @@ const INFERENCE_PROFILES: Record<string, string> = {
   'twelvelabs.pegasus-1-2-v1:0': 'global.twelvelabs.pegasus-1-2-v1:0',
 };
 
-export const AWSProvider: AISdkProvider = {
+export const AWSProvider: AISdkSubprovider = {
   name: 'aws',
   settings: ['apiKey'],
+
   getClient(user) {
     if (!user?.settings?.providers?.aws?.apiKey) return null;
     return createAmazonBedrock({
@@ -26,7 +29,8 @@ export const AWSProvider: AISdkProvider = {
       apiKey: user.settings.providers.aws.apiKey as string,
     });
   },
-  getLanguageModel(user, id) {
+
+  getClientModel(user, id) {
     const client = this.getClient(user) as ReturnType<typeof createAmazonBedrock>;
     if (!client) return null;
 
@@ -36,6 +40,26 @@ export const AWSProvider: AISdkProvider = {
 
     return client.languageModel(id);
   },
+
+  getClientOptions(user, config) {
+    if (config.model.includes('claude-')) {
+      return {
+        bedrock: {
+          reasoningConfig: AnthropicProvider.getClientOptions(user, config)?.thinking,
+        } satisfies BedrockProviderOptions,
+      };
+    }
+
+    return {
+      bedrock: {
+        reasoningConfig: {
+          type: config.args?.thinking !== 'none' ? 'enabled' : 'disabled',
+          maxReasoningEffort: config.args?.thinking !== 'none' ? config.args?.thinking : undefined,
+        },
+      } satisfies BedrockProviderOptions,
+    };
+  },
+
   async getModels(user) {
     if (!user?.settings?.providers?.aws?.apiKey) return [];
 
@@ -50,54 +74,21 @@ export const AWSProvider: AISdkProvider = {
       return foundation.modelSummaries!.flatMap((m): Model[] => {
         if (!m.modelId) return [];
 
-        if (m.modelId?.includes('claude-')) {
-          const args = getCommonArgs(1);
-          if (m.modelId.includes('claude-4.5')) {
-            args.push({
-              name: 'thinking',
-              type: 'list' as const,
-              values: ['disabled', '2500', '5000', '7500', '10000'],
-              default: '2500',
-            });
-          }
-          if (m.modelId.includes('claude-4.6')) {
-            args.push({
-              name: 'thinking',
-              type: 'list' as const,
-              values: ['disabled', 'adaptive'],
-              default: 'adaptive',
-            });
-          }
+        if (m.modelId.includes('claude-')) {
           return [
             {
               name: m.modelId,
               features: ['generate' as const, 'toolCall' as const],
-              args,
+              args: AnthropicFamily.getArgs(m.modelId),
             } satisfies Model,
           ];
         }
 
-        const openaiReasoning =
-          m.modelId.includes('gpt-5') ||
-          m.modelId.includes('gpt-4o') ||
-          m.modelId.includes('o1') ||
-          m.modelId.includes('o3') ||
-          m.modelId.includes('o4');
-
-        const args = getCommonArgs(openaiReasoning ? -1 : 2);
-        if (openaiReasoning) {
-          args.push({
-            name: 'reasoning',
-            type: 'list' as const,
-            values: ['low', 'medium', 'high'],
-            default: 'medium',
-          });
-        }
         return [
           {
             name: m.modelId,
             features: ['generate' as const, 'toolCall' as const],
-            args,
+            args: AmazonFamily.getArgs(m.modelId),
           } satisfies Model,
         ];
       });

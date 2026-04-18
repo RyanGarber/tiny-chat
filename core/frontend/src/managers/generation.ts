@@ -26,7 +26,7 @@ export async function handleMessage(messageId: string) {
   );
 
   try {
-    await streamIntoReply(stream);
+    await streamIntoReply(stream, false);
   } catch (e: unknown) {
     // @ts-expect-error AbortError check
     if (e.name === 'AbortError') console.warn('Stream aborted');
@@ -38,7 +38,6 @@ export async function handleMessage(messageId: string) {
     await usePersistence.getState().fetchMemories();
   }
 }
-
 
 export async function continueToolCall(
   messageId: string,
@@ -65,7 +64,7 @@ export async function continueToolCall(
   );
 
   try {
-    await streamIntoReply(stream);
+    await streamIntoReply(stream, true);
   } catch (e: unknown) {
     // @ts-expect-error AbortError check
     if (e.name === 'AbortError') console.warn('Stream aborted');
@@ -79,7 +78,7 @@ export async function continueToolCall(
 }
 
 /** Stream SSE events into the local reply message for real-time UI updates. */
-async function streamIntoReply(stream: AsyncGenerator<zGenerateOutput>) {
+async function streamIntoReply(stream: AsyncGenerator<zGenerateOutput>, continued: boolean) {
   let reply: MessageUnomitted | null = null;
   let lastFlush = 0;
 
@@ -102,7 +101,7 @@ async function streamIntoReply(stream: AsyncGenerator<zGenerateOutput>) {
       if (replyRef) {
         reply = replyRef;
         reply.state.any = true;
-        reply.data = []; // Reset in case of reuse
+        if (!continued) reply.data = [];
         reply.metadata = [];
         useChats.setState({ messages: [...useChats.getState().messages] });
       }

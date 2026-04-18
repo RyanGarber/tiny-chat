@@ -376,7 +376,7 @@ export async function* generate(
         }
 
         if (event.type === 'special' && event.value.type === 'metadata') {
-          modelMessage.metadata = event.value.value; // to push Gemini thoughtSignature into next pass
+          modelMessage.metadata.push(event.value.value); // to push Gemini thoughtSignature into next pass
         }
       }
     } catch (e: any) {

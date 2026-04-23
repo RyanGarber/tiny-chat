@@ -25,6 +25,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { useLayout } from '@/stores/layout.tsx';
 import {
   ChatProviderStatus,
+  OtherProviderStatus,
   SearchProviderStatus,
   zConfig,
 } from '@tiny-chat/core-backend/src/types.ts';
@@ -54,7 +55,7 @@ export default function SidebarSettings({
     setProviderSetting,
   } = useSettings();
 
-  const { chatProviders, searchProviders, updateProviders } = useProviders();
+  const { chatProviders, searchProviders, otherProviders, updateProviders } = useProviders();
   const { setGestureBlock, setDrawerCloser } = useLayout();
 
   const codeThemeRef = useRef<HTMLInputElement>(null);
@@ -79,7 +80,7 @@ export default function SidebarSettings({
     }
   }, [opened, close, setDrawerCloser]);
 
-  const ProviderSettings = (providers: (ChatProviderStatus | SearchProviderStatus)[]) => (
+  const ProviderSettings = (providers: (ChatProviderStatus | SearchProviderStatus | OtherProviderStatus)[]) => (
     <Stack>
       {providers
         .filter((s) => s.settings.length)
@@ -339,6 +340,18 @@ export default function SidebarSettings({
                 </Text>
               </Box>
               {ProviderSettings(searchProviders)}
+              {otherProviders.filter((p) => p.settings.length > 0).length > 0 && (
+                <>
+                  <Space />
+                  <Box>
+                    <Text size="sm">Other</Text>
+                    <Text size="xs" c="dimmed">
+                      Additional integrations
+                    </Text>
+                  </Box>
+                  {ProviderSettings(otherProviders)}
+                </>
+              )}
             </Stack>
           </Tabs.Panel>
         </Tabs>

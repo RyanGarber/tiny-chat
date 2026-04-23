@@ -4,15 +4,7 @@ import { procedure, router } from '../index.ts';
 import { createForChat } from './folders.ts';
 import { Author, type Message as PrismaMessage } from '../../generated/prisma/client.ts';
 import { type MessageCreateInput } from '../../generated/prisma/models.ts';
-import {
-  type MessageOmission,
-  type MessageUnomitted,
-  texts,
-  wrapMessage,
-  zConfig,
-  zData,
-  zMetadata,
-} from '../types.ts';
+import { type MessageOmission, texts, wrapMessage, zConfig, zData, zMetadata } from '../types.ts';
 import { embed } from '../utils/embed.ts';
 import { type User } from '../server.ts';
 
@@ -232,7 +224,10 @@ export function reorder(messages: PrismaMessage[]) {
   return sorted;
 }
 
-export async function embedMessage(user: User, message: PrismaMessage | MessageUnomitted) {
+export async function embedMessage(
+  user: User,
+  message: { id: string; data: any },
+): Promise<number[] | null> {
   let embedding: number[][] | null = null;
 
   const text = texts(zData.parse(message.data));

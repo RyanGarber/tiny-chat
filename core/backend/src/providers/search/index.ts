@@ -1,5 +1,6 @@
 import { Brave } from './brave.ts';
 import { type User } from '../../server.ts';
+import type { BaseProvider } from '../base.ts';
 
 export interface SearchResult {
   id: string;
@@ -8,9 +9,7 @@ export interface SearchResult {
   content: string;
 }
 
-export interface SearchProvider {
-  name: string;
-  settings: string[];
+export interface SearchProvider extends BaseProvider {
   check: (user: User) => Promise<boolean>;
   search: (user: User, query: string, maxResults: number) => Promise<Omit<SearchResult, 'id'>[]>;
 }

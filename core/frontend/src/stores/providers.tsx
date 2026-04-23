@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import { ChatProviderStatus, SearchProviderStatus } from '@tiny-chat/core-backend/src/types.ts';
+import { ChatProviderStatus, OtherProviderStatus, SearchProviderStatus } from '@tiny-chat/core-backend/src/types.ts';
 import { trpc } from '@/utils/api';
 import { reloadConfig } from '@/managers/configuration';
 import { useTasks } from '@/stores/tasks.tsx';
@@ -8,6 +8,7 @@ import { useTasks } from '@/stores/tasks.tsx';
 interface ProvidersCache {
   chat: ChatProviderStatus[];
   search: SearchProviderStatus[];
+  other: OtherProviderStatus[];
 }
 
 function readProvidersCache(): ProvidersCache | null {
@@ -33,6 +34,7 @@ interface Providers {
 
   chatProviders: ChatProviderStatus[];
   searchProviders: SearchProviderStatus[];
+  otherProviders: OtherProviderStatus[];
   updateProviders: () => Promise<void>;
 
   abortController: AbortController | null;
@@ -43,7 +45,7 @@ export const useProviders = create(
     init: async () => {
       const cached = readProvidersCache();
       if (cached) {
-        set({ chatProviders: cached.chat, searchProviders: cached.search });
+        set({ chatProviders: cached.chat, searchProviders: cached.search, otherProviders: cached.other ?? [] });
         reloadConfig();
         return;
       }
@@ -52,6 +54,7 @@ export const useProviders = create(
 
     chatProviders: [],
     searchProviders: [],
+    otherProviders: [],
     updateProviders: async () => {
       useTasks.getState().addTask('providers', 'Checking availability');
 
@@ -67,8 +70,8 @@ export const useProviders = create(
         );
 
       console.log('Updated providers:', providers);
-      writeProvidersCache({ chat: providers.chat, search: providers.search });
-      set({ chatProviders: providers.chat, searchProviders: providers.search });
+      writeProvidersCache({ chat: providers.chat, search: providers.search, other: providers.other });
+      set({ chatProviders: providers.chat, searchProviders: providers.search, otherProviders: providers.other });
       reloadConfig();
 
       void useTasks.getState().removeTask('providers');

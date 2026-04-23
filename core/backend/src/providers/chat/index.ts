@@ -8,10 +8,9 @@ import type { ContextItem, Model, zConfig, zGenerateOutput } from '../../types.t
 import type { ToolCall } from '../../tools/index.ts';
 import { type User } from '../../server.ts';
 import { AWSProvider } from './ai-sdk/aws.ts';
+import type { BaseProvider } from '../base.ts';
 
-export interface ChatProvider {
-  name: string;
-  settings: string[];
+export interface ChatProvider extends BaseProvider {
   getModels: (user: User) => Promise<Model[]>;
   generate: (
     user: User,

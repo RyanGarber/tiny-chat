@@ -32,11 +32,12 @@ const ViewWeb = {
   schema: zViewWeb,
   run: async (_, params) => {
     const response = await fetch(`https://r.jina.ai/${params.url}`);
-    if (!response.ok) {
+    const text = await response.text();
+    if (!response.ok || !text) {
       console.error({ status: response.status, url: params.url }, await response.text());
       throw new Error('Failed to fetch webpage content');
     }
-    await response.text();
+    return text;
   },
 } satisfies ToolCall<typeof zViewWeb>;
 

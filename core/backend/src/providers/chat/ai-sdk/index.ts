@@ -286,7 +286,7 @@ export const AISdkProvider: ChatProvider = {
                 return [
                   { type: 'image', image: part.data, mediaType: part.mime } satisfies ImagePart,
                 ];
-              } else if (part.mime === 'text/plain' || part.mime === 'text/markdown') {
+              } else if (part.mime.startsWith('text/')) {
                 return [{ type: 'text', text: part.data } satisfies TextPart];
               }
               return [

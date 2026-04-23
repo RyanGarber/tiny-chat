@@ -4,6 +4,7 @@ import { type User } from '../../server.ts';
 export const Brave: SearchProvider = {
   name: 'brave',
   settings: ['apiKey'],
+
   async check(user) {
     if (!user?.settings?.providers?.[this.name]?.apiKey) return false;
     const response = await fetch(
@@ -20,6 +21,7 @@ export const Brave: SearchProvider = {
     }
     return true;
   },
+
   async search(user: User, query: string, maxResults) {
     const response = await fetch(
       `https://api.search.brave.com/res/v1/llm/context?q=${encodeURIComponent(query)}&count=${maxResults}`,

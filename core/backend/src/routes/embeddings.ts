@@ -1,7 +1,7 @@
 import { procedure, router } from '../index.ts';
 import { Author, MemoryCategory, MemoryStability } from '../../generated/prisma/enums.ts';
 import { combineVectorsWeighted, embed, getMostRelevant } from '../utils/embed.ts';
-import { type Memory, type Message, Prisma } from '../../generated/prisma/client.ts';
+import { type Memory, Prisma } from '../../generated/prisma/client.ts';
 import { type User } from '../server.ts';
 import { type ContextItem, texts, zData } from '../types.ts';
 import { embedMessage } from './messages.ts';
@@ -10,7 +10,7 @@ import { embedGitHubFile } from '../utils/consts.ts';
 export default router({
   fixMissing: procedure.mutation(async ({ ctx }) => {
     const messages = (
-      await globalThis.prisma.$queryRaw<Message[]>`SELECT *
+      await globalThis.prisma.$queryRaw<{ id: string; data: any }[]>`SELECT id, data
         FROM message
         WHERE "userId" = ${ctx.session.user.id}
           AND embedding IS NULL`
@@ -137,7 +137,9 @@ export async function getMemoryContext(user: User, context: ContextItem[]): Prom
   for (const item of context.filter((m) => m.author === Author.USER).slice(-4)) {
     if (item.id) {
       const message = (
-        await globalThis.prisma.$queryRaw<(Message & { embedding?: string })[]>`SELECT *
+        await globalThis.prisma.$queryRaw<
+          { id: string; data: any; embedding?: string }[]
+        >`SELECT id, data, embedding
           FROM message
           WHERE id = ${item.id}`
       )[0];
@@ -234,8 +236,8 @@ export async function getQueryEmbedding(user: User, context: ContextItem[]) {
     if (item.id) {
       const message = (
         await globalThis.prisma.$queryRaw<
-          (Message & { embedding?: string })[]
-        >`SELECT * FROM message WHERE id = ${item.id}`
+          { id: string; data: any; embedding?: string }[]
+        >`SELECT id, data, embedding FROM message WHERE id = ${item.id}`
       )[0];
 
       const text = texts(zData.parse(message.data));

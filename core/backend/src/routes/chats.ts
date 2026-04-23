@@ -3,8 +3,7 @@ import { procedure, router } from '../index.ts';
 import { createId } from '@paralleldrive/cuid2';
 import { reorder } from './messages.ts';
 import { zConfig, zData, zMetadata } from '../types.ts';
-import minisearch, { type SearchResult } from 'minisearch';
-import { embed, getMostRelevant } from '../utils/embed.ts';
+import { embed } from '../utils/embed.ts';
 
 export default router({
   find: procedure.input(z.object({ id: z.cuid2().nullable() })).query(async ({ ctx, input }) => {
@@ -107,113 +106,76 @@ export default router({
   search: procedure
     .input(z.object({ text: z.string().min(1), config: zConfig.optional() }))
     .mutation(async ({ ctx, input }) => {
-      const messages = (
-        await globalThis.prisma.message.findMany({
-          where: { userId: ctx.session.user.id, chat: { temporary: { equals: false } } },
-          include: { chat: { select: { title: true } }, folder: { select: { title: true } } },
-        })
-      ).map((m) => ({ ...m, embedding: null as number[] | null }));
+      console.log(`Searching for "${input.text}" in all chats`);
 
-      console.log(`Searching for "${input.text}" across ${messages.length} messages`);
-      const embeddings = await globalThis.prisma.$queryRaw<
-        {
-          id: string;
-          embedding: string;
-        }[]
-      >`SELECT id, embedding
-                 FROM message
-                 WHERE "userId" = ${ctx.session.user.id}`;
-      for (const message of messages) {
-        const raw = embeddings.find((e) => e.id === message.id)?.embedding;
-        if (raw) message.embedding = JSON.parse(raw);
-      }
+      const queryEmbeddings = ctx.session.user.settings.useEmbeddingSearch
+        ? await embed(ctx.session.user, [input.text])
+        : null;
+      const useEmbedding = !!queryEmbeddings?.[0]?.length;
+      console.log(`Using embedding: ${useEmbedding}`);
 
-      const mappedMessages = messages.map((message) => ({
-        id: message.id,
-        chatId: message.chatId,
-        data: zData.parse(message.data),
-        folderTitle: message.folder.title,
-        chatTitle: message.chat.title,
-        text: zData
-          .parse(message.data)
-          .filter((p) => p.type === 'text')
-          .map((t) => t.value)
-          .join('\n'),
-        embedding: message.embedding,
-      }));
-
-      // --- Text search (minisearch) ---
-      const textIndex = new minisearch({
-        fields: ['folderTitle', 'chatTitle', 'text'],
-        storeFields: ['id', 'chatId', 'data', 'folderTitle', 'chatTitle'],
-        searchOptions: {
-          boost: { chatTitle: 2 },
-          fuzzy: 0.2,
-          prefix: true,
-        },
-      });
-      textIndex.addAll(mappedMessages);
-      const textResults = textIndex.search(input.text) as (SearchResult & {
+      interface Result {
         id: string;
         chatId: string;
         data: zData;
-        folderTitle: string;
-        chatTitle: string;
-      })[];
-
-      console.log('Embedding query');
-      const queryEmbeddings = await embed(ctx.session.user, [input.text]);
-      console.log('Embedding done');
-
-      const messagesWithEmbeddings = mappedMessages.filter(
-        (m) => m.embedding && m.embedding.length > 0,
-      );
-      const useVectorSearch = queryEmbeddings && messagesWithEmbeddings.length > 0;
-
-      if (!useVectorSearch) {
-        return textResults;
+        chatTitle: string | null;
+        folderTitle: string | null;
       }
 
-      const vectorResults = getMostRelevant(
-        queryEmbeddings[0],
-        messagesWithEmbeddings.map((m) => ({ value: m, embedding: m.embedding! })),
-        { maxCount: 50 },
-      );
+      const websearchQuery = useEmbedding ? input.text : input.text.split(' ').join(' OR ');
+      const results = await globalThis.prisma.$queryRaw<Result[]>`
+        WITH search AS (
+          SELECT websearch_to_tsquery('english', ${websearchQuery}) AS query
+        ),
+        embedding_result AS (
+          SELECT
+            m.id,
+            ROW_NUMBER() OVER (ORDER BY m.embedding <=> ${JSON.stringify(queryEmbeddings?.[0])}) AS score
+          FROM message m
+          JOIN chat c ON m."chatId" = c.id
+          WHERE m."userId" = ${ctx.session.user.id}
+            AND c.temporary = false
+            AND m.embedding IS NOT NULL
+            AND ${useEmbedding ? 1 : 0} = 1
+          ORDER BY m.embedding <=> ${JSON.stringify(queryEmbeddings?.[0])}
+          LIMIT 100
+        ),
+        lexicon_result AS (
+          SELECT
+            m.id,
+            ROW_NUMBER() OVER (ORDER BY ts_rank_cd(m.lexicon, search.query) DESC) AS score
+          FROM message m
+          JOIN chat c ON m."chatId" = c.id
+          CROSS JOIN search
+          WHERE m."userId" = ${ctx.session.user.id}
+            AND c.temporary = false
+            AND m.lexicon @@ search.query
+          LIMIT 100
+        ),
+        combined_result AS (
+          SELECT
+            COALESCE(e.id, l.id) AS id,
+            (COALESCE(1.0 / (60 + e.score), 0) + COALESCE(1.0 / (60 + l.score), 0)) AS score
+          FROM embedding_result e
+          FULL OUTER JOIN lexicon_result l ON e.id = l.id
+        )
+        SELECT
+          m.id AS id,
+          m."chatId" AS "chatId",
+          m.data AS data,
+          c.title AS "chatTitle",
+          f.title AS "folderTitle"
+        FROM combined_result
+        JOIN message m ON m.id = combined_result.id
+        CROSS JOIN LATERAL jsonb_array_elements(m.data) AS "dataPart"
+        LEFT JOIN chat c ON m."chatId" = c.id
+        LEFT JOIN "folder" f ON m."folderId" = f.id
+        GROUP BY m.id, m."chatId", m.lexicon, c.title, f.title, combined_result.score
+        ORDER BY combined_result.score DESC
+        LIMIT 25
+      `;
 
-      const maxTextScore = textResults.reduce((m, r) => Math.max(m, r.score), 0) || 1;
-      const maxVectorScore = vectorResults.reduce((m, r) => Math.max(m, r.score), 0) || 1;
-
-      const textScoreMap = new Map(textResults.map((r) => [r.id, r.score / maxTextScore]));
-      const vectorScoreMap = new Map(
-        vectorResults.map((r) => [(r.value as { id: string }).id, r.score / maxVectorScore]),
-      );
-
-      const allIds = new Set([...textScoreMap.keys(), ...vectorScoreMap.keys()]) as Set<string>;
-
-      return Array.from(allIds)
-        .map((id) => {
-          const textScore = textScoreMap.get(id) ?? 0;
-          const vectorScore = vectorScoreMap.get(id) ?? 0;
-          const combinedScore = (textScore + vectorScore) / 2;
-          const message = mappedMessages.find((m) => m.id === id)!;
-          const textResult = textResults.find((r) => r.id === id);
-          return {
-            id,
-            chatId: message.chatId,
-            data: message.data,
-            folderTitle: message.folderTitle,
-            chatTitle: message.chatTitle,
-            score: combinedScore,
-            match: textResult?.match ?? {},
-            terms: textResult?.terms ?? [],
-          } as SearchResult & {
-            id: string;
-            chatId: string;
-            data: zData;
-            folderTitle: string;
-            chatTitle: string;
-          };
-        })
-        .sort((a, b) => b.score - a.score);
+      console.log(`Found ${results.length} results`);
+      return results;
     }),
 });

@@ -1,7 +1,6 @@
 import type { AISdkSubprovider } from './index.ts';
 import { type BedrockProviderOptions, createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 import type { Model } from '../../../types.ts';
-import { BedrockClient, ListFoundationModelsCommand } from '@aws-sdk/client-bedrock';
 import { AnthropicFamily } from '../../../families/anthropic.ts';
 import { AnthropicProvider } from './anthropic.ts';
 import { AmazonFamily } from '../../../families/amazon.ts';
@@ -64,16 +63,15 @@ export const AWSProvider: AISdkSubprovider = {
     if (!user?.settings?.providers?.aws?.apiKey) return [];
 
     try {
-      const client = new BedrockClient({
-        region: 'us-east-1',
-      });
+      const models = (await (
+        await fetch('https://bedrock.us-east-1.amazonaws.com/foundation-models', {
+          headers: { Authorization: `Bearer ${user.settings.providers.aws.apiKey}` },
+        })
+      ).json()) as {
+        modelSummaries: { modelId: string; outputModalities: ('TEXT' | 'IMAGE' | 'EMBEDDING')[] }[];
+      };
 
-      process.env.AWS_BEARER_TOKEN_BEDROCK = user.settings.providers.aws.apiKey; // TODO
-      const foundation = await client.send(new ListFoundationModelsCommand());
-
-      return foundation.modelSummaries!.flatMap((m): Model[] => {
-        if (!m.modelId) return [];
-
+      return models.modelSummaries.flatMap((m): Model[] => {
         if (m.modelId.includes('claude-')) {
           return [
             {
@@ -87,7 +85,11 @@ export const AWSProvider: AISdkSubprovider = {
         return [
           {
             name: m.modelId,
-            features: ['generate' as const, 'toolCall' as const],
+            features: m.outputModalities.includes('TEXT')
+              ? ['generate' as const, 'toolCall' as const]
+              : m.outputModalities.includes('EMBEDDING')
+                ? ['embed' as const]
+                : [],
             args: AmazonFamily.getArgs(m.modelId),
           } satisfies Model,
         ];

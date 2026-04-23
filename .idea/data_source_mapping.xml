@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourcePerFileMappings">
+    <file url="file://$PROJECT_DIR$/core/backend/prisma/migrations/0_init/migration.sql" value="d2eabe8b-a68e-4abe-a98a-a9284eea25ca" />
     <file url="file://$PROJECT_DIR$/core/backend/src/routes/github.ts" value="d2eabe8b-a68e-4abe-a98a-a9284eea25ca" />
   </component>
 </project>

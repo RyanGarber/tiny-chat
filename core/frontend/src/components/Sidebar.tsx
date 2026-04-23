@@ -1,5 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useDebouncedValue } from '@mantine/hooks';
 import {
   ActionIcon,
@@ -45,12 +44,16 @@ export default function Sidebar() {
         void setCurrentChat(location.slice(1) || null, false);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location, isSessionPending, session?.user.id, session?.user]);
 
-  const closeAfter = (action?: () => void) => {
-    action?.();
-    if (isMobile) setSidebarOpen(false);
-  };
+  const closeAfter = useCallback(
+    (action?: () => void) => {
+      action?.();
+      if (isMobile) setSidebarOpen(false);
+    },
+    [isMobile, setSidebarOpen],
+  );
 
   const isTemporary = temporary || currentChat?.temporary;
   const isIncognito = incognito || currentChat?.incognito;
@@ -84,8 +87,8 @@ export default function Sidebar() {
             return true;
           })
           .map((r) => ({
-            id: r.id as string,
-            label: scrubText(r.chatTitle, 50),
+            id: r.id,
+            label: scrubText(r.chatTitle ?? '', 50),
             description: snippetText(scrubText(extractText(r.data)), debouncedQuery),
             onClick: () => closeAfter(() => void setCurrentChat(r.chatId)), // TODO - scroll to chat
           })),
@@ -94,7 +97,7 @@ export default function Sidebar() {
     return () => {
       cancelled = true;
     };
-  }, [debouncedQuery]);
+  }, [closeAfter, debouncedQuery, getEmbeddingConfig, getUseEmbeddingSearch, setCurrentChat]);
 
   const expanded = (
     <>

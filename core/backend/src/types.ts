@@ -41,6 +41,14 @@ export interface SearchProviderStatus {
   error?: string;
 }
 
+export interface OtherProviderStatus {
+  name: string;
+  settings: string[];
+  available: boolean;
+  error?: string;
+}
+
+
 export const zConfig = z.object({
   provider: z.string(),
   model: z.string(),

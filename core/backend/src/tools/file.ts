@@ -3,7 +3,7 @@ import type { ToolCall, ToolContext } from './index.ts';
 import { embed, getMostRelevant } from '../utils/embed.ts';
 import { type File, Prisma } from '../../generated/prisma/client.ts';
 import { type ContextItem, snippetText } from '../types.ts';
-import { embedGitHubFile } from '../utils/consts.ts';
+import { shouldEmbedFile } from '../utils/consts.ts';
 
 const SNIPPET_WINDOW = 2500;
 
@@ -55,7 +55,7 @@ const SearchFiles: ToolCall<typeof zSearchFiles> = {
             uploadId: { in: uploads(context.messages) },
           },
         })
-      ).filter((f) => embedGitHubFile(f.path.join('/')));
+      ).filter((f) => shouldEmbedFile(f.path.join('/'), f.data));
 
       const matches: string[] = [];
       for (const file of files) {

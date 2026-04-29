@@ -16,6 +16,7 @@ const GITHUB_IGNORE = [
   'Cargo.lock',
   'Gemfile.lock',
   'poetry.lock',
+  'uv.lock',
   'composer.lock',
   'mix.lock',
   '.pnp.cjs',
@@ -113,6 +114,28 @@ const GITHUB_IGNORE = [
   '.nyc_output/',
   'playwright-report/',
   'test-results/',
+
+  // 11. Unity
+  'Library/',
+  'Temp/',
+  'Obj/',
+  'Build/',
+  'Builds/',
+  'Photon/',
+  'packages-lock.json',
+  '.meta',
+  '.mixer',
+  '.settings',
+  '.unity',
+  '.prefab',
+  '.asset',
+  '.controller',
+  '.fbx',
+  '.obj',
+  '.shader',
+  '.mat',
+  '.chm',
+  '.unitypackage',
 ];
 
 export function includeGitHubFile(path: string): boolean {
@@ -159,6 +182,7 @@ const GITHUB_EMBED = [
   '.kt', // Kotlin
   '.swift', // Swift
   '.c', // C
+  '.cs', // C#
   '.cpp', // C++
   '.h', // C/C++ headers
   '.sh', // Shell scripts
@@ -192,6 +216,9 @@ export function getCommonArgs(maxTemperature = 2): ModelArg[] {
   ];
 }
 
-export function embedGitHubFile(path: string) {
-  return GITHUB_EMBED.some((extension) => path.toLowerCase().endsWith(extension));
+export function shouldEmbedFile(path: string, bytes: Uint8Array | null) {
+  return (
+    GITHUB_EMBED.some((extension) => path.toLowerCase().endsWith(extension)) &&
+    (!bytes || new TextDecoder().decode(bytes).length > 0)
+  );
 }

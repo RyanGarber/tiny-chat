@@ -7,7 +7,7 @@ import { embed } from '../utils/embed.ts';
 import { createId } from '@paralleldrive/cuid2';
 import { fileTypeFromBuffer } from 'file-type';
 import type { zDataPart } from '../types.ts';
-import { embedGitHubFile, includeGitHubFile } from '../utils/consts.ts';
+import { shouldEmbedFile, includeGitHubFile } from '../utils/consts.ts';
 import { auth } from '../server.ts';
 import { type File, Prisma } from '../../generated/prisma/client.ts';
 
@@ -237,7 +237,7 @@ export default router({
         await globalThis.prisma.$queryRaw<
           File[]
         >`SELECT id, path, data FROM file WHERE "uploadId" = ${uploadId} AND embedding IS NULL`
-      ).filter((f) => embedGitHubFile(f.path.join('/')));
+      ).filter((f) => shouldEmbedFile(f.path.join('/'), f.data));
 
       console.log(`Starting embedding for ${allFiles.length} files...`);
       void (async () => {

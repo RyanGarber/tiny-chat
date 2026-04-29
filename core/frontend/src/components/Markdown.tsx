@@ -453,7 +453,7 @@ const filter = (text: string, citationIds: Set<string>) => {
         // Has explicit LaTeX: \frac, ^2, a_n, {}, etc.
         /[\\^_{}]/.test(trimmed) ||
         // Has math operator with spacing or between operands: 15 / 45, 10 + 30, x = 4
-        /[\d\w]\s*[+\-*/=]\s*[\d\w(]/.test(trimmed) ||
+        /[\d\w]\s*[+\-*=]\s*[\d\w(]/.test(trimmed) || // ([+\-*/=] - / removed due to things like "$5/day, $35/week")
         // Is a pure number (integer or decimal), nothing else: 15, 15.25
         /^-?\d+(\.\d+)?$/.test(trimmed);
 

@@ -5,7 +5,7 @@ import { type Memory, Prisma } from '../../generated/prisma/client.ts';
 import { type User } from '../server.ts';
 import { type ContextItem, texts, zData } from '../types.ts';
 import { embedMessage } from './messages.ts';
-import { embedGitHubFile } from '../utils/consts.ts';
+import { shouldEmbedFile } from '../utils/consts.ts';
 
 export default router({
   fixMissing: procedure.mutation(async ({ ctx }) => {
@@ -86,7 +86,7 @@ export default router({
       FROM file
       WHERE "userId" = ${ctx.session.user.id}
         AND embedding IS NULL`
-    ).filter((f) => embedGitHubFile(f.path.join('/')));
+    ).filter((f) => shouldEmbedFile(f.path.join('/'), f.data));
 
     for (let i = 0; i < files.length; i += 100) {
       console.log('Trying to embed:', files[i]);

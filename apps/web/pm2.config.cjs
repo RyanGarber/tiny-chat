@@ -2,8 +2,9 @@ module.exports = {
   apps: [
     {
       name: 'apps-web',
-      script: 'pnpm',
-      args: 'start',
+      script: 'bun',
+      args: 'run ./src/index.ts',
+      exec_mode: 'fork',
       instances: 1,
       autorestart: true,
       watch: false,

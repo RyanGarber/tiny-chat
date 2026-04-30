@@ -2,8 +2,9 @@ module.exports = {
   apps: [
     {
       name: 'core-backend',
-      script: 'pnpm',
-      args: 'start',
+      script: 'bun',
+      args: 'run ./src/server.ts',
+      exec_mode: 'fork',
       instances: 1,
       autorestart: true,
       watch: false,

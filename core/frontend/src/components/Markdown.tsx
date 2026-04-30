@@ -442,7 +442,7 @@ const filter = (text: string, citationIds: Set<string>) => {
 
   // Step 5: Inline math — $...$ (conservative fallback for non-compliant model output)
   text = text.replace(
-    /(?<![\\$a-zA-Z\d])\$((?:[^$\\\n[\]]|\\.)+?)\$(?!\$)/g,
+    /(?<![\\$a-zA-Z\d])\$((?:[^$\\\n\s[\]]|\\.)+?)\$(?!\$)/g,
     (match, inner: string) => {
       const trimmed = inner.trim();
       if (!trimmed) return match;

@@ -1,8 +1,13 @@
 import { z } from 'zod';
 import { procedure, router } from '../index.ts';
 import { chatProviders } from '../providers/chat/index.ts';
-import { type ChatProviderStatus, type OtherProviderStatus, type SearchProviderStatus, zConfig } from '../types.ts';
-import { searchProviders } from '../providers/search/index.ts';
+import {
+  type ChatProviderStatus,
+  type OtherProviderStatus,
+  type WebProviderStatus,
+  zConfig,
+} from '../types.ts';
+import { webProviders } from '../providers/web/index.ts';
 import { otherProviders } from '../providers/other/index.ts';
 import { checkProvider } from '../providers/base.ts';
 import { embed } from '../utils/embed.ts';
@@ -30,15 +35,15 @@ export default router({
       }
     }
 
-    const search: SearchProviderStatus[] = await Promise.all(
-      searchProviders.map((p) => checkProvider(p, ctx.session.user)),
+    const web: WebProviderStatus[] = await Promise.all(
+      webProviders.map((p) => checkProvider(p, ctx.session.user)),
     );
 
     const other: OtherProviderStatus[] = await Promise.all(
       otherProviders.map((p) => checkProvider(p, ctx.session.user)),
     );
 
-    return { chat, search, other };
+    return { chat, web, other };
   }),
 
   embed: procedure

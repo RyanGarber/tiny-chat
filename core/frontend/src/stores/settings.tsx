@@ -14,6 +14,7 @@ export const zSettings = z
     memoryConfig: zConfig,
     embeddingConfig: zConfig,
     useEmbeddingSearch: z.boolean(),
+    preferredWebProvider: z.string(),
     theme: z.string(),
     codeTheme: z.string(),
     providers: zProviders,
@@ -51,6 +52,8 @@ interface Settings {
   setEmbeddingConfig: (value: zConfig | undefined) => Promise<void>;
   getUseEmbeddingSearch: () => boolean;
   setUseEmbeddingSearch: (value: boolean) => Promise<void>;
+  getPreferredWebProvider: () => string | undefined;
+  setPreferredWebProvider: (value: string | undefined) => Promise<void>;
 
   getTheme: () => string;
   setTheme: (value: string) => Promise<void>;
@@ -147,6 +150,12 @@ export const useSettings = create(
     },
     setUseEmbeddingSearch: async (value) => {
       await get().setSettings({ useEmbeddingSearch: value });
+    },
+    getPreferredWebProvider: () => {
+      return get().settings.preferredWebProvider;
+    },
+    setPreferredWebProvider: async (value) => {
+      await get().setSettings({ preferredWebProvider: value });
     },
 
     getTheme: () => {

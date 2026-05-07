@@ -8,6 +8,7 @@ import chat from './chat.ts';
 import reply from './reply.ts';
 import action from './action.ts';
 import file from './file.ts';
+import legiscan from './legiscan.ts';
 
 export interface ToolContext {
   user: User;
@@ -35,5 +36,6 @@ export function tools(context: ToolContext) {
     ...web(context),
     ...file(context),
     ...chat(context),
+    ...legiscan(context),
   ] as ToolCall[];
 }

@@ -16,7 +16,7 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core';
-import { JSX, useEffect, useRef, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { useProviders } from '@/stores/providers.tsx';
 import { codeThemes, themes, useSettings } from '@/stores/settings.tsx';
 import { hashText } from '@/utils/text';
@@ -26,7 +26,7 @@ import { useLayout } from '@/stores/layout.tsx';
 import {
   ChatProviderStatus,
   OtherProviderStatus,
-  SearchProviderStatus,
+  WebProviderStatus,
   zConfig,
 } from '@tiny-chat/core-backend/src/types.ts';
 import ModelSelect from '@/components/ModelSelect.tsx';
@@ -47,6 +47,8 @@ export default function SidebarSettings({
     setEmbeddingConfig,
     getUseEmbeddingSearch,
     setUseEmbeddingSearch,
+    getPreferredWebProvider,
+    setPreferredWebProvider,
     getTheme,
     setTheme,
     getCodeTheme,
@@ -55,10 +57,8 @@ export default function SidebarSettings({
     setProviderSetting,
   } = useSettings();
 
-  const { chatProviders, searchProviders, otherProviders, updateProviders } = useProviders();
+  const { chatProviders, webProviders, otherProviders, updateProviders } = useProviders();
   const { setGestureBlock, setDrawerCloser } = useLayout();
-
-  const codeThemeRef = useRef<HTMLInputElement>(null);
 
   const [opened, { open, close }] = useDisclosure(false);
 
@@ -80,7 +80,9 @@ export default function SidebarSettings({
     }
   }, [opened, close, setDrawerCloser]);
 
-  const ProviderSettings = (providers: (ChatProviderStatus | SearchProviderStatus | OtherProviderStatus)[]) => (
+  const ProviderSettings = (
+    providers: (ChatProviderStatus | WebProviderStatus | OtherProviderStatus)[],
+  ) => (
     <Stack>
       {providers
         .filter((s) => s.settings.length)
@@ -212,7 +214,7 @@ export default function SidebarSettings({
               </Tooltip>
               <Space />
               <Box>
-                <Text size="sm">Embeddings</Text>
+                <Text size="sm">Chat</Text>
                 <Text size="xs" c="dimmed">
                   Enables memory and smart search
                 </Text>
@@ -279,6 +281,26 @@ export default function SidebarSettings({
                   </Group>
                 </CheckboxCard>
               </Tooltip>
+              <Space />
+              <Box>
+                <Text size="sm">Web</Text>
+                <Text size="xs" c="dimmed">
+                  Enables web browsing for chat models
+                </Text>
+              </Box>
+              <Tooltip label="Provider used for web browsing" color="gray" position="right">
+                <Select
+                  label="Preferred Provider"
+                  styles={consumeLabel}
+                  allowDeselect={false}
+                  data={webProviders.filter((p) => !p.error).map((p) => p.name)}
+                  value={getPreferredWebProvider()}
+                  onChange={(value) => {
+                    if (!value) return;
+                    void setPreferredWebProvider(value);
+                  }}
+                />
+              </Tooltip>
             </Stack>
           </Tabs.Panel>
           <Tabs.Panel value="appearance">
@@ -313,7 +335,6 @@ export default function SidebarSettings({
                     if (!value) return;
                     void setCodeTheme(value);
                   }}
-                  ref={codeThemeRef}
                 />
               </Tooltip>
             </Stack>
@@ -322,9 +343,9 @@ export default function SidebarSettings({
             <Stack>
               <Group justify="space-between">
                 <Box>
-                  <Text size="sm">Models</Text>
+                  <Text size="sm">Chat</Text>
                   <Text size="xs" c="dimmed">
-                    Handles chats and embeddings
+                    Access chat and embedding models
                   </Text>
                 </Box>
                 <ActionIcon variant="transparent" c="dimmed" onClick={() => void updateProviders()}>
@@ -334,19 +355,19 @@ export default function SidebarSettings({
               {ProviderSettings(chatProviders)}
               <Space />
               <Box>
-                <Text size="sm">Search</Text>
+                <Text size="sm">Web</Text>
                 <Text size="xs" c="dimmed">
-                  Enables models to search the web
+                  Enable web browsing for chat models
                 </Text>
               </Box>
-              {ProviderSettings(searchProviders)}
+              {ProviderSettings(webProviders)}
               {otherProviders.filter((p) => p.settings.length > 0).length > 0 && (
                 <>
                   <Space />
                   <Box>
                     <Text size="sm">Other</Text>
                     <Text size="xs" c="dimmed">
-                      Additional integrations
+                      Enable extra features and integrations
                     </Text>
                   </Box>
                   {ProviderSettings(otherProviders)}

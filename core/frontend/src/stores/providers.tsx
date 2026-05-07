@@ -1,13 +1,17 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import { ChatProviderStatus, OtherProviderStatus, SearchProviderStatus } from '@tiny-chat/core-backend/src/types.ts';
+import {
+  ChatProviderStatus,
+  OtherProviderStatus,
+  WebProviderStatus,
+} from '@tiny-chat/core-backend/src/types.ts';
 import { trpc } from '@/utils/api';
 import { reloadConfig } from '@/managers/configuration';
 import { useTasks } from '@/stores/tasks.tsx';
 
 interface ProvidersCache {
   chat: ChatProviderStatus[];
-  search: SearchProviderStatus[];
+  web: WebProviderStatus[];
   other: OtherProviderStatus[];
 }
 
@@ -33,7 +37,7 @@ interface Providers {
   init: () => Promise<void>;
 
   chatProviders: ChatProviderStatus[];
-  searchProviders: SearchProviderStatus[];
+  webProviders: WebProviderStatus[];
   otherProviders: OtherProviderStatus[];
   updateProviders: () => Promise<void>;
 
@@ -45,7 +49,11 @@ export const useProviders = create(
     init: async () => {
       const cached = readProvidersCache();
       if (cached) {
-        set({ chatProviders: cached.chat, searchProviders: cached.search, otherProviders: cached.other ?? [] });
+        set({
+          chatProviders: cached.chat ?? [],
+          webProviders: cached.web ?? [],
+          otherProviders: cached.other ?? [],
+        });
         reloadConfig();
         return;
       }
@@ -53,7 +61,7 @@ export const useProviders = create(
     },
 
     chatProviders: [],
-    searchProviders: [],
+    webProviders: [],
     otherProviders: [],
     updateProviders: async () => {
       useTasks.getState().addTask('providers', 'Checking availability');
@@ -70,8 +78,12 @@ export const useProviders = create(
         );
 
       console.log('Updated providers:', providers);
-      writeProvidersCache({ chat: providers.chat, search: providers.search, other: providers.other });
-      set({ chatProviders: providers.chat, searchProviders: providers.search, otherProviders: providers.other });
+      writeProvidersCache({ chat: providers.chat, web: providers.web, other: providers.other });
+      set({
+        chatProviders: providers.chat,
+        webProviders: providers.web,
+        otherProviders: providers.other,
+      });
       reloadConfig();
 
       void useTasks.getState().removeTask('providers');

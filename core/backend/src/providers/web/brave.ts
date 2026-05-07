@@ -1,18 +1,19 @@
-import { type SearchProvider } from './index.ts';
+import { type WebProvider } from './index.ts';
 import { type User } from '../../server.ts';
 
-export const Brave: SearchProvider = {
+export const Brave: WebProvider = {
   name: 'brave',
   settings: ['apiKey'],
+  features: ['search'],
 
   async check(user) {
-    if (!user?.settings?.providers?.[this.name]?.apiKey) return false;
+    if (!user?.settings?.providers?.brave?.apiKey) return false;
     const response = await fetch(
       `https://api.search.brave.com/res/v1/suggest/search?q=test&count=1&country=US`,
       {
         headers: {
           Accept: 'application/json',
-          'X-Subscription-Token': user.settings.providers?.[this.name]?.apiKey,
+          'X-Subscription-Token': user.settings.providers?.brave?.apiKey,
         },
       },
     );
@@ -28,7 +29,7 @@ export const Brave: SearchProvider = {
       {
         headers: {
           Accept: 'application/json',
-          'X-Subscription-Token': user.settings.providers?.[this.name]?.apiKey,
+          'X-Subscription-Token': user.settings.providers?.brave?.apiKey,
         },
       },
     );
@@ -40,6 +41,11 @@ export const Brave: SearchProvider = {
       title: result.title,
       source: result.url,
       content: result.snippets.join('\n---\n'),
-    })) ?? []) satisfies Awaited<ReturnType<SearchProvider['search']>>;
+    })) ?? []) satisfies Awaited<ReturnType<WebProvider['search']>>;
+  },
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async view() {
+    throw new Error('Unsupported');
   },
 };

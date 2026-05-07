@@ -8,7 +8,7 @@ export const LegiscanProvider: OtherProvider = {
   async check(user) {
     if (!user.settings.providers?.legiscan?.apiKey) return false;
 
-    const client = new LegiscanClient(user.settings.providers.legiscan.apiKey);
+    const client = new LegiscanClient(user.settings.providers.legiscan.apiKey as string);
     await client.getSessionList({ state: State.DC });
 
     return true;

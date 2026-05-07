@@ -24,7 +24,7 @@ import { normalizeText, texts, zData } from '@tiny-chat/core-backend/src/types.t
 import { visit, SKIP } from 'unist-util-visit';
 import type { Plugin } from 'unified';
 import type { Root, Element, Text as HastText } from 'hast';
-import { SearchResult } from '@tiny-chat/core-backend/src/providers/search';
+import { SearchResult } from '../../../backend/src/providers/web';
 import { usePersistence } from '@/stores/persistence.tsx';
 import { format } from 'timeago.js';
 

@@ -34,7 +34,7 @@ export interface ChatProviderStatus {
   error?: string;
 }
 
-export interface SearchProviderStatus {
+export interface WebProviderStatus {
   name: string;
   settings: string[];
   available: boolean;
@@ -47,7 +47,6 @@ export interface OtherProviderStatus {
   available: boolean;
   error?: string;
 }
-
 
 export const zConfig = z.object({
   provider: z.string(),

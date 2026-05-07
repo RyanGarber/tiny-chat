@@ -14,7 +14,7 @@ import { ThoughtGroupPopover, ToolCallPopover } from '@/components/MessageBodyPo
 import { Icon } from '@iconify/react';
 import { useStreamedLength } from '@/hooks/useStreamedLength.ts';
 import Ask from '@/components/Ask.tsx';
-import { SearchResult } from '@tiny-chat/core-backend/src/providers/search';
+import { SearchResult } from '../../../backend/src/providers/web';
 import { MediaPlayer, MediaProvider } from '@vidstack/react';
 import {
   DefaultAudioLayout,

@@ -1,6 +1,6 @@
 import { type ToolCall, type ToolContext } from './index.ts';
 import { z } from 'zod';
-import { searchProviders } from '../providers/search/index.ts';
+import { getBestWebProvider } from '../providers/web/index.ts';
 import { createHash } from 'crypto';
 
 const zSearchWeb = z.object({
@@ -13,7 +13,7 @@ const SearchWeb = {
   parameters: zSearchWeb.toJSONSchema(),
   schema: zSearchWeb,
   run: async ({ user }, params) => {
-    const results = await searchProviders[0].search(user, params.query, 5);
+    const results = await getBestWebProvider(user, 'search').search(user, params.query, 5);
     return results.map((r) => ({
       ...r,
       id: createHash('sha256').update(r.source).digest('hex').slice(0, 6),
@@ -30,7 +30,16 @@ const ViewWeb = {
   description: 'View a webpage.',
   parameters: zViewWeb.toJSONSchema(),
   schema: zViewWeb,
-  run: async (_, params) => {
+  run: async ({ user }, params) => {
+    const provider = getBestWebProvider(user, 'view');
+    if (provider) {
+      try {
+        return await provider.view(user, params.url);
+      } catch (error) {
+        console.warn('Failed to use provider for view_web, falling back to r.jina.ai');
+        console.error(error);
+      }
+    }
     const response = await fetch(`https://r.jina.ai/${params.url}`);
     const text = await response.text();
     if (!response.ok || !text) {
@@ -42,9 +51,7 @@ const ViewWeb = {
 } satisfies ToolCall<typeof zViewWeb>;
 
 export default function tools({ user }: ToolContext) {
-  const searchProvider = searchProviders[0];
-  if (!user.settings.providers?.[searchProvider.name]) {
-    return [ViewWeb];
-  }
-  return [SearchWeb, ViewWeb];
+  const tools: ToolCall[] = [ViewWeb];
+  if (getBestWebProvider(user, 'search')) tools.push(SearchWeb);
+  return tools;
 }

@@ -194,6 +194,12 @@ const GITHUB_EMBED = [
 export function getCommonArgs(maxTemperature = 2): ModelArg[] {
   return [
     {
+      type: 'list',
+      name: 'tools',
+      values: ['disabled', 'enabled'],
+      default: 'enabled',
+    },
+    {
       type: 'range',
       name: 'max-tokens',
       min: 2500,

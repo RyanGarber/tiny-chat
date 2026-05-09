@@ -24,6 +24,8 @@ import { Author } from '../../../../generated/prisma/enums.ts';
 import { type Model, type zConfig, type zGenerateOutput } from '../../../types.ts';
 import { type User } from '../../../server.ts';
 import { AWSProvider } from './aws.ts';
+import { GeminiProvider } from './gemini.ts';
+import { CustomProvider } from './custom.ts';
 
 export interface AISdkSubprovider {
   name: string;
@@ -35,7 +37,7 @@ export interface AISdkSubprovider {
 }
 
 /** Provider namespace keys we look for in providerMetadata */
-const PROVIDER_NAMESPACES = ['google', 'vertex', 'openai', 'azure', 'bedrock'] as const;
+const PROVIDER_NAMESPACES = ['google', 'gemini', 'vertex', 'openai', 'azure', 'bedrock'] as const;
 
 /**
  * Extract providerOptions for a ReasoningPart from persisted sdkData.
@@ -124,7 +126,15 @@ export function wrap(internal: AISdkSubprovider): ChatProvider {
   };
 }
 
-const providers = [GoogleProvider, AnthropicProvider, OpenAIProvider, AzureProvider, AWSProvider];
+const providers = [
+  GoogleProvider,
+  GeminiProvider,
+  AnthropicProvider,
+  OpenAIProvider,
+  AzureProvider,
+  AWSProvider,
+  CustomProvider,
+];
 
 export const AISdkProvider: ChatProvider = {
   name: 'ai-sdk',
@@ -144,6 +154,7 @@ export const AISdkProvider: ChatProvider = {
 
     // Find the internal provider that has this model
     for (const provider of providers) {
+      if (provider.name !== config.provider) continue;
       const models = await provider.getModels(user);
       // TODO - cache
       const model = models.find((m) => m.name === config.model);
@@ -395,6 +406,7 @@ export const AISdkProvider: ChatProvider = {
   async embed(user, texts, config) {
     let client: Partial<Provider> | null = null;
     for (const provider of providers) {
+      if (provider.name !== config.provider) continue;
       const models = await provider.getModels(user);
       if (models.some((m) => m.name === config.model)) {
         client = provider.getClient(user);

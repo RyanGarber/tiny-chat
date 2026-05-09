@@ -29,6 +29,11 @@ export interface ToolCall<T extends z.ZodType = z.ZodType> {
 }
 
 export function tools(context: ToolContext) {
+  console.log(
+    'Tools:',
+    context.generateInput.config.args?.tools === 'disabled' ? 'disabled' : 'enabled (default)',
+  );
+  if (context.generateInput.config.args?.tools === 'disabled') return [];
   return [
     ...reply(context),
     ...memory(context),

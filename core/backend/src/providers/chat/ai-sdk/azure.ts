@@ -40,7 +40,7 @@ export const AzureProvider: AISdkSubprovider = {
 
   getClientOptions(user, config) {
     if (config.model.includes('claude-')) {
-      AnthropicProvider.getClientOptions(user, config);
+      return AnthropicProvider.getClientOptions(user, config);
     }
 
     return OpenAIProvider.getClientOptions(user, config);

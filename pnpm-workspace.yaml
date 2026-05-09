@@ -4,16 +4,20 @@ packages:
 allowBuilds:
   '@prisma/engines': true
   esbuild: true
+  node-pty: true
   prisma: true
   protobufjs: true
   sharp: true
   tesseract.js: true
+  tree-sitter-bash: true
 allowedDeprecatedVersions:
   glob: "*"
   'node-domexception': "*"
   'whatwg-encoding': "*"
 patchedDependencies:
   '@ai-sdk/google': patches/@ai-sdk__google.patch
+  '@google/gemini-cli-core': patches/@google__gemini-cli-core.patch
+  ai-sdk-provider-gemini-cli: patches/ai-sdk-provider-gemini-cli.patch
 peerDependencyRules:
   allowedVersions:
     'eslint-plugin-react-hooks>eslint': '10'

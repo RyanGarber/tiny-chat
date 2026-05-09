@@ -7,7 +7,7 @@ import {
   zConfig as zConfigSchema,
   zData,
   type zDataPart,
-  type zMetadata,
+  zMetadata,
   type zGenerateInput,
   zGenerateMessageInput,
   zContinueToolCallInput,
@@ -217,6 +217,7 @@ export async function continueHandler(req: IncomingMessage, res: ServerResponse)
       where: { id: input.messageId, userId: user.id },
     });
     const currentData = zData.parse(modelMessage.data);
+    const currentMetadata = zMetadata.parse(modelMessage.metadata);
 
     // Check if this result was already added
     const alreadyAnswered = currentData.some(
@@ -293,7 +294,7 @@ export async function continueHandler(req: IncomingMessage, res: ServerResponse)
     );
 
     const data: zData = [...currentData];
-    const metadata: zMetadata = [];
+    const metadata: zMetadata = [...currentMetadata];
     for await (const event of generateStream(generation, data, metadata)) {
       sendEvent(res, event);
       await new Promise<void>((resolve) => setImmediate(resolve));

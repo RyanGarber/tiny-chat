@@ -9,6 +9,8 @@ import type { ToolCall } from '../../tools/index.ts';
 import { type User } from '../../server.ts';
 import { AWSProvider } from './ai-sdk/aws.ts';
 import type { BaseProvider } from '../base.ts';
+import { GeminiProvider } from './ai-sdk/gemini.ts';
+import { CustomProvider } from './ai-sdk/custom.ts';
 
 export interface ChatProvider extends BaseProvider {
   getModels: (user: User) => Promise<Model[]>;
@@ -26,8 +28,10 @@ export interface ChatProvider extends BaseProvider {
 export const chatProviders: ChatProvider[] = [
   Debug,
   wrap(GoogleProvider),
+  wrap(GeminiProvider),
   wrap(AnthropicProvider),
   wrap(OpenAIProvider),
   wrap(AzureProvider),
   wrap(AWSProvider),
+  wrap(CustomProvider),
 ];

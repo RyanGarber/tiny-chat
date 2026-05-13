@@ -26,6 +26,7 @@ import { type User } from '../../../server.ts';
 import { AWSProvider } from './aws.ts';
 import { GeminiProvider } from './gemini.ts';
 import { CustomProvider } from './custom.ts';
+import { listProviders } from '../../../routes/providers.ts';
 
 export interface AISdkSubprovider {
   name: string;
@@ -148,27 +149,14 @@ export const AISdkProvider: ChatProvider = {
   },
 
   async *generate(user, instructions, context, config, abortSignal, tools) {
-    let subprovider: AISdkSubprovider | null = null;
-    let clientModel: LanguageModel | null = null;
-    let supportsToolCall = false;
+    const provider = providers.find((p) => p.name === config.provider);
+    if (!provider) throw new Error(`Provider not found: ${config.provider}`);
 
-    // Find the internal provider that has this model
-    for (const provider of providers) {
-      if (provider.name !== config.provider) continue;
-      const models = await provider.getModels(user);
-      // TODO - cache
-      const model = models.find((m) => m.name === config.model);
-      if (model) {
-        subprovider = provider;
-        clientModel = provider.getClientModel(user, config.model);
-        supportsToolCall = model.features.includes('toolCall');
-        break;
-      }
-    }
-
-    if (!clientModel) {
-      throw new Error(`No available model named '${config.model}'`);
-    }
+    const clientModel = provider.getClientModel(user, config.model);
+    const supportsToolCall = (await listProviders(user, false)).chat
+      .find((p) => p.name === config.provider)
+      ?.models.find((m) => m.name === config.model);
+    if (!clientModel) throw new Error(`Model not available: ${config.model}`);
 
     const sdkData: TextStreamPart<any>[] = [];
 
@@ -177,7 +165,7 @@ export const AISdkProvider: ChatProvider = {
       system: instructions,
       maxOutputTokens: config.args?.['max-tokens'],
       temperature: config.args?.temperature as number,
-      providerOptions: subprovider?.getClientOptions(user, config),
+      providerOptions: provider?.getClientOptions(user, config),
       tools: supportsToolCall
         ? Object.fromEntries(
             tools.map((tool) => [
@@ -404,17 +392,8 @@ export const AISdkProvider: ChatProvider = {
   },
 
   async embed(user, texts, config) {
-    let client: Partial<Provider> | null = null;
-    for (const provider of providers) {
-      if (provider.name !== config.provider) continue;
-      const models = await provider.getModels(user);
-      if (models.some((m) => m.name === config.model)) {
-        client = provider.getClient(user);
-        break;
-      }
-    }
-
-    if (!client) throw new Error(`Provider not found or not configured for model ${config.model}`);
+    const client = providers.find((p) => p.name === config.provider)?.getClient(user);
+    if (!client) throw new Error(`Provider not found: ${config.provider}`);
     if (!client.embeddingModel?.(config.model))
       throw new Error(`Embedding model not found in provider for model ${config.model}`);
 

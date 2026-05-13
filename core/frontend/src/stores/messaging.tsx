@@ -5,8 +5,12 @@ import { ReactEditor } from 'slate-react';
 import { HistoryEditor } from 'slate-history';
 import { deserialize } from '@/slate/serializer.tsx';
 import { extractText } from '@/utils/text';
-import { type zConfig, type zData, type zDataPart } from '@tiny-chat/core-backend/src/types.ts';
-import { type MessageOmitted } from '@tiny-chat/core-backend/src/types.ts';
+import {
+  type MessageOmitted,
+  type zConfig,
+  type zData,
+  type zDataPart,
+} from '@tiny-chat/core-backend/src/types.ts';
 import { reloadConfig } from '@/managers/configuration';
 
 type CustomEditor = BaseEditor & ReactEditor & HistoryEditor;
@@ -18,7 +22,6 @@ interface Messaging {
   setEditor: (editor: CustomEditor) => void;
   clearText: () => void;
   setData: (data: zData) => void;
-  cursorPosition: number | null;
 
   uploads: Upload[];
   addUploads: (...files: Upload[]) => void;
@@ -58,8 +61,6 @@ export const useMessaging = create(
       set({ editor });
     },
 
-    cursorPosition: null,
-
     clearText: () => {
       const { editor } = get();
       if (!editor) return;
@@ -93,7 +94,7 @@ export const useMessaging = create(
     setUploading: (isUploading) => set({ isUploading }),
 
     addQuote: (message, content) => {
-      const { editor, cursorPosition } = get();
+      const { editor } = get();
       if (!editor) return;
 
       const quote = {
@@ -101,7 +102,7 @@ export const useMessaging = create(
         model: message.config.model ?? '',
         children: [{ text: content }],
       };
-      const insertAt = cursorPosition ?? 0;
+      const insertAt = editor.selection?.anchor?.path[0] ?? 0;
       editor.insertNode(quote, { at: [insertAt] });
     },
 

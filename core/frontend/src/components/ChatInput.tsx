@@ -20,7 +20,7 @@ import {
   Stack,
   Text,
 } from '@mantine/core';
-import { CSSProperties, useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { CSSProperties, memo, useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { Editable, ReactEditor, RenderElementProps, RenderLeafProps, Slate } from 'slate-react';
 import { serialize } from '@/slate/serializer.tsx';
 import { useProviders } from '@/stores/providers.tsx';
@@ -35,10 +35,18 @@ import Upload, {
   ScreenshotMenuItem,
 } from '@/components/Upload.tsx';
 
-export function Input(props: InputWrapperProps) {
-  const { setEditor, config, setConfig, isUploading } = useMessaging();
-  const { chatProviders, abortController } = useProviders();
-  const { shadow, setIsMessaging, messagingDisables } = useLayout();
+export const ChatInput = memo((props: InputWrapperProps) => {
+  const setEditor = useMessaging((s) => s.setEditor);
+  const config = useMessaging((s) => s.config);
+  const setConfig = useMessaging((s) => s.setConfig);
+  const isUploading = useMessaging((s) => s.isUploading);
+
+  const providers = useProviders((s) => s.providers);
+  const abortController = useProviders((s) => s.abortController);
+
+  const shadow = useLayout((s) => s.shadow);
+  const setIsMessaging = useLayout((s) => s.setIsMessaging);
+  const messagingDisables = useLayout((s) => s.messagingDisables);
 
   const [isMultiline, setMultiline] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -82,7 +90,7 @@ export function Input(props: InputWrapperProps) {
   const [, updateSavedConfig] = useLocalStorage<string>({ key: 'config' });
 
   const args =
-    chatProviders
+    providers.chat
       .find((s) => s.name === config?.provider)
       ?.models.find((m) => m.name === config?.model)?.args ?? [];
 
@@ -336,4 +344,4 @@ export function Input(props: InputWrapperProps) {
       </InputWrapper>
     </>
   );
-}
+});

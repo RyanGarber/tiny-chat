@@ -5,7 +5,8 @@ import { Level } from '@tiny-chat/core-backend/src/utils/logs.ts';
 import { JsonTree } from '@gfazioli/mantine-json-tree';
 
 export default function Console({ opened, onClose }: Pick<ModalProps, 'opened' | 'onClose'>) {
-  const { logs, clearLogs } = useLogs();
+  const logs = useLogs((s) => s.logs);
+  const clearLogs = useLogs((s) => s.clearLogs);
 
   return (
     <Modal

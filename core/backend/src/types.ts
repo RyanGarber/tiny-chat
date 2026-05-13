@@ -27,26 +27,44 @@ export interface Model {
   args: ModelArg[];
 }
 
-export interface ChatProviderStatus {
-  name: string;
-  settings: string[];
-  models: Model[];
-  error?: string;
-}
+export const zCache = z.object({
+  providers: z
+    .object({
+      chat: z
+        .array(
+          z.object({
+            name: z.string(),
+            settings: z.array(z.string()),
+            models: z.array(z.custom<Model>()),
+            error: z.string().optional(),
+          }),
+        )
+        .default([]),
+      web: z
+        .array(
+          z.object({
+            name: z.string(),
+            settings: z.array(z.string()),
+            available: z.boolean(),
+            error: z.string().optional(),
+          }),
+        )
+        .default([]),
+      other: z
+        .array(
+          z.object({
+            name: z.string(),
+            settings: z.array(z.string()),
+            available: z.boolean(),
+            error: z.string().optional(),
+          }),
+        )
+        .default([]),
+    })
+    .default({ chat: [], web: [], other: [] }),
+});
 
-export interface WebProviderStatus {
-  name: string;
-  settings: string[];
-  available: boolean;
-  error?: string;
-}
-
-export interface OtherProviderStatus {
-  name: string;
-  settings: string[];
-  available: boolean;
-  error?: string;
-}
+export type zCache = z.infer<typeof zCache>;
 
 export const zConfig = z.object({
   provider: z.string(),

@@ -1,5 +1,15 @@
-import { Children, isValidElement, ReactNode } from 'react';
+import { Children, createContext, isValidElement, ReactNode } from 'react';
 import { normalizeText, zData } from '@tiny-chat/core-backend/src/types.ts';
+import { SearchResult } from '@tiny-chat/core-backend/src/providers/web';
+
+export const STREAMING_MARKER = '\uE000';
+export const MATH_MARKER = '\uE001';
+export const CODE_MARKER = '\uE002';
+export const WRITING_MARKER = '\uE003';
+
+export const MarkdownContext = createContext<{ webSearchResults: SearchResult[] }>({
+  webSearchResults: [],
+});
 
 export const hashText = (text: string) => {
   let hash = 0;

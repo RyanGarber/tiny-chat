@@ -64,7 +64,7 @@ interface UploadModalProps {
 function FileTab({ onClose }: { onClose: () => void }) {
   const [history, setHistory] = useState<UploadWithDate[]>([]);
   const [loading, setLoading] = useState(false);
-  const { addUploads } = useMessaging();
+  const addUploads = useMessaging((s) => s.addUploads);
 
   useEffect(() => {
     let mounted = true;
@@ -199,7 +199,7 @@ function RepoTab({ onClose }: { onClose: () => void }) {
   const [search, setSearch] = useState('');
   const [cloningIds, setCloningIds] = useState<Set<number>>(new Set());
   const [cloneErrors, setCloneErrors] = useState<Map<number, string>>(new Map());
-  const { addUploads } = useMessaging();
+  const addUploads = useMessaging((s) => s.addUploads);
 
   // History state
   const [history, setHistory] = useState<UploadWithDate[]>([]);

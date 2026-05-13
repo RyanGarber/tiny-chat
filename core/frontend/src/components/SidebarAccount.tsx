@@ -1,4 +1,4 @@
-import { Button, Drawer, Group, Modal, Stack, Text, Tooltip, Divider } from '@mantine/core';
+import { Button, Divider, Drawer, Group, Modal, Stack, Text, Tooltip } from '@mantine/core';
 import { JSX, useEffect, useState } from 'react';
 import { useSettings } from '@/stores/settings.tsx';
 import { auth, trpc, webUrl } from '@/utils/api';
@@ -16,15 +16,13 @@ export default function SidebarAccount({
   const [isCloning, setCloning] = useState(false);
   const [cloneInterval, setCloneInterval] = useState<NodeJS.Timeout>();
 
-  const {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    accounts,
-    linkAccount,
-    unlinkAccount,
-    deleteUser,
-  } = useSettings();
+  const accounts = useSettings((s) => (s.accounts as { providerId: string }[]) ?? []);
+  const linkAccount = useSettings((s) => s.linkAccount);
+  const unlinkAccount = useSettings((s) => s.unlinkAccount);
+  const deleteUser = useSettings((s) => s.deleteUser);
 
-  const { setGestureBlock, setDrawerCloser } = useLayout();
+  const setGestureBlock = useLayout((s) => s.setGestureBlock);
+  const setDrawerCloser = useLayout((s) => s.setDrawerCloser);
   const { data: session } = auth.useSession();
 
   const [opened, { open, close }] = useDisclosure(false);
@@ -47,9 +45,7 @@ export default function SidebarAccount({
         {icon}
         <Text>{name}</Text>
       </Group>
-      {/* eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-explicit-any */}
-      {accounts.find((account: any) => account.providerId === id) ? (
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      {accounts.find((account) => account.providerId === id) ? (
         accounts.length === 1 ? (
           <Tooltip label="Must have one account" color="gray">
             <Button variant="light" onClick={() => void unlinkAccount(id)} disabled>

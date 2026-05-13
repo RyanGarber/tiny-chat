@@ -5,7 +5,7 @@ import { trpc } from '@/utils/api.ts';
 import { getNextRunAt } from '@tiny-chat/core-backend/src/types.ts';
 
 interface Persistence {
-  init: () => Promise<void>;
+  init: () => void;
 
   actions: (Action & { nextRunAt: Date | null })[];
   fetchActions: () => Promise<void>;
@@ -16,9 +16,9 @@ interface Persistence {
 
 export const usePersistence = create(
   subscribeWithSelector<Persistence>((set, get) => ({
-    init: async () => {
-      await get().fetchActions();
-      await get().fetchMemories();
+    init: () => {
+      void get().fetchActions();
+      void get().fetchMemories();
     },
 
     actions: [],

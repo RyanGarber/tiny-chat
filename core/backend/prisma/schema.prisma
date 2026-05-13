@@ -27,6 +27,8 @@ model User {
   uploads       Upload[]
   files         File[]
 
+  cache Json @default("{}")
+
   @@map("user")
 }
 

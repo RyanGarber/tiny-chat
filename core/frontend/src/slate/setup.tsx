@@ -1,4 +1,3 @@
-import { useMessaging } from '@/stores/messaging.tsx';
 import { BaseElement, BaseText, createEditor, Editor, Transforms } from 'slate';
 import { withHistory } from 'slate-history';
 import { withReact } from 'slate-react';
@@ -16,7 +15,6 @@ export function setupEditor() {
     onChange();
 
     const position = editor.selection?.anchor?.path[0] ?? null;
-    useMessaging.getState().cursorPosition = position; // avoid rerender
 
     if (editor.selection) {
       const [node] = Editor.node(editor, [position ?? 0]);

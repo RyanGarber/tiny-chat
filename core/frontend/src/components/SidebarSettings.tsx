@@ -23,12 +23,7 @@ import { hashText } from '@/utils/text';
 import { consumeLabel } from '@/utils/ui';
 import { useDisclosure } from '@mantine/hooks';
 import { useLayout } from '@/stores/layout.tsx';
-import {
-  ChatProviderStatus,
-  OtherProviderStatus,
-  WebProviderStatus,
-  zConfig,
-} from '@tiny-chat/core-backend/src/types.ts';
+import { zCache, zConfig } from '@tiny-chat/core-backend/src/types.ts';
 import ModelSelect from '@/components/ModelSelect.tsx';
 import { Icon } from '@iconify/react';
 import Console from '@/components/Console.tsx';
@@ -57,8 +52,11 @@ export default function SidebarSettings({
     setProviderSetting,
   } = useSettings();
 
-  const { chatProviders, webProviders, otherProviders, updateProviders } = useProviders();
-  const { setGestureBlock, setDrawerCloser } = useLayout();
+  const providers = useProviders((s) => s.providers);
+  const updateProviders = useProviders((s) => s.updateProviders);
+
+  const setGestureBlock = useLayout((s) => s.setGestureBlock);
+  const setDrawerCloser = useLayout((s) => s.setDrawerCloser);
 
   const [opened, { open, close }] = useDisclosure(false);
 
@@ -80,9 +78,7 @@ export default function SidebarSettings({
     }
   }, [opened, close, setDrawerCloser]);
 
-  const ProviderSettings = (
-    providers: (ChatProviderStatus | WebProviderStatus | OtherProviderStatus)[],
-  ) => (
+  const ProviderSettings = (providers: zCache['providers']['chat' | 'web' | 'other']) => (
     <Stack>
       {providers
         .filter((s) => s.settings.length)
@@ -293,7 +289,7 @@ export default function SidebarSettings({
                   label="Preferred Provider"
                   styles={consumeLabel}
                   allowDeselect={false}
-                  data={webProviders.filter((p) => !p.error).map((p) => p.name)}
+                  data={providers.web.filter((p) => !p.error).map((p) => p.name)}
                   value={getPreferredWebProvider()}
                   onChange={(value) => {
                     if (!value) return;
@@ -352,7 +348,7 @@ export default function SidebarSettings({
                   <Icon icon="lucide:rotate-ccw" />
                 </ActionIcon>
               </Group>
-              {ProviderSettings(chatProviders)}
+              {ProviderSettings(providers.chat)}
               <Space />
               <Box>
                 <Text size="sm">Web</Text>
@@ -360,8 +356,8 @@ export default function SidebarSettings({
                   Enable web browsing for chat models
                 </Text>
               </Box>
-              {ProviderSettings(webProviders)}
-              {otherProviders.filter((p) => p.settings.length > 0).length > 0 && (
+              {ProviderSettings(providers.web)}
+              {providers.other.filter((p) => p.settings.length > 0).length > 0 && (
                 <>
                   <Space />
                   <Box>
@@ -370,7 +366,7 @@ export default function SidebarSettings({
                       Enable extra features and integrations
                     </Text>
                   </Box>
-                  {ProviderSettings(otherProviders)}
+                  {ProviderSettings(providers.other)}
                 </>
               )}
             </Stack>

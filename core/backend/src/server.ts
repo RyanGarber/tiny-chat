@@ -124,34 +124,36 @@ export const auth = betterAuth({
         console.log(
           `Transferring data from anonymous user ${anonymousUser.user.id} to new user ${newUser.user.id}`,
         );
-        await globalThis.prisma.user.update({
-          where: { id: newUser.user.id },
-          data: { settings: { ...anonymousUser.user.settings, ...newUser.user.settings } },
-        });
-        await globalThis.prisma.folder.updateMany({
-          where: { userId: anonymousUser.user.id },
-          data: { userId: newUser.user.id },
-        });
-        await globalThis.prisma.chat.updateMany({
-          where: { userId: anonymousUser.user.id },
-          data: { userId: newUser.user.id },
-        });
-        await globalThis.prisma.message.updateMany({
-          where: { userId: anonymousUser.user.id },
-          data: { userId: newUser.user.id },
-        });
-        await globalThis.prisma.memory.updateMany({
-          where: { userId: anonymousUser.user.id },
-          data: { userId: newUser.user.id },
-        });
-        await globalThis.prisma.action.updateMany({
-          where: { userId: anonymousUser.user.id },
-          data: { userId: newUser.user.id },
-        });
-        console.log(
-          'Transferred:',
-          await globalThis.prisma.user.findFirst({ where: { id: newUser.user.id } }),
-        );
+        await globalThis.prisma.$transaction([
+          globalThis.prisma.user.update({
+            where: { id: newUser.user.id },
+            data: {
+              settings: { ...anonymousUser.user.settings, ...newUser.user.settings },
+              cache: { ...anonymousUser.user.cache, ...newUser.user.cache },
+            },
+          }),
+          globalThis.prisma.folder.updateMany({
+            where: { userId: anonymousUser.user.id },
+            data: { userId: newUser.user.id },
+          }),
+          globalThis.prisma.chat.updateMany({
+            where: { userId: anonymousUser.user.id },
+            data: { userId: newUser.user.id },
+          }),
+          globalThis.prisma.message.updateMany({
+            where: { userId: anonymousUser.user.id },
+            data: { userId: newUser.user.id },
+          }),
+          globalThis.prisma.memory.updateMany({
+            where: { userId: anonymousUser.user.id },
+            data: { userId: newUser.user.id },
+          }),
+          globalThis.prisma.action.updateMany({
+            where: { userId: anonymousUser.user.id },
+            data: { userId: newUser.user.id },
+          }),
+        ]);
+        console.log('Transfer complete');
       },
     }),
     bearer(),

@@ -12,8 +12,14 @@ import { Icon } from '@iconify/react';
 
 const Message = memo(
   function Message({ message, opacity }: { message: MessageData; opacity: number }) {
-    const { currentChat, cloneChat, messages } = useChats();
-    const { editing, setEditing, insertingAfter, setInsertingAfter } = useMessaging();
+    const currentChat = useChats((s) => s.currentChat);
+    const cloneChat = useChats((s) => s.cloneChat);
+    const messages = useChats((s) => s.messages);
+
+    const editing = useMessaging((s) => s.editing);
+    const setEditing = useMessaging((s) => s.setEditing);
+    const insertingAfter = useMessaging((s) => s.insertingAfter);
+    const setInsertingAfter = useMessaging((s) => s.setInsertingAfter);
 
     const [isNodeHovered, { open: onNodeHover, close: onNodeLeave }] = useDisclosure(false);
     const [isConfirmingDelete, { open: onConfirmDelete, close: onCancelDelete }] =

@@ -20,18 +20,16 @@ import { useTasks } from '@/stores/tasks.tsx';
 import { usePersistence } from '@/stores/persistence.tsx';
 
 export default function App() {
-  const {
-    mobile,
-    isMobile,
-    shadow,
-    totalGestureBlocks,
-    drawerCloser,
-    isSidebarOpen,
-    setSidebarOpen,
-    getSidebarWidth,
-    isInitializing,
-    setInitializing,
-  } = useLayout();
+  const mobile = useLayout((s) => s.mobile);
+  const isMobile = useLayout((s) => s.isMobile);
+  const shadow = useLayout((s) => s.shadow);
+  const totalGestureBlocks = useLayout((s) => s.totalGestureBlocks);
+  const drawerCloser = useLayout((s) => s.drawerCloser);
+  const isSidebarOpen = useLayout((s) => s.isSidebarOpen);
+  const setSidebarOpen = useLayout((s) => s.setSidebarOpen);
+  const getSidebarWidth = useLayout((s) => s.getSidebarWidth);
+  const isInitializing = useLayout((s) => s.isInitializing);
+  const setInitializing = useLayout((s) => s.setInitializing);
 
   const session = auth.useSession();
 
@@ -55,12 +53,10 @@ export default function App() {
       }
 
       if (window.location.hash.startsWith('#/app/') && !session.data.user.isAnonymous) {
-        void (async () => {
-          const id = window.location.hash.slice('#/app/'.length);
-          console.log('Accepting clone', id);
-          await trpc.sessions.acceptClone.mutate({ id });
-          window.location.hash = '#/';
-        })();
+        const id = window.location.hash.slice('#/app/'.length);
+        console.log('Accepting clone', id);
+        void trpc.sessions.acceptClone.mutate({ id });
+        window.location.hash = '#/';
       }
 
       const uninit: (() => void)[] = [];
@@ -69,8 +65,8 @@ export default function App() {
           await useSettings.getState().init(); // init first so tasks have access
           uninit.push(useTasks.getState().init()); // init first so updates always work
           await useProviders.getState().init();
-          await useChats.getState().init();
-          await usePersistence.getState().init();
+          useChats.getState().init();
+          usePersistence.getState().init();
         } catch (e: unknown) {
           modals.open({
             children: (
@@ -93,10 +89,6 @@ export default function App() {
       return () => uninit.forEach((d) => d());
     }
   }, [isInitializing, setInitializing, session.data, session.isPending, session.error]);
-
-  useEffect(() => {
-    setSidebarOpen(!isMobile);
-  }, [isMobile, setSidebarOpen]);
 
   // TODO - maybe drag area should be bigger (but it blocks)
   const navbarDragOpen = useDrag(

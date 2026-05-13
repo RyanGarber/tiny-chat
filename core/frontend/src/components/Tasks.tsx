@@ -21,9 +21,9 @@ interface DisplayedTask extends Task {
 }
 
 export default function Tasks() {
-  const { tasks } = useTasks();
+  const tasks = useTasks((s) => s.tasks);
   const color = useMantineTheme().primaryColor;
-  const { shadow } = useLayout();
+  const shadow = useLayout((s) => s.shadow);
 
   const [displayedTasks, setDisplayedTasks] = useState<Record<string, DisplayedTask>>({});
 
@@ -204,7 +204,8 @@ export default function Tasks() {
   const taskList = Object.values(displayedTasks);
 
   const [isUpdateShown, { open: showUpdate, close: hideUpdate }] = useDisclosure();
-  const { tauriUpdate, startTauriUpdate } = useTasks();
+  const tauriUpdate = useTasks((s) => s.tauriUpdate);
+  const startTauriUpdate = useTasks((s) => s.startTauriUpdate);
 
   useEffect(() => {
     if (tauriUpdate) {

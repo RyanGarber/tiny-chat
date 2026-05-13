@@ -56,6 +56,7 @@ export type UserCountAggregateOutputType = {
   updatedAt: number
   isAnonymous: number
   settings: number
+  cache: number
   _all: number
 }
 
@@ -92,6 +93,7 @@ export type UserCountAggregateInputType = {
   updatedAt?: true
   isAnonymous?: true
   settings?: true
+  cache?: true
   _all?: true
 }
 
@@ -177,6 +179,7 @@ export type UserGroupByOutputType = {
   updatedAt: Date
   isAnonymous: boolean | null
   settings: runtime.JsonValue
+  cache: runtime.JsonValue
   _count: UserCountAggregateOutputType | null
   _min: UserMinAggregateOutputType | null
   _max: UserMaxAggregateOutputType | null
@@ -210,6 +213,7 @@ export type UserWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   isAnonymous?: Prisma.BoolNullableFilter<"User"> | boolean | null
   settings?: Prisma.JsonFilter<"User">
+  cache?: Prisma.JsonFilter<"User">
   accounts?: Prisma.AccountListRelationFilter
   action?: Prisma.ActionListRelationFilter
   chats?: Prisma.ChatListRelationFilter
@@ -231,6 +235,7 @@ export type UserOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   isAnonymous?: Prisma.SortOrderInput | Prisma.SortOrder
   settings?: Prisma.SortOrder
+  cache?: Prisma.SortOrder
   accounts?: Prisma.AccountOrderByRelationAggregateInput
   action?: Prisma.ActionOrderByRelationAggregateInput
   chats?: Prisma.ChatOrderByRelationAggregateInput
@@ -255,6 +260,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   isAnonymous?: Prisma.BoolNullableFilter<"User"> | boolean | null
   settings?: Prisma.JsonFilter<"User">
+  cache?: Prisma.JsonFilter<"User">
   accounts?: Prisma.AccountListRelationFilter
   action?: Prisma.ActionListRelationFilter
   chats?: Prisma.ChatListRelationFilter
@@ -276,6 +282,7 @@ export type UserOrderByWithAggregationInput = {
   updatedAt?: Prisma.SortOrder
   isAnonymous?: Prisma.SortOrderInput | Prisma.SortOrder
   settings?: Prisma.SortOrder
+  cache?: Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
   _max?: Prisma.UserMaxOrderByAggregateInput
   _min?: Prisma.UserMinOrderByAggregateInput
@@ -294,6 +301,7 @@ export type UserScalarWhereWithAggregatesInput = {
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
   isAnonymous?: Prisma.BoolNullableWithAggregatesFilter<"User"> | boolean | null
   settings?: Prisma.JsonWithAggregatesFilter<"User">
+  cache?: Prisma.JsonWithAggregatesFilter<"User">
 }
 
 export type UserCreateInput = {
@@ -306,6 +314,7 @@ export type UserCreateInput = {
   updatedAt?: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
   action?: Prisma.ActionCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatCreateNestedManyWithoutUserInput
@@ -327,6 +336,7 @@ export type UserUncheckedCreateInput = {
   updatedAt?: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
   action?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
@@ -348,6 +358,7 @@ export type UserUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
   action?: Prisma.ActionUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
@@ -369,6 +380,7 @@ export type UserUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
   action?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
@@ -390,6 +402,7 @@ export type UserCreateManyInput = {
   updatedAt?: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
 }
 
 export type UserUpdateManyMutationInput = {
@@ -402,6 +415,7 @@ export type UserUpdateManyMutationInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
 }
 
 export type UserUncheckedUpdateManyInput = {
@@ -414,6 +428,7 @@ export type UserUncheckedUpdateManyInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
 }
 
 export type UserCountOrderByAggregateInput = {
@@ -426,6 +441,7 @@ export type UserCountOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
   isAnonymous?: Prisma.SortOrder
   settings?: Prisma.SortOrder
+  cache?: Prisma.SortOrder
 }
 
 export type UserMaxOrderByAggregateInput = {
@@ -611,6 +627,7 @@ export type UserCreateWithoutSessionsInput = {
   updatedAt?: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
   action?: Prisma.ActionCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatCreateNestedManyWithoutUserInput
@@ -631,6 +648,7 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   updatedAt?: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
   action?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
@@ -667,6 +685,7 @@ export type UserUpdateWithoutSessionsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
   action?: Prisma.ActionUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
@@ -687,6 +706,7 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
   action?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
@@ -707,6 +727,7 @@ export type UserCreateWithoutAccountsInput = {
   updatedAt?: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   action?: Prisma.ActionCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatCreateNestedManyWithoutUserInput
   folders?: Prisma.FolderCreateNestedManyWithoutUserInput
@@ -727,6 +748,7 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   updatedAt?: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   action?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
   folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
@@ -763,6 +785,7 @@ export type UserUpdateWithoutAccountsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   action?: Prisma.ActionUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
   folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
@@ -783,6 +806,7 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   action?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
   folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
@@ -803,6 +827,7 @@ export type UserCreateWithoutFoldersInput = {
   updatedAt?: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
   action?: Prisma.ActionCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatCreateNestedManyWithoutUserInput
@@ -823,6 +848,7 @@ export type UserUncheckedCreateWithoutFoldersInput = {
   updatedAt?: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
   action?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
@@ -859,6 +885,7 @@ export type UserUpdateWithoutFoldersInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
   action?: Prisma.ActionUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
@@ -879,6 +906,7 @@ export type UserUncheckedUpdateWithoutFoldersInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
   action?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
@@ -899,6 +927,7 @@ export type UserCreateWithoutChatsInput = {
   updatedAt?: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
   action?: Prisma.ActionCreateNestedManyWithoutUserInput
   folders?: Prisma.FolderCreateNestedManyWithoutUserInput
@@ -919,6 +948,7 @@ export type UserUncheckedCreateWithoutChatsInput = {
   updatedAt?: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
   action?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
   folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
@@ -955,6 +985,7 @@ export type UserUpdateWithoutChatsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
   action?: Prisma.ActionUpdateManyWithoutUserNestedInput
   folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
@@ -975,6 +1006,7 @@ export type UserUncheckedUpdateWithoutChatsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
   action?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
   folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
@@ -995,6 +1027,7 @@ export type UserCreateWithoutMessagesInput = {
   updatedAt?: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
   action?: Prisma.ActionCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatCreateNestedManyWithoutUserInput
@@ -1015,6 +1048,7 @@ export type UserUncheckedCreateWithoutMessagesInput = {
   updatedAt?: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
   action?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
@@ -1051,6 +1085,7 @@ export type UserUpdateWithoutMessagesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
   action?: Prisma.ActionUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
@@ -1071,6 +1106,7 @@ export type UserUncheckedUpdateWithoutMessagesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
   action?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
@@ -1091,6 +1127,7 @@ export type UserCreateWithoutMemoriesInput = {
   updatedAt?: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
   action?: Prisma.ActionCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatCreateNestedManyWithoutUserInput
@@ -1111,6 +1148,7 @@ export type UserUncheckedCreateWithoutMemoriesInput = {
   updatedAt?: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
   action?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
@@ -1147,6 +1185,7 @@ export type UserUpdateWithoutMemoriesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
   action?: Prisma.ActionUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
@@ -1167,6 +1206,7 @@ export type UserUncheckedUpdateWithoutMemoriesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
   action?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
@@ -1187,6 +1227,7 @@ export type UserCreateWithoutActionInput = {
   updatedAt?: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatCreateNestedManyWithoutUserInput
   folders?: Prisma.FolderCreateNestedManyWithoutUserInput
@@ -1207,6 +1248,7 @@ export type UserUncheckedCreateWithoutActionInput = {
   updatedAt?: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
   folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
@@ -1243,6 +1285,7 @@ export type UserUpdateWithoutActionInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
   folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
@@ -1263,6 +1306,7 @@ export type UserUncheckedUpdateWithoutActionInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
   folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
@@ -1283,6 +1327,7 @@ export type UserCreateWithoutUploadsInput = {
   updatedAt?: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
   action?: Prisma.ActionCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatCreateNestedManyWithoutUserInput
@@ -1303,6 +1348,7 @@ export type UserUncheckedCreateWithoutUploadsInput = {
   updatedAt?: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
   action?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
@@ -1339,6 +1385,7 @@ export type UserUpdateWithoutUploadsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
   action?: Prisma.ActionUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
@@ -1359,6 +1406,7 @@ export type UserUncheckedUpdateWithoutUploadsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
   action?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
@@ -1379,6 +1427,7 @@ export type UserCreateWithoutFilesInput = {
   updatedAt?: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
   action?: Prisma.ActionCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatCreateNestedManyWithoutUserInput
@@ -1399,6 +1448,7 @@ export type UserUncheckedCreateWithoutFilesInput = {
   updatedAt?: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
   action?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
@@ -1435,6 +1485,7 @@ export type UserUpdateWithoutFilesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
   action?: Prisma.ActionUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
@@ -1455,6 +1506,7 @@ export type UserUncheckedUpdateWithoutFilesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
   action?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
@@ -1578,6 +1630,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   updatedAt?: boolean
   isAnonymous?: boolean
   settings?: boolean
+  cache?: boolean
   accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>
   action?: boolean | Prisma.User$actionArgs<ExtArgs>
   chats?: boolean | Prisma.User$chatsArgs<ExtArgs>
@@ -1600,6 +1653,7 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   updatedAt?: boolean
   isAnonymous?: boolean
   settings?: boolean
+  cache?: boolean
 }, ExtArgs["result"]["user"]>
 
 export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1612,6 +1666,7 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   updatedAt?: boolean
   isAnonymous?: boolean
   settings?: boolean
+  cache?: boolean
 }, ExtArgs["result"]["user"]>
 
 export type UserSelectScalar = {
@@ -1624,9 +1679,10 @@ export type UserSelectScalar = {
   updatedAt?: boolean
   isAnonymous?: boolean
   settings?: boolean
+  cache?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "emailVerified" | "image" | "createdAt" | "updatedAt" | "isAnonymous" | "settings", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "emailVerified" | "image" | "createdAt" | "updatedAt" | "isAnonymous" | "settings" | "cache", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>
   action?: boolean | Prisma.User$actionArgs<ExtArgs>
@@ -1665,6 +1721,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     updatedAt: Date
     isAnonymous: boolean | null
     settings: runtime.JsonValue
+    cache: runtime.JsonValue
   }, ExtArgs["result"]["user"]>
   composites: {}
 }
@@ -2106,6 +2163,7 @@ export interface UserFieldRefs {
   readonly updatedAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly isAnonymous: Prisma.FieldRef<"User", 'Boolean'>
   readonly settings: Prisma.FieldRef<"User", 'Json'>
+  readonly cache: Prisma.FieldRef<"User", 'Json'>
 }
     
 

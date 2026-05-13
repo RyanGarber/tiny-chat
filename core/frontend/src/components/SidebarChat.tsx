@@ -22,8 +22,13 @@ export default function SidebarChat({
   chat: Chat & { updatedAt?: Date };
   props: NavLinkProps;
 }) {
-  const { currentChat, renameChat, deleteChat, updatedChats } = useChats();
-  const { isMobile, setGestureBlock } = useLayout();
+  const currentChat = useChats((s) => s.currentChat);
+  const renameChat = useChats((s) => s.renameChat);
+  const deleteChat = useChats((s) => s.deleteChat);
+  const updatedChats = useChats((s) => s.updatedChats);
+
+  const isMobile = useLayout((s) => s.isMobile);
+  const setGestureBlock = useLayout((s) => s.setGestureBlock);
 
   const [title, setTitle] = useState<string | null>(null);
   const [isEditOpen, { open: openEdit, close: closeEdit }] = useDisclosure(false);

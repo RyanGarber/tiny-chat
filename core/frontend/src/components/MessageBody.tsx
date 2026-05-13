@@ -10,7 +10,7 @@ import { CSSProperties, memo } from 'react';
 
 const MessageBody = memo(
   function MessageBody({ message, style }: { message: MessageOmitted; style?: CSSProperties }) {
-    const { shadow } = useLayout();
+    const shadow = useLayout((s) => s.shadow);
 
     const { ref: containerRef, width: containerWidth } = useElementSize();
 

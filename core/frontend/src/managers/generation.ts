@@ -1,9 +1,9 @@
 import { useChats } from '@/stores/chats.tsx';
 import { useProviders } from '@/stores/providers.tsx';
+import type { zGenerateOutput } from '@tiny-chat/core-backend/src/types.ts';
 import { type MessageUnomitted, zMetadata } from '@tiny-chat/core-backend/src/types.ts';
 import { generate } from '@/utils/generate';
 import { usePersistence } from '@/stores/persistence.tsx';
-import type { zGenerateOutput } from '@tiny-chat/core-backend/src/types.ts';
 
 export async function handleMessage(messageId: string) {
   const { currentChat } = useChats.getState();
@@ -11,7 +11,7 @@ export async function handleMessage(messageId: string) {
 
   const abortController = new AbortController();
   abortController.signal.addEventListener('abort', () => {
-    // The abort part will be persisted by the backend
+    // Abort handled by backend
   });
   useProviders.setState({ abortController });
 

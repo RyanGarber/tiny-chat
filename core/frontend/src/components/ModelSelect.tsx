@@ -16,13 +16,13 @@ export default function ModelSelect({
   onConfigChange,
   ...selectProps
 }: ModelSelectProps) {
-  const { chatProviders } = useProviders();
+  const providers = useProviders((s) => s.providers);
   return (
     <Select
       required={!optional}
       allowDeselect={optional} // TODO - remove `| null` type when !optional
       maxDropdownHeight={250}
-      data={chatProviders.map((s) => ({
+      data={providers.chat.map((s) => ({
         group: s.name,
         items: s.models
           .filter((m) => m.features.includes(feature))

@@ -9,8 +9,8 @@ import { useEffect, useState } from 'react';
 import { usePersistence } from '@/stores/persistence.tsx';
 
 export default function Actions() {
-  const { currentChat } = useChats();
-  const { actions: allActions } = usePersistence();
+  const currentChat = useChats((s) => s.currentChat);
+  const allActions = usePersistence((s) => s.actions);
   const actions = allActions.filter(
     (a): a is Action & { nextRunAt: Date } =>
       a.chatId === currentChat?.id && a.nextRunAt !== null && a.nextRunAt > new Date(),

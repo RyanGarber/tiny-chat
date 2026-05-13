@@ -40,9 +40,10 @@ export default function MessageBodyContent({
 
   const { displayedLength } = useStreamedLength(fullTextLength, isGenerating);
 
-  const { shadow } = useLayout();
-  const { addQuote } = useMessaging();
-  const { getTheme, getCodeTheme } = useSettings();
+  const shadow = useLayout((s) => s.shadow);
+  const addQuote = useMessaging((s) => s.addQuote);
+  const getTheme = useSettings((s) => s.getTheme);
+  const getCodeTheme = useSettings((s) => s.getCodeTheme);
   void applyHljsTheme(getCodeTheme());
 
   const container = useRef<HTMLDivElement>(null);
@@ -87,7 +88,7 @@ export default function MessageBodyContent({
     if (text) addQuote(message, text);
   };
 
-  const { messages } = useChats();
+  const messages = useChats((s) => s.messages);
   const webSearchResults = useMemo(() => {
     const results = messages.flatMap((m) =>
       (

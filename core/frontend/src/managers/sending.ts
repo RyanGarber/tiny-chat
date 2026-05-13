@@ -11,10 +11,7 @@ import { type zData } from '@tiny-chat/core-backend/src/types.ts';
 import { Author } from '@tiny-chat/core-backend/generated/prisma/enums.ts';
 import { handleMessage } from '@/managers/generation';
 
-export async function sendMessage(
-  data: zData,
-  onCreated?: (id: string) => void,
-) {
+export async function sendMessage(data: zData, onCreated?: (id: string) => void) {
   const { setMessagingDisable } = useLayout.getState();
   const { config, truncating, reset, editing, setData } = useMessaging.getState();
   const { setCurrentChat, fetchFolders, fetchChat, temporary, incognito } = useChats.getState();
@@ -74,13 +71,10 @@ export async function sendMessage(
 
   if (!currentChat.title) {
     console.log('Chat has no title; setting one');
-    void (async () => {
-      await trpc.chats.edit.mutate({
-        id: currentChat.id,
-        title: scrubText(extractText(data), 100),
-      });
-      await fetchFolders(false);
-    })();
+    void trpc.chats.edit.mutate({
+      id: currentChat.id,
+      title: scrubText(extractText(data), 100),
+    });
   }
 
   void useTasks.getState().removeTask('sending');

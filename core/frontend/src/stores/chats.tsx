@@ -12,7 +12,7 @@ import { getLastChatActivity } from '@/utils/ui.ts';
 import { useLayout } from '@/stores/layout.tsx';
 
 interface Chats {
-  init: () => Promise<void>;
+  init: () => void;
 
   folders: Awaited<ReturnType<typeof trpc.folders.list.query>>;
   fetchFolders: (showProgress?: boolean, showActivity?: boolean) => Promise<void>;
@@ -40,8 +40,8 @@ interface Chats {
 
 export const useChats = create(
   subscribeWithSelector<Chats>((set, get) => ({
-    init: async () => {
-      await get().fetchFolders();
+    init: () => {
+      void get().fetchFolders();
       setInterval(() => {
         void (async () => {
           try {

@@ -37,7 +37,7 @@ export default function GitHub({ opened, onClose }: { opened: boolean; onClose: 
   const [cloningIds, setCloningIds] = useState<Set<number>>(new Set());
   const [clonedIds, setClonedIds] = useState<Set<number>>(new Set());
   const [cloneErrors, setCloneErrors] = useState<Map<number, string>>(new Map());
-  const { addUploads } = useMessaging();
+  const addUploads = useMessaging((s) => s.addUploads);
 
   useEffect(() => {
     if (!opened) return;

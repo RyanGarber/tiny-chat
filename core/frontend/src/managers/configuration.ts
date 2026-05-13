@@ -32,7 +32,7 @@ export function reloadConfig() {
     console.log('Migrated old config format to new format');
   }
   const lastConfig = lastConfigString ? zConfig.parse(JSON.parse(lastConfigString)) : null;
-  const fallbackProvider = useProviders.getState().chatProviders.find((s) => s.models.length > 0);
+  const fallbackProvider = useProviders.getState().providers.chat.find((s) => s.models.length > 0);
   try {
     setConfig(
       lastConfig ?? {

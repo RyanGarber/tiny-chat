@@ -10,7 +10,6 @@ import {
   ScrollArea,
   Space,
   Stack,
-  Text,
   Tooltip,
 } from '@mantine/core';
 import { Spotlight, spotlight, SpotlightActionData } from '@mantine/spotlight';
@@ -21,17 +20,26 @@ import { useLocation } from 'wouter';
 import { auth, trpc } from '@/utils/api';
 import { extractText, scrubText } from '@/utils/text';
 import SidebarAccount from '@/components/SidebarAccount';
-import SidebarSettings from '@/components/SidebarSettings';
 import { useSettings } from '@/stores/settings.tsx';
 import { Icon } from '@iconify/react';
-import { version } from '../../../../apps/tauri/tauri.conf.json';
 import { snippetText } from '@tiny-chat/core-backend/src/types.ts';
+import SidebarSettings from '@/components/SidebarSettings.tsx';
 
 export default function Sidebar() {
-  const { folders, currentChat, setCurrentChat, temporary, setTemporary, incognito, setIncognito } =
-    useChats();
-  const { isMobile, isSidebarOpen, setSidebarOpen } = useLayout();
-  const { getEmbeddingConfig, getUseEmbeddingSearch } = useSettings();
+  const folders = useChats((s) => s.folders);
+  const currentChat = useChats((s) => s.currentChat);
+  const setCurrentChat = useChats((s) => s.setCurrentChat);
+  const temporary = useChats((s) => s.temporary);
+  const setTemporary = useChats((s) => s.setTemporary);
+  const incognito = useChats((s) => s.incognito);
+  const setIncognito = useChats((s) => s.setIncognito);
+
+  const isMobile = useLayout((s) => s.isMobile);
+  const isSidebarOpen = useLayout((s) => s.isSidebarOpen);
+  const setSidebarOpen = useLayout((s) => s.setSidebarOpen);
+
+  const embeddingConfig = useSettings((s) => s.settings.embeddingConfig);
+  const useEmbeddingSearch = useSettings((s) => s.settings.useEmbeddingSearch ?? true);
 
   const { data: session, isPending: isSessionPending } = auth.useSession();
 
@@ -74,7 +82,7 @@ export default function Sidebar() {
 
       const results = await trpc.chats.search.mutate({
         text: debouncedQuery,
-        config: getUseEmbeddingSearch() ? getEmbeddingConfig() : undefined,
+        config: useEmbeddingSearch ? embeddingConfig : undefined,
       });
       if (cancelled) return;
       console.log('Results for', debouncedQuery, results);
@@ -97,7 +105,7 @@ export default function Sidebar() {
     return () => {
       cancelled = true;
     };
-  }, [closeAfter, debouncedQuery, getEmbeddingConfig, getUseEmbeddingSearch, setCurrentChat]);
+  }, [closeAfter, debouncedQuery, embeddingConfig, setCurrentChat, useEmbeddingSearch]);
 
   const expanded = (
     <>
@@ -210,7 +218,7 @@ export default function Sidebar() {
           />
         )}
       </SidebarAccount>
-      <SidebarSettings>
+      {/*<SidebarSettings>
         {(openSettings) => (
           <NavLink
             label={
@@ -226,7 +234,7 @@ export default function Sidebar() {
             bdrs="md"
           />
         )}
-      </SidebarSettings>
+      </SidebarSettings>*/}
     </>
   );
 

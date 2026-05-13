@@ -1,5 +1,5 @@
 {
-  "name": "@tiny-chat/apps-tauri",
+  "name": "@tiny-chat/tauri",
   "scripts": {
     "tauri": "tauri"
   },

@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    /* Bundler mode */
+    "moduleResolution": "nodenext"
+  },
+  "include": ["src", "eslint.config.ts", "generated/prisma/**/*", "../shared/src/logs.ts"],
+  "extends": "../../tsconfig.base.json"
+}

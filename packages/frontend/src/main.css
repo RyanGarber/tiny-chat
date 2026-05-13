@@ -1,0 +1,463 @@
+@import url('https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..700;1,300..700&display=swap');
+
+@import './theme.css';
+
+@import '@mantine/notifications/styles.layer.css';
+@import '@mantine/spotlight/styles.layer.css';
+@import '@mantine/nprogress/styles.layer.css';
+@import '@mantine/carousel/styles.layer.css';
+@import '@mantine/dates/styles.layer.css';
+@import '@gfazioli/mantine-json-tree/styles.layer.css';
+@import '@vidstack/react/player/styles/default/theme.css';
+@import '@vidstack/react/player/styles/default/layouts/audio.css';
+@import '@vidstack/react/player/styles/default/layouts/video.css';
+
+@source '../node_modules/streamdown/dist/*.js';
+@source '../node_modules/@streamdown/math/dist/*.js';
+@source '../node_modules/@streamdown/mermaid/dist/*.js';
+@source '../node_modules/@streamdown/code/dist/*.js';
+
+/* Map shadcn tokens used by Streamdown directly to Mantine's theme engine */
+@theme inline {
+  /* ── Base ── */
+  --color-background: var(--mantine-color-body);
+  --color-foreground: var(--mantine-color-text);
+
+  /* ── Card ── */
+  --color-card: var(--mantine-color-default);
+  --color-card-foreground: var(--mantine-color-text);
+
+  /* ── Popover ── */
+  --color-popover: var(--mantine-color-default);
+  --color-popover-foreground: var(--mantine-color-text);
+
+  /* ── Primary ── */
+  --color-primary: var(--mantine-primary-color-filled);
+  --color-primary-foreground: var(--mantine-primary-color-contrast);
+
+  /* ── Secondary ── */
+  --color-secondary: var(--mantine-color-default-hover);
+  --color-secondary-foreground: var(--mantine-color-text);
+
+  /* ── Muted ── */
+  --color-muted: var(--mantine-color-default-hover);
+  --color-muted-foreground: var(--mantine-color-dimmed);
+
+  /* ── Accent ── */
+  --color-accent: var(--mantine-primary-color-light);
+  --color-accent-foreground: var(--mantine-primary-color-light-color);
+
+  /* ── Destructive ── */
+  --color-destructive: var(--mantine-color-red-filled);
+  --color-destructive-foreground: var(--mantine-color-white);
+
+  /* ── Border / Input / Ring ── */
+  --color-border: var(--mantine-color-default-border);
+  --color-input: var(--mantine-color-default-border);
+  --color-ring: var(--mantine-primary-color-filled);
+
+  /* ── Chart palette (map to Mantine color scale stops) ── */
+  --color-chart-1: var(--mantine-color-blue-6);
+  --color-chart-2: var(--mantine-color-teal-6);
+  --color-chart-3: var(--mantine-color-orange-6);
+  --color-chart-4: var(--mantine-color-violet-6);
+  --color-chart-5: var(--mantine-color-pink-6);
+
+  /* ── Sidebar ── */
+  --color-sidebar: var(--mantine-color-body);
+  --color-sidebar-foreground: var(--mantine-color-text);
+  --color-sidebar-primary: var(--mantine-primary-color-filled);
+  --color-sidebar-primary-foreground: var(--mantine-primary-color-contrast);
+  --color-sidebar-accent: var(--mantine-color-default-hover);
+  --color-sidebar-accent-foreground: var(--mantine-color-text);
+  --color-sidebar-border: var(--mantine-color-default-border);
+  --color-sidebar-ring: var(--mantine-primary-color-filled);
+
+  /* ── Radius ──────────────────────────────────────────────────────────────
+     shadcn derives its full scale from a single --radius base.
+     We set that base to Mantine's md radius, then let shadcn's
+     calc() multipliers do the rest. Override --radius in :root to
+     shift the whole scale (e.g. var(--mantine-radius-sm) for sharper UI).
+  ── */
+  --radius: var(--mantine-radius-md); /* base: ~0.5rem default */
+
+  --radius-sm: calc(var(--radius) * 0.6); /* ~xs equivalent        */
+  --radius-md: calc(var(--radius) * 0.8); /* between xs and md     */
+  --radius-lg: var(--radius); /* = --mantine-radius-md */
+  --radius-xl: calc(var(--radius) * 1.4); /* = --mantine-radius-lg */
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6); /* ~pill territory       */
+
+  /* ── Typography ──────────────────────────────────────────────────────────
+     shadcn exposes font-family tokens for sans, serif, and mono.
+     Mantine surfaces its font stacks via these vars.
+  ── */
+  --font-sans: var(--mantine-font-family);
+  --font-mono: var(--mantine-font-family-monospace);
+  /* shadcn has no --font-serif equivalent in Mantine; fall back to a
+     sensible system stack: */
+  --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+
+  /* ── Spacing ─────────────────────────────────────────────────────────────
+     shadcn components themselves don't define spacing CSS vars —
+     they rely on Tailwind's built-in spacing scale (which is already
+     available as --spacing-* in Tailwind v4). The one shadcn-specific
+     spacing concept is the sidebar width tokens, added in newer releases.
+  ── */
+  --sidebar-width: 16rem; /* shadcn default */
+  --sidebar-width-icon: 3rem;
+  --sidebar-width-mobile: 18rem;
+
+  /* ── Shadows ─────────────────────────────────────────────────────────────
+     shadcn components use Tailwind's shadow-* utilities directly,
+     but some newer presets expose these semantic shadow tokens.
+     Mantine doesn't have named shadow CSS vars, so we map to
+     Tailwind v4's built-in shadow scale.
+  ── */
+  --shadow-sm: var(--shadow-sm); /* Tailwind v4 built-in */
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+
+  /* ── Animation ───────────────────────────────────────────────────────────
+     shadcn's accordion/collapsible components reference these
+     keyframe-driven vars. No Mantine equivalent exists; these are
+     just the shadcn defaults passed through unchanged.
+  ── */
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+}
+
+html,
+body {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: auto;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.selectable * {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.mantine-AppShell-root,
+.mantine-AppShell-main {
+  min-height: 0 !important;
+  max-height: 100% !important;
+}
+
+.mantine-NavLink-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.section-on-hover .mantine-NavLink-section {
+  display: none;
+}
+
+.section-on-hover:hover .mantine-NavLink-section,
+.section-on-hover.hover .mantine-NavLink-section {
+  display: flex;
+}
+
+[data-mantine-color-scheme='dark'] .nav-link-like:is(:hover, [data-active='true']) {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-mantine-color-scheme='light'] .nav-link-like:is(:hover, [data-active='true']) {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.nav-link-like.filled[data-active='true'] {
+  background-color: var(--mantine-color-blue-filled);
+}
+
+.nav-link-like.filled[data-active='true']:hover {
+  background-color: var(--mantine-color-blue-filled-hover);
+}
+
+.nav-link-like.filled[data-active='true'] * {
+  color: var(--mantine-color-white);
+}
+
+.new-chat {
+  color: revert;
+}
+
+[data-mantine-color-scheme='dark'] .new-chat:is(:hover, [data-active='true']) {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-mantine-color-scheme='light'] .new-chat:is(:hover, [data-active='true']) {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* ── NavLink hover tints ──
+   Override Mantine's default solid hover/active backgrounds with
+   subtle tints that work over the glass surfaces. */
+[data-mantine-color-scheme='dark'] .mantine-NavLink-root:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-mantine-color-scheme='light'] .mantine-NavLink-root:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Active (non-filled) NavLink gets the same tint treatment */
+[data-mantine-color-scheme='dark']
+  .mantine-NavLink-root[data-active]:not([class*='mantine-NavLink-root'][data-variant='filled']) {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-mantine-color-scheme='light']
+  .mantine-NavLink-root[data-active]:not([class*='mantine-NavLink-root'][data-variant='filled']) {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-slate-editor] {
+  align-content: center;
+}
+
+[data-slate-editor] p {
+  margin: 0;
+}
+
+[contenteditable] {
+  font-size: 16px; /* prevents iOS zoom I guess */
+}
+
+[contenteditable]:focus {
+  outline: 0 solid transparent !important;
+}
+
+[data-use-hljs-bg='true'] [class*='mantine-CodeHighlight'] {
+  --ch-background: var(--hljs-bg);
+}
+
+[data-use-hljs-bg='true'] .mantine-CodeHighlight-pre {
+  background: var(--hljs-bg);
+}
+
+[data-use-hljs-bg='true'] .mantine-Typography-root *:has(pre) {
+  background: var(--hljs-bg);
+}
+
+[data-use-hljs-bg='false'] .hljs {
+  background: transparent;
+}
+
+.mantine-Typography-root .ignore-typography {
+  all: revert;
+}
+
+.mantine-Typography-root :not(pre) > code {
+  font-size: inherit;
+  background: var(--tc-surface);
+}
+
+.mantine-Typography-root .ignore-typography.mantine-Blockquote-root {
+  position: relative;
+  margin: 0;
+  border-inline-start: 3px solid var(--mantine-color-blue-filled);
+  border-start-end-radius: var(--mantine-radius-default);
+  border-end-end-radius: var(--mantine-radius-default);
+  background: rgba(25, 113, 194, 0.06);
+  padding: calc(var(--mantine-spacing-xl) / 4) calc(2.375rem * var(--mantine-scale) / 2);
+}
+
+.user-message {
+  background: var(--tc-surface);
+}
+
+.code-fade-in {
+  animation: codeFadeIn 0.3s ease;
+}
+
+@keyframes codeFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Character-by-character fade for streaming text */
+@keyframes stream-char-in {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.stream-char-fade {
+  display: inline-block;
+  white-space: pre-wrap;
+  animation: stream-char-in 100ms ease-out both;
+}
+
+.input-effect {
+  background: transparent;
+}
+
+.dialog {
+  background: var(--tc-surface);
+}
+
+/* TODO - TASKS */
+.topbar * {
+  z-index: calc(var(--mantine-z-index-app) + 1);
+}
+
+/* ── Vidstack theme overrides ─────────────────────────────────── */
+
+/* Shared (applied to both themes via the layout root) */
+.vds-video-layout,
+.vds-audio-layout {
+  --video-brand: var(--mantine-color-blue-filled);
+  --video-focus-ring-color: var(--mantine-color-blue-filled);
+
+  --audio-brand: var(--mantine-color-blue-filled);
+  --audio-focus-ring-color: var(--mantine-color-blue-filled);
+}
+
+/* Dark theme */
+[data-mantine-color-scheme='dark'] .vds-video-layout,
+[data-mantine-color-scheme='dark'] .vds-audio-layout {
+  --video-bg: var(--tc-surface);
+  --audio-bg: var(--tc-surface);
+
+  --default-bg: var(--mantine-color-dark-7);
+  --default-border: var(--mantine-color-dark-5);
+
+  --menu-bg: var(--mantine-color-dark-6);
+  --menu-bg-hover: var(--mantine-color-dark-5);
+  --menu-border-color: var(--mantine-color-dark-5);
+
+  --settings-bg: var(--mantine-color-dark-6);
+  --settings-bg-hover: var(--mantine-color-dark-5);
+  --settings-border-color: var(--mantine-color-dark-5);
+  --settings-focus-bg: var(--mantine-color-dark-5);
+
+  --slider-track-bg: var(--mantine-color-dark-4);
+  --slider-track-fill-bg: var(--mantine-color-blue-filled);
+  --slider-thumb-bg: var(--mantine-color-blue-light);
+
+  --time-divider-color: var(--mantine-color-dark-3);
+
+  --tooltip-bg: var(--mantine-color-dark-6);
+  --tooltip-border-color: var(--mantine-color-dark-5);
+  --tooltip-color: var(--mantine-color-dark-0);
+
+  --chapter-title-color: var(--mantine-color-dark-1);
+  --title-color: var(--mantine-color-dark-1);
+}
+
+/* Light theme */
+[data-mantine-color-scheme='light'] .vds-video-layout,
+[data-mantine-color-scheme='light'] .vds-audio-layout {
+  --video-bg: var(--tc-surface);
+  --audio-bg: var(--tc-surface);
+
+  --default-bg: #f4f5f8; /* matches your light body */
+  --default-border: var(--mantine-color-gray-3);
+
+  --menu-bg: #ffffff;
+  --menu-bg-hover: var(--mantine-color-gray-1);
+  --menu-border-color: var(--mantine-color-gray-3);
+
+  --settings-bg: #ffffff;
+  --settings-bg-hover: var(--mantine-color-gray-1);
+  --settings-border-color: var(--mantine-color-gray-3);
+  --settings-focus-bg: var(--mantine-color-gray-1);
+
+  --slider-track-bg: var(--mantine-color-gray-3);
+  --slider-track-fill-bg: var(--mantine-color-blue-filled);
+  --slider-thumb-bg: var(--mantine-color-blue-light);
+
+  --time-divider-color: var(--mantine-color-gray-5);
+
+  --tooltip-bg: #ffffff;
+  --tooltip-border-color: var(--mantine-color-gray-3);
+  --tooltip-color: var(--mantine-color-gray-9);
+
+  --chapter-title-color: var(--mantine-color-gray-7);
+  --title-color: var(--mantine-color-gray-8);
+}
+
+:where(.vds-menu-items) {
+  --root-bg: var(--tc-surface);
+}
+
+[data-mantine-color-scheme='dark'] .vds-menu-items {
+  --default-gray-200: var(--mantine-color-dark-6);
+  --default-gray-300: var(--mantine-color-dark-7);
+}
+
+[data-mantine-color-scheme='light'] .vds-menu-items {
+  --default-gray-200: var(--mantine-color-white);
+  --default-gray-300: var(--mantine-color-gray-1);
+}
+
+.vds-audio-layout .vds-volume-popup {
+  --default-bg: var(--tc-surface) !important;
+}
+
+[data-mantine-color-scheme='dark'] .vds-icon path {
+  fill: var(--mantine-color-gray-4);
+}
+
+[data-mantine-color-scheme='light'] :not(.vds-play-button) > .vds-icon path {
+  fill: var(--mantine-color-dark-3);
+}
+
+table[class*='react-diff'] {
+  flex-shrink: 1 !important;
+  flex-grow: 1 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: 100% !important;
+  height: 100% !important;
+  position: relative !important;
+  inset: 0 !important;
+}
+
+[class*='react-diff'] td {
+  padding: 3px !important;
+  height: 20px !important;
+}
+
+[class*='react-diff'] pre {
+  padding: 0 !important;
+  width: 100% !important;
+  text-align: center !important;
+}
+
+[data-streamdown='code-block'] {
+  background: var(--tc-surface);
+}
+
+[data-streamdown='code-block-body'] {
+  background: var(--tc-surface);
+  padding: 0;
+}
+
+[data-streamdown='code-block-actions'] {
+  background: var(--tc-surface);
+  border: 0;
+}

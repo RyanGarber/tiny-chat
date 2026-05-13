@@ -1,0 +1,124 @@
+import { useState } from 'react';
+import {
+  Avatar,
+  Card,
+  Center,
+  Image,
+  Popover,
+  PopoverDropdown,
+  PopoverTarget,
+  Stack,
+  Tooltip,
+} from '@mantine/core';
+import { Carousel } from '@mantine/carousel';
+import { Icon } from '@iconify/react';
+import { glassStyle } from '@/utils/glass';
+
+interface IconEntry {
+  test: RegExp;
+  icon: string;
+}
+
+const fileIcons: IconEntry[] = [
+  { test: /html|css|js|ts|java|kt|py|cpp|json|ya?ml]/, icon: 'file-braces-corner' },
+  { test: /zip|tar|archive/, icon: 'file-archive' },
+  { test: /mp3|wav|ogg|aac/, icon: 'file-volume' },
+  { test: /mp4|mov|webm/, icon: 'file-video-camera' },
+  { test: /csv/, icon: 'file-chart-line' },
+  { test: /doc|dox|txt/, icon: 'file-text' },
+  { test: /ppt|pptx|pdf/, icon: 'file-image' },
+];
+
+function getIcon(name: string | undefined, iconSize: number) {
+  const entry = fileIcons.find((e) => e.test.test(name ?? ''));
+  return <Icon icon={`lucide:${entry?.icon ?? 'file'}`} height={iconSize} />;
+}
+
+export default function Attachments({
+  list,
+  size = 30,
+  width,
+  maxHeight,
+}: {
+  list: { name?: string; image?: string }[];
+  size?: number;
+  width?: number | string;
+  maxHeight?: number;
+}) {
+  // Reserve space for PopoverDropdown padding (~32px) so the Carousel fits within maxHeight
+  const carouselHeight = maxHeight ? Math.max(maxHeight - 100, 200) : 400;
+
+  const [slide, setSlide] = useState(0);
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  return (
+    <>
+      <Popover
+        withArrow
+        arrowSize={15}
+        arrowPosition="center"
+        arrowOffset={15}
+        withOverlay
+        shadow="md"
+        width={width}
+        withinPortal={false}
+        styles={{
+          dropdown: glassStyle,
+        }}
+      >
+        <PopoverTarget>
+          <Avatar.Group>
+            {list.map((a, i) => (
+              <Tooltip label={a.name} key={a.name} color="gray" position="bottom">
+                <Avatar
+                  radius="xl"
+                  size={size}
+                  src={a.image ?? null}
+                  bd="2px solid var(--mantine-color-default-border)"
+                  onClick={() => {
+                    setSlide(i);
+                    setCurrentSlide(i);
+                  }}
+                >
+                  {getIcon(a.name, size * 0.6)}
+                </Avatar>
+              </Tooltip>
+            ))}
+          </Avatar.Group>
+        </PopoverTarget>
+        <PopoverDropdown maw="calc(100vw - 20px)">
+          <Carousel
+            slideSize="100%"
+            height={carouselHeight}
+            initialSlide={slide}
+            onSlideChange={setCurrentSlide}
+            previousControlProps={{
+              style: { visibility: currentSlide === 0 ? 'hidden' : 'visible' },
+            }}
+            nextControlProps={{
+              style: { visibility: currentSlide === list.length - 1 ? 'hidden' : 'visible' },
+            }}
+          >
+            {list.map((a) => (
+              <Carousel.Slide key={a.name}>
+                <Stack h="100%">
+                  <Center p={5}></Center>
+                  <Stack flex={1} justify="center" mih={0} style={{ overflow: 'hidden' }}>
+                    {a.image ? (
+                      <Image src={a.image} fit="contain" h="100%" w="100%" />
+                    ) : (
+                      <Card withBorder h={200}>
+                        <Center h="100%">{getIcon(a.name, 64)}</Center>
+                      </Card>
+                    )}
+                  </Stack>
+                  <Center p={5}>{a.name}</Center>
+                </Stack>
+              </Carousel.Slide>
+            ))}
+          </Carousel>
+        </PopoverDropdown>
+      </Popover>
+    </>
+  );
+}

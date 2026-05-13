@@ -1,0 +1,258 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  isAnonymous   Boolean?  @default(false)
+  settings      Json      @default("{}")
+  accounts      Account[]
+  action        Action[]
+  chats         Chat[]
+  folders       Folder[]
+  memories      Memory[]
+  messages      Message[]
+  sessions      Session[]
+  uploads       Upload[]
+  files         File[]
+  skills        Skill[]
+  
+  cache Json @default("{}")
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model Folder {
+  id        String    @id
+  userId    String
+  title     String?
+  createdAt DateTime  @default(now())
+  action    Action[]
+  chats     Chat[]
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memories  Memory[]
+  messages  Message[]
+
+  @@index([userId])
+  @@map("folder")
+}
+
+model Chat {
+  id        String    @id
+  userId    String
+  folderId  String
+  title     String?
+  createdAt DateTime  @default(now())
+  temporary Boolean   @default(false)
+  incognito Boolean   @default(false)
+  action    Action[]
+  folder    Folder    @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memories  Memory[]
+  messages  Message[]
+
+  @@index([userId])
+  @@index([folderId])
+  @@map("chat")
+}
+
+model Message {
+  id         String                   @id
+  userId     String
+  folderId   String
+  chatId     String
+  previousId String?                  @unique
+  author     Author
+  config     Json
+  data       Json
+  metadata   Json
+  createdAt  DateTime                 @default(now())
+  embedding  Unsupported("vector")?
+  lexicon    Unsupported("tsvector")?
+  action     Action[]
+  memories   Memory[]
+  chat       Chat                     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  folder     Folder                   @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  previous   Message?                 @relation("Chat", fields: [previousId], references: [id], onDelete: SetNull)
+  next       Message?                 @relation("Chat")
+  user       User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([folderId])
+  @@index([chatId])
+  @@index([lexicon], type: Gin)
+  @@map("message")
+}
+
+model Memory {
+  id         String                 @id
+  userId     String
+  folderId   String?
+  chatId     String?
+  config     Json
+  fact       String
+  category   MemoryCategory
+  stability  MemoryStability
+  evidence   String[]
+  confidence Float
+  createdAt  DateTime               @default(now())
+  embedding  Unsupported("vector")?
+  messageId  String?
+  chat       Chat?                  @relation(fields: [chatId], references: [id], onDelete: SetNull)
+  folder     Folder?                @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  message    Message?               @relation(fields: [messageId], references: [id], onDelete: SetNull)
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([folderId])
+  @@index([chatId])
+  @@index([messageId])
+  @@map("memory")
+}
+
+model Action {
+  id        String                 @id(map: "task_pkey")
+  userId    String
+  folderId  String
+  chatId    String
+  schedule  String
+  config    Json
+  data      Json
+  createdAt DateTime               @default(now())
+  embedding Unsupported("vector")?
+  messageId String?
+  lastRanAt DateTime?
+  timezone  String
+  chat      Chat                   @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  folder    Folder                 @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  message   Message?               @relation(fields: [messageId], references: [id], onDelete: SetNull)
+  user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade, map: "task_userId_fkey")
+
+  @@index([chatId], map: "task_chatId_idx")
+  @@index([folderId], map: "task_folderId_idx")
+  @@index([messageId], map: "task_messageId_idx")
+  @@index([userId], map: "task_userId_idx")
+  @@map("action")
+}
+
+model Upload {
+  id        String   @id
+  userId    String
+  name      String
+  files     File[]
+  thumbnail String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("upload")
+}
+
+model File {
+  id        String                 @id
+  userId    String
+  uploadId  String?
+  skillId   String?
+  path      String[]
+  mime      String
+  data      Bytes
+  embedding Unsupported("vector")?
+  createdAt DateTime               @default(now())
+  user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  upload    Upload?                @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  skill     Skill?                 @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([uploadId])  
+  @@index([skillId])
+  @@map("file")
+}
+
+model Skill {
+  id String @id
+  userId String
+  files File[]
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+
+  @@index([userId])
+  @@map("skill")
+}
+
+enum Author {
+  USER
+  MODEL
+}
+
+enum MemoryCategory {
+  IDENTITY
+  PREFERENCES
+  PROJECTS
+  SKILLS
+  CONSTRAINTS
+}
+
+enum MemoryStability {
+  SHORT_TERM
+  MEDIUM_TERM
+  LONG_TERM
+}

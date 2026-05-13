@@ -1,0 +1,88 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import { tRPCRouter } from '@tiny-chat/backend/src/routes/index.ts';
+import { createTRPCClient, httpLink } from '@trpc/client';
+import { createAuthClient } from 'better-auth/react';
+import { anonymousClient, inferAdditionalFields } from 'better-auth/client/plugins';
+import superjson from 'superjson';
+import { auth as serverAuth } from '@tiny-chat/backend/src/services/auth.ts';
+import { QueryClient } from '@tanstack/react-query';
+import { createTRPCOptionsProxy } from '@trpc/tanstack-react-query';
+
+declare global {
+  interface Window {
+    __TAURI__?: unknown;
+  }
+}
+declare const __TAURI_DEV_HOST__: string | undefined;
+
+export const webUrl: string = import.meta.env.DEV
+  ? `http://${__TAURI_DEV_HOST__ ?? 'localhost'}:${import.meta.env.VITE_WEB_PORT}`
+  : import.meta.env.VITE_WEB_URL;
+
+export const backendUrl: string = import.meta.env.DEV
+  ? `http://${__TAURI_DEV_HOST__ ?? 'localhost'}:${import.meta.env.VITE_BACKEND_PORT}`
+  : import.meta.env.VITE_BACKEND_URL;
+
+export const queryClient = new QueryClient();
+
+export const trpc = createTRPCClient<tRPCRouter>({
+  links: [
+    httpLink({
+      url: import.meta.env.DEV
+        ? `http://${__TAURI_DEV_HOST__ ?? 'localhost'}:${import.meta.env.VITE_BACKEND_PORT}${import.meta.env.VITE_BACKEND_PATH_TRPC}`
+        : `${import.meta.env.VITE_BACKEND_URL}${import.meta.env.VITE_BACKEND_PATH_TRPC}`,
+      transformer: superjson,
+      headers: () => {
+        const token = localStorage.getItem('token');
+        return { Authorization: token ? `Bearer ${token}` : undefined };
+      },
+    }),
+  ],
+});
+
+export const query = createTRPCOptionsProxy({
+  client: trpc,
+  queryClient: queryClient,
+});
+
+export const auth = createAuthClient({
+  baseURL: import.meta.env.DEV
+    ? `http://${__TAURI_DEV_HOST__ ?? 'localhost'}:${import.meta.env.VITE_BACKEND_PORT}`
+    : import.meta.env.VITE_BACKEND_URL,
+  basePath: import.meta.env.VITE_BACKEND_PATH_AUTH,
+  fetchOptions: {
+    auth: {
+      type: 'Bearer',
+      token: () => localStorage.getItem('token') ?? undefined,
+    },
+  },
+  plugins: [anonymousClient(), inferAdditionalFields<typeof serverAuth>()],
+});
+
+export async function invoke<T>(command: string, args?: Record<string, unknown>): Promise<T> {
+  if (!isTauri()) throw new Error(`invoke(${command}) called outside of tauri`);
+
+  const { invoke } = await import('@tauri-apps/api/core');
+  return await invoke<T>(command, args).catch((error) => {
+    throw new Error(
+      `invoke(${command}) failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  });
+}
+
+export async function listen<T>(event: string, callback: (data: T) => void) {
+  if (!isTauri()) throw new Error(`listen(${event}) called outside of tauri`);
+
+  const { listen } = await import('@tauri-apps/api/event');
+  return await listen<T>(event, (event) => callback(event.payload));
+}
+
+export function isTauri() {
+  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+}
+
+export async function isTauriDesktop() {
+  if (!isTauri()) return false;
+  const { type } = await import('@tauri-apps/plugin-os');
+  return ['linux', 'macos', 'windows'].includes(type());
+}

@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'apps-web',
+      name: 'web',
       script: 'bun',
       args: 'run ./src/index.ts',
       exec_mode: 'fork',

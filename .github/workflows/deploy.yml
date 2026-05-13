@@ -45,7 +45,7 @@ jobs:
       - name: Build backend and web
         run: |
           pnpm run build:web
-          cp -r core/frontend/dist apps/web/dist
+          cp -r packages/frontend/dist apps/web/dist
 
       - name: Create deploy artifact
         run: |
@@ -54,8 +54,9 @@ jobs:
           cp pnpm-lock.yaml deploy/
           cp pnpm-workspace.yaml deploy/
           cp -r patches deploy/patches
-          mkdir deploy/core
-          cp -r core/backend deploy/core/backend
+          mkdir deploy/packages
+          cp -r packages/shared deploy/packages/shared
+          cp -r packages/backend deploy/packages/backend
           mkdir deploy/apps
           cp -r apps/web deploy/apps/web
           tar -czf deploy.tar.gz deploy

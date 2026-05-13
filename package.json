@@ -3,27 +3,41 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev:tauri": "dotenv -- concurrently -k \"pnpm --filter @tiny-chat/core-backend run dev\" \"node scripts/wait-for-backend.ts && pnpm --filter @tiny-chat/apps-tauri run tauri dev\"",
-    "dev:tauri:ios": "dotenv -- concurrently -k \"pnpm --filter @tiny-chat/core-backend run dev -- --host\" \"node scripts/wait-for-backend.ts && pnpm --filter @tiny-chat/apps-tauri run tauri ios dev -- --host\"",
-    "dev:tauri:android": "dotenv -- concurrently -k \"pnpm --filter @tiny-chat/core-backend run dev -- --host\" \"node scripts/wait-for-backend.ts && pnpm --filter @tiny-chat/apps-tauri run tauri android dev -- --host\"",
-    "dev:web": "dotenv -- concurrently -k \"pnpm --filter @tiny-chat/core-backend run dev\" \"node scripts/wait-for-backend.ts && pnpm --filter @tiny-chat/apps-web run dev\"",
-    "build:tauri": "dotenv -- pnpm --filter @tiny-chat/apps-tauri run tauri build",
-    "build:tauri:ios": "dotenv -- pnpm --filter @tiny-chat/apps-tauri run tauri ios build",
-    "build:tauri:android": "dotenv -- pnpm --filter @tiny-chat/apps-tauri run tauri android build",
-    "build:web": "dotenv -- pnpm --filter @tiny-chat/core-frontend run build",
-    "open:tauri:ios": "dotenv -- concurrently -k \"pnpm --filter @tiny-chat/core-backend run dev -- --host\" \"node scripts/wait-for-backend.ts && pnpm --filter @tiny-chat/apps-tauri run tauri ios dev --host --open\"",
-    "open:tauri:android": "dotenv -- concurrently -k \"pnpm --filter @tiny-chat/core-backend run dev -- --host\" \"node scripts/wait-for-backend.ts && pnpm --filter @tiny-chat/apps-tauri run tauri android dev --host --open\"",
-    "dev:backend": "dotenv -- pnpm --filter @tiny-chat/core-backend run dev",
-    "start:backend": "dotenv -- pnpm --filter @tiny-chat/core-backend run start",
-    "lint:frontend": "pnpm --filter @tiny-chat/core-frontend exec eslint .",
-    "lint:backend": "pnpm --filter @tiny-chat/core-backend exec eslint .",
-    "lint": "pnpm lint:frontend && pnpm lint:backend"
+    "dev:tauri": "dotenv -- concurrently -k \"pnpm --filter @tiny-chat/backend run dev\" \"node scripts/wait-for-backend.ts && pnpm --filter @tiny-chat/tauri run tauri dev\"",
+    "dev:tauri:ios": "dotenv -- concurrently -k \"pnpm --filter @tiny-chat/backend run dev -- --host\" \"node scripts/wait-for-backend.ts && pnpm --filter @tiny-chat/tauri run tauri ios dev --host\"",
+    "dev:tauri:android": "dotenv -- concurrently -k \"pnpm --filter @tiny-chat/backend run dev -- --host\" \"node scripts/wait-for-backend.ts && pnpm --filter @tiny-chat/tauri run tauri android dev --host\"",
+    "dev:web": "dotenv -- concurrently -k \"pnpm --filter @tiny-chat/backend run dev\" \"node scripts/wait-for-backend.ts && pnpm --filter @tiny-chat/web run dev\"",
+    "build:tauri": "dotenv -- pnpm --filter @tiny-chat/tauri run tauri build",
+    "build:tauri:ios": "dotenv -- pnpm --filter @tiny-chat/tauri run tauri ios build",
+    "build:tauri:android": "dotenv -- pnpm --filter @tiny-chat/tauri run tauri android build",
+    "build:web": "dotenv -- pnpm --filter @tiny-chat/frontend run build",
+    "open:tauri:ios": "dotenv -- concurrently -k \"pnpm --filter @tiny-chat/backend run dev -- --host\" \"node scripts/wait-for-backend.ts && pnpm --filter @tiny-chat/tauri run tauri ios dev --host --open\"",
+    "open:tauri:android": "dotenv -- concurrently -k \"pnpm --filter @tiny-chat/backend run dev -- --host\" \"node scripts/wait-for-backend.ts && pnpm --filter @tiny-chat/tauri run tauri android dev --host --open\"",
+    "dev:backend": "dotenv -- pnpm --filter @tiny-chat/backend run dev",
+    "start:backend": "dotenv -- pnpm --filter @tiny-chat/backend run start",
+    "lint:frontend": "pnpm --filter @tiny-chat/frontend exec eslint .",
+    "lint:backend": "pnpm --filter @tiny-chat/backend exec eslint .",
+    "lint:shared": "pnpm --filter @tiny-chat/shared exec eslint .",
+    "lint": "pnpm lint:frontend && pnpm lint:backend && pnpm lint:shared",
+    "typecheck:frontend": "pnpm --filter @tiny-chat/frontend exec tsc --noEmit",
+    "typecheck:backend": "pnpm --filter @tiny-chat/backend exec tsc --noEmit",
+    "typecheck:shared": "pnpm --filter @tiny-chat/shared exec tsc --noEmit",
+    "typecheck": "pnpm typecheck:frontend && pnpm typecheck:backend && pnpm typecheck:shared"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/wait-on": "^5.3.4",
     "concurrently": "^9.2.1",
     "dotenv-cli": "^11.0.0",
+    "eslint": "^10.4.0",
+    "prettier": "^3.8.3",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.59.4",
+    "vitest": "^4.1.7",
     "wait-on": "^9.0.3"
   },
-  "packageManager": "pnpm@11.0.8+sha512.4c4097e1dd2d42372c4e7fa5a791ff28fc75a484c7ac192e64b1df0fdef17594ba982f9b4fed9adfb3c757846f565b799b2763fb3733d1de1bcb82cf46684912"
+  "packageManager": "pnpm@11.4.0+sha512.f0febc7e37552ab485494a914241b338e0b3580b93d54ce31f00933015880863129038a1b4ae4e414a0ee63ac35bf21197e990172c4a68256450b5636310968f",
+  "dependencies": {
+    "zod-to-json-schema": "^3.25.2"
+  }
 }

@@ -1,65 +1,13 @@
 diff --git a/dist/index.d.mts b/dist/index.d.mts
-index 89f6bf4b05c22d778da2f8450fc3fc5dc5586381..63f2b059b6bb28c3a14a40584b2f4734d43ab4b5 100644
+index 7ff6e6def4a45d14873aa94ac8838020336fa322..22d350ae19eb58cf69247abe37399decfb38511b 100644
 --- a/dist/index.d.mts
 +++ b/dist/index.d.mts
 @@ -13,7 +13,7 @@ type GoogleErrorData = InferSchema<typeof googleErrorDataSchema>;
  
- type GoogleGenerativeAIModelId = 'gemini-2.0-flash' | 'gemini-2.0-flash-001' | 'gemini-2.0-flash-lite' | 'gemini-2.0-flash-lite-001' | 'gemini-2.5-pro' | 'gemini-2.5-flash' | 'gemini-2.5-flash-image' | 'gemini-2.5-flash-lite' | 'gemini-2.5-flash-lite-preview-09-2025' | 'gemini-2.5-flash-preview-tts' | 'gemini-2.5-pro-preview-tts' | 'gemini-2.5-flash-native-audio-latest' | 'gemini-2.5-flash-native-audio-preview-09-2025' | 'gemini-2.5-flash-native-audio-preview-12-2025' | 'gemini-2.5-computer-use-preview-10-2025' | 'gemini-3-pro-preview' | 'gemini-3-pro-image-preview' | 'gemini-3-flash-preview' | 'gemini-3.1-pro-preview' | 'gemini-3.1-pro-preview-customtools' | 'gemini-3.1-flash-image-preview' | 'gemini-3.1-flash-lite-preview' | 'gemini-pro-latest' | 'gemini-flash-latest' | 'gemini-flash-lite-latest' | 'deep-research-pro-preview-12-2025' | 'nano-banana-pro-preview' | 'aqa' | 'gemini-robotics-er-1.5-preview' | 'gemma-3-1b-it' | 'gemma-3-4b-it' | 'gemma-3n-e4b-it' | 'gemma-3n-e2b-it' | 'gemma-3-12b-it' | 'gemma-3-27b-it' | (string & {});
+ type GoogleGenerativeAIModelId = 'gemini-2.0-flash' | 'gemini-2.0-flash-001' | 'gemini-2.0-flash-lite' | 'gemini-2.0-flash-lite-001' | 'gemini-2.5-pro' | 'gemini-2.5-flash' | 'gemini-2.5-flash-image' | 'gemini-2.5-flash-lite' | 'gemini-2.5-flash-preview-tts' | 'gemini-2.5-pro-preview-tts' | 'gemini-2.5-flash-native-audio-latest' | 'gemini-2.5-flash-native-audio-preview-09-2025' | 'gemini-2.5-flash-native-audio-preview-12-2025' | 'gemini-2.5-computer-use-preview-10-2025' | 'gemini-3-pro-preview' | 'gemini-3-pro-image-preview' | 'gemini-3-flash-preview' | 'gemini-3.1-pro-preview' | 'gemini-3.1-pro-preview-customtools' | 'gemini-3.1-flash-image-preview' | 'gemini-3.1-flash-lite-preview' | 'gemini-3.1-flash-tts-preview' | 'gemini-pro-latest' | 'gemini-flash-latest' | 'gemini-flash-lite-latest' | 'deep-research-pro-preview-12-2025' | 'nano-banana-pro-preview' | 'aqa' | 'gemini-robotics-er-1.5-preview' | 'gemma-3-1b-it' | 'gemma-3-4b-it' | 'gemma-3n-e4b-it' | 'gemma-3n-e2b-it' | 'gemma-3-12b-it' | 'gemma-3-27b-it' | (string & {});
  declare const googleLanguageModelOptions: _ai_sdk_provider_utils.LazySchema<{
 -    responseModalities?: ("TEXT" | "IMAGE")[] | undefined;
 +    responseModalities?: ("TEXT" | "IMAGE" | "AUDIO")[] | undefined;
      thinkingConfig?: {
          thinkingBudget?: number | undefined;
          includeThoughts?: boolean | undefined;
-diff --git a/dist/index.d.ts b/dist/index.d.ts
-index 89f6bf4b05c22d778da2f8450fc3fc5dc5586381..63f2b059b6bb28c3a14a40584b2f4734d43ab4b5 100644
---- a/dist/index.d.ts
-+++ b/dist/index.d.ts
-@@ -13,7 +13,7 @@ type GoogleErrorData = InferSchema<typeof googleErrorDataSchema>;
- 
- type GoogleGenerativeAIModelId = 'gemini-2.0-flash' | 'gemini-2.0-flash-001' | 'gemini-2.0-flash-lite' | 'gemini-2.0-flash-lite-001' | 'gemini-2.5-pro' | 'gemini-2.5-flash' | 'gemini-2.5-flash-image' | 'gemini-2.5-flash-lite' | 'gemini-2.5-flash-lite-preview-09-2025' | 'gemini-2.5-flash-preview-tts' | 'gemini-2.5-pro-preview-tts' | 'gemini-2.5-flash-native-audio-latest' | 'gemini-2.5-flash-native-audio-preview-09-2025' | 'gemini-2.5-flash-native-audio-preview-12-2025' | 'gemini-2.5-computer-use-preview-10-2025' | 'gemini-3-pro-preview' | 'gemini-3-pro-image-preview' | 'gemini-3-flash-preview' | 'gemini-3.1-pro-preview' | 'gemini-3.1-pro-preview-customtools' | 'gemini-3.1-flash-image-preview' | 'gemini-3.1-flash-lite-preview' | 'gemini-pro-latest' | 'gemini-flash-latest' | 'gemini-flash-lite-latest' | 'deep-research-pro-preview-12-2025' | 'nano-banana-pro-preview' | 'aqa' | 'gemini-robotics-er-1.5-preview' | 'gemma-3-1b-it' | 'gemma-3-4b-it' | 'gemma-3n-e4b-it' | 'gemma-3n-e2b-it' | 'gemma-3-12b-it' | 'gemma-3-27b-it' | (string & {});
- declare const googleLanguageModelOptions: _ai_sdk_provider_utils.LazySchema<{
--    responseModalities?: ("TEXT" | "IMAGE")[] | undefined;
-+    responseModalities?: ("TEXT" | "IMAGE" | "AUDIO")[] | undefined;
-     thinkingConfig?: {
-         thinkingBudget?: number | undefined;
-         includeThoughts?: boolean | undefined;
-diff --git a/dist/index.js b/dist/index.js
-index 96c67400fb402cb6f3b27f9808b8d3751c86c342..9ba523e48b7657dcab19677098b044c3d1578fd5 100644
---- a/dist/index.js
-+++ b/dist/index.js
-@@ -707,7 +707,7 @@ var import_v44 = require("zod/v4");
- var googleLanguageModelOptions = (0, import_provider_utils5.lazySchema)(
-   () => (0, import_provider_utils5.zodSchema)(
-     import_v44.z.object({
--      responseModalities: import_v44.z.array(import_v44.z.enum(["TEXT", "IMAGE"])).optional(),
-+      responseModalities: import_v44.z.array(import_v44.z.enum(["TEXT", "IMAGE", "AUDIO"])).optional(),
-       thinkingConfig: import_v44.z.object({
-         thinkingBudget: import_v44.z.number().optional(),
-         includeThoughts: import_v44.z.boolean().optional(),
-diff --git a/dist/index.mjs b/dist/index.mjs
-index 9f013fd770bc1880eb26cc3bb09496c90d36d63d..459a9ef0e80d04cb33f9ca68f84883ae8e81fc22 100644
---- a/dist/index.mjs
-+++ b/dist/index.mjs
-@@ -713,7 +713,7 @@ import { z as z4 } from "zod/v4";
- var googleLanguageModelOptions = lazySchema4(
-   () => zodSchema4(
-     z4.object({
--      responseModalities: z4.array(z4.enum(["TEXT", "IMAGE"])).optional(),
-+      responseModalities: z4.array(z4.enum(["TEXT", "IMAGE", "AUDIO"])).optional(),
-       thinkingConfig: z4.object({
-         thinkingBudget: z4.number().optional(),
-         includeThoughts: z4.boolean().optional(),
-diff --git a/src/google-generative-ai-options.ts b/src/google-generative-ai-options.ts
-index 343a745420641642e30d67c1f55e59770b1d936d..27be4f1ba80fa10a3fd31aa2596681458ceab7c8 100644
---- a/src/google-generative-ai-options.ts
-+++ b/src/google-generative-ai-options.ts
-@@ -48,7 +48,7 @@ export type GoogleGenerativeAIModelId =
- export const googleLanguageModelOptions = lazySchema(() =>
-   zodSchema(
-     z.object({
--      responseModalities: z.array(z.enum(['TEXT', 'IMAGE'])).optional(),
-+      responseModalities: z.array(z.enum(['TEXT', 'IMAGE', 'AUDIO'])).optional(),
- 
-       thinkingConfig: z
-         .object({

@@ -1,9 +1,9 @@
 {
-  "name": "@tiny-chat/apps-web",
+  "name": "@tiny-chat/web",
   "type": "module",
   "scripts": {
-    "dev": "pnpm --filter @tiny-chat/core-frontend run dev",
-    "build": "pnpm --filter @tiny-chat/core-frontend run build",
+    "dev": "pnpm --filter @tiny-chat/frontend run dev",
+    "build": "pnpm --filter @tiny-chat/frontend run build",
     "start": "node src/index.ts"
   },
   "dependencies": {

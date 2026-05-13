@@ -1,8 +1,10 @@
 packages:
-  - 'core/*'
   - 'apps/*'
+  - 'packages/*'
 allowBuilds:
+  '@google/genai': true
   '@prisma/engines': true
+  bson: set this to true or false
   esbuild: true
   node-pty: true
   prisma: true
@@ -11,9 +13,17 @@ allowBuilds:
   tesseract.js: true
   tree-sitter-bash: true
 allowedDeprecatedVersions:
-  glob: "*"
-  'node-domexception': "*"
-  'whatwg-encoding': "*"
+  glob: '*'
+  'node-domexception': '*'
+  'whatwg-encoding': '*'
+minimumReleaseAgeExclude:
+  - xlsx@0.19.3
+  - xlsx@0.20.2
+  - diff@8.0.3
+  - '@tootallnate/once@3.0.1'
+  - '@hono/node-server@1.19.13'
+  - '@opentelemetry/sdk-node@0.217.0'
+  - '@opentelemetry/exporter-prometheus@0.217.0'
 patchedDependencies:
   '@ai-sdk/google': patches/@ai-sdk__google.patch
   '@google/gemini-cli-core': patches/@google__gemini-cli-core.patch

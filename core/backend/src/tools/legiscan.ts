@@ -1,9 +1,9 @@
 import type { ToolCall, ToolContext } from './index.ts';
 import { z } from 'zod';
-import { LegiscanClient, State, zNames } from '@ryangarber/legiscan-ts';
+import { LegiscanClient, State } from '@ryangarber/legiscan-ts';
 
 const zListSessions = z.object({
-  state: zNames(State),
+  state: z.enum(Object.keys(State)),
 });
 
 const ListSessions: ToolCall<typeof zListSessions> = {

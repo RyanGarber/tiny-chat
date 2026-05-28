@@ -3,6 +3,36 @@ import { DEFAULT_SKILLS, DEFAULT_TOOL_GROUPS, zConfig } from '@tiny-chat/shared/
 import { useHiddenModels } from '@/features/settings/hooks/useHiddenModels';
 import { useProviders } from '../hooks/useProviders';
 
+const useModelSelectData = (feature: 'generate' | 'embed', includeHidden: boolean) => {
+  const { providers } = useProviders();
+  const { hiddenModels } = useHiddenModels();
+  return providers.data?.chat
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .filter(
+      (p) =>
+        includeHidden ||
+        p.models.some(
+          (m) =>
+            !hiddenModels.data?.[feature].find((h) => h.provider === p.name && h.model === m.name),
+        ),
+    )
+    .map((p) => ({
+      group: p.name,
+      items: p.models
+        .filter((m) => m.features.includes(feature))
+        .filter(
+          (m) =>
+            includeHidden ||
+            !hiddenModels.data?.[feature].find((h) => h.provider === p.name && h.model === m.name),
+        )
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((m) => ({
+          label: m.name,
+          value: JSON.stringify({ provider: p.name, model: m.name }),
+        })),
+    }));
+};
+
 interface ModelSelectProps extends SelectProps {
   feature: 'generate' | 'embed';
   optional?: boolean;
@@ -19,35 +49,13 @@ export default function ModelSelect({
   includeHidden = false,
   ...selectProps
 }: ModelSelectProps) {
-  const { providers } = useProviders();
-  const { hiddenModels } = useHiddenModels();
+  const data = useModelSelectData(feature, includeHidden);
   return (
     <Select
       required={!optional}
       allowDeselect={optional} // TODO - remove `| null` type when !optional
       maxDropdownHeight={250}
-      data={providers.data?.chat
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .filter(
-          (s) => includeHidden || !hiddenModels.data?.[feature].some((m) => m.provider === s.name),
-        )
-        .map((s) => ({
-          group: s.name,
-          items: s.models
-            .filter((m) => m.features.includes(feature))
-            .filter(
-              (m) =>
-                includeHidden ||
-                !hiddenModels.data?.[feature].some(
-                  (pm) => pm.provider === s.name && pm.model === m.name,
-                ),
-            )
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map((m) => ({
-              label: m.name,
-              value: JSON.stringify({ provider: s.name, model: m.name }),
-            })),
-        }))}
+      data={data}
       value={
         configValue
           ? JSON.stringify({ provider: configValue.provider, model: configValue.model })
@@ -83,33 +91,11 @@ export function ModelMultiSelect({
   includeHidden = false,
   ...multiSelectProps
 }: ModelMultiSelectProps) {
-  const { providers } = useProviders();
-  const { hiddenModels } = useHiddenModels();
+  const data = useModelSelectData(feature, includeHidden);
   return (
     <MultiSelect
       maxDropdownHeight={250}
-      data={providers.data?.chat
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .filter(
-          (s) => includeHidden || !hiddenModels.data?.[feature].some((m) => m.provider === s.name),
-        )
-        .map((s) => ({
-          group: s.name,
-          items: s.models
-            .filter((m) => m.features.includes(feature))
-            .filter(
-              (m) =>
-                includeHidden ||
-                !hiddenModels.data?.[feature].some(
-                  (pm) => pm.provider === s.name && pm.model === m.name,
-                ),
-            )
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map((m) => ({
-              label: m.name,
-              value: JSON.stringify({ provider: s.name, model: m.name }),
-            })),
-        }))}
+      data={data}
       value={configValue.map((v) => JSON.stringify({ provider: v.provider, model: v.model }))}
       onChange={(value) => onConfigChange(value.map((v) => zConfig.parse(JSON.parse(v))) ?? [])}
       {...multiSelectProps}

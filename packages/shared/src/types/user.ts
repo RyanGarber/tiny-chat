@@ -71,13 +71,16 @@ export const zMCPServers = z
   .optional();
 export type zMCPServers = z.infer<typeof zMCPServers>;
 
-export const zPreferredModels = z
+export const zHiddenModel = zConfig.pick({ model: true, provider: true });
+export type zHiddenModel = z.infer<typeof zHiddenModel>;
+
+export const zHiddenModels = z
   .object({
-    generate: z.array(zConfig).default([]),
-    embed: z.array(zConfig).default([]),
+    generate: z.array(zHiddenModel).default([]),
+    embed: z.array(zHiddenModel).default([]),
   })
   .default({ generate: [], embed: [] });
-export type zPreferredModels = z.infer<typeof zPreferredModels>;
+export type zHiddenModels = z.infer<typeof zHiddenModels>;
 
 export const zSettings = z
   .object({
@@ -85,7 +88,7 @@ export const zSettings = z
     embeddingConfig: zConfig,
     useEmbeddingSearch: z.boolean(),
     preferredWebProvider: z.string(),
-    preferredModels: zPreferredModels,
+    hiddenModels: zHiddenModels,
     useProviderCache: z.boolean(),
     theme: z.string(),
     codeTheme: z.string(),

@@ -50,9 +50,18 @@ export default function App() {
         return;
       }
 
+      setInitializing(false);
+      console.log('>> session:', session.data);
+
+      if (!session.data.session?.token) {
+        return;
+      }
+
+      console.log('>> session token:', session.data.session?.token);
       const oldToken = localStorage.getItem('token');
       localStorage.setItem('token', session.data.session.token);
       if (session.data.session.token !== oldToken) {
+        console.log('>> session token changed:', `${oldToken} -> ${session.data.session.token}`);
         window.location.reload();
         return;
       }
@@ -62,8 +71,6 @@ export default function App() {
         void trpc.sessions.acceptClone.mutate({ id: query.clone });
         setHashbang(hash, { ...query, clone: undefined });
       }
-
-      setInitializing(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isInitializing, setInitializing, session.data, session.isPending, session.error]);

@@ -238,7 +238,6 @@ export const ChatInput = memo((props: InputWrapperProps) => {
                 setConfig(value!);
               }}
               feature="generate"
-              preferredOnly
               disabled={isAny}
             />
             <Button

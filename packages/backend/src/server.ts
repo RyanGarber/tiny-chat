@@ -2,15 +2,26 @@ import { createServer } from 'http';
 import { internalIpV4 } from 'internal-ip';
 import { config } from 'dotenv';
 import { resolve } from 'path';
-import uploadHandler from './services/upload.ts';
 import { initLogs } from '@tiny-chat/shared/src/logs.ts';
-import { authHandler } from './services/auth.ts';
-import { apiHandler } from './services/api.ts';
-import { geminiHandler } from './services/gemini.ts';
-import onTick from './services/worker.ts';
-import { mcpHandler } from './services/mcp.ts';
 
 config({ path: resolve(import.meta.dirname, '../../../.env'), quiet: true });
+
+const [
+  { authHandler },
+  { apiHandler },
+  { geminiHandler },
+  { default: uploadHandler },
+  { mcpHandler },
+  { default: onTick },
+] = await Promise.all([
+  import('./services/auth.ts'),
+  import('./services/api.ts'),
+  import('./services/gemini.ts'),
+  import('./services/upload.ts'),
+  import('./services/mcp.ts'),
+  import('./services/worker.ts'),
+]);
+
 if (import.meta.main) initLogs(undefined, true);
 
 const server = createServer((req, res) => {

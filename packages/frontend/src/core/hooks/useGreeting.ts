@@ -7,8 +7,8 @@ export function useGreeting() {
   const createIncognito = useChatStore((s) => s.createIncognito);
 
   const name =
-    session.data && !session.data.user.isAnonymous && !createIncognito
-      ? session.data.user.name.split(' ')[0]
+    session.data && !session.data.user?.isAnonymous && !createIncognito
+      ? session.data.user?.name.split(' ')[0]
       : undefined;
 
   const time = getTime();

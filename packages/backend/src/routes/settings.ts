@@ -1,4 +1,4 @@
-import { zMCPServers, zSettings } from '@tiny-chat/shared/src/types/user.ts';
+import { zHiddenModel, zMCPServers, zSettings } from '@tiny-chat/shared/src/types/user.ts';
 import { procedure, router } from '../index.ts';
 import z from 'zod';
 import { zConfig } from '@tiny-chat/shared/src/types/chat.ts';
@@ -52,14 +52,17 @@ export default router({
       }));
     }),
 
-  setPreferredModels: procedure
-    .input(z.object({ feature: z.enum(['generate', 'embed']), models: z.array(zConfig) }))
+  setHiddenModels: procedure
+    .input(
+      z.object({
+        feature: z.enum(['generate', 'embed']),
+        models: z.array(zHiddenModel),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       return set(ctx, (settings) => {
-        settings.preferredModels ??= { generate: [], embed: [] };
-        settings.preferredModels[input.feature] = input.models.map(
-          (m) => ({ model: m.model, provider: m.provider }) satisfies Partial<zConfig> as zConfig,
-        );
+        settings.hiddenModels ??= { generate: [], embed: [] };
+        settings.hiddenModels[input.feature] = input.models;
         return settings;
       });
     }),

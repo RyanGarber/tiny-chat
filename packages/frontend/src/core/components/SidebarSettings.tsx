@@ -27,7 +27,7 @@ import ModelSelect, { ModelMultiSelect } from '@/features/input/components/Model
 import { Icon } from '@iconify/react';
 import Console from '@/core/components/Console';
 import { glassStyle } from '@/utils/glass';
-import { usePreferredModels } from '@/features/settings/hooks/usePreferredModels';
+import { useHiddenModels } from '@/features/settings/hooks/useHiddenModels';
 import { useInstructions } from '@/features/settings/hooks/useInstructions';
 import { useRetrieval } from '@/features/settings/hooks/useRetrieval';
 import { useProviderSettings } from '@/features/settings/hooks/useProviderSettings';
@@ -66,7 +66,7 @@ export default function SidebarSettings({
   }, [opened, close, setDrawerCloser]);
 
   const [consoleOpened, { open: openConsole, close: closeConsole }] = useDisclosure(false);
-  const { preferredModels, setPreferredModels } = usePreferredModels();
+  const { hiddenModels, setHiddenModels } = useHiddenModels();
   const { instructions, addInstruction, editInstruction, removeInstruction } = useInstructions();
   const { embeddingConfig, setEmbeddingConfig, useEmbeddingSearch, setUseEmbeddingSearch } =
     useRetrieval();
@@ -206,54 +206,56 @@ export default function SidebarSettings({
               </Tooltip>
               <Space />
               <Box>
-                <Text size="sm">Preferences</Text>
+                <Text size="sm">Performance</Text>
                 <Text size="xs" c="dimmed">
-                  Changes the models shown in menus
+                  Optimizes performance of the app
+                </Text>
+              </Box>
+              <Tooltip label="Reuse model lists for faster loading" color="gray" position="right">
+                <CheckboxCard
+                  p="xs"
+                  checked={useProviderCache.data}
+                  onChange={(value) => {
+                    setUseProviderCache.mutate({ useProviderCache: value });
+                  }}
+                >
+                  <Group>
+                    <CheckboxIndicator size="xs" />
+                    <Text size="sm">Provider Cache</Text>
+                  </Group>
+                </CheckboxCard>
+              </Tooltip>
+              <Space />
+              <Box>
+                <Text size="sm">Hidden Models</Text>
+                <Text size="xs" c="dimmed">
+                  Hides models from lists and dropdowns
                 </Text>
               </Box>
               <Stack>
-                <Tooltip label="Models shown in chat options" color="gray" position="right">
+                <Tooltip label="Generative models to hide" color="gray" position="right">
                   <ModelMultiSelect
                     label="Generation"
                     styles={consumeLabel}
                     feature="generate"
-                    configValue={preferredModels.data?.generate ?? []}
+                    configValue={hiddenModels.data?.generate.map((m) => zConfig.parse(m)) ?? []}
                     onConfigChange={(value) =>
-                      setPreferredModels.mutate({ feature: 'generate', models: value })
+                      setHiddenModels.mutate({ feature: 'generate', models: value })
                     }
+                    includeHidden
                   />
                 </Tooltip>
-                <Tooltip label="Models shown in embedding options" color="gray" position="right">
+                <Tooltip label="Embedding models to hide" color="gray" position="right">
                   <ModelMultiSelect
                     label="Embedding"
                     styles={consumeLabel}
                     feature="embed"
-                    configValue={preferredModels.data?.embed ?? []}
+                    configValue={hiddenModels.data?.embed.map((m) => zConfig.parse(m)) ?? []}
                     onConfigChange={(value) =>
-                      setPreferredModels.mutate({ feature: 'embed', models: value })
+                      setHiddenModels.mutate({ feature: 'embed', models: value })
                     }
+                    includeHidden
                   />
-                </Tooltip>
-                <Space />
-                <Box>
-                  <Text size="sm">Performance</Text>
-                  <Text size="xs" c="dimmed">
-                    Optimizes performance of the app
-                  </Text>
-                </Box>
-                <Tooltip label="Reuse model lists for faster loading" color="gray" position="right">
-                  <CheckboxCard
-                    p="xs"
-                    checked={useProviderCache.data}
-                    onChange={(value) => {
-                      setUseProviderCache.mutate({ useProviderCache: value });
-                    }}
-                  >
-                    <Group>
-                      <CheckboxIndicator size="xs" />
-                      <Text size="sm">Provider Cache</Text>
-                    </Group>
-                  </CheckboxCard>
                 </Tooltip>
               </Stack>
             </Stack>
@@ -337,7 +339,6 @@ export default function SidebarSettings({
                     openEmbedConfirm();
                   }}
                   feature="embed"
-                  preferredOnly
                   disabled={isEmbedConfirmOpen || setEmbeddingConfig.isPending}
                   readOnly={isEmbedConfirmOpen || setEmbeddingConfig.isPending}
                 />
@@ -409,7 +410,7 @@ export default function SidebarSettings({
                   label="Preferred Provider"
                   styles={consumeLabel}
                   allowDeselect={false}
-                  data={providers.data?.web.filter((p) => !p.error).map((p) => p.name)}
+                  data={providers.data?.web.filter((p) => p.available).map((p) => p.name)}
                   value={preferredWebProvider.data}
                   onChange={(value) => {
                     if (!value) return;

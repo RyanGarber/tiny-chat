@@ -1,6 +1,6 @@
 import { MultiSelect, Select, SelectProps, type MultiSelectProps } from '@mantine/core';
 import { DEFAULT_SKILLS, DEFAULT_TOOL_GROUPS, zConfig } from '@tiny-chat/shared/src/types/chat.ts';
-import { usePreferredModels } from '@/features/settings/hooks/usePreferredModels';
+import { useHiddenModels } from '@/features/settings/hooks/useHiddenModels';
 import { useProviders } from '../hooks/useProviders';
 
 interface ModelSelectProps extends SelectProps {
@@ -8,7 +8,7 @@ interface ModelSelectProps extends SelectProps {
   optional?: boolean;
   configValue: zConfig | null | undefined;
   onConfigChange: (value: zConfig | null | undefined) => void;
-  preferredOnly?: boolean;
+  includeHidden?: boolean;
 }
 
 export default function ModelSelect({
@@ -16,11 +16,11 @@ export default function ModelSelect({
   optional = false,
   configValue,
   onConfigChange,
-  preferredOnly = false,
+  includeHidden = false,
   ...selectProps
 }: ModelSelectProps) {
   const { providers } = useProviders();
-  const { preferredModels } = usePreferredModels();
+  const { hiddenModels } = useHiddenModels();
   return (
     <Select
       required={!optional}
@@ -29,8 +29,7 @@ export default function ModelSelect({
       data={providers.data?.chat
         .sort((a, b) => a.name.localeCompare(b.name))
         .filter(
-          (s) =>
-            !preferredOnly || preferredModels.data?.[feature].some((m) => m.provider === s.name),
+          (s) => includeHidden || !hiddenModels.data?.[feature].some((m) => m.provider === s.name),
         )
         .map((s) => ({
           group: s.name,
@@ -38,8 +37,8 @@ export default function ModelSelect({
             .filter((m) => m.features.includes(feature))
             .filter(
               (m) =>
-                !preferredOnly ||
-                preferredModels.data?.[feature].some(
+                includeHidden ||
+                !hiddenModels.data?.[feature].some(
                   (pm) => pm.provider === s.name && pm.model === m.name,
                 ),
             )
@@ -74,26 +73,25 @@ interface ModelMultiSelectProps extends MultiSelectProps {
   feature: 'generate' | 'embed';
   configValue: zConfig[];
   onConfigChange: (value: zConfig[]) => void;
-  preferredOnly?: boolean;
+  includeHidden?: boolean;
 }
 
 export function ModelMultiSelect({
   feature,
   configValue,
   onConfigChange,
-  preferredOnly = false,
+  includeHidden = false,
   ...multiSelectProps
 }: ModelMultiSelectProps) {
   const { providers } = useProviders();
-  const { preferredModels } = usePreferredModels();
+  const { hiddenModels } = useHiddenModels();
   return (
     <MultiSelect
       maxDropdownHeight={250}
       data={providers.data?.chat
         .sort((a, b) => a.name.localeCompare(b.name))
         .filter(
-          (s) =>
-            !preferredOnly || preferredModels.data?.[feature].some((m) => m.provider === s.name),
+          (s) => includeHidden || !hiddenModels.data?.[feature].some((m) => m.provider === s.name),
         )
         .map((s) => ({
           group: s.name,
@@ -101,8 +99,8 @@ export function ModelMultiSelect({
             .filter((m) => m.features.includes(feature))
             .filter(
               (m) =>
-                !preferredOnly ||
-                preferredModels.data?.[feature].some(
+                includeHidden ||
+                !hiddenModels.data?.[feature].some(
                   (pm) => pm.provider === s.name && pm.model === m.name,
                 ),
             )

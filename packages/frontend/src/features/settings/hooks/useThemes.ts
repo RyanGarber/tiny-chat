@@ -8,7 +8,7 @@ export const useThemes = () => {
 
   const theme = useQuery({
     ...query.settings.get.queryOptions(),
-    select: (data) => data.theme as (typeof THEMES)[number],
+    select: (data) => (data.theme as (typeof THEMES)[number]) ?? THEMES[0],
     initialData: zSettings.safeParse(session.data?.user?.settings).data ?? {
       theme: THEMES[0],
     },
@@ -23,7 +23,7 @@ export const useThemes = () => {
 
   const codeTheme = useQuery({
     ...query.settings.get.queryOptions(),
-    select: (data) => data.codeTheme as (typeof CODE_THEMES)[number],
+    select: (data) => (data.codeTheme as (typeof CODE_THEMES)[number]) ?? CODE_THEMES[0],
     initialData: zSettings.safeParse(session.data?.user?.settings).data ?? {
       codeTheme: CODE_THEMES[0],
     },

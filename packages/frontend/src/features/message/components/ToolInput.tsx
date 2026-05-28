@@ -30,13 +30,13 @@ import { GenerateService } from '@/features/message/services/GenerateService';
 import { useChat } from '@/features/chat/hooks/useChat';
 import { zShellExecInput } from '@/tools/shell';
 import { zWriteFileInput } from '@/tools/filesystem';
-import { invoke } from '@tauri-apps/api/core';
 import { DIFF_MARKER } from '@/utils/text';
 import { useTools } from '@/features/input/hooks/useTools';
 import type { Tool } from '@tiny-chat/shared/src/types/tool.ts';
 import type { z } from 'zod';
 import { useProviders } from '@/features/input/hooks/useProviders';
 import { useSkills } from '@/features/input/hooks/useSkills';
+import { invoke } from '@/utils/api';
 
 export default function ToolInput({
   message,

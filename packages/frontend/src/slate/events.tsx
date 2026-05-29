@@ -1,15 +1,9 @@
 import { KeyboardEvent } from 'react';
 import { useLayout } from '@/stores/layout.tsx';
 import { useMessaging } from '@/stores/messaging.tsx';
-import { serialize } from '@/slate/serializer.tsx';
-import { zConfig, zDataPart } from '@tiny-chat/shared/src/types/chat.ts';
 import { Editor, Path, Text, Transforms } from 'slate';
 import { tokenize } from '@/slate/tokenizer.tsx';
-import { ChatService } from '@/features/chat/services/ChatService';
-import type { Chat } from '@tiny-chat/backend/generated/prisma/client.ts';
-import type { zCache } from '@tiny-chat/shared/src/types/user';
-import type { ToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
-import type { zSkill } from '@tiny-chat/shared/src/types/skill.ts';
+import type { useSend } from '@/features/chat/hooks/useSend';
 
 type MarkSyntax = 'bold' | 'italic' | 'code';
 
@@ -156,40 +150,7 @@ function toggleMark(syntax: MarkSyntax) {
   }
 }
 
-export function onSend(
-  config: zConfig,
-  activeChat: Chat | null,
-  tools: ToolGroup[],
-  skills: zSkill[],
-  providers: zCache['providers'],
-) {
-  const { editor, uploads, setData } = useMessaging.getState();
-  if (!editor) return;
-
-  const text = serialize();
-
-  const data: zDataPart[] = [...uploads];
-
-  if (text.trim().length) data.push({ type: 'text', value: text });
-
-  if (!data.length) return;
-
-  console.log('Sending message:', data);
-
-  void ChatService.sendMessage([data], config, activeChat, tools, skills, providers);
-  void setData([]);
-
-  useMessaging.getState().requestScrollToBottom();
-}
-
-export function onKeyDown(
-  event: KeyboardEvent,
-  config: zConfig,
-  activeChat: Chat | null,
-  tools: ToolGroup[],
-  skills: zSkill[],
-  providers: zCache['providers'],
-) {
+export function onKeyDown(event: KeyboardEvent, send: ReturnType<typeof useSend>['sendMessage']) {
   const { editor } = useMessaging.getState();
   if (!editor) return;
 
@@ -201,7 +162,7 @@ export function onKeyDown(
     !useLayout.getState().isMobile
   ) {
     event.preventDefault();
-    void onSend(config, activeChat, tools, skills, providers);
+    send.mutate();
   }
 
   if (event.metaKey || event.ctrlKey) {

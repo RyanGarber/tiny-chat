@@ -1,6 +1,6 @@
 import { useMessaging } from '@/stores/messaging.tsx';
 import { setupEditor } from '@/slate/setup.tsx';
-import { onKeyDown, onSend } from '@/slate/events.tsx';
+import { onKeyDown } from '@/slate/events.tsx';
 import { decorate, renderElement, renderLeaf } from '@/slate/renderer.tsx';
 import {
   ActionIcon,
@@ -27,6 +27,8 @@ import {
   useMemo,
   useRef,
   useState,
+  type ClipboardEventHandler,
+  type KeyboardEvent,
 } from 'react';
 import { Editable, ReactEditor, RenderElementProps, RenderLeafProps, Slate } from 'slate-react';
 import { serialize } from '@/slate/serializer.tsx';
@@ -41,8 +43,6 @@ import Upload, {
 } from '@/features/input/components/Upload';
 import { useChat } from '@/features/chat/hooks/useChat';
 import { StreamService } from '@/features/message/services/StreamService';
-import { useMessages } from '@/features/message/hooks/useMessages';
-import { isMissingToolResult } from '@/utils/ui';
 import { glassStyle } from '@/utils/glass';
 import { useConfig } from '@/features/input/hooks/useConfig';
 import { CapabilitySelect } from '@/features/input/components/CapabilitySelect';
@@ -51,23 +51,27 @@ import { useProviders } from '@/features/input/hooks/useProviders';
 import { useSkills } from '@/features/input/hooks/useSkills';
 import { useHotkeys } from '@mantine/hooks';
 import { useIsMutating } from '@tanstack/react-query';
-import { uploadMutationKey } from '@/features/input/hooks/useUploads';
+import { uploadMutationKey, useUploads } from '@/features/input/hooks/useUploads';
+import { useSend } from '../hooks/useSend';
+import { GenerateService } from '@/features/message/services/GenerateService';
+import { precheckAllToolRequirements } from '@tiny-chat/shared/src/utils';
+import { auth } from '@/utils/api';
+import { useChatStore } from '../stores/useChatStore';
+import { useTauri } from '@/core/hooks/useTauri';
 
-export const ChatInput = memo((props: InputWrapperProps) => {
+export const ChatInput = memo(({ isAny, ...props }: InputWrapperProps & { isAny: boolean }) => {
+  const session = auth.useSession();
   const activeChat = useChat();
-  const messages = useMessages();
   const { config, setConfig } = useConfig();
 
   const stream = StreamService.getChat(activeChat.data?.id ?? '');
 
+  const createIncognito = useChatStore((s) => s.createIncognito);
   const setEditor = useMessaging((s) => s.setEditor);
+  const { isTauriDesktop } = useTauri();
 
   const { providers } = useProviders();
   const { toolGroups } = useTools();
-  const enabledTools = useMemo(
-    () => toolGroups.filter((g) => config.toolGroups?.includes(g.name)).flatMap((g) => g.tools),
-    [toolGroups, config.toolGroups],
-  );
 
   const { skills } = useSkills();
   const enabledSkills = useMemo(
@@ -75,8 +79,33 @@ export const ChatInput = memo((props: InputWrapperProps) => {
     [skills, config.skills],
   );
 
+  const enabledTools = useMemo(
+    () =>
+      precheckAllToolRequirements(
+        toolGroups,
+        session.data?.user,
+        activeChat.data,
+        createIncognito,
+        true,
+        isTauriDesktop.data,
+        providers.data,
+        skills,
+      )
+        .filter((g) => config.toolGroups?.includes(g.name))
+        .flatMap((g) => g.tools),
+    [
+      toolGroups,
+      config.toolGroups,
+      session.data?.user,
+      activeChat.data,
+      createIncognito,
+      isTauriDesktop.data,
+      providers.data,
+      skills,
+    ],
+  );
+
   const shadow = useLayout((s) => s.shadow);
-  const messagingDisables = useLayout((s) => s.messagingDisables);
 
   const [isMultiline, setMultiline] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -135,25 +164,45 @@ export const ChatInput = memo((props: InputWrapperProps) => {
     [config, setConfig],
   );
 
-  const resetMultiline = useCallback(() => {
-    if (!serialize().length) setMultiline(false);
-  }, [setMultiline]);
-
-  const editing = useMessaging((s) => s.editing);
+  const [isEmpty, setEmpty] = useState(true);
+  const onValueChanged = useCallback(() => {
+    setEmpty(!serialize().trim().length);
+    if (serialize().length === 0) setMultiline(false);
+  }, [setEmpty, setMultiline]);
 
   const isUploading = useIsMutating({ mutationKey: uploadMutationKey }) > 0;
 
-  const isAny =
-    isUploading ||
-    messages.isFetching ||
-    (messages.data?.pages.flatMap((p) => p.messages).some((m) => isMissingToolResult(m)) &&
-      !editing);
+  const { sendMessage } = useSend();
 
   const [capabilitySelectOpen, setCapabilitySelectOpen] = useState(false);
 
   const onCapabilitySelectClose = useCallback(() => {
     setCapabilitySelectOpen(false);
   }, [setCapabilitySelectOpen]);
+
+  const { upload } = useUploads();
+  const addUploads = useMessaging((s) => s.addUploads);
+
+  const handlePaste = useCallback<ClipboardEventHandler<HTMLDivElement>>(
+    (event) => {
+      for (const item of event.clipboardData.items) {
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) {
+            upload.mutate(
+              { type: 'upload', files: [file] },
+              {
+                onSuccess: (data) => {
+                  addUploads(...data);
+                },
+              },
+            );
+          }
+        }
+      }
+    },
+    [upload, addUploads],
+  );
 
   useHotkeys([
     [
@@ -172,8 +221,9 @@ export const ChatInput = memo((props: InputWrapperProps) => {
             variant="subtle"
             color="var(--mantine-color-text)"
             radius={20}
-            size={32}
-            disabled={messagingDisables.size > 0 || isAny}
+            size={40}
+            disabled={isAny}
+            loading={isUploading}
           >
             <Icon icon="lucide:paperclip" height={18} />
           </ActionIcon>
@@ -197,7 +247,7 @@ export const ChatInput = memo((props: InputWrapperProps) => {
         </Menu.Dropdown>
       </Menu>
     ),
-    [isAny, setUploadTab, setUploadOpen, messagingDisables.size, shadow],
+    [isAny, setUploadTab, setUploadOpen, shadow, isUploading],
   );
 
   const rightActionContent = useMemo(
@@ -212,7 +262,7 @@ export const ChatInput = memo((props: InputWrapperProps) => {
               color="var(--mantine-color-text)"
               maw="25vw"
               radius={20}
-              h={32}
+              h={40}
               px={15}
               disabled={isAny}
             >
@@ -297,18 +347,15 @@ export const ChatInput = memo((props: InputWrapperProps) => {
           </PopoverDropdown>
         </Popover>
         <ActionIcon
-          variant="subtle"
-          size={32}
-          color="var(--mantine-color-text)"
+          variant="filled"
+          size={40}
           radius={20}
           onClick={() => {
-            if (stream) {
-              stream.abort.abort();
-            } else {
-              onSend(config, activeChat.data ?? null, toolGroups, skills, providers.data!);
-            }
+            if (stream) GenerateService.abort(stream.id);
+            else sendMessage.mutate();
           }}
-          disabled={isAny && (stream === undefined || stream.abort.signal.aborted)}
+          loading={sendMessage.isPending}
+          disabled={(isEmpty || isAny) && (stream === undefined || stream.abort.signal.aborted)}
         >
           {stream ? (
             <Icon icon="lucide:square" height={18} />
@@ -323,9 +370,6 @@ export const ChatInput = memo((props: InputWrapperProps) => {
       onCapabilitySelectClose,
       isAny,
       config,
-      toolGroups,
-      skills,
-      providers.data,
       shadow,
       enabledTools.length,
       enabledSkills.length,
@@ -333,7 +377,8 @@ export const ChatInput = memo((props: InputWrapperProps) => {
       setArg,
       setConfig,
       stream,
-      activeChat.data,
+      isEmpty,
+      sendMessage,
     ],
   );
 
@@ -401,7 +446,7 @@ export const ChatInput = memo((props: InputWrapperProps) => {
           component="div"
           multiline
           pointer
-          disabled={messagingDisables.size > 0 || isAny}
+          disabled={isAny}
           leftSection={leftActions}
           rightSection={rightActions}
           style={{
@@ -411,7 +456,7 @@ export const ChatInput = memo((props: InputWrapperProps) => {
           radius={(props.style as CSSProperties)?.borderRadius ?? 0}
           styles={{
             input: {
-              padding: 0,
+              padding: 5,
               wordBreak: 'break-word',
               ...glassStyle,
             },
@@ -434,7 +479,7 @@ export const ChatInput = memo((props: InputWrapperProps) => {
               paddingTop: 5,
               paddingBottom: 5,
               minHeight: 'var(--input-height)',
-              cursor: messagingDisables.size > 0 || isAny ? 'not-allowed' : 'text',
+              cursor: isAny ? 'not-allowed' : 'text',
               transition: 'padding-left 200ms ease, padding-right 200ms ease',
             }}
             onClick={() => ReactEditor.focus(editor)}
@@ -442,23 +487,18 @@ export const ChatInput = memo((props: InputWrapperProps) => {
             <Slate
               editor={editor}
               initialValue={[{ type: 'paragraph', children: [{ text: '' }] }]}
-              onValueChange={resetMultiline}
+              onValueChange={onValueChanged}
             >
               <Editable
-                renderElement={useCallback((props: RenderElementProps) => renderElement(props), [])} // TODO - eskms - ughhhhhhh
+                renderElement={useCallback((props: RenderElementProps) => renderElement(props), [])}
                 renderLeaf={useCallback((props: RenderLeafProps) => renderLeaf(props), [])}
                 decorate={useCallback((entry: NodeEntry) => decorate(entry), [])}
-                onKeyDown={(event) =>
-                  onKeyDown(
-                    event,
-                    config,
-                    activeChat.data ?? null,
-                    toolGroups,
-                    skills,
-                    providers.data!,
-                  )
-                }
-                readOnly={messagingDisables.size > 0 || isAny}
+                onKeyDown={useCallback(
+                  (event: KeyboardEvent) => onKeyDown(event, sendMessage),
+                  [sendMessage],
+                )}
+                onPaste={handlePaste}
+                readOnly={isAny}
                 autoCapitalize="sentences"
               ></Editable>
             </Slate>
@@ -468,7 +508,6 @@ export const ChatInput = memo((props: InputWrapperProps) => {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              padding: isMultiline ? '0 5px 5px 5px' : '0 5px 0 5px',
               maxHeight: isMultiline ? 50 : 0,
               opacity: isMultiline ? 1 : 0,
               overflow: 'hidden',

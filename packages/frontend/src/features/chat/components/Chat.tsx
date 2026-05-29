@@ -1,4 +1,4 @@
-import { type RefObject, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { type RefObject, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ActionIcon,
   Box,
@@ -25,6 +25,10 @@ import { useSentinel } from '@/core/hooks/useSentinel';
 import { useMergedRef } from '@mantine/hooks';
 import { useChatStore } from '@/features/chat/stores/useChatStore';
 import { query } from '@/utils/api';
+import { useIsMutating } from '@tanstack/react-query';
+import { deleteMessageMutationKey, sendMessageMutationKey } from '../hooks/useSend';
+import { uploadMutationKey } from '@/features/input/hooks/useUploads';
+import { isMissingToolResult } from '@/utils/ui';
 
 function useElementHeight(initialHeight = 0): {
   ref: RefObject<HTMLDivElement | null>;
@@ -59,9 +63,7 @@ export default function Chat() {
   const isMobile = useLayout((s) => s.isMobile);
   const shadow = useLayout((s) => s.shadow);
   const isInitializing = useLayout((s) => s.isInitializing);
-  const getSidebarWidth = useLayout((s) => s.getSidebarWidth);
 
-  const [scrollHeight, setScrollHeight] = useState(0);
   const scrollRequested = useMessaging((s) => (activeChat.isFetching ? 0 : s.scrollRequested));
   const scrollInstant = useMessaging((s) => (activeChat.isFetching ? 0 : s.scrollInstant));
 
@@ -75,15 +77,27 @@ export default function Chat() {
     isInitializing,
   });
 
+  const [oldHeight, setOldHeight] = useState(-1);
   const { viewportRef: viewportRef2, sentinelRef } = useSentinel({
     query: messages,
     queryKey: query.messages.listInfinite.pathKey(),
-    onFetchNextPage: () => {
+    onFetchNextPage: useCallback(() => {
       if (viewportNodeRef.current) {
-        setScrollHeight(viewportNodeRef.current.scrollHeight);
+        setOldHeight(viewportNodeRef.current.scrollHeight);
       }
-    },
+    }, [viewportNodeRef]),
   });
+  useLayoutEffect(() => {
+    if (viewportNodeRef.current && oldHeight >= 0 && !messages.isFetchingNextPage) {
+      const newHeight = viewportNodeRef.current.scrollHeight;
+      console.log('scrolling to', newHeight - oldHeight);
+      viewportNodeRef.current.scrollTo({
+        top: newHeight - oldHeight,
+        behavior: 'instant',
+      });
+      setOldHeight(-1);
+    }
+  }, [viewportNodeRef, oldHeight, messages.isFetchingNextPage, scrollToBottom]);
 
   const viewportRef = useMergedRef(viewportRef1, viewportRef2);
 
@@ -92,14 +106,6 @@ export default function Chat() {
       scrollToBottom('instant');
     }
   }, [scrollInstant, scrollToBottom]);
-
-  useLayoutEffect(() => {
-    if (viewportNodeRef.current && scrollHeight > 0 && !messages.isFetchingNextPage) {
-      const newHeight = viewportNodeRef.current.scrollHeight;
-      viewportNodeRef.current.scrollTo({ top: newHeight - scrollHeight, behavior: 'instant' });
-      setScrollHeight(0);
-    }
-  }, [viewportNodeRef, scrollHeight, messages.isFetchingNextPage, scrollToBottom]);
 
   const editing = useMessaging((s) => s.editing);
   const insertingAfter = useMessaging((s) => s.insertingAfter);
@@ -125,28 +131,27 @@ export default function Chat() {
 
   const inputMaxWidth = 860;
   const inputRef = useRef<HTMLDivElement>(null);
-  const [isInputMaxWidth, setIsInputMaxWidth] = useState(
-    window.innerWidth > 860 + getSidebarWidth(),
-  );
-
-  useLayoutEffect(() => {
-    const handleResize = () => {
-      setIsInputMaxWidth(
-        (inputRef.current?.clientWidth ?? window.innerWidth - getSidebarWidth()) >= inputMaxWidth,
-      );
-    };
-    const observer = new ResizeObserver(() => handleResize());
-    if (inputRef.current) observer.observe(inputRef.current);
-    handleResize();
-    return () => observer.disconnect();
-  }, [getSidebarWidth]);
 
   const { ref: inputEffectsRef, height: inputEffectsHeight } = useElementHeight();
   const { ref: chatContainerRef, height: chatContainerHeight } = useElementHeight(600);
 
+  const greeting = useGreeting();
   const isNewChat = !activeChat.data;
 
-  const greeting = useGreeting();
+  const isSendingMessage = useIsMutating({ mutationKey: sendMessageMutationKey }) > 0;
+  const isDeletingMessage = useIsMutating({ mutationKey: deleteMessageMutationKey }) > 0;
+  const isUploading = useIsMutating({ mutationKey: uploadMutationKey }) > 0;
+  const isAny = useMemo(
+    () =>
+      isSendingMessage ||
+      isDeletingMessage ||
+      isUploading ||
+      messages.isFetching ||
+      ((messages.data?.pages.flatMap((p) => p.messages).some((m) => isMissingToolResult(m)) ??
+        false) &&
+        !editing),
+    [isSendingMessage, isDeletingMessage, isUploading, messages.isFetching, editing, messages.data],
+  );
 
   return (
     <Stack h="100%" gap={0}>
@@ -363,7 +368,7 @@ export default function Chat() {
           inputEffectsRef={inputEffectsRef}
           chatContainerHeight={chatContainerHeight}
           inputMaxWidth={inputMaxWidth}
-          isInputMaxWidth={isInputMaxWidth}
+          isAny={isAny}
         />
       </Box>
 
@@ -373,10 +378,10 @@ export default function Chat() {
           w="100%"
           maw={inputMaxWidth}
           m="0 auto"
-          p={isMobile ? 0 : '0 10px 10px 10px'}
+          p={isMobile ? '0 10px 10px 10px' : '0 20px 20px 20px'}
           ref={inputRef}
         >
-          <ChatInput style={{ borderRadius: 20 }} />
+          <ChatInput style={{ borderRadius: 25 }} isAny={isAny} />
         </Box>
       </Box>
     </Stack>

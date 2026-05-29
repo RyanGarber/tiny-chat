@@ -48,10 +48,18 @@ export function UploadFile({ onClose }: { onClose: () => void }) {
                   onClose();
                 }}
               >
-                <Group gap="sm">
+                <Group gap="sm" style={{ minWidth: 0, flex: 1 }}>
                   <Attachments list={[{ name: file.name, image: file.thumbnail ?? undefined }]} />
-                  <Stack gap={0}>
-                    <Text size="sm" fw={500}>
+                  <Stack gap={0} style={{ minWidth: 0, flex: 1 }}>
+                    <Text
+                      size="sm"
+                      fw={500}
+                      style={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
                       {file.name}
                     </Text>
                     <Text size="xs" c="dimmed">

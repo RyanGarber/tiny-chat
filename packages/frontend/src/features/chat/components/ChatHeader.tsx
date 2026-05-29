@@ -29,11 +29,13 @@ export default function ChatHeader({ fixed }: { fixed: boolean }) {
       bottom={fixed ? undefined : 0}
       p={10}
       gap={5}
-      bdrs="md"
       display={isMobile ? undefined : 'none'}
       style={{
         zIndex: 'calc(var(--mantine-z-index-app) + 1)',
         ...glassStyle,
+        borderTop: 'none',
+        borderLeft: 'none',
+        borderRight: 'none',
         boxShadow: shadow,
       }}
     >
@@ -51,7 +53,7 @@ export default function ChatHeader({ fixed }: { fixed: boolean }) {
               variant="subtle"
               c="dimmed"
               bdrs="md"
-              className="nav-link-like filled"
+              className="nav-link-like"
               onClick={() => ChatService.setChatId(null)}
               data-active={!activeChat.data}
             >
@@ -66,7 +68,7 @@ export default function ChatHeader({ fixed }: { fixed: boolean }) {
               variant="subtle"
               c="dimmed"
               bdrs="md"
-              className="nav-link-like filled"
+              className="nav-link-like"
               onClick={() => {
                 if (activeChat.data) ChatService.setChatId(null);
                 setTemporary(!isTemporary);
@@ -82,7 +84,7 @@ export default function ChatHeader({ fixed }: { fixed: boolean }) {
               variant="subtle"
               c="dimmed"
               bdrs="md"
-              className="nav-link-like filled"
+              className="nav-link-like"
               onClick={() => {
                 if (activeChat.data) ChatService.setChatId(null);
                 setIncognito(!isIncognito);

@@ -29,9 +29,10 @@ export function serializeElement(element: BaseElement): string | null {
 }
 
 export function serialize(): string {
-  return useMessaging
-    .getState()
-    .editor!.children.map((node) => serializeElement(node as BaseElement))
+  return (
+    useMessaging.getState().editor?.children.map((node) => serializeElement(node as BaseElement)) ??
+    []
+  )
     .filter((line) => line !== null)
     .join('\n');
 }

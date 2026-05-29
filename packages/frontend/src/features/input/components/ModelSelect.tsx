@@ -3,9 +3,12 @@ import { DEFAULT_SKILLS, DEFAULT_TOOL_GROUPS, zConfig } from '@tiny-chat/shared/
 import { useHiddenModels } from '@/features/settings/hooks/useHiddenModels';
 import { useProviders } from '../hooks/useProviders';
 
-const useModelSelectData = (feature: 'generate' | 'embed', includeHidden: boolean) => {
-  const { providers } = useProviders();
-  const { hiddenModels } = useHiddenModels();
+const getData = (
+  feature: 'generate' | 'embed',
+  includeHidden: boolean,
+  providers: ReturnType<typeof useProviders>['providers'],
+  hiddenModels: ReturnType<typeof useHiddenModels>['hiddenModels'],
+) => {
   return providers.data?.chat
     .sort((a, b) => a.name.localeCompare(b.name))
     .filter(
@@ -49,7 +52,9 @@ export default function ModelSelect({
   includeHidden = false,
   ...selectProps
 }: ModelSelectProps) {
-  const data = useModelSelectData(feature, includeHidden);
+  const { providers } = useProviders();
+  const { hiddenModels } = useHiddenModels();
+  const data = getData(feature, includeHidden, providers, hiddenModels);
   return (
     <Select
       required={!optional}
@@ -91,7 +96,9 @@ export function ModelMultiSelect({
   includeHidden = false,
   ...multiSelectProps
 }: ModelMultiSelectProps) {
-  const data = useModelSelectData(feature, includeHidden);
+  const { providers } = useProviders();
+  const { hiddenModels } = useHiddenModels();
+  const data = getData(feature, includeHidden, providers, hiddenModels);
   return (
     <MultiSelect
       maxDropdownHeight={250}

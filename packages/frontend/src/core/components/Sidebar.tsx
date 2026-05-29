@@ -120,24 +120,24 @@ export default function Sidebar() {
         />
         <Burger opened={isSidebarOpen} onClick={() => setSidebarOpen(!isSidebarOpen)} size={16} />
       </Group>
-      <Group align="center" mt={5} gap={2}>
+      <Group align="center" mt={0} gap={5}>
         <NavLink
           label="New Chat"
           leftSection={<Icon icon="lucide:message-circle-plus" height={18} />}
           className="new-chat"
           onClick={() => closeAfter(() => ChatService.setChatId(null))}
           active={!activeChat.data}
-          variant="subtle"
           flex={1}
           bdrs="md"
+          h={40}
         />
         <Tooltip label="Temporary" color="gray" position="right">
           <ActionIcon
-            size={32}
+            size={40}
             variant="subtle"
             c="dimmed"
             bdrs="md"
-            className="nav-link-like filled"
+            className="nav-link-like"
             onClick={() =>
               closeAfter(() => {
                 if (activeChat.data) ChatService.setChatId(null);
@@ -151,11 +151,11 @@ export default function Sidebar() {
         </Tooltip>
         <Tooltip label="Anonymous" color="gray" position="right">
           <ActionIcon
-            size={32}
+            size={40}
             variant="subtle"
             c="dimmed"
             bdrs="md"
-            className="nav-link-like filled"
+            className="nav-link-like"
             onClick={() =>
               closeAfter(() => {
                 if (activeChat.data) ChatService.setChatId(null);
@@ -188,6 +188,8 @@ export default function Sidebar() {
             }
             onClick={openAccount}
             bdrs="md"
+            h={40}
+            mb={5}
           />
         )}
       </SidebarAccount>
@@ -205,6 +207,8 @@ export default function Sidebar() {
             leftSection={<Icon icon="lucide:settings" height={18} />}
             onClick={openSettings}
             bdrs="md"
+            h={40}
+            mb={5}
           />
         )}
       </SidebarSettings>

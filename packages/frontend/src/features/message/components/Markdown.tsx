@@ -16,6 +16,7 @@ import { math } from '@streamdown/math';
 import { mermaid } from '@streamdown/mermaid';
 import { code } from '@streamdown/code';
 import { useThemes } from '@/features/settings/hooks/useThemes.ts';
+import 'katex/dist/katex.min.css';
 
 const markdownComponents: Components = {
   blockquote: BlockquoteComponent,

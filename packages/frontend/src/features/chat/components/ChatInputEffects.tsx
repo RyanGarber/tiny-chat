@@ -8,9 +8,16 @@ import { useMessaging } from '@/stores/messaging.tsx';
 import { texts } from '@tiny-chat/shared/src/utils.ts';
 import { glassStyle } from '@/utils/glass';
 
-function ChatInputEffect({ content, onDelete }: { content: ReactNode; onDelete: () => void }) {
+function ChatInputEffect({
+  content,
+  onDelete,
+  isAny,
+}: {
+  content: ReactNode;
+  onDelete: () => void;
+  isAny: boolean;
+}) {
   const shadow = useLayout((s) => s.shadow);
-  const messagingDisables = useLayout((s) => s.messagingDisables);
   return (
     <Group
       className="input-effect"
@@ -19,17 +26,12 @@ function ChatInputEffect({ content, onDelete }: { content: ReactNode; onDelete: 
       px={10}
       py={5}
       w="fit-content"
-      bdrs={20}
+      bdrs={25}
       fz={14}
-      opacity={messagingDisables.size > 0 ? 0.5 : 1}
+      opacity={isAny ? 0.5 : 1}
       style={{ ...glassStyle, boxShadow: shadow, pointerEvents: 'auto' }}
     >
-      <ActionIcon
-        size={20}
-        variant="subtle"
-        onClick={onDelete}
-        disabled={messagingDisables.size > 0}
-      >
+      <ActionIcon size={20} variant="subtle" color="dimmed" onClick={onDelete} disabled={isAny}>
         <Icon icon="lucide:x" height={18} />
       </ActionIcon>
       <Box>{content}</Box>
@@ -41,12 +43,12 @@ export default function ChatInputEffects({
   inputEffectsRef,
   inputMaxWidth,
   chatContainerHeight,
-  isInputMaxWidth: _isInputMaxWidth,
+  isAny,
 }: {
   inputEffectsRef: RefObject<HTMLDivElement | null>;
   inputMaxWidth: number;
   chatContainerHeight: number;
-  isInputMaxWidth: boolean;
+  isAny: boolean;
 }) {
   const editing = useMessaging((s) => s.editing);
   const setEditing = useMessaging((s) => s.setEditing);
@@ -61,15 +63,15 @@ export default function ChatInputEffects({
     <Group
       pos="absolute"
       bottom={0}
-      left={isMobile ? 0 : 10}
-      right={isMobile ? 0 : 10}
+      left={isMobile ? 10 : 20}
+      right={isMobile ? 10 : 20}
       justify="center"
       style={{
         pointerEvents: 'none',
         zIndex: 'calc(var(--mantine-z-index-app) + 1)',
       }}
     >
-      <div style={{ width: '100%', maxWidth: inputMaxWidth - 20 }}>
+      <div style={{ width: '100%', maxWidth: inputMaxWidth - 40 }}>
         <Group gap={3} pb={3} ref={inputEffectsRef}>
           {editing && (
             <ChatInputEffect
@@ -80,10 +82,15 @@ export default function ChatInputEffects({
                 </>
               }
               onDelete={() => setEditing(null)}
+              isAny={isAny}
             />
           )}
           {truncating && (
-            <ChatInputEffect content={'Deleting newer'} onDelete={() => setTruncating(false)} />
+            <ChatInputEffect
+              content={'Deleting newer'}
+              onDelete={() => setTruncating(false)}
+              isAny={isAny}
+            />
           )}
           {insertingAfter && (
             <ChatInputEffect
@@ -94,6 +101,7 @@ export default function ChatInputEffects({
                 </>
               }
               onDelete={() => setInsertingAfter(null)}
+              isAny={isAny}
             />
           )}
           {uploads.map((file, i) => (
@@ -108,6 +116,7 @@ export default function ChatInputEffects({
               }
               onDelete={() => removeUpload(i)}
               key={i}
+              isAny={isAny}
             />
           ))}
         </Group>

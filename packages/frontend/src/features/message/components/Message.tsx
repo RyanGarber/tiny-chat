@@ -16,6 +16,7 @@ import { useProviders } from '@/features/input/hooks/useProviders';
 import { useSkills } from '@/features/input/hooks/useSkills';
 import { useTools } from '@/features/input/hooks/useTools';
 import { useMessages } from '../hooks/useMessages';
+import { useSend } from '@/features/chat/hooks/useSend';
 
 const Message = memo(
   function Message({
@@ -29,6 +30,7 @@ const Message = memo(
   }) {
     const activeChat = useChat();
     const messages = useMessages();
+    const { deleteMessage } = useSend();
 
     const { providers } = useProviders();
     const { toolGroups } = useTools();
@@ -225,9 +227,10 @@ const Message = memo(
           <Button
             color="red"
             fullWidth
+            loading={deleteMessage.isPending}
+            disabled={deleteMessage.isPending}
             onClick={() => {
-              void ChatService.deleteMessagePair(message, activeChat.data!);
-              onCancelDelete();
+              deleteMessage.mutate(message, { onSuccess: () => onCancelDelete() });
             }}
           >
             Confirm

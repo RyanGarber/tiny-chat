@@ -5,6 +5,8 @@ export const useProviders = () => {
   const providers = useQuery({
     ...query.persistence.getCache.queryOptions(),
     select: (data) => data.providers,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 
   const updateProviders = useMutation({

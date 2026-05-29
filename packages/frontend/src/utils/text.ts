@@ -4,8 +4,6 @@ import { SearchResult } from '@tiny-chat/shared/src/providers/web';
 import type { useMemories } from '@/features/chat/hooks/useMemories.ts';
 import type { useActions } from '@/features/chat/hooks/useActions.ts';
 
-export const STREAMING_MARKER = '\uE000';
-export const MATH_MARKER = '\uE001';
 export const CODE_MARKER = '\uE002';
 export const WRITING_MARKER = '\uE003';
 export const DIFF_MARKER = '\uE004';

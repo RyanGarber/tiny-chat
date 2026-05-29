@@ -19,9 +19,6 @@ interface Layout {
   isInitializing: boolean;
   setInitializing: (value: boolean) => void;
 
-  messagingDisables: Set<string>;
-  setMessagingDisable: (id: string, value: boolean) => void;
-
   shadow: string;
 }
 
@@ -56,15 +53,6 @@ export const useLayout = create(
 
       isInitializing: true,
       setInitializing: (value: boolean) => set({ isInitializing: value }),
-
-      messagingDisables: new Set<string>(),
-      setMessagingDisable: (id: string, value: boolean) => {
-        const { messagingDisables } = get();
-        if (value === messagingDisables.has(id)) return;
-        if (value) messagingDisables.add(id);
-        else messagingDisables.delete(id);
-        set({ messagingDisables });
-      },
 
       shadow: 'rgba(0, 0, 0, 0.2) 2px 0px 15px',
     };

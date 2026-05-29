@@ -122,13 +122,7 @@ export const GenerateService = {
     const chat = await trpc.chats.find.query({ id: message.chatId });
     if (!chat) throw new Error(`Chat ${message.chatId} not found after send`);
 
-    try {
-      await GenerateService.onModelMessage({ message, activeChat: chat, tools, providers, skills });
-    } catch (e) {
-      // TODO - do we always want to roll everything back during tool/sync errors
-      await ChatService.deleteMessagePair(message, activeChat);
-      throw e;
-    }
+    await GenerateService.onModelMessage({ message, activeChat: chat, tools, providers, skills });
 
     return { message, chat };
   },
@@ -229,7 +223,7 @@ export const GenerateService = {
       return;
     }
 
-    await GenerateService._generate({
+    void GenerateService._generate({
       stream: reply,
       context,
       config: seed.config,

@@ -137,7 +137,9 @@ export default function App() {
                 zIndex: 'calc(var(--mantine-z-index-app) + 2)',
                 transition: 'width 250ms ease, min-width 250ms ease, transform 300ms ease',
                 ...glassStyle,
-                borderRadius: 10,
+                borderLeft: 'none',
+                borderBottom: 'none',
+                borderTop: 'none',
               },
               main: {
                 transition: 'padding-inline-start 250ms ease',

@@ -68,7 +68,7 @@ export default function SidebarChatList() {
   return (
     <>
       <ScrollArea flex={1} viewportRef={viewportRef}>
-        <Stack gap={5}>
+        <Stack gap={10}>
           {chatList.data?.pages
             .flatMap((page) => page.folders)
             .map((folder) => {
@@ -182,6 +182,7 @@ function ChatListItem({
         className={'section-on-hover' + (active || isMobile || isOpen ? ' hover' : '')}
         onClick={onClick}
         bdrs="md"
+        h={40}
         {...(chat.unseen && { pl: 35 })}
         rightSection={
           <Menu shadow="md" width={200} onChange={setOpen}>

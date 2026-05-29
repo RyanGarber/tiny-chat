@@ -317,11 +317,6 @@ body {
   background: var(--tc-surface);
 }
 
-/* TODO - TASKS */
-.topbar * {
-  z-index: calc(var(--mantine-z-index-app) + 1);
-}
-
 /* ── Vidstack theme overrides ─────────────────────────────────── */
 
 /* Shared (applied to both themes via the layout root) */

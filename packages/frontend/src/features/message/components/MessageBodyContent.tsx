@@ -266,19 +266,14 @@ export const MessageBodyContent = memo(
                 variant="subtle"
                 onClick={() => {
                   void (async () => {
-                    const { setMessagingDisable } = useLayout.getState();
-                    try {
-                      setMessagingDisable('resendMessage', true);
-                      await GenerateService.onModelMessage({
-                        message,
-                        activeChat: activeChat.data!,
-                        tools: toolGroups,
-                        skills,
-                        providers: providers.data!,
-                      });
-                    } finally {
-                      setMessagingDisable('resendMessage', false);
-                    }
+                    // TODO - move this to new hook
+                    await GenerateService.onModelMessage({
+                      message,
+                      activeChat: activeChat.data!,
+                      tools: toolGroups,
+                      skills,
+                      providers: providers.data!,
+                    });
                   })();
                 }}
               >
@@ -321,19 +316,13 @@ export const MessageBodyContent = memo(
                   variant="subtle"
                   onClick={() => {
                     void (async () => {
-                      const { setMessagingDisable } = useLayout.getState();
-                      try {
-                        setMessagingDisable('resendMessage', true);
-                        await GenerateService.onModelMessage({
-                          message,
-                          activeChat: activeChat.data!,
-                          tools: toolGroups,
-                          skills,
-                          providers: providers.data!,
-                        });
-                      } finally {
-                        setMessagingDisable('resendMessage', false);
-                      }
+                      await GenerateService.onModelMessage({
+                        message,
+                        activeChat: activeChat.data!,
+                        tools: toolGroups,
+                        skills,
+                        providers: providers.data!,
+                      });
                     })();
                   }}
                 >

@@ -46,6 +46,7 @@ export const useChat = () => {
           ?.pages.flatMap((page) => page.folders)
           .flatMap((folder) => folder.chats)
           .find((chat) => chat.id === chatId),
+        refetchOnWindowFocus: false,
       },
     ),
   });

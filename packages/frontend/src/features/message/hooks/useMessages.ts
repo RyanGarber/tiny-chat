@@ -24,6 +24,7 @@ export const useMessages = () => {
             pageParams: data.pageParams,
           };
         },
+        refetchOnWindowFocus: false,
       },
     ),
   });

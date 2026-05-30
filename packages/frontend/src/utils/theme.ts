@@ -73,3 +73,5 @@ export const codeThemesByTheme = (theme: (typeof THEMES)[number]) => {
     ? CODE_THEMES.filter((t) => !t.includes('light'))
     : CODE_THEMES.filter((t) => !t.includes('dark'));
 };
+
+export const SHADOW = 'rgba(0, 0, 0, 0.2) 2px 0px 15px';

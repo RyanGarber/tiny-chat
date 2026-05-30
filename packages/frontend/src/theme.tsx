@@ -19,7 +19,7 @@ export const theme = createTheme({
   lineHeights: {
     md: '1.8',
   },
-  defaultRadius: 'md',
+  defaultRadius: 'lg',
   colors: {
     dark: darkPalette,
   },
@@ -48,39 +48,34 @@ export const theme = createTheme({
     },
     Popover: {
       defaultProps: {
-        radius: 'md',
+        radius: 'lg',
       },
     },
     Menu: {
       defaultProps: {
-        radius: 'md',
-      },
-    },
-    Notification: {
-      defaultProps: {
-        radius: 'md',
+        radius: 'lg',
       },
     },
     NavLink: {
       styles: {
         root: {
-          borderRadius: 'var(--mantine-radius-md)',
+          borderRadius: 'var(--mantine-radius-lg)',
         },
       },
     },
     Tooltip: {
       defaultProps: {
-        radius: 'md',
+        radius: 'lg',
       },
     },
     Card: {
       defaultProps: {
-        radius: 'md',
+        radius: 'lg',
       },
     },
     Tabs: {
       defaultProps: {
-        radius: 'md',
+        radius: 'lg',
       },
     },
     Spotlight: {

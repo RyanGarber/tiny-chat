@@ -2,9 +2,7 @@
 
 @import './theme.css';
 
-@import '@mantine/notifications/styles.layer.css';
 @import '@mantine/spotlight/styles.layer.css';
-@import '@mantine/nprogress/styles.layer.css';
 @import '@mantine/carousel/styles.layer.css';
 @import '@mantine/dates/styles.layer.css';
 @import '@gfazioli/mantine-json-tree/styles.layer.css';
@@ -189,40 +187,6 @@ body {
   color: var(--mantine-color-white);
 }
 
-.new-chat {
-  color: revert;
-}
-
-[data-mantine-color-scheme='dark'] .new-chat:is(:hover, [data-active='true']) {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-[data-mantine-color-scheme='light'] .new-chat:is(:hover, [data-active='true']) {
-  background-color: rgba(0, 0, 0, 0.1);
-}
-
-/* ── NavLink hover tints ──
-   Override Mantine's default solid hover/active backgrounds with
-   subtle tints that work over the glass surfaces. */
-[data-mantine-color-scheme='dark'] .mantine-NavLink-root:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-[data-mantine-color-scheme='light'] .mantine-NavLink-root:hover {
-  background-color: rgba(0, 0, 0, 0.1);
-}
-
-/* Active (non-filled) NavLink gets the same tint treatment */
-[data-mantine-color-scheme='dark']
-  .mantine-NavLink-root[data-active]:not([class*='mantine-NavLink-root'][data-variant='filled']) {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-[data-mantine-color-scheme='light']
-  .mantine-NavLink-root[data-active]:not([class*='mantine-NavLink-root'][data-variant='filled']) {
-  background-color: rgba(0, 0, 0, 0.1);
-}
-
 [data-slate-editor] {
   align-content: center;
 }
@@ -272,6 +236,27 @@ body {
   border-end-end-radius: var(--mantine-radius-default);
   background: rgba(25, 113, 194, 0.06);
   padding: calc(var(--mantine-spacing-xl) / 4) calc(2.375rem * var(--mantine-scale) / 2);
+}
+
+.mantine-Typography-root table {
+  background: color-mix(in srgb, var(--tc-surface) 80%, transparent 15%);
+  border-radius: var(--mantine-radius-lg);
+}
+
+.mantine-Typography-root table th {
+  background: color-mix(in srgb, var(--tc-surface) 50%, rgba(0, 0, 0, 0.01) 50%);
+}
+
+[data-mantine-color-scheme='dark'] .mantine-Typography-root table th {
+  background: color-mix(in srgb, var(--tc-surface) 50%, rgba(255, 255, 255, 0.01) 50%);
+}
+
+.mantine-Typography-root table th:first-child {
+  border-start-start-radius: var(--mantine-radius-lg);
+}
+
+.mantine-Typography-root table th:last-child {
+  border-start-end-radius: var(--mantine-radius-lg);
 }
 
 .user-message {
@@ -455,4 +440,54 @@ table[class*='react-diff'] {
 [data-streamdown='code-block-actions'] {
   background: var(--tc-surface);
   border: 0;
+}
+
+.shimmer-text {
+  color: var(--mantine-color-dimmed);
+}
+
+.sd-wrapper > * > *:last-child::after {
+  --streamdown-caret: '•••';
+  font-size: 25px;
+}
+
+.shimmer-text.active,
+.sd-wrapper > * > *:last-child::after {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.25) 0%,
+    rgba(0, 0, 0, 0.75) 25%,
+    rgba(0, 0, 0, 0.25) 50%,
+    rgba(0, 0, 0, 0.75) 75%,
+    rgba(0, 0, 0, 0.25) 100%
+  );
+  color: transparent;
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: shine 4s linear infinite;
+}
+
+[data-mantine-color-scheme='dark'] .shimmer-text.active,
+.sd-wrapper > * > *:last-child::after {
+  color: rgba(0, 0, 0, 0.25);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.25) 0%,
+    rgba(255, 255, 255, 0.75) 25%,
+    rgba(255, 255, 255, 0.25) 50%,
+    rgba(255, 255, 255, 0.75) 75%,
+    rgba(255, 255, 255, 0.25) 100%
+  );
+  color: transparent;
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: shine 4s linear infinite;
+}
+
+@keyframes shine {
+  to {
+    background-position: 200% center;
+  }
 }

@@ -1,16 +1,16 @@
 import { create } from 'zustand';
 
-export interface TaskOptions {
+export interface TauriTaskOptions {
   crawlSpeed: number;
   crawlMax: number;
 }
 
-export interface Task {
+export interface TauriTask {
   id: string;
   name: string;
   details?: string;
   progress: number;
-  options: TaskOptions;
+  options: TauriTaskOptions;
   /** When set, the component should animate displayedProgress toward this value, then call animResolve. */
   animTarget?: number;
   animResolve?: () => void;
@@ -18,20 +18,20 @@ export interface Task {
   removeResolve?: () => void;
 }
 
-interface Tasks {
-  tasks: Record<string, Task>;
+interface TauriStore {
+  tasks: Record<string, TauriTask>;
   addTask: (
     id: string,
     name: string,
     details?: string,
     progress?: number,
-    options?: Partial<TaskOptions>,
+    options?: Partial<TauriTaskOptions>,
   ) => void;
   updateTask: (id: string, progress?: number, details?: string, name?: string) => Promise<void>;
   removeTask: (id: string) => Promise<void>;
 }
 
-export const useTasks = create<Tasks>((set, get) => ({
+export const useTauriStore = create<TauriStore>((set, get) => ({
   tasks: {},
   addTask: (id, name, details, progress = 0, options = {}) => {
     if (get().tasks[id]) return;

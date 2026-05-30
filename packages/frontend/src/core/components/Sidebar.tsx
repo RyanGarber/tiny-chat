@@ -1,19 +1,8 @@
 import { useCallback, useState } from 'react';
 import { useDebouncedValue } from '@mantine/hooks';
-import {
-  ActionIcon,
-  Avatar,
-  Burger,
-  Divider,
-  Group,
-  NavLink,
-  Space,
-  Stack,
-  Text,
-  Tooltip,
-} from '@mantine/core';
+import { ActionIcon, Avatar, Burger, Group, NavLink, Stack, Text, Tooltip } from '@mantine/core';
 import { Spotlight, spotlight, SpotlightActionData } from '@mantine/spotlight';
-import { useLayout } from '@/stores/layout.tsx';
+import { useLayoutStore } from '@/core/stores/useLayoutStore.tsx';
 import { auth, query } from '@/utils/api';
 import { scrubText } from '@/utils/text';
 import SidebarAccount from '@/core/components/SidebarAccount.tsx';
@@ -30,19 +19,19 @@ import { ChatService } from '@/features/chat/services/ChatService.ts';
 import { useRetrieval } from '@/features/settings/hooks/useRetrieval.ts';
 
 export default function Sidebar() {
-  const activeChat = useChat();
+  const { chat } = useChat();
   const createTemporary = useChatStore((s) => s.createTemporary);
   const { embeddingConfig, useEmbeddingSearch } = useRetrieval();
 
   const setCreateTemporary = useChatStore((s) => s.setCreateTemporary);
   const createIncognito = useChatStore((s) => s.createIncognito);
   const setCreateIncognito = useChatStore((s) => s.setCreateIncognito);
-  const isTemporary = activeChat.data?.temporary ?? createTemporary;
-  const isIncognito = activeChat.data?.incognito ?? createIncognito;
+  const isTemporary = chat.data?.temporary ?? createTemporary;
+  const isIncognito = chat.data?.incognito ?? createIncognito;
 
-  const isMobile = useLayout((s) => s.isMobile);
-  const isSidebarOpen = useLayout((s) => s.isSidebarOpen);
-  const setSidebarOpen = useLayout((s) => s.setSidebarOpen);
+  const isMobile = useLayoutStore((s) => s.isMobile);
+  const isSidebarOpen = useLayoutStore((s) => s.isSidebarOpen);
+  const setSidebarOpen = useLayoutStore((s) => s.setSidebarOpen);
 
   const { data: session } = auth.useSession();
 
@@ -90,7 +79,7 @@ export default function Sidebar() {
 
   const expanded = (
     <>
-      <Group justify="space-between" px={5} pb={5}>
+      <Group justify="space-between" p="xs">
         <ActionIcon variant="transparent" onClick={spotlight.open}>
           <Icon icon="lucide:search" height={18} color="var(--mantine-color-text)" />
         </ActionIcon>
@@ -120,27 +109,27 @@ export default function Sidebar() {
         />
         <Burger opened={isSidebarOpen} onClick={() => setSidebarOpen(!isSidebarOpen)} size={16} />
       </Group>
-      <Group align="center" mt={0} gap={5}>
+      <Group align="center" my="md" gap={3}>
         <NavLink
           label="New Chat"
+          variant="filled"
+          c="dimmed"
+          className="nav-link-like filled"
           leftSection={<Icon icon="lucide:message-circle-plus" height={18} />}
-          className="new-chat"
           onClick={() => closeAfter(() => ChatService.setChatId(null))}
-          active={!activeChat.data}
+          active={!chat.data}
           flex={1}
-          bdrs="md"
           h={40}
         />
         <Tooltip label="Temporary" color="gray" position="right">
           <ActionIcon
             size={40}
             variant="subtle"
-            c="dimmed"
-            bdrs="md"
+            c={!isTemporary ? 'dimmed' : undefined}
             className="nav-link-like"
             onClick={() =>
               closeAfter(() => {
-                if (activeChat.data) ChatService.setChatId(null);
+                if (chat.data) ChatService.setChatId(null);
                 setCreateTemporary(!isTemporary);
               })
             }
@@ -153,12 +142,11 @@ export default function Sidebar() {
           <ActionIcon
             size={40}
             variant="subtle"
-            c="dimmed"
-            bdrs="md"
+            c={!isIncognito ? 'dimmed' : undefined}
             className="nav-link-like"
             onClick={() =>
               closeAfter(() => {
-                if (activeChat.data) ChatService.setChatId(null);
+                if (chat.data) ChatService.setChatId(null);
                 setCreateIncognito(!isIncognito);
               })
             }
@@ -168,12 +156,12 @@ export default function Sidebar() {
           </ActionIcon>
         </Tooltip>
       </Group>
-      <Divider my="sm" />
       <SidebarChatList />
-      <Divider my="sm" />
       <SidebarAccount>
         {(openAccount) => (
           <NavLink
+            mt="lg"
+            c="dimmed"
             label={
               !session?.user || session.user.isAnonymous
                 ? 'Sign In'
@@ -187,7 +175,6 @@ export default function Sidebar() {
               )
             }
             onClick={openAccount}
-            bdrs="md"
             h={40}
             mb={5}
           />
@@ -196,6 +183,7 @@ export default function Sidebar() {
       <SidebarSettings>
         {(openSettings) => (
           <NavLink
+            c="dimmed"
             label={
               <Group justify="space-between">
                 Settings
@@ -206,7 +194,6 @@ export default function Sidebar() {
             }
             leftSection={<Icon icon="lucide:settings" height={18} />}
             onClick={openSettings}
-            bdrs="md"
             h={40}
             mb={5}
           />
@@ -216,24 +203,23 @@ export default function Sidebar() {
   );
 
   const collapsed = (
-    <Stack align="center" justify="space-between" h="100%" gap={0} py={4}>
-      <Stack align="center" gap={5}>
+    <Stack align="center" justify="space-between" h="100%" py="xs">
+      <Stack align="center" gap="lg">
         <Burger opened={isSidebarOpen} onClick={() => setSidebarOpen(!isSidebarOpen)} size={16} />
-        <Space />
         <Tooltip label="New Chat" position="right" color="gray">
           <ActionIcon
             variant="subtle"
             size={32}
             c="dimmed"
-            className="new-chat nav-link-like filled"
-            data-active={!activeChat.data}
+            className="nav-link-like filled"
+            data-active={!chat.data}
             onClick={() => closeAfter(() => ChatService.setChatId(null))}
           >
             <Icon icon="lucide:message-circle-plus" height={18} />
           </ActionIcon>
         </Tooltip>
       </Stack>
-      <Stack align="center" gap={5}>
+      <Stack align="center" gap="sm">
         <SidebarAccount>
           {(openAccount) => (
             <Tooltip

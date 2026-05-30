@@ -3,11 +3,12 @@ import { createHash } from 'crypto';
 import type { Tool, ToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
 import { getBestWebProvider } from '@tiny-chat/shared/src/providers/web/index.ts';
 
-const zSearchWebInput = z.object({
+export const zSearchWebInput = z.object({
   query: z.string(),
 });
+export type zSearchWebInput = z.infer<typeof zSearchWebInput>;
 
-const zSearchWebOutput = z.array(
+export const zSearchWebOutput = z.array(
   z.object({
     id: z.string(),
     title: z.string(),
@@ -15,6 +16,7 @@ const zSearchWebOutput = z.array(
     content: z.string(),
   }),
 );
+export type zSearchWebOutput = z.infer<typeof zSearchWebOutput>;
 
 const SearchWeb: Tool<typeof zSearchWebInput, typeof zSearchWebOutput> = {
   name: 'search_web',
@@ -33,11 +35,13 @@ const SearchWeb: Tool<typeof zSearchWebInput, typeof zSearchWebOutput> = {
   },
 };
 
-const zViewWebInput = z.object({
-  urls: z.array(z.url()),
+export const zViewWebInput = z.object({
+  url: z.url(),
 });
+export type zViewWebInput = z.infer<typeof zViewWebInput>;
 
-const zViewWebOutput = z.array(z.object({ url: z.url(), content: z.string() }));
+export const zViewWebOutput = z.object({ url: z.url(), content: z.string() });
+export type zViewWebOutput = z.infer<typeof zViewWebOutput>;
 
 const ViewWeb: Tool<typeof zViewWebInput, typeof zViewWebOutput> = {
   name: 'view_web',
@@ -45,28 +49,20 @@ const ViewWeb: Tool<typeof zViewWebInput, typeof zViewWebOutput> = {
   input: zViewWebInput.toJSONSchema(),
   output: zViewWebOutput.toJSONSchema(),
   run: async ({ user }, params) => {
-    const provider = getBestWebProvider(user, 'view');
-
-    const result: Awaited<ReturnType<typeof ViewWeb.run>> = [];
-
-    for (const url of params.urls) {
-      try {
-        const content = await provider.view(user, url);
-        result.push({ url, content });
-      } catch (error) {
-        console.warn(`Failed to view ${url} with provider, falling back to r.jina.ai`);
-        console.error(error);
-        const response = await fetch(`https://r.jina.ai/${url}`);
-        const text = await response.text();
-        if (!response.ok || !text) {
-          console.error({ status: response.status, url }, text);
-          throw new Error('Failed to fetch webpage content', { cause: error });
-        }
-        result.push({ url, content: text });
+    try {
+      const provider = getBestWebProvider(user, 'view');
+      const content = await provider.view(user, params.url);
+      return { url: params.url, content };
+    } catch (error) {
+      console.warn(`Failed to view ${params.url} with provider, falling back to r.jina.ai:`, error);
+      const response = await fetch(`https://r.jina.ai/${params.url}`);
+      const text = await response.text();
+      if (!response.ok || !text) {
+        console.error({ status: response.status, url: params.url, text });
+        throw new Error('Failed to fetch webpage content from r.jina.ai', { cause: error });
       }
+      return { url: params.url, content: text };
     }
-
-    return result;
   },
 };
 

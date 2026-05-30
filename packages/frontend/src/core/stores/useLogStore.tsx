@@ -2,14 +2,14 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { Level, LogWrite } from '@tiny-chat/shared/src/logs.ts';
 
-interface Logs {
+interface LogStore {
   logs: { time: string; level: Level; data: unknown[] }[];
   writeLog: LogWrite;
   clearLogs: () => void;
 }
 
-export const useLogs = create(
-  subscribeWithSelector<Logs>((set) => ({
+export const useLogStore = create(
+  subscribeWithSelector<LogStore>((set) => ({
     logs: [],
     writeLog: (time, level, ...data) =>
       set((state) => ({ logs: [...state.logs, { time, level, data }] })),

@@ -21,12 +21,35 @@ export default defineConfig(() => ({
     tsconfigPaths(),
     visualizer({
       filename: 'dist/stats.html',
-      template: 'network',
+      template: 'flamegraph',
     }),
   ],
   build: {
+    sourcemap: true,
     rollupOptions: {
       external: ['fs', 'path', 'os', 'util'],
+      output: {
+        manualChunks: {
+          vendor: [
+            'react',
+            'react-dom',
+            '@mantine/core',
+            '@mantine/hooks',
+            '@mantine/spotlight',
+            '@mantine/modals',
+            '@mantine/dates',
+            '@mantine/carousel',
+            '@mantine/dropzone',
+            '@gfazioli/mantine-json-tree',
+            'streamdown',
+            '@streamdown/math',
+            '@streamdown/mermaid',
+            '@streamdown/code',
+            'katex',
+            'ogl',
+          ],
+        },
+      },
     },
   },
   server: {

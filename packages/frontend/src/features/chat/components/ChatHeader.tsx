@@ -1,24 +1,24 @@
 import { ActionIcon, Burger, Group, Tooltip } from '@mantine/core';
 import { Icon } from '@iconify/react';
-import { useLayout } from '@/stores/layout.tsx';
+import { useLayoutStore } from '@/core/stores/useLayoutStore';
 import { useChat } from '../hooks/useChat';
 import { glassStyle } from '@/utils/glass';
 import { useChatStore } from '../stores/useChatStore';
 import { ChatService } from '../services/ChatService';
+import { SHADOW } from '@/utils/theme';
 
 export default function ChatHeader({ fixed }: { fixed: boolean }) {
-  const activeChat = useChat();
-  const isMobile = useLayout((s) => s.isMobile);
-  const shadow = useLayout((s) => s.shadow);
-  const isSidebarOpen = useLayout((s) => s.isSidebarOpen);
-  const setSidebarOpen = useLayout((s) => s.setSidebarOpen);
+  const { chat } = useChat();
+  const isMobile = useLayoutStore((s) => s.isMobile);
+  const isSidebarOpen = useLayoutStore((s) => s.isSidebarOpen);
+  const setSidebarOpen = useLayoutStore((s) => s.setSidebarOpen);
   const temporary = useChatStore((s) => s.createTemporary);
   const setTemporary = useChatStore((s) => s.setCreateTemporary);
   const incognito = useChatStore((s) => s.createIncognito);
   const setIncognito = useChatStore((s) => s.setCreateIncognito);
 
-  const isTemporary = activeChat.data?.temporary ?? temporary;
-  const isIncognito = activeChat.data?.incognito ?? incognito;
+  const isTemporary = chat.data?.temporary ?? temporary;
+  const isIncognito = chat.data?.incognito ?? incognito;
 
   return (
     <Group
@@ -36,7 +36,7 @@ export default function ChatHeader({ fixed }: { fixed: boolean }) {
         borderTop: 'none',
         borderLeft: 'none',
         borderRight: 'none',
-        boxShadow: shadow,
+        boxShadow: SHADOW,
       }}
     >
       <Burger
@@ -51,11 +51,9 @@ export default function ChatHeader({ fixed }: { fixed: boolean }) {
             <ActionIcon
               size={32}
               variant="subtle"
-              c="dimmed"
-              bdrs="md"
-              className="nav-link-like"
+              className="nav-link-like filled"
               onClick={() => ChatService.setChatId(null)}
-              data-active={!activeChat.data}
+              data-active={!chat.data}
             >
               <Icon icon="lucide:message-circle-plus" height={18} />
             </ActionIcon>
@@ -66,11 +64,9 @@ export default function ChatHeader({ fixed }: { fixed: boolean }) {
             <ActionIcon
               size={32}
               variant="subtle"
-              c="dimmed"
-              bdrs="md"
               className="nav-link-like"
               onClick={() => {
-                if (activeChat.data) ChatService.setChatId(null);
+                if (chat.data) ChatService.setChatId(null);
                 setTemporary(!isTemporary);
               }}
               data-active={isTemporary}
@@ -82,11 +78,9 @@ export default function ChatHeader({ fixed }: { fixed: boolean }) {
             <ActionIcon
               size={32}
               variant="subtle"
-              c="dimmed"
-              bdrs="md"
               className="nav-link-like"
               onClick={() => {
-                if (activeChat.data) ChatService.setChatId(null);
+                if (chat.data) ChatService.setChatId(null);
                 setIncognito(!isIncognito);
               }}
               data-active={isIncognito}

@@ -34,6 +34,9 @@ export const useTools = () => {
         ),
       })),
     ],
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const mcpTools = useQuery({

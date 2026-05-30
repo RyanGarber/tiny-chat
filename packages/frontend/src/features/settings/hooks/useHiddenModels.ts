@@ -5,8 +5,6 @@ export const useHiddenModels = () => {
   const hiddenModels = useQuery({
     ...query.settings.get.queryOptions(),
     select: (data) => data.hiddenModels,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
   });
 
   const setHiddenModels = useMutation({

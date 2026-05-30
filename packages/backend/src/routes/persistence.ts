@@ -127,8 +127,15 @@ export async function searchFiles(
   queryEmbedding: number[],
   maxCount?: number,
 ) {
-  const files = await globalThis.prisma.$queryRaw<(File & { embedding: string })[]>`
-        SELECT * FROM file
+  interface File {
+    id: string;
+    path: string[];
+    data: any;
+    embedding: string;
+  }
+  // TODO - use lexicon for fallback
+  const files = await globalThis.prisma.$queryRaw<File[]>`
+        SELECT id, path, data, embedding FROM file
         WHERE "uploadId" IN (${Prisma.join(
           context.flatMap((m) =>
             m.data

@@ -1,4 +1,4 @@
-import { useMessaging } from '@/stores/messaging';
+import { useMessagingStore } from '@/features/chat/stores/useMessagingStore';
 import { query } from '@/utils/api';
 import { Icon } from '@iconify/react';
 import {
@@ -11,18 +11,18 @@ import {
   ActionIcon,
   Text,
   Box,
-  Skeleton,
 } from '@mantine/core';
 import { useState } from 'react';
 import { format } from 'timeago.js';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { glassStyle } from '@/utils/glass';
 import { useUploads } from '../hooks/useUploads';
+import Sentinel from '@/core/components/Sentinel';
 
 export function UploadRepo({ onClose }: { onClose: () => void }) {
   // Logic from GitHub.tsx
   const [search, setSearch] = useState('');
-  const addUploads = useMessaging((s) => s.addUploads);
+  const addUploads = useMessagingStore((s) => s.addUploads);
 
   const repos = useQuery({
     ...query.github.list.queryOptions(),
@@ -82,7 +82,7 @@ export function UploadRepo({ onClose }: { onClose: () => void }) {
                 <Box
                   key={repo.id}
                   p="xs"
-                  bdrs="md"
+                  bdrs="lg"
                   style={{ ...glassStyle, cursor: historyItem ? 'pointer' : 'default' }}
                   onClick={() => {
                     if (!historyItem) return;
@@ -169,12 +169,7 @@ export function UploadRepo({ onClose }: { onClose: () => void }) {
                 </Box>
               );
             })}
-            <Skeleton
-              height={10}
-              width="100%"
-              opacity={repos.isFetching ? 1 : 0.25}
-              animate={repos.isFetching}
-            />
+            <Sentinel isFetching={repos.isFetching} />
           </Stack>
         </ScrollArea>
       )}

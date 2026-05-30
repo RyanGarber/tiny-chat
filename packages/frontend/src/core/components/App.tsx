@@ -1,33 +1,32 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { AppShell, Box, LoadingOverlay, MantineProvider, Overlay } from '@mantine/core';
-import { NavigationProgress } from '@mantine/nprogress';
 import { useDrag } from '@use-gesture/react';
 import Chat from '@/features/chat/components/Chat';
 import Sidebar from '@/core/components/Sidebar';
-import { useLayout } from '@/stores/layout.tsx';
+import { useLayoutStore } from '@/core/stores/useLayoutStore';
 import { auth, trpc } from '@/utils/api';
 import { useViewport } from '@/utils/ui';
-import { Notifications } from '@mantine/notifications';
+import { SHADOW } from '@/utils/theme';
 import { cssResolver, theme as mantineTheme } from '@/theme.tsx';
 import { glassStyle } from '@/utils/glass';
 import { ModalsProvider } from '@mantine/modals';
-import Tasks from '@/core/components/Tasks';
+import Tauri from '@/core/components/Tauri';
 import { setHashbang, useHashbang } from '../hooks/useHashbang';
 import Aurora from '@/core/components/Aurora';
 import { useChatStore } from '@/features/chat/stores/useChatStore';
 import { useThemes } from '@/features/settings/hooks/useThemes';
+import { useChat } from '@/features/chat/hooks/useChat';
 
 export default function App() {
-  const mobile = useLayout((s) => s.mobile);
-  const isMobile = useLayout((s) => s.isMobile);
-  const shadow = useLayout((s) => s.shadow);
-  const totalGestureBlocks = useLayout((s) => s.totalGestureBlocks);
-  const drawerCloser = useLayout((s) => s.drawerCloser);
-  const isSidebarOpen = useLayout((s) => s.isSidebarOpen);
-  const setSidebarOpen = useLayout((s) => s.setSidebarOpen);
-  const getSidebarWidth = useLayout((s) => s.getSidebarWidth);
-  const isInitializing = useLayout((s) => s.isInitializing);
-  const setInitializing = useLayout((s) => s.setInitializing);
+  const mobile = useLayoutStore((s) => s.mobile);
+  const isMobile = useLayoutStore((s) => s.isMobile);
+  const totalGestureBlocks = useLayoutStore((s) => s.totalGestureBlocks);
+  const drawerCloser = useLayoutStore((s) => s.drawerCloser);
+  const isSidebarOpen = useLayoutStore((s) => s.isSidebarOpen);
+  const setSidebarOpen = useLayoutStore((s) => s.setSidebarOpen);
+  const getSidebarWidth = useLayoutStore((s) => s.getSidebarWidth);
+  const isInitializing = useLayoutStore((s) => s.isInitializing);
+  const setInitializing = useLayoutStore((s) => s.setInitializing);
 
   const session = auth.useSession();
 
@@ -103,6 +102,11 @@ export default function App() {
   );
 
   const createIncognito = useChatStore((s) => s.createIncognito);
+  const { chat } = useChat();
+  const incognito = useMemo(
+    () => chat.data?.incognito ?? createIncognito,
+    [chat.data?.incognito, createIncognito],
+  );
 
   const { height: viewportHeight, containerRef } = useViewport();
   const { theme } = useThemes();
@@ -114,9 +118,7 @@ export default function App() {
       cssVariablesResolver={cssResolver}
     >
       <ModalsProvider>
-        <Tasks />
-        <NavigationProgress />
-        <Notifications position="bottom-right" />
+        <Tauri />
         <Box pos="relative" h={viewportHeight} ref={containerRef}>
           <LoadingOverlay visible={isInitializing} zIndex={1000} overlayProps={{ blur: 2 }} />
           <AppShell
@@ -172,7 +174,7 @@ export default function App() {
               {...navbarDragClose()}
               p={10}
               style={{
-                boxShadow: isSidebarOpen || !isMobile ? shadow : '',
+                boxShadow: isSidebarOpen || !isMobile ? SHADOW : '',
                 touchAction: 'pan-y',
                 fontWeight: 450,
               }}
@@ -194,9 +196,7 @@ export default function App() {
         <Box pos="absolute" inset={0} style={{ zIndex: -1, opacity: 0.25 }}>
           <Aurora
             colorStops={
-              createIncognito
-                ? ['#888888', '#aaaaaa', '#888888']
-                : ['#1b72de', '#587ec1', '#1a5bc4']
+              incognito ? ['#888888', '#aaaaaa', '#888888'] : ['#1b72de', '#587ec1', '#1a5bc4']
             }
             blend={2}
             amplitude={1}

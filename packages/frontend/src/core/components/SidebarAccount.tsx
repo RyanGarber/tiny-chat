@@ -3,8 +3,7 @@ import { JSX, useEffect, useState } from 'react';
 import { auth, isTauri, trpc, webUrl } from '@/utils/api';
 import { openExternal } from '@/utils/ui';
 import { useDisclosure } from '@mantine/hooks';
-import { useLayout } from '@/stores/layout.tsx';
-import { useTasks } from '@/stores/tasks.tsx';
+import { useLayoutStore } from '@/core/stores/useLayoutStore';
 import { Icon } from '@iconify/react';
 import { glassStyle } from '@/utils/glass';
 import { useAccounts } from '@/features/settings/hooks/useAccounts';
@@ -19,8 +18,8 @@ export default function SidebarAccount({
 
   const { accounts, linkAccount, unlinkAccount, deleteUser } = useAccounts();
 
-  const setGestureBlock = useLayout((s) => s.setGestureBlock);
-  const setDrawerCloser = useLayout((s) => s.setDrawerCloser);
+  const setGestureBlock = useLayoutStore((s) => s.setGestureBlock);
+  const setDrawerCloser = useLayoutStore((s) => s.setDrawerCloser);
   const { data: session } = auth.useSession();
 
   const [opened, { open, close }] = useDisclosure(false);
@@ -66,16 +65,13 @@ export default function SidebarAccount({
   const clone = async (open: boolean) => {
     if (!isCloning) {
       setCloning(true);
-      useTasks.getState().addTask('signIn', open ? 'Opening browser' : 'Generating link');
-      const id = await trpc.sessions.startClone.mutate();
+      const id = await trpc.sessions.startClone.mutate(); // TODO - use query
       if (open) void openExternal(`${webUrl}/#?clone=${id}`);
       else void navigator.clipboard.writeText(`${webUrl}/#?clone=${id}`);
-      void useTasks.getState().updateTask('signIn', 50, 'Sign in to continue');
       setCloneInterval(
         setInterval(() => {
-          void trpc.sessions.finalizeClone.query({ id }).then(async (res) => {
+          void trpc.sessions.finalizeClone.query({ id }).then((res) => {
             if (res) {
-              await useTasks.getState().removeTask('signIn');
               clearInterval(cloneInterval);
               window.location.reload();
             }
@@ -84,7 +80,6 @@ export default function SidebarAccount({
       );
     } else {
       setCloning(false);
-      void useTasks.getState().removeTask('signIn');
       clearInterval(cloneInterval);
     }
   };
@@ -148,9 +143,7 @@ export default function SidebarAccount({
                 mt={10}
                 onClick={() => {
                   void (async () => {
-                    useTasks.getState().addTask('signOut', 'Signing out');
                     await auth.signOut();
-                    await useTasks.getState().removeTask('signOut');
                     window.location.reload();
                   })();
                 }}

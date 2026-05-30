@@ -1,4 +1,4 @@
-import { useTasks } from '@/stores/tasks';
+import { useTauriStore } from '@/core/stores/useTauriStore';
 import { isTauriDesktop as _isTauriDesktop } from '@/utils/api';
 import { useMutation, useQuery } from '@tanstack/react-query';
 
@@ -31,7 +31,7 @@ export const useTauri = () => {
       let total: number | undefined;
 
       // TODO - move
-      void useTasks
+      void useTauriStore
         .getState()
         .addTask(
           'update',
@@ -45,11 +45,11 @@ export const useTauri = () => {
         }
         if (event.event === 'Progress') {
           current += event.data.chunkLength;
-          if (total) void useTasks.getState().updateTask('update', (current / total) * 100);
+          if (total) void useTauriStore.getState().updateTask('update', (current / total) * 100);
         }
       });
 
-      await useTasks.getState().removeTask('update');
+      await useTauriStore.getState().removeTask('update');
 
       await (await import('@tauri-apps/plugin-process')).relaunch();
     },

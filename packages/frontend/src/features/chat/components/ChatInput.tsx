@@ -1,7 +1,7 @@
-import { useMessaging } from '@/stores/messaging.tsx';
-import { setupEditor } from '@/slate/setup.tsx';
-import { onKeyDown } from '@/slate/events.tsx';
-import { decorate, renderElement, renderLeaf } from '@/slate/renderer.tsx';
+import { useMessagingStore } from '@/features/chat/stores/useMessagingStore';
+import { setupEditor } from '@/features/slate/setup';
+import { onKeyDown } from '@/features/slate/events';
+import { decorate, renderElement, renderLeaf } from '@/features/slate/renderer';
 import {
   ActionIcon,
   Box,
@@ -31,8 +31,7 @@ import {
   type KeyboardEvent,
 } from 'react';
 import { Editable, ReactEditor, RenderElementProps, RenderLeafProps, Slate } from 'slate-react';
-import { serialize } from '@/slate/serializer.tsx';
-import { useLayout } from '@/stores/layout.tsx';
+import { serialize } from '@/features/slate/serializer';
 import ModelSelect from '@/features/input/components/ModelSelect';
 import { Icon } from '@iconify/react';
 import { NodeEntry } from 'slate';
@@ -52,22 +51,23 @@ import { useSkills } from '@/features/input/hooks/useSkills';
 import { useHotkeys } from '@mantine/hooks';
 import { useIsMutating } from '@tanstack/react-query';
 import { uploadMutationKey, useUploads } from '@/features/input/hooks/useUploads';
-import { useSend } from '../hooks/useSend';
+import { useSend } from '../hooks/useMessaging';
 import { GenerateService } from '@/features/message/services/GenerateService';
 import { precheckAllToolRequirements } from '@tiny-chat/shared/src/utils';
 import { auth } from '@/utils/api';
 import { useChatStore } from '../stores/useChatStore';
 import { useTauri } from '@/core/hooks/useTauri';
+import { SHADOW } from '@/utils/theme';
 
 export const ChatInput = memo(({ isAny, ...props }: InputWrapperProps & { isAny: boolean }) => {
   const session = auth.useSession();
-  const activeChat = useChat();
+  const { chat } = useChat();
   const { config, setConfig } = useConfig();
 
-  const stream = StreamService.getChat(activeChat.data?.id ?? '');
+  const stream = StreamService.getChat(chat.data?.id ?? '');
 
   const createIncognito = useChatStore((s) => s.createIncognito);
-  const setEditor = useMessaging((s) => s.setEditor);
+  const setEditor = useMessagingStore((s) => s.setEditor);
   const { isTauriDesktop } = useTauri();
 
   const { providers } = useProviders();
@@ -84,7 +84,7 @@ export const ChatInput = memo(({ isAny, ...props }: InputWrapperProps & { isAny:
       precheckAllToolRequirements(
         toolGroups,
         session.data?.user,
-        activeChat.data,
+        chat.data,
         createIncognito,
         true,
         isTauriDesktop.data,
@@ -97,15 +97,13 @@ export const ChatInput = memo(({ isAny, ...props }: InputWrapperProps & { isAny:
       toolGroups,
       config.toolGroups,
       session.data?.user,
-      activeChat.data,
+      chat.data,
       createIncognito,
       isTauriDesktop.data,
       providers.data,
       skills,
     ],
   );
-
-  const shadow = useLayout((s) => s.shadow);
 
   const [isMultiline, setMultiline] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -181,7 +179,6 @@ export const ChatInput = memo(({ isAny, ...props }: InputWrapperProps & { isAny:
   }, [setCapabilitySelectOpen]);
 
   const { upload } = useUploads();
-  const addUploads = useMessaging((s) => s.addUploads);
 
   const handlePaste = useCallback<ClipboardEventHandler<HTMLDivElement>>(
     (event) => {
@@ -189,19 +186,12 @@ export const ChatInput = memo(({ isAny, ...props }: InputWrapperProps & { isAny:
         if (item.kind === 'file') {
           const file = item.getAsFile();
           if (file) {
-            upload.mutate(
-              { type: 'upload', files: [file] },
-              {
-                onSuccess: (data) => {
-                  addUploads(...data);
-                },
-              },
-            );
+            upload.mutate({ type: 'upload', files: [file] });
           }
         }
       }
     },
-    [upload, addUploads],
+    [upload],
   );
 
   useHotkeys([
@@ -228,7 +218,7 @@ export const ChatInput = memo(({ isAny, ...props }: InputWrapperProps & { isAny:
             <Icon icon="lucide:paperclip" height={18} />
           </ActionIcon>
         </Menu.Target>
-        <Menu.Dropdown style={{ ...glassStyle, boxShadow: shadow }}>
+        <Menu.Dropdown style={{ ...glassStyle, boxShadow: SHADOW }}>
           <FileMenuItem
             onClick={() => {
               setUploadTab('file');
@@ -247,7 +237,7 @@ export const ChatInput = memo(({ isAny, ...props }: InputWrapperProps & { isAny:
         </Menu.Dropdown>
       </Menu>
     ),
-    [isAny, setUploadTab, setUploadOpen, shadow, isUploading],
+    [isAny, setUploadTab, setUploadOpen, isUploading],
   );
 
   const rightActionContent = useMemo(
@@ -280,7 +270,7 @@ export const ChatInput = memo(({ isAny, ...props }: InputWrapperProps & { isAny:
               }}
               styles={{
                 dropdown: {
-                  boxShadow: shadow,
+                  boxShadow: SHADOW,
                 },
               }}
               configValue={config}
@@ -370,7 +360,6 @@ export const ChatInput = memo(({ isAny, ...props }: InputWrapperProps & { isAny:
       onCapabilitySelectClose,
       isAny,
       config,
-      shadow,
       enabledTools.length,
       enabledSkills.length,
       args,
@@ -434,7 +423,7 @@ export const ChatInput = memo(({ isAny, ...props }: InputWrapperProps & { isAny:
             left: 0;
             right: 0;
             bottom: 0;
-            box-shadow: ${shadow};
+            box-shadow: ${SHADOW};
             border-radius: ${(props.style as CSSProperties)?.borderRadius ?? 0}px;
             z-index: 10000;
             pointer-events: none;

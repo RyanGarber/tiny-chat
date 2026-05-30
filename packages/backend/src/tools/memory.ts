@@ -8,7 +8,7 @@ import type { Tool, ToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
 import type { zUser } from '@tiny-chat/shared/src/types/user.ts';
 
 const zAddMemoryInput = z.object({
-  fact: z.string().describe('A fact about the user.'),
+  fact: z.string().describe('The fact about the user.'),
   category: z.enum(MemoryCategory).describe('The category the fact belongs to.'),
   stability: z.enum(MemoryStability).describe('How long the fact is expected to remain true.'),
   evidence: z.union([z.string(), z.array(z.string())]).describe('Evidence to support the fact.'),
@@ -18,10 +18,12 @@ const zAddMemoryInput = z.object({
     .max(1)
     .describe('Confidence that the fact is accurate and worth remembering.'),
 });
+export type zAddMemoryInput = z.infer<typeof zAddMemoryInput>;
 
 const zAddMemoryOutput = z.object({
   created_memory_id: z.cuid2(),
 });
+export type zAddMemoryOutput = z.infer<typeof zAddMemoryOutput>;
 
 const AddMemory: Tool<typeof zAddMemoryInput, typeof zAddMemoryOutput> = {
   name: 'add_memory',
@@ -57,7 +59,7 @@ const AddMemory: Tool<typeof zAddMemoryInput, typeof zAddMemoryOutput> = {
 
 const zUpdateMemoryInput = z.object({
   id: z.cuid2().describe('The ID of the memory to update.'),
-  fact: z.string().describe('A fact about the user.'),
+  fact: z.string().describe('The revised fact about the user.'),
   category: z.enum(MemoryCategory).describe('The category this fact belongs to.'),
   stability: z.enum(MemoryStability).describe('How long this fact is expected to remain true.'),
   evidence: z.union([z.string(), z.array(z.string())]).describe('Evidence to support the fact.'),
@@ -67,14 +69,16 @@ const zUpdateMemoryInput = z.object({
     .max(1)
     .describe('Confidence that the fact is accurate and worth remembering.'),
 });
+export type zUpdateMemoryInput = z.infer<typeof zUpdateMemoryInput>;
 
 const zUpdateMemoryOutput = z.object({
   updated_memory_id: z.cuid2(),
 });
+export type zUpdateMemoryOutput = z.infer<typeof zUpdateMemoryOutput>;
 
 const UpdateMemory: Tool<typeof zUpdateMemoryInput, typeof zUpdateMemoryOutput> = {
   name: 'update_memory',
-  description: 'Update an existing memory.',
+  description: 'Update an existing memory with a revised fact.',
   input: zUpdateMemoryInput.toJSONSchema(),
   output: zUpdateMemoryOutput.toJSONSchema(),
   requirements: {
@@ -109,15 +113,23 @@ const UpdateMemory: Tool<typeof zUpdateMemoryInput, typeof zUpdateMemoryOutput> 
 
 const zDeleteMemoryInput = z.object({
   id: z.cuid2().describe('The ID of the memory to delete.'),
+  reason: z
+    .string()
+    .describe(
+      'The fact about the user that makes the previously stored fact inaccurate or irrelevant.',
+    ),
 });
+export type zDeleteMemoryInput = z.infer<typeof zDeleteMemoryInput>;
 
 const zDeleteMemoryOutput = z.object({
   deleted_memory_id: z.cuid2(),
 });
+export type zDeleteMemoryOutput = z.infer<typeof zDeleteMemoryOutput>;
 
 const DeleteMemory: Tool<typeof zDeleteMemoryInput, typeof zDeleteMemoryOutput> = {
   name: 'delete_memory',
-  description: 'Delete an existing memory.',
+  description:
+    'Delete an existing memory because the previously stored fact is no longer relevant or accurate.',
   input: zDeleteMemoryInput.toJSONSchema(),
   output: zDeleteMemoryOutput.toJSONSchema(),
   requirements: {
@@ -132,10 +144,11 @@ const DeleteMemory: Tool<typeof zDeleteMemoryInput, typeof zDeleteMemoryOutput> 
   },
 };
 
-const zSearchMemoryInput = z.object({
+export const zSearchMemoryInput = z.object({
   query: z.string(),
   mode: z.enum(['semantic', 'regex']),
 });
+export type zSearchMemoryInput = z.infer<typeof zSearchMemoryInput>;
 
 /*const zSearchMemoryOutput = z.array(
   z.object({
@@ -147,7 +160,8 @@ const zSearchMemoryInput = z.object({
     confidence: z.number(),
   }),
 );*/ // TODO
-const zSearchMemoryOutput = z.array(z.string());
+export const zSearchMemoryOutput = z.array(z.string());
+export type zSearchMemoryOutput = z.infer<typeof zSearchMemoryOutput>;
 
 const SearchMemory: Tool<typeof zSearchMemoryInput, typeof zSearchMemoryOutput> = {
   name: 'search_memory',

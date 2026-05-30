@@ -286,7 +286,7 @@
 					"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
 					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.ryangarber.tiny-chat;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.ryangarber.chat;
 				PRODUCT_NAME = "Tiny Chat";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -452,7 +452,7 @@
 					"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
 					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.ryangarber.tiny-chat;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.ryangarber.chat;
 				PRODUCT_NAME = "Tiny Chat";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";

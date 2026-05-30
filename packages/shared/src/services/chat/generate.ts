@@ -111,6 +111,11 @@ export async function* generate(
     let parts = data[data.length - 1];
 
     const push = (part: zDataPart): zGenerateOutput => {
+      if (!parts) {
+        console.warn('[Generate] parts array is undefined - this should not happen');
+        data.push([]);
+        parts = data[data.length - 1];
+      }
       parts.push(part);
       return { type: 'data', value: part };
     };
@@ -152,11 +157,6 @@ export async function* generate(
               parts.push(event.value);
             }
           } else {
-            if (!parts) {
-              console.warn('[Generate] parts array is undefined - THIS IS NOT NORMAL');
-              data.push([]);
-              parts = data[data.length - 1];
-            }
             parts.push(event.value);
           }
         }

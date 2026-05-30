@@ -1,12 +1,13 @@
 import { ActionIcon, Box, Group } from '@mantine/core';
 import { ReactNode, RefObject } from 'react';
-import { useLayout } from '@/stores/layout.tsx';
+import { useLayoutStore } from '@/core/stores/useLayoutStore';
 import { Icon } from '@iconify/react';
 import { scrubText } from '@/utils/text.ts';
 import Attachments from '@/features/input/components/Attachments';
-import { useMessaging } from '@/stores/messaging.tsx';
+import { useMessagingStore } from '@/features/chat/stores/useMessagingStore';
 import { texts } from '@tiny-chat/shared/src/utils.ts';
 import { glassStyle } from '@/utils/glass';
+import { SHADOW } from '@/utils/theme';
 
 function ChatInputEffect({
   content,
@@ -17,7 +18,6 @@ function ChatInputEffect({
   onDelete: () => void;
   isAny: boolean;
 }) {
-  const shadow = useLayout((s) => s.shadow);
   return (
     <Group
       className="input-effect"
@@ -29,7 +29,7 @@ function ChatInputEffect({
       bdrs={25}
       fz={14}
       opacity={isAny ? 0.5 : 1}
-      style={{ ...glassStyle, boxShadow: shadow, pointerEvents: 'auto' }}
+      style={{ ...glassStyle, boxShadow: SHADOW, pointerEvents: 'auto' }}
     >
       <ActionIcon size={20} variant="subtle" color="dimmed" onClick={onDelete} disabled={isAny}>
         <Icon icon="lucide:x" height={18} />
@@ -50,15 +50,15 @@ export default function ChatInputEffects({
   chatContainerHeight: number;
   isAny: boolean;
 }) {
-  const editing = useMessaging((s) => s.editing);
-  const setEditing = useMessaging((s) => s.setEditing);
-  const insertingAfter = useMessaging((s) => s.insertingAfter);
-  const setInsertingAfter = useMessaging((s) => s.setInsertingAfter);
-  const truncating = useMessaging((s) => s.truncating);
-  const setTruncating = useMessaging((s) => s.setTruncating);
-  const uploads = useMessaging((s) => s.uploads);
-  const removeUpload = useMessaging((s) => s.removeUpload);
-  const isMobile = useLayout((s) => s.isMobile);
+  const editing = useMessagingStore((s) => s.editing);
+  const setEditing = useMessagingStore((s) => s.setEditing);
+  const insertingAfter = useMessagingStore((s) => s.insertingAfter);
+  const setInsertingAfter = useMessagingStore((s) => s.setInsertingAfter);
+  const truncating = useMessagingStore((s) => s.truncating);
+  const setTruncating = useMessagingStore((s) => s.setTruncating);
+  const uploads = useMessagingStore((s) => s.uploads);
+  const removeUpload = useMessagingStore((s) => s.removeUpload);
+  const isMobile = useLayoutStore((s) => s.isMobile);
   return (
     <Group
       pos="absolute"

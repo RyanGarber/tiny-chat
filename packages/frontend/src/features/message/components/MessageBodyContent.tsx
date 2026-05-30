@@ -1,6 +1,16 @@
-import { useLayout } from '@/stores/layout.tsx';
-import { useMessaging } from '@/stores/messaging.tsx';
-import { ActionIcon, Alert, Box, Group, Image, Portal, Text, Transition } from '@mantine/core';
+import { useMessagingStore } from '@/features/chat/stores/useMessagingStore';
+import {
+  ActionIcon,
+  Alert,
+  Box,
+  Button,
+  Group,
+  Image,
+  Portal,
+  Stack,
+  Text,
+  Transition,
+} from '@mantine/core';
 import {
   memo,
   MouseEvent,
@@ -15,12 +25,8 @@ import { MessageState, zDataPart } from '@tiny-chat/shared/src/types/chat.ts';
 import { texts } from '@tiny-chat/shared/src/utils.ts';
 import { Markdown } from '@/features/message/components/Markdown';
 import { Author } from '@tiny-chat/backend/generated/prisma/enums.ts';
-import {
-  ThoughtGroupPopover,
-  ToolCallPopover,
-} from '@/features/message/components/MessageBodyPopover';
 import { Icon } from '@iconify/react';
-import ToolInput from '@/features/message/components/ToolInput';
+import { ToolCallInput } from '@/features/message/components/ToolCallInput';
 import { MediaPlayer, MediaProvider } from '@vidstack/react';
 import {
   DefaultAudioLayout,
@@ -38,6 +44,9 @@ import { useThemes } from '@/features/settings/hooks/useThemes';
 import { useTools } from '@/features/input/hooks/useTools';
 import { useProviders } from '@/features/input/hooks/useProviders';
 import { useSkills } from '@/features/input/hooks/useSkills';
+import { Thinking } from './Thinking';
+import { ToolCall } from './ToolCall';
+import { SHADOW } from '@/utils/theme';
 
 export const MessageBodyContent = memo(
   ({
@@ -49,14 +58,14 @@ export const MessageBodyContent = memo(
     containerWidth: number;
     style?: CSSProperties;
   }) => {
+    const { chat } = useChat();
     const { theme } = useThemes();
 
     const stream = useMessageStream(message.author === Author.MODEL ? message.id : undefined);
     const live = stream ?? message;
     const isGenerating = live.state.generating;
 
-    const shadow = useLayout((s) => s.shadow);
-    const addQuote = useMessaging((s) => s.addQuote);
+    const addQuote = useMessagingStore((s) => s.addQuote);
 
     const container = useRef<HTMLDivElement>(null);
 
@@ -74,8 +83,6 @@ export const MessageBodyContent = memo(
       [],
     );
     const selectedTextRef = useRef('');
-
-    const activeChat = useChat();
 
     const isNodeInContainer = (node: Node | null): boolean => {
       if (!node) return false;
@@ -174,16 +181,42 @@ export const MessageBodyContent = memo(
         //if (groupedThoughts.filter((t) => t.trim() !== '').length === 0) {
         const isThinkingActive = live.state.thinking && end === parts.length - 1;
         renderedParts.push(
-          <ThoughtGroupPopover
+          <Thinking
             key={`thought-${i}`}
             thoughts={groupedThoughts}
-            isThinkingActive={isThinkingActive}
-            containerWidth={containerWidth}
+            isThinking={isThinkingActive}
+            context={{
+              webSearchResults,
+              memories: memories.data ?? [],
+              actions: actions.data ?? [],
+              isGenerating,
+            }}
           />,
         );
         //}
 
         i = end;
+      } else if (part.type === 'toolCall') {
+        const result = parts.find(
+          (p): p is Extract<zDataPart, { type: 'toolResult' }> =>
+            p.type === 'toolResult' && p.id === part.id,
+        );
+
+        renderedParts.push(<ToolCall key={i} toolCall={part} toolResult={result} />);
+
+        const tool = tools.find((t) => t.name === part.name);
+        if (tool?.userInput || tool?.requirements?.approval) {
+          renderedParts.push(
+            <ToolCallInput
+              key={`${i}-tci`}
+              message={message}
+              part={part}
+              result={result}
+              containerWidth={containerWidth}
+              tool={tool}
+            />,
+          );
+        }
       } else if (part.type === 'text') {
         if (part.value.trim() !== '') {
           renderedParts.push(
@@ -227,59 +260,37 @@ export const MessageBodyContent = memo(
             </MediaPlayer>,
           );
         }
-      } else if (part.type === 'toolCall') {
-        const result = parts.find(
-          (p): p is Extract<zDataPart, { type: 'toolResult' }> =>
-            p.type === 'toolResult' && p.id === part.id,
-        );
-
-        renderedParts.push(
-          <ToolCallPopover key={i} call={part} result={result} containerWidth={containerWidth} />,
-        );
-
-        const tool = tools.find((t) => t.name === part.name);
-        if (tool?.userInput || tool?.requirements?.approval) {
-          renderedParts.push(
-            <ToolInput
-              key={`${i}-tci`}
-              message={message}
-              part={part}
-              result={result}
-              containerWidth={containerWidth}
-              tool={tool}
-            />,
-          );
-        }
       } else if (part.type === 'abort') {
         renderedParts.push(
           <Alert
             key={i}
             color={part.reason === 'error' ? 'red' : 'gray'}
             variant="light"
-            title={part.reason === 'error' ? 'Error' : 'Stopped'}
-            icon={<Icon icon="lucide:circle-x" />}
-            my={4}
+            title={part.reason === 'error' ? 'Failed' : 'Stopped'}
           >
-            <Group justify="space-between">
-              <Text>{part.message ?? `Response ended due to ${part.reason}.`}</Text>
-              <ActionIcon
+            <Stack align="flex-end">
+              <Text fz="15px" w="100%">
+                {part.message ?? `Response ended due to ${part.reason}.`}
+              </Text>
+              <Button
                 variant="subtle"
+                color="dimmed"
                 onClick={() => {
                   void (async () => {
-                    // TODO - move this to new hook
-                    await GenerateService.onModelMessage({
+                    await GenerateService.handle({
                       message,
-                      activeChat: activeChat.data!,
+                      activeChat: chat.data!,
                       tools: toolGroups,
                       skills,
                       providers: providers.data!,
                     });
                   })();
                 }}
+                leftSection={<Icon icon="lucide:refresh-cw" />}
               >
-                <Icon icon="lucide:refresh-cw" />
-              </ActionIcon>
-            </Group>
+                Retry
+              </Button>
+            </Stack>
           </Alert>,
         );
       }
@@ -316,9 +327,9 @@ export const MessageBodyContent = memo(
                   variant="subtle"
                   onClick={() => {
                     void (async () => {
-                      await GenerateService.onModelMessage({
+                      await GenerateService.handle({
                         message,
-                        activeChat: activeChat.data!,
+                        activeChat: chat.data!,
                         tools: toolGroups,
                         skills,
                         providers: providers.data!,
@@ -350,7 +361,7 @@ export const MessageBodyContent = memo(
                   left: rect.left + rect.width / 2,
                   transform: 'translateX(-50%)',
                   zIndex: 'var(--mantine-zindex-app)',
-                  boxShadow: shadow,
+                  boxShadow: SHADOW,
                   ...styles,
                 }}
                 onMouseDown={captureSelectionForQuote}

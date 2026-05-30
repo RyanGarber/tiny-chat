@@ -12,7 +12,7 @@ export default function Dropzone({
   ...props
 }: Partial<DropzoneProps> & {
   type: 'upload' | 'skill';
-  options: Parameters<ReturnType<typeof useUploads>['upload']['mutate']>[1];
+  options?: Parameters<ReturnType<typeof useUploads>['upload']['mutate']>[1];
 }) {
   const { upload } = useUploads();
 

@@ -1,16 +1,17 @@
-import { useMessaging } from '@/stores/messaging';
+import { useMessagingStore } from '@/features/chat/stores/useMessagingStore';
 import { query } from '@/utils/api';
 import { Icon } from '@iconify/react';
-import { Group, ScrollArea, ActionIcon, Text, Stack, Skeleton } from '@mantine/core';
+import { Group, ScrollArea, ActionIcon, Text, Stack } from '@mantine/core';
 import { format } from 'timeago.js';
 import Attachments from './Attachments';
 import { useSentinel } from '@/core/hooks/useSentinel';
 import { glassStyle } from '@/utils/glass';
 import Dropzone from '@/features/input/components/Dropzone';
 import { useUploads } from '../hooks/useUploads';
+import Sentinel from '@/core/components/Sentinel';
 
 export function UploadFile({ onClose }: { onClose: () => void }) {
-  const addUploads = useMessaging((s) => s.addUploads);
+  const addUploads = useMessagingStore((s) => s.addUploads);
 
   const { fileUploads, deleteUpload } = useUploads();
 
@@ -21,7 +22,7 @@ export function UploadFile({ onClose }: { onClose: () => void }) {
 
   return (
     <Stack h="100%">
-      <Dropzone type="upload" options={{ onSuccess: (data) => addUploads(...data) }} />
+      <Dropzone type="upload" />
       <ScrollArea h={300} viewportRef={viewportRef}>
         <Stack gap="xs">
           {fileUploads.data?.pages.flatMap((page) => page.uploads).length === 0 && (
@@ -36,7 +37,7 @@ export function UploadFile({ onClose }: { onClose: () => void }) {
                 key={file.id}
                 justify="space-between"
                 p="xs"
-                bdrs="md"
+                bdrs="lg"
                 style={{ ...glassStyle, cursor: 'pointer' }}
                 onClick={() => {
                   addUploads({
@@ -81,13 +82,7 @@ export function UploadFile({ onClose }: { onClose: () => void }) {
                 </ActionIcon>
               </Group>
             ))}
-          <Skeleton
-            height={10}
-            width="100%"
-            opacity={fileUploads.isFetching ? 1 : 0.25}
-            animate={fileUploads.isFetching}
-            ref={sentinelRef}
-          />
+          <Sentinel isFetching={fileUploads.isFetching} ref={sentinelRef} />
         </Stack>
       </ScrollArea>
     </Stack>

@@ -1,8 +1,10 @@
-import { useMessaging } from '@/stores/messaging';
-import { queryClient, query, type trpc } from '@/utils/api';
-import { useQuery } from '@tanstack/react-query';
+import { queryClient, query, trpc } from '@/utils/api';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import type { Chat } from '@tiny-chat/backend/generated/prisma/client.ts';
 import { useChatStore } from '../stores/useChatStore';
+import type { MessageState } from '@tiny-chat/shared/src/types/chat';
+import { refetchChatList } from './useChatList';
+import { ChatService } from '../services/ChatService';
 
 export type ChatState = Chat & { unseen: boolean };
 
@@ -19,7 +21,6 @@ export async function refetchActiveChat(chatId: string) {
     queryKey: query.chats.pathKey(),
   });
   useChatStore.getState().setLastSeen(chatId, new Date().getTime());
-  useMessaging.getState().requestScrollInstant();
 }
 
 export const useChat = () => {
@@ -46,10 +47,26 @@ export const useChat = () => {
           ?.pages.flatMap((page) => page.folders)
           .flatMap((folder) => folder.chats)
           .find((chat) => chat.id === chatId),
+        staleTime: Infinity,
         refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
       },
     ),
   });
 
-  return chat;
+  const forkChat = useMutation({
+    mutationFn: async ({ chat, atMessage }: { chat: ChatState; atMessage: MessageState }) => {
+      return trpc.chats.clone.mutate({
+        id: chat.id,
+        untilMessageId: atMessage.id,
+        title: `Fork of ${chat.title ?? 'Forked Chat'}`,
+      });
+    },
+    onSuccess: async (clone, input) => {
+      await refetchChatList();
+      if (input.chat.id === chatId) ChatService.setChatId(clone.id);
+    },
+  });
+
+  return { chat, forkChat };
 };

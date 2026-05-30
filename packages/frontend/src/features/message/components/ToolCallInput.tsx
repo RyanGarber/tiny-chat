@@ -1,0 +1,312 @@
+import { memo, ReactNode, useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  ColorInput,
+  Grid,
+  Group,
+  NumberInput,
+  Radio,
+  Stack,
+  Text,
+  Textarea,
+} from '@mantine/core';
+import { DatePicker, DateTimePicker, TimePicker } from '@mantine/dates';
+import { MessageState, zDataPart } from '@tiny-chat/shared/src/types/chat.ts';
+import {
+  zReplyColorInput,
+  zReplyColorOutput,
+  zReplyDatetimeOutput,
+  zReplyDatetimeInput,
+  zReplyNumberInput,
+  zReplyNumberOutput,
+  zReplyQuestionInput,
+  zReplyQuestionOutput,
+} from '@/tools/reply';
+import { Markdown } from '@/features/message/components/Markdown';
+import { zShellExecInput } from '@/tools/shell';
+import { zWriteFileInput } from '@/tools/filesystem';
+import { DIFF_MARKER } from '@/utils/text';
+import type { Tool } from '@tiny-chat/shared/src/types/tool.ts';
+import type { z } from 'zod';
+import { invoke } from '@/utils/api';
+import { glassStyle } from '@/utils/glass';
+import { toolCallRejectedMessage, useToolInput } from '../hooks/useToolInput';
+import { Icon } from '@iconify/react';
+
+export const ToolCallInput = memo(
+  ({
+    message,
+    part,
+    result,
+    tool,
+  }: {
+    message: MessageState;
+    part: Extract<zDataPart, { type: 'toolCall' }>;
+    result?: Extract<zDataPart, { type: 'toolResult' }>;
+    containerWidth: number;
+    tool?: Tool<z.ZodAny, z.ZodAny, z.ZodAny>;
+  }) => {
+    const { sendToolInput } = useToolInput();
+
+    const [inputValue, setInputValue] = useState<unknown>(result?.value);
+
+    const [writeFileContents, setWriteFileContents] = useState<string>('');
+
+    useEffect(() => {
+      if (part.name === 'write_file') {
+        const write = zWriteFileInput.parse(part.args);
+        invoke<string>('read_file', { path: write.path })
+          .then((contents) => {
+            setWriteFileContents(contents);
+          })
+          .catch((error) => {
+            console.error('Error reading file', error);
+            setWriteFileContents('');
+          });
+      }
+    }, [part.name, part.args]);
+
+    const disabled = result !== undefined;
+
+    const input: ReactNode | undefined = useMemo(() => {
+      if (part.name === 'shell_exec') {
+        return (
+          <Markdown source={`\`\`\`shell\n${(part.args as zShellExecInput).command}\n\`\`\``} />
+        );
+      } else if (part.name === 'write_file') {
+        return (
+          <Markdown
+            source={`\`\`\`diff ${(part.args as zWriteFileInput).path}\n${writeFileContents}${DIFF_MARKER}${(part.args as zWriteFileInput).contents}\n\`\`\``}
+          />
+        );
+      } else if (part.name === 'reply_question') {
+        return (
+          <Stack gap="xs">
+            <Text>
+              <Markdown source={(part.args as zReplyQuestionInput).question} />
+            </Text>
+            <Grid grow>
+              {(part.args as zReplyQuestionInput).suggestions.map((suggestion) => (
+                <Grid.Col key={suggestion} span={4} align="stretch">
+                  <Radio.Card
+                    p="md"
+                    h="100%"
+                    checked={
+                      (inputValue as zReplyQuestionOutput | undefined)?.answer === suggestion
+                    }
+                    disabled={disabled}
+                    defaultChecked={
+                      (inputValue as zReplyQuestionOutput | undefined)?.answer === suggestion
+                    }
+                    onClick={() =>
+                      setInputValue({ answer: suggestion } satisfies zReplyQuestionOutput)
+                    }
+                  >
+                    <Group wrap="nowrap" align="flex-start" h="100%">
+                      <Radio.Indicator />
+                      <Box>
+                        <Text>{suggestion}</Text>
+                      </Box>
+                    </Group>
+                  </Radio.Card>
+                </Grid.Col>
+              ))}
+            </Grid>
+            <Textarea
+              autosize
+              minRows={1}
+              maxRows={10}
+              placeholder="..."
+              defaultValue={(inputValue as zReplyQuestionOutput | undefined)?.answer}
+              value={(inputValue as zReplyQuestionOutput | undefined)?.answer}
+              disabled={disabled}
+              onChange={(e) =>
+                setInputValue({ answer: e.target.value } satisfies zReplyQuestionOutput)
+              }
+            />
+          </Stack>
+        );
+      } else if (part.name === 'reply_color') {
+        return (
+          <Stack gap="xs">
+            <Text>
+              <Markdown source={(part.args as zReplyColorInput).question} />
+            </Text>
+            <ColorInput
+              value={(inputValue as zReplyColorOutput | undefined)?.color}
+              defaultValue={(inputValue as zReplyColorOutput | undefined)?.color}
+              placeholder="..."
+              disabled={disabled}
+              onChange={(v) =>
+                setInputValue({
+                  color: v,
+                } satisfies zReplyColorOutput)
+              }
+            />
+          </Stack>
+        );
+      } else if (part.name === 'reply_number') {
+        return (
+          <Stack gap="xs">
+            <Text>
+              <Markdown source={(part.args as zReplyNumberInput).question} />
+            </Text>
+            <NumberInput
+              value={(inputValue as zReplyNumberOutput | undefined)?.number}
+              defaultValue={(inputValue as zReplyNumberOutput | undefined)?.number}
+              placeholder="..."
+              disabled={disabled}
+              onChange={(v) =>
+                setInputValue({
+                  number: Number(v),
+                } satisfies zReplyNumberOutput)
+              }
+            />
+          </Stack>
+        );
+      } else if (part.name === 'reply_datetime') {
+        return (
+          <Stack gap="xs">
+            <Text>
+              <Markdown source={(part.args as zReplyDatetimeInput).question} />
+            </Text>
+            <DateTimePicker
+              value={(inputValue as zReplyDatetimeOutput | undefined)?.date}
+              defaultValue={(inputValue as zReplyDatetimeOutput | undefined)?.date}
+              placeholder="..."
+              disabled={disabled}
+              onChange={(v) =>
+                setInputValue({
+                  date: v!.split(' ')[0],
+                  time: v!.split(' ')[1],
+                } satisfies zReplyDatetimeOutput)
+              }
+            />
+          </Stack>
+        );
+      } else if (part.name === 'reply_date') {
+        return (
+          <Stack gap="xs">
+            <Text>
+              <Markdown source={(part.args as zReplyDatetimeInput).question} />
+            </Text>
+            <DatePicker
+              value={(inputValue as zReplyDatetimeOutput | undefined)?.date}
+              defaultValue={(inputValue as zReplyDatetimeOutput | undefined)?.date}
+              onChange={(v) =>
+                setInputValue({
+                  date: v ?? undefined,
+                } satisfies zReplyDatetimeOutput)
+              }
+            />
+          </Stack>
+        );
+      } else if (part.name === 'reply_time') {
+        return (
+          <Stack gap="xs">
+            <Text>
+              <Markdown source={(part.args as zReplyDatetimeInput).question} />
+            </Text>
+            <TimePicker
+              value={(inputValue as zReplyDatetimeOutput | undefined)?.time}
+              defaultValue={(inputValue as zReplyDatetimeOutput | undefined)?.time}
+              disabled={disabled}
+              onChange={(v) =>
+                setInputValue({
+                  time: v,
+                } satisfies zReplyDatetimeOutput)
+              }
+            />
+          </Stack>
+        );
+      }
+    }, [part.name, part.args, inputValue, setInputValue, writeFileContents, disabled]);
+
+    if (tool && input) {
+      return (
+        <Stack gap="xs" mb={10}>
+          <Card withBorder style={{ ...glassStyle }}>
+            <Stack gap="xs">
+              <Box>{input}</Box>
+            </Stack>
+          </Card>
+          <Group gap="xs" justify="flex-end">
+            {tool.requirements?.approval ? (
+              <Group gap="xs">
+                <Button
+                  size="xs"
+                  onClick={() =>
+                    sendToolInput.mutate({
+                      seed: message,
+                      part,
+                      approved: true,
+                      value: inputValue,
+                    })
+                  }
+                  leftSection={
+                    result?.value !== toolCallRejectedMessage ? (
+                      <Icon icon="lucide:check" />
+                    ) : undefined
+                  }
+                  loading={sendToolInput.isPending && sendToolInput.variables?.approved === true}
+                  disabled={sendToolInput.isPending || disabled}
+                >
+                  Approve
+                </Button>
+                <Button
+                  variant="default"
+                  size="xs"
+                  onClick={() =>
+                    sendToolInput.mutate({
+                      seed: message,
+                      part,
+                      approved: false,
+                      value: inputValue,
+                    })
+                  }
+                  leftSection={
+                    result?.error && result.value === toolCallRejectedMessage ? (
+                      <Icon icon="lucide:check" />
+                    ) : undefined
+                  }
+                  loading={sendToolInput.isPending && sendToolInput.variables?.approved === false}
+                  disabled={sendToolInput.isPending || result !== undefined}
+                >
+                  Deny
+                </Button>
+              </Group>
+            ) : (
+              <Button
+                size="xs"
+                variant="filled"
+                onClick={() =>
+                  sendToolInput.mutate({
+                    seed: message,
+                    part,
+                    value: inputValue,
+                  })
+                }
+                leftSection={result !== undefined ? <Icon icon="lucide:check" /> : undefined}
+                loading={sendToolInput.isPending}
+                disabled={sendToolInput.isPending || result !== undefined}
+              >
+                Continue
+              </Button>
+            )}
+          </Group>
+        </Stack>
+      );
+    }
+
+    if (!result) {
+      return (
+        <Alert color="red" title="Error">
+          Tool <code>{part.name}</code> not recognized Tool <code>{part.name}</code> not found
+        </Alert>
+      );
+    }
+  },
+);

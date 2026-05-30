@@ -47,6 +47,7 @@ export const zWriteFileInput = z.object({
   path: z.string().describe('The absolute path of the file to write.'),
   contents: z.string().describe('The contents of the file to write.'),
 });
+export type zWriteFileInput = z.infer<typeof zWriteFileInput>;
 
 export const zWriteFileOutput = z.object({
   path: z.string().describe('The absolute path of the file that was written.'),

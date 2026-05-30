@@ -6,12 +6,11 @@ import {
   Modal,
   NavLink,
   ScrollArea,
-  Skeleton,
   Stack,
   TextInput,
 } from '@mantine/core';
 import { useCallback, useEffect, useState } from 'react';
-import { useLayout } from '@/stores/layout';
+import { useLayoutStore } from '@/core/stores/useLayoutStore';
 import { Icon } from '@iconify/react';
 import { useDisclosure } from '@mantine/hooks';
 import { useChat, type ChatState } from '@/features/chat/hooks/useChat';
@@ -20,11 +19,13 @@ import { glassStyle } from '@/utils/glass';
 import { useSentinel } from '../hooks/useSentinel';
 import { ChatService } from '@/features/chat/services/ChatService';
 import { query } from '@/utils/api';
+import Sentinel from './Sentinel';
+import { SHADOW } from '@/utils/theme';
 
 export default function SidebarChatList() {
-  const isMobile = useLayout((s) => s.isMobile);
-  const setSidebarOpen = useLayout((s) => s.setSidebarOpen);
-  const setGestureBlock = useLayout((s) => s.setGestureBlock);
+  const isMobile = useLayoutStore((s) => s.isMobile);
+  const setSidebarOpen = useLayoutStore((s) => s.setSidebarOpen);
+  const setGestureBlock = useLayoutStore((s) => s.setGestureBlock);
 
   const [title, setTitle] = useState<string>('');
   const [editingChat, setEditingChat] = useState<ChatState | null>(null);
@@ -45,23 +46,11 @@ export default function SidebarChatList() {
     setGestureBlock(isEditOpen);
   }, [isEditOpen, setGestureBlock]);
 
-  const chatList = useChatList();
-  const activeChat = useChat();
-
-  const saveTitle = async () => {
-    if (!editingChat || !title) return;
-    await ChatService.renameChat(editingChat, title);
-    closeEdit();
-  };
-
-  const saveDelete = async () => {
-    if (!deletingChat) return;
-    await ChatService.deleteChat(deletingChat, activeChat.data ?? null);
-    closeDelete();
-  };
+  const { folders, renameChat, deleteChat } = useChatList();
+  const { chat } = useChat();
 
   const { viewportRef, sentinelRef } = useSentinel({
-    query: chatList,
+    query: folders,
     queryKey: query.folders.list.pathKey(),
   });
 
@@ -69,22 +58,22 @@ export default function SidebarChatList() {
     <>
       <ScrollArea flex={1} viewportRef={viewportRef}>
         <Stack gap={10}>
-          {chatList.data?.pages
+          {folders.data?.pages
             .flatMap((page) => page.folders)
             .map((folder) => {
-              const chats = folder.chats.map((chat) => (
+              const chats = folder.chats.map((c) => (
                 <ChatListItem
-                  key={chat.id}
-                  chat={chat}
-                  active={activeChat.data?.id === chat.id}
-                  onClick={() => closeAfter(() => ChatService.setChatId(chat.id))}
+                  key={c.id}
+                  chat={c}
+                  active={chat.data?.id === c.id}
+                  onClick={() => closeAfter(() => ChatService.setChatId(c.id))}
                   onRename={() => {
-                    setEditingChat(chat);
-                    setTitle(chat.title ?? '');
+                    setEditingChat(c);
+                    setTitle(c.title ?? '');
                     openEdit();
                   }}
                   onDelete={() => {
-                    setDeletingChat(chat);
+                    setDeletingChat(c);
                     openDelete();
                   }}
                 />
@@ -106,13 +95,7 @@ export default function SidebarChatList() {
               }
             })}
         </Stack>
-        <Skeleton
-          key="loading"
-          height={10}
-          opacity={chatList.isFetching ? 1 : 0.25}
-          animate={chatList.isFetching}
-          ref={sentinelRef}
-        />
+        <Sentinel isFetching={folders.isFetching} ref={sentinelRef} />
       </ScrollArea>
 
       <Modal
@@ -127,10 +110,21 @@ export default function SidebarChatList() {
           mb={10}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && void saveTitle()}
+          onKeyDown={(e) =>
+            e.key === 'Enter' &&
+            renameChat.mutate({ chat: editingChat!, title }, { onSuccess: () => closeEdit() })
+          }
           data-autofocus
         />
-        <Button variant="filled" fullWidth onClick={() => void saveTitle()}>
+        <Button
+          variant="filled"
+          fullWidth
+          onClick={() =>
+            renameChat.mutate({ chat: editingChat!, title }, { onSuccess: () => closeEdit() })
+          }
+          loading={renameChat.isPending}
+          disabled={renameChat.isPending || !editingChat || !title}
+        >
           Save
         </Button>
       </Modal>
@@ -142,7 +136,13 @@ export default function SidebarChatList() {
         styles={{ content: glassStyle }}
         centered
       >
-        <Button color="red" fullWidth onClick={() => void saveDelete()}>
+        <Button
+          color="red"
+          fullWidth
+          onClick={() =>
+            deleteChat.mutate({ chat: deletingChat! }, { onSuccess: () => closeDelete() })
+          }
+        >
           Confirm
         </Button>
       </Modal>
@@ -163,7 +163,7 @@ function ChatListItem({
   onRename: () => void;
   onDelete: () => void;
 }) {
-  const isMobile = useLayout((s) => s.isMobile);
+  const isMobile = useLayoutStore((s) => s.isMobile);
   const [isOpen, setOpen] = useState(false);
 
   return (
@@ -181,11 +181,10 @@ function ChatListItem({
         active={active}
         className={'section-on-hover' + (active || isMobile || isOpen ? ' hover' : '')}
         onClick={onClick}
-        bdrs="md"
         h={40}
         {...(chat.unseen && { pl: 35 })}
         rightSection={
-          <Menu shadow="md" width={200} onChange={setOpen}>
+          <Menu width={200} onChange={setOpen} styles={{ dropdown: { boxShadow: SHADOW } }}>
             <Menu.Target>
               <ActionIcon
                 size={24}

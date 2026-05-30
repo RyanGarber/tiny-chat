@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 
-interface Layout {
+interface LayoutStore {
   mobile: string;
   isMobile: boolean;
   setMobile: (value: boolean) => void;
@@ -18,12 +18,10 @@ interface Layout {
 
   isInitializing: boolean;
   setInitializing: (value: boolean) => void;
-
-  shadow: string;
 }
 
-export const useLayout = create(
-  subscribeWithSelector<Layout>((set, get) => {
+export const useLayoutStore = create(
+  subscribeWithSelector<LayoutStore>((set, get) => {
     const mobile = '48em'; // useMantineTheme().breakpoints.sm
     const isMobile = window.matchMedia(`(max-width: ${mobile})`);
 
@@ -53,8 +51,6 @@ export const useLayout = create(
 
       isInitializing: true,
       setInitializing: (value: boolean) => set({ isInitializing: value }),
-
-      shadow: 'rgba(0, 0, 0, 0.2) 2px 0px 15px',
     };
   }),
 );

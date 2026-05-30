@@ -1,4 +1,4 @@
-import { Group, Menu, Modal, Tabs, Text } from '@mantine/core';
+import { Menu, Modal, Tabs } from '@mantine/core';
 import { Icon } from '@iconify/react';
 import { useState, useCallback } from 'react';
 import { glassStyle } from '@/utils/glass';
@@ -6,7 +6,6 @@ import { UploadFile } from '@/features/input/components/UploadFile';
 import { UploadRepo } from '@/features/input/components/UploadRepo';
 import { isTauri } from '@/utils/api';
 import { useUploads } from '../hooks/useUploads';
-import { useMessaging } from '@/stores/messaging';
 
 export default function Upload({
   opened,
@@ -23,17 +22,12 @@ export default function Upload({
     <Modal
       opened={opened}
       onClose={onClose}
-      title={
-        <Group gap={6}>
-          <Icon icon={tab === 'file' ? 'lucide:file' : 'lucide:github'} height={18} />
-          <Text fw={600}>{tab === 'file' ? 'Upload Files' : 'Repositories'}</Text>
-        </Group>
-      }
+      title="Uploads"
       size="lg"
       styles={{ content: glassStyle }}
       centered
     >
-      <Tabs value={tab} onChange={(val) => onTabChange(val as 'file' | 'repo')}>
+      <Tabs value={tab} onChange={(val) => onTabChange(val as 'file' | 'repo')} variant="pills">
         <Tabs.List mb="md">
           <Tabs.Tab value="file" leftSection={<Icon icon="lucide:file" height={16} />}>
             Files
@@ -99,7 +93,6 @@ export function ScreenshotMenuItem({ disabled }: { disabled?: boolean }) {
   });
 
   const { upload } = useUploads();
-  const { addUploads } = useMessaging();
 
   const captureScreenshot = useCallback(async () => {
     try {
@@ -122,16 +115,13 @@ export function ScreenshotMenuItem({ disabled }: { disabled?: boolean }) {
         if (blob) {
           const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
           const file = new File([blob], `Screenshot-${timestamp}.png`, { type: 'image/png' });
-          upload.mutate(
-            { type: 'upload', files: [file] },
-            { onSuccess: (data) => addUploads(...data) },
-          );
+          upload.mutate({ type: 'upload', files: [file] });
         }
       }, 'image/png');
     } catch (e) {
       console.error('Failed to capture screenshot:', e);
     }
-  }, [addUploads, upload]);
+  }, [upload]);
 
   if (!supported) return null;
 

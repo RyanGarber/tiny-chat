@@ -123,6 +123,7 @@ export const Markdown = memo(
           <Streamdown
             animated={BLUR_OPTIONS}
             isAnimating={context.isGenerating}
+            //caret="circle"
             mode={context.isGenerating ? 'streaming' : 'static'}
             components={markdownComponents}
             allowedTags={CUSTOM_TAGS}

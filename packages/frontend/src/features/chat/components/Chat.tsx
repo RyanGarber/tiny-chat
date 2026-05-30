@@ -1,16 +1,7 @@
 import { type RefObject, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import {
-  ActionIcon,
-  Box,
-  Group,
-  ScrollArea,
-  Skeleton,
-  Stack,
-  Text,
-  Transition,
-} from '@mantine/core';
-import { useMessaging } from '@/stores/messaging.tsx';
-import { useLayout } from '@/stores/layout.tsx';
+import { ActionIcon, Box, Group, ScrollArea, Stack, Text, Transition } from '@mantine/core';
+import { useMessagingStore } from '@/features/chat/stores/useMessagingStore';
+import { useLayoutStore } from '@/core/stores/useLayoutStore';
 import ChatInputEffects from '@/features/chat/components/ChatInputEffects';
 import { ChatInput } from '@/features/chat/components/ChatInput';
 import { Icon } from '@iconify/react';
@@ -26,9 +17,11 @@ import { useMergedRef } from '@mantine/hooks';
 import { useChatStore } from '@/features/chat/stores/useChatStore';
 import { query } from '@/utils/api';
 import { useIsMutating } from '@tanstack/react-query';
-import { deleteMessageMutationKey, sendMessageMutationKey } from '../hooks/useSend';
+import { deleteMessageMutationKey, sendMessageMutationKey } from '../hooks/useMessaging';
 import { uploadMutationKey } from '@/features/input/hooks/useUploads';
 import { isMissingToolResult } from '@/utils/ui';
+import Sentinel from '@/core/components/Sentinel';
+import { SHADOW } from '@/utils/theme';
 
 function useElementHeight(initialHeight = 0): {
   ref: RefObject<HTMLDivElement | null>;
@@ -54,18 +47,16 @@ function useElementHeight(initialHeight = 0): {
 }
 
 export default function Chat() {
-  const activeChat = useChat();
+  const { chat } = useChat();
   const messages = useMessages();
 
   const createTemporary = useChatStore((s) => s.createTemporary);
   const createIncognito = useChatStore((s) => s.createIncognito);
+  const scrollRequested = useChatStore((s) => (chat.isFetching ? 0 : s.scrollRequested));
+  const scrollInstant = useChatStore((s) => (chat.isFetching ? 0 : s.scrollInstant));
 
-  const isMobile = useLayout((s) => s.isMobile);
-  const shadow = useLayout((s) => s.shadow);
-  const isInitializing = useLayout((s) => s.isInitializing);
-
-  const scrollRequested = useMessaging((s) => (activeChat.isFetching ? 0 : s.scrollRequested));
-  const scrollInstant = useMessaging((s) => (activeChat.isFetching ? 0 : s.scrollInstant));
+  const isMobile = useLayoutStore((s) => s.isMobile);
+  const isInitializing = useLayoutStore((s) => s.isInitializing);
 
   const {
     viewportRef: viewportRef1,
@@ -107,9 +98,9 @@ export default function Chat() {
     }
   }, [scrollInstant, scrollToBottom]);
 
-  const editing = useMessaging((s) => s.editing);
-  const insertingAfter = useMessaging((s) => s.insertingAfter);
-  const truncating = useMessaging((s) => s.truncating);
+  const editing = useMessagingStore((s) => s.editing);
+  const insertingAfter = useMessagingStore((s) => s.insertingAfter);
+  const truncating = useMessagingStore((s) => s.truncating);
 
   const messageOpacities = useMemo(() => {
     const map = new Map<string, number>();
@@ -136,7 +127,7 @@ export default function Chat() {
   const { ref: chatContainerRef, height: chatContainerHeight } = useElementHeight(600);
 
   const greeting = useGreeting();
-  const isNewChat = !activeChat.data;
+  const isNewChat = !chat.data;
 
   const isSendingMessage = useIsMutating({ mutationKey: sendMessageMutationKey }) > 0;
   const isDeletingMessage = useIsMutating({ mutationKey: deleteMessageMutationKey }) > 0;
@@ -270,13 +261,7 @@ export default function Chat() {
         >
           <Stack pt={isMobile ? 40 : 10} px={20} m="0 auto" maw={860} gap={10}>
             <>
-              <Skeleton
-                height={10}
-                width="100%"
-                opacity={messages.isFetching ? 1 : 0.25}
-                animate={messages.isFetching}
-                ref={sentinelRef}
-              />
+              <Sentinel isFetching={messages.isFetching} ref={sentinelRef} />
               {messages.data?.pages
                 .flatMap((page) => page.messages)
                 .map((message) => (
@@ -317,7 +302,7 @@ export default function Chat() {
           }}
         >
           <Transition
-            mounted={!isNewChat && !!activeChat.data?.unseen}
+            mounted={!isNewChat && !!chat.data?.unseen}
             transition="pop"
             duration={200}
             timingFunction="ease"
@@ -328,12 +313,14 @@ export default function Chat() {
                 radius="xl"
                 size="lg"
                 style={{
-                  boxShadow: shadow,
+                  boxShadow: SHADOW,
                   ...styles,
                 }}
                 onClick={() => {
-                  void refetchActiveChat(activeChat.data!.id);
+                  void refetchActiveChat(chat.data!.id);
                 }}
+                loading={chat.isFetching}
+                disabled={chat.isFetching}
               >
                 <Icon icon="lucide:refresh-cw" height={18} />
               </ActionIcon>
@@ -351,7 +338,7 @@ export default function Chat() {
                 radius="xl"
                 size="lg"
                 style={{
-                  boxShadow: shadow,
+                  boxShadow: SHADOW,
                   ...styles,
                 }}
                 onClick={() => {

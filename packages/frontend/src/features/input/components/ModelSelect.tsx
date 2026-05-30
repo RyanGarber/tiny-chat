@@ -1,42 +1,50 @@
-import { MultiSelect, Select, SelectProps, type MultiSelectProps } from '@mantine/core';
+import { TreeSelect, TreeSelectProps, type TreeNodeData } from '@mantine/core';
 import { DEFAULT_SKILLS, DEFAULT_TOOL_GROUPS, zConfig } from '@tiny-chat/shared/src/types/chat.ts';
 import { useHiddenModels } from '@/features/settings/hooks/useHiddenModels';
 import { useProviders } from '../hooks/useProviders';
+import { useCallback, useMemo } from 'react';
 
 const getData = (
   feature: 'generate' | 'embed',
   includeHidden: boolean,
   providers: ReturnType<typeof useProviders>['providers'],
   hiddenModels: ReturnType<typeof useHiddenModels>['hiddenModels'],
-) => {
-  return providers.data?.chat
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .filter(
-      (p) =>
-        includeHidden ||
-        p.models.some(
-          (m) =>
-            !hiddenModels.data?.[feature].find((h) => h.provider === p.name && h.model === m.name),
-        ),
-    )
-    .map((p) => ({
-      group: p.name,
-      items: p.models
-        .filter((m) => m.features.includes(feature))
-        .filter(
-          (m) =>
-            includeHidden ||
-            !hiddenModels.data?.[feature].find((h) => h.provider === p.name && h.model === m.name),
-        )
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map((m) => ({
-          label: m.name,
-          value: JSON.stringify({ provider: p.name, model: m.name }),
-        })),
-    }));
+): TreeNodeData[] => {
+  return (
+    providers.data?.chat
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .filter(
+        (p) =>
+          includeHidden ||
+          p.models.some(
+            (m) =>
+              !hiddenModels.data?.[feature].find(
+                (h) => h.provider === p.name && h.model === m.name,
+              ),
+          ),
+      )
+      .map((p) => ({
+        label: p.name,
+        value: p.name,
+        children: p.models
+          .filter((m) => m.features.includes(feature))
+          .filter(
+            (m) =>
+              includeHidden ||
+              !hiddenModels.data?.[feature].find(
+                (h) => h.provider === p.name && h.model === m.name,
+              ),
+          )
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map((m) => ({
+            label: m.name,
+            value: JSON.stringify({ provider: p.name, model: m.name }),
+          })),
+      })) ?? []
+  );
 };
 
-interface ModelSelectProps extends SelectProps {
+interface ModelSelectProps extends Omit<TreeSelectProps<'single'>, 'data'> {
   feature: 'generate' | 'embed';
   optional?: boolean;
   configValue: zConfig | null | undefined;
@@ -56,10 +64,11 @@ export default function ModelSelect({
   const { hiddenModels } = useHiddenModels();
   const data = getData(feature, includeHidden, providers, hiddenModels);
   return (
-    <Select
+    <TreeSelect
       required={!optional}
-      allowDeselect={optional} // TODO - remove `| null` type when !optional
+      allowDeselect={optional}
       maxDropdownHeight={250}
+      expandOnClick
       data={data}
       value={
         configValue
@@ -82,29 +91,76 @@ export default function ModelSelect({
   );
 }
 
-interface ModelMultiSelectProps extends MultiSelectProps {
+interface ModelMultiSelectProps extends Omit<TreeSelectProps<'checkbox'>, 'data'> {
   feature: 'generate' | 'embed';
-  configValue: zConfig[];
+  configValues: zConfig[];
   onConfigChange: (value: zConfig[]) => void;
   includeHidden?: boolean;
+  invert?: boolean;
 }
 
 export function ModelMultiSelect({
   feature,
-  configValue,
+  configValues,
   onConfigChange,
   includeHidden = false,
+  invert = false,
   ...multiSelectProps
 }: ModelMultiSelectProps) {
   const { providers } = useProviders();
   const { hiddenModels } = useHiddenModels();
   const data = getData(feature, includeHidden, providers, hiddenModels);
+
+  let values: string[];
+  if (invert) {
+    values = data
+      .flatMap((p) => p.children?.map((m) => m.value) ?? [])
+      .filter(
+        (available) =>
+          !configValues.some(
+            (selected) =>
+              selected.provider === (JSON.parse(available) as zConfig).provider &&
+              selected.model === (JSON.parse(available) as zConfig).model,
+          ),
+      );
+  } else {
+    values = configValues.map((v) => JSON.stringify({ provider: v.provider, model: v.model }));
+  }
+
+  const onChange = useCallback(
+    (value: string[]) => {
+      if (invert) {
+        onConfigChange(
+          data
+            .flatMap((p) => p.children?.map((m) => m.value) ?? [])
+            .filter(
+              (available) =>
+                !value.some(
+                  (selected) =>
+                    (JSON.parse(selected) as zConfig).provider ===
+                      (JSON.parse(available) as zConfig).provider &&
+                    (JSON.parse(selected) as zConfig).model ===
+                      (JSON.parse(available) as zConfig).model,
+                ),
+            )
+            .map((v) => zConfig.parse(JSON.parse(v))),
+        );
+      } else {
+        onConfigChange(value.map((v) => zConfig.parse(JSON.parse(v))));
+      }
+    },
+    [data, invert, onConfigChange],
+  );
+
   return (
-    <MultiSelect
+    <TreeSelect
       maxDropdownHeight={250}
       data={data}
-      value={configValue.map((v) => JSON.stringify({ provider: v.provider, model: v.model }))}
-      onChange={(value) => onConfigChange(value.map((v) => zConfig.parse(JSON.parse(v))) ?? [])}
+      mode="multiple"
+      expandOnClick
+      clearable
+      value={useMemo(() => values, [values])}
+      onChange={useCallback((value: string[]) => onChange(value), [onChange])}
       {...multiSelectProps}
     />
   );

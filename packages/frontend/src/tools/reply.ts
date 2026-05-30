@@ -5,6 +5,7 @@ export const zReplyQuestionInput = z.object({
   question: z.string(),
   suggestions: z.array(z.string()).default([]).describe('A list of autocomplete suggestions.'),
 });
+export type zReplyQuestionInput = z.infer<typeof zReplyQuestionInput>;
 
 export const zReplyQuestionOutput = z.object({
   answer: z.string(),
@@ -29,6 +30,7 @@ const ReplyQuestion: Tool<
 export const zReplyColorInput = z.object({
   question: z.string(),
 });
+export type zReplyColorInput = z.infer<typeof zReplyColorInput>;
 
 export const zReplyColorOutput = z.object({
   color: z.string(),
@@ -53,6 +55,7 @@ const ReplyColor: Tool<
 export const zReplyNumberInput = z.object({
   question: z.string(),
 });
+export type zReplyNumberInput = z.infer<typeof zReplyNumberInput>;
 
 export const zReplyNumberOutput = z.object({
   number: z.number(),
@@ -79,6 +82,7 @@ export const zReplyDatetimeInput = z.object({
   date: z.boolean().describe('Request a date.'),
   time: z.boolean().describe('Request a time.'),
 });
+export type zReplyDatetimeInput = z.infer<typeof zReplyDatetimeInput>;
 
 export const zReplyDatetimeOutput = z.object({
   date: z.string().optional(),

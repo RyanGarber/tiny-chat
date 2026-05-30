@@ -4,18 +4,21 @@ import { scrubText } from '@/utils/text';
 import { zData } from '@tiny-chat/shared/src/types/chat.ts';
 import { texts } from '@tiny-chat/shared/src/utils.ts';
 import { format } from 'timeago.js';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useActions } from '@/features/chat/hooks/useActions';
 import { useChat } from '@/features/chat/hooks/useChat';
 
 export default function Actions() {
-  const activeChat = useChat();
+  const { chat } = useChat();
 
   const actions = useActions();
-  const activeActions =
-    actions.data?.filter(
-      (a) => a.chatId === activeChat.data?.id && a.nextRunAt !== null && a.nextRunAt > new Date(),
-    ) ?? [];
+  const activeActions = useMemo(
+    () =>
+      actions.data?.filter(
+        (a) => a.chatId === chat.data?.id && a.nextRunAt !== null && a.nextRunAt > new Date(),
+      ) ?? [],
+    [actions.data, chat.data],
+  );
 
   const [, tick] = useState(0);
 

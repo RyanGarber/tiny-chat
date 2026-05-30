@@ -1,13 +1,13 @@
 import { ActionIcon, Group, Modal, ModalProps, ScrollArea, Stack, Text } from '@mantine/core';
-import { useLogs } from '@/stores/logs.tsx';
+import { useLogStore } from '@/core/stores/useLogStore';
 import { Icon } from '@iconify/react';
 import { Level } from '@tiny-chat/shared/src/logs.ts';
 import { JsonTree } from '@gfazioli/mantine-json-tree';
 import { glassStyle } from '@/utils/glass';
 
 export default function Console({ opened, onClose }: Pick<ModalProps, 'opened' | 'onClose'>) {
-  const logs = useLogs((s) => s.logs);
-  const clearLogs = useLogs((s) => s.clearLogs);
+  const logs = useLogStore((s) => s.logs);
+  const clearLogs = useLogStore((s) => s.clearLogs);
 
   return (
     <Modal

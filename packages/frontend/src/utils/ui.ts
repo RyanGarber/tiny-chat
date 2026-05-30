@@ -1,4 +1,3 @@
-import { notifications } from '@mantine/notifications';
 import type { MessageState } from '@tiny-chat/shared/src/types/chat.ts';
 import { useEffect, useRef, useState } from 'react';
 import { isTauri } from './api';
@@ -20,11 +19,6 @@ export const consumeLabel = {
     zIndex: 1,
   },
 } as never;
-
-export function alert(type: 'info' | 'warning' | 'error', message: string) {
-  const color = type === 'error' ? 'red' : type === 'warning' ? 'yellow' : undefined;
-  notifications.show({ message, color });
-}
 
 export async function openExternal(url: string) {
   console.log(`Opening link externally: ${url}`);

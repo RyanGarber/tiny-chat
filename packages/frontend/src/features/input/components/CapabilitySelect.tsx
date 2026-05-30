@@ -8,7 +8,6 @@ import {
   ScrollArea,
   JsonInput,
   ActionIcon,
-  Divider,
   TextInput,
   Box,
   Space,
@@ -32,10 +31,12 @@ import { useProviders } from '../hooks/useProviders';
 import { useChatStore } from '@/features/chat/stores/useChatStore';
 import { auth } from '@/utils/api';
 import { useChat } from '@/features/chat/hooks/useChat';
+import { useLayoutStore } from '@/core/stores/useLayoutStore';
 
 export const CapabilitySelect = memo(
   ({ opened, onClose }: { opened: boolean; onClose: () => void }) => {
     const { config, setConfig } = useConfig();
+    const { isMobile } = useLayoutStore();
     const { mcpServerSettings, setMcpServerSettings } = useMcpServerSettings();
     const { builtInTools, mcpTools } = useTools();
     const { localSkills, remoteSkills, deleteRemoteSkill, skills } = useSkills();
@@ -48,16 +49,17 @@ export const CapabilitySelect = memo(
 
     const session = auth.useSession();
     const { isTauriDesktop } = useTauri();
-    const activeChat = useChat();
+    const { chat } = useChat();
     const createIncognito = useChatStore((s) => s.createIncognito);
+    const incognito = chat.data?.incognito ?? createIncognito;
 
     const { providers } = useProviders();
     const builtInToolsSupported = useMemo(() => {
       return precheckAllToolRequirements(
         builtInTools.data,
         session.data?.user,
-        activeChat.data,
-        createIncognito,
+        chat.data,
+        incognito,
         true,
         isTauriDesktop.data,
         providers.data,
@@ -66,8 +68,8 @@ export const CapabilitySelect = memo(
     }, [
       builtInTools.data,
       session.data?.user,
-      activeChat.data,
-      createIncognito,
+      chat.data,
+      incognito,
       isTauriDesktop.data,
       providers.data,
       skills,
@@ -149,37 +151,33 @@ export const CapabilitySelect = memo(
       <Modal
         opened={opened}
         onClose={onClose}
-        title="Capabilities"
+        title="Tools & Skills"
         zIndex={1000}
         size="lg"
         styles={{ content: { ...glassStyle } }}
         centered
       >
-        <Tabs defaultValue="tools:built-in">
+        <Tabs defaultValue="tools:built-in" variant="pills">
           <Tabs.List mb="md">
-            <Group w="100%" gap="xs">
-              <Stack gap={0} mr="md">
-                <Text size="xs" c="dimmed" px="md">
-                  Tools
-                </Text>
-                <Divider my={5} opacity={0.5} />
-                <Group gap="xs">
-                  <Tabs.Tab value="tools:built-in">Native</Tabs.Tab>
-                  <Tabs.Tab value="tools:mcp">MCP</Tabs.Tab>
-                </Group>
-              </Stack>
-              <Stack gap={0}>
-                <Text size="xs" c="dimmed" px="md">
-                  Skills
-                </Text>
-                <Divider my={5} opacity={0.5} />
-                <Group gap="xs">
-                  <Tabs.Tab value="skills:built-in">Native</Tabs.Tab>
+            <Group gap={10}>
+              <Group gap={7} mr={10}>
+                <Box c="dimmed">
+                  <Icon icon="lucide:wrench" width={14} />
+                </Box>
+                <Tabs.Tab value="tools:built-in">Native</Tabs.Tab>
+                <Tabs.Tab value="tools:mcp">MCP</Tabs.Tab>
+              </Group>
+              <Group gap={7}>
+                <Box c="dimmed">
+                  <Icon icon="lucide:graduation-cap" width={14} />
+                </Box>
+                <Tabs.Tab value="skills:built-in">Native</Tabs.Tab>
+                {(isTauriDesktop.data ?? !isMobile) && (
                   <Tabs.Tab value="skills:this-pc" disabled={!isTauriDesktop.data}>
                     This PC
                   </Tabs.Tab>
-                </Group>
-              </Stack>
+                )}
+              </Group>
             </Group>
           </Tabs.List>
           <Tabs.Panel value="tools:built-in">

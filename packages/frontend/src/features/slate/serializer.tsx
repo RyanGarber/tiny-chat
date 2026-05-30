@@ -1,4 +1,4 @@
-import { useMessaging } from '@/stores/messaging.tsx';
+import { useMessagingStore } from '@/features/chat/stores/useMessagingStore';
 import { BaseElement, BaseText, Descendant, Text } from 'slate';
 
 const QUOTE_PREFIX = '::>:: ';
@@ -30,8 +30,9 @@ export function serializeElement(element: BaseElement): string | null {
 
 export function serialize(): string {
   return (
-    useMessaging.getState().editor?.children.map((node) => serializeElement(node as BaseElement)) ??
-    []
+    useMessagingStore
+      .getState()
+      .editor?.children.map((node) => serializeElement(node as BaseElement)) ?? []
   )
     .filter((line) => line !== null)
     .join('\n');

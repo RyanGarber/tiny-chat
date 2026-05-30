@@ -1,12 +1,12 @@
-import { useMessaging } from '@/stores/messaging.tsx';
+import { useMessagingStore } from '@/features/chat/stores/useMessagingStore';
 import { ActionIcon, Blockquote, Box, Group, Text as MantineText } from '@mantine/core';
 import { BaseText, Node, Range, Text, Transforms } from 'slate';
 import { ReactEditor, RenderElementProps, RenderLeafProps } from 'slate-react';
-import { tokenize } from '@/slate/tokenizer.tsx';
+import { tokenize } from '@/features/slate/tokenizer';
 import { Icon } from '@iconify/react';
 
 export function renderElement(props: RenderElementProps) {
-  const editor = useMessaging.getState().editor!;
+  const editor = useMessagingStore.getState().editor!;
 
   switch (props.element.type) {
     case 'quote': {

@@ -1,6 +1,6 @@
 import { ActionIcon, Box, Button, Group, Modal, Stack, Text, Tooltip } from '@mantine/core';
 import { useClipboard, useDisclosure, useHotkeys } from '@mantine/hooks';
-import { useMessaging } from '@/stores/messaging.tsx';
+import { useMessagingStore } from '@/features/chat/stores/useMessagingStore';
 import MessageBody from '@/features/message/components/MessageBody';
 import { MessageState } from '@tiny-chat/shared/src/types/chat.ts';
 import { texts } from '@tiny-chat/shared/src/utils.ts';
@@ -9,14 +9,13 @@ import { JSX, memo } from 'react';
 import { Icon } from '@iconify/react';
 import { useChat } from '@/features/chat/hooks/useChat';
 import { glassStyle } from '@/utils/glass';
-import { ChatService } from '@/features/chat/services/ChatService';
 import Attachments from '@/features/input/components/Attachments';
 import { GenerateService } from '../services/GenerateService';
 import { useProviders } from '@/features/input/hooks/useProviders';
 import { useSkills } from '@/features/input/hooks/useSkills';
 import { useTools } from '@/features/input/hooks/useTools';
 import { useMessages } from '../hooks/useMessages';
-import { useSend } from '@/features/chat/hooks/useSend';
+import { useSend } from '@/features/chat/hooks/useMessaging';
 
 const Message = memo(
   function Message({
@@ -28,7 +27,7 @@ const Message = memo(
     opacity: number;
     isLast: boolean;
   }) {
-    const activeChat = useChat();
+    const { chat, forkChat } = useChat();
     const messages = useMessages();
     const { deleteMessage } = useSend();
 
@@ -36,10 +35,10 @@ const Message = memo(
     const { toolGroups } = useTools();
     const { skills } = useSkills();
 
-    const editing = useMessaging((s) => s.editing);
-    const setEditing = useMessaging((s) => s.setEditing);
-    const insertingAfter = useMessaging((s) => s.insertingAfter);
-    const setInsertingAfter = useMessaging((s) => s.setInsertingAfter);
+    const editing = useMessagingStore((s) => s.editing);
+    const setEditing = useMessagingStore((s) => s.setEditing);
+    const insertingAfter = useMessagingStore((s) => s.insertingAfter);
+    const setInsertingAfter = useMessagingStore((s) => s.setInsertingAfter);
 
     const [isNodeHovered, { open: onNodeHover, close: onNodeLeave }] = useDisclosure(false);
     const [isConfirmingDelete, { open: onConfirmDelete, close: onCancelDelete }] =
@@ -66,13 +65,15 @@ const Message = memo(
         </Tooltip>,
       );
     }
-    if (!activeChat.data?.temporary) {
+    if (!chat.data?.temporary) {
       actions.push(
         <Tooltip label="Fork Here" position="bottom" color="gray" key="clone">
           <ActionIcon
             variant="subtle"
             size={32}
-            onClick={() => void ChatService.cloneChat(activeChat.data!, message.id)}
+            onClick={() => forkChat.mutate({ chat: chat.data!, atMessage: message })}
+            loading={forkChat.isPending}
+            disabled={forkChat.isPending}
           >
             <Icon icon="lucide:split" width={20} />
           </ActionIcon>
@@ -90,9 +91,9 @@ const Message = memo(
         'mod+.',
         () => {
           if (message.id === messages.data?.pages.flatMap((page) => page.messages).at(-1)?.id) {
-            void GenerateService.onModelMessage({
+            void GenerateService.handle({
               message,
-              activeChat: activeChat.data!,
+              activeChat: chat.data!,
               append: [],
               tools: toolGroups,
               skills,

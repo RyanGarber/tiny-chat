@@ -1,13 +1,13 @@
-import { Box, Group, Loader, Stack } from '@mantine/core';
+import { Box, Group, Stack } from '@mantine/core';
 import { useElementSize } from '@mantine/hooks';
 import { MessageState } from '@tiny-chat/shared/src/types/chat.ts';
 import { texts } from '@tiny-chat/shared/src/utils.ts';
 import { MessageBodyContent } from '@/features/message/components/MessageBodyContent';
-import { useLayout } from '@/stores/layout.tsx';
 import { Author } from '@tiny-chat/backend/generated/prisma/enums.ts';
 import { useMessageStream } from '@/features/message/hooks/useStreaming';
 import { CSSProperties, memo } from 'react';
 import { glassStyle } from '@/utils/glass';
+import { SHADOW } from '@/utils/theme';
 
 const MessageBody = memo(
   function MessageBody({ message, style }: { message: MessageState; style?: CSSProperties }) {
@@ -16,8 +16,6 @@ const MessageBody = memo(
     const stream = useMessageStream(message.author === Author.MODEL ? message.id : undefined);
     const live = stream ?? message;
     const parts = live.data.flat();
-
-    const shadow = useLayout((s) => s.shadow);
 
     const { ref: containerRef, width: containerWidth } = useElementSize();
 
@@ -32,7 +30,7 @@ const MessageBody = memo(
                 py={10}
                 bdrs={20}
                 className="user-message"
-                style={{ boxShadow: shadow, alignSelf: 'flex-end', ...glassStyle }}
+                style={{ boxShadow: SHADOW, alignSelf: 'flex-end', ...glassStyle }}
               >
                 <MessageBodyContent message={message} containerWidth={containerWidth} />
               </Box>
@@ -73,12 +71,12 @@ const MessageBody = memo(
             }) && (
               <Box
                 component="span"
-                pt={parts.length > 0 ? 'sm' : 0}
-                pb="xs"
                 display="inline-block"
                 style={{ verticalAlign: 'middle' }}
+                className="shimmer-text active"
+                fz="25px"
               >
-                <Loader size="sm" type="dots" color="dimmed" />
+                &middot;&middot;&middot;
               </Box>
             )}
         </Box>

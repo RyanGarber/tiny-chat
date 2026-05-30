@@ -11,11 +11,11 @@ export const refetchMessages = async (chatId?: string) => {
 };
 
 export const useMessages = () => {
-  const activeChat = useChat();
+  const { chat } = useChat();
 
   const messages = useInfiniteQuery({
     ...query.messages.listInfinite.infiniteQueryOptions(
-      { chatId: activeChat.data?.id, limit: 5 },
+      { chatId: chat.data?.id, limit: 5 },
       {
         getNextPageParam: (lastPage, _pages) => lastPage.nextCursor,
         select: (data) => {
@@ -24,7 +24,9 @@ export const useMessages = () => {
             pageParams: data.pageParams,
           };
         },
+        staleTime: Infinity,
         refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
       },
     ),
   });

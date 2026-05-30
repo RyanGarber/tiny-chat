@@ -1,9 +1,9 @@
 import { KeyboardEvent } from 'react';
-import { useLayout } from '@/stores/layout.tsx';
-import { useMessaging } from '@/stores/messaging.tsx';
+import { useLayoutStore } from '@/core/stores/useLayoutStore';
+import { useMessagingStore } from '@/features/chat/stores/useMessagingStore';
 import { Editor, Path, Text, Transforms } from 'slate';
-import { tokenize } from '@/slate/tokenizer.tsx';
-import type { useSend } from '@/features/chat/hooks/useSend';
+import { tokenize } from '@/features/slate/tokenizer';
+import type { useSend } from '@/features/chat/hooks/useMessaging';
 
 type MarkSyntax = 'bold' | 'italic' | 'code';
 
@@ -26,7 +26,7 @@ function getWordBounds(text: string, offset: number): { start: number; end: numb
 }
 
 function toggleMark(syntax: MarkSyntax) {
-  const { editor } = useMessaging.getState();
+  const { editor } = useMessagingStore.getState();
   if (!editor?.selection) return;
 
   const markers = syntax === 'bold' ? '**' : syntax === 'italic' ? '*' : '`';
@@ -151,7 +151,7 @@ function toggleMark(syntax: MarkSyntax) {
 }
 
 export function onKeyDown(event: KeyboardEvent, send: ReturnType<typeof useSend>['sendMessage']) {
-  const { editor } = useMessaging.getState();
+  const { editor } = useMessagingStore.getState();
   if (!editor) return;
 
   if (
@@ -159,7 +159,7 @@ export function onKeyDown(event: KeyboardEvent, send: ReturnType<typeof useSend>
     !event.shiftKey &&
     !event.ctrlKey &&
     !event.metaKey &&
-    !useLayout.getState().isMobile
+    !useLayoutStore.getState().isMobile
   ) {
     event.preventDefault();
     send.mutate();

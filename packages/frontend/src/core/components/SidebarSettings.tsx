@@ -20,7 +20,7 @@ import { JSX, useEffect, useState } from 'react';
 import { hashText } from '@/utils/text';
 import { consumeLabel } from '@/utils/ui';
 import { useDisclosure } from '@mantine/hooks';
-import { useLayout } from '@/stores/layout.tsx';
+import { useLayoutStore } from '@/core/stores/useLayoutStore';
 import { zCache } from '@tiny-chat/shared/src/types/user.ts';
 import { zConfig } from '@tiny-chat/shared/src/types/chat.ts';
 import ModelSelect, { ModelMultiSelect } from '@/features/input/components/ModelSelect';
@@ -43,8 +43,8 @@ export default function SidebarSettings({
   children: (open: () => void) => JSX.Element;
 }) {
   const { providers, updateProviders } = useProviders();
-  const setGestureBlock = useLayout((s) => s.setGestureBlock);
-  const setDrawerCloser = useLayout((s) => s.setDrawerCloser);
+  const setGestureBlock = useLayoutStore((s) => s.setGestureBlock);
+  const setDrawerCloser = useLayoutStore((s) => s.setDrawerCloser);
 
   const [opened, { open, close }] = useDisclosure(false);
 
@@ -154,7 +154,7 @@ export default function SidebarSettings({
           </Group>
         }
       >
-        <Tabs defaultValue="app">
+        <Tabs defaultValue="app" variant="pills">
           <Tabs.List mb="lg">
             <Tabs.Tab value="app" leftSection={<Icon icon="lucide:settings-2" height={18} />}>
               App
@@ -227,34 +227,36 @@ export default function SidebarSettings({
               </Tooltip>
               <Space />
               <Box>
-                <Text size="sm">Hidden Models</Text>
+                <Text size="sm">Preferred Models</Text>
                 <Text size="xs" c="dimmed">
-                  Hides models from lists and dropdowns
+                  Determines the models shown in the app
                 </Text>
               </Box>
               <Stack>
-                <Tooltip label="Generative models to hide" color="gray" position="right">
+                <Tooltip label="Generative models to show" color="gray" position="right">
                   <ModelMultiSelect
                     label="Generation"
                     styles={consumeLabel}
                     feature="generate"
-                    configValue={hiddenModels.data?.generate.map((m) => zConfig.parse(m)) ?? []}
+                    configValues={hiddenModels.data?.generate.map((m) => zConfig.parse(m)) ?? []}
                     onConfigChange={(value) =>
                       setHiddenModels.mutate({ feature: 'generate', models: value })
                     }
                     includeHidden
+                    invert
                   />
                 </Tooltip>
-                <Tooltip label="Embedding models to hide" color="gray" position="right">
+                <Tooltip label="Embedding models to show" color="gray" position="right">
                   <ModelMultiSelect
                     label="Embedding"
                     styles={consumeLabel}
                     feature="embed"
-                    configValue={hiddenModels.data?.embed.map((m) => zConfig.parse(m)) ?? []}
+                    configValues={hiddenModels.data?.embed.map((m) => zConfig.parse(m)) ?? []}
                     onConfigChange={(value) =>
                       setHiddenModels.mutate({ feature: 'embed', models: value })
                     }
                     includeHidden
+                    invert
                   />
                 </Tooltip>
               </Stack>

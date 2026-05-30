@@ -8,7 +8,7 @@ import {
   type MessageState,
   type zMetadata,
 } from '@tiny-chat/shared/src/types/chat.ts';
-import type { ToolGroup, zToolContext } from '@tiny-chat/shared/src/types/tool.ts';
+import type { ToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
 import type { zSkill } from '@tiny-chat/shared/src/types/skill.ts';
 import {
   alignToolResults,
@@ -18,52 +18,31 @@ import {
 import type { Chat } from '@tiny-chat/backend/generated/prisma/client.ts';
 import { type Stream, StreamService } from '@/features/message/services/StreamService';
 import { auth, backendUrl, isTauriDesktop, trpc } from '@/utils/api.ts';
-import { scrubText } from '@/utils/text.ts';
-import { checkAllToolRequirements, texts } from '@tiny-chat/shared/src/utils.ts';
+import { checkAllToolRequirements } from '@tiny-chat/shared/src/utils.ts';
 import { smoothStream } from 'ai';
 import { refetchMessages } from '@/features/message/hooks/useMessages.ts';
 import { refetchChatList } from '@/features/chat/hooks/useChatList';
 import { refetchMemories } from '@/features/chat/hooks/useMemories.ts';
 import { refetchActions } from '@/features/chat/hooks/useActions.ts';
 import { isMissingToolResult } from '@/utils/ui';
-import { ChatService } from '@/features/chat/services/ChatService';
 import type { zCache } from '@tiny-chat/shared/src/types/user';
 
 /* ───────────────────────────── Controller ────────────────────────────── */
 
-interface BaseProps {
+export interface BaseGenerateProps {
   tools: ToolGroup[];
   skills: zSkill[];
   providers: zCache['providers'];
   activeChat: Chat | null;
 }
 
-interface OnUserMessageProps extends BaseProps {
-  data: zData;
-  config: zConfig;
-  editing?: { id: string; author: Author } | null;
-  truncating?: boolean;
-  insertingAfter?: { id: string } | null;
-  temporary?: boolean;
-  incognito?: boolean;
-  onPrepared?: () => void;
-}
-
-interface OnModelMessageProps extends BaseProps {
+interface OnModelMessageProps extends BaseGenerateProps {
   message: MessageState;
   append?: zDataPart[];
   activeChat: Chat;
 }
 
-interface OnToolInputProps extends BaseProps {
-  seed: MessageState;
-  part: Extract<zDataPart, { type: 'toolCall' }>;
-  value?: unknown;
-  approved?: boolean;
-  activeChat: Chat;
-}
-
-interface GenerateProps extends BaseProps {
+interface GenerateProps extends BaseGenerateProps {
   stream: Stream;
   context: zContextItem[];
   config: zConfig;
@@ -72,135 +51,13 @@ interface GenerateProps extends BaseProps {
 }
 
 export const GenerateService = {
-  onUserMessage: async ({
-    data,
-    config,
-    activeChat,
-    editing,
-    truncating,
-    insertingAfter,
-    temporary,
-    incognito,
-    onPrepared,
-    tools,
-    skills,
-    providers,
-  }: OnUserMessageProps) => {
-    const message = editing
-      ? await trpc.messages.edit.mutate({
-          id: editing.id,
-          author: editing.author,
-          config: config,
-          data: data,
-          metadata: [],
-          truncate: truncating ?? false,
-        })
-      : await trpc.messages.create.mutate({
-          chatId: activeChat?.id,
-          author: Author.USER,
-          config: config,
-          data: data,
-          metadata: [],
-          previousId: insertingAfter?.id,
-          temporary: temporary,
-          incognito: incognito,
-        });
-
-    const isNewChat = !activeChat;
-    if (isNewChat) {
-      console.log('isNewChat', isNewChat);
-      const title = scrubText(texts(data, ' '), 100);
-      void trpc.chats.edit.mutate({ id: message.chatId, title });
-      void refetchChatList();
-      ChatService.setChatId(message.chatId);
-    } else {
-      await refetchMessages(message.chatId);
-    }
-
-    onPrepared?.();
-
-    const chat = await trpc.chats.find.query({ id: message.chatId });
-    if (!chat) throw new Error(`Chat ${message.chatId} not found after send`);
-
-    await GenerateService.onModelMessage({ message, activeChat: chat, tools, providers, skills });
-
-    return { message, chat };
-  },
-
-  /**
-   * Provide a user-inputted tool result for a streaming or paused reply and
-   * resume generation. Mirrors the legacy `handleUserInput`.
-   */
-  onToolInput: async ({
-    seed,
-    part,
-    value,
-    approved,
-    activeChat,
-    tools,
-    skills,
-    providers,
-  }: OnToolInputProps): Promise<void> => {
-    console.log('[Generation] handling tool input', seed, part, value, approved, activeChat);
-    const user = (await auth.getSession()).data!.user;
-    const messages = await trpc.messages.list.query({ chatId: activeChat.id });
-    const context: zToolContext = {
-      user,
-      chat: activeChat,
-      generation: {
-        context: messages,
-        config: seed.config,
-        incognito: activeChat.incognito,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        supportsUserInput: true,
-      },
-      skills,
-    };
-
-    const tool = tools.flatMap((t) => t.tools).find((t) => t.name === part.name);
-    if (!tool) throw new Error(`Tool ${part.name} not found`);
-
-    let result: zDataPart;
-    if (tool.requirements?.approval && !approved) {
-      result = {
-        type: 'toolResult',
-        id: part.id,
-        name: part.name,
-        error: true,
-        value: 'User rejected the tool call',
-      };
-    } else {
-      try {
-        const output = (await tool.run(context, part.args, value)) as unknown;
-        result = { type: 'toolResult', id: part.id, name: part.name, error: false, value: output };
-      } catch (e) {
-        result = {
-          type: 'toolResult',
-          id: part.id,
-          name: part.name,
-          error: true,
-          value: e instanceof Error ? e.message : JSON.stringify(e),
-        };
-      }
-    }
-
-    await GenerateService.onModelMessage({
-      message: seed,
-      activeChat,
-      append: [result],
-      tools,
-      providers,
-      skills,
-    });
-  },
-
   /**
    * Trigger model generation for an existing user message. If `message` is a
    * model reply, the seed user message is resolved automatically. When
    * `append` is provided (e.g. a user-supplied tool result), it is appended
    * to the last data slot of the reply before generation continues.
    */
-  onModelMessage: async ({
+  handle: async ({
     message,
     activeChat,
     append,
@@ -416,6 +273,7 @@ export const GenerateService = {
   abort: (streamId: string): void => {
     console.log('[Generation] aborting stream', streamId);
     StreamService.get(streamId)?.abort.abort();
+    StreamService.stop(streamId);
   },
 } as const;
 

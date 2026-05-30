@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { backendUrl, query, trpc } from '@/utils/api';
-import { type Upload } from '@/stores/messaging';
+import { useMessagingStore, type Upload } from '@/features/chat/stores/useMessagingStore';
 import { zUploadOutput } from '@tiny-chat/shared/src/types/chat';
 
 export const uploadMutationKey = ['upload'] as const;
@@ -78,8 +78,10 @@ export const useUploads = () => {
       return result;
     },
 
-    onSuccess: () => {
+    onSuccess: (result) => {
+      console.log('upload success:', result);
       void fileUploads.refetch();
+      useMessagingStore.getState().addUploads(...result);
     },
   });
 

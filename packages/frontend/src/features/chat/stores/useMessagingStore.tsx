@@ -3,7 +3,7 @@ import { subscribeWithSelector } from 'zustand/middleware';
 import { BaseEditor, Editor, Transforms } from 'slate';
 import { ReactEditor } from 'slate-react';
 import { HistoryEditor } from 'slate-history';
-import { deserialize } from '@/slate/serializer.tsx';
+import { deserialize } from '@/features/slate/serializer';
 import { type zData, type zDataPart, type MessageState } from '@tiny-chat/shared/src/types/chat.ts';
 import { texts } from '@tiny-chat/shared/src/utils.ts';
 import { useConfigStore } from '@/features/input/stores/useConfigStore';
@@ -12,7 +12,7 @@ type CustomEditor = BaseEditor & ReactEditor & HistoryEditor;
 
 export type Upload = Extract<zDataPart, { type: 'upload' }>;
 
-interface Messaging {
+interface MessagingStore {
   editor: CustomEditor | null;
   setEditor: (editor: CustomEditor) => void;
   clearText: () => void;
@@ -34,15 +34,10 @@ interface Messaging {
   setInsertingAfter: (insertingAfter: MessageState | null) => void;
 
   reset: () => void;
-
-  scrollRequested: number;
-  scrollInstant: number;
-  requestScrollToBottom: () => void;
-  requestScrollInstant: () => void;
 }
 
-export const useMessaging = create(
-  subscribeWithSelector<Messaging>((set, get) => ({
+export const useMessagingStore = create(
+  subscribeWithSelector<MessagingStore>((set, get) => ({
     editor: null,
     setEditor: (editor) => {
       set({ editor });
@@ -125,10 +120,5 @@ export const useMessaging = create(
       setInsertingAfter(null);
       void setData([]);
     },
-
-    scrollRequested: 0,
-    scrollInstant: 0,
-    requestScrollToBottom: () => set({ scrollRequested: get().scrollRequested + 1 }),
-    requestScrollInstant: () => set({ scrollInstant: get().scrollInstant + 1 }),
   })),
 );

@@ -9,23 +9,22 @@ import {
   useMantineTheme,
 } from '@mantine/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Task, useTasks } from '@/stores/tasks.tsx';
+import { TauriTask, useTauriStore } from '@/core/stores/useTauriStore';
 import { useDisclosure } from '@mantine/hooks';
 import { format } from 'timeago.js';
-import { useLayout } from '@/stores/layout.tsx';
+import { SHADOW } from '@/utils/theme';
 import { useTauri } from '../hooks/useTauri';
 import { glassStyle } from '@/utils/glass';
 
-interface DisplayedTask extends Task {
+interface DisplayedTask extends TauriTask {
   /** Whether this task is in its removal animation / hold phase */
   removing: boolean;
   displayedProgress: number;
 }
 
-export default function Tasks() {
-  const tasks = useTasks((s) => s.tasks);
+export default function Tauri() {
+  const tasks = useTauriStore((s) => s.tasks);
   const color = useMantineTheme().primaryColor;
-  const shadow = useLayout((s) => s.shadow);
 
   const [displayedTasks, setDisplayedTasks] = useState<Record<string, DisplayedTask>>({});
 
@@ -220,7 +219,7 @@ export default function Tasks() {
       opened={taskList.length > 0 || isUpdateShown}
       withCloseButton={false}
       className="dialog"
-      style={{ ...glassStyle, boxShadow: shadow }}
+      style={{ ...glassStyle, boxShadow: SHADOW }}
       zIndex={10000}
     >
       <Stack gap="xs">

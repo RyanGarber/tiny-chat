@@ -123,7 +123,7 @@ export default function SidebarChatList() {
             renameChat.mutate({ chat: editingChat!, title }, { onSuccess: () => closeEdit() })
           }
           loading={renameChat.isPending}
-          disabled={renameChat.isPending || !editingChat || !title}
+          disabled={renameChat.isPending || !title}
         >
           Save
         </Button>
@@ -142,6 +142,8 @@ export default function SidebarChatList() {
           onClick={() =>
             deleteChat.mutate({ chat: deletingChat! }, { onSuccess: () => closeDelete() })
           }
+          loading={deleteChat.isPending}
+          disabled={deleteChat.isPending}
         >
           Confirm
         </Button>

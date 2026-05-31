@@ -49,15 +49,20 @@ function forward(
     (proxyRes: IncomingMessage) => {
       const { statusCode, headers: proxyHeaders } = proxyRes;
 
-      // Ensure mcp-session-id is always readable by the browser
+      // Ensure all mcp headers are available
+      const MCP_HEADERS = ['mcp-session-id', 'mcp-protocol-version', 'mcp-method', 'mcp-name'];
       const exposed = new Set(
         (proxyHeaders['access-control-expose-headers'] ?? '')
           .split(',')
           .map((h) => h.trim().toLowerCase())
           .filter(Boolean),
       );
-      exposed.add('mcp-session-id');
+      for (const h of MCP_HEADERS) exposed.add(h);
       proxyHeaders['access-control-expose-headers'] = [...exposed].join(', ');
+
+      // Fix nginx header conflict
+      delete proxyHeaders['content-length'];
+      delete proxyHeaders['transfer-encoding'];
 
       console.log(`Proxying to ${url.hostname}:${url.port}${url.pathname + url.search}`);
 

@@ -65,7 +65,7 @@ export default function Dropzone({
           </MantineDropzone.Idle>
           <Stack gap={0} align="center">
             <Text size="xl" inline style={{ textAlign: 'center' }}>
-              Drag files here or click to select
+              Drag files here or click to upload
             </Text>
           </Stack>
         </Group>

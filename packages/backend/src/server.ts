@@ -30,7 +30,7 @@ const server = createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'Content-Type, Authorization, X-Requested-With, Accept, tRPC-Accept, X-Upload-Type, X-MCP-URL, Mcp-Protocol-Version, Mcp-Session-Id, Mcp-Method, Mcp-Name',
+    'Content-Type, Transfer-Encoding, Authorization, X-Requested-With, Accept, tRPC-Accept, X-Upload-Type, X-Mcp-Url, Mcp-Protocol-Version, Mcp-Session-Id, Mcp-Method, Mcp-Name',
   );
 
   if (req.method === 'OPTIONS') {

@@ -1,11 +1,12 @@
-import { createAzure, type OpenAIResponsesProviderOptions } from '@ai-sdk/azure';
+import { createAzure } from '@ai-sdk/azure';
 import type { Model } from '../../types/chat.ts';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { AnthropicProvider } from './anthropic.ts';
 import { OpenAIProvider } from './openai.ts';
 import type { ChatProvider } from './index.ts';
+import { isModelVersion } from '../../utils.ts';
 
-const useResponses = (id: string) => ['gpt-', 'o1', 'o3', 'o4'].some((m) => id.includes(m));
+const useResponses = (id: string) => isModelVersion(id, 'gpt', 'o1', 'o3', 'o4');
 
 export const AzureProvider: ChatProvider = {
   name: 'azure',
@@ -24,7 +25,7 @@ export const AzureProvider: ChatProvider = {
     const client = this.getClient(user, env) as ReturnType<typeof createAzure>;
     if (!client) return null;
 
-    if (id.includes('claude-')) {
+    if (isModelVersion(id, 'claude')) {
       const settings = user?.settings?.providers?.azure;
       return createAnthropic({
         baseURL: `https://${encodeURIComponent(settings.resourceId as string)}.services.ai.azure.com/anthropic/v1`,
@@ -37,21 +38,17 @@ export const AzureProvider: ChatProvider = {
   },
 
   getClientOptions(user, config, env) {
-    if (config.model.includes('claude-')) {
+    if (isModelVersion(config.model, 'claude')) {
       return AnthropicProvider.getClientOptions(user, config, env);
     }
 
     return {
-      azure: {
-        reasoningEffort: config.args?.reasoning,
-        reasoningSummary: 'detailed',
-        include: ['reasoning.encrypted_content'],
-      } satisfies OpenAIResponsesProviderOptions,
+      azure: OpenAIProvider.getClientOptions(user, config, env)?.openai,
     };
   },
 
   getPartTransformed(user, config, message, part) {
-    if (config.model.includes('claude-')) {
+    if (isModelVersion(config.model, 'claude')) {
       return AnthropicProvider.getPartTransformed?.(user, config, message, part) ?? [part];
     }
 
@@ -97,7 +94,7 @@ export const AzureProvider: ChatProvider = {
       };
 
       return json.value.map((d) => {
-        if (d.name.includes('claude-')) {
+        if (isModelVersion(d.name, 'claude')) {
           return {
             name: d.name,
             features: ['generate' as const, 'toolCall' as const],
@@ -120,7 +117,7 @@ export const AzureProvider: ChatProvider = {
   },
 
   getModelArgs(model) {
-    if (model.includes('claude-')) {
+    if (isModelVersion(model, 'claude')) {
       return AnthropicProvider.getModelArgs(model);
     }
 

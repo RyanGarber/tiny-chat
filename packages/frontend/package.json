@@ -7,7 +7,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@browser-ai/transformers-js": "^2.2.2",
     "@gfazioli/mantine-json-tree": "^2.0.2",
+    "@huggingface/hub": "^2.13.0",
     "@mantine/carousel": "^9.2.2",
     "@mantine/core": "^9.2.2",
     "@mantine/dates": "^9.2.2",

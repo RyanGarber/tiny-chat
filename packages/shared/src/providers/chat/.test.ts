@@ -29,6 +29,8 @@ const TO_GEMINI: [zContextItem, ModelMessage][] = [
           },
         ],
       ],
+      config: null,
+      createdAt: null,
     },
     {
       role: 'user',
@@ -61,6 +63,8 @@ const TO_GEMINI: [zContextItem, ModelMessage][] = [
           },
         ],
       ],
+      config: null,
+      createdAt: null,
     },
     {
       role: 'assistant',
@@ -86,6 +90,8 @@ const TO_GEMINI: [zContextItem, ModelMessage][] = [
           },
         ],
       ],
+      config: null,
+      createdAt: null,
     },
     {
       role: 'assistant',
@@ -102,9 +108,12 @@ const TO_GEMINI: [zContextItem, ModelMessage][] = [
 
 test.each(TO_GEMINI)('Google - toSdkContext - %#', (from, to) => {
   expect(
-    toSdkContext(USER, { provider: 'google', model: 'gemini-3-flash', args: {} }, GoogleProvider, [
-      from,
-    ]),
+    toSdkContext(
+      USER,
+      { provider: 'google', model: 'gemini-3-flash', args: {}, toolGroups: [], skills: [] },
+      GoogleProvider,
+      [from],
+    ),
   ).toEqual([to]);
 });
 
@@ -122,6 +131,8 @@ const TO_OPENAI: [zContextItem, ModelMessage][] = [
           },
         ],
       ],
+      config: null,
+      createdAt: null,
     },
     {
       role: 'assistant',
@@ -151,6 +162,8 @@ const TO_OPENAI: [zContextItem, ModelMessage][] = [
           },
         ],
       ],
+      config: null,
+      createdAt: null,
     },
     {
       role: 'assistant',
@@ -169,9 +182,12 @@ const TO_OPENAI: [zContextItem, ModelMessage][] = [
 
 test.each(TO_OPENAI)('OpenAI - toSdkContext - %#', (from, to) => {
   expect(
-    toSdkContext(USER, { provider: 'openai', model: 'gpt-5-chat', args: {} }, OpenAIProvider, [
-      from,
-    ]),
+    toSdkContext(
+      USER,
+      { provider: 'openai', model: 'gpt-5-chat', args: {}, toolGroups: [], skills: [] },
+      OpenAIProvider,
+      [from],
+    ),
   ).toEqual([to]);
 });
 
@@ -218,7 +234,7 @@ test.each(FROM_GOOGLE)('Google - fromSdkContent - %#', (event, to) => {
   expect(
     fromSdkContent(
       USER,
-      { provider: 'google', model: 'gemini-3-flash', args: {} },
+      { provider: 'google', model: 'gemini-3-flash', args: {}, toolGroups: [], skills: [] },
       GoogleProvider,
       event,
     ),
@@ -272,7 +288,7 @@ test.each(FROM_OPENAI)('OpenAI - fromSdkContent - %#', (event, to) => {
   expect(
     fromSdkContent(
       USER,
-      { provider: 'openai', model: 'gpt-5-chat', args: {} },
+      { provider: 'openai', model: 'gpt-5-chat', args: {}, toolGroups: [], skills: [] },
       OpenAIProvider,
       event,
     ),

@@ -7,19 +7,26 @@ export const useMcpServerSettings = () => {
 
   const mcpServerSettings = useQuery({
     ...query.settings.get.queryOptions(),
-    select: (data) => data.mcpServers,
+    select: (data) => data.mcpServers ?? [],
     initialData: zSettings.safeParse(session.data?.user?.settings).data,
+  });
+
+  const mcpServerSettingsUnparsed = useQuery({
+    ...query.settings.getUnparsed.queryOptions(),
+    select: (data) => (data as zSettings).mcpServers ?? [],
   });
 
   const setMcpServerSettings = useMutation({
     ...query.settings.setMcpServers.mutationOptions(),
-    onSuccess: (data) => {
-      queryClient.setQueryData(query.settings.get.queryKey(), data);
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: query.settings.get.queryKey() });
+      void queryClient.invalidateQueries({ queryKey: query.settings.getUnparsed.queryKey() });
     },
   });
 
   return {
     mcpServerSettings,
+    mcpServerSettingsUnparsed,
     setMcpServerSettings,
   };
 };

@@ -48,12 +48,12 @@ export const zMCPServers = z
       z.discriminatedUnion('type', [
         z.object({
           name: z.string(),
-          type: z.literal('remote'),
+          type: z.literal('http'),
           url: z.string(),
           auth: z
             .discriminatedUnion('type', [
               z.object({
-                type: z.literal('token'),
+                type: z.literal('bearer'),
                 token: z.string().optional(),
               }),
             ])
@@ -61,7 +61,7 @@ export const zMCPServers = z
         }),
         z.object({
           name: z.string(),
-          type: z.literal('local'),
+          type: z.literal('stdio'),
           command: z.array(z.string()),
           env: z.record(z.string(), z.string()).optional(),
         }),
@@ -93,7 +93,8 @@ export const zSettings = z
     theme: z.string(),
     codeTheme: z.string(),
     providers: zProviderSettings,
-    mcpServers: zMCPServers,
+    mcpServers: zMCPServers.catch(() => undefined),
+    huggingFaceModels: z.array(z.string()).default([]),
   })
   .partial();
 export type zSettings = z.infer<typeof zSettings>;

@@ -21,7 +21,7 @@ export const useMessages = () => {
         select: (data) => {
           return {
             pages: [...data.pages].reverse(),
-            pageParams: data.pageParams,
+            pageParams: [...data.pageParams].reverse(),
           };
         },
         staleTime: Infinity,

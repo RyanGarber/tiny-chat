@@ -3,7 +3,7 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { Anthropic } from '@anthropic-ai/sdk';
 import type { Model, ModelArg } from '../../types/chat.ts';
 import type { ChatProvider } from './index.ts';
-import { getBaseModelArgs, getBaseModelTransform } from '../../utils.ts';
+import { getBaseModelArgs, getBaseModelTransform, isModelVersion } from '../../utils.ts';
 
 export const AnthropicProvider: ChatProvider = {
   name: 'anthropic',
@@ -32,6 +32,7 @@ export const AnthropicProvider: ChatProvider = {
             : config.args?.thinking
               ? { type: 'enabled', budgetTokens: parseInt(config.args.thinking as string) }
               : undefined,
+        effort: config.args?.effort,
       } satisfies AnthropicProviderOptions,
     };
   },
@@ -59,9 +60,9 @@ export const AnthropicProvider: ChatProvider = {
 
   getModelArgs(model) {
     const args: ModelArg[] = [];
-    if (model.includes('claude-')) {
+    if (isModelVersion(model, 'claude')) {
       args.push(...getBaseModelArgs(1));
-      if (model.includes('-4-5')) {
+      if (isModelVersion(model, '4.5')) {
         args.push({
           name: 'thinking',
           type: 'list' as const,
@@ -69,12 +70,28 @@ export const AnthropicProvider: ChatProvider = {
           default: '2500',
         });
       }
-      if (model.includes('-4-6') || model.includes('-4-7')) {
+      if (isModelVersion(model, '4.6', '4.7')) {
         args.push({
           name: 'thinking',
           type: 'list' as const,
           values: ['disabled', 'adaptive'],
           default: 'adaptive',
+        });
+      }
+      if (isModelVersion(model, 'opus 4.5', 'sonnet 4.6', 'opus 4.6')) {
+        args.push({
+          name: 'effort',
+          type: 'list' as const,
+          values: ['low', 'medium', 'high', 'max'],
+          default: 'medium',
+        });
+      }
+      if (isModelVersion(model, 'opus 4.7', 'opus 4.8')) {
+        args.push({
+          name: 'effort',
+          type: 'list' as const,
+          values: ['low', 'medium', 'high', 'xhigh', 'max'],
+          default: 'medium',
         });
       }
     }

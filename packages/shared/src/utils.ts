@@ -309,3 +309,11 @@ export function wrapSkill<T extends Record<string, unknown>>(
       .map((f) => ({ path: f.path.slice(skillMd.path.length - 1).join('/'), content: f.data })),
   };
 }
+
+export function isModelVersion(test: string, ...groups: string[]) {
+  test = test.replace(/[+_.:]/g, '-');
+  groups = groups.map((group) => group.replace(/[+_.:]/g, '-'));
+  return groups.some((group) =>
+    group.split(' ').every((match) => new RegExp(`(?:^|\\W)(${match})(?:\\W|$)`, 'i').test(test)),
+  );
+}

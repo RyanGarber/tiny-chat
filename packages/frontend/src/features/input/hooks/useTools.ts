@@ -43,9 +43,10 @@ export const useTools = () => {
     queryFn: async () => {
       const mcps = await McpService.connect(mcpServerSettingsData);
       return (
-        mcps?.map(({ server, client, tools }, i) => ({
+        mcps?.map(({ server, client, tools, error }, i) => ({
           server,
           client,
+          error,
           toolGroup: {
             name: `mcp:${server.name}`,
             tools: tools.map(

@@ -2,7 +2,7 @@ import type { GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import type { Model, ModelArg, zDataPart } from '../../types/chat.ts';
 import type { ChatProvider } from './index.ts';
-import { getBaseModelArgs, getBaseModelTransform } from '../../utils.ts';
+import { getBaseModelArgs, getBaseModelTransform, isModelVersion } from '../../utils.ts';
 
 export const GoogleProvider: ChatProvider = {
   name: 'google',
@@ -36,7 +36,9 @@ export const GoogleProvider: ChatProvider = {
                     : undefined,
               }
             : undefined,
-        responseModalities: config.model.includes('gemini-3') ? ['TEXT', 'IMAGE'] : undefined,
+        responseModalities: isModelVersion(config.model, 'gemini 3')
+          ? ['TEXT', 'IMAGE']
+          : undefined,
       } satisfies GoogleGenerativeAIProviderOptions,
     };
   },
@@ -44,7 +46,7 @@ export const GoogleProvider: ChatProvider = {
   getPartTransformed(_user, config, _message, part) {
     const parts: zDataPart[] = [];
 
-    if (config.model.includes('gemini-') && part.type === 'text') {
+    if (isModelVersion(config.model, 'gemini') && part.type === 'text') {
       const youtubeRegex =
         /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtube\.com\/shorts\/|youtu\.be\/)([A-Za-z0-9-_]{11})\S*/g;
       let lastIndex = 0;
@@ -125,9 +127,9 @@ export const GoogleProvider: ChatProvider = {
 
   getModelArgs(model) {
     const args: ModelArg[] = [];
-    if (model.includes('gemini')) {
+    if (isModelVersion(model, 'gemini')) {
       args.push(...getBaseModelArgs(2));
-      if (model.includes('gemini-2.5')) {
+      if (isModelVersion(model, 'gemini 2.5')) {
         args.push({
           name: 'thinking-budget',
           type: 'list',
@@ -135,7 +137,7 @@ export const GoogleProvider: ChatProvider = {
           default: 'auto',
         });
       }
-      if (model.includes('gemini-3')) {
+      if (isModelVersion(model, 'gemini 3')) {
         args.push({
           name: 'thinking',
           type: 'list',

@@ -106,8 +106,15 @@ export default function SidebarAccount({
                 variant="default"
                 fullWidth
                 onClick={() => {
-                  if (session?.user?.isAnonymous) void clone(true);
-                  else void openExternal(`${webUrl}`);
+                  if (session?.user?.isAnonymous) {
+                    if (isCloning) {
+                      clearInterval(cloneInterval);
+                      setCloning(false);
+                    }
+                    void clone(true);
+                  } else {
+                    void openExternal(`${webUrl}`);
+                  }
                 }}
               >
                 {isCloning ? 'Cancel' : 'Open Browser'}
@@ -117,8 +124,16 @@ export default function SidebarAccount({
                   href="#"
                   onClick={(e) => {
                     e.preventDefault();
-                    if (session?.user?.isAnonymous) void clone(false);
-                    else void openExternal(`${webUrl}`);
+
+                    if (session?.user?.isAnonymous) {
+                      if (isCloning) {
+                        clearInterval(cloneInterval);
+                        setCloning(false);
+                      }
+                      void clone(false);
+                    } else {
+                      void openExternal(`${webUrl}`);
+                    }
                   }}
                 >
                   or copy the link
@@ -166,6 +181,8 @@ export default function SidebarAccount({
                   onClick={() => {
                     deleteUser.mutate();
                   }}
+                  loading={deleteUser.isPending}
+                  disabled={deleteUser.isPending}
                 >
                   Confirm
                 </Button>

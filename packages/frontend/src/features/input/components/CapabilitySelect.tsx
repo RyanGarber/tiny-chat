@@ -32,12 +32,13 @@ import { useChatStore } from '@/features/chat/stores/useChatStore';
 import { auth } from '@/utils/api';
 import { useChat } from '@/features/chat/hooks/useChat';
 import { useLayoutStore } from '@/core/stores/useLayoutStore';
+import { ZodError } from 'zod';
 
 export const CapabilitySelect = memo(
   ({ opened, onClose }: { opened: boolean; onClose: () => void }) => {
     const { config, setConfig } = useConfig();
     const { isMobile } = useLayoutStore();
-    const { mcpServerSettings, setMcpServerSettings } = useMcpServerSettings();
+    const { mcpServerSettingsUnparsed, setMcpServerSettings } = useMcpServerSettings();
     const { builtInTools, mcpTools } = useTools();
     const { localSkills, remoteSkills, deleteRemoteSkill, skills } = useSkills();
 
@@ -133,12 +134,17 @@ export const CapabilitySelect = memo(
     useEffect(() => {
       if (!mcpInputActive && !mcpInputError && !setMcpServerSettings.isPending) {
         setMcpInputValue(
-          `mcp.json (${JSON.stringify(mcpServerSettings.data ?? [], null, 2).split('\n').length} lines)`,
+          `mcp.json (${JSON.stringify(mcpServerSettingsUnparsed.data ?? [], null, 2).split('\n').length} lines)`,
         );
       } else {
-        setMcpInputValue(JSON.stringify(mcpServerSettings.data ?? [], null, 2) ?? '[]');
+        setMcpInputValue(JSON.stringify(mcpServerSettingsUnparsed.data ?? [], null, 2) ?? '[]');
       }
-    }, [mcpInputActive, mcpInputError, setMcpServerSettings.isPending, mcpServerSettings.data]);
+    }, [
+      mcpInputActive,
+      mcpInputError,
+      setMcpServerSettings.isPending,
+      mcpServerSettingsUnparsed.data,
+    ]);
 
     const [mcpInputValueOverride, setMcpInputValueOverride] = useState<string | null>(null);
     useLayoutEffect(() => {
@@ -250,7 +256,13 @@ export const CapabilitySelect = memo(
                       setMcpInputError(null);
                       setMcpServerSettings.mutate({ mcpServers });
                     } catch (error) {
-                      setMcpInputError(error instanceof Error ? error.message : 'Unknown error');
+                      setMcpInputError(
+                        error instanceof ZodError
+                          ? error.issues.map((e) => e.message).join(', ')
+                          : error instanceof Error
+                            ? error.message
+                            : 'Unknown error',
+                      );
                       console.error(error);
                     }
                   }}
@@ -302,15 +314,32 @@ export const CapabilitySelect = memo(
                           : config.toolGroups?.filter((t) => t !== mcpServer.toolGroup.name),
                       });
                     }}
-                    style={{ ...glassStyle }}
+                    style={{
+                      ...glassStyle,
+                      cursor: mcpServer.error !== undefined ? 'not-allowed' : undefined,
+                    }}
+                    disabled={mcpServer.error !== undefined}
                   >
                     <Group wrap="nowrap" align="flex-start">
                       <Checkbox.Indicator />
-                      <div>
+                      <Stack gap={5} miw={0}>
                         <Text size="xs">{mcpServer.server.name}</Text>
                         <Text size="xs" c="dimmed">
                           {mcpServer.toolGroup.tools.map((t) => t.name).join(', ')}
                         </Text>
+                        {mcpServer.error !== undefined && (
+                          <Group gap="xs" c="red">
+                            <Icon icon="lucide:alert-circle" width={12} />
+                            <Text size="xs">
+                              {mcpServer.error instanceof Error
+                                ? mcpServer.error.message
+                                : 'Unknown error'}
+                            </Text>
+                          </Group>
+                        )}
+                      </Stack>
+                      <div>
+                        <Text size="xs"></Text>
                       </div>
                     </Group>
                   </Checkbox.Card>

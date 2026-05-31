@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useDebouncedValue } from '@mantine/hooks';
+import { useDebouncedValue, useHotkeys } from '@mantine/hooks';
 import { ActionIcon, Avatar, Burger, Group, NavLink, Stack, Text, Tooltip } from '@mantine/core';
 import { Spotlight, spotlight, SpotlightActionData } from '@mantine/spotlight';
 import { useLayoutStore } from '@/core/stores/useLayoutStore.tsx';
@@ -17,6 +17,7 @@ import { glassStyle } from '@/utils/glass.tsx';
 import { useChatStore } from '@/features/chat/stores/useChatStore';
 import { ChatService } from '@/features/chat/services/ChatService.ts';
 import { useRetrieval } from '@/features/settings/hooks/useRetrieval.ts';
+import HuggingFace from '@/core/components/HuggingFace.tsx';
 
 export default function Sidebar() {
   const { chat } = useChat();
@@ -45,6 +46,9 @@ export default function Sidebar() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery] = useDebouncedValue(searchQuery, 400);
+
+  const [superSecretHuggingFaceMenuOpened, setSuperSecretHuggingFaceMenuOpened] = useState(false);
+  useHotkeys([['mod+h', () => setSuperSecretHuggingFaceMenuOpened(true)]]);
 
   const spotlightActions = useInfiniteQuery({
     ...query.chats.search.infiniteQueryOptions(
@@ -300,6 +304,10 @@ export default function Sidebar() {
       >
         {collapsed}
       </div>
+      <HuggingFace
+        opened={superSecretHuggingFaceMenuOpened}
+        onClose={() => setSuperSecretHuggingFaceMenuOpened(false)}
+      />
     </div>
   );
 }

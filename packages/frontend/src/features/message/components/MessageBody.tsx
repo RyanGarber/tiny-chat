@@ -15,7 +15,6 @@ const MessageBody = memo(
     // the loader dots and pending-tool detection are accurate token-by-token.
     const stream = useMessageStream(message.author === Author.MODEL ? message.id : undefined);
     const live = stream ?? message;
-    const parts = live.data.flat();
 
     const { ref: containerRef, width: containerWidth } = useElementSize();
 
@@ -35,22 +34,6 @@ const MessageBody = memo(
                 <MessageBodyContent message={message} containerWidth={containerWidth} />
               </Box>
             )}
-            {/* {uploads.length !== 0 && (
-              <Group
-                gap={5}
-                c="dimmed"
-                mt={15}
-                mb={hasText ? -45 : 0}
-                pr={hasText ? 200 : 0}
-                style={{ alignSelf: 'flex-start' }}
-              >
-                <Icon icon="lucide:paperclip" height={18} />
-                <Attachments
-                  list={uploads.map((u) => ({ name: u.name, image: u.thumbnail }))}
-                  width={containerWidth}
-                />
-              </Group>
-            )} */}
           </Stack>
         </Group>
       );
@@ -60,25 +43,17 @@ const MessageBody = memo(
       <Box w="100%" ref={containerRef} style={style}>
         <Box display="inline">
           <MessageBodyContent message={message} containerWidth={containerWidth} />
-          {live.state.any &&
-            !parts.some((p, index) => {
-              const isLast = index === parts.length - 1;
-              return (
-                (p.type === 'thought' && live.state.thinking && isLast) ||
-                (p.type === 'toolCall' &&
-                  !parts.some((pr) => pr.type === 'toolResult' && pr.id === p.id))
-              );
-            }) && (
-              <Box
-                component="span"
-                display="inline-block"
-                style={{ verticalAlign: 'middle' }}
-                className="shimmer-text active"
-                fz="25px"
-              >
-                &middot;&middot;&middot;
-              </Box>
-            )}
+          {live.state.any && (
+            <Box
+              component="span"
+              display="inline-block"
+              style={{ verticalAlign: 'middle' }}
+              className="shimmer-text active"
+              fz="25px"
+            >
+              &middot;&middot;&middot;
+            </Box>
+          )}
         </Box>
       </Box>
     );

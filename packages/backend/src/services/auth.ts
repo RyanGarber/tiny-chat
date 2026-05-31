@@ -39,6 +39,10 @@ export const auth = betterAuth({
       clientId: process.env.AUTH_GOOGLE_CLIENT!,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
     },
+    /*huggingface: {
+      clientId: process.env.AUTH_HUGGINGFACE_CLIENT!,
+      clientSecret: process.env.AUTH_HUGGINGFACE_SECRET,
+      },*/
   },
   plugins: [
     anonymous({

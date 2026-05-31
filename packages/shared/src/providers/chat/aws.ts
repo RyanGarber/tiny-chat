@@ -2,6 +2,7 @@ import { type BedrockProviderOptions, createAmazonBedrock } from '@ai-sdk/amazon
 import type { Model, ModelArg } from '../../types/chat.ts';
 import { AnthropicProvider } from './anthropic.ts';
 import type { ChatProvider } from './index.ts';
+import { isModelVersion } from '../../utils.ts';
 
 const INFERENCE_PROFILES: Record<string, string> = {
   'amazon.nova-2-lite-v1:0': 'global.amazon.nova-2-lite-v1:0',
@@ -39,7 +40,7 @@ export const AWSProvider: ChatProvider = {
   },
 
   getClientOptions(user, config, env) {
-    if (config.model.includes('claude-')) {
+    if (isModelVersion(config.model, 'claude')) {
       return {
         bedrock: {
           reasoningConfig: AnthropicProvider.getClientOptions(user, config, env)?.thinking,
@@ -58,7 +59,7 @@ export const AWSProvider: ChatProvider = {
   },
 
   getPartTransformed(user, config, message, part) {
-    if (config.model.includes('claude-')) {
+    if (isModelVersion(config.model, 'claude')) {
       return AnthropicProvider.getPartTransformed?.(user, config, message, part) ?? [part];
     }
 
@@ -78,7 +79,7 @@ export const AWSProvider: ChatProvider = {
       };
 
       return models.modelSummaries.flatMap((m): Model[] => {
-        if (m.modelId.includes('claude-')) {
+        if (isModelVersion(m.modelId, 'claude')) {
           return [
             {
               name: m.modelId,
@@ -107,12 +108,12 @@ export const AWSProvider: ChatProvider = {
   },
 
   getModelArgs(model) {
-    if (model.includes('claude-')) {
+    if (isModelVersion(model, 'claude')) {
       return AnthropicProvider.getModelArgs(model);
     }
 
     const args: ModelArg[] = [];
-    if (model.includes('nova-')) {
+    if (isModelVersion(model, 'nova')) {
       args.push({
         name: 'thinking',
         type: 'list' as const,

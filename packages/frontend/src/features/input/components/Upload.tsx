@@ -1,11 +1,12 @@
-import { Menu, Modal, Tabs } from '@mantine/core';
+import { Stack, Group, Menu, Modal, Overlay, Tabs, Text } from '@mantine/core';
 import { Icon } from '@iconify/react';
 import { useState, useCallback } from 'react';
 import { glassStyle } from '@/utils/glass';
 import { UploadFile } from '@/features/input/components/UploadFile';
 import { UploadRepo } from '@/features/input/components/UploadRepo';
-import { isTauri } from '@/utils/api';
 import { useUploads } from '../hooks/useUploads';
+import { Dropzone } from '@mantine/dropzone';
+import { isTauri } from '@/utils/api';
 
 export default function Upload({
   opened,
@@ -18,34 +19,64 @@ export default function Upload({
   tab: 'file' | 'repo';
   onTabChange: (tab: 'file' | 'repo') => void;
 }) {
+  const { upload } = useUploads();
   return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      title="Uploads"
-      size="lg"
-      styles={{ content: glassStyle }}
-      centered
-    >
-      <Tabs value={tab} onChange={(val) => onTabChange(val as 'file' | 'repo')} variant="pills">
-        <Tabs.List mb="md">
-          <Tabs.Tab value="file" leftSection={<Icon icon="lucide:file" height={16} />}>
-            Files
-          </Tabs.Tab>
-          <Tabs.Tab value="repo" leftSection={<Icon icon="lucide:github" height={16} />}>
-            Repositories
-          </Tabs.Tab>
-        </Tabs.List>
+    <>
+      <Dropzone.FullScreen
+        onDrop={(files) => upload.mutate({ type: 'upload', files })}
+        zIndex="calc(var(--mantine-z-index-modal) - 1)"
+        active={!opened}
+        styles={{
+          inner: {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          },
+        }}
+      >
+        <Dropzone.Accept>
+          <Overlay>
+            <Group justify="center" align="center" style={{ height: '100%', width: '100%' }}>
+              <Icon icon="lucide:upload" height={50} color="var(--mantine-color-blue-6)" />
+              <Stack gap={0} align="center">
+                <Text size="xl" inline style={{ textAlign: 'center' }}>
+                  Drop files here to upload
+                </Text>
+              </Stack>
+            </Group>
+          </Overlay>
+        </Dropzone.Accept>
+      </Dropzone.FullScreen>
+      <Modal
+        opened={opened}
+        onClose={onClose}
+        title="Uploads"
+        size="lg"
+        styles={{ content: glassStyle }}
+        centered
+      >
+        <Tabs value={tab} onChange={(val) => onTabChange(val as 'file' | 'repo')} variant="pills">
+          <Tabs.List mb="md">
+            <Tabs.Tab value="file" leftSection={<Icon icon="lucide:file" height={16} />}>
+              Files
+            </Tabs.Tab>
+            <Tabs.Tab value="repo" leftSection={<Icon icon="lucide:github" height={16} />}>
+              Repositories
+            </Tabs.Tab>
+          </Tabs.List>
 
-        <Tabs.Panel value="file">
-          <UploadFile onClose={onClose} />
-        </Tabs.Panel>
+          <Tabs.Panel value="file">
+            <UploadFile onClose={onClose} />
+          </Tabs.Panel>
 
-        <Tabs.Panel value="repo">
-          <UploadRepo onClose={onClose} />
-        </Tabs.Panel>
-      </Tabs>
-    </Modal>
+          <Tabs.Panel value="repo">
+            <UploadRepo onClose={onClose} />
+          </Tabs.Panel>
+        </Tabs>
+      </Modal>
+    </>
   );
 }
 

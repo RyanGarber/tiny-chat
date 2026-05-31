@@ -82,15 +82,13 @@ export type StreamTextOptions = Omit<
 
 export async function* runGeneration(
   user: zUser,
+  provider: ChatProvider,
   context: zContextItem[],
   config: zConfig,
   tools: Tool<any, any, any>[],
   env: Env,
   options: Partial<StreamTextOptions> = {},
 ): AsyncGenerator<zGenerateOutput> {
-  const provider = chatProviders.find((p) => p.name === config.provider);
-  if (!provider) throw new Error(`Provider not found: ${config.provider}`);
-
   const clientModel = provider.getClientModel(user, config.model, env);
   const providerModels = await provider.getModels(user);
   const supportsToolCall = providerModels.find((m) => m.name === config.model);

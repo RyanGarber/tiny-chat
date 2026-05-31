@@ -228,11 +228,11 @@ const Message = memo(
           <Button
             color="red"
             fullWidth
-            loading={deleteMessage.isPending}
-            disabled={deleteMessage.isPending}
             onClick={() => {
               deleteMessage.mutate(message, { onSuccess: () => onCancelDelete() });
             }}
+            loading={deleteMessage.isPending}
+            disabled={deleteMessage.isPending}
           >
             Confirm
           </Button>

@@ -14,6 +14,14 @@ export default router({
     return zSettings.parse(user.settings ?? {});
   }),
 
+  getUnparsed: procedure.query(async ({ ctx }) => {
+    const user = await globalThis.prisma.user.findUniqueOrThrow({
+      where: { id: ctx.session.user.id },
+      select: { settings: true },
+    });
+    return user.settings ?? {};
+  }),
+
   setTheme: procedure.input(z.object({ theme: z.string() })).mutation(async ({ ctx, input }) => {
     return set(ctx, (settings) => ({ ...settings, theme: input.theme }));
   }),
@@ -99,12 +107,6 @@ export default router({
       }));
     }),
 
-  setMcpServers: procedure
-    .input(z.object({ mcpServers: zMCPServers }))
-    .mutation(async ({ ctx, input }) => {
-      return set(ctx, (settings) => ({ ...settings, mcpServers: input.mcpServers }));
-    }),
-
   setProviderSetting: procedure
     .input(z.object({ provider: z.string(), key: z.string(), value: z.string().nullish() }))
     .mutation(async ({ ctx, input }) => {
@@ -127,6 +129,18 @@ export default router({
         ...settings,
         useProviderCache: input.useProviderCache,
       }));
+    }),
+
+  setMcpServers: procedure
+    .input(z.object({ mcpServers: zMCPServers }))
+    .mutation(async ({ ctx, input }) => {
+      return set(ctx, (settings) => ({ ...settings, mcpServers: input.mcpServers }));
+    }),
+
+  setHuggingFaceModels: procedure
+    .input(z.object({ huggingFaceModels: z.array(z.string()) }))
+    .mutation(async ({ ctx, input }) => {
+      return set(ctx, (settings) => ({ ...settings, huggingFaceModels: input.huggingFaceModels }));
     }),
 
   listAccounts: procedure.query(async ({ ctx }) => {

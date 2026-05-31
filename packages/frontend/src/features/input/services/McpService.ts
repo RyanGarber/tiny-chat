@@ -20,13 +20,16 @@ export const McpService = {
     const mcps: {
       server: NonNullable<zSettings['mcpServers']>[number];
       client: Client;
+      error?: unknown;
       tools: Tool[];
     }[] = [];
-    const newClients: Client[] = [];
+    const connected: Client[] = [];
 
     for (let i = 0; i < mcpServerSettings.length; i++) {
       const server = mcpServerSettings[i];
       const client = new Client({ version: '0', name: 'tiny-chat' });
+      let tools: Tool[] = [];
+      let error: unknown;
 
       const tryConnect = async (transport: Transport) => {
         try {
@@ -39,54 +42,63 @@ export const McpService = {
             client.connect(transport).then(resolve).catch(reject);
           });
           transport.onerror = onerror;
-          newClients.push(client);
-
-          const { tools } = await client.listTools();
-          mcps.push({ server, client, tools });
-
+          connected.push(client);
+          tools = (await client.listTools()).tools;
           return true;
         } catch (e) {
-          console.warn(`mcp ${i} error:`, e);
+          console.log('mcp error:', e);
+          error = new Error('Failed to connect');
           await client.close();
-
           return false;
         }
       };
 
-      if (server.type === 'local' && (await isTauriDesktop())) {
-        await tryConnect(new TauriStdioTransport(i.toString(), server.command, server.env));
-      } else if (server.type === 'remote') {
+      const isDesktop = await isTauriDesktop();
+
+      if (server.type === 'stdio') {
+        if (isDesktop) {
+          await tryConnect(new TauriStdioTransport(i.toString(), server.command, server.env));
+        } else {
+          error = new Error('Requires desktop app');
+        }
+      } else if (server.type === 'http') {
+        const isLocal =
+          ['192.168.', '10.', '172.16.', 'fc00:'].some((prefix) =>
+            new URL(server.url).hostname.startsWith(prefix),
+          ) ||
+          ['localhost', '127.0.0.1', '::1'].includes(new URL(server.url).hostname) ||
+          ['.home', '.local'].some((suffix) => new URL(server.url).hostname.endsWith(suffix));
+
         const headers: Record<string, string> =
-          server.auth?.type === 'token' ? { Authorization: `Bearer ${server.auth.token}` } : {};
+          server.auth?.type === 'bearer' ? { Authorization: `Bearer ${server.auth.token}` } : {};
 
-        if (
-          await tryConnect(
-            new StreamableHTTPClientTransport(new URL(server.url), { requestInit: { headers } }),
-          )
-        )
-          continue;
-
-        if (
-          (await isTauriDesktop()) &&
-          (await tryConnect(new TauriHttpTransport(i.toString(), server.url, headers)))
-        )
-          continue;
-
-        if (
-          await tryConnect(
+        let transports: Transport[];
+        if (isLocal) {
+          if (isDesktop) transports = [new TauriHttpTransport(server.name, server.url, headers)];
+          else
+            transports = [
+              new StreamableHTTPClientTransport(new URL(server.url), { requestInit: { headers } }),
+            ];
+        } else {
+          transports = [
             new StreamableHTTPClientTransport(new URL(`${backendUrl}/@/mcp`), {
-              requestInit: { headers: { 'X-MCP-URL': server.url, ...headers } },
+              requestInit: { headers: { 'X-Mcp-Url': server.url, ...headers } },
             }),
-          )
-        )
-          continue;
+          ];
+        }
 
-        console.error(`mcp failed all transports:`, server); // TODO - push with error field
+        for (const transport of transports) {
+          if (await tryConnect(transport)) {
+            break;
+          }
+        }
       }
+
+      mcps.push({ server, client, error, tools });
     }
 
     // swap to prevent mcp server disconnects
-    const oldClients = McpService.clients.splice(0, McpService.clients.length, ...newClients);
+    const oldClients = McpService.clients.splice(0, McpService.clients.length, ...connected);
     for (const client of oldClients) {
       await client.close().catch((e) => console.warn('mcp close error:', e));
     }

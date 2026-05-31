@@ -25,6 +25,7 @@ import type { zUser } from '@tiny-chat/shared/src/types/user.ts';
 import { zCache } from '@tiny-chat/shared/src/types/user.ts';
 import backend from '../tools/index.ts';
 import type { ToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
+import { chatProviders } from '@tiny-chat/shared/src/providers/chat/index.ts';
 
 const callbacks: GenerationCallbacks = {
   fetchChat: async (id, messageId) => {
@@ -122,6 +123,7 @@ export default async function onTick() {
 
       const generation = generate(
         user as zUser,
+        chatProviders.find((p) => p.name === generateInput.config.provider)!,
         callbacks,
         checkAllToolRequirements(
           backend,

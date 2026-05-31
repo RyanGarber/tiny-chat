@@ -1,5 +1,5 @@
 import {
-  chatProviders,
+  type ChatProvider,
   runGeneration,
   type StreamTextOptions,
 } from '../../providers/chat/index.ts';
@@ -77,6 +77,7 @@ export function alignToolResults(data: zDataPart[]): zDataPart[] {
 // ── Pure generation loop ──────────────────────────────────────────
 export async function* generate(
   user: zUser,
+  provider: ChatProvider,
   callbacks: GenerationCallbacks,
   toolGroups: ToolGroup[] = [],
   skills: zSkill[] = [],
@@ -86,9 +87,6 @@ export async function* generate(
   env: Env,
   options?: Partial<Omit<StreamTextOptions, 'system'>>,
 ): AsyncGenerator<zGenerateOutput> {
-  const resolvedProvider = chatProviders.find((s) => s.name === input.config.provider);
-  if (!resolvedProvider) return;
-
   const messageId = input.context.find((m) => !!m.id)?.id;
   const chat = messageId ? await callbacks.fetchChat(undefined, messageId) : null;
 
@@ -121,7 +119,7 @@ export async function* generate(
     };
 
     try {
-      const generation = runGeneration(user, context, input.config, tools, env, {
+      const generation = runGeneration(user, provider, context, input.config, tools, env, {
         ...options,
         system: input.overrideInstructions ?? instructions,
       });

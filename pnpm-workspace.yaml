@@ -7,6 +7,7 @@ allowBuilds:
   bson: set this to true or false
   esbuild: true
   node-pty: true
+  onnxruntime-node: true
   prisma: true
   protobufjs: true
   sharp: true

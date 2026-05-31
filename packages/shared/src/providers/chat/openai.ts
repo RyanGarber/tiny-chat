@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 import type { Model, ModelArg } from '../../types/chat.ts';
 import type { OpenAIResponsesProviderOptions } from '@ai-sdk/azure';
 import type { ChatProvider } from './index.ts';
-import { getBaseModelArgs, getBaseModelTransform } from '../../utils.ts';
+import { getBaseModelArgs, getBaseModelTransform, isModelVersion } from '../../utils.ts';
 
 export const OpenAIProvider: ChatProvider = {
   name: 'openai',
@@ -69,20 +69,21 @@ export const OpenAIProvider: ChatProvider = {
 
     return models.data.flatMap((m): Model[] => {
       if (
-        [
-          '-audio',
-          '-realtime',
-          '-search',
-          '-transcribe',
+        isModelVersion(
+          m.id,
+          'audio',
+          'realtime',
+          'search',
+          'transcribe',
           'tts',
           'whisper',
           'sora',
           'moderation',
-        ].some((t) => m.id.includes(t))
+        )
       )
         return [];
 
-      if (m.id.includes('-embedding'))
+      if (isModelVersion(m.id, 'embedding'))
         return [
           {
             name: m.id,
@@ -103,16 +104,32 @@ export const OpenAIProvider: ChatProvider = {
 
   getModelArgs(model) {
     const args: ModelArg[] = [];
-    if (['gpt-', 'o1', 'o3', 'o4'].some((m) => model.includes(m))) {
-      const isReasoning = ['gpt-5', 'gpt-4o', 'o1', 'o3', 'o4'].some((m) => model.includes(m));
+    if (isModelVersion(model, 'gpt', 'o1', 'o3', 'o4')) {
+      const isReasoning = isModelVersion(model, 'gpt 5', 'gpt 4o', 'o1', 'o3', 'o4');
       args.push(...getBaseModelArgs(isReasoning ? -1 : 2));
       if (isReasoning) {
-        args.push({
-          name: 'reasoning',
-          type: 'list',
-          values: ['off', 'low', 'medium', 'high'],
-          default: 'medium',
-        });
+        if (isModelVersion(model, 'gpt 5.1 codex max')) {
+          args.push({
+            name: 'reasoning',
+            type: 'list',
+            values: ['none', 'minimal', 'low', 'medium', 'high', 'xhigh'],
+            default: 'medium',
+          });
+        } else if (isModelVersion(model, 'gpt 5.1')) {
+          args.push({
+            name: 'reasoning',
+            type: 'list',
+            values: ['none', 'minimal', 'low', 'medium', 'high'],
+            default: 'medium',
+          });
+        } else {
+          args.push({
+            name: 'reasoning',
+            type: 'list',
+            values: ['minimal', 'low', 'medium', 'high'],
+            default: 'medium',
+          });
+        }
       }
     }
     return args;

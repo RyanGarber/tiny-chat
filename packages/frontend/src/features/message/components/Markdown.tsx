@@ -12,7 +12,7 @@ import {
 } from '@/features/message/components/MarkdownComponents.tsx';
 import { CODE_MARKER, MarkdownContext, WRITING_MARKER } from '@/utils/text.ts';
 import { BLUR_ATTRIBUTE, BLUR_OPTIONS, blurred } from '@/utils/blur.tsx';
-import { math } from '@streamdown/math';
+import { createMathPlugin } from '@streamdown/math';
 import { mermaid } from '@streamdown/mermaid';
 import { code } from '@streamdown/code';
 import { useThemes } from '@/features/settings/hooks/useThemes.ts';
@@ -31,7 +31,7 @@ const CUSTOM_TAGS = { reference: ['id', BLUR_ATTRIBUTE] };
 const REMARK_PLUGINS = [...Object.values(defaultRemarkPlugins), RemarkBreaks];
 
 const PLUGINS: PluginConfig = {
-  math,
+  math: createMathPlugin({ singleDollarTextMath: false }),
   mermaid,
   code,
   renderers: [{ language: 'diff', component: DiffRenderer }],

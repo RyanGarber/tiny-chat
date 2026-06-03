@@ -21,6 +21,7 @@ function ChatInputEffect({
   return (
     <Group
       className="input-effect"
+      bg="transparent"
       align="center"
       gap={5}
       px={10}

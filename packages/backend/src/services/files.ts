@@ -128,25 +128,29 @@ export async function handleFiles(
 
     console.log(`Starting embedding for ${toEmbed.length} files...`);
     void (async () => {
-      for (let i = 0; i < toEmbed.length; i += 100) {
-        const chunk = toEmbed.slice(i, i + 100);
-        console.log(`Generating embeddings for files ${i}-${i + chunk.length}`);
-        const embeddings = await embed(
-          user,
-          chunk.map((f) => new TextDecoder().decode(f.data)),
-          process.env,
-        );
-        if (!embeddings) {
-          console.log(`Failed to generate embeddings for chunk starting at ${i}`);
-          continue;
+      try {
+        for (let i = 0; i < toEmbed.length; i += 100) {
+          const chunk = toEmbed.slice(i, i + 100);
+          console.log(`Generating embeddings for files ${i}-${i + chunk.length}`);
+          const embeddings = await embed(
+            user,
+            chunk.map((f) => new TextDecoder().decode(f.data)),
+            process.env,
+          );
+          if (!embeddings) {
+            console.log(`Failed to generate embeddings for chunk starting at ${i}`);
+            continue;
+          }
+          await globalThis.prisma.$transaction(
+            embeddings.map(
+              (emb, j) =>
+                globalThis.prisma
+                  .$executeRaw`UPDATE file SET embedding = ${JSON.stringify(emb)}::vector WHERE id = ${chunk[j].id}`,
+            ),
+          );
         }
-        await globalThis.prisma.$transaction(
-          embeddings.map(
-            (emb, j) =>
-              globalThis.prisma
-                .$executeRaw`UPDATE file SET embedding = ${JSON.stringify(emb)}::vector WHERE id = ${chunk[j].id}`,
-          ),
-        );
+      } catch (error) {
+        console.error(`Failed to embed files`, error);
       }
     })();
   }

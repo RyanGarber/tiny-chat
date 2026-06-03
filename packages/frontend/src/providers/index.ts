@@ -1,4 +1,4 @@
 import { ChatProvider } from '@tiny-chat/shared/src/providers/chat';
-import { HuggingFaceProvider } from './huggingface';
+import { WebLLMProvider } from './webllm';
 
-export const frontendChatProviders: ChatProvider[] = [HuggingFaceProvider];
+export const frontendChatProviders: ChatProvider[] = [WebLLMProvider];

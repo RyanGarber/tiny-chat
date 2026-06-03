@@ -94,7 +94,6 @@ export const zSettings = z
     codeTheme: z.string(),
     providers: zProviderSettings,
     mcpServers: zMCPServers.catch(() => undefined),
-    huggingFaceModels: z.array(z.string()).default([]),
   })
   .partial();
 export type zSettings = z.infer<typeof zSettings>;

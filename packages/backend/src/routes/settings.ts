@@ -137,12 +137,6 @@ export default router({
       return set(ctx, (settings) => ({ ...settings, mcpServers: input.mcpServers }));
     }),
 
-  setHuggingFaceModels: procedure
-    .input(z.object({ huggingFaceModels: z.array(z.string()) }))
-    .mutation(async ({ ctx, input }) => {
-      return set(ctx, (settings) => ({ ...settings, huggingFaceModels: input.huggingFaceModels }));
-    }),
-
   listAccounts: procedure.query(async ({ ctx }) => {
     return auth.api.listUserAccounts({ headers: authHeaders(ctx.req.headers) });
   }),

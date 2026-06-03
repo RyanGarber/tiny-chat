@@ -38,20 +38,25 @@ import type { ReactDiffViewerStylesOverride } from 'react-diff-viewer-continued'
 import ReactDiffViewer from 'react-diff-viewer-continued';
 import { code as streamdownCode } from '@streamdown/code';
 import { useThemes } from '@/features/settings/hooks/useThemes';
+import { glassStyle } from '@/utils/glass';
+import { SHADOW } from '@/utils/theme';
 
 const TOOLTIP_PROPS = {
   multiline: true,
   position: 'bottom',
-  bg: 'var(--tc-surface)',
-  c: 'var(--mantine-color-text)',
-  bd: '1px solid var(--mantine-color-default-border)',
+  style: { ...glassStyle, boxShadow: SHADOW },
   p: 'md',
+  c: 'var(--mantine-color-text)',
 } as const;
 
 const PILL_BASE: CSSProperties = {
+  height: 'auto',
+  margin: 0,
+  padding: '2px 5.25px',
   fontSize: '0.7em',
-  margin: '0 2px',
   display: 'inline-flex',
+  cursor: 'default',
+  background: 'var(--tc-interior)',
 };
 
 // Rendered for each [^id] citation reference inline
@@ -62,110 +67,95 @@ export const ReferenceComponent: Components['reference'] = withBlur((props) => {
   if (isGenerating) {
     return (
       <Pill size="xs" style={{ ...PILL_BASE, cursor: 'wait' }}>
-        ...
+        ⋯
       </Pill>
     );
   }
 
-  if (!referenceId) {
-    return (
-      <Pill size="xs" style={{ ...PILL_BASE, cursor: 'help' }}>
-        <Text span c="dimmed">
-          ?
-        </Text>
-      </Pill>
-    );
-  }
+  if (referenceId) {
+    const citation = webSearchResults.find((c) => c.id === referenceId);
+    const memory = memories.find((m) => m.id === referenceId);
+    const action = actions.find((a) => a.id === referenceId);
 
-  const citation = webSearchResults.find((c) => c.id === referenceId);
-  const memory = memories.find((m) => m.id === referenceId);
-  const action = actions.find((a) => a.id === referenceId);
-
-  if (citation) {
-    return (
-      <Tooltip
-        {...TOOLTIP_PROPS}
-        label={
-          <Stack gap="xs" maw={300}>
-            <Text size="sm" fw={500} lineClamp={2}>
-              {citation.title}
-            </Text>
-            <Anchor size="xs" href={citation.source} target="_blank" lineClamp={1}>
-              {citation.source}
-            </Anchor>
-          </Stack>
-        }
-      >
-        <Pill
-          size="xs"
-          style={{ ...PILL_BASE, cursor: 'pointer' }}
-          onClick={(e) => {
-            e.preventDefault();
-            void openExternal(citation.source);
-          }}
+    if (citation) {
+      return (
+        <Tooltip
+          {...TOOLTIP_PROPS}
+          label={
+            <Stack gap="xs" maw={300}>
+              <Text size="sm" fw={500} lineClamp={2}>
+                {citation.title}
+              </Text>
+              <Anchor size="xs" href={citation.source} target="_blank" lineClamp={1}>
+                {citation.source}
+              </Anchor>
+            </Stack>
+          }
         >
-          {citation.title.length > 20 ? citation.title.slice(0, 17) + '…' : citation.title}
-        </Pill>
-      </Tooltip>
-    );
-  }
+          <Pill
+            size="xs"
+            style={{ ...PILL_BASE, cursor: 'pointer' }}
+            onClick={(e) => {
+              e.preventDefault();
+              void openExternal(citation.source);
+            }}
+          >
+            🔗
+          </Pill>
+        </Tooltip>
+      );
+    }
 
-  if (memory) {
-    return (
-      <Tooltip
-        {...TOOLTIP_PROPS}
-        label={
-          <Stack gap="xs" maw={300}>
-            <Text size="sm" fw={500} lineClamp={2}>
-              {memory.fact}
-            </Text>
-            <Text size="xs" c="dimmed">
-              Learned {format(memory.createdAt)}
-            </Text>
-          </Stack>
-        }
-      >
-        <Pill size="xs" style={{ ...PILL_BASE, cursor: 'default' }}>
-          🧠
-        </Pill>
-      </Tooltip>
-    );
-  }
+    if (memory) {
+      return (
+        <Tooltip
+          {...TOOLTIP_PROPS}
+          label={
+            <Stack gap="xs" maw={300}>
+              <Text size="sm" fw={500} lineClamp={2}>
+                {memory.fact}
+              </Text>
+              <Text size="xs" c="dimmed">
+                Learned {format(memory.createdAt)}
+              </Text>
+            </Stack>
+          }
+        >
+          <Pill size="xs" style={{ ...PILL_BASE }}>
+            🧠
+          </Pill>
+        </Tooltip>
+      );
+    }
 
-  if (action?.nextRunAt) {
-    return (
-      <Tooltip
-        {...TOOLTIP_PROPS}
-        label={
-          <Stack gap="xs" maw={300}>
-            <Text size="sm" fw={500} lineClamp={2}>
-              {scrubText(texts(action.data as zData))}
-            </Text>
-            <Text size="xs" c="dimmed">
-              {format(action.nextRunAt)}
-            </Text>
-          </Stack>
-        }
-      >
-        <Pill size="xs" style={{ ...PILL_BASE, cursor: 'default' }}>
-          ⚡
-        </Pill>
-      </Tooltip>
-    );
+    if (action?.nextRunAt) {
+      return (
+        <Tooltip
+          {...TOOLTIP_PROPS}
+          label={
+            <Stack gap="xs" maw={300}>
+              <Text size="sm" fw={500} lineClamp={2}>
+                {scrubText(texts(action.data as zData))}
+              </Text>
+              <Text size="xs" c="dimmed">
+                {format(action.nextRunAt)}
+              </Text>
+            </Stack>
+          }
+        >
+          <Pill size="xs" style={{ ...PILL_BASE }}>
+            ⚡
+          </Pill>
+        </Tooltip>
+      );
+    }
   }
 
   return (
-    <Tooltip
-      label={referenceId}
-      color="dark"
-      position="bottom"
-      bg="var(--tc-surface)"
-      bd="1px solid var(--mantine-color-default-border)"
-      p="xs"
-    >
-      <Pill size="xs" style={{ ...PILL_BASE, cursor: 'help' }}>
+    <Tooltip {...TOOLTIP_PROPS} label={referenceId ?? 'Unknown reference'}>
+      <Pill size="xs" style={{ ...PILL_BASE }}>
         <Text span c="dimmed">
-          ?
+          ﹖
         </Text>
       </Pill>
     </Tooltip>

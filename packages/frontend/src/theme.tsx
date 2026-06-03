@@ -1,4 +1,5 @@
 import { createTheme, CSSVariablesResolver, MantineColorsTuple } from '@mantine/core';
+import { glassStyle } from './utils/glass';
 
 export const darkPalette: MantineColorsTuple = [
   '#C4C6CF', // [0]  near-white text — very slightly cool
@@ -36,8 +37,12 @@ export const theme = createTheme({
     },
     Drawer: {
       styles: {
+        header: {
+          background: 'transparent',
+        },
         content: {
           borderRadius: 0,
+          ...glassStyle,
         },
       },
     },
@@ -68,11 +73,6 @@ export const theme = createTheme({
         radius: 'lg',
       },
     },
-    Card: {
-      defaultProps: {
-        radius: 'lg',
-      },
-    },
     Tabs: {
       defaultProps: {
         radius: 'lg',
@@ -85,23 +85,39 @@ export const theme = createTheme({
         },
       },
     },
+    Card: {
+      defaultProps: {
+        radius: 'lg',
+      },
+    },
+    CheckboxCard: {
+      styles: {
+        card: {
+          background: 'var(--tc-surface)',
+        },
+      },
+    },
+    Input: {
+      styles: {
+        input: {
+          backgroundColor: 'var(--tc-surface)',
+        },
+      },
+    },
   },
 });
 
 export const cssResolver: CSSVariablesResolver = () => ({
   variables: {
-    '--tc-sidebar-bg': 'var(--mantine-color-body)',
-    '--tc-surface': 'var(--mantine-color-body)',
+    '--mantine-color-body': 'var(--tc-surface)',
   },
   light: {
-    '--mantine-color-card': '#FFFFFF',
-    '--mantine-color-body': '#eeeeee',
-    '--tc-sidebar-bg': '#FFFFFF',
-    '--tc-surface': '#FFFFFF',
+    '--tc-surface': 'var(--mantine-color-gray-1)',
+    '--tc-interior': 'var(--mantine-color-gray-2)',
   },
   dark: {
     '--tc-surface': 'var(--mantine-color-dark-6)',
-    '--tc-sidebar-bg': 'var(--mantine-color-dark-6)',
+    '--tc-interior': 'var(--mantine-color-dark-5)',
   },
 });
 

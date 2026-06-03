@@ -44,7 +44,7 @@ export const Thinking = memo(
             py="xs"
             ml={8}
           >
-            <Markdown source={thinkingText} context={thinkingContext} style={{ fontSize: FZ }} />
+            <Markdown source={thinkingText} context={thinkingContext} />
           </Box>
         </Collapse>
       </Box>

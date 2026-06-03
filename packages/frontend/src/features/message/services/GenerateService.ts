@@ -27,7 +27,6 @@ import { refetchActions } from '@/features/chat/hooks/useActions.ts';
 import { isMissingToolResult } from '@/utils/ui';
 import type { zCache } from '@tiny-chat/shared/src/types/user';
 import { ChatProvider, chatProviders } from '@tiny-chat/shared/src/providers/chat';
-import { frontendChatProviders } from '@/providers';
 
 /* ───────────────────────────── Controller ────────────────────────────── */
 
@@ -198,6 +197,8 @@ export const GenerateService = {
     console.log('enabledTools:', enabledTools);
     console.log('enabledSkills:', enabledSkills);
 
+    // TODO - toggle for enabling WebLLMProvider
+    const { frontendChatProviders } = await import('@/providers');
     const provider: ChatProvider | undefined = [...chatProviders, ...frontendChatProviders].find(
       (p) => p.name === config.provider,
     );

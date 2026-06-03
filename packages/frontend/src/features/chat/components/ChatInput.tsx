@@ -218,7 +218,7 @@ export const ChatInput = memo(({ isAny, ...props }: InputWrapperProps & { isAny:
             <Icon icon="lucide:paperclip" height={18} />
           </ActionIcon>
         </Menu.Target>
-        <Menu.Dropdown style={{ ...glassStyle, boxShadow: SHADOW }}>
+        <Menu.Dropdown style={{ boxShadow: SHADOW }}>
           <FileMenuItem
             onClick={() => {
               setUploadTab('file');
@@ -259,7 +259,7 @@ export const ChatInput = memo(({ isAny, ...props }: InputWrapperProps & { isAny:
               {config.model}
             </Button>
           </PopoverTarget>
-          <PopoverDropdown maw={250} style={glassStyle}>
+          <PopoverDropdown maw={250} style={{ boxShadow: SHADOW }}>
             <ModelSelect
               flex={1}
               variant="subtle"
@@ -300,7 +300,6 @@ export const ChatInput = memo(({ isAny, ...props }: InputWrapperProps & { isAny:
                       </Text>
                       <Select
                         key={arg.name}
-                        comboboxProps={{ withinPortal: false, offset: 0 }}
                         data={arg.values}
                         size="xs"
                         value={
@@ -308,6 +307,19 @@ export const ChatInput = memo(({ isAny, ...props }: InputWrapperProps & { isAny:
                           arg.default
                         }
                         variant="unstyled"
+                        styles={{
+                          input: {
+                            padding: '0 10px',
+                          },
+                          dropdown: {
+                            boxShadow: SHADOW,
+                          },
+                        }}
+                        comboboxProps={{
+                          withinPortal: false,
+                          offset: 0,
+                          transitionProps: { transition: 'fade-up' },
+                        }}
                         onChange={(value) => setArg(arg.name, value)}
                         disabled={isAny}
                       />

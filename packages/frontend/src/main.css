@@ -167,12 +167,16 @@ body {
   display: flex;
 }
 
-[data-mantine-color-scheme='dark'] .nav-link-like:is(:hover, [data-active='true']) {
-  background-color: rgba(255, 255, 255, 0.1);
+[data-mantine-color-scheme='dark'] .mantine-NavLink-root:hover:not([data-active='true']),
+[data-mantine-color-scheme='dark'] .nav-link-like:is(:hover, [data-active='true']),
+[data-mantine-color-scheme='dark'] .chat-input Button:hover {
+  background-color: var(--mantine-color-dark-5);
 }
 
-[data-mantine-color-scheme='light'] .nav-link-like:is(:hover, [data-active='true']) {
-  background-color: rgba(0, 0, 0, 0.1);
+[data-mantine-color-scheme='light'] .mantine-NavLink-root:hover:not([data-active='true']),
+[data-mantine-color-scheme='light'] .nav-link-like:is(:hover, [data-active='true']),
+[data-mantine-color-scheme='light'] .chat-input Button:hover {
+  background-color: var(--mantine-color-gray-3);
 }
 
 .nav-link-like.filled[data-active='true'] {
@@ -203,29 +207,17 @@ body {
   outline: 0 solid transparent !important;
 }
 
-[data-use-hljs-bg='true'] [class*='mantine-CodeHighlight'] {
-  --ch-background: var(--hljs-bg);
-}
-
-[data-use-hljs-bg='true'] .mantine-CodeHighlight-pre {
-  background: var(--hljs-bg);
-}
-
-[data-use-hljs-bg='true'] .mantine-Typography-root *:has(pre) {
-  background: var(--hljs-bg);
-}
-
-[data-use-hljs-bg='false'] .hljs {
-  background: transparent;
-}
-
 .mantine-Typography-root .ignore-typography {
   all: revert;
 }
 
 .mantine-Typography-root :not(pre) > code {
   font-size: inherit;
-  background: var(--tc-surface);
+  background: color-mix(in srgb, var(--tc-surface) 25%, transparent 75%);
+}
+
+[data-mantine-color-scheme='dark'] .mantine-Typography-root :not(pre) > code {
+  background: color-mix(in srgb, var(--tc-surface), rgba(255, 255, 255, 0.1));
 }
 
 .mantine-Typography-root .ignore-typography.mantine-Blockquote-root {
@@ -239,7 +231,7 @@ body {
 }
 
 .mantine-Typography-root table {
-  background: color-mix(in srgb, var(--tc-surface) 80%, transparent 15%);
+  background: color-mix(in srgb, var(--tc-surface) 80%, transparent 20%);
   border-radius: var(--mantine-radius-lg);
 }
 
@@ -257,49 +249,6 @@ body {
 
 .mantine-Typography-root table th:last-child {
   border-start-end-radius: var(--mantine-radius-lg);
-}
-
-.user-message {
-  background: var(--tc-surface);
-}
-
-.code-fade-in {
-  animation: codeFadeIn 0.3s ease;
-}
-
-@keyframes codeFadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-/* Character-by-character fade for streaming text */
-@keyframes stream-char-in {
-  from {
-    opacity: 0;
-    filter: blur(2px);
-  }
-  to {
-    opacity: 1;
-    filter: blur(0);
-  }
-}
-
-.stream-char-fade {
-  display: inline-block;
-  white-space: pre-wrap;
-  animation: stream-char-in 100ms ease-out both;
-}
-
-.input-effect {
-  background: transparent;
-}
-
-.dialog {
-  background: var(--tc-surface);
 }
 
 /* ── Vidstack theme overrides ─────────────────────────────────── */

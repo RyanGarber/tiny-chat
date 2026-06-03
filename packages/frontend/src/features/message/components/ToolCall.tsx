@@ -81,7 +81,10 @@ export const ToolCall = memo(
         </>
       );
       details = (
-        <Markdown source={(toolResult?.value as zViewWebOutput).content} style={{ fontSize: FZ }} />
+        <Markdown
+          source={`\`\`\` markdown\n${(toolResult?.value as zViewWebOutput)?.content ?? ''}\n\`\`\``}
+          typographyProps={{ style: { fontSize: 10 } }}
+        />
       );
     } else if (toolCall.name === 'search_memory') {
       status = (
@@ -117,19 +120,19 @@ export const ToolCall = memo(
       if (toolCall.name === 'add_memory') {
         details = (
           <Text fz={FZ}>
-            Created memory with ID: {(toolResult?.value as zAddMemoryOutput).created_memory_id}.
+            Created memory with ID: {(toolResult?.value as zAddMemoryOutput)?.created_memory_id}.
           </Text>
         );
       } else if (toolCall.name === 'update_memory') {
         details = (
           <Text fz={FZ}>
-            Updated memory with ID: {(toolResult?.value as zUpdateMemoryOutput).updated_memory_id}.
+            Updated memory with ID: {(toolResult?.value as zUpdateMemoryOutput)?.updated_memory_id}.
           </Text>
         );
       } else if (toolCall.name === 'delete_memory') {
         details = (
           <Text fz={FZ}>
-            Removed memory with ID: {(toolResult?.value as zDeleteMemoryOutput).deleted_memory_id}.
+            Removed memory with ID: {(toolResult?.value as zDeleteMemoryOutput)?.deleted_memory_id}.
           </Text>
         );
       }

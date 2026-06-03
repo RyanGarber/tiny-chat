@@ -147,6 +147,7 @@ export default function SidebarAccount({
               </Text>
               {provider('google', 'Google', <Icon icon="lucide:chromium" />)}
               {provider('github', 'GitHub', <Icon icon="lucide:github" />)}
+              {provider('huggingface', 'Hugging Face', <Icon icon="lucide:smile" />)}
             </>
           )}
           {session?.user && !session.user.isAnonymous && (

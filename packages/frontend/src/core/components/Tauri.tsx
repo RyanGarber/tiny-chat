@@ -218,7 +218,6 @@ export default function Tauri() {
     <Dialog
       opened={taskList.length > 0 || isUpdateShown}
       withCloseButton={false}
-      className="dialog"
       style={{ ...glassStyle, boxShadow: SHADOW }}
       zIndex={10000}
     >

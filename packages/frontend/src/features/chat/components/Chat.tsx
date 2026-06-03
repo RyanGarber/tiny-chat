@@ -286,9 +286,12 @@ export default function Chat() {
             position: 'absolute',
             inset: 0,
             pointerEvents: 'none',
-            maskImage: `linear-gradient(transparent calc(100% - ${40 + inputEffectsHeight}px), black 100%)`, // TODO - tasks - 100px
-            //maskImage: `linear-gradient(black ${isMobile ? 55 : 0}px, transparent ${isMobile ? 95 : 40}px, transparent calc(100% - ${40 + inputEffectsHeight}px), black 100%)`, // TODO - tasks - 100px
-            background: 'var(--mantine-color-body)',
+            maskImage:
+              isMobile || chat.data
+                ? `linear-gradient(black 0px, transparent 40px ${chat.data ? `, transparent calc(100% - ${40 + inputEffectsHeight}px), black 100%` : ''})`
+                : undefined,
+            //maskImage: `linear-gradient(black ${isMobile ? 55 : 0}px, transparent ${isMobile ? 95 : 40}px, transparent calc(100% - ${40 + inputEffectsHeight}px), black 100%)`, // TODO - continue to refine
+            background: isMobile || chat.data ? 'var(--mantine-color-body)' : undefined,
           }}
         />
 
@@ -360,7 +363,7 @@ export default function Chat() {
       </Box>
 
       {/* Input area */}
-      <Box style={{ background: 'var(--mantine-color-body)' }}>
+      <Box style={{ background: chat.data ? 'var(--mantine-color-body)' : 'transparent' }}>
         <Box
           w="100%"
           maw={inputMaxWidth}

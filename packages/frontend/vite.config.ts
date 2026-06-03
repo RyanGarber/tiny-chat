@@ -48,6 +48,7 @@ export default defineConfig(() => ({
             'katex',
             'ogl',
           ],
+          'vendor-llm': ['@mlc-ai/web-llm', '@browser-ai/web-llm'],
         },
       },
     },

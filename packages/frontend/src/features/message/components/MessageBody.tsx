@@ -28,7 +28,6 @@ const MessageBody = memo(
                 px={20}
                 py={10}
                 bdrs={20}
-                className="user-message"
                 style={{ boxShadow: SHADOW, alignSelf: 'flex-end', ...glassStyle }}
               >
                 <MessageBodyContent message={message} containerWidth={containerWidth} />

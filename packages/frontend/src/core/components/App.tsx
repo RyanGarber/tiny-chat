@@ -12,7 +12,7 @@ import { glassStyle } from '@/utils/glass';
 import { ModalsProvider } from '@mantine/modals';
 import Tauri from '@/core/components/Tauri';
 import { setHashbang, useHashbang } from '../hooks/useHashbang';
-import Aurora from '@/core/components/Aurora';
+import Background from '@/core/components/Background';
 import { useChatStore } from '@/features/chat/stores/useChatStore';
 import { useThemes } from '@/features/settings/hooks/useThemes';
 import { useChat } from '@/features/chat/hooks/useChat';
@@ -193,15 +193,17 @@ export default function App() {
             </AppShell.Main>
           </AppShell>
         </Box>
-        <Box pos="absolute" inset={0} style={{ zIndex: -1, opacity: 0.25 }}>
-          <Aurora
-            colorStops={
-              incognito ? ['#888888', '#aaaaaa', '#888888'] : ['#1b72de', '#587ec1', '#1a5bc4']
-            }
-            blend={2}
-            amplitude={1}
-            speed={0.25}
-          />
+        <Box
+          pos="absolute"
+          inset={0}
+          style={{
+            zIndex: -1,
+            maskImage: `linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%)`,
+            opacity: chat.data ? 0.125 : 0.5,
+            transition: 'opacity 0.3s ease',
+          }}
+        >
+          <Background incognito={incognito} />
         </Box>
       </ModalsProvider>
     </MantineProvider>

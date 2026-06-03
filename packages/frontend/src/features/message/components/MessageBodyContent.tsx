@@ -156,7 +156,10 @@ export const MessageBodyContent = memo(
     if (message.author === Author.USER) {
       return (
         <Box className="selectable">
-          <Markdown source={texts(message.data, '\n')} style={{ maxWidth: containerWidth - 40 }} />
+          <Markdown
+            source={texts(message.data, '\n')}
+            typographyProps={{ style: { maxWidth: containerWidth - 40 } }}
+          />
         </Box>
       );
     }
@@ -263,6 +266,7 @@ export const MessageBodyContent = memo(
       } else if (part.type === 'abort') {
         renderedParts.push(
           <Alert
+            mb={10}
             key={i}
             color={part.reason === 'error' ? 'red' : 'gray'}
             variant="light"

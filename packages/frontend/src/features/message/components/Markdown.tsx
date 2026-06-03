@@ -1,6 +1,6 @@
-import { CSSProperties, memo, useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { type Components, defaultRemarkPlugins, type PluginConfig, Streamdown } from 'streamdown';
-import { Typography } from '@mantine/core';
+import { Typography, TypographyProps } from '@mantine/core';
 import RemarkBreaks from 'remark-breaks';
 import { normalizeText } from '@tiny-chat/shared/src/utils.ts';
 import {
@@ -99,8 +99,7 @@ const filter = (text: string): string => {
 export const Markdown = memo(
   ({
     source,
-    style,
-    maw,
+    typographyProps,
     context = {
       webSearchResults: [],
       memories: [],
@@ -109,17 +108,24 @@ export const Markdown = memo(
     },
   }: {
     source: string;
-    style?: CSSProperties;
-    maw?: number;
+    typographyProps?: TypographyProps;
     context?: MarkdownContext;
   }) => {
     const processedSource = useMemo(() => filter(source), [source]);
 
     const { codeTheme, theme } = useThemes();
 
+    const props = useMemo(
+      () => ({
+        ...typographyProps,
+        style: { overflowWrap: 'break-word' as const, ...typographyProps?.style },
+      }),
+      [typographyProps],
+    );
+
     return (
       <MarkdownContext.Provider value={context}>
-        <Typography style={{ overflowWrap: 'break-word', ...style }} maw={maw}>
+        <Typography {...props}>
           <Streamdown
             animated={BLUR_OPTIONS}
             isAnimating={context.isGenerating}
@@ -140,7 +146,7 @@ export const Markdown = memo(
   },
   (prev, next) =>
     prev.source === next.source &&
-    prev.style === next.style &&
+    prev.typographyProps === next.typographyProps &&
     prev.context?.isGenerating === next.context?.isGenerating &&
     prev.context?.webSearchResults === next.context?.webSearchResults &&
     prev.context?.memories === next.context?.memories &&

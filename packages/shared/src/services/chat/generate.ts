@@ -1,8 +1,4 @@
-import {
-  type ChatProvider,
-  runGeneration,
-  type StreamTextOptions,
-} from '../../providers/chat/index.ts';
+import { type ChatProvider, runGeneration, type StreamTextOptions, } from '../../providers/chat/index.ts';
 import type {
   ChatSearchResult,
   FileSearchResult,
@@ -211,6 +207,7 @@ export async function* generate(
       try {
         console.log(`[Generate] running tool ${toolCall.name} with args:`, toolCall.args);
         const value = await tool.run(toolContext, toolCall.args, undefined);
+        console.log(`[Generate] tool ${toolCall.name} finished with result:`, value);
         yield push({ type: 'toolResult', id: toolCall.id, name: toolCall.name, value });
       } catch (e: any) {
         console.warn(`[Generate] error running tool ${toolCall.name}:`, e);

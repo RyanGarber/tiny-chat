@@ -1,4 +1,4 @@
-package com.ryangarber.tiny_chat
+package dev.ryangarber.chat
 
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge

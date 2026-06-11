@@ -73,6 +73,7 @@ const EXCLUDE_FILES_ADDITIONAL = [
   '.woff2',
   '.eot',
   '.otf',
+  '.icns',
 
   // 7. Archives & Documents
   '.zip',

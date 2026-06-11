@@ -1,9 +1,5 @@
 import { z } from 'zod';
-import type {
-  FileSearchResult,
-  zDataPart,
-  zUploadOutput,
-} from '@tiny-chat/shared/src/types/chat.ts';
+import type { FileSearchResult, zDataPart, zUploadOutput, } from '@tiny-chat/shared/src/types/chat.ts';
 import { type File, Prisma } from '../../generated/prisma/client.ts';
 import { procedure, router } from '../index.ts';
 import { createId } from '@paralleldrive/cuid2';
@@ -319,6 +315,7 @@ export default router({
         existingUpload?.files,
         { uploadId },
         (path) => shouldIncludeFile(path),
+        true,
       );
 
       return {

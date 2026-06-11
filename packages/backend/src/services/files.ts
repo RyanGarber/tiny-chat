@@ -1,5 +1,5 @@
 import { fileTypeFromBuffer } from 'file-type';
-import { Prisma, type File } from '../../generated/prisma/client.ts';
+import { type File, Prisma } from '../../generated/prisma/client.ts';
 import { createId } from '@paralleldrive/cuid2';
 import { shouldIncludeFile } from '../utils.ts';
 import { unzip, type Unzipped } from 'fflate';
@@ -13,6 +13,7 @@ export async function handleFilesZipped(
   existingFiles: File[] = [],
   associate: { uploadId: string } | { skillId: string },
   include?: (path: string) => boolean,
+  skipRoot?: boolean,
 ) {
   const unzipped = await new Promise<Unzipped>((resolve, reject) => {
     unzip(new Uint8Array(zip), (err, data) => {
@@ -29,7 +30,13 @@ export async function handleFilesZipped(
 
   return await handleFiles(
     user,
-    files.map(([name, data]) => [name, data.buffer]),
+    files.map(([name, data]) => [
+      name
+        .split('/')
+        .slice(skipRoot ? 1 : 0)
+        .join('/'),
+      data.buffer,
+    ]),
     existingFiles,
     associate,
     include,
@@ -90,7 +97,8 @@ export async function handleFiles(
     `Incremental sync: ${toCreate.length} to create, ${toUpdate.length} to update, ${toDelete.length} to delete`,
   );
 
-  const result = await globalThis.prisma.$transaction([
+  // TODO - no transaction due to timeouts
+  const result = await Promise.all([
     ...toCreate.map((f) =>
       globalThis.prisma.file.create({
         data: {
@@ -133,7 +141,10 @@ export async function preprocessFile(data: Buffer, filename?: string, mimeType?:
   let mime = (await fileTypeFromBuffer(data))?.mime ?? mimeType ?? 'application/octet-stream';
 
   console.log(`Preprocessing file ${filename} with mime ${mime}`);
-  if (mime.startsWith('image/')) {
+  if (
+    mime.includes('image/') &&
+    ['png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'tiff', 'svg'].some((type) => mime.includes(type))
+  ) {
     try {
       mime = 'image/webp';
       data = await sharp(data, { failOn: 'none', animated: true })

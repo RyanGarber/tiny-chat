@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build:
@@ -10,16 +11,19 @@ jobs:
     environment: production
 
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v6
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v6
+      - name: Install Node
+        uses: actions/setup-node@v6
         with:
           node-version: lts/*
           cache: pnpm
 
-      - name: Create environment
+      - name: Create .env
         run: |
           cat << EOF > .env
           PG_HOST=${{ secrets.PG_HOST }}
@@ -37,17 +41,19 @@ jobs:
           AUTH_GITHUB_SECRET=${{ secrets.AUTH_GITHUB_SECRET }}
           AUTH_GOOGLE_CLIENT=${{ secrets.AUTH_GOOGLE_CLIENT }}
           AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}
+          AUTH_HUGGINGFACE_CLIENT=${{ secrets.AUTH_HUGGINGFACE_CLIENT }}
+          AUTH_HUGGINGFACE_SECRET=${{ secrets.AUTH_HUGGINGFACE_SECRET }}
           EOF
 
-      - name: Install dependencies
+      - name: Install packages
         run: pnpm install --frozen-lockfile
 
-      - name: Build backend and web
+      - name: Build deployment
         run: |
           pnpm run build:web
           cp -r packages/frontend/dist apps/web/dist
 
-      - name: Create deploy artifact
+      - name: Package deployment
         run: |
           mkdir deploy
           cp package.json deploy/
@@ -61,7 +67,7 @@ jobs:
           cp -r apps/web deploy/apps/web
           tar -czf deploy.tar.gz deploy
 
-      - name: Upload deploy artifact
+      - name: Upload deployment
         uses: actions/upload-artifact@v6
         with:
           name: deploy
@@ -73,18 +79,18 @@ jobs:
     environment: production
 
     steps:
-      - name: Download deploy artifact
+      - name: Download deployment
         uses: actions/download-artifact@v8
         with:
           name: deploy
           path: artifact
 
-      - name: Extract deploy artifact
+      - name: Extract deployment
         run: |
           rm -rf ~/deploy
           tar -xzf artifact/deploy.tar.gz -C ~
 
-      - name: Create environment
+      - name: Create .env
         run: |
           cat << EOF > ~/deploy/.env
           PG_HOST=${{ secrets.PG_HOST }}
@@ -102,12 +108,14 @@ jobs:
           AUTH_GITHUB_SECRET=${{ secrets.AUTH_GITHUB_SECRET }}
           AUTH_GOOGLE_CLIENT=${{ secrets.AUTH_GOOGLE_CLIENT }}
           AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}
+          AUTH_HUGGINGFACE_CLIENT=${{ secrets.AUTH_HUGGINGFACE_CLIENT }}
+          AUTH_HUGGINGFACE_SECRET=${{ secrets.AUTH_HUGGINGFACE_SECRET }}
           EOF
 
-      - name: Install dependencies
+      - name: Install packages
         run: |
           cd ~/deploy
           pnpm install --frozen-lockfile
 
-      - name: Deploy
+      - name: Activate deployment
         run: pm2 restart all

@@ -1,4 +1,4 @@
-name: 'release'
+name: release-android
 
 on:
   push:
@@ -7,39 +7,37 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-release:
+  build:
+    runs-on: ubuntu-latest
+    environment: production
     permissions:
       contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: 'macos-latest'
-            args: '--target aarch64-apple-darwin'
-          - platform: 'macos-latest'
-            args: '--target x86_64-apple-darwin'
-          - platform: 'ubuntu-latest'
-            args: ''
-          - platform: 'windows-latest'
-            args: ''
-
-    runs-on: ${{ matrix.platform }}
-    environment: production
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
       - name: Install system
-        if: matrix.platform == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
+      - name: Install Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install NDK
+        run: sdkmanager "ndk;30.0.14904198"
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
           toolchain: stable
 
       - name: Install pnpm
@@ -52,7 +50,6 @@ jobs:
           cache: pnpm
 
       - name: Create .env
-        shell: bash
         run: |
           cat << EOF > .env
           PG_HOST=${{ secrets.PG_HOST }}
@@ -77,21 +74,31 @@ jobs:
       - name: Install packages
         run: pnpm install --frozen-lockfile
 
+      - name: Build project
+        env:
+          NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/30.0.14904198
+        run: pnpm --filter @tiny-chat/tauri run tauri android build --apk --split-per-abi
+
+      - name: Package APKs
+        run: |
+          APK_DIR="apps/tauri/gen/android/app/build/outputs/apk"
+          OUTPUT="$RUNNER_TEMP/TinyChat-Android.zip"
+          find "$APK_DIR" -name "*-unsigned.apk" | while read apk; do
+            echo "Found: $apk"
+          done
+          zip -9 -j "$OUTPUT" $(find "$APK_DIR" -name "*-unsigned.apk")
+          echo "Archive size: $(du -sh "$OUTPUT" | cut -f1)"
+
       - name: Generate tag
-        shell: bash
-        id: tag_name
+        id: tag
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - name: Create release
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        uses: softprops/action-gh-release@v3
         with:
-          tagName: ${{ steps.tag_name.outputs.sha_short }}
-          projectPath: ./apps/tauri
-          releaseName: ${{ steps.tag_name.outputs.sha_short }}
-          releaseBody: macOS, Linux, and Windows builds.
-          includeUpdaterJson: true
-          args: ${{ matrix.args }}
+          tag_name: ${{ steps.tag.outputs.sha_short }}-android
+          name: ${{ steps.tag.outputs.sha_short }} (Android)
+          body: |
+            Unsigned Android build for sideloading.
+          files: ${{ runner.temp }}/TinyChat-Android.zip
+          fail_on_unmatched_files: true

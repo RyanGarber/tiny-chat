@@ -4,8 +4,10 @@ import {
   type StreamTextOptions,
 } from '../../providers/chat/index.ts';
 import type {
+  ChatSearchResult,
+  FileSearchResult,
+  MemorySearchResult,
   zChat,
-  zContextItem,
   zData,
   zDataPart,
   zGenerateInput,
@@ -13,33 +15,33 @@ import type {
   zMetadata,
 } from '../../types/chat.ts';
 import type { zUser } from '../../types/user.ts';
-import type { zToolContext, ToolGroup } from '../../types/tool.ts';
+import type { ToolContext, ToolGroup } from '../../types/tool.ts';
 import { buildContext } from './context.ts';
-import type { Action } from '../../../../backend/generated/prisma/client.ts';
-import type { File } from '../../../../backend/generated/prisma/client.ts';
+import type { Action, File } from '../../../../backend/generated/prisma/client.ts';
 import type { zSkill } from '../../types/skill.ts';
 import type { Env } from '../../types/env.ts';
 
 export interface GenerationCallbacks {
-  // Context building (generate.ts)
-  fetchChat(id?: string, messageId?: string): Promise<zChat | null>;
+  // Embeddings
+  embed(text: string): Promise<number[] | null>;
+  getEmbedding(input: { messageId?: string }): Promise<number[] | undefined>;
+
+  // Chats
+  getChat(id?: string, messageId?: string): Promise<zChat | null>;
+  searchChats(text: string, embedding?: number[], limit?: number): Promise<ChatSearchResult[]>;
 
   // Instruction building (instructions.ts)
-  getMemoryContext(user: zUser, messages: zContextItem[]): Promise<string[]>;
-  fetchActions(userId: string): Promise<Action[]>;
+  searchMemories(text: string, embedding?: number[], limit?: number): Promise<MemorySearchResult[]>;
+  listActions(): Promise<Action[]>;
 
   // Upload/file handling (context.ts)
-  fetchUploadFiles(uploadId: string): Promise<File[]>;
-  getContextEmbedding(
-    user: zUser,
-    messages: zContextItem[],
-  ): Promise<{ query: string; queryEmbedding: number[] } | null>;
+  listUploadFiles(uploadId: string): Promise<File[]>;
   searchFiles(
-    messages: zContextItem[],
-    query: string,
-    queryEmbedding: number[],
-    maxCount?: number,
-  ): Promise<string>;
+    uploads: string[],
+    text: string,
+    embedding?: number[],
+    limit?: number,
+  ): Promise<FileSearchResult[]>;
 }
 
 // ── Shared accumulation logic ─────────────────────────────────────
@@ -88,13 +90,14 @@ export async function* generate(
   options?: Partial<Omit<StreamTextOptions, 'system'>>,
 ): AsyncGenerator<zGenerateOutput> {
   const messageId = input.context.find((m) => !!m.id)?.id;
-  const chat = messageId ? await callbacks.fetchChat(undefined, messageId) : null;
+  const chat = messageId ? await callbacks.getChat(undefined, messageId) : null;
 
-  const toolContext: zToolContext = {
+  const toolContext: ToolContext = {
     user,
     chat,
     generation: input,
     skills,
+    callbacks,
   };
   const tools = toolGroups.flatMap((g) => g.tools);
   console.log('[Generate] tools:', tools.map((t) => t.name).join(', '));
@@ -104,7 +107,7 @@ export async function* generate(
 
   // Agentic loop: keep generating until the model stops calling tools
   while (true) {
-    context[context.length - 1].data = data; // TODO - let's do better than this
+    context[context.length - 1].data = data;
 
     let parts = data[data.length - 1];
 

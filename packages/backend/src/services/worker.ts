@@ -1,16 +1,16 @@
 import type { zContextItem } from '@tiny-chat/shared/src/types/chat.ts';
 import {
+  Author,
   zConfig,
   zData,
-  type zMetadata,
   type zGenerateInput,
-  Author,
+  type zMetadata,
 } from '@tiny-chat/shared/src/types/chat.ts';
 import {
-  wrapMessage,
-  texts,
-  getNextRunAt,
   checkAllToolRequirements,
+  getNextRunAt,
+  texts,
+  wrapMessage,
   wrapSkill,
 } from '@tiny-chat/shared/src/utils.ts';
 import { createId } from '@paralleldrive/cuid2';
@@ -18,17 +18,26 @@ import {
   generate,
   type GenerationCallbacks,
 } from '@tiny-chat/shared/src/services/chat/generate.ts';
-import { searchFiles } from '../routes/persistence.ts';
-import { getContextEmbedding, getMemoryContext } from '../routes/embeddings.ts';
-import { reorder } from '../routes/messages.ts';
-import type { zUser } from '@tiny-chat/shared/src/types/user.ts';
-import { zCache } from '@tiny-chat/shared/src/types/user.ts';
+import { searchFiles } from '../routes/input.ts';
+import { reorder } from '../routes/message.ts';
+import { zCache, zSettings, zUser } from '@tiny-chat/shared/src/types/user.ts';
 import backend from '../tools/index.ts';
 import type { ToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
 import { chatProviders } from '@tiny-chat/shared/src/providers/chat/index.ts';
+import { embed } from '@tiny-chat/shared/src/services/chat/embed.ts';
+import { searchChats } from '../routes/chat.ts';
+import { getEmbedding, searchMemories } from '../routes/context.ts';
 
-const callbacks: GenerationCallbacks = {
-  fetchChat: async (id, messageId) => {
+export const getGenerationCallbacksBackend = (user: zUser): GenerationCallbacks => ({
+  embed: async (text) => {
+    const embedConfig = zSettings.parse(user.settings).embeddingConfig;
+    if (!embedConfig) return null;
+    const provider = chatProviders.find((p) => p.name === embedConfig.provider);
+    if (!provider) return null;
+    return (await embed(zUser.parse(user), provider, [text], embedConfig, process.env))[0] ?? null;
+  },
+  getEmbedding: async (input) => getEmbedding(zUser.parse(user), input),
+  getChat: async (id, messageId) => {
     if (id) {
       return globalThis.prisma.chat.findUnique({
         where: { id },
@@ -45,13 +54,14 @@ const callbacks: GenerationCallbacks = {
     }
     return null;
   },
-  fetchActions: (userId) => globalThis.prisma.action.findMany({ where: { userId } }),
-  fetchUploadFiles: (uploadId) => globalThis.prisma.file.findMany({ where: { uploadId } }),
-  searchFiles: (context, query, queryEmbedding, maxCount) =>
-    searchFiles(context, query, queryEmbedding, maxCount),
-  getMemoryContext: (user, context) => getMemoryContext(user, context),
-  getContextEmbedding: (user, context) => getContextEmbedding(user, context),
-};
+  searchChats: async (text, embedding, limit) =>
+    (await searchChats(zUser.parse(user), text, embedding, limit)).results,
+  listActions: () => globalThis.prisma.action.findMany({ where: { userId: user.id } }),
+  listUploadFiles: (uploadId) => globalThis.prisma.file.findMany({ where: { uploadId } }),
+  searchFiles: (uploads, text, embedding, limit) =>
+    searchFiles(zUser.parse(user), uploads, text, embedding, limit),
+  searchMemories: (text, embedding, limit) => searchMemories(user, text, embedding, limit),
+});
 
 export default async function onTick() {
   const actions = await globalThis.prisma.action.findMany();
@@ -124,7 +134,7 @@ export default async function onTick() {
       const generation = generate(
         user as zUser,
         chatProviders.find((p) => p.name === generateInput.config.provider)!,
-        callbacks,
+        getGenerationCallbacksBackend(user as zUser),
         checkAllToolRequirements(
           backend,
           { user: user as zUser, chat, generation: generateInput, skills: [] }, // TODO - skills

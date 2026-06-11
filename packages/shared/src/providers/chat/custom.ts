@@ -16,10 +16,16 @@ export const CustomProvider: ChatProvider = {
     });
   },
 
-  getClientModel(user, id, env) {
+  getClientGenerateModel(user, id, env) {
     const client = this.getClient(user, env) as ReturnType<typeof createOpenAICompatible>;
     if (!client) return null;
     return client.languageModel(id);
+  },
+
+  getClientEmbedModel(user, id, env) {
+    const client = this.getClient(user, env) as ReturnType<typeof createOpenAICompatible>;
+    if (!client) return null;
+    return client.embeddingModel(id);
   },
 
   getClientOptions(_user, _config) {

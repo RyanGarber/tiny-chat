@@ -24,4 +24,5 @@ export const apiHandler = createHTTPHandler({
   onError: ({ error }) => {
     console.error('tRPC Error:', error);
   },
+  allowMethodOverride: true,
 });

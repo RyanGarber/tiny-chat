@@ -71,7 +71,7 @@ export default function Chat() {
   const [oldHeight, setOldHeight] = useState(-1);
   const { viewportRef: viewportRef2, sentinelRef } = useSentinel({
     query: messages,
-    queryKey: query.messages.listInfinite.pathKey(),
+    queryKey: query.message.listInfinite.pathKey(),
     onFetchNextPage: useCallback(() => {
       if (viewportNodeRef.current) {
         setOldHeight(viewportNodeRef.current.scrollHeight);

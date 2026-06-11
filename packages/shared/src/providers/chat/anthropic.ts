@@ -17,10 +17,16 @@ export const AnthropicProvider: ChatProvider = {
     });
   },
 
-  getClientModel(user, id, env) {
+  getClientGenerateModel(user, id, env) {
     const client = this.getClient(user, env) as ReturnType<typeof createAnthropic>;
     if (!client) return null;
     return client.languageModel(id);
+  },
+
+  getClientEmbedModel(user, id, env) {
+    const client = this.getClient(user, env) as ReturnType<typeof createAnthropic>;
+    if (!client) return null;
+    return client.embeddingModel(id);
   },
 
   getClientOptions(_user, config) {
@@ -86,7 +92,7 @@ export const AnthropicProvider: ChatProvider = {
           default: 'medium',
         });
       }
-      if (isModelVersion(model, 'opus 4.7', 'opus 4.8')) {
+      if (isModelVersion(model, 'opus 4.7', 'opus 4.8') || isModelVersion(model, 'fable 5')) {
         args.push({
           name: 'effort',
           type: 'list' as const,

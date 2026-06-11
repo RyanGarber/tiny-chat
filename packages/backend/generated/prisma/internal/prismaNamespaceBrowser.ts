@@ -220,8 +220,8 @@ export const UploadScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   name: 'name',
-  thumbnail: 'thumbnail',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  thumbnail: 'thumbnail'
 } as const
 
 export type UploadScalarFieldEnum = (typeof UploadScalarFieldEnum)[keyof typeof UploadScalarFieldEnum]
@@ -231,11 +231,11 @@ export const FileScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   uploadId: 'uploadId',
-  skillId: 'skillId',
   path: 'path',
   mime: 'mime',
   data: 'data',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  skillId: 'skillId'
 } as const
 
 export type FileScalarFieldEnum = (typeof FileScalarFieldEnum)[keyof typeof FileScalarFieldEnum]

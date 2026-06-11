@@ -7,6 +7,7 @@ import {
   Drawer,
   Group,
   Modal,
+  Progress,
   Select,
   Space,
   Stack,
@@ -16,7 +17,7 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core';
-import { JSX, useEffect, useState } from 'react';
+import { JSX, useEffect, useMemo, useState } from 'react';
 import { hashText } from '@/utils/text';
 import { consumeLabel } from '@/utils/ui';
 import { useDisclosure } from '@mantine/hooks';
@@ -32,10 +33,10 @@ import { useInstructions } from '@/features/settings/hooks/useInstructions';
 import { useRetrieval } from '@/features/settings/hooks/useRetrieval';
 import { useProviderSettings } from '@/features/settings/hooks/useProviderSettings';
 import { useThemes } from '@/features/settings/hooks/useThemes';
-import { useProviders } from '@/features/input/hooks/useProviders';
+import { providerCacheMutationKey, useProviders } from '@/features/input/hooks/useProviders';
 import { codeThemesByTheme, THEMES } from '@/utils/theme';
-import { useIsMutating } from '@tanstack/react-query';
-import { query } from '@/utils/api';
+import { useIsMutating, useMutationState } from '@tanstack/react-query';
+import { runEmbeddingBatchMutationKey, useEmbedding } from '@/features/provider/hooks/useEmbedding';
 
 export default function SidebarSettings({
   children,
@@ -80,6 +81,31 @@ export default function SidebarSettings({
   } = useProviderSettings();
   const { theme, setTheme, codeTheme, setCodeTheme } = useThemes();
 
+  const { nextEmbeddingBatch } = useEmbedding();
+  const embeddingMutationStatus =
+    useMutationState({
+      filters: { mutationKey: runEmbeddingBatchMutationKey },
+      select: (m) => m.state.status,
+    }).at(-1) ?? 'idle';
+  const runEmbeddingBatch = {
+    isIdle: embeddingMutationStatus === 'idle',
+    isPending: embeddingMutationStatus === 'pending',
+    isError: embeddingMutationStatus === 'error',
+    isSuccess: embeddingMutationStatus === 'success',
+  };
+  const { batchCount, totalCount } = useMemo(() => {
+    return {
+      batchCount:
+        (nextEmbeddingBatch.data?.messages.length ?? 0) +
+        (nextEmbeddingBatch.data?.memories.length ?? 0) +
+        (nextEmbeddingBatch.data?.files.length ?? 0),
+      totalCount:
+        Number(nextEmbeddingBatch.data?.messages[0]?.total ?? 0) +
+        Number(nextEmbeddingBatch.data?.memories[0]?.total ?? 0) +
+        Number(nextEmbeddingBatch.data?.files[0]?.total ?? 0),
+    };
+  }, [nextEmbeddingBatch.data]);
+
   const ProviderSettings = (providers: zCache['providers']['chat' | 'web' | 'other']) => (
     <Stack>
       {providers
@@ -97,7 +123,14 @@ export default function SidebarSettings({
                 : undefined
             }
           >
-            <Text size="sm">{provider.name}</Text>
+            <Group justify="space-between">
+              <Text size="sm">{provider.name}</Text>
+              {provider.error && (
+                <Text size="xs" c="red">
+                  {provider.error}
+                </Text>
+              )}
+            </Group>
             <Stack mt={5}>
               {provider.settings.map((s) => (
                 <TextInput
@@ -135,8 +168,7 @@ export default function SidebarSettings({
     </Stack>
   );
 
-  const areProvidersUpdating =
-    useIsMutating({ mutationKey: query.persistence.updateCache.mutationKey() }) > 0;
+  const areProvidersUpdating = useIsMutating({ mutationKey: providerCacheMutationKey }) > 0;
 
   return (
     <>
@@ -328,7 +360,28 @@ export default function SidebarSettings({
                 <Text size="sm">Retrieval</Text>
                 <Text size="xs" c="dimmed">
                   Enables memory and smart search
+                  {totalCount > 0 && ` (${totalCount.toLocaleString()})`}
                 </Text>
+                {totalCount > 0 && (
+                  <Progress
+                    my={5}
+                    value={
+                      runEmbeddingBatch.isError
+                        ? 100
+                        : runEmbeddingBatch.isIdle
+                          ? 0
+                          : Math.min(100, (batchCount / totalCount) * 100)
+                    }
+                    color={
+                      runEmbeddingBatch.isError
+                        ? 'red'
+                        : runEmbeddingBatch.isIdle
+                          ? 'gray'
+                          : undefined
+                    }
+                    animated={runEmbeddingBatch.isPending}
+                  />
+                )}
               </Box>
               <Tooltip label="Model that generates embeddings" color="gray" position="right">
                 <ModelSelect
@@ -412,7 +465,7 @@ export default function SidebarSettings({
                   label="Preferred Provider"
                   styles={consumeLabel}
                   allowDeselect={false}
-                  data={providers.data?.web.filter((p) => p.available).map((p) => p.name)}
+                  data={providers.data?.web.filter((p) => p.available).map((p) => p.name) ?? []}
                   value={preferredWebProvider.data}
                   onChange={(value) => {
                     if (!value) return;

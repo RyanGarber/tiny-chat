@@ -1,13 +1,13 @@
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
-import { backendUrl, query, trpc } from '@/utils/api';
-import { useMessagingStore, type Upload } from '@/features/chat/stores/useMessagingStore';
-import { zUploadOutput } from '@tiny-chat/shared/src/types/chat';
+import { query, trpc } from '@/utils/api';
+import { useMessagingStore } from '@/features/chat/stores/useMessagingStore';
+import { fetchNextEmbeddingBatch } from '@/features/provider/hooks/useEmbedding';
 
 export const uploadMutationKey = ['upload'] as const;
 
 export const useUploads = () => {
   const fileUploads = useInfiniteQuery({
-    ...query.persistence.listUploads.infiniteQueryOptions(
+    ...query.input.listUploads.infiniteQueryOptions(
       { limit: 10, isNot: 'github' },
       {
         getNextPageParam: (lastPage, _pages) => lastPage.nextCursor,
@@ -20,7 +20,7 @@ export const useUploads = () => {
   });
 
   const repoUploads = useQuery({
-    ...query.persistence.listUploads.queryOptions({ is: 'github' }),
+    ...query.input.listUploads.queryOptions({ is: 'github' }),
     select: (data) =>
       data.uploads.map((u) => ({
         ...u,
@@ -31,62 +31,23 @@ export const useUploads = () => {
 
   const upload = useMutation({
     mutationKey: uploadMutationKey,
-    mutationFn: async ({
-      type,
-      files,
-      onProgress,
-    }: {
-      type: 'upload' | 'skill';
-      files: File[];
-      onProgress?: (progress: number) => void;
-    }) => {
-      const formData = new FormData();
-      for (const file of files) {
-        formData.append('files', file, file.name);
-      }
-
-      const token = localStorage.getItem('token');
-
-      const result = await new Promise<Upload[]>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', `${backendUrl}/@/upload`, true);
-        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-        xhr.setRequestHeader('X-Upload-Type', type);
-
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            const percentComplete = (event.loaded / event.total) * 100;
-            onProgress?.(percentComplete);
-          }
-        };
-
-        xhr.onload = () => {
-          try {
-            resolve(zUploadOutput.parse(JSON.parse(xhr.responseText.slice(6))));
-          } catch {
-            reject(new Error(xhr.responseText));
-          }
-        };
-
-        xhr.onerror = () => {
-          reject(new Error('Failed to upload'));
-        };
-
-        xhr.send(formData);
-      });
-
-      return result;
+    mutationFn: async ({ type, file }: { type: 'upload' | 'skill'; file: File }) => {
+      const data = new FormData();
+      data.set('type', type);
+      data.set('file', file);
+      return trpc.input.createUpload.mutate(data);
     },
 
     onSuccess: (result) => {
-      console.log('upload success:', result);
+      console.log('Upload suceeded:', result);
       void fileUploads.refetch();
-      useMessagingStore.getState().addUploads(...result);
+      void fetchNextEmbeddingBatch();
+      useMessagingStore.getState().addUploads(result);
     },
   });
 
   const deleteUpload = useMutation({
-    mutationFn: (id: string) => trpc.persistence.deleteFiles.mutate({ type: 'upload', id }),
+    mutationFn: (id: string) => trpc.input.deleteFiles.mutate({ type: 'upload', id }),
     onSuccess: () => {
       void fileUploads.refetch();
     },

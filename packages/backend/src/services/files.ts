@@ -1,8 +1,7 @@
 import { fileTypeFromBuffer } from 'file-type';
 import { Prisma, type File } from '../../generated/prisma/client.ts';
 import { createId } from '@paralleldrive/cuid2';
-import { shouldEmbedFile, shouldIncludeFile } from '../utils.ts';
-import { embed } from '@tiny-chat/shared/src/services/chat/embed.ts';
+import { shouldIncludeFile } from '../utils.ts';
 import { unzip, type Unzipped } from 'fflate';
 import sharp from 'sharp';
 import { MarkItDown } from 'markitdown-ts';
@@ -28,12 +27,18 @@ export async function handleFilesZipped(
 
   const files = Object.entries(unzipped).filter(([path]) => shouldIncludeFile(path, false));
 
-  return await handleFiles(user, files, existingFiles, associate, include);
+  return await handleFiles(
+    user,
+    files.map(([name, data]) => [name, data.buffer]),
+    existingFiles,
+    associate,
+    include,
+  );
 }
 
 export async function handleFiles(
   user: zUser,
-  files: [string, Uint8Array][],
+  files: [string, ArrayBufferLike][],
   existingFiles: File[] = [],
   associate: { uploadId: string } | { skillId: string },
   include?: (path: string) => boolean,
@@ -117,42 +122,6 @@ export async function handleFiles(
   if (toUpdate.length > 0) {
     await globalThis.prisma
       .$executeRaw`UPDATE file SET embedding = NULL WHERE id IN (${Prisma.join(toUpdate.map((u) => u.id))})`;
-  }
-
-  if (result.length > 0) {
-    const toEmbed = (
-      await globalThis.prisma.$queryRaw<
-        File[]
-      >`SELECT id, path, data FROM file WHERE id IN (${Prisma.join(result.map((f) => f.id))}) AND embedding IS NULL`
-    ).filter((f) => shouldEmbedFile(f.path.join('/'), f.data));
-
-    console.log(`Starting embedding for ${toEmbed.length} files...`);
-    void (async () => {
-      try {
-        for (let i = 0; i < toEmbed.length; i += 100) {
-          const chunk = toEmbed.slice(i, i + 100);
-          console.log(`Generating embeddings for files ${i}-${i + chunk.length}`);
-          const embeddings = await embed(
-            user,
-            chunk.map((f) => new TextDecoder().decode(f.data)),
-            process.env,
-          );
-          if (!embeddings) {
-            console.log(`Failed to generate embeddings for chunk starting at ${i}`);
-            continue;
-          }
-          await globalThis.prisma.$transaction(
-            embeddings.map(
-              (emb, j) =>
-                globalThis.prisma
-                  .$executeRaw`UPDATE file SET embedding = ${JSON.stringify(emb)}::vector WHERE id = ${chunk[j].id}`,
-            ),
-          );
-        }
-      } catch (error) {
-        console.error(`Failed to embed files`, error);
-      }
-    })();
   }
 
   return result.map((f) => ({ ...f, ...preprocessing.get(f.path.join('/')) }));

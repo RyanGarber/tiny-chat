@@ -1,11 +1,9 @@
 import { z } from 'zod';
-import { getMemorySearch, prepareMemories } from '../routes/embeddings.ts';
 import { MemoryCategory, MemoryStability } from '../../generated/prisma/enums.ts';
 import { createId } from '@paralleldrive/cuid2';
-import { type Memory } from '../../generated/prisma/client.ts';
-import { embed } from '@tiny-chat/shared/src/services/chat/embed.ts';
 import type { Tool, ToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
-import type { zUser } from '@tiny-chat/shared/src/types/user.ts';
+import { searchMemories } from '../routes/context.ts';
+import type { MemorySearchResult } from '@tiny-chat/shared/src/types/chat.ts';
 
 const zAddMemoryInput = z.object({
   fact: z.string().describe('The fact about the user.'),
@@ -34,7 +32,7 @@ const AddMemory: Tool<typeof zAddMemoryInput, typeof zAddMemoryOutput> = {
     chat: true,
     notIncognito: true,
   },
-  run: async ({ user, chat, generation }, input) => {
+  run: async ({ chat, generation }, input) => {
     const memory = await globalThis.prisma.memory.create({
       data: {
         id: createId(),
@@ -50,8 +48,6 @@ const AddMemory: Tool<typeof zAddMemoryInput, typeof zAddMemoryOutput> = {
         confidence: input.confidence,
       },
     });
-
-    void embedMemory(user, memory);
 
     return { created_memory_id: memory.id };
   },
@@ -105,8 +101,6 @@ const UpdateMemory: Tool<typeof zUpdateMemoryInput, typeof zUpdateMemoryOutput> 
       });
     });
 
-    void embedMemory(user, memory);
-
     return { updated_memory_id: memory.id };
   },
 };
@@ -150,17 +144,14 @@ export const zSearchMemoryInput = z.object({
 });
 export type zSearchMemoryInput = z.infer<typeof zSearchMemoryInput>;
 
-/*const zSearchMemoryOutput = z.array(
+export const zSearchMemoryOutput = z.array(
   z.object({
-    id: z.cuid2(),
     fact: z.string(),
     category: z.enum(MemoryCategory),
     stability: z.enum(MemoryStability),
-    evidence: z.array(z.string()),
-    confidence: z.number(),
+    createdAt: z.iso.datetime(),
   }),
-);*/ // TODO
-export const zSearchMemoryOutput = z.array(z.string());
+);
 export type zSearchMemoryOutput = z.infer<typeof zSearchMemoryOutput>;
 
 const SearchMemory: Tool<typeof zSearchMemoryInput, typeof zSearchMemoryOutput> = {
@@ -172,13 +163,12 @@ const SearchMemory: Tool<typeof zSearchMemoryInput, typeof zSearchMemoryOutput> 
     embeddings: true,
     notIncognito: true,
   },
-  run: async ({ user }, input) => {
-    const result: Awaited<ReturnType<typeof SearchMemory.run>> = [];
+  run: async ({ user, callbacks }, input) => {
+    const result: MemorySearchResult[] = [];
 
     if (input.mode === 'semantic') {
-      const embeddings = await embed(user, [input.query], process.env);
-      if (!embeddings) throw new Error('Failed to generate embedding for query');
-      const matches = await getMemorySearch(user, embeddings[0]);
+      const embedding = await callbacks.embed(input.query);
+      const matches = await searchMemories(user, input.query, embedding ?? undefined, 10);
       for (const match of matches) {
         result.push(match);
       }
@@ -188,16 +178,21 @@ const SearchMemory: Tool<typeof zSearchMemoryInput, typeof zSearchMemoryOutput> 
       });
       const matches = memories.filter((m) => new RegExp(input.query, 'i').test(m.fact));
       for (const match of matches) {
-        result.push(prepareMemories([match])[0]);
+        result.push(match);
       }
     }
 
-    return result;
+    return result.map((r) => ({
+      fact: r.fact,
+      category: r.category,
+      stability: r.stability,
+      createdAt: r.createdAt.toISOString(),
+    }));
   },
 };
 
-export const memory: ToolGroup = {
-  name: 'memory',
+export const memories: ToolGroup = {
+  name: 'memories',
   tools: [AddMemory, UpdateMemory, DeleteMemory, SearchMemory],
   instructions: {
     heading: 'Memories',
@@ -205,14 +200,3 @@ export const memory: ToolGroup = {
 If unsure whether something is worth remembering, ask the user if they'd like it remembered, and add it if they say yes.`,
   },
 };
-
-async function embedMemory(user: zUser, memory: Memory) {
-  const embeddings = await embed(user, [memory.fact], process.env);
-  if (!embeddings) {
-    console.warn('Failed to generate embedding for memory:', memory.id);
-    return;
-  }
-  await globalThis.prisma
-    .$queryRaw`UPDATE memory SET embedding = ${JSON.stringify(embeddings[0])}::vector WHERE id = ${memory.id}`;
-  console.log('Saved embedding for memory', memory.id);
-}

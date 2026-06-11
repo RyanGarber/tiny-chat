@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { zUser } from './user.ts';
 import { zChat, zGenerateInput } from './chat.ts';
 import { zSkill } from './skill.ts';
+import type { GenerationCallbacks } from '../services/chat/generate.ts';
 
 export const zToolContext = z.object({
   user: zUser,
@@ -10,6 +11,10 @@ export const zToolContext = z.object({
   skills: z.array(zSkill),
 });
 export type zToolContext = z.infer<typeof zToolContext>;
+
+export interface ToolContext extends zToolContext {
+  callbacks: GenerationCallbacks;
+}
 
 export const zTool = z.object({
   name: z.string(),
@@ -38,7 +43,7 @@ export interface Tool<
   TUserInput extends z.ZodTypeAny | undefined = undefined,
 > extends zTool {
   run(
-    context: zToolContext,
+    context: ToolContext,
     input: z.infer<TInput>,
     userInput: z.infer<TUserInput>,
   ): Promise<z.infer<TOutput>>;

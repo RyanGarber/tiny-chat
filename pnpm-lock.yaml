@@ -416,6 +416,9 @@ importers:
       timeago.js:
         specifier: ^4.0.2
         version: 4.0.2
+      voyage-ai-provider:
+        specifier: ^4.0.0
+        version: 4.0.0(zod@4.4.3)
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -6640,6 +6643,14 @@ packages:
 
   vm-browserify@1.1.2:
     resolution: {integrity: sha512-2ham8XPWTONajOR0ohOKOHXkm3+gaBmGut3SRuu75xLd/RRaY6vqgh8NBYYk7+RW3u5AtzPQZG8F10LHkl0lAQ==}
+
+  voyage-ai-provider@4.0.0:
+    resolution: {integrity: sha512-zlVJvrttY8Qm0ORaLfwDURiD2ZMMaw6g7kjLJMyknNIaLebdC0RsQ0tXCleNB9AoiQiYZyFNsD8EvzkRIGudhw==}
+    peerDependencies:
+      zod: ^3.25.76 || ^4
+    peerDependenciesMeta:
+      zod:
+        optional: true
 
   w3c-xmlserializer@5.0.0:
     resolution: {integrity: sha512-o8qghlI8NZHU1lLPrpi2+Uq7abh4GGPpYANlalzWxyWteJOCsr/P+oPBA49TOLu5FTZO4d3F9MnWJfiMo4BkmA==}
@@ -13700,6 +13711,13 @@ snapshots:
       - msw
 
   vm-browserify@1.1.2: {}
+
+  voyage-ai-provider@4.0.0(zod@4.4.3):
+    dependencies:
+      '@ai-sdk/provider': 3.0.10
+      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
+    optionalDependencies:
+      zod: 4.4.3
 
   w3c-xmlserializer@5.0.0:
     dependencies:

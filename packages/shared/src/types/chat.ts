@@ -1,8 +1,12 @@
 import { z } from 'zod';
-import { Author } from '../../../backend/generated/prisma/enums.ts';
+import {
+  Author,
+  MemoryCategory,
+  MemoryStability,
+} from '../../../backend/generated/prisma/enums.ts';
 import type { Message } from '../../../backend/generated/prisma/client.ts';
 
-export { Author };
+export { Author, MemoryCategory, MemoryStability };
 
 export const DEFAULT_TOOL_GROUPS = ['skill', 'action', 'chat', 'memory', 'upload', 'web', 'reply'];
 
@@ -121,7 +125,7 @@ export const zGenerateOutput = z.discriminatedUnion('type', [
 ]);
 export type zGenerateOutput = z.infer<typeof zGenerateOutput>;
 
-export const zUploadOutput = z.array(z.custom<Extract<zDataPart, { type: 'upload' }>>());
+export const zUploadOutput = z.custom<Extract<zDataPart, { type: 'upload' }>>();
 export type zUploadOutput = z.infer<typeof zUploadOutput>;
 
 export type MessageState = Message & {
@@ -157,4 +161,29 @@ export interface Model {
   name: string;
   features: ModelFeature[];
   args: ModelArg[];
+}
+
+export interface ChatSearchResult {
+  id: string;
+  chatId: string;
+  author: string;
+  data: zData;
+  createdAt: Date;
+  chatTitle: string | null;
+}
+
+export interface MemorySearchResult {
+  id: string;
+  fact: string;
+  category: MemoryCategory;
+  stability: MemoryStability;
+  createdAt: Date;
+}
+
+export interface FileSearchResult {
+  id: string;
+  uploadId: string;
+  uploadName: string;
+  path: string[];
+  data: Uint8Array;
 }

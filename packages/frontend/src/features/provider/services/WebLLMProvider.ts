@@ -23,9 +23,17 @@ export const WebLLMProvider: ChatProvider = {
     return createWebLLM();
   },
 
-  getClientModel(user, model, env) {
+  getClientGenerateModel(user, id, env) {
     const client = this.getClient(user, env) as ReturnType<typeof createWebLLM>;
-    return client.languageModel(model, {
+    return client.languageModel(id, {
+      appConfig: WebLLMConfig,
+      engineConfig: { initProgressCallback: console.log, appConfig: WebLLMConfig },
+    });
+  },
+
+  getClientEmbedModel(user, id, env) {
+    const client = this.getClient(user, env) as ReturnType<typeof createWebLLM>;
+    return client.embeddingModel(id, {
       appConfig: WebLLMConfig,
       engineConfig: { initProgressCallback: console.log, appConfig: WebLLMConfig },
     });

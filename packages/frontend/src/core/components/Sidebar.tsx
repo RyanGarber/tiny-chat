@@ -1,23 +1,23 @@
-import { useCallback, useState } from 'react';
-import { useDebouncedValue /*, useHotkeys*/ } from '@mantine/hooks';
+import { useCallback, useRef, useState } from 'react';
+import { useDebouncedValue } from '@mantine/hooks';
 import { ActionIcon, Avatar, Burger, Group, NavLink, Stack, Text, Tooltip } from '@mantine/core';
 import { Spotlight, spotlight, SpotlightActionData } from '@mantine/spotlight';
 import { useLayoutStore } from '@/core/stores/useLayoutStore.tsx';
-import { auth, query } from '@/utils/api';
-import { scrubText } from '@/utils/text';
+import { auth, env, query } from '@/utils/api';
 import SidebarAccount from '@/core/components/SidebarAccount.tsx';
 import { Icon } from '@iconify/react';
-import { snippetText, texts } from '@tiny-chat/shared/src/utils.ts';
+import { scrubText, snippetText, texts } from '@tiny-chat/shared/src/utils.ts';
 import SidebarSettings from '@/core/components/SidebarSettings.tsx';
 import { version } from '../../../../../apps/tauri/tauri.conf.json';
 import SidebarChatList from './SidebarChatList.tsx';
 import { useChat } from '@/features/chat/hooks/useChat.ts';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { glassStyle } from '@/utils/glass.tsx';
 import { useChatStore } from '@/features/chat/stores/useChatStore';
 import { ChatService } from '@/features/chat/services/ChatService.ts';
 import { useRetrieval } from '@/features/settings/hooks/useRetrieval.ts';
-//import WebLLM from '@/core/components/WebLLM.tsx';
+import { ProviderService } from '@/features/provider/services/ProviderService.ts';
+import { embed } from '@tiny-chat/shared/src/services/chat/embed.ts';
 
 export default function Sidebar() {
   const { chat } = useChat();
@@ -46,15 +46,49 @@ export default function Sidebar() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery] = useDebouncedValue(searchQuery, 400);
+  const embeddingCache = useRef<Map<string, number[]>>(new Map());
 
-  //const [superSecretWebLLMMenuOpened, setSuperSecretWebLLMMenuOpened] = useState(false);
-  //useHotkeys([['mod+h', () => setSuperSecretWebLLMMenuOpened(true)]]);
+  const debouncedSearch = useQuery({
+    queryKey: ['search', debouncedQuery],
+    queryFn: async () => {
+      if (debouncedQuery.trim().length < 3) {
+        return null;
+      }
+
+      if (!embeddingConfig.data || !useEmbeddingSearch.data) {
+        return { text: debouncedQuery, embedding: undefined };
+      }
+
+      const provider = (await ProviderService.getChatProviders()).find(
+        (p) => p.name === embeddingConfig.data?.provider,
+      );
+      if (!provider) return { text: debouncedQuery, embedding: undefined };
+
+      if (!embeddingCache.current.has(debouncedQuery)) {
+        console.log('Generating embedding for search:', debouncedQuery);
+        const embedding = await embed(
+          session!.user,
+          provider,
+          [debouncedQuery],
+          embeddingConfig.data,
+          env,
+        );
+        embeddingCache.current.set(debouncedQuery, embedding[0]);
+      }
+
+      return {
+        text: debouncedQuery,
+        embedding: embeddingCache.current.get(debouncedQuery),
+      };
+    },
+    enabled: debouncedQuery.trim().length >= 3,
+  });
 
   const spotlightActions = useInfiniteQuery({
-    ...query.chats.search.infiniteQueryOptions(
+    ...query.chat.search.infiniteQueryOptions(
       {
-        text: debouncedQuery,
-        config: useEmbeddingSearch ? embeddingConfig.data : undefined,
+        text: debouncedSearch?.data?.text,
+        embedding: debouncedSearch?.data?.embedding,
         limit: 5,
       },
       {
@@ -70,7 +104,7 @@ export default function Sidebar() {
                   label: result.chatTitle ? scrubText(result.chatTitle, 50) : undefined,
                   description: snippetText(scrubText(texts(result.data)), debouncedQuery),
                   onClick: () => closeAfter(() => ChatService.setChatId(result.chatId)),
-                  group: result.folderTitle ?? undefined,
+                  group: result.chatTitle ?? undefined,
                 }),
               ),
             })),
@@ -304,10 +338,6 @@ export default function Sidebar() {
       >
         {collapsed}
       </div>
-      {/*<WebLLM
-        opened={superSecretWebLLMMenuOpened}
-        onClose={() => setSuperSecretWebLLMMenuOpened(false)}
-      />*/}
     </div>
   );
 }

@@ -1,9 +1,9 @@
-import { memory } from './memory.ts';
-import { legiscan } from './legiscan.ts';
-import { chat } from './chat.ts';
-import { action } from './action.ts';
-import { upload } from './upload.ts';
-import { web } from './web.ts';
 import type { ToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
+import { web } from './web.ts';
+import { memories } from './memories.ts';
+import { actions } from './actions.ts';
+import { uploads } from './uploads.ts';
+import { legiscan } from './legiscan.ts';
+import { chats } from './chats.ts';
 
-export default [memory, action, upload, chat, web, legiscan] satisfies ToolGroup[];
+export default [chats, web, memories, actions, uploads, legiscan] satisfies ToolGroup[];

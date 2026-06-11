@@ -15,13 +15,16 @@ const getData = (
       .sort((a, b) => a.name.localeCompare(b.name))
       .filter(
         (p) =>
-          includeHidden ||
-          p.models.some(
-            (m) =>
-              !hiddenModels.data?.[feature].find(
-                (h) => h.provider === p.name && h.model === m.name,
-              ),
-          ),
+          p.models.length &&
+          (includeHidden ||
+            p.models
+              .filter((m) => m.features.includes(feature))
+              .some(
+                (m) =>
+                  !hiddenModels.data?.[feature].find(
+                    (h) => h.provider === p.name && h.model === m.name,
+                  ),
+              )),
       )
       .map((p) => ({
         label: p.name,

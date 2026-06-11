@@ -51,7 +51,7 @@ export const SkillService = {
   findRemote: async () => {
     const skills: (zSkill & { id: string })[] = [];
 
-    const remoteSkills = await trpc.capabilities.listSkills.query({ withResources: true });
+    const remoteSkills = await trpc.context.listSkills.query({ withResources: true });
     console.log('remote skills:', remoteSkills);
     for (const { id, files } of remoteSkills) {
       const skill = wrapSkill(files, { id });

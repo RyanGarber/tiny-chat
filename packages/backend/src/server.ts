@@ -6,21 +6,14 @@ import { initLogs } from '@tiny-chat/shared/src/logs.ts';
 
 config({ path: resolve(import.meta.dirname, '../../../.env'), quiet: true });
 
-const [
-  { authHandler },
-  { apiHandler },
-  { geminiHandler },
-  { default: uploadHandler },
-  { mcpHandler },
-  { default: onTick },
-] = await Promise.all([
-  import('./services/auth.ts'),
-  import('./services/api.ts'),
-  import('./services/gemini.ts'),
-  import('./services/upload.ts'),
-  import('./services/mcp.ts'),
-  import('./services/worker.ts'),
-]);
+const [{ authHandler }, { apiHandler }, { geminiHandler }, { mcpHandler }, { default: onTick }] =
+  await Promise.all([
+    import('./services/auth.ts'),
+    import('./services/api.ts'),
+    import('./services/gemini.ts'),
+    import('./services/mcp.ts'),
+    import('./services/worker.ts'),
+  ]);
 
 if (import.meta.main) initLogs(undefined, true);
 
@@ -45,8 +38,6 @@ const server = createServer((req, res) => {
     void authHandler(req, res);
   } else if (req.url?.startsWith('/@/gemini')) {
     void geminiHandler(req, res);
-  } else if (req.url?.startsWith('/@/upload')) {
-    void uploadHandler(req, res);
   } else if (req.url?.startsWith('/@/mcp')) {
     void mcpHandler(req, res);
   } else {

@@ -6,6 +6,7 @@ import { isModelVersion } from '../../utils.ts';
 
 const INFERENCE_PROFILES: Record<string, string> = {
   'amazon.nova-2-lite-v1:0': 'global.amazon.nova-2-lite-v1:0',
+  'anthropic.claude-fable-5': 'global.anthropic.claude-fable-5',
   'anthropic.claude-haiku-4-5-20251001-v1:0': 'global.anthropic.claude-haiku-4-5-20251001-v1:0',
   'anthropic.claude-opus-4-5-20251101-v1:0': 'global.anthropic.claude-opus-4-5-20251101-v1:0',
   'anthropic.claude-opus-4-6-v1': 'global.anthropic.claude-opus-4-6-v1',
@@ -28,7 +29,7 @@ export const AWSProvider: ChatProvider = {
     });
   },
 
-  getClientModel(user, id, env) {
+  getClientGenerateModel(user, id, env) {
     const client = this.getClient(user, env) as ReturnType<typeof createAmazonBedrock>;
     if (!client) return null;
 
@@ -37,6 +38,12 @@ export const AWSProvider: ChatProvider = {
     }
 
     return client.languageModel(id);
+  },
+
+  getClientEmbedModel(user, id, env) {
+    const client = this.getClient(user, env) as ReturnType<typeof createAmazonBedrock>;
+    if (!client) return null;
+    return client.embeddingModel(id);
   },
 
   getClientOptions(user, config, env) {

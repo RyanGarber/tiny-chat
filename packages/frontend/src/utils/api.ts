@@ -23,6 +23,8 @@ export const backendUrl: string = import.meta.env.DEV
   ? `http://${__TAURI_DEV_HOST__ ?? 'localhost'}:${import.meta.env.VITE_BACKEND_PORT}`
   : import.meta.env.VITE_BACKEND_URL;
 
+export const env = { ...import.meta.env, VITE_BACKEND_URL: backendUrl };
+
 export const queryClient = new QueryClient();
 
 export const trpc = createTRPCClient<tRPCRouter>({
@@ -36,6 +38,7 @@ export const trpc = createTRPCClient<tRPCRouter>({
         const token = localStorage.getItem('token');
         return { Authorization: token ? `Bearer ${token}` : undefined };
       },
+      methodOverride: 'POST',
     }),
   ],
 });

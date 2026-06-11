@@ -186,7 +186,7 @@ export const ChatInput = memo(({ isAny, ...props }: InputWrapperProps & { isAny:
         if (item.kind === 'file') {
           const file = item.getAsFile();
           if (file) {
-            upload.mutate({ type: 'upload', files: [file] });
+            upload.mutate({ type: 'upload', file });
           }
         }
       }

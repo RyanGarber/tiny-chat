@@ -18,16 +18,15 @@ import { MessageState, zDataPart } from '@tiny-chat/shared/src/types/chat.ts';
 import {
   zReplyColorInput,
   zReplyColorOutput,
-  zReplyDatetimeOutput,
   zReplyDatetimeInput,
+  zReplyDatetimeOutput,
   zReplyNumberInput,
   zReplyNumberOutput,
   zReplyQuestionInput,
   zReplyQuestionOutput,
-} from '@/tools/reply';
+} from '@tiny-chat/shared/src/tools/questions.ts';
 import { Markdown } from '@/features/message/components/Markdown';
-import { zShellExecInput } from '@/tools/shell';
-import { zWriteFileInput } from '@/tools/filesystem';
+import { zShellExecInput, zWriteFileInput } from '@/tools/system.ts';
 import { DIFF_MARKER } from '@/utils/text';
 import type { Tool } from '@tiny-chat/shared/src/types/tool.ts';
 import type { z } from 'zod';
@@ -85,9 +84,9 @@ export const ToolCallInput = memo(
       } else if (part.name === 'reply_question') {
         return (
           <Stack gap="xs">
-            <Text>
+            <Box>
               <Markdown source={(part.args as zReplyQuestionInput).question} />
-            </Text>
+            </Box>
             <Grid grow>
               {(part.args as zReplyQuestionInput).suggestions.map((suggestion) => (
                 <Grid.Col key={suggestion} span={4} align="stretch">
@@ -120,7 +119,6 @@ export const ToolCallInput = memo(
               minRows={1}
               maxRows={10}
               placeholder="..."
-              defaultValue={(inputValue as zReplyQuestionOutput | undefined)?.answer}
               value={(inputValue as zReplyQuestionOutput | undefined)?.answer}
               disabled={disabled}
               onChange={(e) =>

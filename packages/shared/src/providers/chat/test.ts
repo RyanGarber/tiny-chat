@@ -10,10 +10,16 @@ export const TestProvider: ChatProvider = {
     return createTestProvider();
   },
 
-  getClientModel(user, id, env) {
+  getClientGenerateModel(user, id, env) {
     const client = this.getClient(user, env) as ReturnType<typeof createTestProvider>;
     if (!client) return null;
     return client.languageModel(id);
+  },
+
+  getClientEmbedModel(user, id, env) {
+    const client = this.getClient(user, env) as ReturnType<typeof createTestProvider>;
+    if (!client) return null;
+    return client.embeddingModel(id);
   },
 
   getClientOptions() {
@@ -24,9 +30,14 @@ export const TestProvider: ChatProvider = {
   async getModels() {
     return [
       {
-        name: 'test',
+        name: 'test-generate',
         features: ['generate', 'toolCall'],
-        args: this.getModelArgs('test'),
+        args: this.getModelArgs('test-generate'),
+      },
+      {
+        name: 'test-embed',
+        features: ['embed'],
+        args: this.getModelArgs('test-embed'),
       },
     ];
   },

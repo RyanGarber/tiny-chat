@@ -1,7 +1,7 @@
 import type { GenerationCallbacks } from './generate.ts';
-import type { zContextItem } from '../../types/chat.ts';
+import type { FileSearchResult, zContextItem } from '../../types/chat.ts';
 import { Author, type zDataPart, type zGenerateInput } from '../../types/chat.ts';
-import { normalizeText } from '../../utils.ts';
+import { getLastPrompt, normalizeText, snippetText, texts } from '../../utils.ts';
 import type { zUser } from '../../types/user.ts';
 import { buildGenerationInstructions } from './instructions.ts';
 import type { zToolGroup } from '../../types/tool.ts';
@@ -18,25 +18,28 @@ export async function buildContext(
 ) {
   console.log('[Context] input context:', input.context);
 
+  const prompt = getLastPrompt(input.context);
+  const promptText = texts(prompt.data);
+  const promptEmbedding = prompt.id
+    ? await callbacks.getEmbedding({ messageId: prompt.id })
+    : await callbacks.embed(promptText);
+
   const context: zContextItem[] = await Promise.all(
     input.context.map(async (m, i) => {
       let isFirstText = true;
 
       const uploadFiles: Record<string, File[]> = {};
-      const uploadFileContexts: Record<string, string> = {};
+      const uploadFileContexts: Record<string, FileSearchResult[]> = {};
       for (const upload of m.data
         .flat()
         .filter((d): d is Extract<zDataPart, { type: 'upload' }> => d.type === 'upload')) {
-        uploadFiles[upload.id] = await callbacks.fetchUploadFiles(upload.id);
-        const query = await callbacks.getContextEmbedding(user, input.context);
-        if (query) {
-          uploadFileContexts[upload.id] = await callbacks.searchFiles(
-            [m],
-            query.query,
-            query.queryEmbedding,
-            3,
-          );
-        }
+        uploadFiles[upload.id] = await callbacks.listUploadFiles(upload.id);
+        uploadFileContexts[upload.id] = await callbacks.searchFiles(
+          m.data.flat().flatMap((p) => (p.type === 'upload' ? [p.id] : [])),
+          promptText,
+          promptEmbedding ?? undefined,
+          3,
+        );
       }
 
       return {
@@ -95,18 +98,14 @@ export async function buildContext(
                   return '```\n' + renderTree(tree) + '\n```';
                 };
                 const treeMarkdown = buildFileTreeMarkdown(uploadFiles[p.id]);
-                console.log(
-                  '[Context] files:',
-                  treeMarkdown,
-                  uploadFileContexts[p.id]
-                    .split('---')
-                    .map((c) => c.trim().slice(0, 1000))
-                    .join('\n\n---\n\n'),
-                );
+                const snippets = uploadFileContexts[p.id]
+                  .map((f) => snippetText(new TextDecoder().decode(f.data), promptText, 2500))
+                  .join('\n\n---\n\n');
+                console.log('[Context] upload files:', treeMarkdown, snippets);
                 return [
                   {
                     type: 'text',
-                    value: `Uploaded files (${p.name}):\n${treeMarkdown}\n\n---${uploadFileContexts[p.id]}`,
+                    value: `Relevant files from upload (${p.name}):\n${treeMarkdown}\n\n---${snippets}`,
                   },
                 ];
               }
@@ -139,7 +138,7 @@ export async function buildContext(
                         relativeDate: m.createdAt,
                       }).replace(' ago', '');
                       if (delay !== 'just now') {
-                        heading += `[Conversation timing: ${delay} ${delay.endsWith('s') ? 'have' : 'has'} passed since the last message.]\n`;
+                        heading += `[info: conversation timing: ${delay} ${delay.endsWith('s') ? 'have' : 'has'} passed since the last message.]\n`;
                       }
                     }
                   }

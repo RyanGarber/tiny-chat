@@ -125,6 +125,7 @@ CREATE TABLE "memory" (
     "confidence" DOUBLE PRECISION NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "embedding" vector,
+    "lexicon" tsvector,
     "messageId" TEXT,
 
     CONSTRAINT "memory_pkey" PRIMARY KEY ("id")
@@ -168,6 +169,7 @@ CREATE TABLE "file" (
     "mime" TEXT NOT NULL,
     "data" BYTEA NOT NULL,
     "embedding" vector,
+    "lexicon" tsvector,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "file_pkey" PRIMARY KEY ("id")
@@ -306,13 +308,26 @@ ALTER TABLE "file" ADD CONSTRAINT "file_userId_fkey" FOREIGN KEY ("userId") REFE
 ALTER TABLE "file" ADD CONSTRAINT "file_uploadId_fkey" FOREIGN KEY ("uploadId") REFERENCES "upload"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- CUSTOM: Triggers
+CREATE OR REPLACE FUNCTION try_decode_utf8(b bytea) RETURNS text AS $$
+DECLARE decoded text;
+BEGIN
+    decoded := convert_from(b, 'UTF8');
+	IF LENGTH(decoded) > 0 THEN
+    	RETURN decoded;
+	END IF;
+	RETURN NULL;
+EXCEPTION WHEN OTHERS THEN
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION message_lexicon_update() RETURNS trigger AS $$
 BEGIN
     NEW.lexicon := to_tsvector('english', (
-      SELECT string_agg("dataPart"->>'value', ' ')
-      FROM jsonb_array_elements(NEW."data") AS "step",
-       jsonb_array_elements("step") AS "dataPart"
-      WHERE "dataPart"->>'type' = 'text'
+        SELECT string_agg("dataPart"->>'value', ' ')
+        FROM jsonb_array_elements(NEW."data") AS "step",
+          jsonb_array_elements("step") AS "dataPart"
+        WHERE "dataPart"->>'type' = 'text'
     ));
     RETURN NEW;
 END;
@@ -322,20 +337,45 @@ CREATE OR REPLACE TRIGGER message_lexicon_trigger
     BEFORE INSERT OR UPDATE ON message
     FOR EACH ROW EXECUTE FUNCTION message_lexicon_update();
 
+CREATE OR REPLACE FUNCTION action_lexicon_update() RETURNS trigger AS $$
+BEGIN
+  NEW.lexicon := to_tsvector('english', (
+    SELECT string_agg("dataPart"->>'value', ' ')
+    FROM jsonb_array_elements(NEW."data") AS "step",
+         jsonb_array_elements("step") AS "dataPart"
+    WHERE "dataPart"->>'type' = 'text'
+  ));
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER action_lexicon_trigger
+  BEFORE INSERT OR UPDATE ON action
+  FOR EACH ROW EXECUTE FUNCTION action_lexicon_update();
+
 CREATE OR REPLACE FUNCTION file_lexicon_update() RETURNS trigger AS $$
 DECLARE
-  decoded_data text;
+    decoded_data text;
 BEGIN
-  BEGIN
-    decoded_data := convert_from(NEW.data, 'UTF8');
-  EXCEPTION WHEN others THEN
+    decoded_data := try_decode_utf8(NEW.data);
+    IF decoded_data IS NOT NULL THEN
+     	  NEW.lexicon := to_tsvector('english', decoded_data);
+    END IF;
     RETURN NEW;
-  END;
-  NEW.lexicon := to_tsvector('english', decoded_data);
-  RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE TRIGGER file_lexicon_trigger
     BEFORE INSERT OR UPDATE ON file
     FOR EACH ROW EXECUTE FUNCTION file_lexicon_update();
+
+CREATE OR REPLACE FUNCTION memory_lexicon_update() RETURNS trigger AS $$
+BEGIN
+  NEW.lexicon := to_tsvector('english', NEW.fact);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER memory_lexicon_trigger
+  BEFORE INSERT OR UPDATE ON memory
+  FOR EACH ROW EXECUTE FUNCTION memory_lexicon_update();

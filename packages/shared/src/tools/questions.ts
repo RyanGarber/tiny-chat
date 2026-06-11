@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Tool, ToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
+import type { Tool, ToolGroup } from '../types/tool.ts';
 
 export const zReplyQuestionInput = z.object({
   question: z.string(),
@@ -105,11 +105,11 @@ const ReplyDatetime: Tool<
   },
 };
 
-export const reply: ToolGroup = {
-  name: 'reply',
+export const questions: ToolGroup = {
+  name: 'questions',
   tools: [ReplyQuestion, ReplyColor, ReplyNumber, ReplyDatetime],
   instructions: {
-    heading: 'Replies',
+    heading: 'Questions',
     body: 'If more information from the user could improve the response, you can ask them using reply tools.',
   },
 };

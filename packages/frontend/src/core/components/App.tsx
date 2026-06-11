@@ -67,7 +67,7 @@ export default function App() {
 
       if (query.clone) {
         console.log('Accepting clone', query.clone);
-        void trpc.sessions.acceptClone.mutate({ id: query.clone });
+        void trpc.user.acceptClone.mutate({ id: query.clone });
         setHashbang(hash, { ...query, clone: undefined });
       }
     }

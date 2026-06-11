@@ -1,10 +1,11 @@
 import type { zContextItem, zGenerateInput } from '../../types/chat.ts';
 import { zData } from '../../types/chat.ts';
-import { getNextRunAt, texts } from '../../utils.ts';
+import { getLastPrompt, getNextRunAt, texts } from '../../utils.ts';
 import type { zToolGroup } from '../../types/tool.ts';
 import type { zSkill } from '../../types/skill.ts';
 import type { zUser } from '../../types/user.ts';
 import type { GenerationCallbacks } from './generate.ts';
+import { format } from 'timeago.js';
 
 export async function buildGenerationInstructions(
   user: zUser,
@@ -14,11 +15,22 @@ export async function buildGenerationInstructions(
   toolGroups: zToolGroup[],
   skills: zSkill[],
 ) {
-  console.log('[Instructions] input:', input);
+  // TODO - reimplement combined and weighted prompt emebddings
+  const prompt = getLastPrompt(messages);
+  const promptText = texts(prompt.data);
+  const promptEmbedding = prompt.id
+    ? await callbacks.getEmbedding({ messageId: prompt.id })
+    : await callbacks.embed(promptText);
 
-  const memories = !input.incognito ? await callbacks.getMemoryContext(user, messages) : [];
+  console.log(
+    `[Instructions] prompt [${prompt.id}]: '${promptText.slice(0, 100)}...' (embedding: ${!!promptEmbedding?.length})`,
+  );
 
-  const actions = !input.incognito ? await callbacks.fetchActions(user.id) : [];
+  const memories = !input.incognito
+    ? await callbacks.searchMemories(promptText, promptEmbedding ?? undefined)
+    : [];
+
+  const actions = !input.incognito ? await callbacks.listActions() : [];
 
   const userInstructions = !input.incognito ? user.settings.instructions : [];
 
@@ -86,7 +98,7 @@ ${
 
 Relevant memories of the user:
 
-${memories.length ? memories.map((m) => `- ${m}`).join('\n') : '- (none)'}
+${memories.length ? memories.map((m) => `- [^${m.id}] ${m.category}: ${m.fact} (${m.stability} - learned ${format(m.createdAt)})`).join('\n') : '- (none)'}
 
 Instructions from the user:
 

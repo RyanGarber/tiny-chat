@@ -1,12 +1,12 @@
 import { useMutation } from '@tanstack/react-query';
-import { GenerateService } from '../services/GenerateService';
+import { GenerateService, getGenerationCallbacks } from '../services/GenerateService';
 import type { MessageState, zDataPart } from '@tiny-chat/shared/src/types/chat';
 import { useChat } from '@/features/chat/hooks/useChat';
 import { useProviders } from '@/features/input/hooks/useProviders';
 import { useSkills } from '@/features/input/hooks/useSkills';
 import { useTools } from '@/features/input/hooks/useTools';
 import { auth, trpc } from '@/utils/api';
-import type { zToolContext } from '@tiny-chat/shared/src/types/tool';
+import type { ToolContext } from '@tiny-chat/shared/src/types/tool';
 
 export const toolCallRejectedMessage = 'User rejected the tool call.';
 export const toolInputMutationKey = ['toolInput'] as const;
@@ -32,8 +32,8 @@ export const useToolInput = () => {
       approved?: boolean;
     }) => {
       console.log('[ToolInput] sending tool input', seed, part, value, approved);
-      const messages = await trpc.messages.list.query({ chatId: chat.data!.id });
-      const context: zToolContext = {
+      const messages = await trpc.message.list.query({ chatId: chat.data!.id });
+      const context: ToolContext = {
         user: session.data!.user,
         chat: chat.data!,
         generation: {
@@ -44,6 +44,7 @@ export const useToolInput = () => {
           supportsUserInput: true,
         },
         skills,
+        callbacks: getGenerationCallbacks(session.data!.user),
       };
 
       const tool = tools.find((t) => t.name === part.name);

@@ -1,4 +1,5 @@
-import { queryClient, auth, query, trpc } from '@/utils/api';
+import { fetchNextEmbeddingBatch } from '@/features/provider/hooks/useEmbedding';
+import { auth, query, queryClient, trpc } from '@/utils/api';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { zSettings } from '@tiny-chat/shared/src/types/user';
 
@@ -9,15 +10,14 @@ export const useRetrieval = () => {
     ...query.settings.get.queryOptions(),
     select: (data) => data.embeddingConfig,
     initialData: zSettings.safeParse(session.data?.user?.settings).data,
-    refetchInterval: 1000 * 60 * 60, // 1 hour
   });
 
   const setEmbeddingConfig = useMutation({
     ...query.settings.setEmbeddingConfig.mutationOptions(),
     onSuccess: async (data) => {
       queryClient.setQueryData(query.settings.get.queryKey(), data);
-      await trpc.embeddings.reset.mutate();
-      // TODO - regenerate embeddings (or have backend do it automatically)
+      await trpc.context.resetEmbeddings.mutate();
+      await fetchNextEmbeddingBatch();
     },
   });
 

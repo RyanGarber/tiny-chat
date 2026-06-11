@@ -1,6 +1,6 @@
 import type { zDataPart } from '@tiny-chat/shared/src/types/chat';
-import { memo, useState, type ReactNode } from 'react';
-import { Box, Group, Text, Collapse, Stack, Anchor } from '@mantine/core';
+import { memo, type ReactNode, useState } from 'react';
+import { Anchor, Box, Collapse, Group, Stack, Text } from '@mantine/core';
 import { Icon } from '@iconify/react';
 import { JsonTree } from '@gfazioli/mantine-json-tree';
 import type {
@@ -18,8 +18,9 @@ import type {
   zSearchMemoryOutput,
   zUpdateMemoryInput,
   zUpdateMemoryOutput,
-} from '@tiny-chat/backend/src/tools/memory';
+} from '@tiny-chat/backend/src/tools/memories';
 import { Markdown } from './Markdown';
+import { format } from 'timeago.js';
 
 const FZ = '14px';
 
@@ -97,9 +98,14 @@ export const ToolCall = memo(
       details = (
         <Stack>
           {(toolResult?.value as zSearchMemoryOutput)?.map((result, i) => (
-            <Text key={i} fz={FZ}>
-              {result.split(':').slice(1).join(':')}
-            </Text>
+            <Stack gap={0}>
+              <Text key={i} fz={FZ}>
+                {result.fact}
+              </Text>
+              <Text size="xs" c="dimmed">
+                (learned {format(result.createdAt)})
+              </Text>
+            </Stack>
           ))}
         </Stack>
       );
@@ -136,6 +142,8 @@ export const ToolCall = memo(
           </Text>
         );
       }
+    } else if (toolCall.name.startsWith('ask_')) {
+      status = <>{!toolResult ? 'Asking a question...' : 'Asked a question'}</>;
     } else {
       status = (
         <>

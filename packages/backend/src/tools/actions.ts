@@ -3,7 +3,7 @@ import rrule from 'rrule';
 import { createId } from '@paralleldrive/cuid2';
 import { zConfig, zData } from '@tiny-chat/shared/src/types/chat.ts';
 import type { Tool, ToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
-import { texts, getNextRunAt } from '@tiny-chat/shared/src/utils.ts';
+import { getNextRunAt, texts } from '@tiny-chat/shared/src/utils.ts';
 
 const zAddActionInput = z.object({
   prompt: z.string().describe('The prompt to send when the action runs.'),
@@ -142,7 +142,7 @@ const ListActions: Tool<typeof zListActionsInput, typeof zListActionsOutput> = {
   },
 };
 
-export const action: ToolGroup = {
+export const actions: ToolGroup = {
   name: 'action',
   tools: [AddAction, UpdateAction, DeleteAction, ListActions],
   instructions: {

@@ -1,11 +1,11 @@
 import {
   Author,
+  type MessageState,
   type zConfig,
   type zContextItem,
   type zData,
   type zDataPart,
   type zGenerateInput,
-  type MessageState,
   type zMetadata,
 } from '@tiny-chat/shared/src/types/chat.ts';
 import type { ToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
@@ -13,11 +13,11 @@ import type { zSkill } from '@tiny-chat/shared/src/types/skill.ts';
 import {
   alignToolResults,
   generate,
-  type GenerationCallbacks,
+  GenerationCallbacks,
 } from '@tiny-chat/shared/src/services/chat/generate.ts';
 import type { Chat } from '@tiny-chat/backend/generated/prisma/client.ts';
 import { type Stream, StreamService } from '@/features/message/services/StreamService';
-import { auth, backendUrl, isTauriDesktop, trpc } from '@/utils/api.ts';
+import { auth, env, isTauriDesktop, trpc } from '@/utils/api.ts';
 import { checkAllToolRequirements } from '@tiny-chat/shared/src/utils.ts';
 import { smoothStream } from 'ai';
 import { refetchMessages } from '@/features/message/hooks/useMessages.ts';
@@ -25,8 +25,36 @@ import { refetchChatList } from '@/features/chat/hooks/useChatList';
 import { refetchMemories } from '@/features/chat/hooks/useMemories.ts';
 import { refetchActions } from '@/features/chat/hooks/useActions.ts';
 import { isMissingToolResult } from '@/utils/ui';
-import type { zCache } from '@tiny-chat/shared/src/types/user';
-import { ChatProvider, chatProviders } from '@tiny-chat/shared/src/providers/chat';
+import { type zCache, zSettings, zUser } from '@tiny-chat/shared/src/types/user';
+import { embed } from '@tiny-chat/shared/src/services/chat/embed';
+import { ProviderService } from '@/features/provider/services/ProviderService';
+import { fetchNextEmbeddingBatch } from '@/features/provider/hooks/useEmbedding.ts';
+
+export const getGenerationCallbacks = (user: zUser): GenerationCallbacks => ({
+  embed: async (text) => {
+    const embedConfig = zSettings.parse(user.settings).embeddingConfig;
+    if (!embedConfig) return null;
+    const chatProviders = await ProviderService.getChatProviders();
+    const provider = chatProviders.find((p) => p.name === embedConfig.provider);
+    if (!provider) return null;
+    return (await embed(user, provider, [text], embedConfig, env))[0] ?? null;
+  },
+  getChat: (id, messageId) => trpc.chat.find.query({ id, messageId }),
+  searchChats: async (text, embedding, limit) =>
+    (await trpc.chat.search.query({ text, embedding, limit })).results,
+  listActions: () => trpc.context.listActions.query(),
+  searchMemories: (text, embedding, limit) =>
+    trpc.context.searchMemories.query({ text, embedding, limit }),
+  listUploadFiles: (id) => trpc.input.listUploadFiles.query({ id }),
+  searchFiles: (uploads, text, embedding, limit) =>
+    trpc.input.searchUploads.query({
+      uploads,
+      text,
+      embedding,
+      limit,
+    }),
+  getEmbedding: (input) => trpc.context.getEmbedding.query(input),
+});
 
 /* ───────────────────────────── Controller ────────────────────────────── */
 
@@ -69,7 +97,7 @@ export const GenerateService = {
     console.log('[Generation] handling model message', message, activeChat, append);
     let seed: MessageState | undefined = message;
     if (message.author === Author.MODEL) {
-      const messages = await trpc.messages.list.query({ chatId: activeChat.id });
+      const messages = await trpc.message.list.query({ chatId: activeChat.id });
       seed = messages.find((m) => m.id === message.previousId);
     }
     if (!seed) throw new Error(`Could not find seed (user) message for ${message.id}`);
@@ -101,7 +129,7 @@ export const GenerateService = {
     console.log('[Generation] preparing reply', seed, activeChat, append);
     // Fetch full message list once so we can both locate the existing reply
     // and build the generation context from a single source of truth.
-    const messages = await trpc.messages.list.query({ chatId: seed.chatId });
+    const messages = await trpc.message.list.query({ chatId: seed.chatId });
     const existing = messages.find((m) => m.previousId === seed.id);
 
     let reply: MessageState;
@@ -114,7 +142,7 @@ export const GenerateService = {
         );
         metadata = [...existing.metadata];
       }
-      const edited = await trpc.messages.edit.mutate({
+      const edited = await trpc.message.edit.mutate({
         id: existing.id,
         config: seed.config,
         author: existing.author,
@@ -124,7 +152,7 @@ export const GenerateService = {
       });
       reply = { ...edited };
     } else {
-      const created = await trpc.messages.create.mutate({
+      const created = await trpc.message.create.mutate({
         author: Author.MODEL,
         chatId: seed.chatId,
         previousId: seed.id,
@@ -139,7 +167,7 @@ export const GenerateService = {
     await refetchMessages(seed.chatId);
 
     // Re-fetch to ensure the context reflects the inserted/edited reply.
-    const refreshed = await trpc.messages.list.query({ chatId: seed.chatId });
+    const refreshed = await trpc.message.list.query({ chatId: seed.chatId });
     const replyIndex = refreshed.findIndex((m) => m.id === reply.id);
     const replyRef = replyIndex >= 0 ? refreshed[replyIndex] : reply;
 
@@ -197,23 +225,20 @@ export const GenerateService = {
     console.log('enabledTools:', enabledTools);
     console.log('enabledSkills:', enabledSkills);
 
-    // TODO - toggle for enabling WebLLMProvider
-    const { frontendChatProviders } = await import('@/providers');
-    const provider: ChatProvider | undefined = [...chatProviders, ...frontendChatProviders].find(
-      (p) => p.name === config.provider,
-    );
+    const chatProviders = await ProviderService.getChatProviders();
+    const provider = chatProviders.find((p) => p.name === config.provider);
     if (!provider) throw new Error(`Provider "${config.provider}" not found`);
 
     const generator = generate(
       user,
       provider,
-      callbacks,
+      getGenerationCallbacks(user),
       enabledTools,
       enabledSkills,
       input,
       stream.message.data,
       stream.message.metadata,
-      { ...import.meta.env, VITE_BACKEND_URL: backendUrl },
+      env,
       {
         abortSignal: stream.abort.signal,
         experimental_transform: [smoothStream({ delayInMs: 20 })],
@@ -263,7 +288,7 @@ export const GenerateService = {
   _finalize: async (stream: Stream): Promise<void> => {
     console.log('[Generation] finalizing', stream);
     const { message } = stream;
-    await trpc.messages.edit.mutate({
+    await trpc.message.edit.mutate({
       id: message.id,
       author: message.author,
       config: message.config,
@@ -276,6 +301,7 @@ export const GenerateService = {
     await refetchMessages(message.chatId);
     void refetchActions();
     void refetchMemories();
+    void fetchNextEmbeddingBatch();
   },
 
   /** Abort a single in-flight stream. */
@@ -284,20 +310,4 @@ export const GenerateService = {
     StreamService.get(streamId)?.abort.abort();
     StreamService.stop(streamId);
   },
-} as const;
-
-export const callbacks: GenerationCallbacks = {
-  fetchChat: (id, messageId) => trpc.chats.find.query({ id, messageId }),
-  fetchActions: () => trpc.persistence.listActions.query(),
-  fetchUploadFiles: (id) => trpc.persistence.listUploadFiles.query({ id }),
-  searchFiles: (context, query, queryEmbedding, maxCount) =>
-    trpc.persistence.searchUploadFiles.mutate({
-      context,
-      query,
-      queryEmbedding,
-      maxCount,
-    }),
-  getMemoryContext: (user, context) => trpc.embeddings.getMemoryContext.mutate({ user, context }),
-  getContextEmbedding: (user, context) =>
-    trpc.embeddings.getContextEmbedding.mutate({ user, context }),
 } as const;

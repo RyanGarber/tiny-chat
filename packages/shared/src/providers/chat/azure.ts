@@ -21,7 +21,7 @@ export const AzureProvider: ChatProvider = {
     });
   },
 
-  getClientModel(user, id, env) {
+  getClientGenerateModel(user, id, env) {
     const client = this.getClient(user, env) as ReturnType<typeof createAzure>;
     if (!client) return null;
 
@@ -35,6 +35,12 @@ export const AzureProvider: ChatProvider = {
 
     if (!useResponses(id)) return client.chat(id); // force completions api
     return client.languageModel(id);
+  },
+
+  getClientEmbedModel(user, id, env) {
+    const client = this.getClient(user, env) as ReturnType<typeof createAzure>;
+    if (!client) return null;
+    return client.embeddingModel(id);
   },
 
   getClientOptions(user, config, env) {

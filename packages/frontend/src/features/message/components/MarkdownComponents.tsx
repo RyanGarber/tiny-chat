@@ -11,20 +11,19 @@ import {
   Tooltip,
 } from '@mantine/core';
 import {
+  type BundledLanguage,
+  type BundledTheme,
   CodeBlockContainer,
   CodeBlockCopyButton,
   CodeBlockDownloadButton,
   CodeBlockHeader,
   Components,
-  type BundledLanguage,
-  type BundledTheme,
   type CustomRendererProps,
 } from 'streamdown';
 import {
   DIFF_MARKER,
   getTextFromChildren,
   MarkdownContext,
-  scrubText,
   takeStringOutOfNodeAndChildren,
   WRITING_MARKER,
 } from '@/utils/text.ts';
@@ -32,7 +31,7 @@ import { Icon } from '@iconify/react';
 import { openExternal } from '@/utils/ui.ts';
 import { format } from 'timeago.js';
 import { zData } from '@tiny-chat/shared/src/types/chat.ts';
-import { texts } from '@tiny-chat/shared/src/utils.ts';
+import { scrubText, texts } from '@tiny-chat/shared/src/utils.ts';
 import { withBlur } from '@/utils/blur.tsx';
 import type { ReactDiffViewerStylesOverride } from 'react-diff-viewer-continued';
 import ReactDiffViewer from 'react-diff-viewer-continued';

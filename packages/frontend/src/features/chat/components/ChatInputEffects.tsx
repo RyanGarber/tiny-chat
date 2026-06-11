@@ -2,10 +2,9 @@ import { ActionIcon, Box, Group } from '@mantine/core';
 import { ReactNode, RefObject } from 'react';
 import { useLayoutStore } from '@/core/stores/useLayoutStore';
 import { Icon } from '@iconify/react';
-import { scrubText } from '@/utils/text.ts';
 import Attachments from '@/features/input/components/Attachments';
 import { useMessagingStore } from '@/features/chat/stores/useMessagingStore';
-import { texts } from '@tiny-chat/shared/src/utils.ts';
+import { scrubText, texts } from '@tiny-chat/shared/src/utils.ts';
 import { glassStyle } from '@/utils/glass';
 import { SHADOW } from '@/utils/theme';
 

@@ -24,7 +24,7 @@ export const useSkills = () => {
   });
 
   const deleteRemoteSkill = useMutation({
-    mutationFn: (id: string) => trpc.persistence.deleteFiles.mutate({ type: 'skill', id }),
+    mutationFn: (id: string) => trpc.input.deleteFiles.mutate({ type: 'skill', id }),
     onSuccess: () => {
       void remoteSkills.refetch();
     },

@@ -13,7 +13,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useLayoutStore } from '@/core/stores/useLayoutStore';
 import { Icon } from '@iconify/react';
 import { useDisclosure } from '@mantine/hooks';
-import { useChat, type ChatState } from '@/features/chat/hooks/useChat';
+import { type ChatState, useChat } from '@/features/chat/hooks/useChat';
 import { useChatList } from '@/features/chat/hooks/useChatList';
 import { glassStyle } from '@/utils/glass';
 import { useSentinel } from '../hooks/useSentinel';
@@ -51,7 +51,7 @@ export default function SidebarChatList() {
 
   const { viewportRef, sentinelRef } = useSentinel({
     query: folders,
-    queryKey: query.folders.list.pathKey(),
+    queryKey: query.chat.list.pathKey(),
   });
 
   return (

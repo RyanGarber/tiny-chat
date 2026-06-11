@@ -1,17 +1,17 @@
-import { chatProviders, runEmbedding } from '../../providers/chat/index.ts';
+import { type ChatProvider, runEmbedding } from '../../providers/chat/index.ts';
 import { zConfig } from '../../types/chat.ts';
 import type { zUser } from '../../types/user.ts';
 import { z } from 'zod';
 import type { Env } from '../../types/env.ts';
 
-export async function embed(user: zUser, texts: string[], env: Env) {
-  const config = getEmbedConfig(user);
-  if (!config) return null;
-
-  const provider = chatProviders.find((s) => s.name === config.provider);
-  if (!provider) return null;
-
-  return runEmbedding(user, texts, config, env);
+export async function embed(
+  user: zUser,
+  provider: ChatProvider,
+  texts: string[],
+  config: zConfig,
+  env: Env,
+) {
+  return runEmbedding(user, provider, texts, config, env);
 }
 
 export function getEmbedConfig(user: zUser) {

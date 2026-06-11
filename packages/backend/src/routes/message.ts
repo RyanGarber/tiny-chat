@@ -1,13 +1,11 @@
 import { z } from 'zod';
 import { createId } from '@paralleldrive/cuid2';
-import { createForChat } from './folders.ts';
 import { Author, type Message as PrismaMessage } from '../../generated/prisma/client.ts';
 import { type MessageCreateInput } from '../../generated/prisma/models.ts';
-import type { zUser } from '@tiny-chat/shared/src/types/user.ts';
 import { zConfig, zData, zMetadata } from '@tiny-chat/shared/src/types/chat.ts';
-import { texts, wrapMessage } from '@tiny-chat/shared/src/utils.ts';
-import { embed } from '@tiny-chat/shared/src/services/chat/embed.ts';
+import { wrapMessage } from '@tiny-chat/shared/src/utils.ts';
 import { procedure, router } from '../index.ts';
+import { createFolder } from './chat.ts';
 
 export default router({
   create: procedure
@@ -72,7 +70,7 @@ export default router({
         });
       } else {
         message = (
-          await createForChat(
+          await createFolder(
             ctx.session.user.id,
             input.temporary ?? false,
             input.incognito ?? false,
@@ -80,8 +78,6 @@ export default router({
           )
         ).chats[0].messages[0];
       }
-
-      await embedMessage(ctx.session.user, message);
 
       return wrapMessage(message);
     }),
@@ -128,8 +124,6 @@ export default router({
           createdAt: new Date(),
         },
       });
-
-      await embedMessage(ctx.session.user, message);
 
       return wrapMessage(message);
     }),
@@ -253,25 +247,4 @@ export function reorder(messages: PrismaMessage[]) {
   }
 
   return sorted;
-}
-
-export async function embedMessage(
-  user: zUser,
-  message: { id: string; data: any },
-): Promise<number[] | null> {
-  let embedding: number[][] | null = null;
-
-  const text = texts(zData.parse(message.data));
-  if (text.trim().length) {
-    embedding = await embed(user, [text], process.env);
-    if (!embedding) {
-      console.warn('Failed to generate embedding for message:', message.id);
-    }
-  }
-
-  await globalThis.prisma
-    .$executeRaw`UPDATE message SET embedding = ${embedding ? JSON.stringify(embedding[0]) : null}::vector WHERE id = ${message.id}`;
-
-  console.log('Generated embedding for message', message.id);
-  return embedding ? embedding[0] : null;
 }

@@ -18,6 +18,7 @@
     "openai": "^6.34.0",
     "rrule": "^2.8.1",
     "timeago.js": "^4.0.2",
+    "voyage-ai-provider": "^4.0.0",
     "zod": "^4.4.3"
   }
 }

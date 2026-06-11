@@ -1,16 +1,16 @@
 import {
-  Checkbox,
-  Modal,
-  Stack,
-  Text,
-  Group,
-  Tabs,
-  ScrollArea,
-  JsonInput,
   ActionIcon,
-  TextInput,
   Box,
+  Checkbox,
+  Group,
+  JsonInput,
+  Modal,
+  ScrollArea,
   Space,
+  Stack,
+  Tabs,
+  Text,
+  TextInput,
 } from '@mantine/core';
 import { glassStyle } from '@/utils/glass';
 import { zMCPServers } from '@tiny-chat/shared/src/types/user';
@@ -21,12 +21,11 @@ import { useIsFetching } from '@tanstack/react-query';
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { localSkillFilesQueryKey, useSkills } from '../hooks/useSkills';
-import { scrubText } from '@/utils/text';
 import Dropzone from '@/features/input/components/Dropzone';
 import type { zTool, zToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
 import type { zSkill } from '@tiny-chat/shared/src/types/skill.ts';
 import { useTauri } from '@/core/hooks/useTauri';
-import { precheckAllToolRequirements } from '@tiny-chat/shared/src/utils';
+import { precheckAllToolRequirements, scrubText } from '@tiny-chat/shared/src/utils';
 import { useProviders } from '../hooks/useProviders';
 import { useChatStore } from '@/features/chat/stores/useChatStore';
 import { auth } from '@/utils/api';

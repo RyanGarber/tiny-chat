@@ -65,12 +65,12 @@ export default function SidebarAccount({
   const clone = async (open: boolean) => {
     if (!isCloning) {
       setCloning(true);
-      const id = await trpc.sessions.startClone.mutate(); // TODO - use query
+      const id = await trpc.user.startClone.mutate(); // TODO - use query
       if (open) void openExternal(`${webUrl}/#?clone=${id}`);
       else void navigator.clipboard.writeText(`${webUrl}/#?clone=${id}`);
       setCloneInterval(
         setInterval(() => {
-          void trpc.sessions.finalizeClone.query({ id }).then((res) => {
+          void trpc.user.finalizeClone.query({ id }).then((res) => {
             if (res) {
               clearInterval(cloneInterval);
               window.location.reload();

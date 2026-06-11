@@ -1,4 +1,4 @@
-import { queryClient, query, trpc } from '@/utils/api';
+import { query, queryClient, trpc } from '@/utils/api';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { Chat } from '@tiny-chat/backend/generated/prisma/client.ts';
 import { useChatStore } from '../stores/useChatStore';
@@ -8,7 +8,7 @@ import { ChatService } from '../services/ChatService';
 
 export type ChatState = Chat & { unseen: boolean };
 
-export function getChatTimestamp(chat: Awaited<ReturnType<typeof trpc.chats.find.query>>) {
+export function getChatTimestamp(chat: Awaited<ReturnType<typeof trpc.chat.find.query>>) {
   if (!chat) return -1;
   return Math.max(
     chat.createdAt.getTime(),
@@ -18,7 +18,7 @@ export function getChatTimestamp(chat: Awaited<ReturnType<typeof trpc.chats.find
 
 export async function refetchActiveChat(chatId: string) {
   await queryClient.invalidateQueries({
-    queryKey: query.chats.pathKey(),
+    queryKey: query.chat.pathKey(),
   });
   useChatStore.getState().setLastSeen(chatId, new Date().getTime());
 }
@@ -28,7 +28,7 @@ export const useChat = () => {
   const lastSeen = useChatStore((s) => s.lastSeen);
 
   const chat = useQuery({
-    ...query.chats.find.queryOptions(
+    ...query.chat.find.queryOptions(
       { id: chatId },
       {
         enabled: !!chatId,
@@ -43,7 +43,7 @@ export const useChat = () => {
           };
         },
         initialData: queryClient
-          .getQueryData(query.folders.list.infiniteQueryKey({ limit: 10 }))
+          .getQueryData(query.chat.list.infiniteQueryKey({ limit: 10 }))
           ?.pages.flatMap((page) => page.folders)
           .flatMap((folder) => folder.chats)
           .find((chat) => chat.id === chatId),
@@ -56,7 +56,7 @@ export const useChat = () => {
 
   const forkChat = useMutation({
     mutationFn: async ({ chat, atMessage }: { chat: ChatState; atMessage: MessageState }) => {
-      return trpc.chats.clone.mutate({
+      return trpc.chat.clone.mutate({
         id: chat.id,
         untilMessageId: atMessage.id,
         title: `Fork of ${chat.title ?? 'Forked Chat'}`,

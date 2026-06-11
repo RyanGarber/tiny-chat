@@ -1,8 +1,7 @@
 import { Box, Card, Divider, Group, Stack, Text } from '@mantine/core';
 import { Icon } from '@iconify/react';
-import { scrubText } from '@/utils/text';
 import { zData } from '@tiny-chat/shared/src/types/chat.ts';
-import { texts } from '@tiny-chat/shared/src/utils.ts';
+import { scrubText, texts } from '@tiny-chat/shared/src/utils.ts';
 import { format } from 'timeago.js';
 import { useEffect, useMemo, useState } from 'react';
 import { useActions } from '@/features/chat/hooks/useActions';
@@ -54,7 +53,7 @@ export default function Actions() {
                   {scrubText(texts(zData.parse(action.data)))}
                 </Text>
                 <Text size="sm" style={{ whiteSpace: 'nowrap' }}>
-                  {format(action.nextRunAt!)}
+                  {action.nextRunAt && format(action.nextRunAt)}
                 </Text>
               </div>
               {i !== array.length - 1 && <Divider my="xs" />}

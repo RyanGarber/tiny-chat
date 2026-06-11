@@ -2,15 +2,15 @@ import { useMessagingStore } from '@/features/chat/stores/useMessagingStore';
 import { query } from '@/utils/api';
 import { Icon } from '@iconify/react';
 import {
-  Stack,
-  TextInput,
-  Center,
-  ScrollArea,
-  Group,
-  Badge,
   ActionIcon,
-  Text,
+  Badge,
   Box,
+  Center,
+  Group,
+  ScrollArea,
+  Stack,
+  Text,
+  TextInput,
 } from '@mantine/core';
 import { useState } from 'react';
 import { format } from 'timeago.js';
@@ -25,7 +25,7 @@ export function UploadRepo({ onClose }: { onClose: () => void }) {
   const addUploads = useMessagingStore((s) => s.addUploads);
 
   const repos = useQuery({
-    ...query.github.list.queryOptions(),
+    ...query.input.listRepos.queryOptions(),
     select: (data) =>
       [...data.filter((p) => p.fullName.toLowerCase().includes(search.toLowerCase().trim()))].sort(
         (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
@@ -33,7 +33,7 @@ export function UploadRepo({ onClose }: { onClose: () => void }) {
   });
 
   const cloneRepo = useMutation({
-    ...query.github.clone.mutationOptions(),
+    ...query.input.cloneRepo.mutationOptions(),
     onSuccess: (data) => {
       addUploads(data);
       void repoUploads.refetch();

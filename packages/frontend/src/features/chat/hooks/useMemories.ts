@@ -1,15 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
-import { queryClient, query } from '@/utils/api';
+import { query, queryClient } from '@/utils/api';
 
 export const refetchMemories = async () => {
   return queryClient.invalidateQueries({
-    queryKey: query.persistence.listMemories.pathKey(),
+    queryKey: query.context.listMemories.pathKey(),
   });
 };
 
 export const useMemories = () => {
   const memories = useQuery({
-    ...query.persistence.listMemories.queryOptions(),
+    ...query.context.listMemories.queryOptions(),
     select: (data) => data,
     staleTime: Infinity,
     refetchOnWindowFocus: false,

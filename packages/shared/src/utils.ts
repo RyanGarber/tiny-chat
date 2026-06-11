@@ -1,5 +1,5 @@
 import type { Action, Message } from '../../backend/generated/prisma/client.ts';
-import type { MessageState, ModelArg, zChat, zDataPart } from './types/chat.ts';
+import type { MessageState, ModelArg, zChat, zContextItem, zDataPart } from './types/chat.ts';
 import { zConfig, zData, zMetadata } from './types/chat.ts';
 import type { zSkill } from './types/skill.ts';
 import type { zTool, zToolContext, zToolGroup } from './types/tool.ts';
@@ -30,17 +30,39 @@ export function texts(data: zData, join = ' ') {
 export function normalizeText(text: string) {
   const lines = text.split('\n');
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i].trim().length && !/^\[(user|assistant)/.exec(lines[i].trim())) {
+    if (lines[i].trim().length && !/^\[(user|assistant|info)/.exec(lines[i].trim())) {
       return text;
     }
-    if (/^\[(user|assistant)/.exec(lines[i].trim())) {
+    if (/^\[(user|assistant|info)/.exec(lines[i].trim())) {
       for (let j = i + 1; j < lines.length; j++) {
-        if (lines[j].trim().length && !/^\[(user|assistant)/.exec(lines[j].trim())) {
+        if (lines[j].trim().length && !/^\[(user|assistant|info)/.exec(lines[j].trim())) {
           return lines.slice(j).join('\n');
         }
       }
       return '';
     }
+  }
+  return text;
+}
+
+export function scrubText(text: string, maxLength = -1): string {
+  text = normalizeText(text)
+    .replace(/::model=[^:]+::/g, '') // Remove quote model tags
+    .replace(/::>::\s?(.*)/g, '$1') // Remove quote markers
+    .replace(/!\[.*?]\(.*?\)/g, '') // Remove images
+    .replace(/\[([^\]]+)]\((.*?)\)/g, '$1') // Remove links but keep text
+    .replace(/(`{1,3})(.*?)\1/g, '$2') // Remove inline code and code blocks
+    .replace(/(\*\*|__)(.*?)\1/g, '$2') // Remove bold
+    .replace(/([*_])(.*?)\1/g, '$2') // Remove italics
+    .replace(/~~(.*?)~~/g, '$1') // Remove strikethrough
+    .replace(/#+\s?(.*)/g, '$1') // Remove headings
+    .replace(/>\s?(.*)/g, '$1') // Remove blockquotes
+    .replace(/-\s?(.*)/g, '$1') // Remove unordered list markers
+    .replace(/\d+\.\s?(.*)/g, '$1') // Remove ordered list markers
+    .replace(/\n/g, ' ') // Replace multiple newlines with a single newline
+    .trim();
+  if (maxLength > 0 && text.length > maxLength) {
+    return text.substring(0, maxLength) + '...';
   }
   return text;
 }
@@ -122,8 +144,6 @@ export function getNextRunAt(action: Action | { schedule: string; lastRanAt?: Da
   return schedule.after(searchFrom, false);
 }
 
-export const MAX_FILE_SIZE = 50 * 1024 * 1024;
-
 export function getBaseModelArgs(maxTemperature = 2): ModelArg[] {
   return [
     {
@@ -169,9 +189,9 @@ export function checkToolRequirements(
   providers: zCache['providers'],
 ) {
   const providerNames = [
-    ...providers.chat.filter((p) => p.models.length && !p.error).map((p) => p.name),
-    ...providers.web.filter((p) => p.available && !p.error).map((p) => p.name),
-    ...providers.other.filter((p) => p.available && !p.error).map((p) => p.name),
+    ...(providers?.chat.filter((p) => p.models.length && !p.error).map((p) => p.name) ?? []),
+    ...(providers?.web.filter((p) => p.available && !p.error).map((p) => p.name) ?? []),
+    ...(providers?.other.filter((p) => p.available && !p.error).map((p) => p.name) ?? []),
   ];
 
   if (tool.requirements?.chat && !context.chat) {
@@ -196,10 +216,7 @@ export function checkToolRequirements(
   ) {
     return false;
   }
-  if (tool.requirements?.desktop && !desktop) {
-    return false;
-  }
-  return true;
+  return !(tool.requirements?.desktop && !desktop);
 }
 
 export function checkAllToolRequirements(
@@ -316,4 +333,13 @@ export function isModelVersion(test: string, ...groups: string[]) {
   return groups.some((group) =>
     group.split(' ').every((match) => new RegExp(`(?:^|\\W)(${match})(?:\\W|$)`, 'i').test(test)),
   );
+}
+
+export function getLastPrompt(context: zContextItem[]): zContextItem {
+  for (let i = context.length - 1; i >= 0; i--) {
+    if (context[i].author === 'USER' && texts(context[i].data).length > 0) {
+      return context[i];
+    }
+  }
+  throw new Error('No user message in context');
 }

@@ -1,7 +1,7 @@
 import { useMessagingStore } from '@/features/chat/stores/useMessagingStore';
 import { query } from '@/utils/api';
 import { Icon } from '@iconify/react';
-import { Group, ScrollArea, ActionIcon, Text, Stack } from '@mantine/core';
+import { ActionIcon, Group, ScrollArea, Stack, Text } from '@mantine/core';
 import { format } from 'timeago.js';
 import Attachments from './Attachments';
 import { useSentinel } from '@/core/hooks/useSentinel';
@@ -17,7 +17,7 @@ export function UploadFile({ onClose }: { onClose: () => void }) {
 
   const { viewportRef, sentinelRef } = useSentinel({
     query: fileUploads,
-    queryKey: query.persistence.listUploads.pathKey(),
+    queryKey: query.input.listUploads.pathKey(),
   });
 
   return (

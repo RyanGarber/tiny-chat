@@ -148,7 +148,7 @@ export function shouldIncludeFile(path: string, excludeAdditional = true): boole
   );
 }
 
-const EMBED_FILES = [
+export const EMBED_FILES = [
   // 1. Code & Markup Files
   '.ts',
   '.tsx',

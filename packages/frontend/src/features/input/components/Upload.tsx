@@ -23,7 +23,7 @@ export default function Upload({
   return (
     <>
       <Dropzone.FullScreen
-        onDrop={(files) => upload.mutate({ type: 'upload', files })}
+        onDrop={(files) => files.forEach((file) => upload.mutate({ type: 'upload', file }))}
         zIndex="calc(var(--mantine-z-index-modal) - 1)"
         active={!opened}
         styles={{
@@ -146,7 +146,7 @@ export function ScreenshotMenuItem({ disabled }: { disabled?: boolean }) {
         if (blob) {
           const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
           const file = new File([blob], `Screenshot-${timestamp}.png`, { type: 'image/png' });
-          upload.mutate({ type: 'upload', files: [file] });
+          upload.mutate({ type: 'upload', file });
         }
       }, 'image/png');
     } catch (e) {

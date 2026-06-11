@@ -28,14 +28,11 @@ export default function Dropzone({
         styles={{ inner: { height: '100%' }, root: { cursor: 'pointer' } }}
         onDrop={(files) => {
           for (const file of files) {
-            setUploads((prev) => new Map(prev).set(file, { progress: 0 }));
+            setUploads((prev) => new Map(prev).set(file, { progress: Math.random() * 25 }));
             upload.mutate(
               {
                 type,
-                files: [file],
-                onProgress: (progress) => {
-                  setUploads((prev) => new Map(prev).set(file, { progress: progress }));
-                },
+                file,
               },
               {
                 ...options,
@@ -45,7 +42,12 @@ export default function Dropzone({
                 },
                 onSuccess: (data, ...rest) => {
                   // TODO - replace with onResult, call when deleting too
-                  setUploads((prev) => new Map(prev).set(file, { progress: 100, result: data }));
+                  setUploads((prev) =>
+                    new Map(prev).set(file, {
+                      progress: 100,
+                      result: data,
+                    }),
+                  );
                   options?.onSuccess?.(data, ...rest);
                 },
               },
@@ -105,7 +107,7 @@ export default function Dropzone({
                     </ActionIcon>
                   )}
                 </Group>
-                {!error && <Progress value={progress} />}
+                {!error && <Progress value={progress} animated />}
                 {!!error && (
                   <Text size="sm" c="red">
                     {error instanceof Error ? error.message : 'Unknown error'}

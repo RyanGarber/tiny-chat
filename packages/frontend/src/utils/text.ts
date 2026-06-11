@@ -1,5 +1,4 @@
 import { Children, createContext, isValidElement, ReactNode } from 'react';
-import { normalizeText } from '@tiny-chat/shared/src/utils.ts';
 import { SearchResult } from '@tiny-chat/shared/src/providers/web';
 import type { useMemories } from '@/features/chat/hooks/useMemories.ts';
 import type { useActions } from '@/features/chat/hooks/useActions.ts';
@@ -46,28 +45,6 @@ export function getTextFromChildren(children: ReactNode): string {
     .split('\n')
     .filter((line) => line.trim() !== '')
     .join('\n');
-}
-
-export function scrubText(text: string, maxLength = -1): string {
-  text = normalizeText(text)
-    .replace(/::model=[^:]+::/g, '') // Remove quote model tags
-    .replace(/::>::\s?(.*)/g, '$1') // Remove quote markers
-    .replace(/!\[.*?]\(.*?\)/g, '') // Remove images
-    .replace(/\[([^\]]+)]\((.*?)\)/g, '$1') // Remove links but keep text
-    .replace(/(`{1,3})(.*?)\1/g, '$2') // Remove inline code and code blocks
-    .replace(/(\*\*|__)(.*?)\1/g, '$2') // Remove bold
-    .replace(/([*_])(.*?)\1/g, '$2') // Remove italics
-    .replace(/~~(.*?)~~/g, '$1') // Remove strikethrough
-    .replace(/#+\s?(.*)/g, '$1') // Remove headings
-    .replace(/>\s?(.*)/g, '$1') // Remove blockquotes
-    .replace(/-\s?(.*)/g, '$1') // Remove unordered list markers
-    .replace(/\d+\.\s?(.*)/g, '$1') // Remove ordered list markers
-    .replace(/\n/g, ' ') // Replace multiple newlines with a single newline
-    .trim();
-  if (maxLength > 0 && text.length > maxLength) {
-    return text.substring(0, maxLength) + '...';
-  }
-  return text;
 }
 
 export function takeStringOutOfNodeAndChildren(node: ReactNode, str: string): ReactNode {

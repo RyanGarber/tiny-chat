@@ -1,6 +1,9 @@
 import { createId } from '@paralleldrive/cuid2';
 import { z } from 'zod';
 import { procedure, router } from '../index.ts';
+import type { zUser } from '@tiny-chat/shared/src/types/user.ts';
+import { zCache } from '@tiny-chat/shared/src/types/user.ts';
+import { fetchProviders } from '@tiny-chat/shared/src/providers/index.ts';
 
 interface Clone {
   id: string;
@@ -8,7 +11,42 @@ interface Clone {
 }
 const clones: Clone[] = [];
 
+async function updateCache(user: zUser) {
+  const cache = zCache.parse(
+    (
+      await globalThis.prisma.user.findUniqueOrThrow({
+        where: { id: user.id },
+        select: { cache: true },
+      })
+    ).cache,
+  );
+  cache.providers = await fetchProviders(user);
+  await globalThis.prisma.user.update({
+    where: { id: user.id },
+    data: { cache: cache as any },
+  });
+  return cache;
+}
+
 export default router({
+  getCache: procedure.query(async ({ ctx }) => {
+    if (!ctx.session.user.settings.useProviderCache) {
+      return updateCache(ctx.session.user);
+    }
+    return zCache.parse(
+      (
+        await globalThis.prisma.user.findUniqueOrThrow({
+          where: { id: ctx.session.user.id },
+          select: { cache: true },
+        })
+      ).cache,
+    );
+  }),
+
+  updateCache: procedure.mutation(async ({ ctx }) => {
+    return updateCache(ctx.session.user);
+  }),
+
   startClone: procedure.mutation(({ ctx }) => {
     const id = createId();
     clones.push({ id, userId: null });

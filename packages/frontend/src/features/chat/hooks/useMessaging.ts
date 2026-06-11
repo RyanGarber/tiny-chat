@@ -14,20 +14,24 @@ import { useTools } from '@/features/input/hooks/useTools';
 import { useConfig } from '@/features/input/hooks/useConfig';
 import { serialize } from '@/features/slate/serializer';
 import { useRef } from 'react';
-import { trpc } from '@/utils/api';
+import { auth, env, trpc } from '@/utils/api';
 import { refetchMessages } from '@/features/message/hooks/useMessages';
 import { refetchChatList } from './useChatList';
 import { ChatService } from '../services/ChatService';
-import { scrubText } from '@/utils/text';
-import { texts } from '@tiny-chat/shared/src/utils';
+import { scrubText, texts } from '@tiny-chat/shared/src/utils';
+import { embed } from '@tiny-chat/shared/src/services/chat/embed.ts';
+import { useRetrieval } from '@/features/settings/hooks/useRetrieval.ts';
+import { ProviderService } from '@/features/provider/services/ProviderService.ts';
 
 export const sendMessageMutationKey = ['send-message'] as const;
 export const deleteMessageMutationKey = ['delete-message'] as const;
 
 export const useSend = () => {
+  const session = auth.useSession();
   const { toolGroups } = useTools();
   const { skills } = useSkills();
   const { providers } = useProviders();
+  const { embeddingConfig } = useRetrieval();
   const { config } = useConfig();
 
   const deletingChatId = useRef<string | undefined>(undefined);
@@ -36,7 +40,7 @@ export const useSend = () => {
     mutationKey: deleteMessageMutationKey,
     mutationFn: async (message: MessageState) => {
       deletingChatId.current = message.chatId;
-      return await trpc.messages.delete.mutate({ id: message.id });
+      return await trpc.message.delete.mutate({ id: message.id });
     },
     onSuccess: async (chatDeleted, message) => {
       void refetchMessages(deletingChatId.current);
@@ -72,7 +76,7 @@ export const useSend = () => {
 
       const chatId = useChatStore.getState().chatId ?? undefined;
       const message = editing
-        ? await trpc.messages.edit.mutate({
+        ? await trpc.message.edit.mutate({
             id: editing.id,
             author: editing.author,
             config: config,
@@ -80,7 +84,7 @@ export const useSend = () => {
             metadata: [],
             truncate: truncating ?? false,
           })
-        : await trpc.messages.create.mutate({
+        : await trpc.message.create.mutate({
             chatId,
             author: Author.USER,
             config: config,
@@ -91,11 +95,34 @@ export const useSend = () => {
             incognito: createIncognito,
           });
 
+      const changed = !editing || texts(message.data).trim() !== texts(editing.data).trim();
+      if (texts(message.data).trim().length && changed && embeddingConfig.data) {
+        const provider = (await ProviderService.getChatProviders()).find(
+          (p) => p.name === embeddingConfig.data!.provider,
+        );
+        if (provider) {
+          console.log(`[Messaging] message changed, embedding new message`);
+          const embeddings = await embed(
+            session.data!.user,
+            provider,
+            [texts(message.data)],
+            embeddingConfig.data,
+            env,
+          );
+          if (embeddings[0]?.length) {
+            await trpc.context.saveEmbeddings.mutate([
+              { messageId: message.id, embedding: embeddings[0] },
+            ]);
+            console.log(`[Messaging] embedding succeeded for message ${message.id}`);
+          }
+        }
+      }
+
       if (!chatId) {
         ChatService.setChatId(message.chatId);
         const title = scrubText(texts([data], ' '), 100);
         void (async () => {
-          await trpc.chats.edit.mutate({ id: message.chatId, title });
+          await trpc.chat.edit.mutate({ id: message.chatId, title });
           await refetchChatList();
         })();
       } else {
@@ -104,7 +131,7 @@ export const useSend = () => {
 
       await GenerateService.handle({
         message,
-        activeChat: (await trpc.chats.find.query({ id: message.chatId }))!,
+        activeChat: (await trpc.chat.find.query({ id: message.chatId }))!,
         tools: toolGroups,
         providers: providers.data!,
         skills,

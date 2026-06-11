@@ -1,24 +1,18 @@
-import folders from './folders.ts';
-import chats from './chats.ts';
-import embeddings from './embeddings.ts';
-import messages from './messages.ts';
-import sessions from './sessions.ts';
-import persistence from './persistence.ts';
-import github from './github.ts';
-import capabilities from './capabilities.ts';
-import settings from './settings.ts';
 import { router } from '../index.ts';
+import chat from './chat.ts';
+import context from './context.ts';
+import input from './input.ts';
+import message from './message.ts';
+import settings from './settings.ts';
+import user from './user.ts';
 
 export const tRPCRouter = router({
-  folders,
-  chats,
-  embeddings,
-  messages,
-  sessions,
-  persistence,
-  github,
-  capabilities,
+  chat,
+  context,
+  input,
+  message,
   settings,
+  user,
 });
 
 export type tRPCRouter = typeof tRPCRouter;

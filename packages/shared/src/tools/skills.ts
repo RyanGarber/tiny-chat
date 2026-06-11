@@ -1,4 +1,4 @@
-import type { Tool, ToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
+import type { Tool, ToolGroup } from '../types/tool.ts';
 import { z } from 'zod';
 
 const zUseSkillInput = z.object({

@@ -17,18 +17,17 @@ model User {
   updatedAt     DateTime  @updatedAt
   isAnonymous   Boolean?  @default(false)
   settings      Json      @default("{}")
+  cache         Json      @default("{}")
   accounts      Account[]
   action        Action[]
   chats         Chat[]
+  files         File[]
   folders       Folder[]
   memories      Memory[]
   messages      Message[]
   sessions      Session[]
-  uploads       Upload[]
-  files         File[]
   skills        Skill[]
-  
-  cache Json @default("{}")
+  uploads       Upload[]
 
   @@map("user")
 }
@@ -131,7 +130,7 @@ model Message {
   memories   Memory[]
   chat       Chat                     @relation(fields: [chatId], references: [id], onDelete: Cascade)
   folder     Folder                   @relation(fields: [folderId], references: [id], onDelete: Cascade)
-  previous   Message?                 @relation("Chat", fields: [previousId], references: [id], onDelete: SetNull)
+  previous   Message?                 @relation("Chat", fields: [previousId], references: [id])
   next       Message?                 @relation("Chat")
   user       User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -143,7 +142,7 @@ model Message {
 }
 
 model Memory {
-  id         String                 @id
+  id         String                   @id
   userId     String
   folderId   String?
   chatId     String?
@@ -153,13 +152,14 @@ model Memory {
   stability  MemoryStability
   evidence   String[]
   confidence Float
-  createdAt  DateTime               @default(now())
+  createdAt  DateTime                 @default(now())
   embedding  Unsupported("vector")?
   messageId  String?
-  chat       Chat?                  @relation(fields: [chatId], references: [id], onDelete: SetNull)
-  folder     Folder?                @relation(fields: [folderId], references: [id], onDelete: SetNull)
-  message    Message?               @relation(fields: [messageId], references: [id], onDelete: SetNull)
-  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lexicon    Unsupported("tsvector")?
+  chat       Chat?                    @relation(fields: [chatId], references: [id])
+  folder     Folder?                  @relation(fields: [folderId], references: [id])
+  message    Message?                 @relation(fields: [messageId], references: [id])
+  user       User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([folderId])
@@ -169,22 +169,23 @@ model Memory {
 }
 
 model Action {
-  id        String                 @id(map: "task_pkey")
+  id        String                   @id(map: "task_pkey")
   userId    String
   folderId  String
   chatId    String
   schedule  String
   config    Json
   data      Json
-  createdAt DateTime               @default(now())
+  createdAt DateTime                 @default(now())
   embedding Unsupported("vector")?
+  lexicon   Unsupported("tsvector")?
   messageId String?
   lastRanAt DateTime?
   timezone  String
-  chat      Chat                   @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  folder    Folder                 @relation(fields: [folderId], references: [id], onDelete: Cascade)
-  message   Message?               @relation(fields: [messageId], references: [id], onDelete: SetNull)
-  user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade, map: "task_userId_fkey")
+  chat      Chat                     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  folder    Folder                   @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  message   Message?                 @relation(fields: [messageId], references: [id])
+  user      User                     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "task_userId_fkey")
 
   @@index([chatId], map: "task_chatId_idx")
   @@index([folderId], map: "task_folderId_idx")
@@ -197,9 +198,9 @@ model Upload {
   id        String   @id
   userId    String
   name      String
-  files     File[]
-  thumbnail String?
   createdAt DateTime @default(now())
+  thumbnail String?
+  files     File[]
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -207,32 +208,32 @@ model Upload {
 }
 
 model File {
-  id        String                 @id
+  id        String                   @id
   userId    String
   uploadId  String?
-  skillId   String?
   path      String[]
   mime      String
   data      Bytes
   embedding Unsupported("vector")?
-  createdAt DateTime               @default(now())
-  user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  upload    Upload?                @relation(fields: [uploadId], references: [id], onDelete: Cascade)
-  skill     Skill?                 @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  createdAt DateTime                 @default(now())
+  skillId   String?
+  lexicon   Unsupported("tsvector")?
+  skill     Skill?                   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  upload    Upload?                  @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  user      User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([uploadId])  
+  @@index([uploadId])
   @@index([skillId])
   @@map("file")
 }
 
 model Skill {
-  id String @id
-  userId String
-  files File[]
+  id        String   @id
+  userId    String
   createdAt DateTime @default(now())
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  files     File[]
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("skill")

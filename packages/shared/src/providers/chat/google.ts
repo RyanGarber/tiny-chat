@@ -15,10 +15,16 @@ export const GoogleProvider: ChatProvider = {
     });
   },
 
-  getClientModel(user, id, env) {
+  getClientGenerateModel(user, id, env) {
     const client = this.getClient(user, env) as ReturnType<typeof createGoogleGenerativeAI>;
     if (!client) return null;
     return client.languageModel(id);
+  },
+
+  getClientEmbedModel(user, id, env) {
+    const client = this.getClient(user, env) as ReturnType<typeof createGoogleGenerativeAI>;
+    if (!client) return null;
+    return client.embeddingModel(id);
   },
 
   getClientOptions(_user, config) {

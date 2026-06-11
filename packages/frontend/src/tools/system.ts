@@ -68,11 +68,39 @@ export const WriteFile: Tool<typeof zWriteFileInput, typeof zWriteFileOutput> = 
   },
 };
 
-export const filesystem: ToolGroup = {
-  name: 'filesystem',
-  tools: [ReadDir, ReadFile, WriteFile],
+export const zShellExecInput = z.object({
+  command: z.string(),
+});
+export type zShellExecInput = z.infer<typeof zShellExecInput>;
+
+export const zShellExecOutput = z.object({
+  status: z.number().optional(),
+  stderr: z.string(),
+  stdout: z.string(),
+});
+export type zShellExecOutput = z.infer<typeof zShellExecOutput>;
+
+const ShellExec: Tool<typeof zShellExecInput, typeof zShellExecOutput> = {
+  name: 'shell_exec',
+  description: 'Execute a shell command.',
+  input: zShellExecInput.toJSONSchema(),
+  output: zShellExecOutput.toJSONSchema(),
+  requirements: {
+    desktop: true,
+    approval: true,
+  },
+  run: async (_, input) => {
+    return await invoke<{ status?: number; stderr: string; stdout: string }>('shell_exec', {
+      command: input.command,
+    });
+  },
+};
+
+export const system: ToolGroup = {
+  name: 'system',
+  tools: [ReadDir, ReadFile, WriteFile, ShellExec],
   instructions: {
-    heading: 'Filesystem',
-    body: "You have access to the user's filesystem. Use read_dir and read_file to read files and directories.",
+    heading: 'System',
+    body: "You have access to the user's filesystem and shell. Use read_dir and read_file to read files and directories, and shell_exec to run a command.",
   },
 };

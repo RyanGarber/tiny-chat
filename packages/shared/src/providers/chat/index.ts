@@ -10,6 +10,7 @@ import type {
   Tool as AISdkTool,
   ToolCallPart,
   ToolResultPart,
+  EmbeddingModel,
 } from 'ai';
 import { embedMany, streamText } from 'ai';
 
@@ -34,6 +35,7 @@ import { GeminiProvider } from './gemini.ts';
 import type { Tool } from '../../types/tool.ts';
 import { TestProvider } from './test.ts';
 import type { Env } from '../../types/env.ts';
+import { VoyageProvider } from './voyage.ts';
 
 export interface ChatProvider extends BaseProvider {
   name: string;
@@ -42,7 +44,8 @@ export interface ChatProvider extends BaseProvider {
   getModelArgs: (model: string) => ModelArg[];
 
   getClient: (user: zUser, env: Env) => Partial<Provider> | null;
-  getClientModel: (user: zUser, id: string, env: Env) => LanguageModel | null;
+  getClientGenerateModel: (user: zUser, id: string, env: Env) => LanguageModel | null;
+  getClientEmbedModel: (user: zUser, id: string, env: Env) => EmbeddingModel | null;
   getClientOptions: (user: zUser, config: zConfig, env: Env) => Record<string, any> | undefined;
 
   getPartTransformed?: (
@@ -72,6 +75,7 @@ export const chatProviders: ChatProvider[] = [
   GeminiProvider,
   GoogleProvider,
   OpenAIProvider,
+  VoyageProvider,
   TestProvider,
 ];
 
@@ -89,7 +93,7 @@ export async function* runGeneration(
   env: Env,
   options: Partial<StreamTextOptions> = {},
 ): AsyncGenerator<zGenerateOutput> {
-  const clientModel = provider.getClientModel(user, config.model, env);
+  const clientModel = provider.getClientGenerateModel(user, config.model, env);
   const providerModels = await provider.getModels(user);
   const supportsToolCall = providerModels.find((m) => m.name === config.model);
   if (!clientModel) throw new Error(`Model not available: ${config.model}`);
@@ -354,14 +358,16 @@ function cleanSignature(signature: ReturnType<NonNullable<ChatProvider['getPartS
   return undefined;
 }
 
-export async function runEmbedding(user: zUser, texts: string[], config: zConfig, env: Env) {
-  const provider = chatProviders.find((p) => p.name === config.provider);
-  if (!provider) throw new Error(`Provider not found: ${config.provider}`);
-
-  const clientModel = provider.getClient(user, env)!.embeddingModel!(config.model);
-
-  config = prepareConfig(config, provider.getModelArgs(config.model));
-
+export async function runEmbedding(
+  user: zUser,
+  provider: ChatProvider,
+  texts: string[],
+  config: zConfig,
+  env: Env,
+) {
+  const clientModel = provider.getClientEmbedModel(user, config.model, env);
+  if (!clientModel) throw new Error(`No embedding model available for ${config.model}`);
+  // config = prepareConfig(config, provider.getModelArgs(config.model)); - no used args at the moment
   return (await embedMany({ model: clientModel, values: texts })).embeddings;
 }
 

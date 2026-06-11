@@ -268,6 +268,7 @@
 				INFOPLIST_FILE = "tiny-chat_iOS/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Tiny Chat";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -434,6 +435,7 @@
 				INFOPLIST_FILE = "tiny-chat_iOS/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Tiny Chat";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

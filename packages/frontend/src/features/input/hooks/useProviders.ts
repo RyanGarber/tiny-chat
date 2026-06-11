@@ -1,23 +1,19 @@
-import { query, queryClient, trpc } from '@/utils/api';
+import { queryClient } from '@/utils/api';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { auth } from '../../../utils/api';
+import { ProviderService } from '@/features/provider/services/ProviderService';
+import { zCache } from '@tiny-chat/shared/src/types/user';
 
 export const providerCacheQueryKey = ['cache', 'providers'] as const;
+export const providerCacheMutationKey = ['cache', 'providers'] as const;
 
 export const useProviders = () => {
   const session = auth.useSession();
 
-  const providers = useQuery({
+  const providers = useQuery<zCache['providers']>({
     queryKey: providerCacheQueryKey,
-    queryFn: async () => {
-      const data = await trpc.persistence.getCache.query();
-      // TODO - toggle for enabling WebLLMProvider
-      const { WebLLMProvider } = await import('@/providers/webllm');
-      data.providers.chat.push({
-        ...WebLLMProvider,
-        models: await WebLLMProvider.getModels(session.data!.user),
-      });
-      return data.providers;
+    queryFn: () => {
+      return ProviderService.getChatProviderCache(session.data!.user);
     },
     staleTime: Infinity,
     refetchOnWindowFocus: false,
@@ -25,7 +21,10 @@ export const useProviders = () => {
   });
 
   const updateProviders = useMutation({
-    ...query.persistence.updateCache.mutationOptions(),
+    mutationKey: providerCacheMutationKey,
+    mutationFn: () => {
+      return ProviderService.updateProviderCache();
+    },
     onSuccess: (data) => {
       queryClient.setQueryData(providerCacheQueryKey, data);
     },

@@ -1,11 +1,12 @@
+import type { z } from 'zod';
 import { useMcpServerSettings } from '@/features/settings/hooks/useMcpServerSettings';
 import { query, trpc } from '@/utils/api';
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { Tool } from '@tiny-chat/shared/src/types/tool.ts';
-import frontend from '@/tools';
-import type { z } from 'zod';
 import { McpService } from '../services/McpService';
-import { useMemo } from 'react';
+import frontend from '@/tools';
+import shared from '@tiny-chat/shared/src/tools';
 
 export const mcpToolsQueryKey = ['mcp-servers'] as const;
 
@@ -14,16 +15,17 @@ export const useTools = () => {
   const { data: mcpServerSettingsData } = mcpServerSettings;
 
   const builtInTools = useQuery({
-    ...query.capabilities.listTools.queryOptions(),
+    ...query.context.listTools.queryOptions(),
     select: (data) => [
       ...frontend,
+      ...shared,
       ...data.map((g) => ({
         ...g,
         tools: g.tools.map(
           (t): Tool<z.ZodAny, z.ZodAny, z.ZodAny> => ({
             ...t,
             run: (ctx, input, userInput) => {
-              return trpc.capabilities.callTool.mutate({
+              return trpc.context.callTool.mutate({
                 name: t.name,
                 context: ctx,
                 input: input as never,

@@ -2,7 +2,7 @@ import { ActionIcon, Box, Card, Group, Input, Modal, Progress, Stack, Text } fro
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { glassStyle } from '@/utils/glass';
-import { WebLLMConfig, WebLLMProvider } from '../../providers/webllm';
+import { WebLLMConfig, WebLLMProvider } from '../services/WebLLMProvider';
 import { auth } from '@/utils/api';
 import { Icon } from '@iconify/react';
 import { hasModelInCache, deleteModelInCache, ModelType, ModelRecord } from '@mlc-ai/web-llm';
@@ -38,7 +38,7 @@ export default function WebLLM({ opened, onClose }: { opened: boolean; onClose: 
   const downloadModel = useMutation({
     mutationFn: async (modelName: string) => {
       await (
-        WebLLMProvider.getClientModel(session.data!.user, modelName, import.meta.env) as
+        WebLLMProvider.getClientGenerateModel(session.data!.user, modelName, import.meta.env) as
           | WebLLMLanguageModel
           | WebLLMEmbeddingModel
       ).createSessionWithProgress((progress) => {

@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
     environment: production
     permissions:
@@ -96,9 +96,8 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ steps.tag.outputs.sha_short }}-android
-          name: ${{ steps.tag.outputs.sha_short }} (Android)
-          body: |
-            Unsigned Android build for sideloading.
+          tag_name: ${{ steps.tag.outputs.sha_short }}
+          name: ${{ steps.tag.outputs.sha_short }}
+          body: Download for Windows, macOS, or Linux, or sideload to your iOS or Android device.
           files: ${{ runner.temp }}/TinyChat-Android.zip
           fail_on_unmatched_files: true

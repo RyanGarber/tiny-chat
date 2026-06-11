@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  predeploy:
     runs-on: ubuntu-latest
     environment: production
 
@@ -75,7 +75,7 @@ jobs:
 
   deploy:
     runs-on: self-hosted
-    needs: build
+    needs: predeploy
     environment: production
 
     steps:

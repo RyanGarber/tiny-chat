@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  release:
     runs-on: macos-latest
     environment: production
     permissions:
@@ -123,9 +123,8 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ steps.tag.outputs.sha_short }}-ios
-          name: ${{ steps.tag.outputs.sha_short }} (iOS)
-          body: |
-            Unsigned iOS build for sideloading.
+          tag_name: ${{ steps.tag.outputs.sha_short }}
+          name: ${{ steps.tag.outputs.sha_short }}
+          body: Download for Windows, macOS, or Linux, or sideload to your iOS or Android device.
           files: ${{ runner.temp }}/TinyChat.ipa
           fail_on_unmatched_files: true

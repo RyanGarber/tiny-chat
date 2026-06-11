@@ -1,4 +1,4 @@
-name: 'release'
+name: 'release-desktop'
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-release:
+  release:
     permissions:
       contents: write
     strategy:
@@ -90,8 +90,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ steps.tag_name.outputs.sha_short }}
-          projectPath: ./apps/tauri
           releaseName: ${{ steps.tag_name.outputs.sha_short }}
-          releaseBody: macOS, Linux, and Windows builds.
-          includeUpdaterJson: true
+          releaseBody: Download for Windows, macOS, or Linux, or sideload to your iOS or Android device.
+          projectPath: ./apps/tauri
           args: ${{ matrix.args }}
+          includeUpdaterJson: true

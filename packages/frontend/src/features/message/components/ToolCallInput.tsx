@@ -26,14 +26,16 @@ import {
   zReplyQuestionOutput,
 } from '@tiny-chat/shared/src/tools/questions.ts';
 import { Markdown } from '@/features/message/components/Markdown';
-import { zShellExecInput, zWriteFileInput } from '@/tools/system.ts';
-import { DIFF_MARKER } from '@/utils/text';
+import { zShellExecInput } from '@/tools/system.ts';
+import { DIFF_MARKER } from '@/utils/data.ts';
 import type { Tool } from '@tiny-chat/shared/src/types/tool.ts';
 import type { z } from 'zod';
-import { invoke } from '@/utils/api';
-import { glassStyle } from '@/utils/glass';
-import { toolCallRejectedMessage, useToolInput } from '../hooks/useToolInput';
+import { invoke, trpc } from '@/utils/api.ts';
+import { GLASS_STYLE } from '@/utils/theme.ts';
+import { toolCallRejection, useToolInput } from '../hooks/useToolInput';
 import { Icon } from '@iconify/react';
+import { zWriteFileInput } from '@tiny-chat/shared/src/tools/files.ts';
+import { decodeTextLossy, fromChatUri } from '@tiny-chat/shared/src/utils/files.ts';
 
 export const ToolCallInput = memo(
   ({
@@ -57,16 +59,34 @@ export const ToolCallInput = memo(
     useEffect(() => {
       if (part.name === 'write_file') {
         const write = zWriteFileInput.parse(part.args);
-        invoke<string>('read_file', { path: write.path })
-          .then((contents) => {
-            setWriteFileContents(contents);
-          })
-          .catch((error) => {
-            console.error('Error reading file', error);
-            setWriteFileContents('');
-          });
+        const uri = fromChatUri(write.path);
+        console.log(uri);
+        if (uri) {
+          trpc.input.findFileInChat
+            .query({
+              chatId: message.chatId,
+              uploadId: uri.uploadId ?? null,
+              path: uri.path,
+            })
+            .then((file) => {
+              setWriteFileContents(file ? decodeTextLossy(file.data, file.mime) : '');
+            })
+            .catch((error) => {
+              console.error('Error loading file', error);
+              setWriteFileContents('');
+            });
+        } else {
+          invoke<string>('read_file', { path: write.path })
+            .then((contents) => {
+              setWriteFileContents(contents);
+            })
+            .catch((error) => {
+              console.error('Error reading file', error);
+              setWriteFileContents('');
+            });
+        }
       }
-    }, [part.name, part.args]);
+    }, [part.name, part.args, result?.id, message.chatId]);
 
     const disabled = result !== undefined;
 
@@ -75,10 +95,10 @@ export const ToolCallInput = memo(
         return (
           <Markdown source={`\`\`\`shell\n${(part.args as zShellExecInput).command}\n\`\`\``} />
         );
-      } else if (part.name === 'write_file') {
+      } else if (part.name === 'write_file' && !result) {
         return (
           <Markdown
-            source={`\`\`\`diff ${(part.args as zWriteFileInput).path}\n${writeFileContents}${DIFF_MARKER}${(part.args as zWriteFileInput).contents}\n\`\`\``}
+            source={`\`\`\`diff ${(part.args as zWriteFileInput).path.split('/').slice(-1)[0]}\n${writeFileContents}${DIFF_MARKER}${(part.args as zWriteFileInput).content.replace(/```/gm, `\u200B\`\`\``)}\n\`\`\``}
           />
         );
       } else if (part.name === 'reply_question') {
@@ -221,12 +241,12 @@ export const ToolCallInput = memo(
           </Stack>
         );
       }
-    }, [part.name, part.args, inputValue, setInputValue, writeFileContents, disabled]);
+    }, [part.name, part.args, result, writeFileContents, inputValue, disabled]);
 
     if (tool && input) {
       return (
         <Stack gap="xs" mb={10}>
-          <Card withBorder style={{ ...glassStyle }}>
+          <Card withBorder style={{ ...GLASS_STYLE }}>
             <Stack gap="xs">
               <Box>{input}</Box>
             </Stack>
@@ -245,7 +265,7 @@ export const ToolCallInput = memo(
                     })
                   }
                   leftSection={
-                    result?.value !== toolCallRejectedMessage ? (
+                    JSON.stringify(result?.value) !== JSON.stringify(toolCallRejection) ? (
                       <Icon icon="lucide:check" />
                     ) : undefined
                   }
@@ -266,7 +286,8 @@ export const ToolCallInput = memo(
                     })
                   }
                   leftSection={
-                    result?.error && result.value === toolCallRejectedMessage ? (
+                    result?.error &&
+                    JSON.stringify(result.value) === JSON.stringify(toolCallRejection) ? (
                       <Icon icon="lucide:check" />
                     ) : undefined
                   }

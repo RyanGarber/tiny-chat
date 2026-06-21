@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "types": ["vitest/importMeta"],
     "skipLibCheck": true,
     /* Bundler mode */
     "allowImportingTsExtensions": true,
@@ -10,5 +11,6 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true
   }
 }

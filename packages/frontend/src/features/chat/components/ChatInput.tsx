@@ -20,15 +20,15 @@ import {
   Text,
 } from '@mantine/core';
 import {
+  type ClipboardEventHandler,
   CSSProperties,
+  type KeyboardEvent,
   memo,
   useCallback,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
-  type ClipboardEventHandler,
-  type KeyboardEvent,
 } from 'react';
 import { Editable, ReactEditor, RenderElementProps, RenderLeafProps, Slate } from 'slate-react';
 import { serialize } from '@/features/slate/serializer';
@@ -42,7 +42,6 @@ import Upload, {
 } from '@/features/input/components/Upload';
 import { useChat } from '@/features/chat/hooks/useChat';
 import { StreamService } from '@/features/message/services/StreamService';
-import { glassStyle } from '@/utils/glass';
 import { useConfig } from '@/features/input/hooks/useConfig';
 import { CapabilitySelect } from '@/features/input/components/CapabilitySelect';
 import { useTools } from '@/features/input/hooks/useTools';
@@ -54,10 +53,10 @@ import { uploadMutationKey, useUploads } from '@/features/input/hooks/useUploads
 import { useSend } from '../hooks/useMessaging';
 import { GenerateService } from '@/features/message/services/GenerateService';
 import { precheckAllToolRequirements } from '@tiny-chat/shared/src/utils';
-import { auth } from '@/utils/api';
+import { auth } from '@/utils/api.ts';
 import { useChatStore } from '../stores/useChatStore';
 import { useTauri } from '@/core/hooks/useTauri';
-import { SHADOW } from '@/utils/theme';
+import { GLASS_STYLE, SHADOW } from '@/utils/theme.ts';
 
 export const ChatInput = memo(({ isAny, ...props }: InputWrapperProps & { isAny: boolean }) => {
   const session = auth.useSession();
@@ -186,7 +185,7 @@ export const ChatInput = memo(({ isAny, ...props }: InputWrapperProps & { isAny:
         if (item.kind === 'file') {
           const file = item.getAsFile();
           if (file) {
-            upload.mutate({ type: 'upload', file });
+            upload.mutate({ type: 'ATTACHMENT', file });
           }
         }
       }
@@ -353,7 +352,7 @@ export const ChatInput = memo(({ isAny, ...props }: InputWrapperProps & { isAny:
           size={40}
           radius={20}
           onClick={() => {
-            if (stream) GenerateService.abort(stream.id);
+            if (stream) void GenerateService.abort(stream.id);
             else sendMessage.mutate();
           }}
           loading={sendMessage.isPending}
@@ -459,7 +458,7 @@ export const ChatInput = memo(({ isAny, ...props }: InputWrapperProps & { isAny:
             input: {
               padding: 5,
               wordBreak: 'break-word',
-              ...glassStyle,
+              ...GLASS_STYLE,
             },
             section: {
               display: 'flex',

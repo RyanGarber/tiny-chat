@@ -4,6 +4,8 @@ import { zConfig, zData, zMetadata } from './types/chat.ts';
 import type { zSkill } from './types/skill.ts';
 import type { zTool, zToolContext, zToolGroup } from './types/tool.ts';
 import type { zCache, zUser } from './types/user.ts';
+import { decodeTextLossy, isTextAdjacent } from './utils/files.ts';
+export { snippetText } from './utils/text.ts';
 
 export function wrapMessage(message: Message): MessageState {
   return {
@@ -67,68 +69,6 @@ export function scrubText(text: string, maxLength = -1): string {
   return text;
 }
 
-export function snippetText(text: string, query: string | RegExp, window = 160): string {
-  const lower = text.toLowerCase();
-
-  if (query instanceof RegExp) {
-    const match = query.exec(text) ?? query.exec(lower);
-    if (!match) return text.length > window ? text.slice(0, window) + '…' : text;
-    return extractSnippet(text, match.index, window);
-  }
-
-  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  if (!terms.length) return text.length > window ? text.slice(0, window) + '…' : text;
-
-  // Collect all match positions for all terms
-  const hits: number[] = [];
-  for (const term of terms) {
-    let from = 0;
-    while (true) {
-      const i = lower.indexOf(term, from);
-      if (i === -1) break;
-      hits.push(i);
-      from = i + 1;
-    }
-  }
-
-  if (!hits.length) return text.length > window ? text.slice(0, window) + '…' : text;
-
-  // Find the window start position that covers the most hits
-  hits.sort((a, b) => a - b);
-  let bestStart = hits[0];
-  let bestCount = 0;
-  for (let i = 0; i < hits.length; i++) {
-    const windowEnd = hits[i] + window;
-    let count = 0;
-    for (let j = i; j < hits.length && hits[j] < windowEnd; j++) count++;
-    if (count > bestCount) {
-      bestCount = count;
-      bestStart = hits[i];
-    }
-  }
-
-  return extractSnippet(text, bestStart, window);
-}
-
-function extractSnippet(text: string, matchIndex: number, window: number): string {
-  if (window <= 0) return text;
-
-  const half = Math.floor(window / 2);
-  let start = Math.max(0, matchIndex - half);
-  let end = Math.min(text.length, matchIndex + half);
-
-  if (start > 0) {
-    const i = text.indexOf(' ', start);
-    if (i !== -1 && i < matchIndex) start = i + 1;
-  }
-  if (end < text.length) {
-    const i = text.lastIndexOf(' ', end);
-    if (i !== -1 && i > matchIndex) end = i;
-  }
-
-  const snippet = text.slice(start, end).trim();
-  return (start > 0 ? '…' : '') + snippet + (end < text.length ? '…' : '');
-}
 
 export const RRule = (await import('rrule')).default?.RRule ?? (await import('rrule')).RRule;
 
@@ -174,9 +114,14 @@ export function getBaseModelTransform(
   part: zDataPart,
   ...supportedMimes: SupportedMime[]
 ): zDataPart {
-  if (part.type === 'inputFile') {
+  if (part.type === 'file') {
     if (!supportedMimes.some((m) => part.mime.startsWith(m))) {
-      return { type: 'text', value: part.data };
+      if (isTextAdjacent(part.mime)) {
+        const text = decodeTextLossy(part.data, part.mime);
+        return { type: 'text', value: text };
+      } else {
+        return { type: 'text', value: `[Unsupported file: ${part.data}]` };
+      }
     }
   }
   return part;
@@ -254,7 +199,9 @@ export function precheckAllToolRequirements(
     {
       user: {
         id: '',
+        name: '',
         settings: {},
+        isEphemeral: false,
         ...user,
       },
       chat:
@@ -286,10 +233,10 @@ export function precheckAllToolRequirements(
   );
 }
 
-export function wrapSkill<T extends Record<string, unknown>>(
+export function wrapSkill(
+  path: string,
   skillFiles: { path: string[]; data: string | Uint8Array }[],
-  metadata: T,
-): (zSkill & T) | null {
+): zSkill | null {
   const files = skillFiles
     .filter((f) => f.path.at(-1)?.length)
     .map((f) => ({
@@ -310,11 +257,16 @@ export function wrapSkill<T extends Record<string, unknown>>(
     attributes: { name, description, ...attributes },
     body: content,
   } = fm<{ name: string; description: string }>(skillMd.data);
+  if (!name || !content) {
+    console.log('[wrapSkill] invalid skill.md:', files);
+    return null;
+  }
+
   return {
-    ...metadata,
-    name,
-    description,
-    attributes,
+    name: name,
+    path: `${[path, ...skillMd.path].join('/')}`,
+    description: description,
+    attributes: attributes,
     content,
     resources: files
       .filter(
@@ -342,4 +294,13 @@ export function getLastPrompt(context: zContextItem[]): zContextItem {
     }
   }
   throw new Error('No user message in context');
+}
+
+export function uploadIds(context: zContextItem[]) {
+  return context.flatMap((m) =>
+    m.data
+      .flat()
+      .filter((d) => d.type === 'upload')
+      .map((u) => u.id),
+  );
 }

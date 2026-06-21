@@ -113,8 +113,8 @@ jobs:
           mkdir -p "$RUNNER_TEMP/Payload"
           cp -r "$APP_PATH" "$RUNNER_TEMP/Payload/"
           cd "$RUNNER_TEMP"
-          zip -9 -r "TinyChat.ipa" Payload/
-          echo "IPA size: $(du -sh TinyChat.ipa | cut -f1)"
+            zip -9 -r "Tiny.Chat_iOS.ipa" Payload/
+          echo "IPA size: $(du -sh Tiny.Chat_iOS.ipa | cut -f1)"
 
       - name: Generate tag
         id: tag
@@ -126,5 +126,5 @@ jobs:
           tag_name: ${{ steps.tag.outputs.sha_short }}
           name: ${{ steps.tag.outputs.sha_short }}
           body: Download for Windows, macOS, or Linux, or sideload to your iOS or Android device.
-          files: ${{ runner.temp }}/TinyChat.ipa
+          files: ${{ runner.temp }}/Tiny.Chat_iOS.ipa
           fail_on_unmatched_files: true

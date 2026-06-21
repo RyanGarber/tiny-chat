@@ -12,19 +12,15 @@ import {
   Transition,
 } from '@mantine/core';
 import {
-  memo,
-  MouseEvent,
-  ReactNode,
-  TouchEvent,
-  useEffect,
-  useMemo,
-  useRef,
   type CSSProperties,
+  memo,
+  ReactNode,
+  useMemo,
 } from 'react';
-import { MessageState, zDataPart } from '@tiny-chat/shared/src/types/chat.ts';
+import { useMessageSelection } from '@/features/message/hooks/useMessageSelection';
+import { Author, MessageState, zDataPart } from '@tiny-chat/shared/src/types/chat.ts';
 import { texts } from '@tiny-chat/shared/src/utils.ts';
 import { Markdown } from '@/features/message/components/Markdown';
-import { Author } from '@tiny-chat/backend/generated/prisma/enums.ts';
 import { Icon } from '@iconify/react';
 import { ToolCallInput } from '@/features/message/components/ToolCallInput';
 import { MediaPlayer, MediaProvider } from '@vidstack/react';
@@ -67,60 +63,12 @@ export const MessageBodyContent = memo(
 
     const addQuote = useMessagingStore((s) => s.addQuote);
 
-    const container = useRef<HTMLDivElement>(null);
+    const { rect, captureSelection, getSelectedText } = useMessageSelection(message.id);
 
-    //const selection = useTextSelection(); TODO - perf
-    const selection = useMemo(
-      () => ({
-        isCollapsed: false,
-        rangeCount: 0,
-        anchorNode: null,
-        focusNode: null,
-        getRangeAt: (_: number) => ({
-          getBoundingClientRect: () => ({ top: 0, left: 0, width: 0, height: 0 }),
-        }),
-      }),
-      [],
-    );
-    const selectedTextRef = useRef('');
-
-    const isNodeInContainer = (node: Node | null): boolean => {
-      if (!node) return false;
-      const element = node.nodeType === 3 ? node.parentElement : (node as Element);
-      return !!element?.closest(`[data-message-id="${message.id}"]`);
-    };
-
-    const isSelected =
-      selection &&
-      !selection.isCollapsed &&
-      selection.rangeCount > 0 &&
-      isNodeInContainer(selection.anchorNode) &&
-      isNodeInContainer(selection.focusNode);
-
-    let rect = { top: 0, left: 0, width: 0, height: 0 };
-    if (isSelected) rect = selection.getRangeAt(0).getBoundingClientRect();
-
-    useEffect(() => {
-      if (!isSelected) return;
-      // eslint-disable-next-line @typescript-eslint/no-base-to-string
-      selectedTextRef.current = window.getSelection()?.toString() ?? selection?.toString() ?? '';
-    }, [isSelected, selection]);
-
-    const captureSelectionForQuote = (e: MouseEvent | TouchEvent) => {
-      // Keep text selected while pressing the quote button (notably on iOS Safari).
-      e.preventDefault();
-      // eslint-disable-next-line @typescript-eslint/no-base-to-string
-      selectedTextRef.current = window.getSelection()?.toString() ?? selection?.toString() ?? '';
-    };
+    const isSelected = rect !== null;
 
     const handleQuoteClick = () => {
-      const text = (
-        window.getSelection()?.toString() ??
-        selectedTextRef.current ??
-        // eslint-disable-next-line @typescript-eslint/no-base-to-string
-        selection?.toString() ??
-        ''
-      ).trim();
+      const text = getSelectedText();
       if (text) addQuote(message, text);
     };
 
@@ -133,14 +81,15 @@ export const MessageBodyContent = memo(
     const webSearchResults = useMemo(
       () =>
         messageList.flatMap((m) =>
-          (
-            m.data
-              .flat()
-              .filter(
-                (p): p is Extract<zDataPart, { type: 'toolResult' }> =>
-                  p.type === 'toolResult' && p.name === 'search_web' && !p.error,
-              ) as { value: SearchResult[] }[]
-          ).flatMap((p) => p.value),
+          m.data
+            .flat()
+            .filter(
+              (p): p is Extract<zDataPart, { type: 'toolResult' }> =>
+                p.type === 'toolResult' && p.name === 'search_web' && !p.error,
+            )
+            .map((p) => p.value[0])
+            .filter((p) => p.type === 'json')
+            .flatMap((p) => p.value as unknown as SearchResult[]),
         ),
       [messageList],
     );
@@ -235,7 +184,7 @@ export const MessageBodyContent = memo(
             />,
           );
         }
-      } else if (part.type === 'outputFile') {
+      } else if (part.type === 'file') {
         if (part.mime?.startsWith('image/')) {
           renderedParts.push(
             <Image
@@ -313,7 +262,6 @@ export const MessageBodyContent = memo(
     return (
       <>
         <Box
-          ref={container}
           w="100%"
           data-message-id={message.id}
           display="inline"
@@ -361,15 +309,15 @@ export const MessageBodyContent = memo(
                 size={32}
                 style={{
                   position: 'fixed',
-                  top: rect.top - 30,
-                  left: rect.left + rect.width / 2,
+                  top: (rect?.top ?? 0) - 30,
+                  left: (rect?.left ?? 0) + (rect?.width ?? 0) / 2,
                   transform: 'translateX(-50%)',
                   zIndex: 'var(--mantine-zindex-app)',
                   boxShadow: SHADOW,
                   ...styles,
                 }}
-                onMouseDown={captureSelectionForQuote}
-                onTouchStart={captureSelectionForQuote}
+                onMouseDown={captureSelection}
+                onTouchStart={captureSelection}
                 onClick={handleQuoteClick}
               >
                 <Icon icon="lucide:message-square-quote" height={16} />

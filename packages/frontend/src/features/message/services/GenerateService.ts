@@ -1,3 +1,4 @@
+import type { Chat } from '@tiny-chat/shared/src/types/chat.ts';
 import {
   Author,
   type MessageState,
@@ -10,12 +11,8 @@ import {
 } from '@tiny-chat/shared/src/types/chat.ts';
 import type { ToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
 import type { zSkill } from '@tiny-chat/shared/src/types/skill.ts';
-import {
-  alignToolResults,
-  generate,
-  GenerationCallbacks,
-} from '@tiny-chat/shared/src/services/chat/generate.ts';
-import type { Chat } from '@tiny-chat/backend/generated/prisma/client.ts';
+import type { GenerationCallbacks } from '@tiny-chat/shared/src/services/chat/generate.ts';
+import { alignToolResults, generate } from '@tiny-chat/shared/src/services/chat/generate.ts';
 import { type Stream, StreamService } from '@/features/message/services/StreamService';
 import { auth, env, isTauriDesktop, trpc } from '@/utils/api.ts';
 import { checkAllToolRequirements } from '@tiny-chat/shared/src/utils.ts';
@@ -24,8 +21,9 @@ import { refetchMessages } from '@/features/message/hooks/useMessages.ts';
 import { refetchChatList } from '@/features/chat/hooks/useChatList';
 import { refetchMemories } from '@/features/chat/hooks/useMemories.ts';
 import { refetchActions } from '@/features/chat/hooks/useActions.ts';
-import { isMissingToolResult } from '@/utils/ui';
-import { type zCache, zSettings, zUser } from '@tiny-chat/shared/src/types/user';
+import { isMissingToolResult } from '@/utils/data.ts';
+import type { zUser } from '@tiny-chat/shared/src/types/user';
+import { type zCache, zSettings } from '@tiny-chat/shared/src/types/user';
 import { embed } from '@tiny-chat/shared/src/services/chat/embed';
 import { ProviderService } from '@/features/provider/services/ProviderService';
 import { fetchNextEmbeddingBatch } from '@/features/provider/hooks/useEmbedding.ts';
@@ -34,7 +32,7 @@ export const getGenerationCallbacks = (user: zUser): GenerationCallbacks => ({
   embed: async (text) => {
     const embedConfig = zSettings.parse(user.settings).embeddingConfig;
     if (!embedConfig) return null;
-    const chatProviders = await ProviderService.getChatProviders();
+    const chatProviders = await ProviderService.getChatProviders(user);
     const provider = chatProviders.find((p) => p.name === embedConfig.provider);
     if (!provider) return null;
     return (await embed(user, provider, [text], embedConfig, env))[0] ?? null;
@@ -45,14 +43,7 @@ export const getGenerationCallbacks = (user: zUser): GenerationCallbacks => ({
   listActions: () => trpc.context.listActions.query(),
   searchMemories: (text, embedding, limit) =>
     trpc.context.searchMemories.query({ text, embedding, limit }),
-  listUploadFiles: (id) => trpc.input.listUploadFiles.query({ id }),
-  searchFiles: (uploads, text, embedding, limit) =>
-    trpc.input.searchUploads.query({
-      uploads,
-      text,
-      embedding,
-      limit,
-    }),
+  listFilesInChat: (chatId, uploadIds) => trpc.input.listFilesInChat.query({ chatId, uploadIds }),
   getEmbedding: (input) => trpc.context.getEmbedding.query(input),
 });
 
@@ -225,7 +216,7 @@ export const GenerateService = {
     console.log('enabledTools:', enabledTools);
     console.log('enabledSkills:', enabledSkills);
 
-    const chatProviders = await ProviderService.getChatProviders();
+    const chatProviders = await ProviderService.getChatProviders(user);
     const provider = chatProviders.find((p) => p.name === config.provider);
     if (!provider) throw new Error(`Provider "${config.provider}" not found`);
 
@@ -305,9 +296,13 @@ export const GenerateService = {
   },
 
   /** Abort a single in-flight stream. */
-  abort: (streamId: string): void => {
+  abort: async (streamId: string): Promise<void> => {
     console.log('[Generation] aborting stream', streamId);
-    StreamService.get(streamId)?.abort.abort();
-    StreamService.stop(streamId);
+    const stream = StreamService.get(streamId);
+    if (stream) {
+      await GenerateService._finalize(stream);
+      stream.abort.abort();
+      StreamService.stop(streamId);
+    }
   },
 } as const;

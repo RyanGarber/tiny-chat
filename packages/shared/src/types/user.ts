@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { zConfig, type Model } from './chat.ts';
+import { type Model, zConfig } from './chat.ts';
+import { getRandomName } from '../utils/user.ts';
 
 export const zCache = z.object({
   providers: z
@@ -90,6 +91,7 @@ export const zSettings = z
     preferredWebProvider: z.string(),
     hiddenModels: zHiddenModels,
     useProviderCache: z.boolean(),
+    useBrowserModels: z.boolean(),
     theme: z.string(),
     codeTheme: z.string(),
     providers: zProviderSettings,
@@ -98,8 +100,12 @@ export const zSettings = z
   .partial();
 export type zSettings = z.infer<typeof zSettings>;
 
+export const defaultName = getRandomName();
+
 export const zUser = z.object({
   id: z.string(),
+  name: z.string().default(defaultName),
   settings: zSettings,
+  isEphemeral: z.boolean(),
 });
 export type zUser = z.infer<typeof zUser>;

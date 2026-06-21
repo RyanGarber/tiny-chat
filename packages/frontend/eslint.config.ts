@@ -1,27 +1,17 @@
-import * as eslint from '@eslint/js';
 import { defineConfig } from 'eslint/config';
-import tseslint from 'typescript-eslint';
+import baseConfig from '../../eslint.config.base';
 import * as reactHooks from 'eslint-plugin-react-hooks';
-import * as reactRefresh from 'eslint-plugin-react-refresh';
+import reactRefresh from 'eslint-plugin-react-refresh';
 
 export default defineConfig(
+  ...baseConfig,
   {
-    ignores: [
-      'generated/**',
-      'dist/**',
-      'eslint.config.ts',
-      'postcss.config.cjs',
-      'vite.config.ts',
-    ],
+    ignores: ['dist/**', 'postcss.config.cjs', 'vite.config.ts'],
   },
-  eslint.configs.recommended,
-  tseslint.configs.recommendedTypeChecked,
-  tseslint.configs.stylisticTypeChecked,
   reactRefresh.configs.recommended,
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
-      ecmaVersion: 2020,
       parserOptions: {
         project: ['./tsconfig.json', './tsconfig.node.json'],
         tsconfigRootDir: import.meta.dirname,
@@ -34,8 +24,6 @@ export default defineConfig(
     rules: {
       ...reactHooks.configs['recommended-latest'].rules,
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     },
   },
 );

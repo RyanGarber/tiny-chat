@@ -25,11 +25,16 @@ const ListSessions: Tool<typeof zListSessionsInput, typeof zListSessionsOutput> 
   run: async ({ user }, input) => {
     const client = new LegiscanClient(user.settings.providers!.legiscan.apiKey as string);
     const sessions = await client.getSessionList({ state: input.state });
-    return sessions.slice(0, 5).map((session) => ({
-      id: session.session_id,
-      title: session.session_title,
-      adjourned: session.sine_die,
-    }));
+    return [
+      {
+        type: 'json',
+        value: sessions.slice(0, 5).map((session) => ({
+          id: session.session_id,
+          title: session.session_title,
+          adjourned: session.sine_die,
+        })),
+      },
+    ];
   },
 };
 
@@ -60,22 +65,27 @@ const ListBills: Tool<typeof zListBillsInput, typeof zListBillsOutput> = {
   run: async ({ user }, input) => {
     const client = new LegiscanClient(user.settings.providers!.legiscan.apiKey as string);
     const bills = await client.getMasterList({ session: input.session });
-    return bills
-      .filter((bill) => {
-        if (input.include === 'pendingVote')
-          return bill.status === 'Introduced' || bill.status === 'Engrossed';
-        if (input.include === 'pendingSignature') return bill.status === 'Enrolled';
-        if (input.include === 'complete')
-          return bill.status === 'Passed' || bill.status === 'Vetoed';
-      })
-      .map((bill) => ({
-        id: bill.bill_id,
-        title: bill.title,
-        description: bill.description,
-        status: bill.status,
-        last_action: bill.last_action,
-        last_action_date: bill.last_action_date,
-      }));
+    return [
+      {
+        type: 'json',
+        value: bills
+          .filter((bill) => {
+            if (input.include === 'pendingVote')
+              return bill.status === 'Introduced' || bill.status === 'Engrossed';
+            if (input.include === 'pendingSignature') return bill.status === 'Enrolled';
+            if (input.include === 'complete')
+              return bill.status === 'Passed' || bill.status === 'Vetoed';
+          })
+          .map((bill) => ({
+            id: bill.bill_id,
+            title: bill.title,
+            description: bill.description,
+            status: bill.status,
+            last_action: bill.last_action,
+            last_action_date: bill.last_action_date,
+          })),
+      },
+    ];
   },
 };
 
@@ -112,19 +122,24 @@ const ViewBill: Tool<typeof zViewBillInput, typeof zViewBillOutput> = {
   run: async ({ user }, input) => {
     const client = new LegiscanClient(user.settings.providers!.legiscan.apiKey as string);
     const bill = await client.getBill({ id: input.bill });
-    return {
-      title: bill.title,
-      description: bill.description,
-      status: bill.status,
-      history: bill.history.map((item) => ({
-        action: item.action,
-        date: item.date,
-      })),
-      sponsors: bill.sponsors.map((sponsor) => ({
-        name: sponsor.name,
-        party: sponsor.party,
-      })),
-    };
+    return [
+      {
+        type: 'json',
+        value: {
+          title: bill.title,
+          description: bill.description,
+          status: bill.status,
+          history: bill.history.map((item) => ({
+            action: item.action,
+            date: item.date,
+          })),
+          sponsors: bill.sponsors.map((sponsor) => ({
+            name: sponsor.name,
+            party: sponsor.party,
+          })),
+        },
+      },
+    ];
   },
 };
 

@@ -3,9 +3,9 @@ import { query } from '@/utils/api';
 import { Icon } from '@iconify/react';
 import { ActionIcon, Group, ScrollArea, Stack, Text } from '@mantine/core';
 import { format } from 'timeago.js';
-import Attachments from './Attachments';
+import FileThumbnails from './FileThumbnails.tsx';
 import { useSentinel } from '@/core/hooks/useSentinel';
-import { glassStyle } from '@/utils/glass';
+import { GLASS_STYLE } from '@/utils/theme';
 import Dropzone from '@/features/input/components/Dropzone';
 import { useUploads } from '../hooks/useUploads';
 import Sentinel from '@/core/components/Sentinel';
@@ -13,24 +13,24 @@ import Sentinel from '@/core/components/Sentinel';
 export function UploadFile({ onClose }: { onClose: () => void }) {
   const addUploads = useMessagingStore((s) => s.addUploads);
 
-  const { fileUploads, deleteUpload } = useUploads();
+  const { attachmentUploads, deleteUpload } = useUploads();
 
   const { viewportRef, sentinelRef } = useSentinel({
-    query: fileUploads,
+    query: attachmentUploads,
     queryKey: query.input.listUploads.pathKey(),
   });
 
   return (
     <Stack h="100%">
-      <Dropzone type="upload" />
+      <Dropzone type="ATTACHMENT" />
       <ScrollArea h={300} viewportRef={viewportRef}>
         <Stack gap="xs">
-          {fileUploads.data?.pages.flatMap((page) => page.uploads).length === 0 && (
+          {attachmentUploads.data?.pages.flatMap((page) => page.uploads).length === 0 && (
             <Text size="sm" c="dimmed" ta="center" py="xl">
               No recent uploads
             </Text>
           )}
-          {fileUploads.data?.pages
+          {attachmentUploads.data?.pages
             .flatMap((page) => page.uploads)
             .map((file) => (
               <Group
@@ -38,7 +38,7 @@ export function UploadFile({ onClose }: { onClose: () => void }) {
                 justify="space-between"
                 p="xs"
                 bdrs="lg"
-                style={{ ...glassStyle, cursor: 'pointer' }}
+                style={{ ...GLASS_STYLE, cursor: 'pointer' }}
                 onClick={() => {
                   addUploads({
                     type: 'upload',
@@ -50,7 +50,7 @@ export function UploadFile({ onClose }: { onClose: () => void }) {
                 }}
               >
                 <Group gap="sm" style={{ minWidth: 0, flex: 1 }}>
-                  <Attachments list={[{ name: file.name, image: file.thumbnail ?? undefined }]} />
+                  <FileThumbnails list={[{ name: file.name, image: file.thumbnail ?? undefined }]} />
                   <Stack gap={0} style={{ minWidth: 0, flex: 1 }}>
                     <Text
                       size="sm"
@@ -73,16 +73,16 @@ export function UploadFile({ onClose }: { onClose: () => void }) {
                   color="red"
                   onClick={(e) => {
                     e.stopPropagation();
-                    void deleteUpload.mutate(file.id);
+                    void deleteUpload.mutate({ id: file.id });
                   }}
-                  loading={deleteUpload.isPending && deleteUpload.variables === file.id}
-                  disabled={deleteUpload.isPending && deleteUpload.variables === file.id}
+                  loading={deleteUpload.isPending && deleteUpload.variables.id === file.id}
+                  disabled={deleteUpload.isPending && deleteUpload.variables.id === file.id}
                 >
                   <Icon icon="lucide:trash" height={16} />
                 </ActionIcon>
               </Group>
             ))}
-          <Sentinel isFetching={fileUploads.isFetching} ref={sentinelRef} />
+          <Sentinel isFetching={attachmentUploads.isFetching} ref={sentinelRef} />
         </Stack>
       </ScrollArea>
     </Stack>

@@ -2,10 +2,9 @@ import { ActionIcon, Burger, Group, Tooltip } from '@mantine/core';
 import { Icon } from '@iconify/react';
 import { useLayoutStore } from '@/core/stores/useLayoutStore';
 import { useChat } from '../hooks/useChat';
-import { glassStyle } from '@/utils/glass';
 import { useChatStore } from '../stores/useChatStore';
 import { ChatService } from '../services/ChatService';
-import { SHADOW } from '@/utils/theme';
+import { GLASS_STYLE, SHADOW } from '@/utils/theme.ts';
 
 export default function ChatHeader({ fixed }: { fixed: boolean }) {
   const { chat } = useChat();
@@ -32,7 +31,7 @@ export default function ChatHeader({ fixed }: { fixed: boolean }) {
       display={isMobile ? undefined : 'none'}
       style={{
         zIndex: 'calc(var(--mantine-z-index-app) + 1)',
-        ...glassStyle,
+        ...GLASS_STYLE,
         borderTop: 'none',
         borderLeft: 'none',
         borderRight: 'none',

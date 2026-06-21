@@ -6,9 +6,8 @@ import Sidebar from '@/core/components/Sidebar';
 import { useLayoutStore } from '@/core/stores/useLayoutStore';
 import { auth, trpc } from '@/utils/api';
 import { useViewport } from '@/utils/ui';
-import { SHADOW } from '@/utils/theme';
+import { GLASS_STYLE, SHADOW } from '@/utils/theme';
 import { cssResolver, theme as mantineTheme } from '@/theme.tsx';
-import { glassStyle } from '@/utils/glass';
 import { ModalsProvider } from '@mantine/modals';
 import Tauri from '@/core/components/Tauri';
 import { setHashbang, useHashbang } from '../hooks/useHashbang';
@@ -16,6 +15,7 @@ import Background from '@/core/components/Background';
 import { useChatStore } from '@/features/chat/stores/useChatStore';
 import { useThemes } from '@/features/settings/hooks/useThemes';
 import { useChat } from '@/features/chat/hooks/useChat';
+import ChatFiles from '@/features/chat/components/ChatFiles.tsx';
 
 export default function App() {
   const mobile = useLayoutStore((s) => s.mobile);
@@ -24,6 +24,8 @@ export default function App() {
   const drawerCloser = useLayoutStore((s) => s.drawerCloser);
   const isSidebarOpen = useLayoutStore((s) => s.isSidebarOpen);
   const setSidebarOpen = useLayoutStore((s) => s.setSidebarOpen);
+  const isAsideOpen = useLayoutStore((s) => s.isAsideOpen);
+  const setAsideOpen = useLayoutStore((s) => s.setAsideOpen);
   const getSidebarWidth = useLayoutStore((s) => s.getSidebarWidth);
   const isInitializing = useLayoutStore((s) => s.isInitializing);
   const setInitializing = useLayoutStore((s) => s.setInitializing);
@@ -85,6 +87,16 @@ export default function App() {
     { axis: 'x', filterTaps: true },
   );
 
+  const asideDragOpen = useDrag(
+    ({ movement: [movementX], direction: [directionX], cancel }) => {
+      if (movementX < -50 && directionX < 0 && !totalGestureBlocks) {
+        setAsideOpen(true);
+        cancel();
+      }
+    },
+    { axis: 'x', filterTaps: true },
+  );
+
   const navbarDragClose = useDrag(
     ({ movement: [movementX], direction: [directionX], cancel }) => {
       if (movementX < -50 && directionX < 0) {
@@ -95,6 +107,17 @@ export default function App() {
           return;
         }
         setSidebarOpen(false);
+        cancel();
+      }
+    },
+    { axis: 'x', filterTaps: true },
+  );
+
+  const asideDragClose = useDrag(
+    ({ movement: [movementX], direction: [directionX], cancel }) => {
+      if (movementX > 50 && directionX > 0) {
+        if (totalGestureBlocks) return; // modal open – block completely
+        setAsideOpen(false);
         cancel();
       }
     },
@@ -128,6 +151,11 @@ export default function App() {
               breakpoint: mobile,
               collapsed: { desktop: false, mobile: !isSidebarOpen },
             }}
+            aside={{
+              width: 300,
+              breakpoint: mobile,
+              collapsed: { desktop: !isAsideOpen, mobile: !isAsideOpen },
+            }}
             style={{
               height: `${viewportHeight}px`,
               maxHeight: `${viewportHeight}px`,
@@ -138,8 +166,15 @@ export default function App() {
               navbar: {
                 zIndex: 'calc(var(--mantine-z-index-app) + 2)',
                 transition: 'width 250ms ease, min-width 250ms ease, transform 300ms ease',
-                ...glassStyle,
+                ...GLASS_STYLE,
                 borderLeft: 'none',
+                borderBottom: 'none',
+                borderTop: 'none',
+              },
+              aside: {
+                zIndex: 'calc(var(--mantine-z-index-app) + 2)',
+                ...GLASS_STYLE,
+                borderRight: 'none',
                 borderBottom: 'none',
                 borderTop: 'none',
               },
@@ -160,6 +195,19 @@ export default function App() {
                 touchAction: 'none',
               }}
             ></div>
+            <div
+              {...asideDragOpen()}
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                bottom: 0,
+                width: 15,
+                zIndex: 'var(--mantine-z-index-max)',
+                touchAction: 'none',
+              }}
+            ></div>
+
             {isSidebarOpen && isMobile && (
               <Overlay
                 opacity={1}
@@ -191,6 +239,17 @@ export default function App() {
             >
               <Chat />
             </AppShell.Main>
+            <AppShell.Aside
+              {...asideDragClose()}
+              p={10}
+              style={{
+                boxShadow: isSidebarOpen || !isMobile ? SHADOW : '',
+                touchAction: 'pan-y',
+                fontWeight: 450,
+              }}
+            >
+              <ChatFiles />
+            </AppShell.Aside>
           </AppShell>
         </Box>
         <Box

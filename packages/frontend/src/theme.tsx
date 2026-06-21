@@ -1,5 +1,5 @@
 import { createTheme, CSSVariablesResolver, MantineColorsTuple } from '@mantine/core';
-import { glassStyle } from './utils/glass';
+import { GLASS_STYLE } from './utils/theme.ts';
 
 export const darkPalette: MantineColorsTuple = [
   '#C4C6CF', // [0]  near-white text — very slightly cool
@@ -42,7 +42,7 @@ export const theme = createTheme({
         },
         content: {
           borderRadius: 0,
-          ...glassStyle,
+          ...GLASS_STYLE,
         },
       },
     },

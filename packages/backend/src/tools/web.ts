@@ -18,7 +18,7 @@ export const zSearchWebOutput = z.array(
 );
 export type zSearchWebOutput = z.infer<typeof zSearchWebOutput>;
 
-const SearchWeb: Tool<typeof zSearchWebInput, typeof zSearchWebOutput> = {
+export const SearchWeb: Tool<typeof zSearchWebInput, typeof zSearchWebOutput> = {
   name: 'search_web',
   description: 'Search the web.',
   input: zSearchWebInput.toJSONSchema(),
@@ -28,10 +28,15 @@ const SearchWeb: Tool<typeof zSearchWebInput, typeof zSearchWebOutput> = {
   },
   run: async ({ user }, input) => {
     const results = await getBestWebProvider(user, 'search').search(user, input.query, 5);
-    return results.map((r) => ({
-      ...r,
-      id: createHash('sha256').update(r.source).digest('hex').slice(0, 6),
-    }));
+    return [
+      {
+        type: 'json',
+        value: results.map((r) => ({
+          ...r,
+          id: createHash('sha256').update(r.source).digest('hex').slice(0, 6),
+        })),
+      },
+    ];
   },
 };
 
@@ -52,7 +57,7 @@ const ViewWeb: Tool<typeof zViewWebInput, typeof zViewWebOutput> = {
     try {
       const provider = getBestWebProvider(user, 'view');
       const content = await provider.view(user, params.url);
-      return { url: params.url, content };
+      return [{ type: 'json', value: { url: params.url, content } }];
     } catch (error) {
       console.warn(`Failed to view ${params.url} with provider, falling back to r.jina.ai:`, error);
       const response = await fetch(`https://r.jina.ai/${params.url}`);
@@ -61,7 +66,7 @@ const ViewWeb: Tool<typeof zViewWebInput, typeof zViewWebOutput> = {
         console.error({ status: response.status, url: params.url, text });
         throw new Error('Failed to fetch webpage content from r.jina.ai', { cause: error });
       }
-      return { url: params.url, content: text };
+      return [{ type: 'json', value: { url: params.url, content: text } }];
     }
   },
 };

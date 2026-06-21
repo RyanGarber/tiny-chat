@@ -1,13 +1,11 @@
 import { Box, Group, Stack } from '@mantine/core';
 import { useElementSize } from '@mantine/hooks';
-import { MessageState } from '@tiny-chat/shared/src/types/chat.ts';
+import { Author, MessageState } from '@tiny-chat/shared/src/types/chat.ts';
 import { texts } from '@tiny-chat/shared/src/utils.ts';
 import { MessageBodyContent } from '@/features/message/components/MessageBodyContent';
-import { Author } from '@tiny-chat/backend/generated/prisma/enums.ts';
 import { useMessageStream } from '@/features/message/hooks/useStreaming';
 import { CSSProperties, memo } from 'react';
-import { glassStyle } from '@/utils/glass';
-import { SHADOW } from '@/utils/theme';
+import { GLASS_STYLE, SHADOW } from '@/utils/theme.ts';
 
 const MessageBody = memo(
   function MessageBody({ message, style }: { message: MessageState; style?: CSSProperties }) {
@@ -28,7 +26,7 @@ const MessageBody = memo(
                 px={20}
                 py={10}
                 bdrs={20}
-                style={{ boxShadow: SHADOW, alignSelf: 'flex-end', ...glassStyle }}
+                style={{ boxShadow: SHADOW, alignSelf: 'flex-end', ...GLASS_STYLE }}
               >
                 <MessageBodyContent message={message} containerWidth={containerWidth} />
               </Box>

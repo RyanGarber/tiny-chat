@@ -97,7 +97,7 @@ export const useSend = () => {
 
       const changed = !editing || texts(message.data).trim() !== texts(editing.data).trim();
       if (texts(message.data).trim().length && changed && embeddingConfig.data) {
-        const provider = (await ProviderService.getChatProviders()).find(
+        const provider = (await ProviderService.getChatProviders(session.data!.user)).find(
           (p) => p.name === embeddingConfig.data!.provider,
         );
         if (provider) {

@@ -1,10 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { tRPCRouter } from '@tiny-chat/backend/src/routes/index.ts';
+import type { tRPCRouter } from '@tiny-chat/backend/src/routes/index.ts';
 import { createTRPCClient, httpLink } from '@trpc/client';
 import { createAuthClient } from 'better-auth/react';
 import { anonymousClient, inferAdditionalFields } from 'better-auth/client/plugins';
 import superjson from 'superjson';
-import { auth as serverAuth } from '@tiny-chat/backend/src/services/auth.ts';
+import type { auth as serverAuth } from '@tiny-chat/backend/src/services/auth.ts';
 import { QueryClient } from '@tanstack/react-query';
 import { createTRPCOptionsProxy } from '@trpc/tanstack-react-query';
 
@@ -88,4 +87,16 @@ export async function isTauriDesktop() {
   if (!isTauri()) return false;
   const { type } = await import('@tauri-apps/plugin-os');
   return ['linux', 'macos', 'windows'].includes(type());
+}
+
+export async function openExternal(url: string) {
+  console.log(`Opening link externally: ${url}`);
+
+  if (isTauri()) {
+    const { openUrl } = await import('@tauri-apps/plugin-opener');
+    await openUrl(url);
+    return;
+  } else {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
 }

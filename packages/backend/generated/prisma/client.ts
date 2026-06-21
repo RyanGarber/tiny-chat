@@ -96,8 +96,3 @@ export type Upload = Prisma.UploadModel
  * 
  */
 export type File = Prisma.FileModel
-/**
- * Model Skill
- * 
- */
-export type Skill = Prisma.SkillModel

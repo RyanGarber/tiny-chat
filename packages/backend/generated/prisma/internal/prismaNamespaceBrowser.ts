@@ -61,8 +61,7 @@ export const ModelName = {
   Memory: 'Memory',
   Action: 'Action',
   Upload: 'Upload',
-  File: 'File',
-  Skill: 'Skill'
+  File: 'File'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -90,6 +89,7 @@ export const UserScalarFieldEnum = {
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   isAnonymous: 'isAnonymous',
+  isEphemeral: 'isEphemeral',
   settings: 'settings',
   cache: 'cache'
 } as const
@@ -221,7 +221,8 @@ export const UploadScalarFieldEnum = {
   userId: 'userId',
   name: 'name',
   createdAt: 'createdAt',
-  thumbnail: 'thumbnail'
+  thumbnail: 'thumbnail',
+  type: 'type'
 } as const
 
 export type UploadScalarFieldEnum = (typeof UploadScalarFieldEnum)[keyof typeof UploadScalarFieldEnum]
@@ -235,19 +236,10 @@ export const FileScalarFieldEnum = {
   mime: 'mime',
   data: 'data',
   createdAt: 'createdAt',
-  skillId: 'skillId'
+  chatId: 'chatId'
 } as const
 
 export type FileScalarFieldEnum = (typeof FileScalarFieldEnum)[keyof typeof FileScalarFieldEnum]
-
-
-export const SkillScalarFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  createdAt: 'createdAt'
-} as const
-
-export type SkillScalarFieldEnum = (typeof SkillScalarFieldEnum)[keyof typeof SkillScalarFieldEnum]
 
 
 export const SortOrder = {

@@ -3,9 +3,10 @@ import { MemoryCategory, MemoryStability } from '../../generated/prisma/enums.ts
 import { createId } from '@paralleldrive/cuid2';
 import type { Tool, ToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
 import { searchMemories } from '../routes/context.ts';
-import type { MemorySearchResult } from '@tiny-chat/shared/src/types/chat.ts';
+import type { ChatSearchResult, MemorySearchResult } from '@tiny-chat/shared/src/types/chat.ts';
+import { scrubText, snippetText, texts } from '@tiny-chat/shared/src/utils.ts';
 
-const zAddMemoryInput = z.object({
+export const zAddMemoryInput = z.object({
   fact: z.string().describe('The fact about the user.'),
   category: z.enum(MemoryCategory).describe('The category the fact belongs to.'),
   stability: z.enum(MemoryStability).describe('How long the fact is expected to remain true.'),
@@ -18,12 +19,12 @@ const zAddMemoryInput = z.object({
 });
 export type zAddMemoryInput = z.infer<typeof zAddMemoryInput>;
 
-const zAddMemoryOutput = z.object({
+export const zAddMemoryOutput = z.object({
   created_memory_id: z.cuid2(),
 });
 export type zAddMemoryOutput = z.infer<typeof zAddMemoryOutput>;
 
-const AddMemory: Tool<typeof zAddMemoryInput, typeof zAddMemoryOutput> = {
+export const AddMemory: Tool<typeof zAddMemoryInput, typeof zAddMemoryOutput> = {
   name: 'add_memory',
   description: 'Remember a fact about the user.',
   input: zAddMemoryInput.toJSONSchema(),
@@ -49,11 +50,11 @@ const AddMemory: Tool<typeof zAddMemoryInput, typeof zAddMemoryOutput> = {
       },
     });
 
-    return { created_memory_id: memory.id };
+    return [{ type: 'json', value: { created_memory_id: memory.id } }];
   },
 };
 
-const zUpdateMemoryInput = z.object({
+export const zUpdateMemoryInput = z.object({
   id: z.cuid2().describe('The ID of the memory to update.'),
   fact: z.string().describe('The revised fact about the user.'),
   category: z.enum(MemoryCategory).describe('The category this fact belongs to.'),
@@ -67,12 +68,12 @@ const zUpdateMemoryInput = z.object({
 });
 export type zUpdateMemoryInput = z.infer<typeof zUpdateMemoryInput>;
 
-const zUpdateMemoryOutput = z.object({
+export const zUpdateMemoryOutput = z.object({
   updated_memory_id: z.cuid2(),
 });
 export type zUpdateMemoryOutput = z.infer<typeof zUpdateMemoryOutput>;
 
-const UpdateMemory: Tool<typeof zUpdateMemoryInput, typeof zUpdateMemoryOutput> = {
+export const UpdateMemory: Tool<typeof zUpdateMemoryInput, typeof zUpdateMemoryOutput> = {
   name: 'update_memory',
   description: 'Update an existing memory with a revised fact.',
   input: zUpdateMemoryInput.toJSONSchema(),
@@ -81,12 +82,8 @@ const UpdateMemory: Tool<typeof zUpdateMemoryInput, typeof zUpdateMemoryOutput> 
     notIncognito: true,
   },
   run: async ({ user }, input) => {
-    const memory = await globalThis.prisma.$transaction(async (tx) => {
-      await tx.memory.delete({
-        where: { id: input.id, userId: user.id },
-      });
-
-      return tx.memory.update({
+    const memory = await globalThis.prisma.$transaction([
+      globalThis.prisma.memory.update({
         where: {
           id: input.id,
           userId: user.id,
@@ -98,14 +95,16 @@ const UpdateMemory: Tool<typeof zUpdateMemoryInput, typeof zUpdateMemoryOutput> 
           evidence: typeof input.evidence === 'string' ? [input.evidence] : input.evidence,
           confidence: input.confidence,
         },
-      });
-    });
+      }),
+      globalThis.prisma
+        .$executeRaw`UPDATE memory SET embedding = NULL WHERE id = ${input.id} AND "userId" = ${user.id}`,
+    ]);
 
-    return { updated_memory_id: memory.id };
+    return [{ type: 'json', value: { updated_memory_id: memory[0].id } }];
   },
 };
 
-const zDeleteMemoryInput = z.object({
+export const zDeleteMemoryInput = z.object({
   id: z.cuid2().describe('The ID of the memory to delete.'),
   reason: z
     .string()
@@ -115,12 +114,12 @@ const zDeleteMemoryInput = z.object({
 });
 export type zDeleteMemoryInput = z.infer<typeof zDeleteMemoryInput>;
 
-const zDeleteMemoryOutput = z.object({
+export const zDeleteMemoryOutput = z.object({
   deleted_memory_id: z.cuid2(),
 });
 export type zDeleteMemoryOutput = z.infer<typeof zDeleteMemoryOutput>;
 
-const DeleteMemory: Tool<typeof zDeleteMemoryInput, typeof zDeleteMemoryOutput> = {
+export const DeleteMemory: Tool<typeof zDeleteMemoryInput, typeof zDeleteMemoryOutput> = {
   name: 'delete_memory',
   description:
     'Delete an existing memory because the previously stored fact is no longer relevant or accurate.',
@@ -134,7 +133,7 @@ const DeleteMemory: Tool<typeof zDeleteMemoryInput, typeof zDeleteMemoryOutput> 
       where: { id: input.id, userId: user.id },
     });
 
-    return { deleted_memory_id: input.id };
+    return [{ type: 'json', value: { deleted_memory_id: input.id } }];
   },
 };
 
@@ -154,7 +153,7 @@ export const zSearchMemoryOutput = z.array(
 );
 export type zSearchMemoryOutput = z.infer<typeof zSearchMemoryOutput>;
 
-const SearchMemory: Tool<typeof zSearchMemoryInput, typeof zSearchMemoryOutput> = {
+export const SearchMemory: Tool<typeof zSearchMemoryInput, typeof zSearchMemoryOutput> = {
   name: 'search_memory',
   description: 'Search all stored memories.',
   input: zSearchMemoryInput.toJSONSchema(),
@@ -182,18 +181,80 @@ const SearchMemory: Tool<typeof zSearchMemoryInput, typeof zSearchMemoryOutput> 
       }
     }
 
-    return result.map((r) => ({
-      fact: r.fact,
-      category: r.category,
-      stability: r.stability,
-      createdAt: r.createdAt.toISOString(),
-    }));
+    return [
+      {
+        type: 'json',
+        value: result.map((r) => ({
+          fact: r.fact,
+          category: r.category,
+          stability: r.stability,
+          createdAt: r.createdAt.toISOString(),
+        })),
+      },
+    ];
+  },
+};
+
+export const zSearchChatsInput = z.object({
+  query: z.string(),
+  mode: z.enum(['semantic', 'regex']),
+});
+export type zSearchChatsInput = z.infer<typeof zSearchChatsInput>;
+
+export const zSearchChatsOutput = z.array(
+  z.object({
+    author: z.string(),
+    chatTitle: z.string().nullable(),
+    snippet: z.string(),
+    createdAt: z.iso.datetime(),
+  }),
+);
+export type zSearchChatsOutput = z.infer<typeof zSearchChatsOutput>;
+
+export const SearchChats: Tool<typeof zSearchChatsInput, typeof zSearchChatsOutput> = {
+  name: 'search_chats',
+  description: 'Search for messages across all chats.',
+  input: zSearchChatsInput.toJSONSchema(),
+  output: zSearchChatsOutput.toJSONSchema(),
+  requirements: {
+    embeddings: true,
+    notIncognito: true,
+  },
+  run: async ({ user, callbacks }, input) => {
+    let result: ChatSearchResult[] = [];
+    if (input.mode === 'semantic') {
+      const embedding = await callbacks.embed(input.query);
+      result = await callbacks.searchChats(input.query, embedding ?? undefined);
+    } else if (input.mode === 'regex') {
+      result = await globalThis.prisma.$queryRaw<ChatSearchResult[]>`
+        SELECT
+          m.id AS id,
+          m."chatId" as chatId,
+          m."author" as author,
+          m."data" as data,
+          m."createdAt" as "createdAt",
+          c.title as "chatTitle"
+        FROM message m
+        LEFT JOIN chat c ON m."chatId" = c."id"
+       WHERE m."data" ~ ${input.query} AND m."userId" = ${user.id}`;
+    }
+    return [
+      {
+        type: 'json',
+        value: result.map((r) => ({
+          author: r.author,
+          chatTitle: r.chatTitle,
+          snippet: snippetText(scrubText(texts(r.data)), input.query, 1000),
+          createdAt: r.createdAt.toISOString(),
+        })),
+      },
+    ];
   },
 };
 
 export const memories: ToolGroup = {
   name: 'memories',
-  tools: [AddMemory, UpdateMemory, DeleteMemory, SearchMemory],
+  tools: [AddMemory, UpdateMemory, DeleteMemory, SearchMemory, SearchChats],
   instructions: {
     heading: 'Memories',
     body: `Any time the user shares information that could improve future chats, store it as memory, even if it was only mentioned once.

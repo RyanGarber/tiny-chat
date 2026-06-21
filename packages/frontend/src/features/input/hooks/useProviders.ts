@@ -2,7 +2,7 @@ import { queryClient } from '@/utils/api';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { auth } from '../../../utils/api';
 import { ProviderService } from '@/features/provider/services/ProviderService';
-import { zCache } from '@tiny-chat/shared/src/types/user';
+import type { zCache } from '@tiny-chat/shared/src/types/user';
 
 export const providerCacheQueryKey = ['cache', 'providers'] as const;
 export const providerCacheMutationKey = ['cache', 'providers'] as const;

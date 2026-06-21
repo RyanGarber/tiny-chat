@@ -4,7 +4,7 @@ import { BaseEditor, Editor, Transforms } from 'slate';
 import { ReactEditor } from 'slate-react';
 import { HistoryEditor } from 'slate-history';
 import { deserialize } from '@/features/slate/serializer';
-import { type zData, type zDataPart, type MessageState } from '@tiny-chat/shared/src/types/chat.ts';
+import { type MessageState, type zData, type zDataPart } from '@tiny-chat/shared/src/types/chat.ts';
 import { texts } from '@tiny-chat/shared/src/utils.ts';
 import { useConfigStore } from '@/features/input/stores/useConfigStore';
 
@@ -19,7 +19,7 @@ interface MessagingStore {
   setData: (data: zData) => void;
 
   uploads: Upload[];
-  addUploads: (...files: Upload[]) => void;
+  addUploads: (...uploads: Upload[]) => void;
   removeUpload: (index: number) => void;
 
   addQuote: (message: MessageState, content: string) => void;

@@ -1,3 +1,5 @@
+const EXCLUDE_FILES = ['__MACOSX/', '.DS_Store', 'Thumbs.db'];
+
 const EXCLUDE_FILES_ADDITIONAL = [
   // 1. Version Control & Git
   '.git/',
@@ -134,8 +136,6 @@ const EXCLUDE_FILES_ADDITIONAL = [
   '.chm',
   '.unitypackage',
 ];
-
-const EXCLUDE_FILES = ['__MACOSX/', '.DS_Store', 'Thumbs.db'];
 
 export function shouldIncludeFile(path: string, excludeAdditional = true): boolean {
   return (

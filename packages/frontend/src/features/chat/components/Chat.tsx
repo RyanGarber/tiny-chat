@@ -15,13 +15,13 @@ import { useGreeting } from '@/core/hooks/useGreeting';
 import { useSentinel } from '@/core/hooks/useSentinel';
 import { useMergedRef } from '@mantine/hooks';
 import { useChatStore } from '@/features/chat/stores/useChatStore';
-import { query } from '@/utils/api';
+import { query } from '@/utils/api.ts';
 import { useIsMutating } from '@tanstack/react-query';
 import { deleteMessageMutationKey, sendMessageMutationKey } from '../hooks/useMessaging';
 import { uploadMutationKey } from '@/features/input/hooks/useUploads';
-import { isMissingToolResult } from '@/utils/ui';
+import { isMissingToolResult } from '@/utils/data.ts';
 import Sentinel from '@/core/components/Sentinel';
-import { SHADOW } from '@/utils/theme';
+import { SHADOW } from '@/utils/theme.ts';
 
 function useElementHeight(initialHeight = 0): {
   ref: RefObject<HTMLDivElement | null>;

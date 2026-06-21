@@ -5,14 +5,16 @@ import { zConfig, zData } from '@tiny-chat/shared/src/types/chat.ts';
 import type { Tool, ToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
 import { getNextRunAt, texts } from '@tiny-chat/shared/src/utils.ts';
 
-const zAddActionInput = z.object({
+export const zAddActionInput = z.object({
   prompt: z.string().describe('The prompt to send when the action runs.'),
   schedule: z.string().describe('An RRule (RFC 5545) schedule. Do not convert - use local time.'),
 });
+export type zAddActionInput = z.infer<typeof zAddActionInput>;
 
-const zAddActionOutput = z.object({
+export const zAddActionOutput = z.object({
   created_action_id: z.cuid2(),
 });
+export type zAddActionOutput = z.infer<typeof zAddActionOutput>;
 
 const AddAction: Tool<typeof zAddActionInput, typeof zAddActionOutput> = {
   name: 'add_action',
@@ -24,14 +26,13 @@ const AddAction: Tool<typeof zAddActionInput, typeof zAddActionOutput> = {
     notIncognito: true,
   },
   run: async ({ chat, generation }, input) => {
-    if (!chat) throw new Error('Cannot use tool in this context');
     const schedule = toUTC(input.schedule, generation.timezone);
     const action = await globalThis.prisma.action.create({
       data: {
         id: createId(),
-        user: { connect: { id: chat.userId } },
-        folder: { connect: { id: chat.folderId } },
-        chat: { connect: { id: chat.id } },
+        user: { connect: { id: chat!.userId } },
+        folder: { connect: { id: chat!.folderId } },
+        chat: { connect: { id: chat!.id } },
         message: { connect: { id: generation.context[generation.context.length - 1].id! } },
         config: generation.config,
         data: [[{ type: 'text', value: input.prompt }]] satisfies zData,
@@ -39,19 +40,21 @@ const AddAction: Tool<typeof zAddActionInput, typeof zAddActionOutput> = {
         timezone: generation.timezone,
       },
     });
-    return { created_action_id: action.id };
+    return [{ type: 'json', value: { created_action_id: action.id } }];
   },
 };
 
-const zUpdateActionInput = z.object({
+export const zUpdateActionInput = z.object({
   id: z.cuid2().describe('The ID of the action to update.'),
   prompt: z.string().describe('The prompt to send when the action runs.'),
   schedule: z.string().describe('An RRule (RFC 5545) schedule. Do not convert - use local time.'),
 });
+export type zUpdateActionInput = z.infer<typeof zUpdateActionInput>;
 
-const zUpdateActionOutput = z.object({
+export const zUpdateActionOutput = z.object({
   updated_action_id: z.cuid2(),
 });
+export type zUpdateActionOutput = z.infer<typeof zUpdateActionOutput>;
 
 const UpdateAction: Tool<typeof zUpdateActionInput, typeof zUpdateActionOutput> = {
   name: 'update_action',
@@ -63,28 +66,35 @@ const UpdateAction: Tool<typeof zUpdateActionInput, typeof zUpdateActionOutput> 
   },
   run: async ({ user, generation }, input) => {
     const schedule = toUTC(input.schedule, generation.timezone);
-    const action = await globalThis.prisma.action.update({
-      where: {
-        id: input.id,
-        userId: user.id,
-      },
-      data: {
-        data: [[{ type: 'text', value: input.prompt }]] satisfies zData,
-        schedule,
-        timezone: generation.timezone,
-      },
-    });
-    return { updated_action_id: action.id };
+    const action = await globalThis.prisma.$transaction([
+      globalThis.prisma.action.update({
+        where: {
+          id: input.id,
+          userId: user.id,
+        },
+        data: {
+          data: [[{ type: 'text', value: input.prompt }]] satisfies zData,
+          schedule,
+          timezone: generation.timezone,
+        },
+      }),
+      globalThis.prisma
+        .$executeRaw`UPDATE action SET embedding = NULL WHERE id = ${input.id} AND "userId" = ${user.id}`,
+    ]);
+    return [{ type: 'json', value: { updated_action_id: action[0].id } }];
   },
 };
 
-const zDeleteActionInput = z.object({
+export const zDeleteActionInput = z.object({
   id: z.cuid2().describe('The ID of the action to delete.'),
+  reason: z.cuid2().describe('The reason for deleting the action.'),
 });
+export type zDeleteActionInput = z.infer<typeof zDeleteActionInput>;
 
-const zDeleteActionOutput = z.object({
+export const zDeleteActionOutput = z.object({
   deleted_action_id: z.cuid2(),
 });
+export type zDeleteActionOutput = z.infer<typeof zDeleteActionOutput>;
 
 const DeleteAction: Tool<typeof zDeleteActionInput, typeof zDeleteActionOutput> = {
   name: 'delete_action',
@@ -98,25 +108,28 @@ const DeleteAction: Tool<typeof zDeleteActionInput, typeof zDeleteActionOutput> 
     await globalThis.prisma.action.delete({
       where: { id: input.id, userId: user.id },
     });
-    return { deleted_action_id: input.id };
+    return [{ type: 'json', value: { deleted_action_id: input.id } }];
   },
 };
 
-const zListActionsInput = z.object({
+export const zListActionsInput = z.object({
   active_only: z
     .boolean()
     .default(true)
     .describe('Only list actions that are scheduled to run again.'),
 });
+export type zListActionsInput = z.infer<typeof zListActionsInput>;
 
-const zListActionsOutput = z.array(
+export const zListActionsOutput = z.array(
   z.object({
     id: z.cuid2(),
     chatId: z.cuid2(),
     config: zConfig,
+    schedule: z.string(),
     prompt: z.string(),
   }),
 );
+export type zListActionsOutput = z.infer<typeof zListActionsOutput>;
 
 const ListActions: Tool<typeof zListActionsInput, typeof zListActionsOutput> = {
   name: 'list_actions',
@@ -127,23 +140,29 @@ const ListActions: Tool<typeof zListActionsInput, typeof zListActionsOutput> = {
     notIncognito: true,
   },
   run: async ({ user }, input) => {
-    return (
-      await globalThis.prisma.action.findMany({
-        where: { userId: user.id },
-      })
-    )
-      .filter((action) => !input.active_only || getNextRunAt(action))
-      .map((action) => ({
-        id: action.id,
-        chatId: action.chatId,
-        config: zConfig.parse(action.config),
-        prompt: texts(zData.parse(action.data)),
-      }));
+    return [
+      {
+        type: 'json',
+        value: (
+          await globalThis.prisma.action.findMany({
+            where: { userId: user.id },
+          })
+        )
+          .filter((action) => !input.active_only || getNextRunAt(action))
+          .map((action) => ({
+            id: action.id,
+            chatId: action.chatId,
+            config: zConfig.parse(action.config),
+            schedule: action.schedule,
+            prompt: texts(zData.parse(action.data)),
+          })),
+      },
+    ];
   },
 };
 
 export const actions: ToolGroup = {
-  name: 'action',
+  name: 'actions',
   tools: [AddAction, UpdateAction, DeleteAction, ListActions],
   instructions: {
     heading: 'Actions',

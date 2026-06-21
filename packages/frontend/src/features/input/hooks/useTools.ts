@@ -15,7 +15,7 @@ export const useTools = () => {
   const { data: mcpServerSettingsData } = mcpServerSettings;
 
   const builtInTools = useQuery({
-    ...query.context.listTools.queryOptions(),
+    ...query.input.listTools.queryOptions(),
     select: (data) => [
       ...frontend,
       ...shared,
@@ -25,7 +25,7 @@ export const useTools = () => {
           (t): Tool<z.ZodAny, z.ZodAny, z.ZodAny> => ({
             ...t,
             run: (ctx, input, userInput) => {
-              return trpc.context.callTool.mutate({
+              return trpc.input.callTool.mutate({
                 name: t.name,
                 context: ctx,
                 input: input as never,
@@ -64,7 +64,7 @@ export const useTools = () => {
                     arguments: input as never,
                   });
                   console.log('Output:', _, output);
-                  return output;
+                  return [{ type: 'json', value: output }];
                 },
               }),
             ),

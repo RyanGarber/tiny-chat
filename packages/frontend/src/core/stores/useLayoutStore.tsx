@@ -16,6 +16,9 @@ interface LayoutStore {
   setSidebarOpen: (value: boolean) => void;
   getSidebarWidth: () => number;
 
+  isAsideOpen: boolean;
+  setAsideOpen: (value: boolean) => void;
+
   isInitializing: boolean;
   setInitializing: (value: boolean) => void;
 }
@@ -45,9 +48,12 @@ export const useLayoutStore = create(
       drawerCloser: null,
       setDrawerCloser: (fn) => set({ drawerCloser: fn }),
 
-      isSidebarOpen: false, // TODO
+      isSidebarOpen: false,
       setSidebarOpen: (value: boolean) => set({ isSidebarOpen: value }),
       getSidebarWidth: () => (get().isSidebarOpen ? 300 : 60),
+
+      isAsideOpen: false,
+      setAsideOpen: (value: boolean) => set({ isAsideOpen: value }),
 
       isInitializing: true,
       setInitializing: (value: boolean) => set({ isInitializing: value }),

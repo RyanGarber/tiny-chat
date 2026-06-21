@@ -1,4 +1,5 @@
 import type {
+  EmbeddingModel,
   FilePart,
   ImagePart,
   LanguageModel,
@@ -10,18 +11,20 @@ import type {
   Tool as AISdkTool,
   ToolCallPart,
   ToolResultPart,
-  EmbeddingModel,
 } from 'ai';
 import { embedMany, streamText } from 'ai';
 
-import type {
-  zConfig,
-  zContextItem,
-  zDataPart,
-  zGenerateOutput,
-  zSignature,
+import {
+  type Model,
+  type ModelArg,
+  type zConfig,
+  type zContextItem,
+  zData,
+  type zDataPart,
+  type zGenerateOutput,
+  type zSignature,
+  zToolResultValue,
 } from '../../types/chat.ts';
-import { type Model, type ModelArg, zData } from '../../types/chat.ts';
 import type { zUser } from '../../types/user.ts';
 import type { BaseProvider } from '../index.ts';
 import { GoogleProvider } from './google.ts';
@@ -30,12 +33,14 @@ import { OpenAIProvider } from './openai.ts';
 import { AzureProvider } from './azure.ts';
 import { AWSProvider } from './aws.ts';
 import { CustomProvider } from './custom.ts';
+import type { JSONType } from 'zod';
 import { z } from 'zod';
-import { GeminiProvider } from './gemini.ts';
+import { AntigravityProvider } from './antigravity.ts';
 import type { Tool } from '../../types/tool.ts';
 import { TestProvider } from './test.ts';
 import type { Env } from '../../types/env.ts';
 import { VoyageProvider } from './voyage.ts';
+import { getBaseModelTransform } from '../../utils.ts';
 
 export interface ChatProvider extends BaseProvider {
   name: string;
@@ -72,7 +77,7 @@ export const chatProviders: ChatProvider[] = [
   AWSProvider,
   AzureProvider,
   CustomProvider,
-  GeminiProvider,
+  AntigravityProvider,
   GoogleProvider,
   OpenAIProvider,
   VoyageProvider,
@@ -102,7 +107,7 @@ export async function* runGeneration(
 
   const sdkData: (TextStreamPart<any> | ObjectStreamPart<any>)[] = [];
 
-  console.log(`[AI SDK] |Context|`, context);
+  console.log(`[provider] original context:`, context);
 
   const stream = streamText({
     ...options,
@@ -152,9 +157,6 @@ export function toSdkContext(
   provider: ChatProvider,
   context: zContextItem[],
 ) {
-  const getTransformed =
-    provider.getPartTransformed ?? ((_user, _config, _message, part) => [part]);
-
   const sdkMessages: ModelMessage[] = [];
   for (const original of context) {
     const message: ModelMessage = {
@@ -162,12 +164,9 @@ export function toSdkContext(
       content: [],
     };
 
-    console.log('[AI-SDK] |To SDK| Original parts:', original);
-    const parts = zData
-      .parse(original.data)
-      .flat()
-      .flatMap((part) => getTransformed(user, config, original, part));
-    console.log('[AI-SDK] |To SDK| Transformed parts:', parts);
+    const transform = (part: zDataPart) =>
+      provider.getPartTransformed?.(user, config, original, part) ?? getBaseModelTransform(part);
+    const parts = zData.parse(original.data).flat().flatMap(transform);
 
     for (const part of parts) {
       const isToolResult = part.type === 'toolResult';
@@ -175,67 +174,119 @@ export function toSdkContext(
 
       // If transitioning between toolResult and non-toolResult blocks, push and reset
       if ((isToolResult && !isToolRole) || (!isToolResult && isToolRole)) {
-        console.log(`[AI SDK] |To SDK| Splitting ${message.role} message:`, message);
         sdkMessages.push({ ...message });
         message.content = [];
       }
 
-      let providerOptions = provider.getPartSignatureReturn?.(user, config, original, part);
-      providerOptions = cleanSignatureReturn(providerOptions);
-      if (providerOptions) console.log(`[AI-SDK] |To SDK| SignatureReturn:`, part, providerOptions);
-
-      if (part.type === 'text') {
-        (message.content as TextPart[]).push({ type: 'text', text: part.value, providerOptions });
-      } else if (part.type === 'thought') {
-        (message.content as any[]).push({
-          type: 'reasoning',
-          text: part.value,
-          providerOptions,
-        });
-      } else if (part.type === 'toolCall') {
-        console.log(`Including providerOptions on ${part.name} call:`, part, providerOptions);
-        (message.content as ToolCallPart[]).push({
-          type: 'tool-call',
-          toolCallId: part.id,
-          toolName: part.name,
-          input: part.args,
-          providerOptions,
-        });
-      } else if (part.type === 'toolResult') {
-        (message.content as ToolResultPart[]).push({
-          type: 'tool-result',
-          toolCallId: part.id,
-          toolName: part.name,
-          output: part.error
-            ? { type: 'error-json', value: part.value }
-            : { type: 'json', value: part.value },
-          providerOptions,
-        });
-      } else if (part.type === 'inputFile') {
-        if (message.role === 'user' && part.mime.startsWith('image/')) {
-          (message.content as ImagePart[]).push({
-            type: 'image',
-            image: part.data,
-            mediaType: part.mime,
-            providerOptions,
-          } satisfies ImagePart);
-        } else {
-          (message.content as FilePart[]).push({
-            type: 'file',
-            data: part.data,
-            mediaType: part.mime,
-            filename: part.name,
-            providerOptions,
-          } satisfies FilePart);
-        }
-      }
-
       // Correctly assign the author for the current block
       message.role = isToolResult ? 'tool' : original.author === 'MODEL' ? 'assistant' : 'user';
+
+      let providerOptions = provider.getPartSignatureReturn?.(user, config, original, part);
+      providerOptions = cleanSignatureReturn(providerOptions);
+
+      const toSdkPart = (
+        part: zDataPart,
+      ): (
+        | TextPart
+        | ImagePart
+        | (Omit<TextPart, 'type'> & { type: 'reasoning' })
+        | ToolCallPart
+        | ToolResultPart
+        | FilePart
+      )[] => {
+        if (part.type === 'text') {
+          return [{ type: 'text', text: part.value, providerOptions }];
+        } else if (part.type === 'file') {
+          if (part.mime.startsWith('image/')) {
+            return [{ type: 'image', mediaType: part.mime, image: part.data, providerOptions }];
+          } else {
+            return [
+              {
+                type: 'file',
+                filename: part.name,
+                mediaType: part.mime,
+                data: part.data,
+                providerOptions,
+              },
+            ];
+          }
+        } else if (part.type === 'json') {
+          return [
+            {
+              type: 'text',
+              text: JSON.stringify(part.value),
+              providerOptions,
+            },
+          ];
+        } else if (part.type === 'thought') {
+          return [
+            {
+              type: 'reasoning',
+              text: part.value,
+              providerOptions,
+            },
+          ];
+        } else if (part.type === 'toolCall') {
+          return [
+            {
+              type: 'tool-call',
+              toolCallId: part.id,
+              toolName: part.name,
+              input: part.args,
+              providerOptions,
+            },
+          ];
+        } else if (part.type === 'toolResult') {
+          const parsed = zToolResultValue.safeParse(part.value);
+          return [
+            {
+              type: 'tool-result',
+              toolCallId: part.id,
+              toolName: part.name,
+              output: part.error
+                ? { type: 'error-json', value: part.value }
+                : parsed.success
+                  ? {
+                      type: 'content',
+                      value: parsed.data
+                        .flatMap(transform)
+                        .flatMap(
+                          (p): Extract<ToolResultPart['output'], { type: 'content' }>['value'] => {
+                            if (p.type === 'text') {
+                              return [{ type: 'text', text: p.value }];
+                            } else if (p.type === 'file') {
+                              if (p.mime.startsWith('image/')) {
+                                return [{ type: 'image-data', mediaType: p.mime, data: p.data }];
+                              } else {
+                                return [
+                                  {
+                                    type: 'file-data',
+                                    filename: p.name,
+                                    mediaType: p.mime,
+                                    data: p.data,
+                                  },
+                                ];
+                              }
+                            } else if (p.type === 'json') {
+                              return [{ type: 'text', text: JSON.stringify(p.value) }];
+                            }
+                            console.warn('[provider] invalid tool output:', p);
+                            return [];
+                          },
+                        ),
+                    }
+                  : { type: 'json', value: part.value },
+              providerOptions,
+            },
+          ];
+        }
+        return [];
+      };
+
+      (message.content as any[]).push(...toSdkPart(part));
     }
 
     if (message.content.length) {
-      console.log(`[AI SDK] |To SDK| Pushing ${message.role} message:`, message);
       sdkMessages.push(message);
     }
   }
@@ -262,7 +313,6 @@ export function fromSdkContent(
 ): zGenerateOutput | null {
   let signature = provider.getPartSignature?.(user, config, event);
   signature = cleanSignature(signature);
-  if (signature) console.log(`[AI-SDK] |From SDK| Signature:`, signature);
 
   if (
     event.type === 'reasoning-start' ||
@@ -275,6 +325,15 @@ export function fromSdkContent(
         type: 'thought',
         id: event.id,
         value: 'text' in event ? event.text : '',
+        signature,
+      },
+    };
+  } else if (event.type === 'object') {
+    return {
+      type: 'data',
+      value: {
+        type: 'json',
+        value: event.object,
         signature,
       },
     };
@@ -296,7 +355,7 @@ export function fromSdkContent(
     return {
       type: 'data',
       value: {
-        type: 'outputFile',
+        type: 'file',
         mime: event.file.mediaType,
         data: event.file.base64,
         signature,
@@ -320,7 +379,12 @@ export function fromSdkContent(
         type: 'toolResult',
         name: event.toolName,
         id: event.toolCallId,
-        value: event.output,
+        value: [
+          {
+            type: 'json',
+            value: event.output as JSONType,
+          },
+        ],
       },
     };
   }
@@ -372,11 +436,11 @@ export async function runEmbedding(
 }
 
 export function prepareConfig(config: zConfig, args: ModelArg[]) {
-  console.log('Model args:', args);
+  console.log('[provider] model args:', args);
   const inputArgs = (config.args ?? {}) as Record<string, unknown>;
   for (const arg of args) {
     if (inputArgs?.[arg.name] === undefined) {
-      console.log(`Using default value for arg ${arg.name}:`, arg.default);
+      console.log(`[provider] using default ${arg.default} for arg ${arg.name}`);
       if (config.args === undefined) config.args = {};
       inputArgs[arg.name] = arg.default;
     }

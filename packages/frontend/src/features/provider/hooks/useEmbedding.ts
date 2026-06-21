@@ -47,7 +47,7 @@ export const useEmbedding = () => {
         ...files.map((file) => ({ fileId: file.id, text: file.text })),
       ];
 
-      const providers = await ProviderService.getChatProviders();
+      const providers = await ProviderService.getChatProviders(session.data.user);
       const result = await embed(
         session.data.user,
         providers.find((p) => p.name === embeddingConfig.data!.provider)!,

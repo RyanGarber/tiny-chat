@@ -3,7 +3,7 @@
 ## Big picture
 
 - PNPM workspace monorepo (`pnpm-workspace.yaml`) with:
-  - `packages/backend`: Node HTTP server exposing **tRPC** + **better-auth** + small `/@/gemini` and `/@/upload` endpoints.
+  - `packages/backend`: Node HTTP server exposing **tRPC** + **better-auth** + small `/@/antigravity` and `/@/upload` endpoints.
   - `packages/frontend`: Vite + React (Mantine) UI; ships inside Tauri or as web build.
   - `apps/tauri`: Tauri v2 shell for desktop/iOS/Android.
   - `apps/web`: Fastify static host for `packages/frontend` build output.
@@ -66,7 +66,7 @@
   - Each handler receives `{ ctx, input }` where `ctx.session.user` is the authenticated user
   - Examples: `routes/chats.ts`, `routes/folders.ts`, `routes/messages.ts`, etc.
 - **Services**: Standalone logic in `packages/backend/src/services/`:
-  - `gemini.ts`: Gemini provider streaming endpoint (`/@/gemini`) — uses `ai-sdk-provider-gemini-cli` + `ai`'s `streamText` to provide SSE-style streamed events. The handler expects a JSON body and a Bearer token (refresh token) in `Authorization` for `oauth-personal` flows.
+  - `antigravity.ts`: Antigravity provider streaming endpoint (`/@/antigravity`) — uses `ai-sdk-antigravity-proxy` + `ai`'s `streamText` to provide SSE-style streamed events. The handler expects a JSON body and a JSON-stringified AntigravityAccount in `X-Antigravity-Account` for oauth flow.
   - `upload.ts`: File upload handling (`/@/upload`)
   - `api.ts`: Creates the tRPC HTTP handler (`createHTTPHandler`) and tRPC request context (extracts session via `auth.api.getSession` using `authHeaders`) — this is where tRPC's basePath and max body size are configured.
 - **Providers**: AI model families in `packages/backend/src/providers/`:
@@ -109,7 +109,7 @@
   - `packages/frontend/src/App.tsx` (token storage, session bootstrap, anonymous sign-in fallback)
   - Better-auth plugins: `anonymous()` (data migration on account link) + `bearer()` (token auth)
 - **Services & endpoints**: Keep in sync:
-  - `/@/gemini` → `gemini.ts` (streaming AI responses via SSE). The endpoint expects a JSON payload (model, prompt, tools, providerOptions) and reads a Bearer token from `Authorization` (used as a refresh token for `oauth-personal` with the Gemini provider).
+  - `/@/antigravity` → `antigravity.ts` (streaming AI responses via SSE). The endpoint expects a JSON payload (model, prompt, tools, providerOptions) and reads an account from `X-Antigravity-Account` (used to authenticate with Google).
   - `/@/upload` → `upload.ts` (file upload, returns file metadata)
   - Both are HTTP routes _outside_ the tRPC router (they perform their own auth checks via `auth.api.getSession`/`authHeaders` where appropriate).
 - **Provider/family changes**: Update both:

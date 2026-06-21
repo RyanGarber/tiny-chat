@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react';
+
 export const THEMES = ['dark', 'light'] as const;
 
 export const CODE_THEMES = [
@@ -75,3 +77,30 @@ export const codeThemesByTheme = (theme: (typeof THEMES)[number]) => {
 };
 
 export const SHADOW = 'rgba(0, 0, 0, 0.2) 2px 0px 15px';
+
+export const GLASS_BG = 'color-mix(in srgb, var(--tc-surface), transparent 15%)';
+export const GLASS_BLUR = 'blur(10px)';
+export const GLASS_BORDER = '1px solid color-mix(in srgb, var(--tc-surface), #ffffff 15%)';
+export const GLASS_STYLE: CSSProperties = {
+  backgroundColor: GLASS_BG,
+  backdropFilter: GLASS_BLUR,
+  border: GLASS_BORDER,
+};
+
+export const INPUT_STYLE = {
+  root: {
+    position: 'relative',
+  },
+  input: {
+    height: 54,
+    paddingTop: 18,
+  },
+  label: {
+    position: 'absolute',
+    pointerEvents: 'none',
+    fontSize: 'var(--mantine-font-size-xs)',
+    paddingLeft: 'var(--mantine-spacing-sm)',
+    paddingTop: 'calc(var(--mantine-spacing-sm) / 2)',
+    zIndex: 1,
+  },
+} as never;

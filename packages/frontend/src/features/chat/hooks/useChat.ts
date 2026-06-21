@@ -1,8 +1,7 @@
 import { query, queryClient, trpc } from '@/utils/api';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import type { Chat } from '@tiny-chat/backend/generated/prisma/client.ts';
 import { useChatStore } from '../stores/useChatStore';
-import type { MessageState } from '@tiny-chat/shared/src/types/chat';
+import type { Chat, MessageState } from '@tiny-chat/shared/src/types/chat';
 import { refetchChatList } from './useChatList';
 import { ChatService } from '../services/ChatService';
 

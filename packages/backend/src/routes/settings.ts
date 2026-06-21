@@ -131,6 +131,15 @@ export default router({
       }));
     }),
 
+  setUseBrowserModels: procedure
+    .input(z.object({ useBrowserModels: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      return set(ctx, (settings) => ({
+        ...settings,
+        useBrowserModels: input.useBrowserModels,
+      }));
+    }),
+
   setMcpServers: procedure
     .input(z.object({ mcpServers: zMCPServers }))
     .mutation(async ({ ctx, input }) => {

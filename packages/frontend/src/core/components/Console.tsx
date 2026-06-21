@@ -3,7 +3,7 @@ import { useLogStore } from '@/core/stores/useLogStore';
 import { Icon } from '@iconify/react';
 import { Level } from '@tiny-chat/shared/src/logs.ts';
 import { JsonTree } from '@gfazioli/mantine-json-tree';
-import { glassStyle } from '@/utils/glass';
+import { GLASS_STYLE } from '@/utils/theme.ts';
 
 export default function Console({ opened, onClose }: Pick<ModalProps, 'opened' | 'onClose'>) {
   const logs = useLogStore((s) => s.logs);
@@ -23,7 +23,7 @@ export default function Console({ opened, onClose }: Pick<ModalProps, 'opened' |
       }
       zIndex="calc(var(--mantine-z-index-modal) + 1)"
       size="lg"
-      styles={{ content: glassStyle }}
+      styles={{ content: GLASS_STYLE }}
       fullScreen
       className="selectable"
     >

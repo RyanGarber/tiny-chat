@@ -1,5 +1,5 @@
 import { useProviders } from '@/features/input/hooks/useProviders';
-import { queryClient, auth, query } from '@/utils/api';
+import { auth, query, queryClient } from '@/utils/api';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { zSettings } from '@tiny-chat/shared/src/types/user';
 
@@ -47,6 +47,19 @@ export const useProviderSettings = () => {
     },
   });
 
+  const useBrowserModels = useQuery({
+    ...query.settings.get.queryOptions(),
+    select: (data) => data.useBrowserModels,
+    initialData: zSettings.safeParse(session.data?.user?.settings).data,
+  });
+
+  const setUseBrowserModels = useMutation({
+    ...query.settings.setUseBrowserModels.mutationOptions(),
+    onSuccess: (data) => {
+      queryClient.setQueryData(query.settings.get.queryKey(), data);
+    },
+  });
+
   return {
     providerSettings,
     setProviderSetting,
@@ -54,5 +67,7 @@ export const useProviderSettings = () => {
     setPreferredWebProvider,
     useProviderCache,
     setUseProviderCache,
+    useBrowserModels,
+    setUseBrowserModels,
   };
 };

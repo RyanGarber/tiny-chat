@@ -201,6 +201,7 @@ export type ChatWhereInput = {
   action?: Prisma.ActionListRelationFilter
   folder?: Prisma.XOR<Prisma.FolderScalarRelationFilter, Prisma.FolderWhereInput>
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
+  files?: Prisma.FileListRelationFilter
   memories?: Prisma.MemoryListRelationFilter
   messages?: Prisma.MessageListRelationFilter
 }
@@ -216,6 +217,7 @@ export type ChatOrderByWithRelationInput = {
   action?: Prisma.ActionOrderByRelationAggregateInput
   folder?: Prisma.FolderOrderByWithRelationInput
   user?: Prisma.UserOrderByWithRelationInput
+  files?: Prisma.FileOrderByRelationAggregateInput
   memories?: Prisma.MemoryOrderByRelationAggregateInput
   messages?: Prisma.MessageOrderByRelationAggregateInput
 }
@@ -234,6 +236,7 @@ export type ChatWhereUniqueInput = Prisma.AtLeast<{
   action?: Prisma.ActionListRelationFilter
   folder?: Prisma.XOR<Prisma.FolderScalarRelationFilter, Prisma.FolderWhereInput>
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
+  files?: Prisma.FileListRelationFilter
   memories?: Prisma.MemoryListRelationFilter
   messages?: Prisma.MessageListRelationFilter
 }, "id">
@@ -273,6 +276,7 @@ export type ChatCreateInput = {
   action?: Prisma.ActionCreateNestedManyWithoutChatInput
   folder: Prisma.FolderCreateNestedOneWithoutChatsInput
   user: Prisma.UserCreateNestedOneWithoutChatsInput
+  files?: Prisma.FileCreateNestedManyWithoutChatInput
   memories?: Prisma.MemoryCreateNestedManyWithoutChatInput
   messages?: Prisma.MessageCreateNestedManyWithoutChatInput
 }
@@ -286,6 +290,7 @@ export type ChatUncheckedCreateInput = {
   temporary?: boolean
   incognito?: boolean
   action?: Prisma.ActionUncheckedCreateNestedManyWithoutChatInput
+  files?: Prisma.FileUncheckedCreateNestedManyWithoutChatInput
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutChatInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutChatInput
 }
@@ -299,6 +304,7 @@ export type ChatUpdateInput = {
   action?: Prisma.ActionUpdateManyWithoutChatNestedInput
   folder?: Prisma.FolderUpdateOneRequiredWithoutChatsNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutChatsNestedInput
+  files?: Prisma.FileUpdateManyWithoutChatNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutChatNestedInput
   messages?: Prisma.MessageUpdateManyWithoutChatNestedInput
 }
@@ -312,6 +318,7 @@ export type ChatUncheckedUpdateInput = {
   temporary?: Prisma.BoolFieldUpdateOperationsInput | boolean
   incognito?: Prisma.BoolFieldUpdateOperationsInput | boolean
   action?: Prisma.ActionUncheckedUpdateManyWithoutChatNestedInput
+  files?: Prisma.FileUncheckedUpdateManyWithoutChatNestedInput
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutChatNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutChatNestedInput
 }
@@ -522,6 +529,22 @@ export type ChatUpdateOneRequiredWithoutActionNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ChatUpdateToOneWithWhereWithoutActionInput, Prisma.ChatUpdateWithoutActionInput>, Prisma.ChatUncheckedUpdateWithoutActionInput>
 }
 
+export type ChatCreateNestedOneWithoutFilesInput = {
+  create?: Prisma.XOR<Prisma.ChatCreateWithoutFilesInput, Prisma.ChatUncheckedCreateWithoutFilesInput>
+  connectOrCreate?: Prisma.ChatCreateOrConnectWithoutFilesInput
+  connect?: Prisma.ChatWhereUniqueInput
+}
+
+export type ChatUpdateOneWithoutFilesNestedInput = {
+  create?: Prisma.XOR<Prisma.ChatCreateWithoutFilesInput, Prisma.ChatUncheckedCreateWithoutFilesInput>
+  connectOrCreate?: Prisma.ChatCreateOrConnectWithoutFilesInput
+  upsert?: Prisma.ChatUpsertWithoutFilesInput
+  disconnect?: Prisma.ChatWhereInput | boolean
+  delete?: Prisma.ChatWhereInput | boolean
+  connect?: Prisma.ChatWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ChatUpdateToOneWithWhereWithoutFilesInput, Prisma.ChatUpdateWithoutFilesInput>, Prisma.ChatUncheckedUpdateWithoutFilesInput>
+}
+
 export type ChatCreateWithoutUserInput = {
   id: string
   title?: string | null
@@ -530,6 +553,7 @@ export type ChatCreateWithoutUserInput = {
   incognito?: boolean
   action?: Prisma.ActionCreateNestedManyWithoutChatInput
   folder: Prisma.FolderCreateNestedOneWithoutChatsInput
+  files?: Prisma.FileCreateNestedManyWithoutChatInput
   memories?: Prisma.MemoryCreateNestedManyWithoutChatInput
   messages?: Prisma.MessageCreateNestedManyWithoutChatInput
 }
@@ -542,6 +566,7 @@ export type ChatUncheckedCreateWithoutUserInput = {
   temporary?: boolean
   incognito?: boolean
   action?: Prisma.ActionUncheckedCreateNestedManyWithoutChatInput
+  files?: Prisma.FileUncheckedCreateNestedManyWithoutChatInput
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutChatInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutChatInput
 }
@@ -593,6 +618,7 @@ export type ChatCreateWithoutFolderInput = {
   incognito?: boolean
   action?: Prisma.ActionCreateNestedManyWithoutChatInput
   user: Prisma.UserCreateNestedOneWithoutChatsInput
+  files?: Prisma.FileCreateNestedManyWithoutChatInput
   memories?: Prisma.MemoryCreateNestedManyWithoutChatInput
   messages?: Prisma.MessageCreateNestedManyWithoutChatInput
 }
@@ -605,6 +631,7 @@ export type ChatUncheckedCreateWithoutFolderInput = {
   temporary?: boolean
   incognito?: boolean
   action?: Prisma.ActionUncheckedCreateNestedManyWithoutChatInput
+  files?: Prisma.FileUncheckedCreateNestedManyWithoutChatInput
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutChatInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutChatInput
 }
@@ -644,6 +671,7 @@ export type ChatCreateWithoutMessagesInput = {
   action?: Prisma.ActionCreateNestedManyWithoutChatInput
   folder: Prisma.FolderCreateNestedOneWithoutChatsInput
   user: Prisma.UserCreateNestedOneWithoutChatsInput
+  files?: Prisma.FileCreateNestedManyWithoutChatInput
   memories?: Prisma.MemoryCreateNestedManyWithoutChatInput
 }
 
@@ -656,6 +684,7 @@ export type ChatUncheckedCreateWithoutMessagesInput = {
   temporary?: boolean
   incognito?: boolean
   action?: Prisma.ActionUncheckedCreateNestedManyWithoutChatInput
+  files?: Prisma.FileUncheckedCreateNestedManyWithoutChatInput
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutChatInput
 }
 
@@ -684,6 +713,7 @@ export type ChatUpdateWithoutMessagesInput = {
   action?: Prisma.ActionUpdateManyWithoutChatNestedInput
   folder?: Prisma.FolderUpdateOneRequiredWithoutChatsNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutChatsNestedInput
+  files?: Prisma.FileUpdateManyWithoutChatNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutChatNestedInput
 }
 
@@ -696,6 +726,7 @@ export type ChatUncheckedUpdateWithoutMessagesInput = {
   temporary?: Prisma.BoolFieldUpdateOperationsInput | boolean
   incognito?: Prisma.BoolFieldUpdateOperationsInput | boolean
   action?: Prisma.ActionUncheckedUpdateManyWithoutChatNestedInput
+  files?: Prisma.FileUncheckedUpdateManyWithoutChatNestedInput
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutChatNestedInput
 }
 
@@ -708,6 +739,7 @@ export type ChatCreateWithoutMemoriesInput = {
   action?: Prisma.ActionCreateNestedManyWithoutChatInput
   folder: Prisma.FolderCreateNestedOneWithoutChatsInput
   user: Prisma.UserCreateNestedOneWithoutChatsInput
+  files?: Prisma.FileCreateNestedManyWithoutChatInput
   messages?: Prisma.MessageCreateNestedManyWithoutChatInput
 }
 
@@ -720,6 +752,7 @@ export type ChatUncheckedCreateWithoutMemoriesInput = {
   temporary?: boolean
   incognito?: boolean
   action?: Prisma.ActionUncheckedCreateNestedManyWithoutChatInput
+  files?: Prisma.FileUncheckedCreateNestedManyWithoutChatInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutChatInput
 }
 
@@ -748,6 +781,7 @@ export type ChatUpdateWithoutMemoriesInput = {
   action?: Prisma.ActionUpdateManyWithoutChatNestedInput
   folder?: Prisma.FolderUpdateOneRequiredWithoutChatsNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutChatsNestedInput
+  files?: Prisma.FileUpdateManyWithoutChatNestedInput
   messages?: Prisma.MessageUpdateManyWithoutChatNestedInput
 }
 
@@ -760,6 +794,7 @@ export type ChatUncheckedUpdateWithoutMemoriesInput = {
   temporary?: Prisma.BoolFieldUpdateOperationsInput | boolean
   incognito?: Prisma.BoolFieldUpdateOperationsInput | boolean
   action?: Prisma.ActionUncheckedUpdateManyWithoutChatNestedInput
+  files?: Prisma.FileUncheckedUpdateManyWithoutChatNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutChatNestedInput
 }
 
@@ -771,6 +806,7 @@ export type ChatCreateWithoutActionInput = {
   incognito?: boolean
   folder: Prisma.FolderCreateNestedOneWithoutChatsInput
   user: Prisma.UserCreateNestedOneWithoutChatsInput
+  files?: Prisma.FileCreateNestedManyWithoutChatInput
   memories?: Prisma.MemoryCreateNestedManyWithoutChatInput
   messages?: Prisma.MessageCreateNestedManyWithoutChatInput
 }
@@ -783,6 +819,7 @@ export type ChatUncheckedCreateWithoutActionInput = {
   createdAt?: Date | string
   temporary?: boolean
   incognito?: boolean
+  files?: Prisma.FileUncheckedCreateNestedManyWithoutChatInput
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutChatInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutChatInput
 }
@@ -811,6 +848,7 @@ export type ChatUpdateWithoutActionInput = {
   incognito?: Prisma.BoolFieldUpdateOperationsInput | boolean
   folder?: Prisma.FolderUpdateOneRequiredWithoutChatsNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutChatsNestedInput
+  files?: Prisma.FileUpdateManyWithoutChatNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutChatNestedInput
   messages?: Prisma.MessageUpdateManyWithoutChatNestedInput
 }
@@ -823,6 +861,75 @@ export type ChatUncheckedUpdateWithoutActionInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   temporary?: Prisma.BoolFieldUpdateOperationsInput | boolean
   incognito?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  files?: Prisma.FileUncheckedUpdateManyWithoutChatNestedInput
+  memories?: Prisma.MemoryUncheckedUpdateManyWithoutChatNestedInput
+  messages?: Prisma.MessageUncheckedUpdateManyWithoutChatNestedInput
+}
+
+export type ChatCreateWithoutFilesInput = {
+  id: string
+  title?: string | null
+  createdAt?: Date | string
+  temporary?: boolean
+  incognito?: boolean
+  action?: Prisma.ActionCreateNestedManyWithoutChatInput
+  folder: Prisma.FolderCreateNestedOneWithoutChatsInput
+  user: Prisma.UserCreateNestedOneWithoutChatsInput
+  memories?: Prisma.MemoryCreateNestedManyWithoutChatInput
+  messages?: Prisma.MessageCreateNestedManyWithoutChatInput
+}
+
+export type ChatUncheckedCreateWithoutFilesInput = {
+  id: string
+  userId: string
+  folderId: string
+  title?: string | null
+  createdAt?: Date | string
+  temporary?: boolean
+  incognito?: boolean
+  action?: Prisma.ActionUncheckedCreateNestedManyWithoutChatInput
+  memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutChatInput
+  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutChatInput
+}
+
+export type ChatCreateOrConnectWithoutFilesInput = {
+  where: Prisma.ChatWhereUniqueInput
+  create: Prisma.XOR<Prisma.ChatCreateWithoutFilesInput, Prisma.ChatUncheckedCreateWithoutFilesInput>
+}
+
+export type ChatUpsertWithoutFilesInput = {
+  update: Prisma.XOR<Prisma.ChatUpdateWithoutFilesInput, Prisma.ChatUncheckedUpdateWithoutFilesInput>
+  create: Prisma.XOR<Prisma.ChatCreateWithoutFilesInput, Prisma.ChatUncheckedCreateWithoutFilesInput>
+  where?: Prisma.ChatWhereInput
+}
+
+export type ChatUpdateToOneWithWhereWithoutFilesInput = {
+  where?: Prisma.ChatWhereInput
+  data: Prisma.XOR<Prisma.ChatUpdateWithoutFilesInput, Prisma.ChatUncheckedUpdateWithoutFilesInput>
+}
+
+export type ChatUpdateWithoutFilesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  temporary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  incognito?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  action?: Prisma.ActionUpdateManyWithoutChatNestedInput
+  folder?: Prisma.FolderUpdateOneRequiredWithoutChatsNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutChatsNestedInput
+  memories?: Prisma.MemoryUpdateManyWithoutChatNestedInput
+  messages?: Prisma.MessageUpdateManyWithoutChatNestedInput
+}
+
+export type ChatUncheckedUpdateWithoutFilesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  folderId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  temporary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  incognito?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  action?: Prisma.ActionUncheckedUpdateManyWithoutChatNestedInput
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutChatNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutChatNestedInput
 }
@@ -844,6 +951,7 @@ export type ChatUpdateWithoutUserInput = {
   incognito?: Prisma.BoolFieldUpdateOperationsInput | boolean
   action?: Prisma.ActionUpdateManyWithoutChatNestedInput
   folder?: Prisma.FolderUpdateOneRequiredWithoutChatsNestedInput
+  files?: Prisma.FileUpdateManyWithoutChatNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutChatNestedInput
   messages?: Prisma.MessageUpdateManyWithoutChatNestedInput
 }
@@ -856,6 +964,7 @@ export type ChatUncheckedUpdateWithoutUserInput = {
   temporary?: Prisma.BoolFieldUpdateOperationsInput | boolean
   incognito?: Prisma.BoolFieldUpdateOperationsInput | boolean
   action?: Prisma.ActionUncheckedUpdateManyWithoutChatNestedInput
+  files?: Prisma.FileUncheckedUpdateManyWithoutChatNestedInput
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutChatNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutChatNestedInput
 }
@@ -886,6 +995,7 @@ export type ChatUpdateWithoutFolderInput = {
   incognito?: Prisma.BoolFieldUpdateOperationsInput | boolean
   action?: Prisma.ActionUpdateManyWithoutChatNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutChatsNestedInput
+  files?: Prisma.FileUpdateManyWithoutChatNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutChatNestedInput
   messages?: Prisma.MessageUpdateManyWithoutChatNestedInput
 }
@@ -898,6 +1008,7 @@ export type ChatUncheckedUpdateWithoutFolderInput = {
   temporary?: Prisma.BoolFieldUpdateOperationsInput | boolean
   incognito?: Prisma.BoolFieldUpdateOperationsInput | boolean
   action?: Prisma.ActionUncheckedUpdateManyWithoutChatNestedInput
+  files?: Prisma.FileUncheckedUpdateManyWithoutChatNestedInput
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutChatNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutChatNestedInput
 }
@@ -918,12 +1029,14 @@ export type ChatUncheckedUpdateManyWithoutFolderInput = {
 
 export type ChatCountOutputType = {
   action: number
+  files: number
   memories: number
   messages: number
 }
 
 export type ChatCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   action?: boolean | ChatCountOutputTypeCountActionArgs
+  files?: boolean | ChatCountOutputTypeCountFilesArgs
   memories?: boolean | ChatCountOutputTypeCountMemoriesArgs
   messages?: boolean | ChatCountOutputTypeCountMessagesArgs
 }
@@ -943,6 +1056,13 @@ export type ChatCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensi
  */
 export type ChatCountOutputTypeCountActionArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.ActionWhereInput
+}
+
+/**
+ * ChatCountOutputType without action
+ */
+export type ChatCountOutputTypeCountFilesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.FileWhereInput
 }
 
 /**
@@ -971,6 +1091,7 @@ export type ChatSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   action?: boolean | Prisma.Chat$actionArgs<ExtArgs>
   folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  files?: boolean | Prisma.Chat$filesArgs<ExtArgs>
   memories?: boolean | Prisma.Chat$memoriesArgs<ExtArgs>
   messages?: boolean | Prisma.Chat$messagesArgs<ExtArgs>
   _count?: boolean | Prisma.ChatCountOutputTypeDefaultArgs<ExtArgs>
@@ -1015,6 +1136,7 @@ export type ChatInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   action?: boolean | Prisma.Chat$actionArgs<ExtArgs>
   folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  files?: boolean | Prisma.Chat$filesArgs<ExtArgs>
   memories?: boolean | Prisma.Chat$memoriesArgs<ExtArgs>
   messages?: boolean | Prisma.Chat$messagesArgs<ExtArgs>
   _count?: boolean | Prisma.ChatCountOutputTypeDefaultArgs<ExtArgs>
@@ -1034,6 +1156,7 @@ export type $ChatPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     action: Prisma.$ActionPayload<ExtArgs>[]
     folder: Prisma.$FolderPayload<ExtArgs>
     user: Prisma.$UserPayload<ExtArgs>
+    files: Prisma.$FilePayload<ExtArgs>[]
     memories: Prisma.$MemoryPayload<ExtArgs>[]
     messages: Prisma.$MessagePayload<ExtArgs>[]
   }
@@ -1442,6 +1565,7 @@ export interface Prisma__ChatClient<T, Null = never, ExtArgs extends runtime.Typ
   action<T extends Prisma.Chat$actionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Chat$actionArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ActionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   folder<T extends Prisma.FolderDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FolderDefaultArgs<ExtArgs>>): Prisma.Prisma__FolderClient<runtime.Types.Result.GetResult<Prisma.$FolderPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  files<T extends Prisma.Chat$filesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Chat$filesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FilePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   memories<T extends Prisma.Chat$memoriesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Chat$memoriesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MemoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   messages<T extends Prisma.Chat$messagesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Chat$messagesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -1902,6 +2026,30 @@ export type Chat$actionArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
   take?: number
   skip?: number
   distinct?: Prisma.ActionScalarFieldEnum | Prisma.ActionScalarFieldEnum[]
+}
+
+/**
+ * Chat.files
+ */
+export type Chat$filesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the File
+   */
+  select?: Prisma.FileSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the File
+   */
+  omit?: Prisma.FileOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.FileInclude<ExtArgs> | null
+  where?: Prisma.FileWhereInput
+  orderBy?: Prisma.FileOrderByWithRelationInput | Prisma.FileOrderByWithRelationInput[]
+  cursor?: Prisma.FileWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.FileScalarFieldEnum | Prisma.FileScalarFieldEnum[]
 }
 
 /**

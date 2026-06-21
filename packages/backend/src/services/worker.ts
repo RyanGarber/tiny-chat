@@ -18,7 +18,6 @@ import {
   generate,
   type GenerationCallbacks,
 } from '@tiny-chat/shared/src/services/chat/generate.ts';
-import { searchFiles } from '../routes/input.ts';
 import { reorder } from '../routes/message.ts';
 import { zCache, zSettings, zUser } from '@tiny-chat/shared/src/types/user.ts';
 import backend from '../tools/index.ts';
@@ -27,6 +26,8 @@ import { chatProviders } from '@tiny-chat/shared/src/providers/chat/index.ts';
 import { embed } from '@tiny-chat/shared/src/services/chat/embed.ts';
 import { searchChats } from '../routes/chat.ts';
 import { getEmbedding, searchMemories } from '../routes/context.ts';
+import { listFilesInChat } from '../routes/input.ts';
+import { toChatUri } from '@tiny-chat/shared/src/utils/files.ts';
 
 export const getGenerationCallbacksBackend = (user: zUser): GenerationCallbacks => ({
   embed: async (text) => {
@@ -57,9 +58,7 @@ export const getGenerationCallbacksBackend = (user: zUser): GenerationCallbacks 
   searchChats: async (text, embedding, limit) =>
     (await searchChats(zUser.parse(user), text, embedding, limit)).results,
   listActions: () => globalThis.prisma.action.findMany({ where: { userId: user.id } }),
-  listUploadFiles: (uploadId) => globalThis.prisma.file.findMany({ where: { uploadId } }),
-  searchFiles: (uploads, text, embedding, limit) =>
-    searchFiles(zUser.parse(user), uploads, text, embedding, limit),
+  listFilesInChat: (chatId, uploadIds) => listFilesInChat(user, chatId, uploadIds),
   searchMemories: (text, embedding, limit) => searchMemories(user, text, embedding, limit),
 });
 
@@ -123,8 +122,8 @@ export default async function onTick() {
         supportsUserInput: false,
       };
 
-      const skills = await globalThis.prisma.skill.findMany({
-        where: { userId: action.userId },
+      const skills = await globalThis.prisma.upload.findMany({
+        where: { userId: action.userId, type: 'SKILL' },
         include: { files: true },
       });
 
@@ -132,16 +131,16 @@ export default async function onTick() {
       const metadata: zMetadata = [];
 
       const generation = generate(
-        user as zUser,
+        zUser.parse(user),
         chatProviders.find((p) => p.name === generateInput.config.provider)!,
-        getGenerationCallbacksBackend(user as zUser),
+        getGenerationCallbacksBackend(zUser.parse(user)),
         checkAllToolRequirements(
           backend,
-          { user: user as zUser, chat, generation: generateInput, skills: [] }, // TODO - skills
+          { user: zUser.parse(user), chat, generation: generateInput, skills: [] }, // TODO - skills
           false,
           zCache.parse(user.cache).providers,
         ) as ToolGroup[],
-        skills.flatMap((s) => wrapSkill(s.files, { id: s.id }) ?? []),
+        skills.flatMap((s) => wrapSkill(toChatUri(s.id), s.files) ?? []),
         generateInput,
         data,
         metadata,

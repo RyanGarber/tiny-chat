@@ -1,70 +1,156 @@
 import { z } from 'zod';
-import { invoke } from '@/utils/api.ts';
-import { Tool, type ToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
+import { invoke, trpc } from '@/utils/api.ts';
+import type { Tool } from '@tiny-chat/shared/src/types/tool.ts';
+import { type ToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
+import type {
+  zListFilesInput,
+  zListFilesOutput,
+  zReadFileInput,
+  zReadFileOutput,
+  zSearchFilesInput,
+  zSearchFilesOutput,
+  zWriteFileInput,
+  zWriteFileOutput,
+} from '@tiny-chat/shared/src/tools/files.ts';
+import {
+  zListFiles,
+  zReadFile,
+  zSearchFiles,
+  zWriteFile,
+} from '@tiny-chat/shared/src/tools/files.ts';
+import {
+  decodeTextLossy,
+  fromChatUri,
+  isTextAdjacent,
+  mimeType,
+} from '@tiny-chat/shared/src/utils/files.ts';
+import { snippetText } from '@tiny-chat/shared/src/utils.ts';
 
-export const zReadDirInput = z.object({
-  path: z.string().describe('The absolute path of the directory to read.'),
-});
-
-export const zReadDirOutput = z.object({
-  path: z.string(),
-  contents: z.any(), // TODO - other types?
-});
-
-export const ReadDir: Tool<typeof zReadDirInput, typeof zReadDirOutput> = {
-  name: 'read_dir',
-  description: 'Read the contents of a directory.',
-  input: zReadDirInput.toJSONSchema(),
-  output: zReadDirOutput.toJSONSchema(),
+const ReadFile: Tool<typeof zReadFileInput, typeof zReadFileOutput> = {
+  ...zReadFile,
   requirements: {
     desktop: true,
   },
-  run: async (_, input) => {
-    return { path: input.path, contents: await invoke('read_dir', { path: input.path }) };
+  overrides: true,
+  run: async (context, input, userInput) => {
+    if (fromChatUri(input.path)) {
+      console.log('chat:// file detected, forwarding to backend');
+      return (await trpc.input.callTool.mutate({
+        name: ReadFile.name,
+        context,
+        input,
+        userInput,
+      })) as never;
+    }
+    const name = input.path.split('/').pop();
+    const content = await invoke<string>('read_file', { path: input.path });
+
+    return [
+      {
+        type: 'file',
+        name,
+        mime: (await mimeType(content, input.path)) ?? 'application/octet-stream',
+        data: content,
+      },
+    ];
   },
 };
 
-export const zReadFileInput = z.object({
-  path: z.string().describe('The absolute path of the file to read.'),
-});
-
-export const zReadFileOutput = z.object({ path: z.string(), contents: z.string() });
-
-export const ReadFile: Tool<typeof zReadFileInput, typeof zReadFileOutput> = {
-  name: 'read_file',
-  description: 'Read the contents of a file.',
-  input: zReadFileInput.toJSONSchema(),
-  output: zReadFileOutput.toJSONSchema(),
-  requirements: {
-    desktop: true,
-  },
-  run: async (_, input) => {
-    return { path: input.path, contents: await invoke('read_file', { path: input.path }) };
-  },
-};
-
-export const zWriteFileInput = z.object({
-  path: z.string().describe('The absolute path of the file to write.'),
-  contents: z.string().describe('The contents of the file to write.'),
-});
-export type zWriteFileInput = z.infer<typeof zWriteFileInput>;
-
-export const zWriteFileOutput = z.object({
-  path: z.string().describe('The absolute path of the file that was written.'),
-});
-
-export const WriteFile: Tool<typeof zWriteFileInput, typeof zWriteFileOutput> = {
-  name: 'write_file',
-  description: 'Write to a file.',
-  input: zWriteFileInput.toJSONSchema(),
-  output: zWriteFileOutput.toJSONSchema(),
+const WriteFile: Tool<typeof zWriteFileInput, typeof zWriteFileOutput> = {
+  ...zWriteFile,
   requirements: {
     desktop: true,
     approval: true,
   },
-  run: async (_, input) => {
-    await invoke('write_file', input);
-    return { path: input.path };
+  overrides: true,
+  run: async (context, input, userInput) => {
+    if (fromChatUri(input.path)) {
+      console.log('chat:// file detected, forwarding to backend');
+      return await trpc.input.callTool.mutate({
+        name: WriteFile.name,
+        context,
+        input,
+        userInput,
+      });
+    }
+    const bytes = new TextEncoder().encode(input.content);
+    let binary = '';
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    await invoke('write_file', { path: input.path, content: btoa(binary) });
+    return [{ type: 'json', value: { path: input.path } }];
+  },
+};
+
+const ListFiles: Tool<typeof zListFilesInput, typeof zListFilesOutput> = {
+  ...zListFiles,
+  requirements: {
+    desktop: true,
+  },
+  overrides: true,
+  run: async (context, input, userInput) => {
+    if (fromChatUri(input.path)) {
+      console.log('chat:// file detected, forwarding to backend');
+      return await trpc.input.callTool.mutate({
+        name: ListFiles.name,
+        context,
+        input,
+        userInput,
+      });
+    }
+    return [
+      {
+        type: 'json',
+        value: { path: input.path, files: await invoke('list_files', { path: input.path }) },
+      },
+    ];
+  },
+};
+
+const SearchFiles: Tool<typeof zSearchFilesInput, typeof zSearchFilesOutput> = {
+  ...zSearchFiles,
+  requirements: {
+    desktop: true,
+  },
+  overrides: true,
+  run: async (context, input, userInput) => {
+    if (fromChatUri(input.path)) {
+      console.log('chat:// file detected, forwarding to backend');
+      return await trpc.input.callTool.mutate({
+        name: SearchFiles.name,
+        context,
+        input,
+        userInput,
+      });
+    }
+    const files = await Promise.all(
+      (
+        await invoke<{ path: string; content: string }[]>('search_files', {
+          path: input.path,
+          query: input.query,
+        })
+      ).map(async (file) => ({
+        ...file,
+        mime: (await mimeType(file.content, file.path)) ?? 'application/octet-stream',
+      })),
+    );
+    return [
+      {
+        type: 'json',
+        value: files
+          .filter((file) => isTextAdjacent(file.mime))
+          .map((file) => ({
+            path: file.path,
+            snippet: snippetText(decodeTextLossy(file.content, file.mime), input.query, 1000),
+          })),
+      },
+      {
+        type: 'text',
+        value: '[note] regex search fallback used for local files',
+      },
+    ];
   },
 };
 
@@ -90,17 +176,22 @@ const ShellExec: Tool<typeof zShellExecInput, typeof zShellExecOutput> = {
     approval: true,
   },
   run: async (_, input) => {
-    return await invoke<{ status?: number; stderr: string; stdout: string }>('shell_exec', {
-      command: input.command,
-    });
+    return [
+      {
+        type: 'json',
+        value: await invoke<{ status?: number; stderr: string; stdout: string }>('shell_exec', {
+          command: input.command,
+        }),
+      },
+    ];
   },
 };
 
 export const system: ToolGroup = {
   name: 'system',
-  tools: [ReadDir, ReadFile, WriteFile, ShellExec],
+  tools: [ReadFile, WriteFile, ListFiles, SearchFiles, ShellExec],
   instructions: {
-    heading: 'System',
-    body: "You have access to the user's filesystem and shell. Use read_dir and read_file to read files and directories, and shell_exec to run a command.",
+    heading: 'This PC',
+    body: "You have access to the user's filesystem and shell. Use list_files and read_file to the user's local files and directories, and shell_exec to run a command in their local shell.",
   },
 };

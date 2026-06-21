@@ -2,11 +2,10 @@ import { ActionIcon, Box, Group } from '@mantine/core';
 import { ReactNode, RefObject } from 'react';
 import { useLayoutStore } from '@/core/stores/useLayoutStore';
 import { Icon } from '@iconify/react';
-import Attachments from '@/features/input/components/Attachments';
+import FileThumbnails from '@/features/input/components/FileThumbnails.tsx';
 import { useMessagingStore } from '@/features/chat/stores/useMessagingStore';
 import { scrubText, texts } from '@tiny-chat/shared/src/utils.ts';
-import { glassStyle } from '@/utils/glass';
-import { SHADOW } from '@/utils/theme';
+import { GLASS_STYLE, SHADOW } from '@/utils/theme.ts';
 
 function ChatInputEffect({
   content,
@@ -29,7 +28,7 @@ function ChatInputEffect({
       bdrs={25}
       fz={14}
       opacity={isAny ? 0.5 : 1}
-      style={{ ...glassStyle, boxShadow: SHADOW, pointerEvents: 'auto' }}
+      style={{ ...GLASS_STYLE, boxShadow: SHADOW, pointerEvents: 'auto' }}
     >
       <ActionIcon size={20} variant="subtle" color="dimmed" onClick={onDelete} disabled={isAny}>
         <Icon icon="lucide:x" height={18} />
@@ -107,7 +106,7 @@ export default function ChatInputEffects({
           {uploads.map((file, i) => (
             <ChatInputEffect
               content={
-                <Attachments
+                <FileThumbnails
                   list={[{ name: file.name, image: file.thumbnail }]}
                   width={inputMaxWidth}
                   maxHeight={chatContainerHeight}

@@ -2,14 +2,13 @@ import { ActionIcon, Box, Button, Group, Modal, Stack, Text, Tooltip } from '@ma
 import { useClipboard, useDisclosure, useHotkeys } from '@mantine/hooks';
 import { useMessagingStore } from '@/features/chat/stores/useMessagingStore';
 import MessageBody from '@/features/message/components/MessageBody';
-import { MessageState } from '@tiny-chat/shared/src/types/chat.ts';
+import { Author, MessageState } from '@tiny-chat/shared/src/types/chat.ts';
 import { texts } from '@tiny-chat/shared/src/utils.ts';
-import { Author } from '@tiny-chat/backend/generated/prisma/enums.ts';
-import { JSX, memo } from 'react';
+import { memo, ReactNode } from 'react';
 import { Icon } from '@iconify/react';
 import { useChat } from '@/features/chat/hooks/useChat';
-import { glassStyle } from '@/utils/glass';
-import Attachments from '@/features/input/components/Attachments';
+import { GLASS_STYLE } from '@/utils/theme.ts';
+import FileThumbnails from '@/features/input/components/FileThumbnails.tsx';
 import { GenerateService } from '../services/GenerateService';
 import { useProviders } from '@/features/input/hooks/useProviders';
 import { useSkills } from '@/features/input/hooks/useSkills';
@@ -47,7 +46,7 @@ const Message = memo(
 
     const uploads = message.data.flat().filter((p) => p.type === 'upload');
 
-    const actions: JSX.Element[] = [];
+    const actions: ReactNode[] = [];
     if (!isLast) {
       actions.push(
         <Tooltip label="Insert Here" position="bottom" color="gray" key="insert">
@@ -125,7 +124,7 @@ const Message = memo(
                         height={14}
                         color="var(--mantine-color-dimmed)"
                       />
-                      <Attachments
+                      <FileThumbnails
                         list={uploads.map((u) => ({ name: u.name, image: u.thumbnail }))}
                         size={22}
                       />
@@ -204,8 +203,6 @@ const Message = memo(
                 </Group>
                 {message.author === Author.MODEL && actions.length !== 0 && (
                   <Box
-                    bg="var(--tc-surface)"
-                    bdrs="md"
                     opacity={isNodeHovered || insertingAfter?.id === message.id ? 1 : 0.5}
                     onMouseEnter={onNodeHover}
                     onMouseLeave={onNodeLeave}
@@ -222,7 +219,7 @@ const Message = memo(
           opened={isConfirmingDelete}
           onClose={onCancelDelete}
           title="Delete Message"
-          styles={{ content: glassStyle }}
+          styles={{ content: GLASS_STYLE }}
           centered
         >
           <Button

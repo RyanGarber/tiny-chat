@@ -37,8 +37,10 @@ export function createTestProvider(): ProviderV3 {
                 controller.enqueue({
                   type: 'tool-call',
                   toolCallId: '1',
-                  toolName: 'list_pages',
-                  input: JSON.stringify({}),
+                  toolName: 'read_file',
+                  input: JSON.stringify({
+                    path: '~/.zshrc',
+                  }),
                 });
               } else {
                 controller.enqueue({
@@ -51,7 +53,7 @@ export function createTestProvider(): ProviderV3 {
                 controller.enqueue({
                   type: 'text-delta',
                   id: '1',
-                  delta: `Done! 🎉`,
+                  delta: `<message role="assistant" model="test-generate">\nDone! 🎉</message>`,
                   providerMetadata: {},
                 });
                 await sleep(1000);

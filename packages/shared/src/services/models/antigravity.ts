@@ -1,22 +1,26 @@
 import type { ObjectStreamPart, TextStreamPart } from 'ai';
 import type { LanguageModelV3, LanguageModelV3StreamPart, ProviderV3 } from '@ai-sdk/provider';
+import type { AntigravityAccount } from '@ryangarber/ai-sdk-antigravity-proxy';
 
-export function createGeminiProvider(url: string, refreshToken: string): ProviderV3 {
+export function createAntigravityProxyRelayProvider(
+  url: string,
+  account: AntigravityAccount,
+): ProviderV3 {
   return {
     specificationVersion: 'v3',
     languageModel(modelId: string): LanguageModelV3 {
       return {
         specificationVersion: 'v3',
-        provider: 'gemini',
+        provider: 'antigravity-proxy-relay',
         modelId,
         supportedUrls: {},
         doGenerate() {
           throw new Error('Only streams are supported.');
         },
         async doStream(options) {
-          console.log('Calling gemini provider with options:', options);
+          console.log('Calling Antigravity relay with options:', account, options);
           const result = await fetch(url, {
-            headers: { Authorization: `Bearer ${refreshToken}` },
+            headers: { 'X-Antigravity-Account': JSON.stringify(account) },
             method: 'POST',
             body: JSON.stringify({
               model: modelId,

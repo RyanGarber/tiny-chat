@@ -6,14 +6,19 @@ import { initLogs } from '@tiny-chat/shared/src/logs.ts';
 
 config({ path: resolve(import.meta.dirname, '../../../.env'), quiet: true });
 
-const [{ authHandler }, { apiHandler }, { geminiHandler }, { mcpHandler }, { default: onTick }] =
-  await Promise.all([
-    import('./services/auth.ts'),
-    import('./services/api.ts'),
-    import('./services/gemini.ts'),
-    import('./services/mcp.ts'),
-    import('./services/worker.ts'),
-  ]);
+const [
+  { authHandler },
+  { apiHandler },
+  { antigravityHandler },
+  { mcpHandler },
+  { default: onTick },
+] = await Promise.all([
+  import('./services/auth.ts'),
+  import('./services/api.ts'),
+  import('./services/antigravity.ts'),
+  import('./services/mcp.ts'),
+  import('./services/worker.ts'),
+]);
 
 if (import.meta.main) initLogs(undefined, true);
 
@@ -23,7 +28,7 @@ const server = createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'Content-Type, Transfer-Encoding, Authorization, X-Requested-With, Accept, tRPC-Accept, X-Upload-Type, X-Mcp-Url, Mcp-Protocol-Version, Mcp-Session-Id, Mcp-Method, Mcp-Name',
+    'Content-Type, Transfer-Encoding, Authorization, X-Requested-With, Accept, tRPC-Accept, X-Antigravity-Account, X-Mcp-Url, Mcp-Protocol-Version, Mcp-Session-Id, Mcp-Method, Mcp-Name',
   );
 
   if (req.method === 'OPTIONS') {
@@ -36,8 +41,8 @@ const server = createServer((req, res) => {
     apiHandler(req, res);
   } else if (req.url?.startsWith(process.env.VITE_BACKEND_PATH_AUTH!)) {
     void authHandler(req, res);
-  } else if (req.url?.startsWith('/@/gemini')) {
-    void geminiHandler(req, res);
+  } else if (req.url?.startsWith('/@/antigravity')) {
+    void antigravityHandler(req, res);
   } else if (req.url?.startsWith('/@/mcp')) {
     void mcpHandler(req, res);
   } else {

@@ -290,6 +290,23 @@ export type FloatWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedFloatFilter<$PrismaModel>
 }
 
+export type EnumUploadTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.UploadType | Prisma.EnumUploadTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.UploadType[] | Prisma.ListEnumUploadTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.UploadType[] | Prisma.ListEnumUploadTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumUploadTypeFilter<$PrismaModel> | $Enums.UploadType
+}
+
+export type EnumUploadTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.UploadType | Prisma.EnumUploadTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.UploadType[] | Prisma.ListEnumUploadTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.UploadType[] | Prisma.ListEnumUploadTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumUploadTypeWithAggregatesFilter<$PrismaModel> | $Enums.UploadType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumUploadTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumUploadTypeFilter<$PrismaModel>
+}
+
 export type BytesFilter<$PrismaModel = never> = {
   equals?: runtime.Bytes | Prisma.BytesFieldRefInput<$PrismaModel>
   in?: runtime.Bytes[] | Prisma.ListBytesFieldRefInput<$PrismaModel>
@@ -567,6 +584,23 @@ export type NestedFloatWithAggregatesFilter<$PrismaModel = never> = {
   _sum?: Prisma.NestedFloatFilter<$PrismaModel>
   _min?: Prisma.NestedFloatFilter<$PrismaModel>
   _max?: Prisma.NestedFloatFilter<$PrismaModel>
+}
+
+export type NestedEnumUploadTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.UploadType | Prisma.EnumUploadTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.UploadType[] | Prisma.ListEnumUploadTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.UploadType[] | Prisma.ListEnumUploadTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumUploadTypeFilter<$PrismaModel> | $Enums.UploadType
+}
+
+export type NestedEnumUploadTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.UploadType | Prisma.EnumUploadTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.UploadType[] | Prisma.ListEnumUploadTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.UploadType[] | Prisma.ListEnumUploadTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumUploadTypeWithAggregatesFilter<$PrismaModel> | $Enums.UploadType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumUploadTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumUploadTypeFilter<$PrismaModel>
 }
 
 export type NestedBytesFilter<$PrismaModel = never> = {

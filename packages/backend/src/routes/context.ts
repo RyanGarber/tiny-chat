@@ -1,8 +1,5 @@
-import { zToolContext, type zToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
-import backend from '../tools/index.ts';
 import { z } from 'zod';
 import { procedure, router } from '../index.ts';
-import { getGenerationCallbacksBackend } from '../services/worker.ts';
 import { type Action, type Memory, Prisma } from '../../generated/prisma/client.ts';
 import { EMBED_FILES } from '../utils.ts';
 import { texts } from '@tiny-chat/shared/src/utils.ts';
@@ -118,54 +115,6 @@ export async function getEmbedding(user: zUser, { messageId }: { messageId?: str
 }
 
 export default router({
-  listTools: procedure.query((): zToolGroup[] => {
-    return backend;
-  }),
-
-  callTool: procedure
-    .input(
-      z.object({
-        context: zToolContext,
-        name: z.string(),
-        input: z.any(),
-        userInput: z.any(),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      await globalThis.prisma.chat.findUniqueOrThrow({
-        where: { id: input.context.chat?.id, userId: ctx.session.user.id },
-      });
-      const tool = backend.flatMap((g) => g.tools).find((t) => t.name === input.name);
-      if (!tool) throw new Error(`Tool not found: ${input.name}`);
-      console.log(`Running tool ${input.name} with params ${JSON.stringify(input.input)}`);
-      return (await tool.run(
-        {
-          ...input.context,
-          callbacks: getGenerationCallbacksBackend(ctx.session.user),
-        },
-        input.input,
-        input.userInput,
-      )) as Promise<z.ZodAny>;
-    }),
-
-  listSkills: procedure
-    .input(z.object({ withResources: z.boolean().optional() }))
-    .query(({ ctx, input }) => {
-      return globalThis.prisma.skill.findMany({
-        where: { userId: ctx.session.user.id },
-        include: { files: input.withResources ? true : { where: { path: { has: 'SKILL.md' } } } },
-      });
-    }),
-
-  listSkillFiles: procedure.input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
-    return (
-      await globalThis.prisma.skill.findUniqueOrThrow({
-        where: { id: input.id, userId: ctx.session.user.id },
-        include: { files: true },
-      })
-    ).files;
-  }),
-
   listMemories: procedure.query(async ({ ctx }): Promise<Memory[]> => {
     return globalThis.prisma.memory.findMany({
       where: { userId: ctx.session.user.id },
@@ -311,13 +260,19 @@ export default router({
     }),
 
   resetEmbeddings: procedure.mutation(async ({ ctx }) => {
-    await globalThis.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`UPDATE message
+    await globalThis.prisma.$transaction([
+      globalThis.prisma.$executeRaw`UPDATE message
                            SET embedding = NULL
-                           WHERE "userId" = ${ctx.session.user.id}`;
-      await tx.$executeRaw`UPDATE memory
+                           WHERE "userId" = ${ctx.session.user.id}`,
+      globalThis.prisma.$executeRaw`UPDATE action
                            SET embedding = NULL
-                           WHERE "userId" = ${ctx.session.user.id}`;
-    });
+                           WHERE "userId" = ${ctx.session.user.id}`,
+      globalThis.prisma.$executeRaw`UPDATE memory
+                           SET embedding = NULL
+                           WHERE "userId" = ${ctx.session.user.id}`,
+      globalThis.prisma.$executeRaw`UPDATE file
+                           SET embedding = NULL
+                           WHERE "userId" = ${ctx.session.user.id}`,
+    ]);
   }),
 });

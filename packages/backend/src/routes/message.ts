@@ -3,7 +3,7 @@ import { createId } from '@paralleldrive/cuid2';
 import { Author, type Message as PrismaMessage } from '../../generated/prisma/client.ts';
 import { type MessageCreateInput } from '../../generated/prisma/models.ts';
 import { zConfig, zData, zMetadata } from '@tiny-chat/shared/src/types/chat.ts';
-import { wrapMessage } from '@tiny-chat/shared/src/utils.ts';
+import { texts, wrapMessage } from '@tiny-chat/shared/src/utils.ts';
 import { procedure, router } from '../index.ts';
 import { createFolder } from './chat.ts';
 
@@ -96,13 +96,18 @@ export default router({
     .mutation(async ({ ctx, input }) => {
       console.log(`Editing message ${input.id} (truncate: ${input.truncate})`);
 
+      const original = await globalThis.prisma.message.findUnique({
+        where: { id: input.id, userId: ctx.session.user.id },
+        select: { data: true },
+      });
+
       if (input.truncate) {
         console.log(`Truncating messages after ${input.id}`);
+        const toDelete: string[] = [];
         let message = await globalThis.prisma.message.findUniqueOrThrow({
           where: { id: input.id, userId: ctx.session.user.id },
           include: { next: true },
         });
-        const toDelete: string[] = [];
         while (message.next) {
           const nextMessage = await globalThis.prisma.message.findUniqueOrThrow({
             where: { id: message.next.id, userId: ctx.session.user.id },
@@ -114,7 +119,7 @@ export default router({
         await globalThis.prisma.message.deleteMany({ where: { id: { in: toDelete } } });
       }
 
-      const message = await globalThis.prisma.message.update({
+      const edited = await globalThis.prisma.message.update({
         where: { id: input.id, userId: ctx.session.user.id },
         data: {
           author: input.author,
@@ -125,7 +130,14 @@ export default router({
         },
       });
 
-      return wrapMessage(message);
+      // TODO - why would `original` not exist when edit is called?
+      if (texts(zData.parse(edited.data)) !== texts(zData.parse(original?.data ?? []))) {
+        console.log(`Message ${input.id} changed, resetting embedding`);
+        await globalThis.prisma
+          .$executeRaw`UPDATE message SET embedding = NULL WHERE id = ${edited.id}`;
+      }
+
+      return wrapMessage(edited);
     }),
 
   delete: procedure.input(z.object({ id: z.cuid2() })).mutation(async ({ ctx, input }) => {

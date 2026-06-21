@@ -1,12 +1,12 @@
-import { Stack, Group, Menu, Modal, Overlay, Tabs, Text } from '@mantine/core';
+import { Group, Menu, Modal, Overlay, Stack, Tabs, Text } from '@mantine/core';
 import { Icon } from '@iconify/react';
-import { useState, useCallback } from 'react';
-import { glassStyle } from '@/utils/glass';
+import { useCallback, useState } from 'react';
 import { UploadFile } from '@/features/input/components/UploadFile';
 import { UploadRepo } from '@/features/input/components/UploadRepo';
 import { useUploads } from '../hooks/useUploads';
 import { Dropzone } from '@mantine/dropzone';
-import { isTauri } from '@/utils/api';
+import { isTauri } from '@/utils/api.ts';
+import { GLASS_STYLE } from '@/utils/theme.ts';
 
 export default function Upload({
   opened,
@@ -23,7 +23,7 @@ export default function Upload({
   return (
     <>
       <Dropzone.FullScreen
-        onDrop={(files) => files.forEach((file) => upload.mutate({ type: 'upload', file }))}
+        onDrop={(files) => files.forEach((file) => upload.mutate({ type: 'ATTACHMENT', file }))}
         zIndex="calc(var(--mantine-z-index-modal) - 1)"
         active={!opened}
         styles={{
@@ -54,7 +54,7 @@ export default function Upload({
         onClose={onClose}
         title="Uploads"
         size="lg"
-        styles={{ content: glassStyle }}
+        styles={{ content: GLASS_STYLE }}
         centered
       >
         <Tabs value={tab} onChange={(val) => onTabChange(val as 'file' | 'repo')} variant="pills">
@@ -146,7 +146,7 @@ export function ScreenshotMenuItem({ disabled }: { disabled?: boolean }) {
         if (blob) {
           const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
           const file = new File([blob], `Screenshot-${timestamp}.png`, { type: 'image/png' });
-          upload.mutate({ type: 'upload', file });
+          upload.mutate({ type: 'ATTACHMENT', file });
         }
       }, 'image/png');
     } catch (e) {

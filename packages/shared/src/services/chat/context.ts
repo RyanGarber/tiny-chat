@@ -1,163 +1,81 @@
 import type { GenerationCallbacks } from './generate.ts';
-import type { FileSearchResult, zContextItem } from '../../types/chat.ts';
-import { Author, type zDataPart, type zGenerateInput } from '../../types/chat.ts';
-import { getLastPrompt, normalizeText, snippetText, texts } from '../../utils.ts';
+import type { zChat } from '../../types/chat.ts';
+import {
+  Author,
+  type zContextItem,
+  type zData,
+  type zDataPart,
+  type zGenerateInput,
+} from '../../types/chat.ts';
+import { normalizeText } from '../../utils.ts';
 import type { zUser } from '../../types/user.ts';
-import { buildGenerationInstructions } from './instructions.ts';
+import { buildGenerationInstructions, formatLocalDate } from './instructions.ts';
 import type { zToolGroup } from '../../types/tool.ts';
 import type { zSkill } from '../../types/skill.ts';
-import type { File } from '../../../../backend/generated/prisma/client.ts';
 import { format } from 'timeago.js';
+import { toChatUri } from '../../utils/files.ts';
 
 export async function buildContext(
   user: zUser,
-  callbacks: GenerationCallbacks,
+  chat: zChat | null,
   input: zGenerateInput,
   toolGroups: zToolGroup[],
   skills: zSkill[],
+  callbacks: GenerationCallbacks,
 ) {
-  console.log('[Context] input context:', input.context);
+  const files = await callbacks.listFilesInChat(chat?.id);
+  console.log(`[context] files in chat:`, files);
 
-  const prompt = getLastPrompt(input.context);
-  const promptText = texts(prompt.data);
-  const promptEmbedding = prompt.id
-    ? await callbacks.getEmbedding({ messageId: prompt.id })
-    : await callbacks.embed(promptText);
+  const context: zContextItem[] = input.context.map((m, i) => {
+    const previous = input.context[i - 1];
 
-  const context: zContextItem[] = await Promise.all(
-    input.context.map(async (m, i) => {
-      let isFirstText = true;
-
-      const uploadFiles: Record<string, File[]> = {};
-      const uploadFileContexts: Record<string, FileSearchResult[]> = {};
-      for (const upload of m.data
-        .flat()
-        .filter((d): d is Extract<zDataPart, { type: 'upload' }> => d.type === 'upload')) {
-        uploadFiles[upload.id] = await callbacks.listUploadFiles(upload.id);
-        uploadFileContexts[upload.id] = await callbacks.searchFiles(
-          m.data.flat().flatMap((p) => (p.type === 'upload' ? [p.id] : [])),
-          promptText,
-          promptEmbedding ?? undefined,
-          3,
-        );
-      }
-
-      return {
-        ...m,
-        data: m.data.map((d) =>
-          d.flatMap((p): zDataPart[] => {
-            if (p.type === 'upload') {
-              console.log(`[Context] handling ${p.name} (${uploadFiles[p.id]?.length ?? 0} files)`);
-              if (uploadFiles[p.id]?.length === 1) {
-                const bytes = Array.from(uploadFiles[p.id][0].data, (byte) =>
-                  String.fromCodePoint(byte),
-                ).join('');
-                return [
-                  { type: 'text', value: `Uploaded file (${p.name}):` },
-                  {
-                    type: 'inputFile',
-                    name: uploadFiles[p.id][0].path[0],
-                    mime: uploadFiles[p.id][0].mime,
-                    data: btoa(bytes),
-                  },
-                ];
-              } else if (uploadFiles[p.id]?.length) {
-                const buildFileTreeMarkdown = (files: (typeof uploadFiles)[string]) => {
-                  const tree: Record<string, unknown> = {};
-
-                  for (const file of files) {
-                    let node = tree;
-                    for (let i = 0; i < file.path.length - 1; i++) {
-                      const segment = file.path[i];
-                      node[segment] ??= {};
-                      node = node[segment] as Record<string, unknown>;
-                    }
-                    const filename = file.path[file.path.length - 1];
-                    node[filename] = null; // leaf = file
-                  }
-
-                  const renderTree = (node: Record<string, unknown>, prefix = ''): string => {
-                    const entries = Object.entries(node);
-                    return entries
-                      .map(([name, children], i) => {
-                        const isLast = i === entries.length - 1;
-                        const connector = isLast ? '└── ' : '├── ';
-                        const childPrefix = prefix + (isLast ? '    ' : '│   ');
-                        if (children === null) {
-                          return `${prefix}${connector}${name}`;
-                        }
-                        const subtree = renderTree(
-                          children as Record<string, unknown>,
-                          childPrefix,
-                        );
-                        return `${prefix}${connector}${name}/\n${subtree}`;
-                      })
-                      .join('\n');
-                  };
-
-                  return '```\n' + renderTree(tree) + '\n```';
-                };
-                const treeMarkdown = buildFileTreeMarkdown(uploadFiles[p.id]);
-                const snippets = uploadFileContexts[p.id]
-                  .map((f) => snippetText(new TextDecoder().decode(f.data), promptText, 2500))
-                  .join('\n\n---\n\n');
-                console.log('[Context] upload files:', treeMarkdown, snippets);
-                return [
-                  {
-                    type: 'text',
-                    value: `Relevant files from upload (${p.name}):\n${treeMarkdown}\n\n---${snippets}`,
-                  },
-                ];
-              }
+    return buildMessageTree(
+      m,
+      previous,
+      m.data.map((d) =>
+        d.flatMap((p): zDataPart[] => {
+          if (p.type === 'upload') {
+            console.log(
+              `[context] transforming upload '${p.name}' with ${files[p.id]?.length ?? 0} file(s)`,
+            );
+            if (files[p.id]?.length) {
+              const xml = buildFileTree(p, files[p.id]);
+              console.log('[context] upload tree:', xml);
+              return [
+                {
+                  type: 'text',
+                  value: xml,
+                },
+              ];
             }
-            if (p.type === 'text') {
-              let value = normalizeText(p.value).replace(/((?:^::>:: .*$\n?)+)/gm, (block) => {
-                const lines = block
-                  .trim()
-                  .split('\n')
-                  .map((l) => l.replace(/^::>:: /, ''));
-                let referencedModel = '';
-                let contentLines = lines;
-                if (lines[0].startsWith('::model=') && lines[0].endsWith('::')) {
-                  referencedModel = lines[0].slice('::model='.length, -2);
-                  contentLines = lines.slice(1);
-                }
-                const prefix = referencedModel
-                  ? `Earlier, ${referencedModel === input.config.model ? 'you' : referencedModel} said:\n`
-                  : '';
-                return prefix + contentLines.map((l) => `> ${l}`).join('\n') + '\n';
-              });
-              if (isFirstText && m.id) {
-                let heading;
-                if (m.author === Author.USER) {
-                  heading = `[user]\n`;
-                  if (i !== 0) {
-                    const previous = input.context[i - 1];
-                    if (m.createdAt && previous?.createdAt) {
-                      const delay = format(previous.createdAt, undefined, {
-                        relativeDate: m.createdAt,
-                      }).replace(' ago', '');
-                      if (delay !== 'just now') {
-                        heading += `[info: conversation timing: ${delay} ${delay.endsWith('s') ? 'have' : 'has'} passed since the last message.]\n`;
-                      }
-                    }
-                  }
-                } else {
-                  heading = `[assistant${m.config ? `:model=${m.config?.model}` : ''}]\n`;
-                }
-                value = heading + '\n' + value;
-                isFirstText = false;
+          }
+          if (p.type === 'text') {
+            const value = normalizeText(p.value).replace(/((?:^::>:: .*$\n?)+)/gm, (block) => {
+              const lines = block
+                .trim()
+                .split('\n')
+                .map((l) => l.replace(/^::>:: /, ''));
+              let referencedModel = '';
+              let contentLines = lines;
+              if (lines[0].startsWith('::model=') && lines[0].endsWith('::')) {
+                referencedModel = lines[0].slice('::model='.length, -2);
+                contentLines = lines.slice(1);
               }
-              return [{ ...p, value }];
-            }
-            return [p];
-          }),
-        ),
-      };
-    }),
-  );
+              const prefix = referencedModel
+                ? `Earlier, ${referencedModel === input.config.model ? 'you' : referencedModel} said:\n`
+                : '';
+              return prefix + contentLines.map((l) => `> ${l}`).join('\n') + '\n';
+            });
+            return [{ ...p, value }];
+          }
+          return [p];
+        }),
+      ),
+      input.timezone,
+    );
+  });
 
-  console.log('[Context] final context:', context);
+  console.log('[context] final context:', context);
 
   const instructions = await buildGenerationInstructions(
     user,
@@ -168,7 +86,87 @@ export async function buildContext(
     skills,
   );
 
-  console.log('[Context] final instructions:', instructions);
+  console.log('[context] final instructions:', instructions);
 
   return { context, instructions };
+}
+
+export function buildMessageTree(
+  message: zContextItem,
+  previous: zContextItem | undefined,
+  data: zData,
+  timezone?: string,
+): zContextItem {
+  const attributes = {
+    role: message.author === Author.USER ? 'user' : 'assistant',
+  } as Record<string, string>;
+
+  if (message.author === Author.MODEL) {
+    const model = message.config?.model;
+    if (model) attributes.model = model;
+  }
+
+  if (message.createdAt) {
+    attributes.sent = formatLocalDate(message.createdAt, timezone);
+  }
+
+  if (message.author === Author.USER) {
+    const after =
+      message.createdAt && previous?.createdAt
+        ? format(previous.createdAt, undefined, {
+            relativeDate: message.createdAt,
+          }).replace(' ago', '')
+        : null;
+    if (after) attributes.gap = after;
+  }
+
+  return {
+    ...message,
+    data: [
+      [
+        {
+          type: 'text',
+          value: `<message${Object.entries(attributes)
+            .map(([k, v]) => ` ${k}="${v}"`)
+            .join('')}>`,
+        },
+      ],
+      ...data,
+      [{ type: 'text', value: '</message>' }],
+    ],
+  };
+}
+
+export function buildFileTree(upload: { id: string; name: string }, files: { path: string[] }[]) {
+  const tree: Record<string, unknown> = {};
+
+  for (const file of files) {
+    const path = file.path.filter((part) => part.length);
+    if (path.length === 0) continue;
+    let node = tree;
+    for (let i = 0; i < path.length - 1; i++) {
+      const segment = path[i];
+      node[segment] ??= {};
+      node = node[segment] as Record<string, unknown>;
+    }
+    const filename = path[path.length - 1];
+    node[filename] = null; // leaf = file
+  }
+
+  const renderTree = (node: Record<string, unknown>, prefix: string[] = []): string => {
+    const entries = Object.entries(node);
+    return entries
+      .flatMap(([name, children]) => {
+        const uri = toChatUri(upload.id, [...prefix, name]);
+        if (!name.length) return [];
+        if (children === null) {
+          return `${'  '.repeat(prefix.length + 1)}<file name="${name}" path="${uri}" />`;
+        }
+        const subtree = renderTree(children as Record<string, unknown>, [...prefix, name]);
+        return `${'  '.repeat(prefix.length + 1)}<folder name="${name}">\n${subtree}\n${'  '.repeat(prefix.length + 1)}</folder>`;
+      })
+      .join('\n');
+  };
+
+  return `<attachment name="${upload.name}" path="${toChatUri(upload.id)}">\n${renderTree(tree)}\n</attachment>`;
 }

@@ -32,6 +32,7 @@ export const McpService = {
       let error: unknown;
 
       const tryConnect = async (transport: Transport) => {
+        console.log('connecting to mcp server:', server.name, transport);
         try {
           const onerror = transport.onerror;
           await new Promise((resolve, reject) => {

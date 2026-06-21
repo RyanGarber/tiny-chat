@@ -1,22 +1,26 @@
 import { trpc } from '@/utils/api';
 import { chatProviders } from '@tiny-chat/shared/src/providers/chat';
-import { zUser } from '@tiny-chat/shared/src/types/user';
+import type { zUser } from '@tiny-chat/shared/src/types/user';
 
 export const ProviderService = {
-  getChatProviders: async () => {
-    // TODO - toggle for enabling WebLLMProvider
-    const { WebLLMProvider } = await import('./WebLLMProvider');
-    return [...chatProviders, WebLLMProvider];
+  getChatProviders: async (user: zUser) => {
+    const providers = [...chatProviders];
+    if (user.settings.useBrowserModels) {
+      const { WebLLMProvider } = await import('./WebLLMProvider');
+      providers.push(WebLLMProvider);
+    }
+    return providers;
   },
 
   getChatProviderCache: async (user: zUser) => {
     const { providers } = await trpc.user.getCache.query();
-    // TODO - toggle for enabling WebLLMProvider
-    const { WebLLMProvider } = await import('./WebLLMProvider');
-    providers.chat.push({
-      ...WebLLMProvider,
-      models: await WebLLMProvider.getModels(user),
-    });
+    if (user.settings.useBrowserModels) {
+      const { WebLLMProvider } = await import('./WebLLMProvider');
+      providers.chat.push({
+        ...WebLLMProvider,
+        models: await WebLLMProvider.getModels(user),
+      });
+    }
     return providers;
   },
 

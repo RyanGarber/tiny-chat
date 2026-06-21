@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { GenerateService, getGenerationCallbacks } from '../services/GenerateService';
-import type { MessageState, zDataPart } from '@tiny-chat/shared/src/types/chat';
+import type { MessageState, zDataPart, zToolResultValue } from '@tiny-chat/shared/src/types/chat';
 import { useChat } from '@/features/chat/hooks/useChat';
 import { useProviders } from '@/features/input/hooks/useProviders';
 import { useSkills } from '@/features/input/hooks/useSkills';
@@ -8,7 +8,9 @@ import { useTools } from '@/features/input/hooks/useTools';
 import { auth, trpc } from '@/utils/api';
 import type { ToolContext } from '@tiny-chat/shared/src/types/tool';
 
-export const toolCallRejectedMessage = 'User rejected the tool call.';
+export const toolCallRejection: zToolResultValue = [
+  { type: 'json', value: 'Tool call rejected by user' },
+];
 export const toolInputMutationKey = ['toolInput'] as const;
 
 export const useToolInput = () => {
@@ -47,8 +49,11 @@ export const useToolInput = () => {
         callbacks: getGenerationCallbacks(session.data!.user),
       };
 
-      const tool = tools.find((t) => t.name === part.name);
-      if (!tool) throw new Error(`Tool ${part.name} not found`);
+      const matchedTools = tools.filter((t) => t.name === part.name);
+      const tool = tools.find(
+        (t) => t.name === part.name && (matchedTools.length === 1 || t.overrides),
+      );
+      if (!tool) throw new Error(`No unambiguous tool ${part.name} found`);
 
       let result: zDataPart;
       if (tool.requirements?.approval && !approved) {
@@ -57,11 +62,11 @@ export const useToolInput = () => {
           id: part.id,
           name: part.name,
           error: true,
-          value: toolCallRejectedMessage,
+          value: toolCallRejection,
         };
       } else {
         try {
-          const output = (await tool.run(context, part.args, value)) as unknown;
+          const output = await tool.run(context, part.args, value);
           result = {
             type: 'toolResult',
             id: part.id,
@@ -75,7 +80,7 @@ export const useToolInput = () => {
             id: part.id,
             name: part.name,
             error: true,
-            value: e instanceof Error ? e.message : JSON.stringify(e),
+            value: [{ type: 'json', value: e instanceof Error ? e.message : JSON.stringify(e) }],
           };
         }
       }

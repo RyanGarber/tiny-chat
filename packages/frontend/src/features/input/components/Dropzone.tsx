@@ -4,14 +4,15 @@ import { Dropzone as MantineDropzone, type DropzoneProps } from '@mantine/dropzo
 import { useUploads } from '../hooks/useUploads';
 import { useState } from 'react';
 import type { zUploadOutput } from '@tiny-chat/shared/src/types/chat';
-import { glassStyle } from '@/utils/glass';
+import { GLASS_STYLE } from '@/utils/theme.ts';
+import { UploadType } from '@tiny-chat/backend/generated/prisma/enums.ts';
 
 export default function Dropzone({
   type,
   options,
   ...props
 }: Partial<DropzoneProps> & {
-  type: 'upload' | 'skill';
+  type: UploadType;
   options?: Parameters<ReturnType<typeof useUploads>['upload']['mutate']>[1];
 }) {
   const { upload } = useUploads();
@@ -76,7 +77,7 @@ export default function Dropzone({
         {Array.from(uploads.entries())
           .filter(([, { result }]) => !result)
           .map(([file, { progress, error }]) => (
-            <Card key={file.name} style={{ ...glassStyle }} w="100%">
+            <Card key={file.name} style={{ ...GLASS_STYLE }} w="100%">
               <Stack gap="sm">
                 <Group gap={5}>
                   <Box flex={1} miw={0}>

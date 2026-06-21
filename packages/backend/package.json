@@ -9,6 +9,7 @@
     "@paralleldrive/cuid2": "^3.3.0",
     "@prisma/adapter-pg": "^7.4.1",
     "@prisma/client": "^7.4.1",
+    "@ryangarber/ai-sdk-antigravity-proxy": "^0.1.2",
     "@ryangarber/legiscan-ts": "^2.1.0",
     "@tiny-chat/shared": "workspace:*",
     "@trpc/server": "^11.10.0",
@@ -17,11 +18,9 @@
     "better-auth": "^1.4.18",
     "busboy": "^1.6.0",
     "fflate": "^0.8.2",
-    "file-type": "^21.3.3",
     "internal-ip": "^9.0.0",
     "markitdown-ts": "^0.0.10",
     "nanoid": "^3.3.11",
-    "pg": "^8.18.0",
     "rrule": "^2.8.1",
     "sharp": "^0.34.5",
     "superjson": "^2.2.6",
@@ -29,12 +28,14 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@trpc/client": "^11.13.4",
     "@types/busboy": "^1.5.4",
     "@types/node": "^25.2.3",
-    "@types/pg": "^8.16.0",
     "@types/ws": "^8.18.1",
     "dotenv": "^17.3.1",
     "dotenv-cli": "^11.0.0",
-    "prisma": "^7.4.1"
+    "prisma": "^7.4.1",
+    "superjson": "^2.2.6",
+    "tsx": "^4.22.4"
   }
 }

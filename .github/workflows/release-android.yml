@@ -82,7 +82,7 @@ jobs:
       - name: Package APKs
         run: |
           APK_DIR="apps/tauri/gen/android/app/build/outputs/apk"
-          OUTPUT="$RUNNER_TEMP/TinyChat-Android.zip"
+          OUTPUT="$RUNNER_TEMP/Tiny.Chat_Android.zip"
           find "$APK_DIR" -name "*-unsigned.apk" | while read apk; do
             echo "Found: $apk"
           done
@@ -99,5 +99,5 @@ jobs:
           tag_name: ${{ steps.tag.outputs.sha_short }}
           name: ${{ steps.tag.outputs.sha_short }}
           body: Download for Windows, macOS, or Linux, or sideload to your iOS or Android device.
-          files: ${{ runner.temp }}/TinyChat-Android.zip
+          files: ${{ runner.temp }}/Tiny.Chat_Android.zip
           fail_on_unmatched_files: true

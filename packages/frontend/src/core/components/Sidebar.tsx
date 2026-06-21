@@ -3,7 +3,8 @@ import { useDebouncedValue } from '@mantine/hooks';
 import { ActionIcon, Avatar, Burger, Group, NavLink, Stack, Text, Tooltip } from '@mantine/core';
 import { Spotlight, spotlight, SpotlightActionData } from '@mantine/spotlight';
 import { useLayoutStore } from '@/core/stores/useLayoutStore.tsx';
-import { auth, env, query } from '@/utils/api';
+import { auth, env, query } from '@/utils/api.ts';
+import { GLASS_STYLE } from '@/utils/theme.ts';
 import SidebarAccount from '@/core/components/SidebarAccount.tsx';
 import { Icon } from '@iconify/react';
 import { scrubText, snippetText, texts } from '@tiny-chat/shared/src/utils.ts';
@@ -12,7 +13,6 @@ import { version } from '../../../../../apps/tauri/tauri.conf.json';
 import SidebarChatList from './SidebarChatList.tsx';
 import { useChat } from '@/features/chat/hooks/useChat.ts';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { glassStyle } from '@/utils/glass.tsx';
 import { useChatStore } from '@/features/chat/stores/useChatStore';
 import { ChatService } from '@/features/chat/services/ChatService.ts';
 import { useRetrieval } from '@/features/settings/hooks/useRetrieval.ts';
@@ -59,7 +59,7 @@ export default function Sidebar() {
         return { text: debouncedQuery, embedding: undefined };
       }
 
-      const provider = (await ProviderService.getChatProviders()).find(
+      const provider = (await ProviderService.getChatProviders(session!.user)).find(
         (p) => p.name === embeddingConfig.data?.provider,
       );
       if (!provider) return { text: debouncedQuery, embedding: undefined };
@@ -93,7 +93,7 @@ export default function Sidebar() {
       },
       {
         enabled: debouncedQuery.trim().length >= 3,
-        getNextPageParam: (lastPage, _pages) => lastPage.nextCursor,
+        getNextPageParam: (lastPage) => lastPage.nextCursor,
         select: (data) => {
           return {
             pages: data.pages.map((page) => ({
@@ -142,7 +142,7 @@ export default function Sidebar() {
           }
           filter={(_, actions) => actions}
           styles={{
-            content: glassStyle,
+            content: GLASS_STYLE,
           }}
         />
         <Burger opened={isSidebarOpen} onClick={() => setSidebarOpen(!isSidebarOpen)} size={16} />

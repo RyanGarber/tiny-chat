@@ -15,9 +15,10 @@ import {
 import { useState } from 'react';
 import { format } from 'timeago.js';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { glassStyle } from '@/utils/glass';
+import { GLASS_STYLE } from '@/utils/theme.ts';
 import { useUploads } from '../hooks/useUploads';
 import Sentinel from '@/core/components/Sentinel';
+import { fetchNextEmbeddingBatch } from '@/features/provider/hooks/useEmbedding.ts';
 
 export function UploadRepo({ onClose }: { onClose: () => void }) {
   // Logic from GitHub.tsx
@@ -36,11 +37,12 @@ export function UploadRepo({ onClose }: { onClose: () => void }) {
     ...query.input.cloneRepo.mutationOptions(),
     onSuccess: (data) => {
       addUploads(data);
-      void repoUploads.refetch();
+      void githubUploads.refetch();
+      void fetchNextEmbeddingBatch();
     },
   });
 
-  const { repoUploads, deleteUpload } = useUploads();
+  const { githubUploads, deleteUpload } = useUploads();
 
   return (
     <Stack h="100%" gap="md">
@@ -67,7 +69,7 @@ export function UploadRepo({ onClose }: { onClose: () => void }) {
             )}
             {repos.data?.map((repo) => {
               const [owner, repoName] = repo.fullName.split('/');
-              const historyItem = repoUploads.data?.find(
+              const historyItem = githubUploads.data?.find(
                 (u) => u.repoName === repo.fullName && u.branch === repo.defaultBranch,
               );
 
@@ -83,7 +85,7 @@ export function UploadRepo({ onClose }: { onClose: () => void }) {
                   key={repo.id}
                   p="xs"
                   bdrs="lg"
-                  style={{ ...glassStyle, cursor: historyItem ? 'pointer' : 'default' }}
+                  style={{ ...GLASS_STYLE, cursor: historyItem ? 'pointer' : 'default' }}
                   onClick={() => {
                     if (!historyItem) return;
                     addUploads({ type: 'upload', id: historyItem.id, name: historyItem.name });
@@ -126,13 +128,13 @@ export function UploadRepo({ onClose }: { onClose: () => void }) {
                             color="red"
                             onClick={(e) => {
                               e.stopPropagation();
-                              deleteUpload.mutate(historyItem.id);
+                              deleteUpload.mutate({ id: historyItem.id });
                             }}
                             loading={
-                              deleteUpload.isPending && deleteUpload.variables === historyItem.id
+                              deleteUpload.isPending && deleteUpload.variables.id === historyItem.id
                             }
                             disabled={
-                              deleteUpload.isPending && deleteUpload.variables === historyItem.id
+                              deleteUpload.isPending && deleteUpload.variables.id === historyItem.id
                             }
                           >
                             <Icon icon="lucide:trash" height={16} />

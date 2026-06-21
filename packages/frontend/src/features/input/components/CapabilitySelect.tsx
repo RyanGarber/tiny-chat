@@ -12,7 +12,6 @@ import {
   Text,
   TextInput,
 } from '@mantine/core';
-import { glassStyle } from '@/utils/glass';
 import { zMCPServers } from '@tiny-chat/shared/src/types/user';
 import { useConfig } from '../hooks/useConfig';
 import { useMcpServerSettings } from '@/features/settings/hooks/useMcpServerSettings';
@@ -32,6 +31,8 @@ import { auth } from '@/utils/api';
 import { useChat } from '@/features/chat/hooks/useChat';
 import { useLayoutStore } from '@/core/stores/useLayoutStore';
 import { ZodError } from 'zod';
+import { fromChatUri } from '@tiny-chat/shared/src/utils/files.ts';
+import { GLASS_STYLE } from '@/utils/theme.ts';
 
 export const CapabilitySelect = memo(
   ({ opened, onClose }: { opened: boolean; onClose: () => void }) => {
@@ -98,7 +99,7 @@ export const CapabilitySelect = memo(
                 : config.skills?.filter((cs) => cs !== skill.name),
             });
           }}
-          style={{ ...glassStyle }}
+          style={{ ...GLASS_STYLE }}
         >
           <Group wrap="nowrap" align="flex-start">
             <Checkbox.Indicator />
@@ -115,11 +116,11 @@ export const CapabilitySelect = memo(
               >
                 {scrubText(skill.description)}
               </Text>
-              {config.skills?.includes(skill.name) && !config.toolGroups?.includes('skill') && (
+              {config.skills?.includes(skill.name) && !config.toolGroups?.includes('files') && (
                 <Group gap="xs" c="yellow">
                   <Icon icon="lucide:alert-triangle" width={12} />
                   <Text size="xs">
-                    Missing tools: <span style={{ fontWeight: 450 }}>use_skill</span>
+                    Missing tools: <span style={{ fontWeight: 450 }}>read_file</span>
                   </Text>
                 </Group>
               )}
@@ -159,7 +160,7 @@ export const CapabilitySelect = memo(
         title="Tools & Skills"
         zIndex={1000}
         size="lg"
-        styles={{ content: { ...glassStyle } }}
+        styles={{ content: { ...GLASS_STYLE } }}
         centered
       >
         <Tabs defaultValue="tools:built-in" variant="pills">
@@ -207,7 +208,7 @@ export const CapabilitySelect = memo(
                       });
                     }}
                     style={{
-                      ...glassStyle,
+                      ...GLASS_STYLE,
                       cursor: !isBuiltInToolSupported(toolGroup) ? 'not-allowed' : undefined,
                     }}
                   >
@@ -314,7 +315,7 @@ export const CapabilitySelect = memo(
                       });
                     }}
                     style={{
-                      ...glassStyle,
+                      ...GLASS_STYLE,
                       cursor: mcpServer.error !== undefined ? 'not-allowed' : undefined,
                     }}
                     disabled={mcpServer.error !== undefined}
@@ -348,7 +349,7 @@ export const CapabilitySelect = memo(
           </Tabs.Panel>
           <Tabs.Panel value="skills:built-in">
             <Dropzone
-              type="skill"
+              type="SKILL"
               accept={{ 'application/zip': ['.zip'], 'text/markdown': ['.md'] }}
               options={{ onSuccess: () => void remoteSkills.refetch() }}
             />
@@ -363,9 +364,17 @@ export const CapabilitySelect = memo(
                     <ActionIcon
                       variant="subtle"
                       color="red"
-                      loading={deleteRemoteSkill.isPending && deleteRemoteSkill.variables === s.id}
-                      disabled={deleteRemoteSkill.isPending && deleteRemoteSkill.variables === s.id}
-                      onClick={() => deleteRemoteSkill.mutate(s.id)}
+                      loading={
+                        deleteRemoteSkill.isPending &&
+                        deleteRemoteSkill.variables.id === fromChatUri(s.path)!.uploadId
+                      }
+                      disabled={
+                        deleteRemoteSkill.isPending &&
+                        deleteRemoteSkill.variables.id === fromChatUri(s.path)!.uploadId
+                      }
+                      onClick={() =>
+                        deleteRemoteSkill.mutate({ id: fromChatUri(s.path)!.uploadId! })
+                      }
                     >
                       <Icon icon="lucide:trash" />
                     </ActionIcon>

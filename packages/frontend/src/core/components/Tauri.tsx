@@ -12,9 +12,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { TauriTask, useTauriStore } from '@/core/stores/useTauriStore';
 import { useDisclosure } from '@mantine/hooks';
 import { format } from 'timeago.js';
-import { SHADOW } from '@/utils/theme';
+import { GLASS_STYLE, SHADOW } from '@/utils/theme.ts';
 import { useTauri } from '../hooks/useTauri';
-import { glassStyle } from '@/utils/glass';
 
 interface DisplayedTask extends TauriTask {
   /** Whether this task is in its removal animation / hold phase */
@@ -126,7 +125,11 @@ export default function Tauri() {
             if (isRemoval) {
               // Hold at 100 % briefly, then dismiss
               holdTimersRef.current[id] = setTimeout(() => {
-                setDisplayed(({ [id]: _, ...rest }) => rest);
+                setDisplayed((prev) => {
+                  const next = { ...prev };
+                  delete next[id];
+                  return next;
+                });
                 task.removeResolve?.();
                 delete holdTimersRef.current[id];
               }, 600);
@@ -141,7 +144,11 @@ export default function Tauri() {
     // Clean up displayed tasks that are no longer in the store (edge-case safety)
     for (const id of Object.keys(displayedRef.current)) {
       if (!tasks[id] && !holdTimersRef.current[id] && !animFramesRef.current[id]) {
-        setDisplayed(({ [id]: _, ...rest }) => rest);
+        setDisplayed((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
       }
     }
   }, [tasks, setDisplayed]);
@@ -218,7 +225,7 @@ export default function Tauri() {
     <Dialog
       opened={taskList.length > 0 || isUpdateShown}
       withCloseButton={false}
-      style={{ ...glassStyle, boxShadow: SHADOW }}
+      style={{ ...GLASS_STYLE, boxShadow: SHADOW }}
       zIndex={10000}
     >
       <Stack gap="xs">

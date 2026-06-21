@@ -2,7 +2,8 @@ import { type BedrockProviderOptions, createAmazonBedrock } from '@ai-sdk/amazon
 import type { Model, ModelArg } from '../../types/chat.ts';
 import { AnthropicProvider } from './anthropic.ts';
 import type { ChatProvider } from './index.ts';
-import { isModelVersion } from '../../utils.ts';
+import { getBaseModelTransform, isModelVersion } from '../../utils.ts';
+import { createBedrockAnthropic } from '@ai-sdk/amazon-bedrock/anthropic';
 
 const INFERENCE_PROFILES: Record<string, string> = {
   'amazon.nova-2-lite-v1:0': 'global.amazon.nova-2-lite-v1:0',
@@ -33,8 +34,14 @@ export const AWSProvider: ChatProvider = {
     const client = this.getClient(user, env) as ReturnType<typeof createAmazonBedrock>;
     if (!client) return null;
 
-    if (INFERENCE_PROFILES[id]) {
-      return client.languageModel(INFERENCE_PROFILES[id]);
+    if (INFERENCE_PROFILES[id]) id = INFERENCE_PROFILES[id];
+
+    if (isModelVersion(id, 'claude')) {
+      const client = createBedrockAnthropic({
+        region: 'us-east-1',
+        apiKey: user.settings.providers!.aws.apiKey as string,
+      });
+      return client.languageModel(id);
     }
 
     return client.languageModel(id);
@@ -48,11 +55,7 @@ export const AWSProvider: ChatProvider = {
 
   getClientOptions(user, config, env) {
     if (isModelVersion(config.model, 'claude')) {
-      return {
-        bedrock: {
-          reasoningConfig: AnthropicProvider.getClientOptions(user, config, env)?.thinking,
-        } satisfies BedrockProviderOptions,
-      };
+      return AnthropicProvider.getClientOptions(user, config, env);
     }
 
     return {
@@ -70,7 +73,7 @@ export const AWSProvider: ChatProvider = {
       return AnthropicProvider.getPartTransformed?.(user, config, message, part) ?? [part];
     }
 
-    return [part];
+    return [getBaseModelTransform(part)];
   },
 
   async getModels(user) {

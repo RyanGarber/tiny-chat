@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { SkillService } from '../services/SkillService';
 import { useMemo } from 'react';
-import { trpc } from '@/utils/api';
+import { query } from '@/utils/api';
 
 export const localSkillFilesQueryKey = ['skills', 'local'] as const;
 export const remoteSkillFilesQueryKey = ['skills', 'remote'] as const;
@@ -24,7 +24,7 @@ export const useSkills = () => {
   });
 
   const deleteRemoteSkill = useMutation({
-    mutationFn: (id: string) => trpc.input.deleteFiles.mutate({ type: 'skill', id }),
+    ...query.input.deleteUpload.mutationOptions(),
     onSuccess: () => {
       void remoteSkills.refetch();
     },

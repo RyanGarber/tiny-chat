@@ -394,8 +394,7 @@ export const ModelName = {
   Memory: 'Memory',
   Action: 'Action',
   Upload: 'Upload',
-  File: 'File',
-  Skill: 'Skill'
+  File: 'File'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -411,7 +410,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "session" | "account" | "verification" | "folder" | "chat" | "message" | "memory" | "action" | "upload" | "file" | "skill"
+    modelProps: "user" | "session" | "account" | "verification" | "folder" | "chat" | "message" | "memory" | "action" | "upload" | "file"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1229,80 +1228,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    Skill: {
-      payload: Prisma.$SkillPayload<ExtArgs>
-      fields: Prisma.SkillFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.SkillFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SkillPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.SkillFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SkillPayload>
-        }
-        findFirst: {
-          args: Prisma.SkillFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SkillPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.SkillFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SkillPayload>
-        }
-        findMany: {
-          args: Prisma.SkillFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SkillPayload>[]
-        }
-        create: {
-          args: Prisma.SkillCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SkillPayload>
-        }
-        createMany: {
-          args: Prisma.SkillCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.SkillCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SkillPayload>[]
-        }
-        delete: {
-          args: Prisma.SkillDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SkillPayload>
-        }
-        update: {
-          args: Prisma.SkillUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SkillPayload>
-        }
-        deleteMany: {
-          args: Prisma.SkillDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.SkillUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.SkillUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SkillPayload>[]
-        }
-        upsert: {
-          args: Prisma.SkillUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SkillPayload>
-        }
-        aggregate: {
-          args: Prisma.SkillAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateSkill>
-        }
-        groupBy: {
-          args: Prisma.SkillGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.SkillGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.SkillCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.SkillCountAggregateOutputType> | number
-        }
-      }
-    }
   }
 } & {
   other: {
@@ -1351,6 +1276,7 @@ export const UserScalarFieldEnum = {
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   isAnonymous: 'isAnonymous',
+  isEphemeral: 'isEphemeral',
   settings: 'settings',
   cache: 'cache'
 } as const
@@ -1482,7 +1408,8 @@ export const UploadScalarFieldEnum = {
   userId: 'userId',
   name: 'name',
   createdAt: 'createdAt',
-  thumbnail: 'thumbnail'
+  thumbnail: 'thumbnail',
+  type: 'type'
 } as const
 
 export type UploadScalarFieldEnum = (typeof UploadScalarFieldEnum)[keyof typeof UploadScalarFieldEnum]
@@ -1496,19 +1423,10 @@ export const FileScalarFieldEnum = {
   mime: 'mime',
   data: 'data',
   createdAt: 'createdAt',
-  skillId: 'skillId'
+  chatId: 'chatId'
 } as const
 
 export type FileScalarFieldEnum = (typeof FileScalarFieldEnum)[keyof typeof FileScalarFieldEnum]
-
-
-export const SkillScalarFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  createdAt: 'createdAt'
-} as const
-
-export type SkillScalarFieldEnum = (typeof SkillScalarFieldEnum)[keyof typeof SkillScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1663,6 +1581,20 @@ export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaMode
 
 
 /**
+ * Reference to a field of type 'UploadType'
+ */
+export type EnumUploadTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UploadType'>
+    
+
+
+/**
+ * Reference to a field of type 'UploadType[]'
+ */
+export type ListEnumUploadTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UploadType[]'>
+    
+
+
+/**
  * Reference to a field of type 'Bytes'
  */
 export type BytesFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Bytes'>
@@ -1810,7 +1742,6 @@ export type GlobalOmitConfig = {
   action?: Prisma.ActionOmit
   upload?: Prisma.UploadOmit
   file?: Prisma.FileOmit
-  skill?: Prisma.SkillOmit
 }
 
 /* Types for Logging */

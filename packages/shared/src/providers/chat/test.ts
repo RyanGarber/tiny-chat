@@ -1,5 +1,5 @@
 import { createTestProvider } from '../../services/models/test.ts';
-import { getBaseModelArgs } from '../../utils.ts';
+import { getBaseModelArgs, getBaseModelTransform } from '../../utils.ts';
 import type { ChatProvider } from './index.ts';
 
 export const TestProvider: ChatProvider = {
@@ -44,5 +44,9 @@ export const TestProvider: ChatProvider = {
 
   getModelArgs() {
     return getBaseModelArgs(-1);
+  },
+
+  getPartTransformed(_user, _config, _message, part) {
+    return [getBaseModelTransform(part)];
   },
 };

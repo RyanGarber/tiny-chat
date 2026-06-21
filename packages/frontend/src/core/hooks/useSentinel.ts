@@ -1,6 +1,7 @@
 import { useIntersection } from '@mantine/hooks';
 import { useIsFetching, type QueryKey, type UseInfiniteQueryResult } from '@tanstack/react-query';
-import { RefCallback, useCallback, useEffect, useState } from 'react';
+import type { RefCallback} from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export function useSentinel({
   query: { data, hasNextPage, isFetching, fetchNextPage },

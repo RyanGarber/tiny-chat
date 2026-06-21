@@ -1,4 +1,5 @@
-import { RefCallback, useCallback, useEffect, useRef, useState } from 'react';
+import type { RefCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const SCROLL_BOTTOM_THRESHOLD = 80;
 const SCROLL_REENGAGE_THRESHOLD = 2;

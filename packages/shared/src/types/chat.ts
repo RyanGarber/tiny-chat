@@ -1,14 +1,15 @@
-import { z } from 'zod';
+import { type JSONType, z } from 'zod';
 import {
   Author,
   MemoryCategory,
   MemoryStability,
+  UploadType,
 } from '../../../backend/generated/prisma/enums.ts';
-import type { Message } from '../../../backend/generated/prisma/client.ts';
+import { type Chat, type Message } from '../../../backend/generated/prisma/client.ts';
 
-export { Author, MemoryCategory, MemoryStability };
+export { type Chat, Author, MemoryCategory, MemoryStability };
 
-export const DEFAULT_TOOL_GROUPS = ['skill', 'action', 'chat', 'memory', 'upload', 'web', 'reply'];
+export const DEFAULT_TOOL_GROUPS = ['questions', 'actions', 'memories', 'files', 'web'];
 
 export const DEFAULT_SKILLS: string[] = [];
 
@@ -29,6 +30,20 @@ export const zSignature = z.object({
 });
 export type zSignature = z.infer<typeof zSignature>;
 
+export const zToolResultValue = z.array(
+  z.discriminatedUnion('type', [
+    z.object({ type: z.literal('text'), value: z.string() }),
+    z.object({
+      type: z.literal('file'),
+      name: z.string().optional(),
+      mime: z.string(),
+      data: z.base64(),
+    }),
+    z.object({ type: z.literal('json'), value: z.json() }),
+  ]),
+);
+export type zToolResultValue = z.infer<typeof zToolResultValue>;
+
 export const zDataPart = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('thought'),
@@ -43,6 +58,12 @@ export const zDataPart = z.discriminatedUnion('type', [
     signature: zSignature.optional(),
   }),
   z.object({
+    type: z.literal('json'),
+    id: z.string().optional(),
+    value: z.json(),
+    signature: zSignature.optional(),
+  }),
+  z.object({
     type: z.literal('toolCall'),
     id: z.string(),
     name: z.string(),
@@ -53,22 +74,16 @@ export const zDataPart = z.discriminatedUnion('type', [
     type: z.literal('toolResult'),
     id: z.string(),
     name: z.string(),
-    value: z.any(),
+    value: zToolResultValue.catch(({ value }) => [{ type: 'json', value: value as JSONType }]),
     error: z.boolean().optional(),
   }),
   z.object({
-    type: z.literal('outputFile'),
+    type: z.literal('file'),
     id: z.string().optional(),
     name: z.string().optional(),
     mime: z.string(),
     data: z.base64(),
     signature: zSignature.optional(),
-  }),
-  z.object({
-    type: z.literal('inputFile'),
-    name: z.string().optional(),
-    mime: z.string(),
-    data: z.base64(),
   }),
   z.object({
     type: z.literal('upload'),
@@ -180,10 +195,12 @@ export interface MemorySearchResult {
   createdAt: Date;
 }
 
+export { UploadType };
+
 export interface FileSearchResult {
   id: string;
-  uploadId: string;
-  uploadName: string;
+  chatId: string | null;
+  uploadId: string | null;
   path: string[];
   data: Uint8Array;
 }

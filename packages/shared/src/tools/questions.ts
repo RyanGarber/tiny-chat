@@ -23,7 +23,7 @@ const ReplyQuestion: Tool<
   userInput: zReplyQuestionOutput.toJSONSchema(),
   output: zReplyQuestionOutput.toJSONSchema(),
   run: async (_context, _input, userInput) => {
-    return new Promise((r) => r(userInput));
+    return new Promise((r) => r([{ type: 'json', value: userInput }]));
   },
 };
 
@@ -48,7 +48,7 @@ const ReplyColor: Tool<
   userInput: zReplyColorOutput.toJSONSchema(),
   output: zReplyColorOutput.toJSONSchema(),
   run: async (_context, _input, userInput) => {
-    return new Promise((r) => r(userInput));
+    return new Promise((r) => r([{ type: 'json', value: userInput }]));
   },
 };
 
@@ -73,7 +73,7 @@ const ReplyNumber: Tool<
   userInput: zReplyNumberInput.toJSONSchema(),
   output: zReplyNumberOutput.toJSONSchema(),
   run: async (_context, _input, userInput) => {
-    return new Promise((r) => r(userInput));
+    return new Promise((r) => r([{ type: 'json', value: userInput }]));
   },
 };
 
@@ -101,7 +101,7 @@ const ReplyDatetime: Tool<
   userInput: zReplyDatetimeInput.toJSONSchema(),
   output: zReplyDatetimeOutput.toJSONSchema(),
   run: async (_context, _input, userInput) => {
-    return new Promise((r) => r(userInput));
+    return new Promise((r) => r([{ type: 'json', value: userInput }]));
   },
 };
 

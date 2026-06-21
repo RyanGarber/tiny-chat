@@ -7,6 +7,8 @@
       <sourceFolder url="file://$MODULE_DIR$/packages/backend/generated" isTestSource="false" generated="true" />
       <excludeFolder url="file://$MODULE_DIR$/apps/tauri/gen" />
       <excludeFolder url="file://$MODULE_DIR$/apps/tauri/target" />
+      <excludeFolder url="file://$MODULE_DIR$/.idea/dataSources" />
+      <excludeFolder url="file://$MODULE_DIR$/.serena/cache" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

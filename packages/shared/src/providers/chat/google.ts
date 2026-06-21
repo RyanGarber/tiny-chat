@@ -64,7 +64,7 @@ export const GoogleProvider: ChatProvider = {
           parts.push({ ...part, value: textBefore });
         }
         parts.push({
-          type: 'inputFile',
+          type: 'file',
           data: `https://www.youtube.com/watch?v=${match[1]}`,
           mime: 'video/mp4',
         });

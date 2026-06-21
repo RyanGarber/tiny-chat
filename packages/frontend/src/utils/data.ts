@@ -1,8 +1,11 @@
-import { Children, createContext, isValidElement, ReactNode } from 'react';
-import { SearchResult } from '@tiny-chat/shared/src/providers/web';
+import type { ReactNode } from 'react';
+import { Children, createContext, isValidElement } from 'react';
+import type { SearchResult } from '@tiny-chat/shared/src/providers/web';
 import type { useMemories } from '@/features/chat/hooks/useMemories.ts';
 import type { useActions } from '@/features/chat/hooks/useActions.ts';
+import type { MessageState } from '@tiny-chat/shared/src/types/chat.ts';
 
+export const NOOP_MARKER = '\uE001';
 export const CODE_MARKER = '\uE002';
 export const WRITING_MARKER = '\uE003';
 export const DIFF_MARKER = '\uE004';
@@ -35,7 +38,7 @@ export function getTextFromChildren(children: ReactNode): string {
     if (typeof child === 'string' || typeof child === 'number') {
       text += child;
     } else if (isValidElement(child)) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       text += getTextFromChildren((child.props as any).children);
     } else if (Array.isArray(child)) {
       text += getTextFromChildren(child);
@@ -68,4 +71,11 @@ export function takeStringOutOfNodeAndChildren(node: ReactNode, str: string): Re
     return node.map((child) => takeStringOutOfNodeAndChildren(child, str));
   }
   return node;
+}
+
+export function isMissingToolResult(message: MessageState) {
+  const parts = message.data.flat();
+  const toolCallCount = parts.filter((p) => p.type === 'toolCall').length;
+  const toolResultCount = parts.filter((p) => p.type === 'toolResult').length;
+  return toolResultCount < toolCallCount;
 }

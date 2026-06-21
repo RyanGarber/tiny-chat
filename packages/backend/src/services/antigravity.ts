@@ -1,11 +1,14 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import { createGeminiProvider } from 'ai-sdk-provider-gemini-cli';
 import type { Tool } from 'ai';
 import { streamText } from 'ai';
 import { z } from 'zod';
+import {
+  type AntigravityAccount,
+  createAntigravityProxyProvider,
+} from '@ryangarber/ai-sdk-antigravity-proxy';
 
-export async function geminiHandler(req: IncomingMessage, res: ServerResponse) {
-  const token = req.headers.authorization?.split(' ')?.[1];
+export async function antigravityHandler(req: IncomingMessage, res: ServerResponse) {
+  const account = JSON.parse(req.headers['x-antigravity-account'] as string) as AntigravityAccount;
   const body = await new Promise<string>((resolve, reject) => {
     let data = '';
     req.on('data', (chunk) => (data += chunk));
@@ -16,7 +19,7 @@ export async function geminiHandler(req: IncomingMessage, res: ServerResponse) {
   const abortController = new AbortController();
   req.on('close', () => abortController.abort());
   try {
-    await generate(data, token!, res, abortController.signal);
+    await generate(data, account, res, abortController.signal);
   } catch (error: any) {
     if (error.name === 'AbortError') {
       console.log('[request aborted]');
@@ -30,7 +33,7 @@ export async function geminiHandler(req: IncomingMessage, res: ServerResponse) {
 
 async function generate(
   data: any,
-  refreshToken: string,
+  account: AntigravityAccount,
   res: ServerResponse,
   abortSignal: AbortSignal,
 ) {
@@ -42,7 +45,7 @@ async function generate(
 
   console.log('[received data]', data);
 
-  const client = createGeminiProvider({ authType: 'oauth-personal', refreshToken });
+  const client = createAntigravityProxyProvider({ account });
   const stream = streamText({
     model: client.languageModel(data.model as string),
     prompt: data.prompt,

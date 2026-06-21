@@ -1,17 +1,17 @@
-import { fileTypeFromBuffer } from 'file-type';
+import type { zUser } from '@tiny-chat/shared/src/types/user.ts';
 import { type File, Prisma } from '../../generated/prisma/client.ts';
 import { createId } from '@paralleldrive/cuid2';
 import { shouldIncludeFile } from '../utils.ts';
 import { unzip, type Unzipped } from 'fflate';
-import sharp from 'sharp';
 import { MarkItDown } from 'markitdown-ts';
-import type { zUser } from '@tiny-chat/shared/src/types/user.ts';
+import sharp from 'sharp';
+import { mimeType } from '@tiny-chat/shared/src/utils/files.ts';
 
 export async function handleFilesZipped(
   user: zUser,
   zip: ArrayBuffer,
   existingFiles: File[] = [],
-  associate: { uploadId: string } | { skillId: string },
+  uploadId: string,
   include?: (path: string) => boolean,
   skipRoot?: boolean,
 ) {
@@ -38,7 +38,7 @@ export async function handleFilesZipped(
       data.buffer,
     ]),
     existingFiles,
-    associate,
+    uploadId,
     include,
   );
 }
@@ -47,7 +47,7 @@ export async function handleFiles(
   user: zUser,
   files: [string, ArrayBufferLike][],
   existingFiles: File[] = [],
-  associate: { uploadId: string } | { skillId: string },
+  uploadId: string,
   include?: (path: string) => boolean,
 ) {
   const toCreate: { path: string[]; mime: string; data: Uint8Array }[] = [];
@@ -63,10 +63,16 @@ export async function handleFiles(
       continue;
     }
 
+    if (rawPath.endsWith('/')) {
+      console.log(`Skipping file ${rawPath} because it is a directory`);
+      continue;
+    }
+
     console.log(`Processing file ${rawPath}`);
 
     const pathParts = rawPath.split('/');
     const pathKey = pathParts.join('/');
+
     paths.add(pathKey);
 
     const existingFile = existingFilesMap.get(pathKey);
@@ -103,8 +109,8 @@ export async function handleFiles(
       globalThis.prisma.file.create({
         data: {
           id: createId(),
-          userId: user.id,
-          ...associate,
+          user: { connect: { id: user.id } },
+          upload: { connect: { id: uploadId } },
           path: f.path,
           mime: f.mime,
           data: new Uint8Array(f.data),
@@ -135,10 +141,10 @@ export async function handleFiles(
   return result.map((f) => ({ ...f, ...preprocessing.get(f.path.join('/')) }));
 }
 
-export async function preprocessFile(data: Buffer, filename?: string, mimeType?: string) {
+export async function preprocessFile(data: Buffer, filename?: string, fallbackMime?: string) {
   let text: string | undefined = undefined;
   let thumbnail: string | undefined;
-  let mime = (await fileTypeFromBuffer(data))?.mime ?? mimeType ?? 'application/octet-stream';
+  let mime = (await mimeType(data, filename, fallbackMime)) ?? 'application/octet-stream';
 
   console.log(`Preprocessing file ${filename} with mime ${mime}`);
   if (
@@ -184,5 +190,5 @@ export async function preprocessFile(data: Buffer, filename?: string, mimeType?:
     }
   }
 
-  return { data, mime, text, thumbnail };
+  return { data, mime: mime, text, thumbnail };
 }

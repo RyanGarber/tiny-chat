@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "module": "nodenext",
-    /* Bundler mode */
     "moduleResolution": "nodenext"
   },
   "include": ["src", "eslint.config.ts", "generated/prisma/**/*"],

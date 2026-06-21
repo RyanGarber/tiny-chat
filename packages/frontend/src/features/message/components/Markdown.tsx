@@ -10,8 +10,8 @@ import {
   ReferenceComponent,
   TableComponent,
 } from '@/features/message/components/MarkdownComponents.tsx';
-import { CODE_MARKER, MarkdownContext, WRITING_MARKER } from '@/utils/text.ts';
-import { BLUR_ATTRIBUTE, BLUR_OPTIONS, blurred } from '@/utils/blur.tsx';
+import { CODE_MARKER, MarkdownContext, WRITING_MARKER } from '@/utils/data.ts';
+import { STREAMDOWN_BLUR_OPTIONS, STREAMDOWN_WORD_INDEX, streamdownBlurred } from '@/utils/ui';
 import { createMathPlugin } from '@streamdown/math';
 import { mermaid } from '@streamdown/mermaid';
 import { code } from '@streamdown/code';
@@ -26,7 +26,7 @@ const markdownComponents: Components = {
 };
 
 // reference tag passes id + animate index through sanitizer; all others blocked by default
-const CUSTOM_TAGS = { reference: ['id', BLUR_ATTRIBUTE] };
+const CUSTOM_TAGS = { reference: ['id', STREAMDOWN_WORD_INDEX] };
 
 const REMARK_PLUGINS = [...Object.values(defaultRemarkPlugins), RemarkBreaks];
 
@@ -68,7 +68,7 @@ const filter = (text: string): string => {
         .map((s) => s.trim())
         .filter((id) => /^\w{3,30}$/.test(id));
       if (ids.length === 0) return match;
-      return ids.map((id, i) => blurred('reference', { id }, text, offset, i)).join('');
+      return ids.map((id, i) => streamdownBlurred('reference', { id }, text, offset, i)).join('');
     },
   );
 
@@ -79,7 +79,7 @@ const filter = (text: string): string => {
   );
 
   // Ensure every fenced block has an explicit language (avoids unstyled blocks)
-  let inBlock = false;
+  /*let inBlock = false;
   text = text
     .split('\n')
     .map((line) => {
@@ -91,7 +91,7 @@ const filter = (text: string): string => {
       }
       return line;
     })
-    .join('\n');
+    .join('\n');*/
 
   return text;
 };
@@ -127,7 +127,7 @@ export const Markdown = memo(
       <MarkdownContext.Provider value={context}>
         <Typography {...props}>
           <Streamdown
-            animated={BLUR_OPTIONS}
+            animated={STREAMDOWN_BLUR_OPTIONS}
             isAnimating={context.isGenerating}
             //caret="circle"
             mode={context.isGenerating ? 'streaming' : 'static'}

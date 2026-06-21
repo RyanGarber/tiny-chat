@@ -16,6 +16,7 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   isAnonymous   Boolean?  @default(false)
+  isEphemeral   Boolean?  @default(false)
   settings      Json      @default("{}")
   cache         Json      @default("{}")
   accounts      Account[]
@@ -26,7 +27,6 @@ model User {
   memories      Memory[]
   messages      Message[]
   sessions      Session[]
-  skills        Skill[]
   uploads       Upload[]
 
   @@map("user")
@@ -105,6 +105,7 @@ model Chat {
   action    Action[]
   folder    Folder    @relation(fields: [folderId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  files     File[]
   memories  Memory[]
   messages  Message[]
 
@@ -178,10 +179,10 @@ model Action {
   data      Json
   createdAt DateTime                 @default(now())
   embedding Unsupported("vector")?
-  lexicon   Unsupported("tsvector")?
   messageId String?
   lastRanAt DateTime?
   timezone  String
+  lexicon   Unsupported("tsvector")?
   chat      Chat                     @relation(fields: [chatId], references: [id], onDelete: Cascade)
   folder    Folder                   @relation(fields: [folderId], references: [id], onDelete: Cascade)
   message   Message?                 @relation(fields: [messageId], references: [id])
@@ -195,13 +196,14 @@ model Action {
 }
 
 model Upload {
-  id        String   @id
+  id        String     @id
   userId    String
   name      String
-  createdAt DateTime @default(now())
+  createdAt DateTime   @default(now())
   thumbnail String?
+  type      UploadType @default(ATTACHMENT)
   files     File[]
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("upload")
@@ -216,27 +218,22 @@ model File {
   data      Bytes
   embedding Unsupported("vector")?
   createdAt DateTime                 @default(now())
-  skillId   String?
   lexicon   Unsupported("tsvector")?
-  skill     Skill?                   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  chatId    String?
+  chat      Chat?                    @relation(fields: [chatId], references: [id], onDelete: Cascade)
   upload    Upload?                  @relation(fields: [uploadId], references: [id], onDelete: Cascade)
   user      User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([uploadId])
-  @@index([skillId])
+  @@index([chatId])
   @@map("file")
 }
 
-model Skill {
-  id        String   @id
-  userId    String
-  createdAt DateTime @default(now())
-  files     File[]
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("skill")
+enum UploadType {
+  ATTACHMENT
+  SKILL
+  GITHUB
 }
 
 enum Author {

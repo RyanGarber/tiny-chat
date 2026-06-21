@@ -419,7 +419,6 @@ table[class*='react-diff'] {
 
 [data-mantine-color-scheme='dark'] .shimmer-text.active,
 .sd-wrapper > * > *:last-child::after {
-  color: rgba(0, 0, 0, 0.25);
   background: linear-gradient(
     90deg,
     rgba(255, 255, 255, 0.25) 0%,

@@ -3,6 +3,7 @@ use tauri::Manager;
 mod mcp_http;
 mod mcp_stdio;
 mod tools;
+mod utils;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -16,10 +17,12 @@ pub fn run() {
 
     let builder = builder.invoke_handler(tauri::generate_handler![
         tools::is_dir,
+        tools::make_dir,
         tools::read_file,
-        tools::read_dir,
+        tools::list_files,
         tools::write_file,
         tools::shell_exec,
+        tools::search_files,
         mcp_http::mcp_start_http,
         mcp_http::mcp_send_http,
         mcp_http::mcp_stop_http,

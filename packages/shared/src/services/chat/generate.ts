@@ -1,7 +1,10 @@
-import { type ChatProvider, runGeneration, type StreamTextOptions, } from '../../providers/chat/index.ts';
+import {
+  type ChatProvider,
+  runGeneration,
+  type StreamTextOptions,
+} from '../../providers/chat/index.ts';
 import type {
   ChatSearchResult,
-  FileSearchResult,
   MemorySearchResult,
   zChat,
   zData,
@@ -13,7 +16,8 @@ import type {
 import type { zUser } from '../../types/user.ts';
 import type { ToolContext, ToolGroup } from '../../types/tool.ts';
 import { buildContext } from './context.ts';
-import type { Action, File } from '../../../../backend/generated/prisma/client.ts';
+import type { Action } from '../../../../backend/generated/prisma/client.ts';
+import type { FileEntry } from '../../../../backend/src/routes/input.ts';
 import type { zSkill } from '../../types/skill.ts';
 import type { Env } from '../../types/env.ts';
 
@@ -31,13 +35,7 @@ export interface GenerationCallbacks {
   listActions(): Promise<Action[]>;
 
   // Upload/file handling (context.ts)
-  listUploadFiles(uploadId: string): Promise<File[]>;
-  searchFiles(
-    uploads: string[],
-    text: string,
-    embedding?: number[],
-    limit?: number,
-  ): Promise<FileSearchResult[]>;
+  listFilesInChat(chatId?: string, uploadIds?: string[]): Promise<Record<string, FileEntry[]>>;
 }
 
 // ── Shared accumulation logic ─────────────────────────────────────
@@ -99,7 +97,14 @@ export async function* generate(
   console.log('[Generate] tools:', tools.map((t) => t.name).join(', '));
   console.log('[Generate] skills:', skills.map((s) => s.name).join(', '));
 
-  const { context, instructions } = await buildContext(user, callbacks, input, toolGroups, skills);
+  const { context, instructions } = await buildContext(
+    user,
+    chat,
+    input,
+    toolGroups,
+    skills,
+    callbacks,
+  );
 
   // Agentic loop: keep generating until the model stops calling tools
   while (true) {
@@ -186,7 +191,10 @@ export async function* generate(
     let stop = false;
 
     for (const toolCall of toolCalls) {
-      const tool = tools.find((t) => t.name === toolCall.name);
+      const matchedTools = tools.filter((t) => t.name === toolCall.name);
+      const tool = tools.find(
+        (t) => t.name === toolCall.name && (matchedTools.length === 1 || t.overrides),
+      );
 
       if (!tool) {
         yield push({
@@ -194,7 +202,7 @@ export async function* generate(
           id: toolCall.id,
           name: toolCall.name,
           error: true,
-          value: `Tool "${toolCall.name}" not found`,
+          value: [{ type: 'text', value: `Tool "${toolCall.name}" not found` }],
         });
         continue;
       }
@@ -216,7 +224,7 @@ export async function* generate(
           id: toolCall.id,
           name: toolCall.name,
           error: true,
-          value: e instanceof Error ? e.message : JSON.stringify(e),
+          value: [{ type: 'text', value: e instanceof Error ? e.message : JSON.stringify(e) }],
         });
       }
     }

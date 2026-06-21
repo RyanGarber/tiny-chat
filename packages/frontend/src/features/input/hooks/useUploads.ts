@@ -2,13 +2,14 @@ import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { query, trpc } from '@/utils/api';
 import { useMessagingStore } from '@/features/chat/stores/useMessagingStore';
 import { fetchNextEmbeddingBatch } from '@/features/provider/hooks/useEmbedding';
+import type { UploadType } from '@tiny-chat/backend/generated/prisma/enums.ts';
 
 export const uploadMutationKey = ['upload'] as const;
 
 export const useUploads = () => {
-  const fileUploads = useInfiniteQuery({
+  const attachmentUploads = useInfiniteQuery({
     ...query.input.listUploads.infiniteQueryOptions(
-      { limit: 10, isNot: 'github' },
+      { limit: 10, type: 'ATTACHMENT' },
       {
         getNextPageParam: (lastPage, _pages) => lastPage.nextCursor,
         select: (data) => ({
@@ -19,8 +20,8 @@ export const useUploads = () => {
     ),
   });
 
-  const repoUploads = useQuery({
-    ...query.input.listUploads.queryOptions({ is: 'github' }),
+  const githubUploads = useQuery({
+    ...query.input.listUploads.queryOptions({ type: 'GITHUB' }),
     select: (data) =>
       data.uploads.map((u) => ({
         ...u,
@@ -31,27 +32,27 @@ export const useUploads = () => {
 
   const upload = useMutation({
     mutationKey: uploadMutationKey,
-    mutationFn: async ({ type, file }: { type: 'upload' | 'skill'; file: File }) => {
+    mutationFn: async ({ type, file }: { type: UploadType; file: File }) => {
       const data = new FormData();
       data.set('type', type);
       data.set('file', file);
       return trpc.input.createUpload.mutate(data);
     },
 
-    onSuccess: (result) => {
+    onSuccess: (result, variables) => {
       console.log('Upload suceeded:', result);
-      void fileUploads.refetch();
+      void attachmentUploads.refetch();
       void fetchNextEmbeddingBatch();
-      useMessagingStore.getState().addUploads(result);
+      if (variables.type !== 'SKILL') useMessagingStore.getState().addUploads(result);
     },
   });
 
   const deleteUpload = useMutation({
-    mutationFn: (id: string) => trpc.input.deleteFiles.mutate({ type: 'upload', id }),
+    ...query.input.deleteUpload.mutationOptions(),
     onSuccess: () => {
-      void fileUploads.refetch();
+      void attachmentUploads.refetch();
     },
   });
 
-  return { fileUploads, repoUploads, upload, deleteUpload };
+  return { attachmentUploads, githubUploads, upload, deleteUpload };
 };

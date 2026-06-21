@@ -1,11 +1,11 @@
 import { ActionIcon, Box, Card, Group, Input, Modal, Progress, Stack, Text } from '@mantine/core';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { glassStyle } from '@/utils/glass';
 import { WebLLMConfig, WebLLMProvider } from '../services/WebLLMProvider';
-import { auth } from '@/utils/api';
+import { auth } from '@/utils/api.ts';
+import { GLASS_STYLE } from '@/utils/theme.ts';
 import { Icon } from '@iconify/react';
-import { hasModelInCache, deleteModelInCache, ModelType, ModelRecord } from '@mlc-ai/web-llm';
+import { deleteModelInCache, hasModelInCache, ModelRecord, ModelType } from '@mlc-ai/web-llm';
 import { WebLLMEmbeddingModel, WebLLMLanguageModel } from '@browser-ai/web-llm';
 
 export default function WebLLM({ opened, onClose }: { opened: boolean; onClose: () => void }) {
@@ -71,7 +71,7 @@ export default function WebLLM({ opened, onClose }: { opened: boolean; onClose: 
           onChange={(e) => setQuery(e.target.value)}
         />
         {filteredModels?.map((m, i) => (
-          <Card key={i} style={{ ...glassStyle }}>
+          <Card key={i} style={{ ...GLASS_STYLE }}>
             <Stack>
               <Group justify="space-between">
                 <Box flex={1} miw={0}>

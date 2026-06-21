@@ -18,8 +18,7 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { JSX, useEffect, useMemo, useState } from 'react';
-import { hashText } from '@/utils/text';
-import { consumeLabel } from '@/utils/ui';
+import { hashText } from '@/utils/data.ts';
 import { useDisclosure } from '@mantine/hooks';
 import { useLayoutStore } from '@/core/stores/useLayoutStore';
 import { zCache } from '@tiny-chat/shared/src/types/user.ts';
@@ -27,14 +26,13 @@ import { zConfig } from '@tiny-chat/shared/src/types/chat.ts';
 import ModelSelect, { ModelMultiSelect } from '@/features/input/components/ModelSelect';
 import { Icon } from '@iconify/react';
 import Console from '@/core/components/Console';
-import { glassStyle } from '@/utils/glass';
 import { useHiddenModels } from '@/features/settings/hooks/useHiddenModels';
 import { useInstructions } from '@/features/settings/hooks/useInstructions';
 import { useRetrieval } from '@/features/settings/hooks/useRetrieval';
 import { useProviderSettings } from '@/features/settings/hooks/useProviderSettings';
 import { useThemes } from '@/features/settings/hooks/useThemes';
 import { providerCacheMutationKey, useProviders } from '@/features/input/hooks/useProviders';
-import { codeThemesByTheme, THEMES } from '@/utils/theme';
+import { codeThemesByTheme, GLASS_STYLE, INPUT_STYLE, THEMES } from '@/utils/theme';
 import { useIsMutating, useMutationState } from '@tanstack/react-query';
 import { runEmbeddingBatchMutationKey, useEmbedding } from '@/features/provider/hooks/useEmbedding';
 
@@ -78,6 +76,8 @@ export default function SidebarSettings({
     setPreferredWebProvider,
     useProviderCache,
     setUseProviderCache,
+    useBrowserModels,
+    setUseBrowserModels,
   } = useProviderSettings();
   const { theme, setTheme, codeTheme, setCodeTheme } = useThemes();
 
@@ -136,7 +136,7 @@ export default function SidebarSettings({
                 <TextInput
                   key={provider.name + s}
                   label={s}
-                  styles={consumeLabel}
+                  styles={INPUT_STYLE}
                   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
                   defaultValue={providerSettings.data?.[provider.name]?.[s] ?? ''}
                   onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
@@ -209,7 +209,7 @@ export default function SidebarSettings({
               <Tooltip label="Styles the app" color="gray" position="right">
                 <Select
                   label="App Theme"
-                  styles={consumeLabel}
+                  styles={INPUT_STYLE}
                   allowDeselect={false}
                   data={THEMES}
                   value={theme.data}
@@ -224,7 +224,7 @@ export default function SidebarSettings({
               <Tooltip label="Styles code blocks" color="gray" position="right">
                 <Select
                   label="Code Theme"
-                  styles={consumeLabel}
+                  styles={INPUT_STYLE}
                   allowDeselect={false}
                   data={codeThemesByTheme(theme.data)}
                   value={codeTheme.data}
@@ -257,6 +257,18 @@ export default function SidebarSettings({
                   </Group>
                 </CheckboxCard>
               </Tooltip>
+              <Tooltip label="Load native model provider" color="gray" position="right">
+                <CheckboxCard
+                  p="xs"
+                  checked={useBrowserModels.data}
+                  onChange={(value) => setUseBrowserModels.mutate({ useBrowserModels: value })}
+                >
+                  <Group>
+                    <CheckboxIndicator size="xs" />
+                    <Text size="sm">Native Provider</Text>
+                  </Group>
+                </CheckboxCard>
+              </Tooltip>
               <Space />
               <Box>
                 <Text size="sm">Preferred Models</Text>
@@ -268,7 +280,7 @@ export default function SidebarSettings({
                 <Tooltip label="Generative models to show" color="gray" position="right">
                   <ModelMultiSelect
                     label="Generation"
-                    styles={consumeLabel}
+                    styles={INPUT_STYLE}
                     feature="generate"
                     configValues={hiddenModels.data?.generate.map((m) => zConfig.parse(m)) ?? []}
                     onConfigChange={(value) =>
@@ -281,7 +293,7 @@ export default function SidebarSettings({
                 <Tooltip label="Embedding models to show" color="gray" position="right">
                   <ModelMultiSelect
                     label="Embedding"
-                    styles={consumeLabel}
+                    styles={INPUT_STYLE}
                     feature="embed"
                     configValues={hiddenModels.data?.embed.map((m) => zConfig.parse(m)) ?? []}
                     onConfigChange={(value) =>
@@ -342,7 +354,7 @@ export default function SidebarSettings({
                   autosize
                   label="Instruction"
                   styles={{
-                    ...(consumeLabel as Record<string, unknown>),
+                    ...(INPUT_STYLE as Record<string, unknown>),
                     ...{ input: { paddingTop: 25 } },
                   }}
                   placeholder="Keep responses short."
@@ -386,7 +398,7 @@ export default function SidebarSettings({
               <Tooltip label="Model that generates embeddings" color="gray" position="right">
                 <ModelSelect
                   label="Embedding Model"
-                  styles={consumeLabel}
+                  styles={INPUT_STYLE}
                   optional
                   configValue={embeddingConfig.data}
                   onConfigChange={(value) => {
@@ -402,7 +414,7 @@ export default function SidebarSettings({
                 title="Change Embedding Model"
                 opened={isEmbedConfirmOpen}
                 onClose={closeEmbedding}
-                styles={{ content: glassStyle }}
+                styles={{ content: GLASS_STYLE }}
                 centered
               >
                 {embedChange ? (
@@ -463,7 +475,7 @@ export default function SidebarSettings({
               <Tooltip label="Provider used for web browsing" color="gray" position="right">
                 <Select
                   label="Preferred Provider"
-                  styles={consumeLabel}
+                  styles={INPUT_STYLE}
                   allowDeselect={false}
                   data={providers.data?.web.filter((p) => p.available).map((p) => p.name) ?? []}
                   value={preferredWebProvider.data}

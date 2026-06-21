@@ -15,12 +15,11 @@ import { Icon } from '@iconify/react';
 import { useDisclosure } from '@mantine/hooks';
 import { type ChatState, useChat } from '@/features/chat/hooks/useChat';
 import { useChatList } from '@/features/chat/hooks/useChatList';
-import { glassStyle } from '@/utils/glass';
 import { useSentinel } from '../hooks/useSentinel';
 import { ChatService } from '@/features/chat/services/ChatService';
-import { query } from '@/utils/api';
+import { GLASS_STYLE, SHADOW } from '@/utils/theme.ts';
+import { query } from '@/utils/api.ts';
 import Sentinel from './Sentinel';
-import { SHADOW } from '@/utils/theme';
 
 export default function SidebarChatList() {
   const isMobile = useLayoutStore((s) => s.isMobile);
@@ -102,7 +101,7 @@ export default function SidebarChatList() {
         title="Rename Chat"
         opened={isEditOpen}
         onClose={closeEdit}
-        styles={{ content: glassStyle }}
+        styles={{ content: GLASS_STYLE }}
         centered
       >
         <TextInput
@@ -133,7 +132,7 @@ export default function SidebarChatList() {
         title="Delete Chat"
         opened={isDeleteOpen}
         onClose={closeDelete}
-        styles={{ content: glassStyle }}
+        styles={{ content: GLASS_STYLE }}
         centered
       >
         <Button

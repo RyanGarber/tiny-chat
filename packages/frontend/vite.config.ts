@@ -4,6 +4,7 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 import tailwindcss from '@tailwindcss/vite';
 import tailwindcssMantine from 'tailwind-preset-mantine/vite';
 import visualizer from 'rollup-plugin-visualizer';
+import inspect from 'vite-plugin-inspect';
 
 const host = process.env.TAURI_DEV_HOST;
 
@@ -12,6 +13,7 @@ export default defineConfig(() => ({
   clearScreen: false,
   define: {
     __TAURI_DEV_HOST__: host ? `"${host}"` : undefined,
+    'import.meta.vitest': 'undefined',
   },
   envDir: '../../',
   plugins: [
@@ -23,6 +25,7 @@ export default defineConfig(() => ({
       filename: 'dist/stats.html',
       template: 'flamegraph',
     }),
+    inspect(),
   ],
   build: {
     sourcemap: true,

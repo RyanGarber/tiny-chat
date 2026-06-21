@@ -1,6 +1,6 @@
 import { Box, Collapse, Group, Text } from '@mantine/core';
 import { Markdown } from './Markdown';
-import type { MarkdownContext } from '@/utils/text';
+import type { MarkdownContext } from '@/utils/data.ts';
 import { memo, useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
 

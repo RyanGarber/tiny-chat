@@ -1,6 +1,13 @@
 import { z } from 'zod';
-import type { FileSearchResult, zDataPart, zUploadOutput, } from '@tiny-chat/shared/src/types/chat.ts';
-import { type File, Prisma } from '../../generated/prisma/client.ts';
+import {
+  type FileSearchResult,
+  zData,
+  type zDataPart,
+  type zUploadOutput,
+} from '@tiny-chat/shared/src/types/chat.ts';
+import { zToolContext, type zToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
+import type { File } from '../../generated/prisma/client.ts';
+import { Prisma, UploadType } from '../../generated/prisma/client.ts';
 import { procedure, router } from '../index.ts';
 import { createId } from '@paralleldrive/cuid2';
 import { handleFiles, handleFilesZipped } from '../services/files.ts';
@@ -8,6 +15,9 @@ import { TRPCError } from '@trpc/server';
 import { shouldIncludeFile } from '../utils.ts';
 import { auth } from '../services/auth.ts';
 import type { zUser } from '@tiny-chat/shared/src/types/user.ts';
+import backend from '../tools/index.ts';
+import { getGenerationCallbacksBackend } from '../services/worker.ts';
+import type { Upload$filesArgs } from '../../generated/prisma/models/Upload.ts';
 
 interface GitHubRepo {
   id: number;
@@ -39,32 +49,53 @@ async function getGithubToken(userId: string): Promise<string> {
 }
 
 export default router({
+  listTools: procedure.query((): zToolGroup[] => {
+    return backend;
+  }),
+
+  callTool: procedure
+    .input(
+      z.object({
+        context: zToolContext,
+        name: z.string(),
+        input: z.any(),
+        userInput: z.any(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (input.context.chat?.id !== 'zzzzzzzzzzzzzzzzzzzzzzzz') {
+        await globalThis.prisma.chat.findUniqueOrThrow({
+          where: { id: input.context.chat?.id, userId: ctx.session.user.id },
+        });
+      }
+      const tool = backend.flatMap((g) => g.tools).find((t) => t.name === input.name);
+      if (!tool) throw new Error(`Tool not found: ${input.name}`);
+      console.log(`Running tool ${input.name} with params ${JSON.stringify(input.input)}`);
+      return await tool.run(
+        {
+          ...input.context,
+          callbacks: getGenerationCallbacksBackend(ctx.session.user),
+        },
+        input.input,
+        input.userInput,
+      );
+    }),
+
   listUploads: procedure
     .input(
       z.object({
-        is: z.string().optional(),
-        isNot: z.string().optional(),
+        type: z.enum(UploadType),
+        includeFiles: z.custom<Upload$filesArgs>().optional(),
         limit: z.number().optional(),
         cursor: z.cuid2().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
       let uploads = await globalThis.prisma.upload.findMany({
-        where: { userId: ctx.session.user.id },
+        where: { userId: ctx.session.user.id, type: input.type },
+        include: { files: input.includeFiles },
         orderBy: { createdAt: 'desc' },
       });
-
-      if (input.is) {
-        uploads = uploads.filter((u) =>
-          u.name.toLowerCase().startsWith(`${input.is!.toLowerCase()}:`),
-        );
-      }
-
-      if (input.isNot) {
-        uploads = uploads.filter(
-          (u) => !u.name.toLowerCase().startsWith(`${input.isNot!.toLowerCase()}:`),
-        );
-      }
 
       if (input.limit) {
         const index = Math.max(
@@ -87,7 +118,7 @@ export default router({
         .transform((fd) => Object.fromEntries(fd.entries()))
         .pipe(
           z.object({
-            type: z.enum(['upload', 'skill']),
+            type: z.enum(UploadType),
             file: z.file(),
           }),
         ),
@@ -96,51 +127,35 @@ export default router({
       console.log(`Preparing to handle upload: ${input.file.name}`);
 
       const id = createId();
-      let associate: { uploadId: string } | { skillId: string };
 
-      if (input.type === 'upload') {
-        associate = { uploadId: id };
-        await globalThis.prisma.upload.create({
-          data: {
-            id,
-            user: { connect: { id: ctx.session.user.id } },
-            name: input.file.name,
-          },
-        });
-      } else if (
-        input.type === 'skill' &&
-        (input.file.name === 'SKILL.md' || input.file.name.endsWith('.zip'))
-      ) {
-        // TODO - incrementally update baased on matching name in frontmatter
-        associate = { skillId: id };
-        await globalThis.prisma.skill.create({
-          data: {
-            id,
-            user: { connect: { id: ctx.session.user.id } },
-          },
-        });
-      } else {
-        throw new Error(`Invalid upload type: ${input.type as string}`);
-      }
+      await globalThis.prisma.upload.create({
+        data: {
+          id,
+          user: { connect: { id: ctx.session.user.id } },
+          type: input.type,
+          name: input.file.name,
+        },
+      });
 
       let files: Awaited<ReturnType<typeof handleFiles>>;
       if (input.file.name.endsWith('.zip')) {
-        files = await handleFilesZipped(
-          ctx.session.user,
-          await input.file.arrayBuffer(),
-          [],
-          associate,
-        );
+        files = await handleFilesZipped(ctx.session.user, await input.file.arrayBuffer(), [], id);
       } else {
         files = await handleFiles(
           ctx.session.user,
           [[input.file.name, await input.file.arrayBuffer()]],
           [],
-          associate,
+          id,
         );
       }
 
       const thumbnail = files.find((f) => !!f.thumbnail)?.thumbnail;
+      await globalThis.prisma.upload.update({
+        where: { id },
+        data: {
+          thumbnail,
+        },
+      });
 
       console.log(
         `Saving files:`,
@@ -153,15 +168,6 @@ export default router({
         `Associated thumbnail: ${thumbnail?.length ?? -1} bytes`,
       );
 
-      if (input.type === 'upload') {
-        await globalThis.prisma.upload.update({
-          where: { id },
-          data: {
-            thumbnail,
-          },
-        });
-      }
-
       return {
         type: 'upload',
         id,
@@ -170,18 +176,48 @@ export default router({
       };
     }),
 
-  listUploadFiles: procedure
-    .input(z.object({ id: z.cuid2() }))
-    .query(async ({ ctx, input }): Promise<File[]> => {
-      return (
-        await globalThis.prisma.upload.findUniqueOrThrow({
-          where: { userId: ctx.session.user.id, id: input.id },
-          include: { files: true },
-        })
-      ).files;
+  listAllFilesInChat: procedure
+    .input(z.object({ chatId: z.cuid2().optional(), uploadIds: z.array(z.cuid2()).optional() }))
+    .query(async ({ ctx, input }) => {
+      return listAllFilesInChat(ctx.session.user, input.chatId, input.uploadIds);
     }),
 
-  searchUploads: procedure
+  listFilesInChat: procedure
+    .input(z.object({ chatId: z.cuid2().optional(), uploadIds: z.array(z.cuid2()).optional() }))
+    .query(async ({ ctx, input }) => {
+      return listFilesInChat(ctx.session.user, input.chatId, input.uploadIds);
+    }),
+
+  findFileInChat: procedure
+    .input(
+      z.object({ chatId: z.cuid2(), uploadId: z.cuid2().nullable(), path: z.array(z.string()) }),
+    )
+    .query(async ({ ctx, input }) => {
+      const file = await globalThis.prisma.file.findFirst({
+        where: {
+          userId: ctx.session.user.id,
+          chatId: input.chatId,
+          uploadId: input.uploadId,
+          path: { equals: input.path },
+        },
+      });
+
+      let uploadFile: File | null = null;
+      if (input.uploadId) {
+        uploadFile = await globalThis.prisma.file.findFirst({
+          where: {
+            userId: ctx.session.user.id,
+            chatId: null,
+            uploadId: input.uploadId,
+            path: { equals: input.path },
+          },
+        });
+      }
+
+      return file ?? uploadFile;
+    }),
+
+  searchFiles: procedure
     .input(
       z.object({
         uploads: z.array(z.cuid2()),
@@ -191,22 +227,14 @@ export default router({
       }),
     )
     .query(({ ctx, input: { uploads, text, embedding, limit } }) => {
-      return searchFiles(ctx.session.user, uploads, text, embedding, limit);
+      return searchFiles(ctx.session.user, text, embedding, limit, uploads);
     }),
 
-  deleteFiles: procedure
-    .input(z.object({ type: z.enum(['upload', 'skill']), id: z.cuid2() }))
-    .mutation(async ({ ctx, input }) => {
-      if (input.type === 'upload') {
-        await globalThis.prisma.upload.delete({
-          where: { id: input.id, userId: ctx.session.user.id },
-        });
-      } else {
-        await globalThis.prisma.skill.delete({
-          where: { id: input.id, userId: ctx.session.user.id },
-        });
-      }
-    }),
+  deleteUpload: procedure.input(z.object({ id: z.cuid2() })).mutation(async ({ ctx, input }) => {
+    await globalThis.prisma.upload.delete({
+      where: { id: input.id, userId: ctx.session.user.id },
+    });
+  }),
 
   listRepos: procedure.query(async ({ ctx }) => {
     const token = await getGithubToken(ctx.session.user.id);
@@ -260,7 +288,7 @@ export default router({
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid characters' });
       }
 
-      const uploadName = `GitHub: ${input.owner}/${input.repo} @ ${input.branch}`;
+      const uploadName = `${input.owner}/${input.repo} @ ${input.branch}`;
 
       console.log(
         `https://api.github.com/repos/${input.owner}/${input.repo}/zipball/${input.branch}`,
@@ -284,10 +312,10 @@ export default router({
         });
       }
 
-      console.log(`Cloning ${input.owner}/${input.repo}@${input.branch} for user ${userId}`);
+      console.log(`Cloning GitHub for upload: ${uploadName}`);
 
       const existingUpload = await globalThis.prisma.upload.findFirst({
-        where: { userId, name: uploadName },
+        where: { userId, type: UploadType.GITHUB, name: uploadName },
         include: { files: true },
       });
 
@@ -297,6 +325,7 @@ export default router({
           data: {
             id: uploadId,
             user: { connect: { id: userId } },
+            type: UploadType.GITHUB,
             name: uploadName,
           },
         });
@@ -313,7 +342,7 @@ export default router({
         ctx.session.user,
         await result.arrayBuffer(),
         existingUpload?.files,
-        { uploadId },
+        uploadId,
         (path) => shouldIncludeFile(path),
         true,
       );
@@ -326,14 +355,174 @@ export default router({
     }),
 });
 
+// ── Shared file-entry types ────────────────────────────────────────────────
+
+export interface FileEntry {
+  id: string;
+  path: string[];
+  uploadId: string | null;
+  uploadName: string | null;
+  lines: number;
+}
+
+/**
+ * Resolves the set of uploadIds referenced in a chat's messages when not
+ * supplied explicitly.
+ */
+async function resolveUploadIds(userId: string, chatId: string): Promise<string[]> {
+  const messages = await globalThis.prisma.message.findMany({
+    where: { userId, chatId },
+    select: { data: true },
+  });
+  return messages.flatMap((m) =>
+    zData
+      .parse(m.data)
+      .flat()
+      .flatMap((part) => (part.type === 'upload' ? [part.id] : [])),
+  );
+}
+
+/**
+ * Returns all files relevant to a chat, pairing each chat-version of a file
+ * with its original upload-version (when both exist). Each entry contains
+ * only the fields needed for display and context-building: id, path, uploadId,
+ * uploadName, and lines.
+ *
+ * Shape: Record<uploadId | '', { file?: FileEntry; uploadFile?: FileEntry }[]>
+ */
+export async function listAllFilesInChat(user: zUser, chatId?: string, uploadIds?: string[]) {
+  if (!uploadIds && chatId) {
+    uploadIds = await resolveUploadIds(user.id, chatId);
+  }
+
+  // One SQL pass: FULL OUTER JOIN chat files ↔ upload files on (uploadId, path).
+  // try_decode_utf8 converts the bytea data to text so we can count newlines;
+  // non-text files will return NULL and get 0 lines.
+  const rows = await globalThis.prisma.$queryRaw<
+    {
+      file_id: string | null;
+      file_path: string[] | null;
+      file_lines: bigint | null;
+      upload_file_id: string | null;
+      upload_file_path: string[] | null;
+      upload_file_lines: bigint | null;
+      upload_id: string | null;
+      upload_name: string | null;
+    }[]
+  >`
+    WITH
+      chat_files AS (
+        SELECT
+          f.id,
+          f.path,
+          f."uploadId",
+          COALESCE(
+            array_length(
+              string_to_array(try_decode_utf8(f.data), E'\n'),
+              1
+            ) - 1,
+            0
+          ) AS lines,
+          u.name AS upload_name
+        FROM file f
+        LEFT JOIN upload u ON u.id = f."uploadId"
+        WHERE f."userId" = ${user.id}
+          AND f."chatId" = ${chatId ?? null}
+          AND ${chatId !== undefined ? Prisma.sql`f."chatId" IS NOT NULL` : Prisma.sql`FALSE`}
+      ),
+      upload_files AS (
+        SELECT
+          f.id,
+          f.path,
+          f."uploadId",
+          COALESCE(
+            array_length(
+              string_to_array(try_decode_utf8(f.data), E'\n'),
+              1
+            ) - 1,
+            0
+          ) AS lines,
+          u.name AS upload_name
+        FROM file f
+        LEFT JOIN upload u ON u.id = f."uploadId"
+        WHERE f."userId" = ${user.id}
+          AND f."chatId" IS NULL
+          AND (
+            ${uploadIds && uploadIds.length > 0 ? Prisma.sql`f."uploadId" = ANY(${uploadIds}::text[])` : Prisma.sql`FALSE`}
+          )
+      )
+    SELECT
+      cf.id            AS file_id,
+      cf.path          AS file_path,
+      cf.lines         AS file_lines,
+      uf.id            AS upload_file_id,
+      uf.path          AS upload_file_path,
+      uf.lines         AS upload_file_lines,
+      COALESCE(cf."uploadId", uf."uploadId") AS upload_id,
+      COALESCE(cf.upload_name, uf.upload_name) AS upload_name
+    FROM chat_files cf
+    FULL OUTER JOIN upload_files uf
+      ON cf."uploadId" = uf."uploadId"
+     AND cf.path = uf.path
+  `;
+
+  const merged: Record<string, { file?: FileEntry; uploadFile?: FileEntry }[]> = {};
+
+  for (const row of rows) {
+    const key = row.upload_id ?? '';
+    merged[key] ??= [];
+
+    const file: FileEntry | undefined = row.file_id
+      ? {
+          id: row.file_id,
+          path: row.file_path ?? [],
+          uploadId: row.upload_id,
+          uploadName: row.upload_name,
+          lines: Number(row.file_lines ?? 0),
+        }
+      : undefined;
+
+    const uploadFile: FileEntry | undefined = row.upload_file_id
+      ? {
+          id: row.upload_file_id,
+          path: row.upload_file_path ?? [],
+          uploadId: row.upload_id,
+          uploadName: row.upload_name,
+          lines: Number(row.upload_file_lines ?? 0),
+        }
+      : undefined;
+
+    merged[key].push({ file, uploadFile });
+  }
+
+  return merged;
+}
+
+/**
+ * Flattens listAllFilesInChat into a simple Record<uploadId | '', FileEntry[]>,
+ * preferring the chat-version of each file over the upload-version.
+ */
+export async function listFilesInChat(user: zUser, chatId?: string, uploadIds?: string[]) {
+  const allFiles = await listAllFilesInChat(user, chatId, uploadIds);
+  return Object.fromEntries(
+    Object.entries(allFiles).map(([uploadId, pairs]) => [
+      uploadId,
+      pairs.map(({ file, uploadFile }) => file ?? uploadFile).filter(Boolean) as FileEntry[],
+    ]),
+  );
+}
+
 export async function searchFiles(
   user: zUser,
-  uploads: string[],
   text: string,
   embedding?: number[],
   limit = 5,
+  uploadIds?: string[] | null,
+  path: string[] = [],
 ): Promise<FileSearchResult[]> {
   console.log(`Searching for "${text}"${embedding ? ' (+embedding)' : ''} in all files in chat`);
+
+  path = path.filter((part) => part.length);
 
   const results = await globalThis.prisma.$queryRaw<FileSearchResult[]>`
     WITH search AS (
@@ -347,7 +536,8 @@ export async function searchFiles(
        ROW_NUMBER() OVER (ORDER BY f.embedding <=> ${JSON.stringify(embedding)}) AS rank
      FROM file f
      WHERE f."userId" = ${user.id}
-       AND f."uploadId" IN (${Prisma.join(uploads)})
+       AND (${uploadIds ? Prisma.sql`f."uploadId" IN (${Prisma.join(uploadIds)})` : Prisma.sql`1=1`})
+       AND (${path.length ? Prisma.sql`array_remove(f.path, '')[1:${path.length}] = ${path}` : Prisma.sql`1=1`})
        AND f.embedding IS NOT NULL
      ORDER BY distance
      LIMIT 200
@@ -361,7 +551,8 @@ export async function searchFiles(
       FROM file f
       CROSS JOIN search
       WHERE f."userId" = ${user.id}
-        AND f."uploadId" IN (${Prisma.join(uploads)})
+        AND (${uploadIds ? Prisma.sql`f."uploadId" IN (${Prisma.join(uploadIds)})` : Prisma.sql`1=1`})
+        AND (${path.length ? Prisma.sql`array_remove(f.path, '')[1:${path.length}] = ${path}` : Prisma.sql`1=1`})
         AND search.query != ''::tsquery
         AND f.lexicon @@ search.query
       ORDER BY ts_score DESC
@@ -375,15 +566,16 @@ export async function searchFiles(
       -- Score by how many path segments match any query word
       (
         SELECT COUNT(*)::float
-        FROM unnest(f.path) AS segment
+        FROM unnest(array_remove(f.path, '')) AS segment
         WHERE to_tsvector('simple', replace(replace(segment, '-', ' '), '_', ' '))
         @@ websearch_to_tsquery('simple', ${text})
       ) AS path_match_count
     FROM file f
     WHERE f."userId" = ${user.id}
-      AND f."uploadId" IN (${Prisma.join(uploads)})
+      AND (${uploadIds ? Prisma.sql`f."uploadId" IN (${Prisma.join(uploadIds)})` : Prisma.sql`1=1`})
+      AND (${path.length ? Prisma.sql`array_remove(f.path, '')[1:${path.length}] = ${path}` : Prisma.sql`1=1`})
       AND f.path IS NOT NULL
-      AND array_length(f.path, 1) > 0
+      AND array_length(array_remove(f.path, ''), 1) > 0
     ),
 
     combined AS (
@@ -398,14 +590,12 @@ export async function searchFiles(
     SELECT
       f.id,
       f."uploadId",
-      u.name AS "uploadName",
       f.path,
       f.data,
       -- Path relevance boost: each matching path segment adds weight
       (c.rrf + COALESCE(p.path_match_count, 0) * 0.005) AS final_score
     FROM combined c
     JOIN file f ON f.id = c.id
-    LEFT JOIN upload u on f."uploadId" = u.id
     LEFT JOIN path_hits p ON p.id = c.id
     ORDER BY final_score DESC
     LIMIT ${limit}

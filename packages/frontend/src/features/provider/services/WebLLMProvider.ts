@@ -2,7 +2,8 @@ import type { ChatProvider } from '@tiny-chat/shared/src/providers/chat';
 import { createWebLLM } from '@browser-ai/web-llm';
 import { getBaseModelArgs, getBaseModelTransform } from '@tiny-chat/shared/src/utils';
 import type { Model } from '@tiny-chat/shared/src/types/chat';
-import { AppConfig, ModelType, prebuiltAppConfig } from '@mlc-ai/web-llm';
+import type { AppConfig} from '@mlc-ai/web-llm';
+import { ModelType, prebuiltAppConfig } from '@mlc-ai/web-llm';
 
 export const WebLLMConfig: AppConfig = {
   ...prebuiltAppConfig,

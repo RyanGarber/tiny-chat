@@ -1,11 +1,10 @@
 import { Button, Divider, Drawer, Group, Modal, Stack, Text, Tooltip } from '@mantine/core';
 import { JSX, useEffect, useState } from 'react';
-import { auth, isTauri, trpc, webUrl } from '@/utils/api';
-import { openExternal } from '@/utils/ui';
+import { auth, isTauri, openExternal, trpc, webUrl } from '@/utils/api';
+import { GLASS_STYLE } from '@/utils/theme.ts';
 import { useDisclosure } from '@mantine/hooks';
 import { useLayoutStore } from '@/core/stores/useLayoutStore';
 import { Icon } from '@iconify/react';
-import { glassStyle } from '@/utils/glass';
 import { useAccounts } from '@/features/settings/hooks/useAccounts';
 
 export default function SidebarAccount({
@@ -173,7 +172,7 @@ export default function SidebarAccount({
                 opened={isDeleteOpen}
                 onClose={closeDelete}
                 title="Delete Account"
-                styles={{ content: glassStyle }}
+                styles={{ content: GLASS_STYLE }}
                 centered
               >
                 <Button

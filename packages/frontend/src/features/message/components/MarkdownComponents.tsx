@@ -26,24 +26,23 @@ import {
   MarkdownContext,
   takeStringOutOfNodeAndChildren,
   WRITING_MARKER,
-} from '@/utils/text.ts';
+} from '@/utils/data.ts';
 import { Icon } from '@iconify/react';
-import { openExternal } from '@/utils/ui.ts';
+import { openExternal } from '@/utils/api.ts';
+import { withStreamdownBlur } from '@/utils/ui';
+import { GLASS_STYLE, SHADOW } from '@/utils/theme.ts';
 import { format } from 'timeago.js';
 import { zData } from '@tiny-chat/shared/src/types/chat.ts';
 import { scrubText, texts } from '@tiny-chat/shared/src/utils.ts';
-import { withBlur } from '@/utils/blur.tsx';
 import type { ReactDiffViewerStylesOverride } from 'react-diff-viewer-continued';
 import ReactDiffViewer from 'react-diff-viewer-continued';
 import { code as streamdownCode } from '@streamdown/code';
 import { useThemes } from '@/features/settings/hooks/useThemes';
-import { glassStyle } from '@/utils/glass';
-import { SHADOW } from '@/utils/theme';
 
 const TOOLTIP_PROPS = {
   multiline: true,
   position: 'bottom',
-  style: { ...glassStyle, boxShadow: SHADOW },
+  style: { ...GLASS_STYLE, boxShadow: SHADOW },
   p: 'md',
   c: 'var(--mantine-color-text)',
 } as const;
@@ -59,7 +58,7 @@ const PILL_BASE: CSSProperties = {
 };
 
 // Rendered for each [^id] citation reference inline
-export const ReferenceComponent: Components['reference'] = withBlur((props) => {
+export const ReferenceComponent: Components['reference'] = withStreamdownBlur((props) => {
   const { webSearchResults, memories, actions, isGenerating } = useContext(MarkdownContext);
   const referenceId = ((props.id ?? '') as string).replace('user-content-', '').trim();
 

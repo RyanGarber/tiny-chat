@@ -1,22 +1,21 @@
 import { invoke, isTauriDesktop, trpc } from '@/utils/api';
-import { shouldIncludeFile } from '@tiny-chat/backend/src/utils';
 import type { zSkill } from '@tiny-chat/shared/src/types/skill.ts';
 import { wrapSkill } from '@tiny-chat/shared/src/utils';
+import { decodeTextLossy, isTextAdjacent, mimeType, toChatUri, } from '@tiny-chat/shared/src/utils/files.ts';
 
 export const SkillService = {
   findLocal: async () => {
-    const skills: (zSkill & { basePath: string })[] = [];
+    const skills: zSkill[] = [];
 
     console.log('local skills:', await isTauriDesktop());
     if (await isTauriDesktop()) {
       try {
-        // TODO - move to rust
-        const dirs = await invoke<string[]>('read_dir', { path: '~/.agents/skills' });
+        const dirs = await invoke<string[]>('list_files', { path: '~/.agents/skills' });
         for (const dir of dirs) {
           if (!(await invoke<boolean>('is_dir', { path: dir }))) continue;
           const walk = async (subdir: string) => {
             const files: { path: string[]; data: string }[] = [];
-            const paths = await invoke<string[]>('read_dir', {
+            const paths = await invoke<string[]>('list_files', {
               path: subdir,
             });
             for (const path of paths) {
@@ -24,19 +23,22 @@ export const SkillService = {
                 .slice(dir.length)
                 .split(/[\\/]+/g)
                 .filter((p) => p.length);
-              if (await invoke<boolean>('is_dir', { path: path })) {
+              if (await invoke<boolean>('is_dir', { path })) {
                 files.push(...(await walk(path)));
               } else {
-                if (!shouldIncludeFile(subpath.join('/'))) continue;
+                // TODO - do we need to keep any of this?
+                const data = await invoke<string>('read_file', { path });
+                const mime = await mimeType(data, path);
+                if (!isTextAdjacent(mime)) continue;
                 files.push({
                   path: subpath,
-                  data: await invoke<string>('read_file', { path: path }),
+                  data: decodeTextLossy(data, mime),
                 });
               }
             }
             return files;
           };
-          const skill = wrapSkill(await walk(dir), { basePath: dir });
+          const skill = wrapSkill(dir, await walk(dir));
           if (skill) skills.push(skill);
         }
       } catch (error) {
@@ -49,16 +51,19 @@ export const SkillService = {
   },
 
   findRemote: async () => {
-    const skills: (zSkill & { id: string })[] = [];
+    const skills: zSkill[] = [];
 
-    const remoteSkills = await trpc.context.listSkills.query({ withResources: true });
+    const remoteSkills = await trpc.input.listUploads.query({
+      type: 'SKILL',
+      includeFiles: { where: { path: { has: 'SKILL.md' } } },
+    });
     console.log('remote skills:', remoteSkills);
-    for (const { id, files } of remoteSkills) {
-      const skill = wrapSkill(files, { id });
+    for (const { id, files } of remoteSkills.uploads) {
+      const skill = wrapSkill(toChatUri(id), files);
       console.log('remote skill:', skill);
       skills.push(
         skill ?? {
-          id,
+          path: toChatUri(id),
           name: '',
           description: 'Error: unrecognized format',
           attributes: {},

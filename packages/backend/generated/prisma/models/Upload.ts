@@ -30,6 +30,7 @@ export type UploadMinAggregateOutputType = {
   name: string | null
   createdAt: Date | null
   thumbnail: string | null
+  type: $Enums.UploadType | null
 }
 
 export type UploadMaxAggregateOutputType = {
@@ -38,6 +39,7 @@ export type UploadMaxAggregateOutputType = {
   name: string | null
   createdAt: Date | null
   thumbnail: string | null
+  type: $Enums.UploadType | null
 }
 
 export type UploadCountAggregateOutputType = {
@@ -46,6 +48,7 @@ export type UploadCountAggregateOutputType = {
   name: number
   createdAt: number
   thumbnail: number
+  type: number
   _all: number
 }
 
@@ -56,6 +59,7 @@ export type UploadMinAggregateInputType = {
   name?: true
   createdAt?: true
   thumbnail?: true
+  type?: true
 }
 
 export type UploadMaxAggregateInputType = {
@@ -64,6 +68,7 @@ export type UploadMaxAggregateInputType = {
   name?: true
   createdAt?: true
   thumbnail?: true
+  type?: true
 }
 
 export type UploadCountAggregateInputType = {
@@ -72,6 +77,7 @@ export type UploadCountAggregateInputType = {
   name?: true
   createdAt?: true
   thumbnail?: true
+  type?: true
   _all?: true
 }
 
@@ -153,6 +159,7 @@ export type UploadGroupByOutputType = {
   name: string
   createdAt: Date
   thumbnail: string | null
+  type: $Enums.UploadType
   _count: UploadCountAggregateOutputType | null
   _min: UploadMinAggregateOutputType | null
   _max: UploadMaxAggregateOutputType | null
@@ -182,6 +189,7 @@ export type UploadWhereInput = {
   name?: Prisma.StringFilter<"Upload"> | string
   createdAt?: Prisma.DateTimeFilter<"Upload"> | Date | string
   thumbnail?: Prisma.StringNullableFilter<"Upload"> | string | null
+  type?: Prisma.EnumUploadTypeFilter<"Upload"> | $Enums.UploadType
   files?: Prisma.FileListRelationFilter
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }
@@ -192,6 +200,7 @@ export type UploadOrderByWithRelationInput = {
   name?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   thumbnail?: Prisma.SortOrderInput | Prisma.SortOrder
+  type?: Prisma.SortOrder
   files?: Prisma.FileOrderByRelationAggregateInput
   user?: Prisma.UserOrderByWithRelationInput
 }
@@ -205,6 +214,7 @@ export type UploadWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"Upload"> | string
   createdAt?: Prisma.DateTimeFilter<"Upload"> | Date | string
   thumbnail?: Prisma.StringNullableFilter<"Upload"> | string | null
+  type?: Prisma.EnumUploadTypeFilter<"Upload"> | $Enums.UploadType
   files?: Prisma.FileListRelationFilter
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }, "id">
@@ -215,6 +225,7 @@ export type UploadOrderByWithAggregationInput = {
   name?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   thumbnail?: Prisma.SortOrderInput | Prisma.SortOrder
+  type?: Prisma.SortOrder
   _count?: Prisma.UploadCountOrderByAggregateInput
   _max?: Prisma.UploadMaxOrderByAggregateInput
   _min?: Prisma.UploadMinOrderByAggregateInput
@@ -229,6 +240,7 @@ export type UploadScalarWhereWithAggregatesInput = {
   name?: Prisma.StringWithAggregatesFilter<"Upload"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Upload"> | Date | string
   thumbnail?: Prisma.StringNullableWithAggregatesFilter<"Upload"> | string | null
+  type?: Prisma.EnumUploadTypeWithAggregatesFilter<"Upload"> | $Enums.UploadType
 }
 
 export type UploadCreateInput = {
@@ -236,6 +248,7 @@ export type UploadCreateInput = {
   name: string
   createdAt?: Date | string
   thumbnail?: string | null
+  type?: $Enums.UploadType
   files?: Prisma.FileCreateNestedManyWithoutUploadInput
   user: Prisma.UserCreateNestedOneWithoutUploadsInput
 }
@@ -246,6 +259,7 @@ export type UploadUncheckedCreateInput = {
   name: string
   createdAt?: Date | string
   thumbnail?: string | null
+  type?: $Enums.UploadType
   files?: Prisma.FileUncheckedCreateNestedManyWithoutUploadInput
 }
 
@@ -254,6 +268,7 @@ export type UploadUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   thumbnail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumUploadTypeFieldUpdateOperationsInput | $Enums.UploadType
   files?: Prisma.FileUpdateManyWithoutUploadNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutUploadsNestedInput
 }
@@ -264,6 +279,7 @@ export type UploadUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   thumbnail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumUploadTypeFieldUpdateOperationsInput | $Enums.UploadType
   files?: Prisma.FileUncheckedUpdateManyWithoutUploadNestedInput
 }
 
@@ -273,6 +289,7 @@ export type UploadCreateManyInput = {
   name: string
   createdAt?: Date | string
   thumbnail?: string | null
+  type?: $Enums.UploadType
 }
 
 export type UploadUpdateManyMutationInput = {
@@ -280,6 +297,7 @@ export type UploadUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   thumbnail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumUploadTypeFieldUpdateOperationsInput | $Enums.UploadType
 }
 
 export type UploadUncheckedUpdateManyInput = {
@@ -288,6 +306,7 @@ export type UploadUncheckedUpdateManyInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   thumbnail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumUploadTypeFieldUpdateOperationsInput | $Enums.UploadType
 }
 
 export type UploadListRelationFilter = {
@@ -306,6 +325,7 @@ export type UploadCountOrderByAggregateInput = {
   name?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   thumbnail?: Prisma.SortOrder
+  type?: Prisma.SortOrder
 }
 
 export type UploadMaxOrderByAggregateInput = {
@@ -314,6 +334,7 @@ export type UploadMaxOrderByAggregateInput = {
   name?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   thumbnail?: Prisma.SortOrder
+  type?: Prisma.SortOrder
 }
 
 export type UploadMinOrderByAggregateInput = {
@@ -322,6 +343,7 @@ export type UploadMinOrderByAggregateInput = {
   name?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   thumbnail?: Prisma.SortOrder
+  type?: Prisma.SortOrder
 }
 
 export type UploadNullableScalarRelationFilter = {
@@ -371,6 +393,10 @@ export type UploadUncheckedUpdateManyWithoutUserNestedInput = {
   deleteMany?: Prisma.UploadScalarWhereInput | Prisma.UploadScalarWhereInput[]
 }
 
+export type EnumUploadTypeFieldUpdateOperationsInput = {
+  set?: $Enums.UploadType
+}
+
 export type UploadCreateNestedOneWithoutFilesInput = {
   create?: Prisma.XOR<Prisma.UploadCreateWithoutFilesInput, Prisma.UploadUncheckedCreateWithoutFilesInput>
   connectOrCreate?: Prisma.UploadCreateOrConnectWithoutFilesInput
@@ -392,6 +418,7 @@ export type UploadCreateWithoutUserInput = {
   name: string
   createdAt?: Date | string
   thumbnail?: string | null
+  type?: $Enums.UploadType
   files?: Prisma.FileCreateNestedManyWithoutUploadInput
 }
 
@@ -400,6 +427,7 @@ export type UploadUncheckedCreateWithoutUserInput = {
   name: string
   createdAt?: Date | string
   thumbnail?: string | null
+  type?: $Enums.UploadType
   files?: Prisma.FileUncheckedCreateNestedManyWithoutUploadInput
 }
 
@@ -438,6 +466,7 @@ export type UploadScalarWhereInput = {
   name?: Prisma.StringFilter<"Upload"> | string
   createdAt?: Prisma.DateTimeFilter<"Upload"> | Date | string
   thumbnail?: Prisma.StringNullableFilter<"Upload"> | string | null
+  type?: Prisma.EnumUploadTypeFilter<"Upload"> | $Enums.UploadType
 }
 
 export type UploadCreateWithoutFilesInput = {
@@ -445,6 +474,7 @@ export type UploadCreateWithoutFilesInput = {
   name: string
   createdAt?: Date | string
   thumbnail?: string | null
+  type?: $Enums.UploadType
   user: Prisma.UserCreateNestedOneWithoutUploadsInput
 }
 
@@ -454,6 +484,7 @@ export type UploadUncheckedCreateWithoutFilesInput = {
   name: string
   createdAt?: Date | string
   thumbnail?: string | null
+  type?: $Enums.UploadType
 }
 
 export type UploadCreateOrConnectWithoutFilesInput = {
@@ -477,6 +508,7 @@ export type UploadUpdateWithoutFilesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   thumbnail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumUploadTypeFieldUpdateOperationsInput | $Enums.UploadType
   user?: Prisma.UserUpdateOneRequiredWithoutUploadsNestedInput
 }
 
@@ -486,6 +518,7 @@ export type UploadUncheckedUpdateWithoutFilesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   thumbnail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumUploadTypeFieldUpdateOperationsInput | $Enums.UploadType
 }
 
 export type UploadCreateManyUserInput = {
@@ -493,6 +526,7 @@ export type UploadCreateManyUserInput = {
   name: string
   createdAt?: Date | string
   thumbnail?: string | null
+  type?: $Enums.UploadType
 }
 
 export type UploadUpdateWithoutUserInput = {
@@ -500,6 +534,7 @@ export type UploadUpdateWithoutUserInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   thumbnail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumUploadTypeFieldUpdateOperationsInput | $Enums.UploadType
   files?: Prisma.FileUpdateManyWithoutUploadNestedInput
 }
 
@@ -508,6 +543,7 @@ export type UploadUncheckedUpdateWithoutUserInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   thumbnail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumUploadTypeFieldUpdateOperationsInput | $Enums.UploadType
   files?: Prisma.FileUncheckedUpdateManyWithoutUploadNestedInput
 }
 
@@ -516,6 +552,7 @@ export type UploadUncheckedUpdateManyWithoutUserInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   thumbnail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumUploadTypeFieldUpdateOperationsInput | $Enums.UploadType
 }
 
 
@@ -555,6 +592,7 @@ export type UploadSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   name?: boolean
   createdAt?: boolean
   thumbnail?: boolean
+  type?: boolean
   files?: boolean | Prisma.Upload$filesArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   _count?: boolean | Prisma.UploadCountOutputTypeDefaultArgs<ExtArgs>
@@ -566,6 +604,7 @@ export type UploadSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   name?: boolean
   createdAt?: boolean
   thumbnail?: boolean
+  type?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["upload"]>
 
@@ -575,6 +614,7 @@ export type UploadSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   name?: boolean
   createdAt?: boolean
   thumbnail?: boolean
+  type?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["upload"]>
 
@@ -584,9 +624,10 @@ export type UploadSelectScalar = {
   name?: boolean
   createdAt?: boolean
   thumbnail?: boolean
+  type?: boolean
 }
 
-export type UploadOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "name" | "createdAt" | "thumbnail", ExtArgs["result"]["upload"]>
+export type UploadOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "name" | "createdAt" | "thumbnail" | "type", ExtArgs["result"]["upload"]>
 export type UploadInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   files?: boolean | Prisma.Upload$filesArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -611,6 +652,7 @@ export type $UploadPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     name: string
     createdAt: Date
     thumbnail: string | null
+    type: $Enums.UploadType
   }, ExtArgs["result"]["upload"]>
   composites: {}
 }
@@ -1041,6 +1083,7 @@ export interface UploadFieldRefs {
   readonly name: Prisma.FieldRef<"Upload", 'String'>
   readonly createdAt: Prisma.FieldRef<"Upload", 'DateTime'>
   readonly thumbnail: Prisma.FieldRef<"Upload", 'String'>
+  readonly type: Prisma.FieldRef<"Upload", 'UploadType'>
 }
     
 

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { zUser } from './user.ts';
+import type { zToolResultValue } from './chat.ts';
 import { zChat, zGenerateInput } from './chat.ts';
 import { zSkill } from './skill.ts';
 import type { GenerationCallbacks } from '../services/chat/generate.ts';
@@ -22,6 +23,7 @@ export const zTool = z.object({
   input: z.any(),
   userInput: z.any().optional(),
   output: z.any(),
+  overrides: z.boolean().optional(),
 
   requirements: z
     .object({
@@ -46,7 +48,12 @@ export interface Tool<
     context: ToolContext,
     input: z.infer<TInput>,
     userInput: z.infer<TUserInput>,
-  ): Promise<z.infer<TOutput>>;
+  ): Promise<
+    (
+      | NonNullable<Exclude<ReturnType<zToolResultValue['at']>, { type: 'json' }>>
+      | { type: 'json'; value: z.infer<TOutput> }
+    )[]
+  >;
 }
 
 export const zToolGroup = z.object({

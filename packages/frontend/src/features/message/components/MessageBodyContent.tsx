@@ -11,12 +11,7 @@ import {
   Text,
   Transition,
 } from '@mantine/core';
-import {
-  type CSSProperties,
-  memo,
-  ReactNode,
-  useMemo,
-} from 'react';
+import { type CSSProperties, memo, ReactNode, useMemo } from 'react';
 import { useMessageSelection } from '@/features/message/hooks/useMessageSelection';
 import { Author, MessageState, zDataPart } from '@tiny-chat/shared/src/types/chat.ts';
 import { texts } from '@tiny-chat/shared/src/utils.ts';
@@ -31,7 +26,6 @@ import {
 } from '@vidstack/react/player/layouts/default';
 import { GenerateService } from '@/features/message/services/GenerateService';
 import { useMessageStream } from '@/features/message/hooks/useStreaming';
-import { SearchResult } from '@tiny-chat/shared/src/providers/web';
 import { useMessages } from '@/features/message/hooks/useMessages';
 import { useChat } from '@/features/chat/hooks/useChat';
 import { useMemories } from '@/features/chat/hooks/useMemories';
@@ -43,6 +37,7 @@ import { useSkills } from '@/features/input/hooks/useSkills';
 import { Thinking } from './Thinking';
 import { ToolCall } from './ToolCall';
 import { SHADOW } from '@/utils/theme';
+import { zSearchWebOutput } from '@tiny-chat/backend/src/tools/web.ts';
 
 export const MessageBodyContent = memo(
   ({
@@ -89,7 +84,7 @@ export const MessageBodyContent = memo(
             )
             .map((p) => p.value[0])
             .filter((p) => p.type === 'json')
-            .flatMap((p) => p.value as unknown as SearchResult[]),
+            .flatMap((p) => p.value as zSearchWebOutput),
         ),
       [messageList],
     );

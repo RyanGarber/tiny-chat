@@ -29,10 +29,10 @@ export const Tavily: WebProvider = {
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
 
     const data = await res.json();
-    return (data.results as { title: string; url: string; content: string }[]).map((r) => ({
+    return (data.results as { title: string; content: string; url: string }[]).map((r) => ({
       title: r.title,
-      source: r.url,
       content: r.content,
+      url: r.url,
     }));
   },
 

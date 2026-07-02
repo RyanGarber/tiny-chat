@@ -2,7 +2,7 @@ import { type BedrockProviderOptions, createAmazonBedrock } from '@ai-sdk/amazon
 import type { Model, ModelArg } from '../../types/chat.ts';
 import { AnthropicProvider } from './anthropic.ts';
 import type { ChatProvider } from './index.ts';
-import { getBaseModelTransform, isModelVersion } from '../../utils.ts';
+import { isModelVersion } from '../../utils.ts';
 import { createBedrockAnthropic } from '@ai-sdk/amazon-bedrock/anthropic';
 
 const INFERENCE_PROFILES: Record<string, string> = {
@@ -14,6 +14,8 @@ const INFERENCE_PROFILES: Record<string, string> = {
   'anthropic.claude-sonnet-4-6': 'global.anthropic.claude-sonnet-4-6',
   'anthropic.claude-sonnet-4-20250514-v1:0': 'global.anthropic.claude-sonnet-4-20250514-v1:0',
   'anthropic.claude-sonnet-4-5-20250929-v1:0': 'global.anthropic.claude-sonnet-4-5-20250929-v1:0',
+  'anthropic.claude-sonnet-5':
+    'arn:aws:bedrock:us-east-1:366731215520:inference-profile/us.anthropic.claude-sonnet-5',
   'cohere.embed-v4:0': 'global.cohere.embed-v4:0',
   'twelvelabs.pegasus-1-2-v1:0': 'global.twelvelabs.pegasus-1-2-v1:0',
 };
@@ -68,12 +70,22 @@ export const AWSProvider: ChatProvider = {
     };
   },
 
-  getPartTransformed(user, config, message, part) {
+  getPartTransformed(user, config, part) {
     if (isModelVersion(config.model, 'claude')) {
-      return AnthropicProvider.getPartTransformed?.(user, config, message, part) ?? [part];
+      return AnthropicProvider.getPartTransformed?.(user, config, part) ?? [part];
     }
+  },
 
-    return [getBaseModelTransform(part)];
+  getPartSignature(user, config, part) {
+    if (isModelVersion(config.model, 'claude')) {
+      return AnthropicProvider.getPartSignature?.(user, config, part);
+    }
+  },
+
+  getPartSignatureReturn(user, config, part) {
+    if (isModelVersion(config.model, 'claude')) {
+      return AnthropicProvider.getPartSignatureReturn?.(user, config, part);
+    }
   },
 
   async getModels(user) {

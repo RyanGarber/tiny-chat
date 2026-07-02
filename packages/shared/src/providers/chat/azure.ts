@@ -33,8 +33,11 @@ export const AzureProvider: ChatProvider = {
       }).languageModel(id);
     }
 
-    if (!useResponses(id)) return client.chat(id); // force completions api
-    return client.languageModel(id);
+    if (useResponses(id)) {
+      return client.languageModel(id);
+    }
+
+    return client.chat(id);
   },
 
   getClientEmbedModel(user, id, env) {
@@ -48,20 +51,28 @@ export const AzureProvider: ChatProvider = {
       return AnthropicProvider.getClientOptions(user, config, env);
     }
 
-    return {
-      azure: OpenAIProvider.getClientOptions(user, config, env)?.openai,
-    };
-  },
-
-  getPartTransformed(user, config, message, part) {
-    if (isModelVersion(config.model, 'claude')) {
-      return AnthropicProvider.getPartTransformed?.(user, config, message, part) ?? [part];
+    if (useResponses(config.model)) {
+      return {
+        azure: OpenAIProvider.getClientOptions(user, config, env)?.openai,
+      };
     }
 
-    return OpenAIProvider.getPartTransformed?.(user, config, message, part) ?? [part];
+    return OpenAIProvider.getClientOptions(user, config, env);
   },
 
-  getPartSignature(_user, config, part) {
+  getPartTransformed(user, config, part) {
+    if (isModelVersion(config.model, 'claude')) {
+      return AnthropicProvider.getPartTransformed?.(user, config, part) ?? [part];
+    }
+
+    return OpenAIProvider.getPartTransformed?.(user, config, part) ?? [part];
+  },
+
+  getPartSignature(user, config, part) {
+    if (isModelVersion(config.model, 'claude')) {
+      return AnthropicProvider.getPartSignature?.(user, config, part);
+    }
+
     if ('providerMetadata' in part) {
       return {
         model: config.model,
@@ -71,7 +82,11 @@ export const AzureProvider: ChatProvider = {
     }
   },
 
-  getPartSignatureReturn(_user, config, _message, part) {
+  getPartSignatureReturn(user, config, part) {
+    if (isModelVersion(config.model, 'claude')) {
+      return AnthropicProvider.getPartSignatureReturn?.(user, config, part);
+    }
+
     if ('signature' in part) {
       return {
         azure: {

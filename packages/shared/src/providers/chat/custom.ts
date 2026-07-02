@@ -32,7 +32,7 @@ export const CustomProvider: ChatProvider = {
     return {} satisfies OpenAICompatibleProviderOptions;
   },
 
-  getPartTransformed(_user, _config, _message, part) {
+  getPartTransformed(_user, _config, part) {
     return [getBaseModelTransform(part, 'image/', 'application/pdf')];
   },
 

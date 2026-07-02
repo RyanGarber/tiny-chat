@@ -3,17 +3,14 @@ import type { zUser } from '../../types/user.ts';
 import type { BaseProvider } from '../index.ts';
 import { Tavily } from './tavily.ts';
 
-export interface SearchResult {
-  id: string;
-  title: string;
-  source: string;
-  content: string;
-}
-
 export interface WebProvider extends BaseProvider {
   features: ('search' | 'view')[];
   check: (user: zUser) => Promise<boolean>;
-  search: (user: zUser, query: string, maxResults: number) => Promise<Omit<SearchResult, 'id'>[]>;
+  search: (
+    user: zUser,
+    query: string,
+    maxResults: number,
+  ) => Promise<{ title: string; content: string; url: string }[]>;
   view: (user: zUser, url: string) => Promise<string>;
 }
 

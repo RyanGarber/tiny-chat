@@ -7,13 +7,13 @@ import {
   type zDataPart,
   type zGenerateInput,
 } from '../../types/chat.ts';
-import { normalizeText } from '../../utils.ts';
 import type { zUser } from '../../types/user.ts';
 import { buildGenerationInstructions, formatLocalDate } from './instructions.ts';
 import type { zToolGroup } from '../../types/tool.ts';
 import type { zSkill } from '../../types/skill.ts';
 import { format } from 'timeago.js';
 import { toChatUri } from '../../utils/files.ts';
+import { directiveToXml } from '../../utils/text.ts';
 
 export async function buildContext(
   user: zUser,
@@ -50,23 +50,7 @@ export async function buildContext(
             }
           }
           if (p.type === 'text') {
-            const value = normalizeText(p.value).replace(/((?:^::>:: .*$\n?)+)/gm, (block) => {
-              const lines = block
-                .trim()
-                .split('\n')
-                .map((l) => l.replace(/^::>:: /, ''));
-              let referencedModel = '';
-              let contentLines = lines;
-              if (lines[0].startsWith('::model=') && lines[0].endsWith('::')) {
-                referencedModel = lines[0].slice('::model='.length, -2);
-                contentLines = lines.slice(1);
-              }
-              const prefix = referencedModel
-                ? `Earlier, ${referencedModel === input.config.model ? 'you' : referencedModel} said:\n`
-                : '';
-              return prefix + contentLines.map((l) => `> ${l}`).join('\n') + '\n';
-            });
-            return [{ ...p, value }];
+            return [{ ...p, value: directiveToXml(p.value, ['quote']) }];
           }
           return [p];
         }),

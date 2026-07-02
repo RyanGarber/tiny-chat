@@ -49,7 +49,7 @@ export const GoogleProvider: ChatProvider = {
     };
   },
 
-  getPartTransformed(_user, config, _message, part) {
+  getPartTransformed(_user, config, part) {
     const parts: zDataPart[] = [];
 
     if (isModelVersion(config.model, 'gemini') && part.type === 'text') {
@@ -91,7 +91,7 @@ export const GoogleProvider: ChatProvider = {
     }
   },
 
-  getPartSignatureReturn(_user, config, _message, part) {
+  getPartSignatureReturn(_user, config, part) {
     if ('signature' in part) {
       return {
         google: {

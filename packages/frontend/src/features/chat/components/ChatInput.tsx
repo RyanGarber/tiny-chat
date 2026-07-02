@@ -57,11 +57,32 @@ import { auth } from '@/utils/api.ts';
 import { useChatStore } from '../stores/useChatStore';
 import { useTauri } from '@/core/hooks/useTauri';
 import { GLASS_STYLE, SHADOW } from '@/utils/theme.ts';
+import { modals } from '@mantine/modals';
+import { JsonTree } from '@gfazioli/mantine-json-tree';
+import { importChat } from '@/utils/ui.tsx';
 
 export const ChatInput = memo(({ isAny, ...props }: InputWrapperProps & { isAny: boolean }) => {
   const session = auth.useSession();
   const { chat } = useChat();
   const { config, setConfig } = useConfig();
+
+  useHotkeys([
+    [
+      'mod+i',
+      async () => {
+        const messages = JSON.parse(await navigator.clipboard.readText()) as Parameters<
+          typeof importChat
+        >[0];
+        console.log('Opening confirm modal with messages', messages);
+        modals.openConfirmModal({
+          title: 'Import chat',
+          children: <JsonTree data={messages} />,
+          labels: { confirm: 'Import', cancel: 'Cancel' },
+          onConfirm: () => void importChat(messages, config),
+        });
+      },
+    ],
+  ]);
 
   const stream = StreamService.getChat(chat.data?.id ?? '');
 
@@ -194,12 +215,8 @@ export const ChatInput = memo(({ isAny, ...props }: InputWrapperProps & { isAny:
   );
 
   useHotkeys([
-    [
-      '/',
-      () => {
-        ReactEditor.focus(editor);
-      },
-    ],
+    ['mod+/', () => ReactEditor.focus(editor)],
+    ['/', () => ReactEditor.focus(editor)],
   ]);
 
   const leftActionContent = useMemo(

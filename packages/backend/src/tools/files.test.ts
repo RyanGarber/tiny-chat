@@ -24,7 +24,7 @@ describe('tools - files', () => {
       {
         id: '1',
         author: 'USER',
-        config: inject('config'),
+        config: inject('backend_config'),
         data: [[upload]],
         createdAt: new Date(),
       },

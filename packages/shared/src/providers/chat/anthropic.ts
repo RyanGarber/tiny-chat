@@ -14,6 +14,7 @@ export const AnthropicProvider: ChatProvider = {
     if (!apiKey) return null;
     return createAnthropic({
       apiKey: apiKey as string,
+      headers: { 'anthropic-dangerous-direct-browser-access': 'true' },
     });
   },
 
@@ -34,7 +35,7 @@ export const AnthropicProvider: ChatProvider = {
       anthropic: {
         thinking:
           config.args?.thinking === 'adaptive' || config.args?.thinking === 'disabled'
-            ? { type: config.args.thinking }
+            ? { type: config.args.thinking, display: 'summarized' }
             : config.args?.thinking
               ? { type: 'enabled', budgetTokens: parseInt(config.args.thinking as string) }
               : undefined,
@@ -60,8 +61,27 @@ export const AnthropicProvider: ChatProvider = {
     });
   },
 
-  getPartTransformed(_user, _config, _message, part) {
+  getPartTransformed(_user, _config, part) {
     return [getBaseModelTransform(part, 'image/', 'application/pdf')];
+  },
+
+  getPartSignature(_user, config, part) {
+    if ('providerMetadata' in part) {
+      return {
+        model: config.model,
+        reasoning: part.providerMetadata?.anthropic?.signature as any,
+      };
+    }
+  },
+
+  getPartSignatureReturn(_user, config, part) {
+    if ('signature' in part) {
+      return {
+        anthropic: {
+          signature: part.signature?.model === config.model ? part.signature?.reasoning : undefined,
+        },
+      };
+    }
   },
 
   getModelArgs(model) {
@@ -76,7 +96,7 @@ export const AnthropicProvider: ChatProvider = {
           default: '2500',
         });
       }
-      if (isModelVersion(model, '4.6', '4.7')) {
+      if (isModelVersion(model, '4.6', '4.7', '4.8', '5')) {
         args.push({
           name: 'thinking',
           type: 'list' as const,
@@ -92,7 +112,7 @@ export const AnthropicProvider: ChatProvider = {
           default: 'medium',
         });
       }
-      if (isModelVersion(model, 'opus 4.7', 'opus 4.8') || isModelVersion(model, 'fable 5')) {
+      if (isModelVersion(model, 'opus 4.7', 'opus 4.8', 'sonnet 5', 'fable 5')) {
         args.push({
           name: 'effort',
           type: 'list' as const,

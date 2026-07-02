@@ -1,8 +1,8 @@
 import type { ChatProvider } from '@tiny-chat/shared/src/providers/chat';
 import { createWebLLM } from '@browser-ai/web-llm';
-import { getBaseModelArgs, getBaseModelTransform } from '@tiny-chat/shared/src/utils';
+import { getBaseModelArgs } from '@tiny-chat/shared/src/utils';
 import type { Model } from '@tiny-chat/shared/src/types/chat';
-import type { AppConfig} from '@mlc-ai/web-llm';
+import type { AppConfig } from '@mlc-ai/web-llm';
 import { ModelType, prebuiltAppConfig } from '@mlc-ai/web-llm';
 
 export const WebLLMConfig: AppConfig = {
@@ -42,18 +42,6 @@ export const WebLLMProvider: ChatProvider = {
 
   getClientOptions() {
     return {};
-  },
-
-  getPartTransformed(_user, _config, _message, part) {
-    return [getBaseModelTransform(part)];
-  },
-
-  getPartSignature() {
-    return undefined;
-  },
-
-  getPartSignatureReturn() {
-    return undefined;
   },
 
   // eslint-disable-next-line @typescript-eslint/require-await

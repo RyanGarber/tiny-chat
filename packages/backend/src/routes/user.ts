@@ -4,6 +4,7 @@ import { procedure, router } from '../index.ts';
 import type { zUser } from '@tiny-chat/shared/src/types/user.ts';
 import { zCache } from '@tiny-chat/shared/src/types/user.ts';
 import { fetchProviders } from '@tiny-chat/shared/src/providers/index.ts';
+import onTick from '../services/worker.ts';
 
 interface Clone {
   id: string;
@@ -72,5 +73,10 @@ export default router({
       data: { user: { connect: { id: clone.userId } } },
     });
     return true;
+  }),
+
+  testWorker: procedure.mutation(async ({ ctx }) => {
+    if (!process.env.DEV) throw new Error('Test requested while not in dev');
+    await onTick(ctx.session.user.id);
   }),
 });

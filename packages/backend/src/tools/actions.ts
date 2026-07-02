@@ -16,7 +16,7 @@ export const zAddActionOutput = z.object({
 });
 export type zAddActionOutput = z.infer<typeof zAddActionOutput>;
 
-const AddAction: Tool<typeof zAddActionInput, typeof zAddActionOutput> = {
+export const AddAction: Tool<typeof zAddActionInput, typeof zAddActionOutput> = {
   name: 'add_action',
   description: 'Schedule a prompt to send to a model.',
   input: zAddActionInput.toJSONSchema(),
@@ -56,7 +56,7 @@ export const zUpdateActionOutput = z.object({
 });
 export type zUpdateActionOutput = z.infer<typeof zUpdateActionOutput>;
 
-const UpdateAction: Tool<typeof zUpdateActionInput, typeof zUpdateActionOutput> = {
+export const UpdateAction: Tool<typeof zUpdateActionInput, typeof zUpdateActionOutput> = {
   name: 'update_action',
   description: 'Update an existing action.',
   input: zUpdateActionInput.toJSONSchema(),
@@ -96,7 +96,7 @@ export const zDeleteActionOutput = z.object({
 });
 export type zDeleteActionOutput = z.infer<typeof zDeleteActionOutput>;
 
-const DeleteAction: Tool<typeof zDeleteActionInput, typeof zDeleteActionOutput> = {
+export const DeleteAction: Tool<typeof zDeleteActionInput, typeof zDeleteActionOutput> = {
   name: 'delete_action',
   description: 'Delete an existing action.',
   input: zDeleteActionInput.toJSONSchema(),
@@ -131,7 +131,7 @@ export const zListActionsOutput = z.array(
 );
 export type zListActionsOutput = z.infer<typeof zListActionsOutput>;
 
-const ListActions: Tool<typeof zListActionsInput, typeof zListActionsOutput> = {
+export const ListActions: Tool<typeof zListActionsInput, typeof zListActionsOutput> = {
   name: 'list_actions',
   description: "List the user's actions across all chats.",
   input: zListActionsInput.toJSONSchema(),

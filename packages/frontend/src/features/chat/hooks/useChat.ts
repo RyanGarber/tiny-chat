@@ -58,7 +58,7 @@ export const useChat = () => {
       return trpc.chat.clone.mutate({
         id: chat.id,
         untilMessageId: atMessage.id,
-        title: `Fork of ${chat.title ?? 'Forked Chat'}`,
+        title: chat.title ? `Fork of ${chat.title}` : 'Forked Chat',
       });
     },
     onSuccess: async (clone, input) => {

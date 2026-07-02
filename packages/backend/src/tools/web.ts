@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { createHash } from 'crypto';
 import type { Tool, ToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
 import { getBestWebProvider } from '@tiny-chat/shared/src/providers/web/index.ts';
 
@@ -10,10 +9,9 @@ export type zSearchWebInput = z.infer<typeof zSearchWebInput>;
 
 export const zSearchWebOutput = z.array(
   z.object({
-    id: z.string(),
     title: z.string(),
-    source: z.string(),
     content: z.string(),
+    url: z.string(),
   }),
 );
 export type zSearchWebOutput = z.infer<typeof zSearchWebOutput>;
@@ -31,10 +29,7 @@ export const SearchWeb: Tool<typeof zSearchWebInput, typeof zSearchWebOutput> = 
     return [
       {
         type: 'json',
-        value: results.map((r) => ({
-          ...r,
-          id: createHash('sha256').update(r.source).digest('hex').slice(0, 6),
-        })),
+        value: results,
       },
     ];
   },

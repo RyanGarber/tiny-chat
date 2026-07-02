@@ -39,7 +39,7 @@ export const OpenAIProvider: ChatProvider = {
     };
   },
 
-  getPartTransformed(_user, _config, _message, part) {
+  getPartTransformed(_user, _config, part) {
     return [getBaseModelTransform(part, 'image/', 'application/pdf')];
   },
 
@@ -53,7 +53,7 @@ export const OpenAIProvider: ChatProvider = {
     }
   },
 
-  getPartSignatureReturn(_user, config, _message, part) {
+  getPartSignatureReturn(_user, config, part) {
     if ('signature' in part) {
       return {
         openai: {

@@ -53,12 +53,7 @@ export interface ChatProvider extends BaseProvider {
   getClientEmbedModel: (user: zUser, id: string, env: Env) => EmbeddingModel | null;
   getClientOptions: (user: zUser, config: zConfig, env: Env) => Record<string, any> | undefined;
 
-  getPartTransformed?: (
-    user: zUser,
-    config: zConfig,
-    message: zContextItem,
-    part: zDataPart,
-  ) => zDataPart[];
+  getPartTransformed?: (user: zUser, config: zConfig, part: zDataPart) => zDataPart[] | undefined;
   getPartSignature?: (
     user: zUser,
     config: zConfig,
@@ -67,7 +62,6 @@ export interface ChatProvider extends BaseProvider {
   getPartSignatureReturn?: (
     user: zUser,
     config: zConfig,
-    message: zContextItem,
     part: zDataPart,
   ) => Record<string, any> | undefined;
 }
@@ -165,7 +159,7 @@ export function toSdkContext(
     };
 
     const transform = (part: zDataPart) =>
-      provider.getPartTransformed?.(user, config, original, part) ?? getBaseModelTransform(part);
+      provider.getPartTransformed?.(user, config, part) ?? getBaseModelTransform(part);
     const parts = zData.parse(original.data).flat().flatMap(transform);
 
     for (const part of parts) {
@@ -181,7 +175,7 @@ export function toSdkContext(
       // Correctly assign the author for the current block
       message.role = isToolResult ? 'tool' : original.author === 'MODEL' ? 'assistant' : 'user';
 
-      let providerOptions = provider.getPartSignatureReturn?.(user, config, original, part);
+      let providerOptions = provider.getPartSignatureReturn?.(user, config, part);
       providerOptions = cleanSignatureReturn(providerOptions);
 
       const toSdkPart = (

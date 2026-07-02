@@ -18,7 +18,7 @@ describe('routes - input', () => {
 
     const message = await trpc.message.create.mutate({
       author: 'USER',
-      config: inject('config'),
+      config: inject('backend_config'),
       data: [[upload1]],
       metadata: [],
     });

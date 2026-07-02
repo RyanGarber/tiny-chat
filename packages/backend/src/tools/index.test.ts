@@ -8,10 +8,10 @@ export function testToolContext(
   context?: zContextItem[],
   overrides: Partial<ToolContext> = {},
 ): ToolContext {
-  const user = inject('user');
+  const user = inject('backend_user');
   const trpc = testTRPC();
   return {
-    user: inject('user'),
+    user: inject('backend_user'),
     chat: {
       id: chat?.id ?? 'zzzzzzzzzzzzzzzzzzzzzzzz',
       userId: chat?.userId ?? user.id,
@@ -20,7 +20,7 @@ export function testToolContext(
     },
     generation: {
       context: context ?? [],
-      config: inject('config'),
+      config: inject('backend_config'),
       timezone: 'America/New_York',
       incognito: chat?.incognito ?? false,
       supportsUserInput: false,

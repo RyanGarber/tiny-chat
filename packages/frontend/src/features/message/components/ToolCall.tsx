@@ -80,24 +80,24 @@ export const ToolCall = memo(
       if (toolResult?.value?.[0].type === 'json') {
         details = (
           <Stack>
-            {(toolResult?.value[0].value as zSearchWebOutput).map((result) => (
-              <Box key={result.id}>
+            {(toolResult?.value[0].value as zSearchWebOutput).map((result, i) => (
+              <Box key={i}>
                 <Text fw={500} fz={FZ}>
                   {result.title}
                 </Text>
                 <Anchor
                   truncate="end"
-                  href={result.source}
+                  href={result.url}
                   target="_blank"
                   style={{
                     display: 'block',
                   }}
                   onClick={(e) => {
                     e.preventDefault();
-                    void openExternal(result.source);
+                    void openExternal(result.url);
                   }}
                 >
-                  {result.source}
+                  {result.url}
                 </Anchor>
                 <Text truncate="end" fz={FZ}>
                   {result.content}

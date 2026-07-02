@@ -42,23 +42,23 @@ export const AntigravityProvider: ChatProvider = {
     return GoogleProvider.getClientOptions(user, config, env);
   },
 
-  getPartTransformed(_user, _config, _message, part) {
+  getPartTransformed(_user, _config, part) {
     return [getBaseModelTransform(part, 'video/', 'image/', 'application/pdf')];
   },
 
   getPartSignature(user, config, part) {
     return GoogleProvider.getPartSignature?.(user, config, {
       ...part,
-      ...('providerMetadata' in part && part.providerMetadata?.google
-        ? { providerMetadata: { 'antigravity-proxy': part.providerMetadata?.google } }
+      ...('providerMetadata' in part && part.providerMetadata?.['antigravity-proxy']
+        ? { providerMetadata: { google: part.providerMetadata?.['antigravity-proxy'] } }
         : {}),
     });
   },
 
-  getPartSignatureReturn(user, config, message, part) {
+  getPartSignatureReturn(user, config, part) {
     return {
       'antigravity-proxy': {
-        ...GoogleProvider.getPartSignatureReturn?.(user, config, message, part)?.google,
+        ...GoogleProvider.getPartSignatureReturn?.(user, config, part)?.google,
       },
     };
   },

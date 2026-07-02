@@ -1,4 +1,4 @@
-import { getBaseModelTransform, isModelVersion } from '../../utils.ts';
+import { isModelVersion } from '../../utils.ts';
 import type { ChatProvider } from './index.ts';
 import { createVoyage } from 'voyage-ai-provider';
 
@@ -58,10 +58,6 @@ export const VoyageProvider: ChatProvider = {
 
   getClientOptions() {
     return {};
-  },
-
-  getPartTransformed(_user, _config, _message, part) {
-    return [getBaseModelTransform(part)];
   },
 
   async getModels(user) {

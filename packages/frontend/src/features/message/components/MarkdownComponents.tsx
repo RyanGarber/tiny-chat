@@ -1,15 +1,5 @@
-import { type ComponentType, type CSSProperties, Fragment, useContext } from 'react';
-import {
-  Anchor,
-  Blockquote,
-  Group,
-  Pill,
-  ScrollArea,
-  Stack,
-  Text,
-  ThemeIcon,
-  Tooltip,
-} from '@mantine/core';
+import { type ComponentType, type CSSProperties, ReactNode, useContext } from 'react';
+import { Anchor, Blockquote, Group, Pill, ScrollArea, Stack, Text, Tooltip } from '@mantine/core';
 import {
   type BundledLanguage,
   type BundledTheme,
@@ -19,17 +9,12 @@ import {
   CodeBlockHeader,
   Components,
   type CustomRendererProps,
+  TableCopyDropdown,
+  TableDownloadDropdown,
 } from 'streamdown';
-import {
-  DIFF_MARKER,
-  getTextFromChildren,
-  MarkdownContext,
-  takeStringOutOfNodeAndChildren,
-  WRITING_MARKER,
-} from '@/utils/data.ts';
+import { DIFF_MARKER, MarkdownContext } from '@/utils/data.ts';
 import { Icon } from '@iconify/react';
 import { openExternal } from '@/utils/api.ts';
-import { withStreamdownBlur } from '@/utils/ui';
 import { GLASS_STYLE, SHADOW } from '@/utils/theme.ts';
 import { format } from 'timeago.js';
 import { zData } from '@tiny-chat/shared/src/types/chat.ts';
@@ -49,7 +34,7 @@ const TOOLTIP_PROPS = {
 
 const PILL_BASE: CSSProperties = {
   height: 'auto',
-  margin: 0,
+  margin: '0 2px',
   padding: '2px 5.25px',
   fontSize: '0.7em',
   display: 'inline-flex',
@@ -57,56 +42,49 @@ const PILL_BASE: CSSProperties = {
   background: 'var(--tc-interior)',
 };
 
-// Rendered for each [^id] citation reference inline
-export const ReferenceComponent: Components['reference'] = withStreamdownBlur((props) => {
-  const { webSearchResults, memories, actions, isGenerating } = useContext(MarkdownContext);
-  const referenceId = ((props.id ?? '') as string).replace('user-content-', '').trim();
+export const CiteComponent: Components['cite'] = ({ children, node }) => {
+  const { webSearchResults, memories, actions } = useContext(MarkdownContext);
+  const type = ((node?.properties.type ?? 'unknown') as string).trim();
+  const ids = ((node?.properties.id ?? '-') as string)
+    .replace('user-content-', '')
+    .split(',')
+    .map((id) => id.trim());
+  const urls = ((node?.properties.url ?? '-') as string).split(',').map((url) => url.trim());
 
-  if (isGenerating) {
+  const unknown = ({ key, id }: { key: number; id: string }) => {
     return (
-      <Pill size="xs" style={{ ...PILL_BASE, cursor: 'wait' }}>
-        ⋯
-      </Pill>
+      <Tooltip
+        key={key}
+        {...TOOLTIP_PROPS}
+        label={
+          <Stack gap="xs" maw={300}>
+            <Text size="sm" fw={500}>
+              Reference not found
+            </Text>
+            <Text size="xs" c="dimmed">
+              {type}: {id}
+            </Text>
+          </Stack>
+        }
+      >
+        <Pill size="xs" style={{ ...PILL_BASE }}>
+          <Text span c="dimmed">
+            ﹖
+          </Text>
+        </Pill>
+      </Tooltip>
     );
-  }
+  };
 
-  if (referenceId) {
-    const citation = webSearchResults.find((c) => c.id === referenceId);
-    const memory = memories.find((m) => m.id === referenceId);
-    const action = actions.find((a) => a.id === referenceId);
+  let pills: ReactNode[];
 
-    if (citation) {
+  if (type === 'memory') {
+    pills = ids.map((id, i) => {
+      const memory = memories.find((memory) => memory.id === id);
+      if (!memory) return unknown({ key: i, id });
       return (
         <Tooltip
-          {...TOOLTIP_PROPS}
-          label={
-            <Stack gap="xs" maw={300}>
-              <Text size="sm" fw={500} lineClamp={2}>
-                {citation.title}
-              </Text>
-              <Anchor size="xs" href={citation.source} target="_blank" lineClamp={1}>
-                {citation.source}
-              </Anchor>
-            </Stack>
-          }
-        >
-          <Pill
-            size="xs"
-            style={{ ...PILL_BASE, cursor: 'pointer' }}
-            onClick={(e) => {
-              e.preventDefault();
-              void openExternal(citation.source);
-            }}
-          >
-            🔗
-          </Pill>
-        </Tooltip>
-      );
-    }
-
-    if (memory) {
-      return (
-        <Tooltip
+          key={i}
           {...TOOLTIP_PROPS}
           label={
             <Stack gap="xs" maw={300}>
@@ -124,11 +102,14 @@ export const ReferenceComponent: Components['reference'] = withStreamdownBlur((p
           </Pill>
         </Tooltip>
       );
-    }
-
-    if (action?.nextRunAt) {
+    });
+  } else if (type === 'action') {
+    pills = ids.map((id, i) => {
+      const action = actions.find((action) => action.id === id);
+      if (!action) return unknown({ key: i, id });
       return (
         <Tooltip
+          key={i}
           {...TOOLTIP_PROPS}
           label={
             <Stack gap="xs" maw={300}>
@@ -136,7 +117,7 @@ export const ReferenceComponent: Components['reference'] = withStreamdownBlur((p
                 {scrubText(texts(action.data as zData))}
               </Text>
               <Text size="xs" c="dimmed">
-                {format(action.nextRunAt)}
+                {action.nextRunAt ? `Next run ${format(action.nextRunAt)}` : 'All runs completed'}
               </Text>
             </Stack>
           }
@@ -146,73 +127,84 @@ export const ReferenceComponent: Components['reference'] = withStreamdownBlur((p
           </Pill>
         </Tooltip>
       );
-    }
+    });
+  } else if (type === 'web') {
+    pills = urls.map((url, i) => {
+      const webSearchResult = webSearchResults.find(
+        (webSearchResult) => webSearchResult.url === url,
+      );
+      if (!webSearchResult) return unknown({ key: i, id: url });
+      return (
+        <Tooltip
+          key={i}
+          {...TOOLTIP_PROPS}
+          label={
+            <Stack gap="xs" maw={300}>
+              <Text size="sm" fw={500} lineClamp={2}>
+                {webSearchResult.title}
+              </Text>
+              <Anchor
+                size="xs"
+                lineClamp={1}
+                href={webSearchResult.url}
+                target="_blank"
+                onClick={(e) => {
+                  e.preventDefault();
+                  void openExternal(webSearchResult.url);
+                }}
+              >
+                {webSearchResult.url}
+              </Anchor>
+            </Stack>
+          }
+        >
+          <Pill
+            size="xs"
+            style={{ ...PILL_BASE, cursor: 'pointer' }}
+            onClick={(e) => {
+              e.preventDefault();
+              void openExternal(webSearchResult.url);
+            }}
+          >
+            🔗
+          </Pill>
+        </Tooltip>
+      );
+    });
+  } else {
+    pills = [...ids, ...urls].map((id, i) => unknown({ key: i, id }));
   }
 
   return (
-    <Tooltip {...TOOLTIP_PROPS} label={referenceId ?? 'Unknown reference'}>
-      <Pill size="xs" style={{ ...PILL_BASE }}>
-        <Text span c="dimmed">
-          ﹖
-        </Text>
-      </Pill>
-    </Tooltip>
+    <span>
+      {children}
+      {pills}
+    </span>
   );
-});
+};
 
-export const BlockquoteComponent: Components['blockquote'] = (node) => {
-  const text = getTextFromChildren(node.children);
-
-  if (text.trim().startsWith(WRITING_MARKER)) {
-    return (
+export const BlockquoteComponent: Components['blockquote'] = ({ node, children }) => {
+  return (
+    <>
+      {node?.properties.model && (
+        <Group gap={5} c="dimmed" mb={4}>
+          <Icon
+            icon="lucide:message-square-quote"
+            height={14}
+            style={{ transform: 'scale(-1,1)' }}
+          />
+          <Text size="xs">{node?.properties.model}</Text>
+        </Group>
+      )}
       <Blockquote
-        icon={
-          <ThemeIcon variant="transparent" color="dimmed">
-            <Icon icon="lucide:pencil-line" height={18} />
-          </ThemeIcon>
-        }
+        {...(node?.properties.model
+          ? { className: 'ignore-typography', mb: 'var(--mantine-spacing-lg)' }
+          : {})}
       >
-        {takeStringOutOfNodeAndChildren(node.children, WRITING_MARKER)}
+        {children}
       </Blockquote>
-    );
-  }
-
-  if (text.trim().startsWith('::>:: ')) {
-    const lines = text.split('\n');
-    let modelName = '';
-    let contentLines = lines;
-
-    const firstContent = lines[0].replace(/^::>::\s?/, '');
-    if (firstContent.startsWith('::model=') && firstContent.endsWith('::')) {
-      modelName = firstContent.slice('::model='.length, -2);
-      contentLines = lines.slice(1);
-    }
-
-    return (
-      <>
-        {modelName && (
-          <Group gap={5} c="dimmed" mb={4}>
-            <Icon
-              icon="lucide:message-square-quote"
-              height={14}
-              style={{ transform: 'scale(-1,1)' }}
-            />
-            <Text size="xs">{modelName}</Text>
-          </Group>
-        )}
-        <Blockquote className="ignore-typography" mb="var(--mantine-spacing-lg)">
-          {contentLines.map((line, index) => (
-            <Fragment key={index}>
-              {line.replace(/^::>::\s?/gm, '')}
-              {index < contentLines.length - 1 && <br />}
-            </Fragment>
-          ))}
-        </Blockquote>
-      </>
-    );
-  }
-
-  return <Blockquote>{node.children}</Blockquote>;
+    </>
+  );
 };
 
 export const LinkComponent: Components['a'] = (props) => {
@@ -232,9 +224,15 @@ export const LinkComponent: Components['a'] = (props) => {
 
 export const TableComponent: Components['table'] = (node) => {
   return (
-    <ScrollArea scrollbars="x" type="always">
-      <table>{node.children}</table>
-    </ScrollArea>
+    <div data-streamdown="table-wrapper">
+      <ScrollArea scrollbars="x" type="always">
+        <Group style={{ position: 'absolute', top: 6, right: 15 }} gap={5}>
+          <TableDownloadDropdown />
+          <TableCopyDropdown />
+        </Group>
+        <table>{node.children}</table>
+      </ScrollArea>
+    </div>
   );
 };
 

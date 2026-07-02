@@ -1,34 +1,64 @@
 import { memo, useMemo } from 'react';
-import { type Components, defaultRemarkPlugins, type PluginConfig, Streamdown } from 'streamdown';
+import {
+  AnimateOptions,
+  type Components,
+  defaultRemarkPlugins,
+  type PluginConfig,
+  Streamdown,
+} from 'streamdown';
 import { Typography, TypographyProps } from '@mantine/core';
 import RemarkBreaks from 'remark-breaks';
-import { normalizeText } from '@tiny-chat/shared/src/utils.ts';
+import RemarkDirective from 'remark-directive';
+import { visit } from 'unist-util-visit';
 import {
   BlockquoteComponent,
+  CiteComponent,
   DiffRenderer,
   LinkComponent,
-  ReferenceComponent,
   TableComponent,
 } from '@/features/message/components/MarkdownComponents.tsx';
-import { CODE_MARKER, MarkdownContext, WRITING_MARKER } from '@/utils/data.ts';
-import { STREAMDOWN_BLUR_OPTIONS, STREAMDOWN_WORD_INDEX, streamdownBlurred } from '@/utils/ui';
+import { MarkdownContext } from '@/utils/data.ts';
 import { createMathPlugin } from '@streamdown/math';
 import { mermaid } from '@streamdown/mermaid';
 import { code } from '@streamdown/code';
 import { useThemes } from '@/features/settings/hooks/useThemes.ts';
 import 'katex/dist/katex.min.css';
+import { Root } from 'mdast';
+import { xmlToDirective } from '@tiny-chat/shared/src/utils/text.ts';
 
 const markdownComponents: Components = {
   blockquote: BlockquoteComponent,
   a: LinkComponent,
   table: TableComponent,
-  reference: ReferenceComponent,
+  cite: CiteComponent,
 };
 
 // reference tag passes id + animate index through sanitizer; all others blocked by default
-const CUSTOM_TAGS = { reference: ['id', STREAMDOWN_WORD_INDEX] };
+const CUSTOM_TAGS = { blockquote: ['model'], cite: ['type', 'id', 'url', 'inline'] };
 
-const REMARK_PLUGINS = [...Object.values(defaultRemarkPlugins), RemarkBreaks];
+const REMARK_PLUGINS = [
+  ...Object.values(defaultRemarkPlugins),
+  RemarkBreaks,
+  RemarkDirective,
+  function directives() {
+    return (tree: Root) => {
+      visit(tree, (node) => {
+        if (node.type === 'containerDirective' || node.type === 'textDirective') {
+          if (node.name === 'quote' || node.name === 'writing') {
+            node.data ??= {};
+            node.data.hName = 'blockquote';
+            node.data.hProperties = { ...node.attributes };
+          }
+          if (node.name === 'ref') {
+            node.data ??= {};
+            node.data.hName = 'cite';
+            node.data.hProperties = { ...node.attributes };
+          }
+        }
+      });
+    };
+  },
+];
 
 const PLUGINS: PluginConfig = {
   math: createMathPlugin({ singleDollarTextMath: false }),
@@ -37,63 +67,12 @@ const PLUGINS: PluginConfig = {
   renderers: [{ language: 'diff', component: DiffRenderer }],
 };
 
-const filter = (text: string): string => {
-  text = normalizeText(text);
-
-  // Extract code spans and blocks before transforming to prevent false matches
-  const codeBlocks: string[] = [];
-  text = text.replace(/(`{3,}[\s\S]*?`{3,}|``[^`\n]*``|`[^`\n]+`)/g, (match) => {
-    codeBlocks.push(match);
-    return `\x00${CODE_MARKER}${codeBlocks.length - 1}\x00`;
-  });
-
-  // ::>:: lines → standard blockquote with the ::>:: prefix preserved for BlockquoteRenderer
-  text = text.replace(/((?:^::>:: .*$\n?)+)/gm, (block) =>
-    block.replace(/^::>:: (.*)$/gm, '> ::>:: $1'),
-  );
-
-  // :::writing ... ::: directive → blockquote with WRITING_MARKER on first line
-  text = text.replace(/^:::writing\s*\n([\s\S]*?)^:::\s*$/gm, (_, content: string) => {
-    const lines = content.trimEnd().split('\n');
-    return lines.map((l: string, i: number) => `> ${i === 0 ? WRITING_MARKER : ''}${l}`).join('\n');
-  });
-
-  // [^id] / [^id1, id2] → <reference id="id"> tags (protected from remark-gfm footnote handling)
-  text = text.replace(
-    /\[((?:[a-z0-9]{6}|[a-z0-9]{30}|,| |\^)+)]/g,
-    (match, inner: string, offset: number) => {
-      const ids = inner
-        .replace(/^\^+/, '')
-        .split(',')
-        .map((s) => s.trim())
-        .filter((id) => /^\w{3,30}$/.test(id));
-      if (ids.length === 0) return match;
-      return ids.map((id, i) => streamdownBlurred('reference', { id }, text, offset, i)).join('');
-    },
-  );
-
-  // Restore code spans/blocks
-  text = text.replace(
-    new RegExp(`\\x00${CODE_MARKER}(\\d+)\\x00`, 'g'),
-    (_, i: string) => codeBlocks[parseInt(i)],
-  );
-
-  // Ensure every fenced block has an explicit language (avoids unstyled blocks)
-  /*let inBlock = false;
-  text = text
-    .split('\n')
-    .map((line) => {
-      if (!inBlock && /^```(\w*)$/.exec(line)) {
-        inBlock = true;
-        return line === '```' ? '```plaintext' : line;
-      } else if (inBlock && /^```$/.exec(line)) {
-        inBlock = false;
-      }
-      return line;
-    })
-    .join('\n');*/
-
-  return text;
+const ANIMATE_OPTIONS: AnimateOptions = {
+  animation: 'blurIn',
+  duration: 150,
+  easing: 'ease',
+  stagger: 5,
+  sep: 'word',
 };
 
 export const Markdown = memo(
@@ -111,8 +90,6 @@ export const Markdown = memo(
     typographyProps?: TypographyProps;
     context?: MarkdownContext;
   }) => {
-    const processedSource = useMemo(() => filter(source), [source]);
-
     const { codeTheme, theme } = useThemes();
 
     const props = useMemo(
@@ -123,13 +100,16 @@ export const Markdown = memo(
       [typographyProps],
     );
 
+    const content = useMemo(() => {
+      return xmlToDirective(source, ['ref']);
+    }, [source]);
+
     return (
       <MarkdownContext.Provider value={context}>
         <Typography {...props}>
           <Streamdown
-            animated={STREAMDOWN_BLUR_OPTIONS}
+            animated={ANIMATE_OPTIONS}
             isAnimating={context.isGenerating}
-            //caret="circle"
             mode={context.isGenerating ? 'streaming' : 'static'}
             components={markdownComponents}
             allowedTags={CUSTOM_TAGS}
@@ -138,7 +118,7 @@ export const Markdown = memo(
             shikiTheme={[codeTheme.data, codeTheme.data]}
             mermaid={{ config: { theme: theme.data === 'dark' ? 'dark' : 'neutral' } }}
           >
-            {processedSource}
+            {content}
           </Streamdown>
         </Typography>
       </MarkdownContext.Provider>
@@ -150,5 +130,5 @@ export const Markdown = memo(
     prev.context?.isGenerating === next.context?.isGenerating &&
     prev.context?.webSearchResults === next.context?.webSearchResults &&
     prev.context?.memories === next.context?.memories &&
-    prev.context?.actions === next.context?.actions,
+    prev.context?.actions === next.context?.actions, // TODO - value comparison
 );

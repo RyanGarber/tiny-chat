@@ -1,22 +1,12 @@
 import { useMessagingStore } from '@/features/chat/stores/useMessagingStore';
 import { BaseElement, BaseText, Descendant, Text } from 'slate';
 
-const QUOTE_PREFIX = '::>:: ';
-
 export function serializeElement(element: BaseElement): string | null {
   if (element.hidden) return null;
   switch (element.type) {
     case 'quote': {
       const model = (element as unknown as { model: string }).model as string | undefined;
-      const modelTag = model ? `${QUOTE_PREFIX}::model=${model}::\n` : '';
-      return (
-        modelTag +
-        (element.children[0] as BaseText).text
-          .split('\n')
-          .map((line) => `${QUOTE_PREFIX}${line}`)
-          .join('\n') +
-        '\n'
-      );
+      return `:::quote{model=${model}}\n${(element.children[0] as BaseText).text}\n:::`;
     }
     default:
       return element.children
@@ -38,39 +28,38 @@ export function serialize(): string {
     .join('\n');
 }
 
+const QUOTE_OPEN = /^:::quote\{model=(.*)\}$/;
+const QUOTE_CLOSE = ':::';
+
 export function deserialize(md: string): Descendant[] {
   const lines = md.split('\n');
   const nodes: Descendant[] = [];
 
+  let quoteModel: string | null = null;
   let quoteLines: string[] = [];
 
-  const endQuote = (line?: string) => {
-    if (!quoteLines.length) return false;
-
-    let model = '';
-    let contentLines = quoteLines;
-    if (quoteLines[0].startsWith('::model=') && quoteLines[0].endsWith('::')) {
-      model = quoteLines[0].slice('::model='.length, -2);
-      contentLines = quoteLines.slice(1);
-    }
-
+  const pushQuote = () => {
     nodes.push({
       type: 'quote',
-      model,
-      children: [{ text: contentLines.join('\n') }],
+      model: quoteModel,
+      children: [{ text: quoteLines.join('\n') }],
     } as Descendant & { model: string });
-
+    quoteModel = null;
     quoteLines = [];
-    return !line?.trim().length;
   };
 
   for (const line of lines) {
-    if (line.startsWith(QUOTE_PREFIX)) {
-      quoteLines.push(line.slice(QUOTE_PREFIX.length));
+    if (quoteModel !== null) {
+      if (line === QUOTE_CLOSE) pushQuote();
+      else quoteLines.push(line);
       continue;
     }
 
-    if (endQuote(line)) continue;
+    const match = QUOTE_OPEN.exec(line);
+    if (match) {
+      quoteModel = match[1];
+      continue;
+    }
 
     nodes.push({
       type: 'paragraph',
@@ -78,8 +67,7 @@ export function deserialize(md: string): Descendant[] {
     });
   }
 
-  endQuote();
-  console.log('Deserialized content:', nodes);
+  if (quoteModel !== null) pushQuote();
 
   return nodes;
 }

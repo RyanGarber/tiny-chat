@@ -7,7 +7,7 @@ describe('routes - message', () => {
   it('creates a new chat with two messages', async () => {
     const first = await trpc.message.create.mutate({
       author: 'USER',
-      config: inject('config'),
+      config: inject('backend_config'),
       data: [[{ type: 'text', value: 'First message' }]],
       metadata: [],
     });
@@ -15,7 +15,7 @@ describe('routes - message', () => {
     const second = await trpc.message.create.mutate({
       chatId: first.chatId,
       author: 'MODEL',
-      config: inject('config'),
+      config: inject('backend_config'),
       data: [[{ type: 'text', value: 'Reply from model' }]],
       metadata: [],
     });
@@ -28,7 +28,7 @@ describe('routes - message', () => {
   it('edits a message and truncates the rest of the chat', async () => {
     const first = await trpc.message.create.mutate({
       author: 'USER',
-      config: inject('config'),
+      config: inject('backend_config'),
       data: [[{ type: 'text', value: 'User message' }]],
       metadata: [],
     });
@@ -36,7 +36,7 @@ describe('routes - message', () => {
     await trpc.message.create.mutate({
       chatId: first.chatId,
       author: 'MODEL',
-      config: inject('config'),
+      config: inject('backend_config'),
       data: [[{ type: 'text', value: 'Model reply' }]],
       metadata: [],
     });
@@ -44,7 +44,7 @@ describe('routes - message', () => {
     await trpc.message.edit.mutate({
       id: first.id,
       author: 'USER',
-      config: inject('config'),
+      config: inject('backend_config'),
       data: [[{ type: 'text', value: 'Edited user message' }]],
       metadata: [],
       truncate: true,
@@ -57,7 +57,7 @@ describe('routes - message', () => {
   it('deletes the last message which deletes the chat', async () => {
     const first = await trpc.message.create.mutate({
       author: 'USER',
-      config: inject('config'),
+      config: inject('backend_config'),
       data: [[{ type: 'text', value: 'User message' }]],
       metadata: [],
     });
@@ -65,7 +65,7 @@ describe('routes - message', () => {
     await trpc.message.create.mutate({
       chatId: first.chatId,
       author: 'MODEL',
-      config: inject('config'),
+      config: inject('backend_config'),
       data: [[{ type: 'text', value: 'Model reply' }]],
       metadata: [],
     });

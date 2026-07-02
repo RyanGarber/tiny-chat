@@ -5,7 +5,8 @@ import type { zSkill } from './types/skill.ts';
 import type { zTool, zToolContext, zToolGroup } from './types/tool.ts';
 import type { zCache, zUser } from './types/user.ts';
 import { decodeTextLossy, isTextAdjacent } from './utils/files.ts';
-export { snippetText } from './utils/text.ts';
+
+export { snippetText } from './utils/snippet.ts';
 
 export function wrapMessage(message: Message): MessageState {
   return {
@@ -29,28 +30,9 @@ export function texts(data: zData, join = ' ') {
     .join(join);
 }
 
-export function normalizeText(text: string) {
-  const lines = text.split('\n');
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].trim().length && !/^\[(user|assistant|info)/.exec(lines[i].trim())) {
-      return text;
-    }
-    if (/^\[(user|assistant|info)/.exec(lines[i].trim())) {
-      for (let j = i + 1; j < lines.length; j++) {
-        if (lines[j].trim().length && !/^\[(user|assistant|info)/.exec(lines[j].trim())) {
-          return lines.slice(j).join('\n');
-        }
-      }
-      return '';
-    }
-  }
-  return text;
-}
-
 export function scrubText(text: string, maxLength = -1): string {
-  text = normalizeText(text)
-    .replace(/::model=[^:]+::/g, '') // Remove quote model tags
-    .replace(/::>::\s?(.*)/g, '$1') // Remove quote markers
+  text = text
+    .replace(/(:{1,3})[a-zA-Z0-9-]+(?:\[.*?\])?(?:{.*?})?([.\n]*)\1/g, '$2') // Remove directives
     .replace(/!\[.*?]\(.*?\)/g, '') // Remove images
     .replace(/\[([^\]]+)]\((.*?)\)/g, '$1') // Remove links but keep text
     .replace(/(`{1,3})(.*?)\1/g, '$2') // Remove inline code and code blocks
@@ -68,7 +50,6 @@ export function scrubText(text: string, maxLength = -1): string {
   }
   return text;
 }
-
 
 export const RRule = (await import('rrule')).default?.RRule ?? (await import('rrule')).RRule;
 

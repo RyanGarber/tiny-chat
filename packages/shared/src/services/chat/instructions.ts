@@ -35,14 +35,38 @@ export async function buildGenerationInstructions(
 
   const userInstructions = !input.incognito ? user.settings.instructions : [];
 
-  const references: string[] = [];
-  if (input.config.toolGroups?.includes('actions')) references.push('actions');
-  if (input.config.toolGroups?.includes('memories')) references.push('memories');
-  if (input.config.toolGroups?.includes('web')) references.push(`search_web results`);
-  const referenceTypes =
-    references.slice(0, -1).join(', ') +
+  const references: { type: string; attribute: string; description: string; example: string }[] =
+    [];
+  if (input.config.toolGroups?.includes('actions'))
+    references.push({
+      type: 'action',
+      attribute: 'id',
+      description: 'an action',
+      example:
+        'I\'ll <ref type="action" id="123">check for updates on the Mets game</ref> tomorrow.',
+    });
+  if (input.config.toolGroups?.includes('memories'))
+    references.push({
+      type: 'memory',
+      attribute: 'id',
+      description: 'a memory',
+      example:
+        'Since <ref type="memory" id="123">you prefer writing Python</ref>, here\'s an example in Python.',
+    });
+  references.push({
+    type: 'web',
+    attribute: 'url',
+    description: 'a web result',
+    example:
+      'As of yesterday, <ref type="web" url="https://wsj.com/articles/123">the DOW has fallen 5 points</ref>.',
+  });
+  const referenceDescriptions =
+    references
+      .map((r) => r.description)
+      .slice(0, -1)
+      .join(', ') +
     (references.length > 1 ? ' or ' : '') +
-    references.slice(-1)[0];
+    references.map((r) => r.description).slice(-1)[0];
 
   return `Formatting re-enabled.
 
@@ -65,26 +89,30 @@ ${userInstructions?.length ? `\n${userInstructions.join('\n')}` : ''}
 It is currently ${formatLocalDate(new Date(), input.timezone)}. Always consider ${formatLocalDate(new Date(), input.timezone)} the date and time. Never convert to UTC when calling tools.
 ${input.context.some((m) => m.createdAt) ? "Always take conversation timing into account. Do not assume the chat is continuous. Consider whether the user's intent has changed between messages." : ''}
 
-Render responses in Markdown, Mermaid, and LaTeX — use headers, tables, lists, math, code blocks, diagrams, and images where helpful.
+Markdown, Mermaid, and LaTeX are supported. Use headers, tables, lists, math, code blocks, diagrams, and images when they would genuinely help illustrate your point.
 Important: Always use two dollar signs ($$...$$) for both inline and display math - never one ($...$).
 
-${referenceTypes ? `When referencing existing ${referenceTypes}, always cite your sources using citations like this: [^id].` : ''}
-${referenceTypes ? `Do NOT use numbers like [^1] - only use the 24-character string [^id] IDs exactly how you see them. Do not include a footnote section at the end of the response, only the inline citations.` : ''}
+${
+  referenceDescriptions
+    ? `When a statement is based on or references ${referenceDescriptions}, always wrap it in a <ref> tag with comma-separated IDs or URLs. For example:
+${references.map((r) => `- ${r.example}`).join('\n')}`
+    : ''
+}
 
 ## Context
 
 <actions>
 ${actions.map((a) => `<action id="${a.id}" schedule="${a.schedule}">${texts(zData.parse(a.data))}</action>`).join('\n')}
 </actions>
-<skills>
-${skills.map((s) => `<skill name="${s.name}" path="${s.path}">${s.description}</skill>`).join('\n')}
-</skills>
-<toolgroups>
-${toolGroups.map((g) => `<toolgroup id="${g.name}">${g.instructions?.body}</toolgroup>`).join('\n')}
-</toolgroups>
 <memories>
 ${memories.map((m) => `<memory id="${m.id}" category="${m.category}" stability="${m.stability}" learned="${format(m.createdAt)}">${m.fact}</memory>`).join('\n')}
 </memories>
+<skills>
+${skills.map((s) => `<skill name="${s.name}" path="${s.path}">${s.description}</skill>`).join('\n')}
+</skills>
+<toolsets>
+${toolGroups.map((g) => `<toolset name="${g.name}">${g.instructions?.body}</toolset>`).join('\n')}
+</toolsets>
 `;
 }
 

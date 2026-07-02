@@ -62,14 +62,14 @@ export const getGenerationCallbacksBackend = (user: zUser): GenerationCallbacks 
   searchMemories: (text, embedding, limit) => searchMemories(user, text, embedding, limit),
 });
 
-export default async function onTick() {
+export default async function onTick(testUserId?: string) {
   const actions = await globalThis.prisma.action.findMany();
   const now = new Date();
 
   for (const action of actions) {
     try {
       const nextRunAt = getNextRunAt(action);
-      if (!nextRunAt || nextRunAt > now) continue;
+      if ((!nextRunAt || nextRunAt > now) && testUserId !== action.userId) continue;
       console.log('Running action', action.id, 'scheduled for', nextRunAt);
 
       await globalThis.prisma.action.update({

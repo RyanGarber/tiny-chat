@@ -35,12 +35,16 @@ export const Brave: WebProvider = {
     if (!response.ok) {
       throw new Error(`Failed: ${response.status} ${response.statusText}`);
     }
-    const data = (await response.json()) as { grounding?: { generic?: any[] } };
-    return (data.grounding?.generic?.map((result) => ({
-      title: result.title,
-      source: result.url,
-      content: result.snippets.join('\n---\n'),
-    })) ?? []) satisfies Awaited<ReturnType<WebProvider['search']>>;
+    const data = (await response.json()) as {
+      grounding?: { generic?: { title: string; snippets: string[]; url: string }[] };
+    };
+    return (
+      data.grounding?.generic?.map((result) => ({
+        title: result.title,
+        content: result.snippets.join('\n---\n'),
+        url: result.url,
+      })) ?? []
+    );
   },
 
   // eslint-disable-next-line @typescript-eslint/require-await

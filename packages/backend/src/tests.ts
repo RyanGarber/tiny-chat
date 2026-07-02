@@ -17,10 +17,10 @@ config({ path: resolve(import.meta.dirname, '../../../../.env'), quiet: true });
 
 declare module 'vitest' {
   export interface ProvidedContext {
-    backendUrl: string;
-    token: string;
-    user: zUser;
-    config: zConfig;
+    backend_backendUrl: string;
+    backend_token: string;
+    backend_user: zUser;
+    backend_config: zConfig;
   }
 }
 
@@ -48,17 +48,17 @@ export async function setup(project: TestProject) {
   const config = zConfig.parse({
     provider: TestProvider.name,
     model: model.name,
-    args: model.args.map((a) => ({
-      name: a.name,
-      value: a.default,
+    args: model.args.map((arg) => ({
+      name: arg.name,
+      value: arg.default,
     })),
   });
 
   console.log('[tests] test user ready', user);
-  project.provide('backendUrl', backendUrl);
-  project.provide('token', session.data.token);
-  project.provide('user', user);
-  project.provide('config', config);
+  project.provide('backend_backendUrl', backendUrl);
+  project.provide('backend_token', session.data.token);
+  project.provide('backend_user', user);
+  project.provide('backend_config', config);
 
   return async () => {
     console.log('[tests] cleaning up test user');
@@ -70,8 +70,8 @@ export async function setup(project: TestProject) {
 }
 
 export function testAuth(
-  backendUrl: string = inject('backendUrl'),
-  token: string | null = inject('token'),
+  backendUrl: string = inject('backend_backendUrl'),
+  token: string | null = inject('backend_token'),
 ) {
   return createAuthClient({
     baseURL: backendUrl,
@@ -86,7 +86,10 @@ export function testAuth(
   });
 }
 
-export function testTRPC(backendUrl = inject('backendUrl'), token = inject('token')) {
+export function testTRPC(
+  backendUrl = inject('backend_backendUrl'),
+  token = inject('backend_token'),
+) {
   return createTRPCClient<tRPCRouter>({
     links: [
       httpLink({

@@ -14,7 +14,7 @@ import {
   type TreeNodeData,
 } from '@mantine/core';
 import type { listAllFilesInChat } from '@tiny-chat/backend/src/routes/input.ts';
-import { pathName } from '@tiny-chat/shared/src/utils/files.ts';
+import { mimeType, pathName } from '@tiny-chat/shared/src/utils/files.ts';
 import { useChatFiles } from '@/features/chat/hooks/useChatFiles.ts';
 import { useLayoutStore } from '@/core/stores/useLayoutStore.tsx';
 import { ReactNode, useMemo, useState } from 'react';
@@ -279,10 +279,14 @@ function FileTreeNode({
               for (let i = 0; i < length; i++) {
                 binary += String.fromCharCode(data.data[i]);
               }
-              setPreviewData({ name: segment, mime: data.mime, data: btoa(binary) });
-              setIsPreviewOpen(true);
+              mimeType(data.data, pathName(data.path), data.mime)
+                .then((mime) => {
+                  setPreviewData({ name: segment, mime, data: btoa(binary) });
+                  setIsPreviewOpen(true);
+                })
+                .catch(console.error);
             })
-            .catch((error) => console.log(error));
+            .catch(console.error);
         }}
       >
         {icon && (

@@ -26,7 +26,6 @@ import {
   zReplyQuestionOutput,
 } from '@tiny-chat/shared/src/tools/questions.ts';
 import { Markdown } from '@/features/message/components/Markdown';
-import { zShellExecInput } from '@/tools/system.ts';
 import { DIFF_MARKER } from '@/utils/data.ts';
 import type { Tool } from '@tiny-chat/shared/src/types/tool.ts';
 import type { z } from 'zod';
@@ -34,7 +33,7 @@ import { invoke, trpc } from '@/utils/api.ts';
 import { GLASS_STYLE } from '@/utils/theme.ts';
 import { toolCallRejection, useToolInput } from '../hooks/useToolInput';
 import { Icon } from '@iconify/react';
-import { zWriteFileInput } from '@tiny-chat/shared/src/tools/files.ts';
+import { zWriteFileInput, zShellExecInput } from '@tiny-chat/shared/src/tools/system.ts';
 import { decodeTextLossy, fromChatUri } from '@tiny-chat/shared/src/utils/files.ts';
 
 export const ToolCallInput = memo(
@@ -60,7 +59,6 @@ export const ToolCallInput = memo(
       if (part.name === 'write_file') {
         const write = zWriteFileInput.parse(part.args);
         const uri = fromChatUri(write.path);
-        console.log(uri);
         if (uri) {
           trpc.input.findFileInChat
             .query({
@@ -91,7 +89,7 @@ export const ToolCallInput = memo(
     const disabled = result !== undefined;
 
     const input: ReactNode | undefined = useMemo(() => {
-      if (part.name === 'shell_exec') {
+      if (part.name === 'shell_exec' && !result) {
         return (
           <Markdown source={`\`\`\`shell\n${(part.args as zShellExecInput).command}\n\`\`\``} />
         );

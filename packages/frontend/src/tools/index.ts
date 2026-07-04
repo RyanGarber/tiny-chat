@@ -1,4 +1,4 @@
 import type { ToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
-import { system } from './system.ts';
+import { pc } from './pc.ts';
 
-export default [system] satisfies ToolGroup[];
+export default [pc] satisfies ToolGroup[];

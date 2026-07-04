@@ -32,7 +32,7 @@ export function texts(data: zData, join = ' ') {
 
 export function scrubText(text: string, maxLength = -1): string {
   text = text
-    .replace(/(:{1,3})[a-zA-Z0-9-]+(?:\[.*?\])?(?:{.*?})?([.\n]*)\1/g, '$2') // Remove directives
+    .replace(/(:{1,3})[a-zA-Z0-9-]+(?:\[.*?])?(?:{.*?})?([.\n]*)\1/g, '$2') // Remove directives
     .replace(/!\[.*?]\(.*?\)/g, '') // Remove images
     .replace(/\[([^\]]+)]\((.*?)\)/g, '$1') // Remove links but keep text
     .replace(/(`{1,3})(.*?)\1/g, '$2') // Remove inline code and code blocks
@@ -236,9 +236,8 @@ export function wrapSkill(
 
   const {
     attributes: { name, description, ...attributes },
-    body: content,
   } = fm<{ name: string; description: string }>(skillMd.data);
-  if (!name || !content) {
+  if (!name) {
     console.log('[wrapSkill] invalid skill.md:', files);
     return null;
   }
@@ -248,15 +247,6 @@ export function wrapSkill(
     path: `${[path, ...skillMd.path].join('/')}`,
     description: description,
     attributes: attributes,
-    content,
-    resources: files
-      .filter(
-        (f) =>
-          f !== skillMd &&
-          f.path.slice(0, skillMd.path.length - 1).join('/') ===
-            skillMd.path.slice(0, skillMd.path.length - 1).join('/'),
-      )
-      .map((f) => ({ path: f.path.slice(skillMd.path.length - 1).join('/'), content: f.data })),
   };
 }
 

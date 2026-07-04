@@ -7,6 +7,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ai-sdk/provider": "^3.0.10",
     "@browser-ai/web-llm": "^2.1.7",
     "@gfazioli/mantine-json-tree": "^2.0.2",
     "@mantine/carousel": "^9.2.2",

@@ -1,4 +1,4 @@
-import { trpc } from '@/utils/api';
+import { isTauriWithAfm, trpc } from '@/utils/api';
 import { chatProviders } from '@tiny-chat/shared/src/providers/chat';
 import type { zUser } from '@tiny-chat/shared/src/types/user';
 
@@ -8,6 +8,10 @@ export const ProviderService = {
     if (user.settings.useBrowserModels) {
       const { WebLLMProvider } = await import('./WebLLMProvider');
       providers.push(WebLLMProvider);
+    }
+    if (await isTauriWithAfm()) {
+      const { AFMProvider } = await import('./AFMProvider');
+      providers.push(AFMProvider);
     }
     return providers;
   },
@@ -19,6 +23,13 @@ export const ProviderService = {
       providers.chat.push({
         ...WebLLMProvider,
         models: await WebLLMProvider.getModels(user),
+      });
+    }
+    if (await isTauriWithAfm()) {
+      const { AFMProvider } = await import('./AFMProvider');
+      providers.chat.push({
+        ...AFMProvider,
+        models: await AFMProvider.getModels(user),
       });
     }
     return providers;

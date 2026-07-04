@@ -1,10 +1,18 @@
 name: release-ios
 
 on:
-  push:
-    branches:
-      - main
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version number to use for the release tag/name'
+        required: true
+        type: string
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number to use for the release tag/name (defaults to tauri.conf.json)'
+        required: false
+        type: string
 
 jobs:
   release:
@@ -16,6 +24,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.version || github.ref }}
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -95,7 +105,7 @@ jobs:
             -workspace tiny-chat.xcodeproj/project.xcworkspace \
             -sdk iphoneos \
             -configuration release \
-            -archivePath "$RUNNER_TEMP/TinyChat.xcarchive" \
+            -archivePath "$RUNNER_TEMP/tiny-chat_iOS.xcarchive" \
             archive \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
@@ -107,7 +117,7 @@ jobs:
 
       - name: Package app
         run: |
-          APP_PATH=$(find "$RUNNER_TEMP/TinyChat.xcarchive/Products/Applications" \
+          APP_PATH=$(find "$RUNNER_TEMP/tiny-chat_iOS.xcarchive/Products/Applications" \
             -maxdepth 1 -name "*.app" | head -1)
           echo "Packaging: $APP_PATH"
           mkdir -p "$RUNNER_TEMP/Payload"
@@ -116,15 +126,20 @@ jobs:
             zip -9 -r "Tiny.Chat_iOS.ipa" Payload/
           echo "IPA size: $(du -sh Tiny.Chat_iOS.ipa | cut -f1)"
 
-      - name: Generate tag
-        id: tag
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      - name: Resolve version
+        id: version
+        run: |
+          VERSION="${{ inputs.version }}"
+          if [ -z "$VERSION" ]; then
+            VERSION=$(node -pe "require('./apps/tauri/tauri.conf.json').version")
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Create release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ steps.tag.outputs.sha_short }}
-          name: ${{ steps.tag.outputs.sha_short }}
+          tag_name: ${{ steps.version.outputs.version }}
+          name: ${{ steps.version.outputs.version }}
           body: Download for Windows, macOS, or Linux, or sideload to your iOS or Android device.
           files: ${{ runner.temp }}/Tiny.Chat_iOS.ipa
           fail_on_unmatched_files: true

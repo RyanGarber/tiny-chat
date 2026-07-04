@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { Group, Image, LoadingOverlay, Modal, ScrollArea, SegmentedControl, Stack, } from '@mantine/core';
+import {
+  Group,
+  Image,
+  LoadingOverlay,
+  Modal,
+  ScrollArea,
+  SegmentedControl,
+  Stack,
+} from '@mantine/core';
 import { Markdown } from '@/features/message/components/Markdown.tsx';
 import { decodeTextLossy, mimeExtension } from '@tiny-chat/shared/src/utils/files.ts';
 

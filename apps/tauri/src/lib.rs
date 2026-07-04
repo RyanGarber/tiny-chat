@@ -1,5 +1,6 @@
 use tauri::Manager;
 
+mod afm;
 mod mcp_http;
 mod mcp_stdio;
 mod tools;
@@ -29,6 +30,10 @@ pub fn run() {
         mcp_stdio::mcp_start_stdio,
         mcp_stdio::mcp_send_stdio,
         mcp_stdio::mcp_stop_stdio,
+        afm::afm_enabled,
+        afm::afm_availability,
+        afm::afm_stream,
+        afm::afm_cancel
     ]);
 
     let builder = builder.setup(|app| {

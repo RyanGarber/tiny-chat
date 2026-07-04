@@ -1,8 +1,8 @@
 import { describe, expect, inject, it } from 'vitest';
 import { testTRPC } from '../tests.ts';
-import { WriteFile } from '../tools/files.ts';
+import { WriteFile } from '../tools/chat.ts';
 import { testToolContext } from '../tools/index.test.ts';
-import { zWriteFileInput } from '@tiny-chat/shared/src/tools/files.ts';
+import { zWriteFileInput } from '@tiny-chat/shared/src/tools/system.ts';
 
 describe('routes - input', () => {
   const trpc = testTRPC();
@@ -28,7 +28,7 @@ describe('routes - input', () => {
       name: WriteFile.name,
       context: testToolContext(chat, [message]),
       input: {
-        path: `chat:///${upload1.id}/uploadFile1.txt`,
+        path: `/mnt/chat/${upload1.id}/uploadFile1.txt`,
         content: 'uploadFile1\nnewline',
       } satisfies zWriteFileInput,
       userInput: undefined,
@@ -38,7 +38,7 @@ describe('routes - input', () => {
       name: WriteFile.name,
       context: testToolContext(chat, [message]),
       input: {
-        path: `chat:///file1.txt`,
+        path: `/mnt/chat/file1.txt`,
         content: 'file1\nnewline',
       } satisfies zWriteFileInput,
       userInput: undefined,

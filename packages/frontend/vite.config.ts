@@ -28,7 +28,6 @@ export default defineConfig(() => ({
     inspect(),
   ],
   build: {
-    sourcemap: true,
     rollupOptions: {
       external: ['fs', 'path', 'os', 'util'],
       output: {

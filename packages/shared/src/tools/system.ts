@@ -78,3 +78,30 @@ export const zSearchFiles: zTool = {
   input: zSearchFilesInput.toJSONSchema(),
   output: zSearchFilesOutput.toJSONSchema(),
 };
+
+export const zShellExecInput = z.object({
+  command: z.string(),
+  chat: z
+    .boolean()
+    .describe(
+      "True to use the chat shell (/mnt/chat), false to use the user's local shell (if available).",
+    ),
+});
+export type zShellExecInput = z.infer<typeof zShellExecInput>;
+
+export const zShellExecOutput = z.object({
+  status: z.number().optional(),
+  stderr: z.string(),
+  stdout: z.string(),
+});
+export type zShellExecOutput = z.infer<typeof zShellExecOutput>;
+
+export const zShellExec: zTool = {
+  name: 'shell_exec',
+  description: 'Execute a shell command.',
+  input: zShellExecInput.toJSONSchema(),
+  output: zShellExecOutput.toJSONSchema(),
+  requirements: {
+    approval: true,
+  },
+};

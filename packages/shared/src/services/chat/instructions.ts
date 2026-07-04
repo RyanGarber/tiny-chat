@@ -6,7 +6,7 @@ import type { zSkill } from '../../types/skill.ts';
 import type { zUser } from '../../types/user.ts';
 import type { GenerationCallbacks } from './generate.ts';
 import { format } from 'timeago.js';
-import { zReadFile } from '../../tools/files.ts';
+import { zReadFile } from '../../tools/system.ts';
 
 export async function buildGenerationInstructions(
   user: zUser,

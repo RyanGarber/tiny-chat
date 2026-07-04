@@ -22,27 +22,27 @@ describe('utils - files', () => {
   });
 
   it('builds chat uris', () => {
-    expect(toChatUri(undefined, ['file.txt'])).toEqual('chat:///file.txt');
-    expect(toChatUri('id')).toEqual('chat:///id');
-    expect(toChatUri('id', [''])).toEqual('chat:///id');
-    expect(toChatUri('id', ['src', '', 'index.ts', ''])).toEqual('chat:///id/src/index.ts');
+    expect(toChatUri(undefined, ['file.txt'])).toEqual('/mnt/chat/file.txt');
+    expect(toChatUri('id')).toEqual('/mnt/chat/id');
+    expect(toChatUri('id', [''])).toEqual('/mnt/chat/id');
+    expect(toChatUri('id', ['src', '', 'index.ts', ''])).toEqual('/mnt/chat/id/src/index.ts');
   });
 
   it('parses chat uris', () => {
     expect(fromChatUri('/file.txt')).toBeNull();
-    expect(fromChatUri('chat://')).toEqual({
+    expect(fromChatUri('/mnt/chat')).toEqual({
       uploadId: undefined,
       path: [],
     });
-    expect(fromChatUri('chat://file')).toEqual({
+    expect(fromChatUri('/mnt/chat/file')).toEqual({
       uploadId: undefined,
       path: ['file'],
     });
-    expect(fromChatUri('chat:///zzzzzzzzzzzzzzzzzzzzzzzz')).toEqual({
+    expect(fromChatUri('/mnt/chat/zzzzzzzzzzzzzzzzzzzzzzzz')).toEqual({
       uploadId: 'zzzzzzzzzzzzzzzzzzzzzzzz',
       path: [],
     });
-    expect(fromChatUri('chat:///zzzzzzzzzzzzzzzzzzzzzzzz/src/index.ts')).toEqual({
+    expect(fromChatUri('/mnt/chat/zzzzzzzzzzzzzzzzzzzzzzzz/src/index.ts')).toEqual({
       uploadId: 'zzzzzzzzzzzzzzzzzzzzzzzz',
       path: ['src', 'index.ts'],
     });

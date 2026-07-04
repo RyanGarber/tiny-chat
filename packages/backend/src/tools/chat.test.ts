@@ -7,10 +7,10 @@ import {
   zListFilesOutput,
   zSearchFilesInput,
   zSearchFilesOutput,
-} from '@tiny-chat/shared/src/tools/files.ts';
-import { ListFiles, SearchFiles } from './files.ts';
+} from '@tiny-chat/shared/src/tools/system.ts';
+import { ListFiles, SearchFiles } from './chat.ts';
 
-describe('tools - files', () => {
+describe('tools - chat', () => {
   const trpc = testTRPC();
   let upload: Awaited<ReturnType<(typeof trpc)['input']['createUpload']['mutate']>>;
   let context: zToolContext;
@@ -35,12 +35,12 @@ describe('tools - files', () => {
     const output = await trpc.input.callTool.mutate({
       name: ListFiles.name,
       context,
-      input: { path: `chat:///${upload.id}` } satisfies zListFilesInput,
+      input: { path: `/mnt/chat/${upload.id}` } satisfies zListFilesInput,
       userInput: undefined,
     });
     expect.assert(output[0].type === 'json');
     expect((output[0].value as zListFilesOutput).files[0]).toEqual(
-      `chat:///${upload.id}/question.md`,
+      `/mnt/chat/${upload.id}/question.md`,
     );
   });
 
@@ -48,7 +48,7 @@ describe('tools - files', () => {
     const output = await trpc.input.callTool.mutate({
       name: SearchFiles.name,
       context,
-      input: { path: `chat://`, query: 'files', mode: 'semantic' } satisfies zSearchFilesInput,
+      input: { path: `/mnt/chat`, query: 'files', mode: 'semantic' } satisfies zSearchFilesInput,
       userInput: undefined,
     });
     expect.assert(output[0].type === 'json');
@@ -59,7 +59,11 @@ describe('tools - files', () => {
     const output = await trpc.input.callTool.mutate({
       name: SearchFiles.name,
       context,
-      input: { path: `chat://`, query: 'xxxxxxxxxx', mode: 'semantic' } satisfies zSearchFilesInput,
+      input: {
+        path: `/mnt/chat`,
+        query: 'xxxxxxxxxx',
+        mode: 'semantic',
+      } satisfies zSearchFilesInput,
       userInput: undefined,
     });
     expect.assert(output[0].type === 'json');
@@ -71,7 +75,7 @@ describe('tools - files', () => {
       name: SearchFiles.name,
       context,
       input: {
-        path: `chat://`,
+        path: `/mnt/chat`,
         query: '(\\W[files]{5}\\W)',
         mode: 'regex',
       } satisfies zSearchFilesInput,
@@ -86,7 +90,7 @@ describe('tools - files', () => {
       name: SearchFiles.name,
       context,
       input: {
-        path: `chat:///404`,
+        path: `/mnt/chat/fakepath`,
         query: '.*',
         mode: 'regex',
       } satisfies zSearchFilesInput,

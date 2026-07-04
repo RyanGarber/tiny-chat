@@ -8,6 +8,10 @@ edition = "2024"
 name = "tinychat_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
+[features]
+default = []
+afm = ["dep:swift-rs"]
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
@@ -28,3 +32,9 @@ tokio = { version = "1.52.3", features = ["default", "full"] }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-updater = "2"
+
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.build-dependencies]
+swift-rs = { version = "1", features = ["build"], optional = true }
+
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
+swift-rs = { version = "1", optional = true }

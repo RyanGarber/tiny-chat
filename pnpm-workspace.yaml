@@ -3,9 +3,11 @@ packages:
   - 'packages/*'
 allowBuilds:
   '@google/genai': true
+  '@mongodb-js/zstd': true
   '@prisma/engines': true
   bson: set this to true or false
   esbuild: true
+  node-liblzma: true
   node-pty: true
   onnxruntime-node: true
   prisma: true

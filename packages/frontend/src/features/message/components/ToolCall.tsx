@@ -40,8 +40,10 @@ import {
   zReadFileInput,
   zSearchFilesInput,
   zSearchFilesOutput,
+  zShellExecInput,
+  zShellExecOutput,
   zWriteFileInput,
-} from '@tiny-chat/shared/src/tools/files.ts';
+} from '@tiny-chat/shared/src/tools/system.ts';
 import { ChatService } from '@/features/chat/services/ChatService.ts';
 import { useActions } from '@/features/chat/hooks/useActions.ts';
 import {
@@ -412,11 +414,23 @@ export const ToolCall = memo(
         <>
           {!toolResult ? 'Running' : 'Ran'}{' '}
           <span style={{ fontWeight: 500 }}>
-            {(toolCall.args as { command: string }).command.split(' ')[0]}
+            {(toolCall.args as zShellExecInput).command.split(' ')[0]}
           </span>
           {!toolResult ? '...' : ''}
         </>
       );
+      if (toolResult?.value[0]?.type === 'json') {
+        const { stdout, stderr } = toolResult.value[0].value as zShellExecOutput;
+        const output = [
+          stdout ? `# stdout\n${stdout.trim()}` : '',
+          stderr ? `# stderr\n${stderr.trim()}` : '',
+        ].filter(Boolean);
+        details = (
+          <Markdown
+            source={`\`\`\`shell\n# stdin\n${(toolCall.args as zShellExecInput).command.trim()}\n\n${output.join('\n\n')}\n\`\`\``}
+          />
+        );
+      }
     }
 
     return (

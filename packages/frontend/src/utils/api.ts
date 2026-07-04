@@ -89,6 +89,13 @@ export async function isTauriDesktop() {
   return ['linux', 'macos', 'windows'].includes(type());
 }
 
+export async function isTauriWithAfm() {
+  if (!isTauri()) return false;
+  const { type } = await import('@tauri-apps/plugin-os');
+  if (!['macos', 'ios'].includes(type())) return false;
+  return await invoke<boolean>('afm_enabled');
+}
+
 export async function openExternal(url: string) {
   console.log(`Opening link externally: ${url}`);
 

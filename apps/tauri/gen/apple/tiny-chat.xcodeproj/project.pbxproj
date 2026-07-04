@@ -12,10 +12,12 @@
 		142002F8FF02546C37D40726 /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 4C32E2B76D8469F267AD1E51 /* assets */; };
 		1567FC774CBFBE89FF573E17 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50C31EE596B4EEB30927C679 /* Security.framework */; };
 		1FFE05F1C95B82C094CC1B44 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6884357D119061648E02E4CB /* MetalKit.framework */; };
+		3D7798E330496B55E709BCA3 /* libapp.a in Resources */ = {isa = PBXBuildFile; fileRef = DCC971773DC1C2480777D1D2 /* libapp.a */; };
 		902C9B95FBA1208960F6EFF8 /* libapp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5759B6E1504C03F57247EDC1 /* libapp.a */; };
 		98F1880AA5AD5C1A9E770B67 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 84A8C3AD482B021FBBE0312A /* Assets.xcassets */; };
 		D5208D546D98384C012143BF /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CC0018AAD8DE626CB0F3785B /* WebKit.framework */; };
 		D6ADD769DED2ACA6BF42A30A /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 09479D40B0FBCF5AC07A6E49 /* QuartzCore.framework */; };
+		E4EF4FD1360E517A990AB468 /* libapp.a in Resources */ = {isa = PBXBuildFile; fileRef = D75ED3F73D51A75F5420A865 /* libapp.a */; };
 		E5D1BDBEDEFC2398AF5DDEA1 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D2903009F4A6E1C377A4174 /* Metal.framework */; };
 		F784922C932FB14D0537CB10 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6C0E70E9F5E5C56B847E4E8A /* LaunchScreen.storyboard */; };
 		FE9E63250F6156D5F77B54DC /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D47062FB69DCE4140CF563F1 /* CoreGraphics.framework */; };
@@ -26,6 +28,7 @@
 		114DD0280E64CDC583A45AEF /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		1D2903009F4A6E1C377A4174 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		2D9255E79A4010A2DB5D100C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		3BA6A797AB0D1FDE09EEA0B9 /* mcp_http.rs */ = {isa = PBXFileReference; path = mcp_http.rs; sourceTree = "<group>"; };
 		4C32E2B76D8469F267AD1E51 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = SOURCE_ROOT; };
 		50C31EE596B4EEB30927C679 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		5759B6E1504C03F57247EDC1 /* libapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libapp.a; sourceTree = "<group>"; };
@@ -33,13 +36,19 @@
 		6952F93EF2294F6B8FFAAD85 /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
 		6C0E70E9F5E5C56B847E4E8A /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		84A8C3AD482B021FBBE0312A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		9004E477D99ED66228445A81 /* Tiny Chat.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Tiny Chat.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		9004E477D99ED66228445A81 /* tiny-chat_iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "tiny-chat_iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E958A983FBBE215EFEA68FA /* afm.rs */ = {isa = PBXFileReference; path = afm.rs; sourceTree = "<group>"; };
 		A05ED7443592C1DD5BD4B671 /* bindings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bindings.h; sourceTree = "<group>"; };
+		ABF0C963A941D3392892DA7F /* mcp_stdio.rs */ = {isa = PBXFileReference; path = mcp_stdio.rs; sourceTree = "<group>"; };
+		AC857B10411128F2FF37B807 /* utils.rs */ = {isa = PBXFileReference; path = utils.rs; sourceTree = "<group>"; };
 		CC0018AAD8DE626CB0F3785B /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
 		CC18BD4C81299403D2497598 /* tiny-chat_iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "tiny-chat_iOS.entitlements"; sourceTree = "<group>"; };
-		D0A845FFF6C29CB29A8377B3 /* lib.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = lib.rs; sourceTree = "<group>"; };
+		D0A845FFF6C29CB29A8377B3 /* lib.rs */ = {isa = PBXFileReference; path = lib.rs; sourceTree = "<group>"; };
 		D47062FB69DCE4140CF563F1 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
-		F409FBCA11682C97F9C7B941 /* main.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = main.rs; sourceTree = "<group>"; };
+		D75ED3F73D51A75F5420A865 /* libapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libapp.a; sourceTree = "<group>"; };
+		DCC971773DC1C2480777D1D2 /* libapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libapp.a; sourceTree = "<group>"; };
+		ED35DF6326EDC6F4C23249DA /* tools.rs */ = {isa = PBXFileReference; path = tools.rs; sourceTree = "<group>"; };
+		F409FBCA11682C97F9C7B941 /* main.rs */ = {isa = PBXFileReference; path = main.rs; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,6 +70,23 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1BAD92A9F402C6CFC4F9E4C5 /* arm64 */ = {
+			isa = PBXGroup;
+			children = (
+				1F6D1F0C2CFA0E15B16960DD /* debug */,
+				BC89C3625AAFD91F41F035FD /* release */,
+			);
+			path = arm64;
+			sourceTree = "<group>";
+		};
+		1F6D1F0C2CFA0E15B16960DD /* debug */ = {
+			isa = PBXGroup;
+			children = (
+				D75ED3F73D51A75F5420A865 /* libapp.a */,
+			);
+			path = debug;
+			sourceTree = "<group>";
+		};
 		410CC2021DC137D898FD7040 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -97,6 +123,7 @@
 		9734AECA9D9D1C9E971170A4 /* Externals */ = {
 			isa = PBXGroup;
 			children = (
+				1BAD92A9F402C6CFC4F9E4C5 /* arm64 */,
 			);
 			path = Externals;
 			sourceTree = "<group>";
@@ -107,6 +134,14 @@
 				6B05705954DB73C85614ADB2 /* tiny-chat */,
 			);
 			path = Sources;
+			sourceTree = "<group>";
+		};
+		BC89C3625AAFD91F41F035FD /* release */ = {
+			isa = PBXGroup;
+			children = (
+				DCC971773DC1C2480777D1D2 /* libapp.a */,
+			);
+			path = release;
 			sourceTree = "<group>";
 		};
 		BED4FE6E6C6B2A1A03978E9D /* bindings */ = {
@@ -120,7 +155,7 @@
 		CCEC59C6F590576F3C4070B3 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				9004E477D99ED66228445A81 /* Tiny Chat.app */,
+				9004E477D99ED66228445A81 /* tiny-chat_iOS.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -143,11 +178,23 @@
 		D479320BFDAA2BAC012CBF74 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				9E958A983FBBE215EFEA68FA /* afm.rs */,
 				D0A845FFF6C29CB29A8377B3 /* lib.rs */,
 				F409FBCA11682C97F9C7B941 /* main.rs */,
+				3BA6A797AB0D1FDE09EEA0B9 /* mcp_http.rs */,
+				ABF0C963A941D3392892DA7F /* mcp_stdio.rs */,
+				ED35DF6326EDC6F4C23249DA /* tools.rs */,
+				AC857B10411128F2FF37B807 /* utils.rs */,
 			);
 			name = src;
 			path = ../../src;
+			sourceTree = "<group>";
+		};
+		"TEMP_F414E05D-6FFD-4374-B709-3DD93180299D" /* x86_64 */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = x86_64;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -170,7 +217,7 @@
 			packageProductDependencies = (
 			);
 			productName = "tiny-chat_iOS";
-			productReference = 9004E477D99ED66228445A81 /* Tiny Chat.app */;
+			productReference = 9004E477D99ED66228445A81 /* tiny-chat_iOS.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -181,6 +228,8 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
 			};
 			buildConfigurationList = 42C843143C22669B12658F81 /* Build configuration list for PBXProject "tiny-chat" */;
 			developmentRegion = en;
@@ -209,6 +258,8 @@
 				98F1880AA5AD5C1A9E770B67 /* Assets.xcassets in Resources */,
 				F784922C932FB14D0537CB10 /* LaunchScreen.storyboard in Resources */,
 				142002F8FF02546C37D40726 /* assets in Resources */,
+				3D7798E330496B55E709BCA3 /* libapp.a in Resources */,
+				E4EF4FD1360E517A990AB468 /* libapp.a in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -234,7 +285,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "export PATH=\"$HOME/.nvm/versions/node/$(ls $HOME/.nvm/versions/node | tail -n 1)/bin:$PATH\"\nexport PATH=\"$HOME/.cargo/bin:$PATH\"\nnpm run -- tauri ios xcode-script -v --platform ${PLATFORM_DISPLAY_NAME:?} --sdk-root ${SDKROOT:?} --framework-search-paths \"${FRAMEWORK_SEARCH_PATHS:?}\" --header-search-paths \"${HEADER_SEARCH_PATHS:?}\" --gcc-preprocessor-definitions \"${GCC_PREPROCESSOR_DEFINITIONS:-}\" --configuration ${CONFIGURATION:?} ${FORCE_COLOR} ${ARCHS:?}\n";
+			shellScript = "npm run -- tauri ios xcode-script -v --platform ${PLATFORM_DISPLAY_NAME:?} --sdk-root ${SDKROOT:?} --framework-search-paths \"${FRAMEWORK_SEARCH_PATHS:?}\" --header-search-paths \"${HEADER_SEARCH_PATHS:?}\" --gcc-preprocessor-definitions \"${GCC_PREPROCESSOR_DEFINITIONS:-}\" --configuration ${CONFIGURATION:?} ${FORCE_COLOR} ${ARCHS:?}";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -261,10 +312,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = "tiny-chat_iOS/tiny-chat_iOS.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = JPXWVM2RY2;
 				ENABLE_BITCODE = NO;
 				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
-				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
 				INFOPLIST_FILE = "tiny-chat_iOS/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Tiny Chat";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
@@ -273,20 +326,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				"LIBRARY_SEARCH_PATHS[arch=arm64]" = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION)",
-					"$(SDKROOT)/usr/lib/swift",
-					"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
-					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
-				);
-				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION)",
-					"$(SDKROOT)/usr/lib/swift",
-					"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
-					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
-				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME) $(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME) $(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.ryangarber.chat;
 				PRODUCT_NAME = "Tiny Chat";
 				SDKROOT = iphoneos;
@@ -425,7 +466,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = "tiny-chat_iOS/tiny-chat_iOS.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = JPXWVM2RY2;
 				ENABLE_BITCODE = NO;
 				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -440,20 +480,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				"LIBRARY_SEARCH_PATHS[arch=arm64]" = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION)",
-					"$(SDKROOT)/usr/lib/swift",
-					"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
-					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
-				);
-				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION)",
-					"$(SDKROOT)/usr/lib/swift",
-					"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
-					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
-				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME) $(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME) $(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.ryangarber.chat;
 				PRODUCT_NAME = "Tiny Chat";
 				SDKROOT = iphoneos;

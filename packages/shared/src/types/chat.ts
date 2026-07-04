@@ -9,7 +9,7 @@ import { type Chat, type Message } from '../../../backend/generated/prisma/clien
 
 export { type Chat, Author, MemoryCategory, MemoryStability };
 
-export const DEFAULT_TOOL_GROUPS = ['questions', 'actions', 'memories', 'files', 'web'];
+export const DEFAULT_TOOL_GROUPS = ['questions', 'actions', 'memories', 'web', 'chat'];
 
 export const DEFAULT_SKILLS: string[] = [];
 

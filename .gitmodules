@@ -1,0 +1,3 @@
+[submodule "apps/tauri/lib/afmize"]
+	path = apps/tauri/lib/afmize
+	url = https://github.com/ryangarber/afmize

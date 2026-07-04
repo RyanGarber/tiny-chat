@@ -36,7 +36,7 @@ mime.define({ 'text/x-r': ['r', 'rmd', 'rnw', 'rprofile'] }, true); // .R handle
 mime.define({ 'text/coffeescript': ['coffee', 'litcoffee'] }, true);
 mime.define({ 'text/x-perl': ['pl', 'pm', 'pod', 'psgi'] }, true);
 mime.define({ 'text/x-ruby': ['rb', 'rake', 'gemspec', 'ru'] }, true);
-mime.define({ 'text/x-python': ['pyi', 'pyw', 'pyx', 'pxd'] }, true); // .py already mapped
+mime.define({ 'text/x-python': ['py', 'pyi', 'pyw', 'pyx', 'pxd'] }, true); // .py already mapped
 mime.define({ 'text/x-vue': ['vue'] }, true);
 mime.define({ 'text/x-svelte': ['svelte'] }, true);
 mime.define({ 'text/x-astro': ['astro'] }, true);
@@ -195,19 +195,19 @@ export function decodeTextLossy(data: Uint8Array | string, mime: string) {
   return new TextDecoder('windows-1252').decode(data.buffer);
 }
 
-export function toChatUri(uploadId?: string | null, path?: string[]) {
-  return `chat:///${[uploadId, ...(path ?? [])].filter((p) => p?.length).join('/')}`;
+export function toChatUri(uploadId?: string | null, path?: string[], basePath = '/mnt/chat/') {
+  return `${basePath}${[uploadId, ...(path ?? [])].filter((p) => p?.length).join('/')}`;
 }
 
-export function fromChatUriOrThrow(uri: string) {
-  const parsed = fromChatUri(uri);
-  if (!parsed) throw new Error('Invalid uri: expected chat:// uri');
+export function fromChatUriOrThrow(uri: string, basePath = '/mnt/chat/') {
+  const parsed = fromChatUri(uri, basePath);
+  if (!parsed) throw new Error('Invalid uri: expected /mnt/chat uri');
   return parsed;
 }
 
-export function fromChatUri(uri: string) {
-  if (!uri.startsWith('chat://')) return null;
-  uri = uri.replace(/^chat:\/\//, '');
+export function fromChatUri(uri: string, basePath = '/mnt/chat/') {
+  if (!uri.startsWith(basePath)) return null;
+  uri = uri.replace(new RegExp(`^${basePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`), '');
   const path = uri.split('/').filter((part) => part.length);
   let uploadId: string | undefined;
   if (path[0]?.length === 24) {

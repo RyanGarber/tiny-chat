@@ -1,7 +1,12 @@
 import { invoke, isTauriDesktop, trpc } from '@/utils/api';
 import type { zSkill } from '@tiny-chat/shared/src/types/skill.ts';
 import { wrapSkill } from '@tiny-chat/shared/src/utils';
-import { decodeTextLossy, isTextAdjacent, mimeType, toChatUri, } from '@tiny-chat/shared/src/utils/files.ts';
+import {
+  decodeTextLossy,
+  isTextAdjacent,
+  mimeType,
+  toChatUri,
+} from '@tiny-chat/shared/src/utils/files.ts';
 
 export const SkillService = {
   findLocal: async () => {
@@ -67,8 +72,6 @@ export const SkillService = {
           name: '',
           description: 'Error: unrecognized format',
           attributes: {},
-          content: '',
-          resources: [],
         },
       );
     }

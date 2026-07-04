@@ -18,6 +18,7 @@ import type { zUser } from '@tiny-chat/shared/src/types/user.ts';
 import backend from '../tools/index.ts';
 import { getGenerationCallbacksBackend } from '../services/worker.ts';
 import type { Upload$filesArgs } from '../../generated/prisma/models/Upload.ts';
+import { pathEquals } from '@tiny-chat/shared/src/utils/files.ts';
 
 interface GitHubRepo {
   id: number;
@@ -220,14 +221,15 @@ export default router({
   searchFiles: procedure
     .input(
       z.object({
-        uploads: z.array(z.cuid2()),
+        chat: z.cuid2().nullish(),
+        uploads: z.array(z.cuid2()).nullish(),
         text: z.string(),
         embedding: z.array(z.number()).optional(),
         limit: z.number().optional(),
       }),
     )
-    .query(({ ctx, input: { uploads, text, embedding, limit } }) => {
-      return searchFiles(ctx.session.user, text, embedding, limit, uploads);
+    .query(({ ctx, input: { chat, uploads, text, embedding, limit } }) => {
+      return searchFiles(ctx.session.user, text, embedding, limit, chat, uploads);
     }),
 
   deleteUpload: procedure.input(z.object({ id: z.cuid2() })).mutation(async ({ ctx, input }) => {
@@ -517,6 +519,7 @@ export async function searchFiles(
   text: string,
   embedding?: number[],
   limit = 5,
+  chatId?: string | null,
   uploadIds?: string[] | null,
   path: string[] = [],
 ): Promise<FileSearchResult[]> {
@@ -536,6 +539,7 @@ export async function searchFiles(
        ROW_NUMBER() OVER (ORDER BY f.embedding <=> ${JSON.stringify(embedding)}) AS rank
      FROM file f
      WHERE f."userId" = ${user.id}
+       AND (${chatId ? Prisma.sql`f."chatId" = ${chatId}` : Prisma.sql`1=1`})
        AND (${uploadIds ? Prisma.sql`f."uploadId" IN (${Prisma.join(uploadIds)})` : Prisma.sql`1=1`})
        AND (${path.length ? Prisma.sql`array_remove(f.path, '')[1:${path.length}] = ${path}` : Prisma.sql`1=1`})
        AND f.embedding IS NOT NULL
@@ -551,6 +555,7 @@ export async function searchFiles(
       FROM file f
       CROSS JOIN search
       WHERE f."userId" = ${user.id}
+        AND (${chatId ? Prisma.sql`f."chatId" = ${chatId}` : Prisma.sql`1=1`})
         AND (${uploadIds ? Prisma.sql`f."uploadId" IN (${Prisma.join(uploadIds)})` : Prisma.sql`1=1`})
         AND (${path.length ? Prisma.sql`array_remove(f.path, '')[1:${path.length}] = ${path}` : Prisma.sql`1=1`})
         AND search.query != ''::tsquery
@@ -572,6 +577,7 @@ export async function searchFiles(
       ) AS path_match_count
     FROM file f
     WHERE f."userId" = ${user.id}
+      AND (${chatId ? Prisma.sql`f."chatId" = ${chatId}` : Prisma.sql`1=1`})
       AND (${uploadIds ? Prisma.sql`f."uploadId" IN (${Prisma.join(uploadIds)})` : Prisma.sql`1=1`})
       AND (${path.length ? Prisma.sql`array_remove(f.path, '')[1:${path.length}] = ${path}` : Prisma.sql`1=1`})
       AND f.path IS NOT NULL
@@ -603,5 +609,11 @@ export async function searchFiles(
 
   console.log(`Found ${results.length} files`);
 
-  return results;
+  return results.filter(
+    (uf) =>
+      !!uf.chatId ||
+      !results.find(
+        (cf) => cf.chatId && cf.uploadId === uf.uploadId && pathEquals(cf.path, uf.path),
+      ),
+  );
 }

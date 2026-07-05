@@ -24,17 +24,11 @@ Tiny Chat supports all modalities. Attach images, videos, PDFs, and more to your
 
 ## Installation
 
-### Windows, macOS, and Linux
-Download the [latest release](https://github.com/ryangarber/tiny-chat/releases) from the releases page.
+Builds are currently available for Windows, macOS, Linux, iOS, and Android. Download the [latest release](https://github.com/ryangarber/tiny-chat/releases) from the releases page.
 
-Note: On macOS, you may need to remove the quarantine attribute before you can open the app by running `xattr -d com.apple.quarantine /Applications/Tiny\ Chat.app`.
-
-### iOS and Android
-Tiny Chat is not currently available on the App Store or Google Play.
-To get it, you will need to build the app yourself using the instructions below.
-Once built, you can use Xcode (iOS) or Android Studio (Android) to install the app on your device.
-
-Note: iOS apps installed through Xcode expire after 7 days. For a better experience, it is recommended to sideload the app using a tool like [SideStore](https://sidestore.io).
+Notes:
+- On macOS, you may need to remove the quarantine attribute before you can open the app: `sudo xattr -d com.apple.quarantine /Applications/Tiny\ Chat.app`.
+- On iOS, without a paid developer account, you may need to reinstall the app every 7 days. For a better experience, sideload the app using a tool like [SideStore](https://sidestore.io).
 
 ## Building
 
@@ -43,11 +37,7 @@ Note: iOS apps installed through Xcode expire after 7 days. For a better experie
 Test the app by running `pnpm run dev:tauri`.\
 Build the app by running `pnpm run build:tauri`.
 
-### Mobile
-
-#### iOS and Android
-
-Note: first, generate the Xcode or Android Studio files by running `pnpm exec tauri [ios/android] init`.
+### iOS, Android
 
 Test the app by running `pnpm run dev:tauri:[ios/android]`.\
 Build the app by running `pnpm run build:tauri:[ios/android]`.

@@ -4,6 +4,7 @@
   "plugins": [
     ["@semantic-release/commit-analyzer", { "preset": "conventionalcommits" }],
     ["@semantic-release/release-notes-generator", { "preset": "conventionalcommits" }],
+    "./scripts/write-release-notes.mjs",
     [
       "@semantic-release/exec",
       {

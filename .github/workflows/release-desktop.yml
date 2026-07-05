@@ -7,10 +7,18 @@ on:
         description: 'Version number to use for the release tag/name'
         required: true
         type: string
+      notes:
+        description: 'Release notes/changelog to include in the release body'
+        required: false
+        type: string
   workflow_dispatch:
     inputs:
       version:
         description: 'Version number to use for the release tag/name (defaults to tauri.conf.json)'
+        required: false
+        type: string
+      notes:
+        description: 'Release notes/changelog to include in the release body'
         required: false
         type: string
 
@@ -106,7 +114,10 @@ jobs:
         with:
           tagName: ${{ steps.version.outputs.version }}
           releaseName: ${{ steps.version.outputs.version }}
-          releaseBody: Download for Windows, macOS, or Linux, or sideload to your iOS or Android device.
+          releaseBody: |
+            ${{ inputs.notes }}
+
+            Download for Windows, macOS, or Linux, or sideload to your iOS or Android device.
           projectPath: ./apps/tauri
           args: ${{ matrix.args }}
           includeUpdaterJson: true

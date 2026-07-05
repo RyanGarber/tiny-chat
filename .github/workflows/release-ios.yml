@@ -7,10 +7,18 @@ on:
         description: 'Version number to use for the release tag/name'
         required: true
         type: string
+      notes:
+        description: 'Release notes/changelog to include in the release body'
+        required: false
+        type: string
   workflow_dispatch:
     inputs:
       version:
         description: 'Version number to use for the release tag/name (defaults to tauri.conf.json)'
+        required: false
+        type: string
+      notes:
+        description: 'Release notes/changelog to include in the release body'
         required: false
         type: string
 
@@ -140,6 +148,9 @@ jobs:
         with:
           tag_name: ${{ steps.version.outputs.version }}
           name: ${{ steps.version.outputs.version }}
-          body: Download for Windows, macOS, or Linux, or sideload to your iOS or Android device.
+          body: |
+            ${{ inputs.notes }}
+
+            Download for Windows, macOS, or Linux, or sideload to your iOS or Android device.
           files: ${{ runner.temp }}/Tiny.Chat_iOS.ipa
           fail_on_unmatched_files: true

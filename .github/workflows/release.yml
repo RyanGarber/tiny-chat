@@ -18,6 +18,7 @@ jobs:
     outputs:
       released: ${{ steps.diff.outputs.released }}
       version: ${{ steps.diff.outputs.version }}
+      notes: ${{ steps.notes.outputs.notes }}
 
     steps:
       - name: Checkout
@@ -63,12 +64,23 @@ jobs:
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Read release notes
+        id: notes
+        run: |
+          DELIMITER="EOF_$(uuidgen)"
+          {
+            echo "notes<<$DELIMITER"
+            cat RELEASE_NOTES.md 2>/dev/null || true
+            echo "$DELIMITER"
+          } >> "$GITHUB_OUTPUT"
+
   desktop:
     needs: version
     if: needs.version.outputs.released == 'true'
     uses: ./.github/workflows/release-desktop.yml
     with:
       version: ${{ needs.version.outputs.version }}
+      notes: ${{ needs.version.outputs.notes }}
     secrets: inherit
 
   android:
@@ -77,6 +89,7 @@ jobs:
     uses: ./.github/workflows/release-android.yml
     with:
       version: ${{ needs.version.outputs.version }}
+      notes: ${{ needs.version.outputs.notes }}
     secrets: inherit
 
   ios:
@@ -85,4 +98,11 @@ jobs:
     uses: ./.github/workflows/release-ios.yml
     with:
       version: ${{ needs.version.outputs.version }}
+      notes: ${{ needs.version.outputs.notes }}
+    secrets: inherit
+
+  deploy:
+    needs: version
+    if: needs.version.outputs.released == 'true'
+    uses: ./.github/workflows/deploy.yml
     secrets: inherit

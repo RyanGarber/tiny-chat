@@ -105,4 +105,6 @@ jobs:
     needs: version
     if: needs.version.outputs.released == 'true'
     uses: ./.github/workflows/deploy.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
     secrets: inherit

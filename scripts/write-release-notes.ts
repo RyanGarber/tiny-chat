@@ -11,6 +11,6 @@ const outputPath = path.resolve(
   '../RELEASE_NOTES.md',
 );
 
-export async function generateNotes(pluginConfig, context) {
+export async function generateNotes(_pluginConfig: any, context: any) {
   writeFileSync(outputPath, context.nextRelease?.notes ?? '');
 }

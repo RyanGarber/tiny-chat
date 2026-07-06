@@ -2,7 +2,7 @@
  * Virtual file system, wrapped when a real filesystem is enabled on desktop.
  */
 import type { FileSearchResult } from '@tiny-chat/shared/src/types/chat.ts';
-import { shouldIncludeFile } from '../utils.ts';
+import { shouldIncludeFile } from '../utils/files.ts';
 import type { Tool, ToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
 import { searchFiles } from '../routes/input.ts';
 import { snippetText } from '@tiny-chat/shared/src/utils.ts';

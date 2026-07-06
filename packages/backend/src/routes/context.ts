@@ -1,11 +1,11 @@
 import { z } from 'zod';
 import { procedure, router } from '../index.ts';
 import { type Action, type Memory, Prisma } from '../../generated/prisma/client.ts';
-import { EMBED_FILES } from '../utils.ts';
 import { texts } from '@tiny-chat/shared/src/utils.ts';
 import type { MemorySearchResult } from '@tiny-chat/shared/src/types/chat.ts';
 import { zData } from '@tiny-chat/shared/src/types/chat.ts';
 import type { zUser } from '@tiny-chat/shared/src/types/user.ts';
+import { shouldIncludeFileSql } from '../utils/files.ts';
 
 export async function searchMemories(
   user: zUser,
@@ -198,7 +198,7 @@ export default router({
         >`SELECT id, data, COUNT(*) OVER() as total
           FROM file
           WHERE "userId" = ${ctx.session.user.id}
-            AND path[cardinality(path)] ILIKE ANY(ARRAY[${Prisma.join(EMBED_FILES.map((e) => `%${e}`))}])
+            AND ${shouldIncludeFileSql(true)}
             AND try_decode_utf8(data) IS NOT NULL
             AND embedding IS NULL
           ${input.limit ? Prisma.sql`LIMIT ${input.limit - messages.length - actions.length - memories.length}` : Prisma.empty}`;

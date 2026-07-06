@@ -32,6 +32,7 @@ export function texts(data: zData, join = ' ') {
 
 export function scrubText(text: string, maxLength = -1): string {
   text = text
+    .replace(/^[\s\n]*<message[^>]*>[\s\n]*|[\s\n]*<\/message>[\s\n]*$/g, '')
     .replace(/(:{1,3})[a-zA-Z0-9-]+(?:\[.*?])?(?:{.*?})?([.\n]*)\1/g, '$2') // Remove directives
     .replace(/!\[.*?]\(.*?\)/g, '') // Remove images
     .replace(/\[([^\]]+)]\((.*?)\)/g, '$1') // Remove links but keep text
@@ -39,10 +40,10 @@ export function scrubText(text: string, maxLength = -1): string {
     .replace(/(\*\*|__)(.*?)\1/g, '$2') // Remove bold
     .replace(/([*_])(.*?)\1/g, '$2') // Remove italics
     .replace(/~~(.*?)~~/g, '$1') // Remove strikethrough
-    .replace(/#+\s?(.*)/g, '$1') // Remove headings
-    .replace(/>\s?(.*)/g, '$1') // Remove blockquotes
-    .replace(/-\s?(.*)/g, '$1') // Remove unordered list markers
-    .replace(/\d+\.\s?(.*)/g, '$1') // Remove ordered list markers
+    .replace(/^[\s#>*-]*#+\s+(.*)/g, '$1') // Remove headings
+    .replace(/^[\s#>*-]*>\s+(.*)/g, '$1') // Remove blockquotes
+    .replace(/^[\s#>*-]*[*-]\s+(.*)/g, '$1') // Remove unordered list markers
+    .replace(/^[\s#>*-]*\d+\.\s*(.*)/g, '$1') // Remove ordered list markers
     .replace(/\n/g, ' ') // Replace multiple newlines with a single newline
     .trim();
   if (maxLength > 0 && text.length > maxLength) {

@@ -4,7 +4,7 @@ import baseConfig from '../../eslint.config.base.ts';
 export default defineConfig(
   ...baseConfig,
   {
-    ignores: ['generated/**', 'prisma.config.ts', 'pm2.config.cjs'],
+    ignores: ['generated/**', 'prisma.config.ts', 'pm2.config.mjs'],
   },
   {
     languageOptions: {

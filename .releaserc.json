@@ -4,11 +4,11 @@
   "plugins": [
     ["@semantic-release/commit-analyzer", { "preset": "conventionalcommits" }],
     ["@semantic-release/release-notes-generator", { "preset": "conventionalcommits" }],
-    "./scripts/write-release-notes.mjs",
+    "./scripts/write-release-notes.ts",
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "node scripts/bump-tauri-version.mjs ${nextRelease.version}"
+        "prepareCmd": "node scripts/bump-tauri-version.ts ${nextRelease.version}"
       }
     ],
     [

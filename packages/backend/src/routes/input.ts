@@ -12,7 +12,7 @@ import { procedure, router } from '../index.ts';
 import { createId } from '@paralleldrive/cuid2';
 import { handleFiles, handleFilesZipped } from '../services/files.ts';
 import { TRPCError } from '@trpc/server';
-import { shouldIncludeFile } from '../utils.ts';
+import { shouldIncludeFile } from '../utils/files.ts';
 import { auth } from '../services/auth.ts';
 import type { zUser } from '@tiny-chat/shared/src/types/user.ts';
 import backend from '../tools/index.ts';

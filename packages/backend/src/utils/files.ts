@@ -1,6 +1,8 @@
+import { Prisma } from '../../generated/prisma/client.ts';
+
 const EXCLUDE_FILES = ['__MACOSX/', '.DS_Store', 'Thumbs.db'];
 
-const EXCLUDE_FILES_ADDITIONAL = [
+export const EXCLUDE_FILES_ADDITIONAL = [
   // 1. Version Control & Git
   '.git/',
   '.gitignore',
@@ -138,67 +140,19 @@ const EXCLUDE_FILES_ADDITIONAL = [
 ];
 
 export function shouldIncludeFile(path: string, excludeAdditional = true): boolean {
-  return (
-    !EXCLUDE_FILES.some(
-      (match) => `/${path}`.includes(`/${match}`) || path.endsWith(match) || path === match,
-    ) &&
-    (!excludeAdditional ||
-      !EXCLUDE_FILES_ADDITIONAL.some(
-        (match) => `/${path}`.includes(`/${match}`) || path.endsWith(match) || path === match,
-      ))
+  const paths = [...EXCLUDE_FILES, ...(excludeAdditional ? EXCLUDE_FILES_ADDITIONAL : [])].map(
+    (path) => path.replace(/\/$/, ''),
   );
+  return !paths.some((match) => `/${path}`.includes(`/${match}/`) || path.endsWith(match));
 }
 
-export const EMBED_FILES = [
-  // 1. Code & Markup Files
-  '.ts',
-  '.tsx',
-  '.js',
-  '.jsx',
-  '.mjs',
-  '.cjs',
-  '.json',
-  '.yaml',
-  '.yml',
-  '.toml',
-  '.xml',
-  '.svg',
-  '.md',
-  '.mdx',
-  '.txt',
-  '.csv',
-  '.html',
-  '.css',
-  '.scss',
-  '.sass',
-  '.less',
-
-  // 2. Configurations & Scripts
-  'Dockerfile',
-  'Makefile',
-  'CMakeLists.txt',
-
-  // 3. Source Code in Popular Languages
-  '.py', // Python
-  '.rb', // Ruby
-  '.go', // Go
-  '.rs', // Rust
-  '.java', // Java
-  '.kt', // Kotlin
-  '.swift', // Swift
-  '.c', // C
-  '.cs', // C#
-  '.cpp', // C++
-  '.h', // C/C++ headers
-  '.sh', // Shell scripts
-  '.bash',
-  '.zsh',
-  '.fish',
-];
-
-export function shouldEmbedFile(path: string, bytes: Uint8Array | null) {
-  return (
-    EMBED_FILES.some((extension) => path.toLowerCase().endsWith(extension)) &&
-    (!bytes || new TextDecoder().decode(bytes).length > 0)
+export function shouldIncludeFileSql(excludeAdditional = true): Prisma.Sql {
+  const paths = [...EXCLUDE_FILES, ...(excludeAdditional ? EXCLUDE_FILES_ADDITIONAL : [])].map(
+    (path) => path.replace(/\/$/, ''),
   );
+  const sql = Prisma.sql`
+    CONCAT('/', array_to_string(path, '/')) NOT ILIKE ALL(ARRAY[${Prisma.join(paths.map((path) => `%/${path}/%`))}])
+    AND array_to_string(path, '/') NOT ILIKE ALL(ARRAY[${Prisma.join(paths.map((path) => `%${path}`))}])
+  `;
+  return sql;
 }

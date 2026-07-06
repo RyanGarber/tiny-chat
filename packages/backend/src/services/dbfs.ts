@@ -9,7 +9,7 @@ import {
 import type { zToolContext } from '@tiny-chat/shared/src/types/tool.ts';
 import { createId } from '@paralleldrive/cuid2';
 import type { File } from '../../generated/prisma/client.ts';
-import { shouldIncludeFile } from '../utils.ts';
+import { shouldIncludeFile } from '../utils/files.ts';
 import { uploadIds } from '@tiny-chat/shared/src/utils.ts';
 
 /**

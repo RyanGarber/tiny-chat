@@ -1,8 +1,8 @@
 import type { zUser } from '@tiny-chat/shared/src/types/user.ts';
 import { type File, Prisma } from '../../generated/prisma/client.ts';
 import { createId } from '@paralleldrive/cuid2';
-import { shouldIncludeFile } from '../utils.ts';
-import { unzip, type Unzipped } from 'fflate';
+import { shouldIncludeFile } from '../utils/files.ts';
+import { unzipSync } from 'fflate';
 import { MarkItDown } from 'markitdown-ts';
 import sharp from 'sharp';
 import { mimeType } from '@tiny-chat/shared/src/utils/files.ts';
@@ -15,16 +15,8 @@ export async function handleFilesZipped(
   include?: (path: string) => boolean,
   skipRoot?: boolean,
 ) {
-  const unzipped = await new Promise<Unzipped>((resolve, reject) => {
-    unzip(new Uint8Array(zip), (err, data) => {
-      if (err) {
-        reject(new Error(`Failed to unzip zip: ${err.message}`));
-      } else {
-        console.log(`Unzipped zip with ${Object.keys(data).length} files`);
-        resolve(data);
-      }
-    });
-  });
+  const unzipped = unzipSync(new Uint8Array(zip));
+  console.log(`Unzipped zip with ${Object.keys(unzipped).length} files`);
 
   const files = Object.entries(unzipped).filter(([path]) => shouldIncludeFile(path, false));
 

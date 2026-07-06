@@ -1,6 +1,6 @@
 import type { zContextItem, zGenerateInput } from '../../types/chat.ts';
 import { zData } from '../../types/chat.ts';
-import { getLastPrompt, texts } from '../../utils.ts';
+import { getLastPrompt, scrubText, texts } from '../../utils.ts';
 import type { zToolGroup } from '../../types/tool.ts';
 import type { zSkill } from '../../types/skill.ts';
 import type { zUser } from '../../types/user.ts';
@@ -18,7 +18,7 @@ export async function buildGenerationInstructions(
 ) {
   // TODO - reimplement combined and weighted prompt emebddings
   const prompt = getLastPrompt(messages);
-  const promptText = texts(prompt.data);
+  const promptText = scrubText(texts(prompt.data));
   const promptEmbedding = prompt.id
     ? await callbacks.getEmbedding({ messageId: prompt.id })
     : await callbacks.embed(promptText);

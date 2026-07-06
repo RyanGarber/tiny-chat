@@ -323,12 +323,12 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION message_lexicon_update() RETURNS trigger AS $$
 BEGIN
-    NEW.lexicon := to_tsvector('english', (
+    NEW.lexicon := to_tsvector('english', LEFT((
         SELECT string_agg("dataPart"->>'value', ' ')
         FROM jsonb_array_elements(NEW."data") AS "step",
           jsonb_array_elements("step") AS "dataPart"
         WHERE "dataPart"->>'type' = 'text'
-    ));
+    ), 500000));
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -339,12 +339,12 @@ CREATE OR REPLACE TRIGGER message_lexicon_trigger
 
 CREATE OR REPLACE FUNCTION action_lexicon_update() RETURNS trigger AS $$
 BEGIN
-  NEW.lexicon := to_tsvector('english', (
+  NEW.lexicon := to_tsvector('english', LEFT((
     SELECT string_agg("dataPart"->>'value', ' ')
     FROM jsonb_array_elements(NEW."data") AS "step",
          jsonb_array_elements("step") AS "dataPart"
     WHERE "dataPart"->>'type' = 'text'
-  ));
+  ), 500000));
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -359,7 +359,7 @@ DECLARE
 BEGIN
     decoded_data := try_decode_utf8(NEW.data);
     IF decoded_data IS NOT NULL THEN
-     	  NEW.lexicon := to_tsvector('english', decoded_data);
+     	  NEW.lexicon := to_tsvector('english', LEFT(decoded_data, 500000));
     END IF;
     RETURN NEW;
 END;
@@ -371,7 +371,7 @@ CREATE OR REPLACE TRIGGER file_lexicon_trigger
 
 CREATE OR REPLACE FUNCTION memory_lexicon_update() RETURNS trigger AS $$
 BEGIN
-  NEW.lexicon := to_tsvector('english', NEW.fact);
+  NEW.lexicon := to_tsvector('english', LEFT(NEW.fact, 500000));
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

@@ -33,8 +33,8 @@ import { invoke, trpc } from '@/utils/api.ts';
 import { GLASS_STYLE } from '@/utils/theme.ts';
 import { toolCallRejection, useToolInput } from '../hooks/useToolInput';
 import { Icon } from '@iconify/react';
-import { zWriteFileInput, zShellExecInput } from '@tiny-chat/shared/src/tools/system.ts';
-import { decodeTextLossy, fromChatUri } from '@tiny-chat/shared/src/utils/files.ts';
+import { zShellExecInput, zWriteFileInput } from '@tiny-chat/shared/src/tools/system.ts';
+import { decodeTextLossy, fromChatUri, mimeType, pathName, } from '@tiny-chat/shared/src/utils/files.ts';
 
 export const ToolCallInput = memo(
   ({
@@ -74,9 +74,19 @@ export const ToolCallInput = memo(
               setWriteFileContents('');
             });
         } else {
+          console.log(`calling read_file ${write.path}`);
           invoke<string>('read_file', { path: write.path })
             .then((contents) => {
-              setWriteFileContents(contents);
+              console.log(`contents:`, contents);
+              mimeType(contents, pathName(write.path), 'text/plain')
+                .then((mime) => {
+                  console.log(`mime: ${mime}`);
+                  setWriteFileContents(decodeTextLossy(contents, mime));
+                })
+                .catch((error) => {
+                  console.error('Error getting mime type of file', error);
+                  setWriteFileContents('');
+                });
             })
             .catch((error) => {
               console.error('Error reading file', error);

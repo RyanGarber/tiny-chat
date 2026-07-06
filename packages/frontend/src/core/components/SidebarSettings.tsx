@@ -257,15 +257,19 @@ export default function SidebarSettings({
                   </Group>
                 </CheckboxCard>
               </Tooltip>
-              <Tooltip label="Load native model provider" color="gray" position="right">
+              <Tooltip
+                label="Disable WebLLM support for faster loading"
+                color="gray"
+                position="right"
+              >
                 <CheckboxCard
                   p="xs"
-                  checked={useBrowserModels.data}
-                  onChange={(value) => setUseBrowserModels.mutate({ useBrowserModels: value })}
+                  checked={!useBrowserModels.data}
+                  onChange={(value) => setUseBrowserModels.mutate({ useBrowserModels: !value })}
                 >
                   <Group>
                     <CheckboxIndicator size="xs" />
-                    <Text size="sm">Native Provider</Text>
+                    <Text size="sm">No Native Provider</Text>
                   </Group>
                 </CheckboxCard>
               </Tooltip>

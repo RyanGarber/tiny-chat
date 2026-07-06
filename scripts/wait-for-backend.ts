@@ -1,4 +1,3 @@
-// @ts-ignore
 import waitOn from 'wait-on';
 
 console.log(`Waiting for backend...`);

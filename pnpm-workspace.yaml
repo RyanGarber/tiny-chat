@@ -33,3 +33,5 @@ patchedDependencies:
 peerDependencyRules:
   allowedVersions:
     'eslint-plugin-react-hooks>eslint': '10'
+overrides:
+  'conventional-changelog-writer': '^9.1.1'

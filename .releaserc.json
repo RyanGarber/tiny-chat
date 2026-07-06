@@ -2,19 +2,17 @@
   "branches": ["main"],
   "tagFormat": "${version}",
   "plugins": [
-    ["@semantic-release/commit-analyzer", { "preset": "conventionalcommits" }],
-    ["@semantic-release/release-notes-generator", { "preset": "conventionalcommits" }],
-    "./scripts/write-release-notes.ts",
+    "./scripts/write-changelog.ts",
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "node scripts/bump-tauri-version.ts ${nextRelease.version}"
+        "prepareCmd": "node scripts/write-version.ts ${nextRelease.version}"
       }
     ],
     [
       "@semantic-release/git",
       {
-        "assets": ["apps/tauri/tauri.conf.json"],
+        "assets": ["apps/tauri/tauri.conf.json", "CHANGELOG.md"],
         "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
       }
     ]

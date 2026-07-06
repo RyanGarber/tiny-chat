@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  conventional-changelog-writer: ^9.1.1
+
 patchedDependencies:
   '@ai-sdk/google': 4108c4b41c640fb175a15ea2c39ef86897892c258288f19a9db2a8347a37da10
 
@@ -18,6 +21,9 @@ importers:
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.4.0(jiti@2.7.0))
+      '@semantic-release/changelog':
+        specifier: ^6.0.3
+        version: 6.0.3(semantic-release@25.0.5(typescript@5.9.3))
       '@semantic-release/commit-analyzer':
         specifier: ^13.0.1
         version: 13.0.1(semantic-release@25.0.5(typescript@5.9.3))
@@ -37,8 +43,8 @@ importers:
         specifier: ^9.2.1
         version: 9.2.1
       conventional-changelog-conventionalcommits:
-        specifier: ^10.2.0
-        version: 10.2.0
+        specifier: ^10.2.1
+        version: 10.2.1
       dotenv-cli:
         specifier: ^11.0.0
         version: 11.0.0
@@ -757,8 +763,8 @@ packages:
     peerDependencies:
       commander: ~15.0.0
 
-  '@conventional-changelog/template@1.2.0':
-    resolution: {integrity: sha512-12qHxvlKjHmP0PQ+17EREgC7lWyLwbph1RKcZQZ7k7ZWGmrxfxC9gadHGfvzr0g0u8BhiBGg3tks93txodlyRQ==}
+  '@conventional-changelog/template@1.2.1':
+    resolution: {integrity: sha512-TzlTVpKPjaqW6qOYjQcYUDuGsLCNsvFHVBXkYGTAnf5V37jCWrE5haKNXzz0WZUtVHjrpV76L1buANjwXMfT8w==}
     engines: {node: '>=22'}
 
   '@csstools/color-helpers@5.1.0':
@@ -2711,6 +2717,12 @@ packages:
   '@selderee/plugin-htmlparser2@0.11.0':
     resolution: {integrity: sha512-P33hHGdldxGabLFjPPpaTxVolMrzrcegejx+0GxjrIb9Zv48D8yAIA/QTDR2dFl7Uz7urX8aX6+5bCZslr+gWQ==}
 
+  '@semantic-release/changelog@6.0.3':
+    resolution: {integrity: sha512-dZuR5qByyfe3Y03TpmCvAxCyTnp7r5XwtHRf/8vD9EAn4ZWbavUX8adMtXYzE86EVh0gyLA7lm5yW4IV30XUag==}
+    engines: {node: '>=14.17'}
+    peerDependencies:
+      semantic-release: '>=18.0.0'
+
   '@semantic-release/commit-analyzer@13.0.1':
     resolution: {integrity: sha512-wdnBPHKkr9HhNhXOhZD5a2LNl91+hs8CC2vsAVYxtZH3y0dV3wKn+uZSN61rdJQZ8EGxzWB3inWocBHV9+u/CQ==}
     engines: {node: '>=20.8.1'}
@@ -2785,6 +2797,10 @@ packages:
   '@simple-libs/stream-utils@1.2.0':
     resolution: {integrity: sha512-KxXvfapcixpz6rVEB6HPjOUZT22yN6v0vI0urQSk1L8MlEWPDFCZkhw2xmkyoTGYeFw7tWTZd7e3lVzRZRN/EA==}
     engines: {node: '>=18'}
+
+  '@simple-libs/stream-utils@2.0.0':
+    resolution: {integrity: sha512-fCTuZK4QBa+39Oz9l4OGfJfz+GpwCp3AqO7Zch3to99xHPgstVsRFpeQ8LNd2o1Gv8raL2mCFwiaHh7bFSp5DQ==}
+    engines: {node: '>=22'}
 
   '@sindresorhus/is@4.6.0':
     resolution: {integrity: sha512-t09vSN3MdfsyCHoFcTRCH/iUtG7OJ0CsjzB8cjAmKc/va/kIgeDI/TxsigdncE/4be734m0cvIYwNaV4i2XqAw==}
@@ -4006,18 +4022,22 @@ packages:
     resolution: {integrity: sha512-6gfI3otXK5Ph5DfCOI1dblr+kN3FAm5a97hYoQkqNZxOaYa5WKfXH+AnpsmS+iUH2mgVC2Cg2Qw9m5OKcmNrIg==}
     engines: {node: '>=18'}
 
-  conventional-changelog-conventionalcommits@10.2.0:
-    resolution: {integrity: sha512-UtlM9GqolY7OmlQh5L/UEVoKsTUpTgUVy1PU8JN5gl5Ydaejb7WRklGliG1SKPxxj7hzA173eG3Kt5fYWE2pmg==}
+  conventional-changelog-conventionalcommits@10.2.1:
+    resolution: {integrity: sha512-n4Kr1HFMTf3iMbES0TMxKIcYtUUv4rKqyQQp2JwfOEfFCOfGT3Tq4mCyJ8S9/YPyWhydjfKrrvnyl+gCjA+mJQ==}
     engines: {node: '>=22'}
 
-  conventional-changelog-writer@8.4.0:
-    resolution: {integrity: sha512-HHBFkk1EECxxmCi4CTu091iuDpQv5/OavuCUAuZmrkWpmYfyD816nom1CvtfXJ/uYfAAjavgHvXHX291tSLK8g==}
-    engines: {node: '>=18'}
+  conventional-changelog-writer@9.1.1:
+    resolution: {integrity: sha512-rkrh3VdVTfeZDwnrV1zrGZq9zzFsYLtyE0ksJ7DD/0QoXzx+fn9higBnOUl5oCm18h3SoFYMDsoYjUQN5LA8AA==}
+    engines: {node: '>=22'}
     hasBin: true
 
   conventional-commits-filter@5.0.0:
     resolution: {integrity: sha512-tQMagCOC59EVgNZcC5zl7XqO30Wki9i9J3acbUvkaosCT6JX3EeFwJD7Qqp4MCikRnzS18WXV3BLIQ66ytu6+Q==}
     engines: {node: '>=18'}
+
+  conventional-commits-filter@6.0.1:
+    resolution: {integrity: sha512-cs+LadpH7Kpw0M3k8wurk+sOVVDAENA0iK4OBOrkL94j5lEVYRJ4j3zd2bhY9qgzyrPqthdcYT3axzRN7AliMg==}
+    engines: {node: '>=22'}
 
   conventional-commits-parser@6.4.0:
     resolution: {integrity: sha512-tvRg7FIBNlyPzjdG8wWRlPHQJJHI7DylhtRGeU9Lq+JuoPh5BKpPRX83ZdLrvXuOSu5Eo/e7SzOQhU4Hd2Miuw==}
@@ -5187,11 +5207,6 @@ packages:
   hachure-fill@0.5.2:
     resolution: {integrity: sha512-3GKBOn+m2LX9iq+JC1064cSFprJY4jL1jCXTcpnfER5HYE2l/4EfWSGzkPa/ZDBmYI0ZOEj5VHV/eKnPGkHuOg==}
 
-  handlebars@4.7.9:
-    resolution: {integrity: sha512-4E71E0rpOaQuJR2A3xDZ+GM1HyWYv1clR58tC8emQNeQe3RH7MAzSbat+V0wG78LQBo6m6bzSG/L4pBuCsgnUQ==}
-    engines: {node: '>=0.4.7'}
-    hasBin: true
-
   has-flag@3.0.0:
     resolution: {integrity: sha512-sKJf1+ceQBr4SMkvQnBDNDtf4TXpVhVGateu0t918bl30FnbE2m4vNLX+VWe/dpjlb+HugGYzW7uQXH98HPEYw==}
     engines: {node: '>=4'}
@@ -6030,6 +6045,10 @@ packages:
     resolution: {integrity: sha512-pxQJQzB6djGPXh08dacEloMFopsOqGVRKFPYvPOt9XDZ1HasbgDZA74CJGreSU4G3Ak7EFJGoiH2auq+yXISgA==}
     engines: {node: '>=18'}
 
+  meow@14.1.0:
+    resolution: {integrity: sha512-EDYo6VlmtnumlcBCbh1gLJ//9jvM/ndXHfVXIFrZVr6fGcwTUyCTFNTLCKuY3ffbK8L/+3Mzqnd58RojiZqHVw==}
+    engines: {node: '>=20'}
+
   merge-descriptors@2.0.0:
     resolution: {integrity: sha512-Snk314V5ayFLhp3fkUREub6WtjBfPdCPY1Ln8/8munuLuiYhsABgBVWsozAG+MWMbVEvcdcpbi9R7ww22l9Q3g==}
     engines: {node: '>=18'}
@@ -6251,9 +6270,6 @@ packages:
   negotiator@1.0.0:
     resolution: {integrity: sha512-8Ofs/AUQh8MaEcrlq5xOX0CQ9ypTF5dl78mjlMNfOK08fzpgTHQRQPBxcPlEtIw0yRpws+Zo/3r+5WRby7u3Gg==}
     engines: {node: '>= 0.6'}
-
-  neo-async@2.6.2:
-    resolution: {integrity: sha512-Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw==}
 
   nerf-dart@1.0.0:
     resolution: {integrity: sha512-EZSPZB70jiVsivaBLYDCyntd5eH8NTSMOn3rB+HxwdmKThGELLdYv8qVIMWvZEFy9w8ZZpW9h9OB32l1rGtj7g==}
@@ -7861,11 +7877,6 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
-  uglify-js@3.19.3:
-    resolution: {integrity: sha512-v3Xu+yuwBXisp6QYTcH4UbH+xYJXqnq2m/LtQVWKWzYc1iehYnLixoQDN9FH6/j9/oybfd6W9Ghwkl8+UMKTKQ==}
-    engines: {node: '>=0.8.0'}
-    hasBin: true
-
   uint8array-extras@1.5.0:
     resolution: {integrity: sha512-rvKSBiC5zqCCiDZ9kAOszZcDvdAHwwIKJG33Ykj43OKcWsnmcBRL09YTU4nOeHZ8Y2a7l1MgTd08SBe9A8Qj6A==}
     engines: {node: '>=18'}
@@ -8228,9 +8239,6 @@ packages:
   word@0.3.0:
     resolution: {integrity: sha512-OELeY0Q61OXpdUfTp+oweA/vtLVg5VDOXh+3he3PNzLGG/y0oylSOC1xRVj0+l4vQ3tj/bB1HVHv1ocXkQceFA==}
     engines: {node: '>=0.8'}
-
-  wordwrap@1.0.0:
-    resolution: {integrity: sha512-gvVzJFlPycKc5dZN4yPkP8w7Dc37BtP1yczEneOb4uq34pXZcvrtRTmWV8W+Ume+XCxKgbjM+nevkyFPMybd4Q==}
 
   wrap-ansi@7.0.0:
     resolution: {integrity: sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==}
@@ -8691,7 +8699,7 @@ snapshots:
     dependencies:
       commander: 15.0.0
 
-  '@conventional-changelog/template@1.2.0': {}
+  '@conventional-changelog/template@1.2.1': {}
 
   '@csstools/color-helpers@5.1.0': {}
 
@@ -10468,10 +10476,18 @@ snapshots:
       domhandler: 5.0.3
       selderee: 0.11.0
 
+  '@semantic-release/changelog@6.0.3(semantic-release@25.0.5(typescript@5.9.3))':
+    dependencies:
+      '@semantic-release/error': 3.0.0
+      aggregate-error: 3.1.0
+      fs-extra: 11.3.5
+      lodash: 4.18.1
+      semantic-release: 25.0.5(typescript@5.9.3)
+
   '@semantic-release/commit-analyzer@13.0.1(semantic-release@25.0.5(typescript@5.9.3))':
     dependencies:
       conventional-changelog-angular: 8.3.1
-      conventional-changelog-writer: 8.4.0
+      conventional-changelog-writer: 9.1.1
       conventional-commits-filter: 5.0.0
       conventional-commits-parser: 6.4.0
       debug: 4.4.3
@@ -10558,7 +10574,7 @@ snapshots:
   '@semantic-release/release-notes-generator@14.1.1(semantic-release@25.0.5(typescript@5.9.3))':
     dependencies:
       conventional-changelog-angular: 8.3.1
-      conventional-changelog-writer: 8.4.0
+      conventional-changelog-writer: 9.1.1
       conventional-commits-filter: 5.0.0
       conventional-commits-parser: 6.4.0
       debug: 4.4.3
@@ -10609,6 +10625,8 @@ snapshots:
       '@simple-git/args-pathspec': 1.0.3
 
   '@simple-libs/stream-utils@1.2.0': {}
+
+  '@simple-libs/stream-utils@2.0.0': {}
 
   '@sindresorhus/is@4.6.0': {}
 
@@ -11847,19 +11865,21 @@ snapshots:
     dependencies:
       compare-func: 2.0.0
 
-  conventional-changelog-conventionalcommits@10.2.0:
+  conventional-changelog-conventionalcommits@10.2.1:
     dependencies:
-      '@conventional-changelog/template': 1.2.0
+      '@conventional-changelog/template': 1.2.1
 
-  conventional-changelog-writer@8.4.0:
+  conventional-changelog-writer@9.1.1:
     dependencies:
-      '@simple-libs/stream-utils': 1.2.0
-      conventional-commits-filter: 5.0.0
-      handlebars: 4.7.9
-      meow: 13.2.0
+      '@conventional-changelog/template': 1.2.1
+      '@simple-libs/stream-utils': 2.0.0
+      conventional-commits-filter: 6.0.1
+      meow: 14.1.0
       semver: 7.8.0
 
   conventional-commits-filter@5.0.0: {}
+
+  conventional-commits-filter@6.0.1: {}
 
   conventional-commits-parser@6.4.0:
     dependencies:
@@ -13230,15 +13250,6 @@ snapshots:
 
   hachure-fill@0.5.2: {}
 
-  handlebars@4.7.9:
-    dependencies:
-      minimist: 1.2.8
-      neo-async: 2.6.2
-      source-map: 0.6.1
-      wordwrap: 1.0.0
-    optionalDependencies:
-      uglify-js: 3.19.3
-
   has-flag@3.0.0: {}
 
   has-flag@4.0.0: {}
@@ -14273,6 +14284,8 @@ snapshots:
 
   meow@13.2.0: {}
 
+  meow@14.1.0: {}
+
   merge-descriptors@2.0.0: {}
 
   merge-stream@2.0.0: {}
@@ -14608,8 +14621,6 @@ snapshots:
   natural-compare@1.4.0: {}
 
   negotiator@1.0.0: {}
-
-  neo-async@2.6.2: {}
 
   nerf-dart@1.0.0: {}
 
@@ -15933,7 +15944,8 @@ snapshots:
 
   source-map@0.5.7: {}
 
-  source-map@0.6.1: {}
+  source-map@0.6.1:
+    optional: true
 
   source-map@0.7.6: {}
 
@@ -16358,9 +16370,6 @@ snapshots:
 
   typescript@5.9.3: {}
 
-  uglify-js@3.19.3:
-    optional: true
-
   uint8array-extras@1.5.0: {}
 
   underscore@1.13.8: {}
@@ -16676,8 +16685,6 @@ snapshots:
   word-wrap@1.2.5: {}
 
   word@0.3.0: {}
-
-  wordwrap@1.0.0: {}
 
   wrap-ansi@7.0.0:
     dependencies:

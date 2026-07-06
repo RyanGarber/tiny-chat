@@ -70,7 +70,7 @@ jobs:
           DELIMITER="EOF_$(uuidgen)"
           {
             echo "notes<<$DELIMITER"
-            cat RELEASE_NOTES.md 2>/dev/null || true
+            cat CHANGES.md 2>/dev/null || true
             echo "$DELIMITER"
           } >> "$GITHUB_OUTPUT"
 

@@ -148,9 +148,6 @@ jobs:
         with:
           tag_name: ${{ steps.version.outputs.version }}
           name: ${{ steps.version.outputs.version }}
-          body: |
-            ${{ inputs.notes }}
-
-            Download for Windows, macOS, or Linux, or sideload to your iOS or Android device.
+          body: ${{ inputs.notes }}
           files: ${{ runner.temp }}/Tiny.Chat_iOS.ipa
           fail_on_unmatched_files: true

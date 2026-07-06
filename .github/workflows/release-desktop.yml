@@ -114,10 +114,7 @@ jobs:
         with:
           tagName: ${{ steps.version.outputs.version }}
           releaseName: ${{ steps.version.outputs.version }}
-          releaseBody: |
-            ${{ inputs.notes }}
-
-            Download for Windows, macOS, or Linux, or sideload to your iOS or Android device.
+          releaseBody: ${{ inputs.notes }}
           projectPath: ./apps/tauri
           args: ${{ matrix.args }}
           includeUpdaterJson: true

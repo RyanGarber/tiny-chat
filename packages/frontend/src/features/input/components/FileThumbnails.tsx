@@ -1,21 +1,32 @@
 import { useState } from 'react';
 import { Avatar, Image, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { FilePreview } from '@/features/input/components/FilePreview.tsx';
+import { FilePreview, FilePreviewItem } from '@/features/input/components/FilePreview.tsx';
 import { theme } from '@/utils/icon.ts';
-import { mimeTypeFromExtension } from '@tiny-chat/shared/src/utils/files.ts';
+import { useMutation } from '@tanstack/react-query';
+import { trpc } from '@/utils/api.ts';
+import { pathName } from '@tiny-chat/shared/src/utils/files.ts';
 
 export default function FileThumbnails({
-  list,
+  uploads,
   size = 30,
 }: {
-  list: { name: string; image?: string }[];
+  uploads: { id: string; name: string; thumbnail?: string }[];
   size?: number;
   width?: number | string;
   maxHeight?: number;
 }) {
   const [opened, { open, close }] = useDisclosure(false);
   const [initialIndex, setInitialIndex] = useState(0);
+  const [fileData, setFileData] = useState<FilePreviewItem[] | null>(null);
+  const loadFileData = useMutation({
+    mutationKey: ['load-file-data'] as const,
+    mutationFn: async () => {
+      return await trpc.input.findFilesInUploads.query({
+        files: uploads.map((upload) => ({ uploadId: upload.id, uploadName: upload.name })),
+      });
+    },
+  });
 
   return (
     <>
@@ -23,34 +34,49 @@ export default function FileThumbnails({
         key={initialIndex}
         opened={opened}
         onClose={close}
-        items={list.map((file) => ({
-          name: file.name,
-          mime: file.image
-            ? file.image.split(';')[0].split(':')[1]
-            : (mimeTypeFromExtension(file.name) ?? 'text/plain'),
-          data: file.image ? file.image.split(',')[1] : 'NYI', // TODO
-        }))}
+        items={fileData}
         initialIndex={initialIndex}
       />
       <Avatar.Group>
-        {list.map((file, i) => {
-          const iconId = theme.getFileIconId(file.name ?? '', undefined, false);
+        {uploads.map((upload, i) => {
+          const iconId = theme.getFileIconId(upload.name ?? '', undefined, false);
           const icon = iconId ? theme.getIconContent(iconId, 'base64') : null;
           return (
-            <Tooltip label={file.name} key={file.name} color="gray" position="bottom">
+            <Tooltip label={upload.name} key={upload.name} color="gray" position="bottom">
               <Avatar
                 radius="xl"
                 size={size}
-                src={file.image ?? null}
+                src={upload.thumbnail ?? null}
                 bd="2px solid var(--mantine-color-default-border)"
                 style={{ cursor: 'pointer' }}
                 onClick={() => {
-                  setInitialIndex(i);
-                  open();
+                  loadFileData
+                    .mutateAsync()
+                    .then((data) => {
+                      setFileData(
+                        data.map((data, i) => {
+                          if (!data)
+                            return {
+                              name: uploads[i].name,
+                              data: '[failed to load]',
+                              mime: 'text/plain',
+                            };
+                          let binary = '';
+                          const length = data.data.length;
+                          for (let i = 0; i < length; i++) {
+                            binary += String.fromCharCode(data.data[i]);
+                          }
+                          return { name: pathName(data.path), mime: data.mime, data: btoa(binary) };
+                        }),
+                      );
+                      setInitialIndex(i);
+                      open();
+                    })
+                    .catch(console.error);
                 }}
               >
                 <Image
-                  src={file.image ?? `data:${icon?.mimeType};base64,${icon?.data}`}
+                  src={upload.thumbnail ?? `data:${icon?.mimeType};base64,${icon?.data}`}
                   height={size * 0.6}
                 />
               </Avatar>

@@ -32,9 +32,9 @@ export function UploadFile({ onClose }: { onClose: () => void }) {
           )}
           {attachmentUploads.data?.pages
             .flatMap((page) => page.uploads)
-            .map((file) => (
+            .map((upload) => (
               <Group
-                key={file.id}
+                key={upload.id}
                 justify="space-between"
                 p="xs"
                 bdrs="lg"
@@ -42,15 +42,23 @@ export function UploadFile({ onClose }: { onClose: () => void }) {
                 onClick={() => {
                   addUploads({
                     type: 'upload',
-                    id: file.id,
-                    name: file.name,
-                    thumbnail: file.thumbnail ?? undefined,
+                    id: upload.id,
+                    name: upload.name,
+                    thumbnail: upload.thumbnail ?? undefined,
                   });
                   onClose();
                 }}
               >
                 <Group gap="sm" style={{ minWidth: 0, flex: 1 }}>
-                  <FileThumbnails list={[{ name: file.name, image: file.thumbnail ?? undefined }]} />
+                  <FileThumbnails
+                    uploads={[
+                      {
+                        id: upload.id,
+                        name: upload.name,
+                        thumbnail: upload.thumbnail ?? undefined,
+                      },
+                    ]}
+                  />
                   <Stack gap={0} style={{ minWidth: 0, flex: 1 }}>
                     <Text
                       size="sm"
@@ -61,10 +69,10 @@ export function UploadFile({ onClose }: { onClose: () => void }) {
                         whiteSpace: 'nowrap',
                       }}
                     >
-                      {file.name}
+                      {upload.name}
                     </Text>
                     <Text size="xs" c="dimmed">
-                      {file.createdAt ? format(file.createdAt) : ''}
+                      {upload.createdAt ? format(upload.createdAt) : ''}
                     </Text>
                   </Stack>
                 </Group>
@@ -73,10 +81,10 @@ export function UploadFile({ onClose }: { onClose: () => void }) {
                   color="red"
                   onClick={(e) => {
                     e.stopPropagation();
-                    void deleteUpload.mutate({ id: file.id });
+                    void deleteUpload.mutate({ id: upload.id });
                   }}
-                  loading={deleteUpload.isPending && deleteUpload.variables.id === file.id}
-                  disabled={deleteUpload.isPending && deleteUpload.variables.id === file.id}
+                  loading={deleteUpload.isPending && deleteUpload.variables.id === upload.id}
+                  disabled={deleteUpload.isPending && deleteUpload.variables.id === upload.id}
                 >
                   <Icon icon="lucide:trash" height={16} />
                 </ActionIcon>

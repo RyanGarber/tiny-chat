@@ -189,6 +189,24 @@ export default router({
       return listFilesInChat(ctx.session.user, input.chatId, input.uploadIds);
     }),
 
+  findFilesInUploads: procedure
+    .input(z.object({ files: z.array(z.object({ uploadId: z.cuid2(), uploadName: z.string() })) }))
+    .query(async ({ ctx, input }) => {
+      return await Promise.all(
+        input.files.map((file) =>
+          globalThis.prisma.file.findFirst({
+            where: {
+              userId: ctx.session.user.id,
+              uploadId: file.uploadId,
+              path: {
+                equals: [file.uploadName],
+              },
+            },
+          }),
+        ),
+      );
+    }),
+
   findFileInChat: procedure
     .input(
       z.object({ chatId: z.cuid2(), uploadId: z.cuid2().nullable(), path: z.array(z.string()) }),

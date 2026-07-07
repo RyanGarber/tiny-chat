@@ -125,7 +125,11 @@ const Message = memo(
                         color="var(--mantine-color-dimmed)"
                       />
                       <FileThumbnails
-                        list={uploads.map((u) => ({ name: u.name, image: u.thumbnail }))}
+                        uploads={uploads.map((u) => ({
+                          id: u.id,
+                          name: u.name,
+                          thumbnail: u.thumbnail,
+                        }))}
                         size={22}
                       />
                     </Group>

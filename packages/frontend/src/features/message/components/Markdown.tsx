@@ -1,11 +1,5 @@
 import { memo, useMemo } from 'react';
-import {
-  AnimateOptions,
-  type Components,
-  defaultRemarkPlugins,
-  type PluginConfig,
-  Streamdown,
-} from 'streamdown';
+import { AnimateOptions, type Components, defaultRemarkPlugins, type PluginConfig, Streamdown, } from 'streamdown';
 import { Typography, TypographyProps } from '@mantine/core';
 import RemarkBreaks from 'remark-breaks';
 import RemarkDirective from 'remark-directive';
@@ -117,6 +111,7 @@ export const Markdown = memo(
             remarkPlugins={REMARK_PLUGINS}
             shikiTheme={[codeTheme.data, codeTheme.data]}
             mermaid={{ config: { theme: theme.data === 'dark' ? 'dark' : 'neutral' } }}
+            className="selectable"
           >
             {content}
           </Streamdown>

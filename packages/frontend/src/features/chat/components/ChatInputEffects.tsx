@@ -103,11 +103,11 @@ export default function ChatInputEffects({
               isAny={isAny}
             />
           )}
-          {uploads.map((file, i) => (
+          {uploads.map((upload, i) => (
             <ChatInputEffect
               content={
                 <FileThumbnails
-                  list={[{ name: file.name, image: file.thumbnail }]}
+                  uploads={[{ id: upload.id, name: upload.name, thumbnail: upload.thumbnail }]}
                   width={inputMaxWidth}
                   maxHeight={chatContainerHeight}
                   size={22}

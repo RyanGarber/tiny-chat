@@ -22,7 +22,6 @@ import type {
   zUpdateMemoryInput,
   zUpdateMemoryOutput,
 } from '@tiny-chat/backend/src/tools/memories';
-import { Markdown } from './Markdown';
 import { format } from 'timeago.js';
 import {
   zAddActionInput,
@@ -53,6 +52,8 @@ import {
   mimeTypeFromExtension,
   pathName,
 } from '@tiny-chat/shared/src/utils/files.ts';
+import { Code } from '@/features/message/components/Components.tsx';
+import { BundledLanguage } from 'streamdown';
 
 const FZ = '14px';
 
@@ -84,9 +85,11 @@ export const ToolCall = memo(
           <Stack>
             {(toolResult?.value[0].value as zSearchWebOutput).map((result, i) => (
               <Box key={i}>
-                <Text fw={500} fz={FZ}>
-                  {result.title}
-                </Text>
+                {result.title && (
+                  <Text fw={500} fz={FZ}>
+                    {result.title}
+                  </Text>
+                )}
                 <Anchor
                   truncate="end"
                   href={result.url}
@@ -123,6 +126,11 @@ export const ToolCall = memo(
         const output = toolResult.value[0].value as zViewWebOutput;
         details = (
           <Stack>
+            {output.title && (
+              <Text fw={500} fz={FZ}>
+                {output.title}
+              </Text>
+            )}
             <Anchor
               fw={500}
               fz={FZ}
@@ -135,10 +143,7 @@ export const ToolCall = memo(
             >
               {output.url}
             </Anchor>
-            <Markdown
-              source={`\`\`\` markdown\n${output.content ?? ''}\n\`\`\``}
-              typographyProps={{ style: { fontSize: 10 } }}
-            />
+            <Code language="markdown" code={output.content} lineNumbers={false} />
           </Stack>
         );
       }
@@ -312,8 +317,15 @@ export const ToolCall = memo(
         } else if (isTextAdjacent(toolResult?.value[0].mime)) {
           const text = decodeTextLossy(toolResult?.value[0].data, toolResult?.value[0].mime);
           content = (
-            <Markdown
-              source={`\`\`\`${mimeExtension(toolResult?.value[0].mime, toolResult?.value[0].name)}\n${text}`}
+            <Code
+              filename={toolResult?.value[0].name}
+              language={
+                mimeExtension(
+                  toolResult?.value[0].mime,
+                  toolResult?.value[0].name,
+                ) as BundledLanguage
+              }
+              code={text}
             />
           );
         }
@@ -345,8 +357,12 @@ export const ToolCall = memo(
             <Text fw={500} fz={FZ}>
               {input.path}
             </Text>
-            <Markdown
-              source={`\`\`\`${mimeExtension(mimeTypeFromExtension(input.path) ?? 'text/plain')}\n${input.content}`}
+            <Code
+              filename={pathName(input.path)}
+              language={
+                mimeExtension(mimeTypeFromExtension(input.path), input.path) as BundledLanguage
+              }
+              code={input.content}
             />
           </Stack>
         );
@@ -426,8 +442,9 @@ export const ToolCall = memo(
           stderr ? `# stderr\n${stderr.trim()}` : '',
         ].filter(Boolean);
         details = (
-          <Markdown
-            source={`\`\`\`shell\n# stdin\n${(toolCall.args as zShellExecInput).command.trim()}\n\n${output.join('\n\n')}\n\`\`\``}
+          <Code
+            language="bash"
+            code={`# stdin\n${(toolCall.args as zShellExecInput).command.trim()}\n\n${output.join('\n\n')}`}
           />
         );
       }
@@ -442,7 +459,12 @@ export const ToolCall = memo(
           gap="xs"
           wrap="nowrap"
         >
-          <Icon icon="lucide:wrench" height={18} color="var(--mantine-color-dimmed)" />
+          <Icon
+            icon="lucide:wrench"
+            height={18}
+            style={{ minWidth: 18 }}
+            color="var(--mantine-color-dimmed)"
+          />
           <Text truncate="end" fz={FZ} c={toolResult?.error ? 'red' : undefined}>
             {status ?? (
               <>
@@ -464,9 +486,9 @@ export const ToolCall = memo(
               {details ?? (
                 <Stack>
                   <Text fz={FZ}>Input</Text>
-                  <JsonTree data={toolCall.args as unknown} withCopyToClipboard />
+                  <JsonTree data={toolCall.args as unknown} withExpandAll withCopyToClipboard />
                   <Text fz={FZ}>Output</Text>
-                  <JsonTree data={toolResult?.value} withCopyToClipboard />
+                  <JsonTree data={toolResult?.value} withExpandAll withCopyToClipboard />
                 </Stack>
               )}
             </Box>

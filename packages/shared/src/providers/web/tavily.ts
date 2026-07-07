@@ -53,6 +53,9 @@ export const Tavily: WebProvider = {
     if (data.failed_results?.length)
       throw new Error((data.failed_results[0] as { error: string }).error);
 
-    return (data.results as { raw_content: string }[])[0].raw_content;
+    return (data.results as { url: string; raw_content: string }[]).map((result) => ({
+      content: result.raw_content,
+      url: result.url,
+    }))[0];
   },
 };

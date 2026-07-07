@@ -1,20 +1,24 @@
 import { memo, useMemo } from 'react';
-import { AnimateOptions, type Components, defaultRemarkPlugins, type PluginConfig, Streamdown, } from 'streamdown';
-import { Typography, TypographyProps } from '@mantine/core';
+import {
+  AnimateOptions,
+  type Components,
+  defaultRemarkPlugins,
+  type PluginConfig,
+  Streamdown,
+} from 'streamdown';
+import { Box, BoxProps } from '@mantine/core';
 import RemarkBreaks from 'remark-breaks';
 import RemarkDirective from 'remark-directive';
 import { visit } from 'unist-util-visit';
 import {
   BlockquoteComponent,
   CiteComponent,
-  DiffRenderer,
   LinkComponent,
-  TableComponent,
 } from '@/features/message/components/MarkdownComponents.tsx';
 import { MarkdownContext } from '@/utils/data.ts';
 import { createMathPlugin } from '@streamdown/math';
 import { mermaid } from '@streamdown/mermaid';
-import { code } from '@streamdown/code';
+import { createCodePlugin } from '@streamdown/code';
 import { useThemes } from '@/features/settings/hooks/useThemes.ts';
 import 'katex/dist/katex.min.css';
 import { Root } from 'mdast';
@@ -23,7 +27,6 @@ import { xmlToDirective } from '@tiny-chat/shared/src/utils/text.ts';
 const markdownComponents: Components = {
   blockquote: BlockquoteComponent,
   a: LinkComponent,
-  table: TableComponent,
   cite: CiteComponent,
 };
 
@@ -54,13 +57,6 @@ const REMARK_PLUGINS = [
   },
 ];
 
-const PLUGINS: PluginConfig = {
-  math: createMathPlugin({ singleDollarTextMath: false }),
-  mermaid,
-  code,
-  renderers: [{ language: 'diff', component: DiffRenderer }],
-};
-
 const ANIMATE_OPTIONS: AnimateOptions = {
   animation: 'blurIn',
   duration: 150,
@@ -72,42 +68,51 @@ const ANIMATE_OPTIONS: AnimateOptions = {
 export const Markdown = memo(
   ({
     source,
-    typographyProps,
+    boxProps,
     context = {
-      webSearchResults: [],
-      memories: [],
-      actions: [],
+      webReferences: [],
+      memoryReferences: [],
+      actionReferences: [],
       isGenerating: false,
     },
   }: {
     source: string;
-    typographyProps?: TypographyProps;
+    boxProps?: BoxProps;
     context?: MarkdownContext;
   }) => {
     const { codeTheme, theme } = useThemes();
 
     const props = useMemo(
       () => ({
-        ...typographyProps,
-        style: { overflowWrap: 'break-word' as const, ...typographyProps?.style },
+        ...boxProps,
+        style: { overflowWrap: 'break-word' as const, ...boxProps?.style },
       }),
-      [typographyProps],
+      [boxProps],
     );
 
     const content = useMemo(() => {
       return xmlToDirective(source, ['ref']);
     }, [source]);
 
+    const plugins = useMemo<PluginConfig>(
+      () => ({
+        math: createMathPlugin({ singleDollarTextMath: false }),
+        mermaid,
+        code: createCodePlugin({ themes: [codeTheme.data, codeTheme.data] }),
+      }),
+      [codeTheme.data],
+    );
+
     return (
       <MarkdownContext.Provider value={context}>
-        <Typography {...props}>
+        <Box {...props}>
           <Streamdown
             animated={ANIMATE_OPTIONS}
             isAnimating={context.isGenerating}
             mode={context.isGenerating ? 'streaming' : 'static'}
             components={markdownComponents}
             allowedTags={CUSTOM_TAGS}
-            plugins={PLUGINS}
+            plugins={plugins}
             remarkPlugins={REMARK_PLUGINS}
             shikiTheme={[codeTheme.data, codeTheme.data]}
             mermaid={{ config: { theme: theme.data === 'dark' ? 'dark' : 'neutral' } }}
@@ -115,15 +120,15 @@ export const Markdown = memo(
           >
             {content}
           </Streamdown>
-        </Typography>
+        </Box>
       </MarkdownContext.Provider>
     );
   },
   (prev, next) =>
     prev.source === next.source &&
-    prev.typographyProps === next.typographyProps &&
+    prev.boxProps === next.boxProps &&
     prev.context?.isGenerating === next.context?.isGenerating &&
-    prev.context?.webSearchResults === next.context?.webSearchResults &&
-    prev.context?.memories === next.context?.memories &&
-    prev.context?.actions === next.context?.actions, // TODO - value comparison
+    prev.context?.webReferences === next.context?.webReferences &&
+    prev.context?.memoryReferences === next.context?.memoryReferences &&
+    prev.context?.actionReferences === next.context?.actionReferences,
 );

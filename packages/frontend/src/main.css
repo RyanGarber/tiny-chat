@@ -207,48 +207,16 @@ body {
   outline: 0 solid transparent !important;
 }
 
-.mantine-Typography-root .ignore-typography {
-  all: revert;
+[data-streamdown="table"] {
+  min-width: 300px;
 }
 
-.mantine-Typography-root :not(pre) > code {
-  font-size: inherit;
-  background: color-mix(in srgb, var(--tc-surface) 25%, transparent 75%);
+[data-mantine-color-scheme='dark'] [data-streamdown="table"] th {
+  background: color-mix(in srgb, var(--tc-surface) 75%, rgba(255, 255, 255, 0.01) 25%);
 }
 
-[data-mantine-color-scheme='dark'] .mantine-Typography-root :not(pre) > code {
-  background: color-mix(in srgb, var(--tc-surface), rgba(255, 255, 255, 0.1));
-}
-
-.mantine-Typography-root .ignore-typography.mantine-Blockquote-root {
-  position: relative;
-  margin: 0;
-  border-inline-start: 3px solid var(--mantine-color-blue-filled);
-  border-start-end-radius: var(--mantine-radius-default);
-  border-end-end-radius: var(--mantine-radius-default);
-  background: rgba(25, 113, 194, 0.06);
-  padding: calc(var(--mantine-spacing-xl) / 4) calc(2.375rem * var(--mantine-scale) / 2);
-}
-
-.mantine-Typography-root table {
-  background: color-mix(in srgb, var(--tc-surface) 80%, transparent 20%);
-  border-radius: var(--mantine-radius-lg);
-}
-
-.mantine-Typography-root table th {
-  background: color-mix(in srgb, var(--tc-surface) 50%, rgba(0, 0, 0, 0.01) 50%);
-}
-
-[data-mantine-color-scheme='dark'] .mantine-Typography-root table th {
-  background: color-mix(in srgb, var(--tc-surface) 50%, rgba(255, 255, 255, 0.01) 50%);
-}
-
-.mantine-Typography-root table th:first-child {
-  border-start-start-radius: var(--mantine-radius-lg);
-}
-
-.mantine-Typography-root table th:last-child {
-  border-start-end-radius: var(--mantine-radius-lg);
+[data-streamdown="code-block-body"] {
+  padding: 10px 5px !important;
 }
 
 /* ── Vidstack theme overrides ─────────────────────────────────── */
@@ -375,6 +343,10 @@ table[class*='react-diff'] {
   padding: 0 !important;
   width: 100% !important;
   text-align: center !important;
+}
+
+[class*='react-diff'][class*='-content'] {
+  width: 100% !important;
 }
 
 [data-streamdown='code-block'] {

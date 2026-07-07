@@ -1,17 +1,14 @@
 import { Brave } from './brave.ts';
 import type { zUser } from '../../types/user.ts';
+import type { zWebContext } from '../../types/web.ts';
 import type { BaseProvider } from '../index.ts';
 import { Tavily } from './tavily.ts';
 
 export interface WebProvider extends BaseProvider {
   features: ('search' | 'view')[];
   check: (user: zUser) => Promise<boolean>;
-  search: (
-    user: zUser,
-    query: string,
-    maxResults: number,
-  ) => Promise<{ title: string; content: string; url: string }[]>;
-  view: (user: zUser, url: string) => Promise<string>;
+  search: (user: zUser, query: string, maxResults: number) => Promise<zWebContext[]>;
+  view: (user: zUser, url: string) => Promise<zWebContext>;
 }
 
 export const webProviders: WebProvider[] = [Brave, Tavily];

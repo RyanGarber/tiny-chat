@@ -1,16 +1,5 @@
 import { useMessagingStore } from '@/features/chat/stores/useMessagingStore';
-import {
-  ActionIcon,
-  Alert,
-  Box,
-  Button,
-  Group,
-  Image,
-  Portal,
-  Stack,
-  Text,
-  Transition,
-} from '@mantine/core';
+import { ActionIcon, Alert, Box, Button, Group, Image, Portal, Stack, Text, Transition, } from '@mantine/core';
 import { type CSSProperties, memo, ReactNode, useMemo } from 'react';
 import { useMessageSelection } from '@/features/message/hooks/useMessageSelection';
 import { Author, MessageState, zDataPart } from '@tiny-chat/shared/src/types/chat.ts';
@@ -19,11 +8,7 @@ import { Markdown } from '@/features/message/components/Markdown';
 import { Icon } from '@iconify/react';
 import { ToolCallInput } from '@/features/message/components/ToolCallInput';
 import { MediaPlayer, MediaProvider } from '@vidstack/react';
-import {
-  DefaultAudioLayout,
-  defaultLayoutIcons,
-  DefaultVideoLayout,
-} from '@vidstack/react/player/layouts/default';
+import { DefaultAudioLayout, defaultLayoutIcons, DefaultVideoLayout, } from '@vidstack/react/player/layouts/default';
 import { GenerateService } from '@/features/message/services/GenerateService';
 import { useMessageStream } from '@/features/message/hooks/useStreaming';
 import { useMessages } from '@/features/message/hooks/useMessages';
@@ -37,7 +22,7 @@ import { useSkills } from '@/features/input/hooks/useSkills';
 import { Thinking } from './Thinking';
 import { ToolCall } from './ToolCall';
 import { SHADOW } from '@/utils/theme';
-import { zSearchWebOutput } from '@tiny-chat/backend/src/tools/web.ts';
+import { SearchWeb, ViewWeb, zSearchWebOutput, zViewWebOutput, } from '@tiny-chat/backend/src/tools/web.ts';
 
 export const MessageBodyContent = memo(
   ({
@@ -73,18 +58,23 @@ export const MessageBodyContent = memo(
       [messages.data],
     );
 
-    const webSearchResults = useMemo(
+    const webContext = useMemo(
       () =>
         messageList.flatMap((m) =>
           m.data
             .flat()
             .filter(
               (p): p is Extract<zDataPart, { type: 'toolResult' }> =>
-                p.type === 'toolResult' && p.name === 'search_web' && !p.error,
+                p.type === 'toolResult' && !p.error,
             )
-            .map((p) => p.value[0])
-            .filter((p) => p.type === 'json')
-            .flatMap((p) => p.value as zSearchWebOutput),
+            .flatMap((p) => {
+              if (p.name === SearchWeb.name && p.value[0]?.type === 'json') {
+                return p.value[0].value as zSearchWebOutput;
+              } else if (p.name === ViewWeb.name && p.value[0]?.type === 'json') {
+                return p.value[0].value as zViewWebOutput;
+              }
+              return [];
+            }),
         ),
       [messageList],
     );
@@ -102,7 +92,7 @@ export const MessageBodyContent = memo(
         <Box className="selectable">
           <Markdown
             source={texts(message.data, '\n')}
-            typographyProps={{ style: { maxWidth: containerWidth - 40 } }}
+            boxProps={{ style: { maxWidth: containerWidth - 40 } }}
           />
         </Box>
       );
@@ -125,7 +115,6 @@ export const MessageBodyContent = memo(
           end++;
         }
 
-        //if (groupedThoughts.filter((t) => t.trim() !== '').length === 0) {
         const isThinkingActive = live.state.thinking && end === parts.length - 1;
         renderedParts.push(
           <Thinking
@@ -133,14 +122,13 @@ export const MessageBodyContent = memo(
             thoughts={groupedThoughts}
             isThinking={isThinkingActive}
             context={{
-              webSearchResults,
-              memories: memories.data ?? [],
-              actions: actions.data ?? [],
-              isGenerating,
+              webReferences: webContext,
+              memoryReferences: memories.data ?? [],
+              actionReferences: actions.data ?? [],
+              isGenerating: isGenerating,
             }}
           />,
         );
-        //}
 
         i = end;
       } else if (part.type === 'toolCall') {
@@ -171,10 +159,10 @@ export const MessageBodyContent = memo(
               key={i}
               source={part.value}
               context={{
-                webSearchResults,
-                memories: memories.data ?? [],
-                actions: actions.data ?? [],
-                isGenerating,
+                webReferences: webContext,
+                memoryReferences: memories.data ?? [],
+                actionReferences: actions.data ?? [],
+                isGenerating: isGenerating,
               }}
             />,
           );
@@ -300,7 +288,6 @@ export const MessageBodyContent = memo(
           >
             {(styles) => (
               <ActionIcon
-                variant="gradient"
                 size={32}
                 style={{
                   position: 'fixed',

@@ -1,9 +1,10 @@
 import { useMessagingStore } from '@/features/chat/stores/useMessagingStore';
-import { ActionIcon, Blockquote, Box, Group, Text as MantineText } from '@mantine/core';
+import { ActionIcon, Box, Group } from '@mantine/core';
 import { BaseText, Node, Range, Text, Transforms } from 'slate';
 import { ReactEditor, RenderElementProps, RenderLeafProps } from 'slate-react';
 import { tokenize } from '@/features/slate/tokenizer';
 import { Icon } from '@iconify/react';
+import { Blockquote } from '@/features/message/components/Components.tsx';
 
 export function renderElement(props: RenderElementProps) {
   const editor = useMessagingStore.getState().editor!;
@@ -13,23 +14,15 @@ export function renderElement(props: RenderElementProps) {
       const modelName = (props.element as unknown as { model: string }).model as string | undefined;
       return (
         <Blockquote
+          model={modelName}
           contentEditable={false}
-          p={10}
-          mx={0}
-          my={10}
-          fz="1em"
           style={{
             userSelect: 'none',
             cursor: 'default',
           }}
         >
-          {modelName && (
-            <Group gap={5} c="dimmed" mb={4}>
-              <Icon icon="lucide:message-square-quote" height={14} />
-              <MantineText size="xs">{modelName}</MantineText>
-            </Group>
-          )}
-          <div style={{ display: 'flex' }}>
+          <Group>
+            <Box flex={1}>{(props.element.children[0] as BaseText).text}</Box>
             <ActionIcon
               size={24}
               variant="subtle"
@@ -40,8 +33,7 @@ export function renderElement(props: RenderElementProps) {
             >
               <Icon icon="lucide:x" height={18} />
             </ActionIcon>
-            <Box pl={5}>{(props.element.children[0] as BaseText).text}</Box>
-          </div>
+          </Group>
         </Blockquote>
       );
     }

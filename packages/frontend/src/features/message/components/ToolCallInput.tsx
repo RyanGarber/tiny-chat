@@ -26,7 +26,6 @@ import {
   zReplyQuestionOutput,
 } from '@tiny-chat/shared/src/tools/questions.ts';
 import { Markdown } from '@/features/message/components/Markdown';
-import { DIFF_MARKER } from '@/utils/data.ts';
 import type { Tool } from '@tiny-chat/shared/src/types/tool.ts';
 import type { z } from 'zod';
 import { invoke, trpc } from '@/utils/api.ts';
@@ -34,7 +33,16 @@ import { GLASS_STYLE } from '@/utils/theme.ts';
 import { toolCallRejection, useToolInput } from '../hooks/useToolInput';
 import { Icon } from '@iconify/react';
 import { zShellExecInput, zWriteFileInput } from '@tiny-chat/shared/src/tools/system.ts';
-import { decodeTextLossy, fromChatUri, mimeType, pathName, } from '@tiny-chat/shared/src/utils/files.ts';
+import {
+  decodeTextLossy,
+  fromChatUri,
+  mimeExtension,
+  mimeType,
+  mimeTypeFromExtension,
+  pathName,
+} from '@tiny-chat/shared/src/utils/files.ts';
+import { Code, Diff } from '@/features/message/components/Components.tsx';
+import { BundledLanguage } from 'streamdown';
 
 export const ToolCallInput = memo(
   ({
@@ -100,13 +108,15 @@ export const ToolCallInput = memo(
 
     const input: ReactNode | undefined = useMemo(() => {
       if (part.name === 'shell_exec' && !result) {
-        return (
-          <Markdown source={`\`\`\`shell\n${(part.args as zShellExecInput).command}\n\`\`\``} />
-        );
+        return <Code language="bash" code={(part.args as zShellExecInput).command} />;
       } else if (part.name === 'write_file' && !result) {
+        const args = part.args as zWriteFileInput;
         return (
-          <Markdown
-            source={`\`\`\`diff ${(part.args as zWriteFileInput).path.split('/').slice(-1)[0]}\n${writeFileContents}${DIFF_MARKER}${(part.args as zWriteFileInput).content.replace(/```/gm, `\u200B\`\`\``)}\n\`\`\``}
+          <Diff
+            filename={pathName(args.path)}
+            language={mimeExtension(mimeTypeFromExtension(args.path), args.path) as BundledLanguage}
+            oldCode={writeFileContents}
+            newCode={args.content}
           />
         );
       } else if (part.name === 'reply_question') {

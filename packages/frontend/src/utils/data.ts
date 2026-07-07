@@ -2,20 +2,21 @@ import { createContext } from 'react';
 import type { useMemories } from '@/features/chat/hooks/useMemories.ts';
 import type { useActions } from '@/features/chat/hooks/useActions.ts';
 import type { MessageState } from '@tiny-chat/shared/src/types/chat.ts';
-import type { zSearchWebOutput } from '@tiny-chat/backend/src/tools/web.ts';
+import type { zWebContext } from '@tiny-chat/shared/src/types/web.ts';
 
 export const DIFF_MARKER = '\uE001';
 
 export interface MarkdownContext {
-  webSearchResults: zSearchWebOutput;
-  memories: NonNullable<ReturnType<typeof useMemories>['data']>;
-  actions: NonNullable<ReturnType<typeof useActions>['data']>;
+  webReferences: zWebContext[];
+  memoryReferences: NonNullable<ReturnType<typeof useMemories>['data']>;
+  actionReferences: NonNullable<ReturnType<typeof useActions>['data']>;
   isGenerating: boolean;
 }
+
 export const MarkdownContext = createContext<MarkdownContext>({
-  webSearchResults: [],
-  memories: [],
-  actions: [],
+  webReferences: [],
+  memoryReferences: [],
+  actionReferences: [],
   isGenerating: false,
 });
 

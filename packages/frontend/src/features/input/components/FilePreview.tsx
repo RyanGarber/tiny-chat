@@ -8,8 +8,9 @@ import {
   SegmentedControl,
   Stack,
 } from '@mantine/core';
-import { Markdown } from '@/features/message/components/Markdown.tsx';
 import { decodeTextLossy, mimeExtension } from '@tiny-chat/shared/src/utils/files.ts';
+import { Code } from '@/features/message/components/Components.tsx';
+import { BundledLanguage } from 'streamdown';
 
 export interface FilePreviewItem {
   name: string;
@@ -51,9 +52,12 @@ export function FilePreview({
                   w="auto"
                 />
               ) : (
-                <Markdown
-                  typographyProps={{ styles: { root: { maxWidth: '100%' } } }}
-                  source={`\`\`\`${mimeExtension(items[selected].mime)}\n${decodeTextLossy(items[selected].data, items[selected].mime)}\n\`\`\``}
+                <Code
+                  filename={items[selected].name}
+                  language={
+                    mimeExtension(items[selected].mime, items[selected].name) as BundledLanguage
+                  }
+                  code={decodeTextLossy(items[selected].data, items[selected].mime)}
                 />
               )}
             </Group>

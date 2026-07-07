@@ -118,8 +118,8 @@ export function mimeTypeFromExtension(filename?: string) {
   return filename ? mime.getType(filename) : undefined;
 }
 
-export function mimeExtension(mimeType: string, filename?: string) {
-  return mime.getExtension(mimeType) ?? filename?.split('.').pop() ?? '';
+export function mimeExtension(mimeType?: string | null, filename?: string) {
+  return (mimeType ? mime.getExtension(mimeType) : null) ?? filename?.split('.').pop() ?? '';
 }
 
 const TEXT_MIMES = new Set([

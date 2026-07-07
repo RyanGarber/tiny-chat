@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Tool, ToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
+import { zWebContext } from '@tiny-chat/shared/src/types/web.ts';
 import { getBestWebProvider } from '@tiny-chat/shared/src/providers/web/index.ts';
 
 export const zSearchWebInput = z.object({
@@ -7,13 +8,7 @@ export const zSearchWebInput = z.object({
 });
 export type zSearchWebInput = z.infer<typeof zSearchWebInput>;
 
-export const zSearchWebOutput = z.array(
-  z.object({
-    title: z.string(),
-    content: z.string(),
-    url: z.string(),
-  }),
-);
+export const zSearchWebOutput = z.array(zWebContext);
 export type zSearchWebOutput = z.infer<typeof zSearchWebOutput>;
 
 export const SearchWeb: Tool<typeof zSearchWebInput, typeof zSearchWebOutput> = {
@@ -40,10 +35,10 @@ export const zViewWebInput = z.object({
 });
 export type zViewWebInput = z.infer<typeof zViewWebInput>;
 
-export const zViewWebOutput = z.object({ url: z.url(), content: z.string() });
+export const zViewWebOutput = zWebContext;
 export type zViewWebOutput = z.infer<typeof zViewWebOutput>;
 
-const ViewWeb: Tool<typeof zViewWebInput, typeof zViewWebOutput> = {
+export const ViewWeb: Tool<typeof zViewWebInput, typeof zViewWebOutput> = {
   name: 'view_web',
   description: 'View the contents of webpages.',
   input: zViewWebInput.toJSONSchema(),
@@ -51,8 +46,7 @@ const ViewWeb: Tool<typeof zViewWebInput, typeof zViewWebOutput> = {
   run: async ({ user }, params) => {
     try {
       const provider = getBestWebProvider(user, 'view');
-      const content = await provider.view(user, params.url);
-      return [{ type: 'json', value: { url: params.url, content } }];
+      return [{ type: 'json', value: await provider.view(user, params.url) }];
     } catch (error) {
       console.warn(`Failed to view ${params.url} with provider, falling back to r.jina.ai:`, error);
       const response = await fetch(`https://r.jina.ai/${params.url}`);

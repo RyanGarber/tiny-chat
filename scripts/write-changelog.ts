@@ -18,6 +18,12 @@ const changelogFile = path.resolve(path.dirname(fileURLToPath(import.meta.url)),
 const PRESET_CONFIG = {
   preset: 'conventionalcommits',
   presetConfig: { preMajor: true },
+  releaseRules: [
+    { breaking: true, release: 'minor' },
+    { type: 'feat', release: 'patch' },
+    { type: 'fix', release: 'patch' },
+    { type: 'perf', release: 'patch' },
+  ],
 };
 
 const CONVENTIONAL_HEADER = /^(\w+)(\(.+\))?!?: .+$/;

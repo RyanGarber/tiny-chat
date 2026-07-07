@@ -1,6 +1,6 @@
 import { setHashbang } from '@/core/hooks/useHashbang';
 import { useChatStore } from '@/features/chat/stores/useChatStore';
-import { useConfigStore } from '@/features/input/stores/useConfigStore';
+import { useConfigStore } from '@/features/uploads/stores/useConfigStore';
 
 export const ChatService = {
   setChatId: (id: string | null) => {

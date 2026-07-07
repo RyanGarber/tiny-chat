@@ -1,7 +1,7 @@
 import { ActionIcon, Box, Card, Group, Input, Modal, Progress, Stack, Text } from '@mantine/core';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { WebLLMConfig, WebLLMProvider } from '../services/WebLLMProvider';
+import { WebLLMConfig, WebLLMProvider } from '@/features/config/services/WebLLMProvider.ts';
 import { auth } from '@/utils/api.ts';
 import { GLASS_STYLE } from '@/utils/theme.ts';
 import { Icon } from '@iconify/react';

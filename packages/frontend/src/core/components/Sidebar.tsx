@@ -16,7 +16,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useChatStore } from '@/features/chat/stores/useChatStore';
 import { ChatService } from '@/features/chat/services/ChatService.ts';
 import { useRetrieval } from '@/features/settings/hooks/useRetrieval.ts';
-import { ProviderService } from '@/features/provider/services/ProviderService.ts';
+import { ProviderService } from '@/features/config/services/ProviderService.ts';
 import { embed } from '@tiny-chat/shared/src/services/chat/embed.ts';
 
 export default function Sidebar() {

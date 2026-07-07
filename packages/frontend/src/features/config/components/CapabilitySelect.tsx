@@ -12,24 +12,24 @@ import {
   Text,
   TextInput,
 } from '@mantine/core';
-import { zMCPServers } from '@tiny-chat/shared/src/types/user';
-import { useConfig } from '../hooks/useConfig';
-import { useMcpServerSettings } from '@/features/settings/hooks/useMcpServerSettings';
-import { mcpToolsQueryKey, useTools } from '../hooks/useTools';
+import { zMCPServers } from '@tiny-chat/shared/src/types/user.ts';
+import { useConfig } from '@/features/config/hooks/useConfig.ts';
+import { useMcpServerSettings } from '@/features/settings/hooks/useMcpServerSettings.ts';
+import { mcpToolsQueryKey, useTools } from '@/features/config/hooks/useTools.ts';
 import { useIsFetching } from '@tanstack/react-query';
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
-import { localSkillFilesQueryKey, useSkills } from '../hooks/useSkills';
-import Dropzone from '@/features/input/components/Dropzone';
+import { localSkillFilesQueryKey, useSkills } from '@/features/uploads/hooks/useSkills.ts';
+import Dropzone from '@/features/uploads/components/Dropzone.tsx';
 import type { zTool, zToolGroup } from '@tiny-chat/shared/src/types/tool.ts';
 import type { zSkill } from '@tiny-chat/shared/src/types/skill.ts';
-import { useTauri } from '@/core/hooks/useTauri';
-import { precheckAllToolRequirements, scrubText } from '@tiny-chat/shared/src/utils';
-import { useProviders } from '../hooks/useProviders';
-import { useChatStore } from '@/features/chat/stores/useChatStore';
-import { auth } from '@/utils/api';
-import { useChat } from '@/features/chat/hooks/useChat';
-import { useLayoutStore } from '@/core/stores/useLayoutStore';
+import { useTauri } from '@/core/hooks/useTauri.ts';
+import { precheckAllToolRequirements, scrubText } from '@tiny-chat/shared/src/utils.ts';
+import { useProviders } from '@/features/config/hooks/useProviders.ts';
+import { useChatStore } from '@/features/chat/stores/useChatStore.ts';
+import { auth } from '@/utils/api.ts';
+import { useChat } from '@/features/chat/hooks/useChat.ts';
+import { useLayoutStore } from '@/core/stores/useLayoutStore.tsx';
 import { ZodError } from 'zod';
 import { fromChatUri } from '@tiny-chat/shared/src/utils/files.ts';
 import { GLASS_STYLE } from '@/utils/theme.ts';

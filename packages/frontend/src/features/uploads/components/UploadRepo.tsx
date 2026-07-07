@@ -18,7 +18,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { GLASS_STYLE } from '@/utils/theme.ts';
 import { useUploads } from '../hooks/useUploads';
 import Sentinel from '@/core/components/Sentinel';
-import { fetchNextEmbeddingBatch } from '@/features/provider/hooks/useEmbedding.ts';
+import { fetchNextEmbeddingBatch } from '@/features/config/hooks/useEmbedding.ts';
 
 export function UploadRepo({ onClose }: { onClose: () => void }) {
   // Logic from GitHub.tsx

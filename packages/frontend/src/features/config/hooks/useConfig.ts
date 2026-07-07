@@ -1,9 +1,9 @@
-import { useMessages } from '@/features/message/hooks/useMessages';
+import { useMessages } from '@/features/message/hooks/useMessages.ts';
 import { useLocalStorage } from '@mantine/hooks';
-import { zConfig } from '@tiny-chat/shared/src/types/chat';
+import { zConfig } from '@tiny-chat/shared/src/types/chat.ts';
 import { useCallback, useMemo } from 'react';
-import { useConfigStore } from '../stores/useConfigStore';
-import { useProviders } from './useProviders';
+import { useConfigStore } from '../../uploads/stores/useConfigStore.ts';
+import { useProviders } from './useProviders.ts';
 
 export const useConfig = () => {
   const overrideConfig = useConfigStore((s) => s.overrideConfig);

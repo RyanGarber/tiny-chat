@@ -8,10 +8,10 @@ import {
 } from '@tiny-chat/shared/src/types/chat';
 import { useChatStore } from '../stores/useChatStore';
 import { GenerateService } from '@/features/message/services/GenerateService';
-import { useProviders } from '@/features/input/hooks/useProviders';
-import { useSkills } from '@/features/input/hooks/useSkills';
-import { useTools } from '@/features/input/hooks/useTools';
-import { useConfig } from '@/features/input/hooks/useConfig';
+import { useProviders } from '@/features/config/hooks/useProviders.ts';
+import { useSkills } from '@/features/uploads/hooks/useSkills';
+import { useTools } from '@/features/config/hooks/useTools.ts';
+import { useConfig } from '@/features/config/hooks/useConfig.ts';
 import { serialize } from '@/features/slate/serializer';
 import { useRef } from 'react';
 import { auth, env, trpc } from '@/utils/api';
@@ -21,7 +21,7 @@ import { ChatService } from '../services/ChatService';
 import { scrubText, texts } from '@tiny-chat/shared/src/utils';
 import { embed } from '@tiny-chat/shared/src/services/chat/embed.ts';
 import { useRetrieval } from '@/features/settings/hooks/useRetrieval.ts';
-import { ProviderService } from '@/features/provider/services/ProviderService.ts';
+import { ProviderService } from '@/features/config/services/ProviderService.ts';
 
 export const sendMessageMutationKey = ['send-message'] as const;
 export const deleteMessageMutationKey = ['delete-message'] as const;

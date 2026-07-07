@@ -1,8 +1,8 @@
-import { queryClient } from '@/utils/api';
+import { queryClient } from '@/utils/api.ts';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { auth } from '../../../utils/api';
-import { ProviderService } from '@/features/provider/services/ProviderService';
-import type { zCache } from '@tiny-chat/shared/src/types/user';
+import { auth } from '../../../utils/api.ts';
+import { ProviderService } from '@/features/config/services/ProviderService.ts';
+import type { zCache } from '@tiny-chat/shared/src/types/user.ts';
 
 export const providerCacheQueryKey = ['cache', 'providers'] as const;
 export const providerCacheMutationKey = ['cache', 'providers'] as const;

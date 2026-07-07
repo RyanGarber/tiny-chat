@@ -23,7 +23,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { useLayoutStore } from '@/core/stores/useLayoutStore';
 import { zCache } from '@tiny-chat/shared/src/types/user.ts';
 import { zConfig } from '@tiny-chat/shared/src/types/chat.ts';
-import ModelSelect, { ModelMultiSelect } from '@/features/input/components/ModelSelect';
+import ModelSelect, { ModelMultiSelect } from '@/features/config/components/ModelSelect.tsx';
 import { Icon } from '@iconify/react';
 import Console from '@/core/components/Console';
 import { useHiddenModels } from '@/features/settings/hooks/useHiddenModels';
@@ -31,10 +31,13 @@ import { useInstructions } from '@/features/settings/hooks/useInstructions';
 import { useRetrieval } from '@/features/settings/hooks/useRetrieval';
 import { useProviderSettings } from '@/features/settings/hooks/useProviderSettings';
 import { useThemes } from '@/features/settings/hooks/useThemes';
-import { providerCacheMutationKey, useProviders } from '@/features/input/hooks/useProviders';
+import { providerCacheMutationKey, useProviders } from '@/features/config/hooks/useProviders.ts';
 import { codeThemesByTheme, GLASS_STYLE, INPUT_STYLE, THEMES } from '@/utils/theme';
 import { useIsMutating, useMutationState } from '@tanstack/react-query';
-import { runEmbeddingBatchMutationKey, useEmbedding } from '@/features/provider/hooks/useEmbedding';
+import {
+  runEmbeddingBatchMutationKey,
+  useEmbedding,
+} from '@/features/config/hooks/useEmbedding.ts';
 
 export default function SidebarSettings({
   children,

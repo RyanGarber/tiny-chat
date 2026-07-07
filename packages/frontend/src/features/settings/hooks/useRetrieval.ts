@@ -1,4 +1,4 @@
-import { fetchNextEmbeddingBatch } from '@/features/provider/hooks/useEmbedding';
+import { fetchNextEmbeddingBatch } from '@/features/config/hooks/useEmbedding.ts';
 import { auth, query, queryClient, trpc } from '@/utils/api';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { zSettings } from '@tiny-chat/shared/src/types/user';

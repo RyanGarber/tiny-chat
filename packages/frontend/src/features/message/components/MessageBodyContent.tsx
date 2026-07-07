@@ -1,5 +1,16 @@
 import { useMessagingStore } from '@/features/chat/stores/useMessagingStore';
-import { ActionIcon, Alert, Box, Button, Group, Image, Portal, Stack, Text, Transition, } from '@mantine/core';
+import {
+  ActionIcon,
+  Alert,
+  Box,
+  Button,
+  Group,
+  Image,
+  Portal,
+  Stack,
+  Text,
+  Transition,
+} from '@mantine/core';
 import { type CSSProperties, memo, ReactNode, useMemo } from 'react';
 import { useMessageSelection } from '@/features/message/hooks/useMessageSelection';
 import { Author, MessageState, zDataPart } from '@tiny-chat/shared/src/types/chat.ts';
@@ -8,7 +19,11 @@ import { Markdown } from '@/features/message/components/Markdown';
 import { Icon } from '@iconify/react';
 import { ToolCallInput } from '@/features/message/components/ToolCallInput';
 import { MediaPlayer, MediaProvider } from '@vidstack/react';
-import { DefaultAudioLayout, defaultLayoutIcons, DefaultVideoLayout, } from '@vidstack/react/player/layouts/default';
+import {
+  DefaultAudioLayout,
+  defaultLayoutIcons,
+  DefaultVideoLayout,
+} from '@vidstack/react/player/layouts/default';
 import { GenerateService } from '@/features/message/services/GenerateService';
 import { useMessageStream } from '@/features/message/hooks/useStreaming';
 import { useMessages } from '@/features/message/hooks/useMessages';
@@ -16,13 +31,18 @@ import { useChat } from '@/features/chat/hooks/useChat';
 import { useMemories } from '@/features/chat/hooks/useMemories';
 import { useActions } from '@/features/chat/hooks/useActions';
 import { useThemes } from '@/features/settings/hooks/useThemes';
-import { useTools } from '@/features/input/hooks/useTools';
-import { useProviders } from '@/features/input/hooks/useProviders';
-import { useSkills } from '@/features/input/hooks/useSkills';
+import { useTools } from '@/features/config/hooks/useTools.ts';
+import { useProviders } from '@/features/config/hooks/useProviders.ts';
+import { useSkills } from '@/features/uploads/hooks/useSkills';
 import { Thinking } from './Thinking';
 import { ToolCall } from './ToolCall';
 import { SHADOW } from '@/utils/theme';
-import { SearchWeb, ViewWeb, zSearchWebOutput, zViewWebOutput, } from '@tiny-chat/backend/src/tools/web.ts';
+import {
+  SearchWeb,
+  ViewWeb,
+  zSearchWebOutput,
+  zViewWebOutput,
+} from '@tiny-chat/backend/src/tools/web.ts';
 
 export const MessageBodyContent = memo(
   ({

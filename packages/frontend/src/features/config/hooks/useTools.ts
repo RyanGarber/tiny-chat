@@ -1,10 +1,10 @@
 import type { z } from 'zod';
-import { useMcpServerSettings } from '@/features/settings/hooks/useMcpServerSettings';
-import { query, trpc } from '@/utils/api';
+import { useMcpServerSettings } from '@/features/settings/hooks/useMcpServerSettings.ts';
+import { query, trpc } from '@/utils/api.ts';
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { Tool } from '@tiny-chat/shared/src/types/tool.ts';
-import { McpService } from '../services/McpService';
+import { McpService } from '../../uploads/services/McpService.ts';
 import frontend from '@/tools';
 import shared from '@tiny-chat/shared/src/tools';
 

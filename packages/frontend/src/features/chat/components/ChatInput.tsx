@@ -32,24 +32,24 @@ import {
 } from 'react';
 import { Editable, ReactEditor, RenderElementProps, RenderLeafProps, Slate } from 'slate-react';
 import { serialize } from '@/features/slate/serializer';
-import ModelSelect from '@/features/input/components/ModelSelect';
+import ModelSelect from '@/features/config/components/ModelSelect.tsx';
 import { Icon } from '@iconify/react';
 import { NodeEntry } from 'slate';
 import Upload, {
   FileMenuItem,
   RepositoryMenuItem,
   ScreenshotMenuItem,
-} from '@/features/input/components/Upload';
+} from '@/features/uploads/components/Upload';
 import { useChat } from '@/features/chat/hooks/useChat';
 import { StreamService } from '@/features/message/services/StreamService';
-import { useConfig } from '@/features/input/hooks/useConfig';
-import { CapabilitySelect } from '@/features/input/components/CapabilitySelect';
-import { useTools } from '@/features/input/hooks/useTools';
-import { useProviders } from '@/features/input/hooks/useProviders';
-import { useSkills } from '@/features/input/hooks/useSkills';
+import { useConfig } from '@/features/config/hooks/useConfig.ts';
+import { CapabilitySelect } from '@/features/config/components/CapabilitySelect.tsx';
+import { useTools } from '@/features/config/hooks/useTools.ts';
+import { useProviders } from '@/features/config/hooks/useProviders.ts';
+import { useSkills } from '@/features/uploads/hooks/useSkills';
 import { useHotkeys } from '@mantine/hooks';
 import { useIsMutating } from '@tanstack/react-query';
-import { uploadMutationKey, useUploads } from '@/features/input/hooks/useUploads';
+import { uploadMutationKey, useUploads } from '@/features/uploads/hooks/useUploads';
 import { useSend } from '../hooks/useMessaging';
 import { GenerateService } from '@/features/message/services/GenerateService';
 import { precheckAllToolRequirements } from '@tiny-chat/shared/src/utils';

@@ -2,7 +2,7 @@ import { ActionIcon, Box, Group } from '@mantine/core';
 import { ReactNode, RefObject } from 'react';
 import { useLayoutStore } from '@/core/stores/useLayoutStore';
 import { Icon } from '@iconify/react';
-import FileThumbnails from '@/features/input/components/FileThumbnails.tsx';
+import FileThumbnails from '@/features/uploads/components/FileThumbnails.tsx';
 import { useMessagingStore } from '@/features/chat/stores/useMessagingStore';
 import { scrubText, texts } from '@tiny-chat/shared/src/utils.ts';
 import { GLASS_STYLE, SHADOW } from '@/utils/theme.ts';

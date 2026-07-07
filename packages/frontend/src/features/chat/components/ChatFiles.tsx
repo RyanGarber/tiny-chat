@@ -22,7 +22,7 @@ import { Icon } from '@iconify/react';
 import { useChatStore } from '@/features/chat/stores/useChatStore.ts';
 import { useThemes } from '@/features/settings/hooks/useThemes.ts';
 import { theme } from '@/utils/icon.ts';
-import { FilePreview, FilePreviewItem } from '@/features/input/components/FilePreview.tsx';
+import { FilePreview, FilePreviewItem } from '@/features/uploads/components/FilePreview.tsx';
 
 type AllFilesData = Awaited<ReturnType<typeof listAllFilesInChat>>;
 type FileEntry = AllFilesData[string][number];

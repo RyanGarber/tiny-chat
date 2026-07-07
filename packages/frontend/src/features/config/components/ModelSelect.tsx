@@ -1,7 +1,7 @@
-import { TreeSelect, TreeSelectProps, type TreeNodeData } from '@mantine/core';
+import { type TreeNodeData, TreeSelect, TreeSelectProps } from '@mantine/core';
 import { DEFAULT_SKILLS, DEFAULT_TOOL_GROUPS, zConfig } from '@tiny-chat/shared/src/types/chat.ts';
-import { useHiddenModels } from '@/features/settings/hooks/useHiddenModels';
-import { useProviders } from '../hooks/useProviders';
+import { useHiddenModels } from '@/features/settings/hooks/useHiddenModels.ts';
+import { useProviders } from '@/features/config/hooks/useProviders.ts';
 import { useCallback, useMemo } from 'react';
 
 const getData = (

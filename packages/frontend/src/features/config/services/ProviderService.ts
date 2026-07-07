@@ -1,16 +1,16 @@
-import { isTauriWithAfm, trpc } from '@/utils/api';
+import { isTauriWithAfm, trpc } from '@/utils/api.ts';
 import { chatProviders } from '@tiny-chat/shared/src/providers/chat';
-import type { zUser } from '@tiny-chat/shared/src/types/user';
+import type { zUser } from '@tiny-chat/shared/src/types/user.ts';
 
 export const ProviderService = {
   getChatProviders: async (user: zUser) => {
     const providers = [...chatProviders];
     if (user.settings.useBrowserModels) {
-      const { WebLLMProvider } = await import('./WebLLMProvider');
+      const { WebLLMProvider } = await import('./WebLLMProvider.ts');
       providers.push(WebLLMProvider);
     }
     if (await isTauriWithAfm()) {
-      const { AFMProvider } = await import('./AFMProvider');
+      const { AFMProvider } = await import('./AFMProvider.ts');
       providers.push(AFMProvider);
     }
     return providers;
@@ -19,14 +19,14 @@ export const ProviderService = {
   getChatProviderCache: async (user: zUser) => {
     const { providers } = await trpc.user.getCache.query();
     if (user.settings.useBrowserModels) {
-      const { WebLLMProvider } = await import('./WebLLMProvider');
+      const { WebLLMProvider } = await import('./WebLLMProvider.ts');
       providers.chat.push({
         ...WebLLMProvider,
         models: await WebLLMProvider.getModels(user),
       });
     }
     if (await isTauriWithAfm()) {
-      const { AFMProvider } = await import('./AFMProvider');
+      const { AFMProvider } = await import('./AFMProvider.ts');
       providers.chat.push({
         ...AFMProvider,
         models: await AFMProvider.getModels(user),

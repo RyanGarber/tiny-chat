@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Avatar, Image, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { FilePreview, FilePreviewItem } from '@/features/input/components/FilePreview.tsx';
+import { FilePreview, FilePreviewItem } from '@/features/uploads/components/FilePreview.tsx';
 import { theme } from '@/utils/icon.ts';
 import { useMutation } from '@tanstack/react-query';
 import { trpc } from '@/utils/api.ts';

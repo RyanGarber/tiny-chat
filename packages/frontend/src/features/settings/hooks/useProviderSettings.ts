@@ -1,4 +1,4 @@
-import { useProviders } from '@/features/input/hooks/useProviders';
+import { useProviders } from '@/features/config/hooks/useProviders.ts';
 import { auth, query, queryClient } from '@/utils/api';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { zSettings } from '@tiny-chat/shared/src/types/user';

@@ -1,8 +1,8 @@
 import { Group, Menu, Modal, Overlay, Stack, Tabs, Text } from '@mantine/core';
 import { Icon } from '@iconify/react';
 import { useCallback, useState } from 'react';
-import { UploadFile } from '@/features/input/components/UploadFile';
-import { UploadRepo } from '@/features/input/components/UploadRepo';
+import { UploadFile } from '@/features/uploads/components/UploadFile';
+import { UploadRepo } from '@/features/uploads/components/UploadRepo';
 import { useUploads } from '../hooks/useUploads';
 import { Dropzone } from '@mantine/dropzone';
 import { isTauri } from '@/utils/api.ts';

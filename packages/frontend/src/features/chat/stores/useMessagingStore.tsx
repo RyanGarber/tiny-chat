@@ -6,7 +6,7 @@ import { HistoryEditor } from 'slate-history';
 import { deserialize } from '@/features/slate/serializer';
 import { type MessageState, type zData, type zDataPart } from '@tiny-chat/shared/src/types/chat.ts';
 import { texts } from '@tiny-chat/shared/src/utils.ts';
-import { useConfigStore } from '@/features/input/stores/useConfigStore';
+import { useConfigStore } from '@/features/uploads/stores/useConfigStore';
 
 type CustomEditor = BaseEditor & ReactEditor & HistoryEditor;
 

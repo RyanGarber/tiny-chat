@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { query, trpc } from '@/utils/api';
 import { useMessagingStore } from '@/features/chat/stores/useMessagingStore';
-import { fetchNextEmbeddingBatch } from '@/features/provider/hooks/useEmbedding';
+import { fetchNextEmbeddingBatch } from '@/features/config/hooks/useEmbedding.ts';
 import type { UploadType } from '@tiny-chat/backend/generated/prisma/enums.ts';
 
 export const uploadMutationKey = ['upload'] as const;

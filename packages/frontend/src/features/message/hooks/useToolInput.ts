@@ -2,9 +2,9 @@ import { useMutation } from '@tanstack/react-query';
 import { GenerateService, getGenerationCallbacks } from '../services/GenerateService';
 import type { MessageState, zDataPart, zToolResultValue } from '@tiny-chat/shared/src/types/chat';
 import { useChat } from '@/features/chat/hooks/useChat';
-import { useProviders } from '@/features/input/hooks/useProviders';
-import { useSkills } from '@/features/input/hooks/useSkills';
-import { useTools } from '@/features/input/hooks/useTools';
+import { useProviders } from '@/features/config/hooks/useProviders.ts';
+import { useSkills } from '@/features/uploads/hooks/useSkills';
+import { useTools } from '@/features/config/hooks/useTools.ts';
 import { auth, trpc } from '@/utils/api';
 import type { ToolContext } from '@tiny-chat/shared/src/types/tool';
 

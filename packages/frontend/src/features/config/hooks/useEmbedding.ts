@@ -1,9 +1,9 @@
-import { auth, backendUrl, queryClient, trpc } from '@/utils/api';
+import { auth, backendUrl, queryClient, trpc } from '@/utils/api.ts';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { embed } from '@tiny-chat/shared/src/services/chat/embed';
+import { embed } from '@tiny-chat/shared/src/services/chat/embed.ts';
 import { useEffect, useRef } from 'react';
-import { useRetrieval } from '@/features/settings/hooks/useRetrieval';
-import { ProviderService } from '@/features/provider/services/ProviderService';
+import { useRetrieval } from '@/features/settings/hooks/useRetrieval.ts';
+import { ProviderService } from '@/features/config/services/ProviderService.ts';
 
 export const nextEmbeddingBatchQueryKey = ['embedding', 'next'] as const;
 export const runEmbeddingBatchMutationKey = ['embedding', 'run'] as const;

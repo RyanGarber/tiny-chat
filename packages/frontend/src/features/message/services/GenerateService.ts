@@ -25,8 +25,8 @@ import { isMissingToolResult } from '@/utils/data.ts';
 import type { zUser } from '@tiny-chat/shared/src/types/user';
 import { type zCache, zSettings } from '@tiny-chat/shared/src/types/user';
 import { embed } from '@tiny-chat/shared/src/services/chat/embed';
-import { ProviderService } from '@/features/provider/services/ProviderService';
-import { fetchNextEmbeddingBatch } from '@/features/provider/hooks/useEmbedding.ts';
+import { ProviderService } from '@/features/config/services/ProviderService';
+import { fetchNextEmbeddingBatch } from '@/features/config/hooks/useEmbedding.ts';
 
 export const getGenerationCallbacks = (user: zUser): GenerationCallbacks => ({
   embed: async (text) => {

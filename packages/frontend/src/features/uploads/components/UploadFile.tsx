@@ -6,7 +6,7 @@ import { format } from 'timeago.js';
 import FileThumbnails from './FileThumbnails.tsx';
 import { useSentinel } from '@/core/hooks/useSentinel';
 import { GLASS_STYLE } from '@/utils/theme';
-import Dropzone from '@/features/input/components/Dropzone';
+import Dropzone from '@/features/uploads/components/Dropzone';
 import { useUploads } from '../hooks/useUploads';
 import Sentinel from '@/core/components/Sentinel';
 

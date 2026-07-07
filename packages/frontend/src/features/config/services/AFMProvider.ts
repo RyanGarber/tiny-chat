@@ -9,8 +9,8 @@ import type {
   LanguageModelV3StreamResult,
   ProviderV3,
 } from '@ai-sdk/provider';
-import type { Model } from '@tiny-chat/shared/src/types/chat';
-import { getBaseModelArgs } from '@tiny-chat/shared/src/utils';
+import type { Model } from '@tiny-chat/shared/src/types/chat.ts';
+import { getBaseModelArgs } from '@tiny-chat/shared/src/utils.ts';
 
 export interface AfmProviderOptions {
   reasoningLevel?: 'light' | 'moderate' | 'deep';

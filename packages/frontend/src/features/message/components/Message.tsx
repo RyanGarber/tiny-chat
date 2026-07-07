@@ -8,11 +8,11 @@ import { memo, ReactNode } from 'react';
 import { Icon } from '@iconify/react';
 import { useChat } from '@/features/chat/hooks/useChat';
 import { GLASS_STYLE } from '@/utils/theme.ts';
-import FileThumbnails from '@/features/input/components/FileThumbnails.tsx';
+import FileThumbnails from '@/features/uploads/components/FileThumbnails.tsx';
 import { GenerateService } from '../services/GenerateService';
-import { useProviders } from '@/features/input/hooks/useProviders';
-import { useSkills } from '@/features/input/hooks/useSkills';
-import { useTools } from '@/features/input/hooks/useTools';
+import { useProviders } from '@/features/config/hooks/useProviders.ts';
+import { useSkills } from '@/features/uploads/hooks/useSkills';
+import { useTools } from '@/features/config/hooks/useTools.ts';
 import { useMessages } from '../hooks/useMessages';
 import { useSend } from '@/features/chat/hooks/useMessaging';
 

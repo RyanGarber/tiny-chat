@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Avatar, Image, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { FilePreview, FilePreviewItem } from '@/features/uploads/components/FilePreview.tsx';
-import { theme } from '@/utils/icon.ts';
 import { useMutation } from '@tanstack/react-query';
 import { trpc } from '@/utils/api.ts';
 import { pathName } from '@tiny-chat/shared/src/utils/files.ts';
+import type { Theme } from '@/utils/icon.ts';
 
 export default function FileThumbnails({
   uploads,
@@ -28,6 +28,12 @@ export default function FileThumbnails({
     },
   });
 
+  const [theme, setTheme] = useState<Theme>();
+
+  useEffect(() => {
+    import('@/utils/icon.ts').then(({ theme }) => setTheme(theme)).catch(console.error);
+  }, []);
+
   return (
     <>
       <FilePreview
@@ -39,8 +45,8 @@ export default function FileThumbnails({
       />
       <Avatar.Group>
         {uploads.map((upload, i) => {
-          const iconId = theme.getFileIconId(upload.name ?? '', undefined, false);
-          const icon = iconId ? theme.getIconContent(iconId, 'base64') : null;
+          const iconId = theme?.getFileIconId(upload.name ?? '', undefined, false);
+          const icon = iconId ? theme!.getIconContent(iconId, 'base64') : null;
           return (
             <Tooltip label={upload.name} key={upload.name} color="gray" position="bottom">
               <Avatar

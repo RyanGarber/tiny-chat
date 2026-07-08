@@ -1,13 +1,26 @@
-diff --git a/dist/index.d.mts b/dist/index.d.mts
-index 7ff6e6def4a45d14873aa94ac8838020336fa322..22d350ae19eb58cf69247abe37399decfb38511b 100644
---- a/dist/index.d.mts
-+++ b/dist/index.d.mts
+diff --git a/dist/index.d.ts b/dist/index.d.ts
+index 0761e08ed80dc37be5ee9185d8d22cfc61848dcf..06b23c84c4afff9d134b81e465c6f093c1c308d7 100644
+--- a/dist/index.d.ts
++++ b/dist/index.d.ts
 @@ -13,7 +13,7 @@ type GoogleErrorData = InferSchema<typeof googleErrorDataSchema>;
  
- type GoogleGenerativeAIModelId = 'gemini-2.0-flash' | 'gemini-2.0-flash-001' | 'gemini-2.0-flash-lite' | 'gemini-2.0-flash-lite-001' | 'gemini-2.5-pro' | 'gemini-2.5-flash' | 'gemini-2.5-flash-image' | 'gemini-2.5-flash-lite' | 'gemini-2.5-flash-preview-tts' | 'gemini-2.5-pro-preview-tts' | 'gemini-2.5-flash-native-audio-latest' | 'gemini-2.5-flash-native-audio-preview-09-2025' | 'gemini-2.5-flash-native-audio-preview-12-2025' | 'gemini-2.5-computer-use-preview-10-2025' | 'gemini-3-pro-preview' | 'gemini-3-pro-image-preview' | 'gemini-3-flash-preview' | 'gemini-3.1-pro-preview' | 'gemini-3.1-pro-preview-customtools' | 'gemini-3.1-flash-image-preview' | 'gemini-3.1-flash-lite-preview' | 'gemini-3.1-flash-tts-preview' | 'gemini-pro-latest' | 'gemini-flash-latest' | 'gemini-flash-lite-latest' | 'deep-research-pro-preview-12-2025' | 'nano-banana-pro-preview' | 'aqa' | 'gemini-robotics-er-1.5-preview' | 'gemma-3-1b-it' | 'gemma-3-4b-it' | 'gemma-3n-e4b-it' | 'gemma-3n-e2b-it' | 'gemma-3-12b-it' | 'gemma-3-27b-it' | (string & {});
+ type GoogleModelId = 'gemini-2.0-flash' | 'gemini-2.0-flash-001' | 'gemini-2.0-flash-lite' | 'gemini-2.0-flash-lite-001' | 'gemini-2.5-pro' | 'gemini-2.5-flash' | 'gemini-2.5-flash-image' | 'gemini-2.5-flash-lite' | 'gemini-2.5-flash-preview-tts' | 'gemini-2.5-pro-preview-tts' | 'gemini-2.5-flash-native-audio-latest' | 'gemini-2.5-flash-native-audio-preview-09-2025' | 'gemini-2.5-flash-native-audio-preview-12-2025' | 'gemini-2.5-computer-use-preview-10-2025' | 'gemini-3-pro-preview' | 'gemini-3-pro-image-preview' | 'gemini-3-flash-preview' | 'gemini-3.1-pro-preview' | 'gemini-3.1-pro-preview-customtools' | 'gemini-3.1-flash-image-preview' | 'gemini-3.1-flash-lite-preview' | 'gemini-3.1-flash-tts-preview' | 'gemini-3.5-flash' | 'gemini-pro-latest' | 'gemini-flash-latest' | 'gemini-flash-lite-latest' | 'deep-research-pro-preview-12-2025' | 'deep-research-max-preview-04-2026' | 'deep-research-preview-04-2026' | 'nano-banana-pro-preview' | 'aqa' | 'gemini-robotics-er-1.5-preview' | 'gemma-3-1b-it' | 'gemma-3-4b-it' | 'gemma-3n-e4b-it' | 'gemma-3n-e2b-it' | 'gemma-3-12b-it' | 'gemma-3-27b-it' | (string & {});
  declare const googleLanguageModelOptions: _ai_sdk_provider_utils.LazySchema<{
 -    responseModalities?: ("TEXT" | "IMAGE")[] | undefined;
 +    responseModalities?: ("TEXT" | "IMAGE" | "AUDIO")[] | undefined;
      thinkingConfig?: {
          thinkingBudget?: number | undefined;
          includeThoughts?: boolean | undefined;
+diff --git a/dist/index.js b/dist/index.js
+index 22a8bc215a46556077519ab517c5020b8cb2c94e..33e8947cb74dd624dc9345770f1fb5e920f92a53 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -884,7 +884,7 @@ import { z as z4 } from "zod/v4";
+ var googleLanguageModelOptions = lazySchema4(
+   () => zodSchema4(
+     z4.object({
+-      responseModalities: z4.array(z4.enum(["TEXT", "IMAGE"])).optional(),
++      responseModalities: z4.array(z4.enum(["TEXT", "IMAGE", "AUDIO"])).optional(),
+       thinkingConfig: z4.object({
+         thinkingBudget: z4.number().optional(),
+         includeThoughts: z4.boolean().optional(),

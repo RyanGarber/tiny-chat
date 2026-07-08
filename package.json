@@ -34,19 +34,19 @@
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/release-notes-generator": "^14.1.1",
     "@types/wait-on": "^5.3.4",
-    "concurrently": "^9.2.1",
+    "concurrently": "^10.0.3",
     "conventional-changelog-conventionalcommits": "^10.2.1",
     "dotenv-cli": "^11.0.0",
-    "eslint": "^10.4.0",
-    "prettier": "^3.8.3",
+    "eslint": "^10.6.0",
+    "prettier": "^3.9.4",
     "semantic-release": "^25.0.5",
-    "typescript": "~5.9.3",
-    "typescript-eslint": "^8.59.4",
-    "vite": "^7.3.3",
-    "vitest": "^4.1.7",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.63.0",
+    "vite": "^8.1.3",
+    "vitest": "^4.1.10",
     "wait-on": "^9.0.3"
   },
-  "packageManager": "pnpm@11.8.0+sha512.c1f5e7c4cb241c8f174b743851d82f42b802324afc8b0f116b96adb15aa06664948dde36960a3ba1079ba5b4b29dd0140135b94b5b5f5263592249d68e555f26",
+  "packageManager": "pnpm@11.10.0+sha512.0b7f8b98060031904c017e3a41eb187a16d40eeb829b95c4f8cb03681761fc4ab53dd219115b9b447f4dce1a05a214764461e7d3703392a9f32f9511ce8c86c8",
   "dependencies": {
     "zod-to-json-schema": "^3.25.2"
   }

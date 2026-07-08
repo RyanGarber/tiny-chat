@@ -1,5 +1,4 @@
-import type { GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createGoogle, type GoogleLanguageModelOptions } from '@ai-sdk/google';
 import type { Model, ModelArg, zDataPart } from '../../types/chat.ts';
 import type { ChatProvider } from './index.ts';
 import { getBaseModelArgs, getBaseModelTransform, isModelVersion } from '../../utils.ts';
@@ -10,19 +9,19 @@ export const GoogleProvider: ChatProvider = {
 
   getClient(user) {
     if (!user?.settings?.providers?.google?.apiKey) return null;
-    return createGoogleGenerativeAI({
+    return createGoogle({
       apiKey: user.settings.providers.google.apiKey as string,
     });
   },
 
   getClientGenerateModel(user, id, env) {
-    const client = this.getClient(user, env) as ReturnType<typeof createGoogleGenerativeAI>;
+    const client = this.getClient(user, env) as ReturnType<typeof createGoogle>;
     if (!client) return null;
     return client.languageModel(id);
   },
 
   getClientEmbedModel(user, id, env) {
-    const client = this.getClient(user, env) as ReturnType<typeof createGoogleGenerativeAI>;
+    const client = this.getClient(user, env) as ReturnType<typeof createGoogle>;
     if (!client) return null;
     return client.embeddingModel(id);
   },
@@ -45,7 +44,7 @@ export const GoogleProvider: ChatProvider = {
         responseModalities: isModelVersion(config.model, 'gemini 3')
           ? ['TEXT', 'IMAGE']
           : undefined,
-      } satisfies GoogleGenerativeAIProviderOptions,
+      } satisfies GoogleLanguageModelOptions,
     };
   },
 

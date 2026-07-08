@@ -1,11 +1,11 @@
-import type { LanguageModelV3, LanguageModelV3StreamPart, ProviderV3 } from '@ai-sdk/provider';
+import type { LanguageModelV4, LanguageModelV4StreamPart, ProviderV4 } from '@ai-sdk/provider';
 
-export function createTestProvider(): ProviderV3 {
+export function createTestProvider(): ProviderV4 {
   return {
-    specificationVersion: 'v3',
-    languageModel(modelId: string): LanguageModelV3 {
+    specificationVersion: 'v4',
+    languageModel(modelId: string): LanguageModelV4 {
       return {
-        specificationVersion: 'v3',
+        specificationVersion: 'v4',
         provider: 'test',
         modelId,
         supportedUrls: {},
@@ -16,7 +16,7 @@ export function createTestProvider(): ProviderV3 {
         async doStream(options) {
           console.log('Running test model with options:', options);
 
-          const stream = new ReadableStream<LanguageModelV3StreamPart>({
+          const stream = new ReadableStream<LanguageModelV4StreamPart>({
             async start(controller) {
               const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 

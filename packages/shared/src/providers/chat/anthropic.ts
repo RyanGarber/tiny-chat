@@ -1,4 +1,4 @@
-import type { AnthropicProviderOptions } from '@ai-sdk/anthropic';
+import type { AnthropicLanguageModelOptions } from '@ai-sdk/anthropic';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { Anthropic } from '@anthropic-ai/sdk';
 import type { Model, ModelArg } from '../../types/chat.ts';
@@ -24,10 +24,8 @@ export const AnthropicProvider: ChatProvider = {
     return client.languageModel(id);
   },
 
-  getClientEmbedModel(user, id, env) {
-    const client = this.getClient(user, env) as ReturnType<typeof createAnthropic>;
-    if (!client) return null;
-    return client.embeddingModel(id);
+  getClientEmbedModel() {
+    return null;
   },
 
   getClientOptions(_user, config) {
@@ -40,7 +38,7 @@ export const AnthropicProvider: ChatProvider = {
               ? { type: 'enabled', budgetTokens: parseInt(config.args.thinking as string) }
               : undefined,
         effort: config.args?.effort,
-      } satisfies AnthropicProviderOptions,
+      } satisfies AnthropicLanguageModelOptions,
     };
   },
 

@@ -1,7 +1,6 @@
 import type {
   EmbeddingModel,
   FilePart,
-  ImagePart,
   LanguageModel,
   ModelMessage,
   ObjectStreamPart,
@@ -182,7 +181,6 @@ export function toSdkContext(
         part: zDataPart,
       ): (
         | TextPart
-        | ImagePart
         | (Omit<TextPart, 'type'> & { type: 'reasoning' })
         | ToolCallPart
         | ToolResultPart
@@ -191,19 +189,15 @@ export function toSdkContext(
         if (part.type === 'text') {
           return [{ type: 'text', text: part.value, providerOptions }];
         } else if (part.type === 'file') {
-          if (part.mime.startsWith('image/')) {
-            return [{ type: 'image', mediaType: part.mime, image: part.data, providerOptions }];
-          } else {
-            return [
-              {
-                type: 'file',
-                filename: part.name,
-                mediaType: part.mime,
-                data: part.data,
-                providerOptions,
-              },
-            ];
-          }
+          return [
+            {
+              type: 'file',
+              filename: part.name,
+              mediaType: part.mime,
+              data: part.data,
+              providerOptions,
+            },
+          ];
         } else if (part.type === 'json') {
           return [
             {
@@ -242,32 +236,31 @@ export function toSdkContext(
                 : parsed.success
                   ? {
                       type: 'content',
-                      value: parsed.data
-                        .flatMap(transform)
-                        .flatMap(
-                          (p): Extract<ToolResultPart['output'], { type: 'content' }>['value'] => {
-                            if (p.type === 'text') {
-                              return [{ type: 'text', text: p.value }];
-                            } else if (p.type === 'file') {
-                              if (p.mime.startsWith('image/')) {
-                                return [{ type: 'image-data', mediaType: p.mime, data: p.data }];
-                              } else {
-                                return [
-                                  {
-                                    type: 'file-data',
-                                    filename: p.name,
-                                    mediaType: p.mime,
-                                    data: p.data,
-                                  },
-                                ];
-                              }
-                            } else if (p.type === 'json') {
-                              return [{ type: 'text', text: JSON.stringify(p.value) }];
+                      value: parsed.data.flatMap(transform).flatMap(
+                        // TODO - check 'file-data'/'image-data' -> 'file'
+                        (p): Extract<ToolResultPart['output'], { type: 'content' }>['value'] => {
+                          if (p.type === 'text') {
+                            return [{ type: 'text', text: p.value }];
+                          } else if (p.type === 'file') {
+                            if (p.mime.startsWith('image/')) {
+                              return [{ type: 'image-data', mediaType: p.mime, data: p.data }];
+                            } else {
+                              return [
+                                {
+                                  type: 'file-data',
+                                  filename: p.name,
+                                  mediaType: p.mime,
+                                  data: p.data,
+                                },
+                              ];
                             }
-                            console.warn('[provider] invalid tool output:', p);
-                            return [];
-                          },
-                        ),
+                          } else if (p.type === 'json') {
+                            return [{ type: 'text', text: JSON.stringify(p.value) }];
+                          }
+                          console.warn('[provider] invalid tool output:', p);
+                          return [];
+                        },
+                      ),
                     }
                   : { type: 'json', value: part.value },
               providerOptions,

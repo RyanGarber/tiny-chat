@@ -1,4 +1,7 @@
-import { type BedrockProviderOptions, createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
+import {
+  type AmazonBedrockLanguageModelOptions,
+  createAmazonBedrock,
+} from '@ai-sdk/amazon-bedrock';
 import type { Model, ModelArg } from '../../types/chat.ts';
 import { AnthropicProvider } from './anthropic.ts';
 import type { ChatProvider } from './index.ts';
@@ -66,7 +69,7 @@ export const AWSProvider: ChatProvider = {
           type: config.args?.thinking !== 'none' ? 'enabled' : 'disabled',
           maxReasoningEffort: config.args?.thinking !== 'none' ? config.args?.thinking : undefined,
         },
-      } satisfies BedrockProviderOptions,
+      } satisfies AmazonBedrockLanguageModelOptions,
     };
   },
 

@@ -1,16 +1,16 @@
 import type { ObjectStreamPart, TextStreamPart } from 'ai';
-import type { LanguageModelV3, LanguageModelV3StreamPart, ProviderV3 } from '@ai-sdk/provider';
+import type { LanguageModelV4, LanguageModelV4StreamPart, ProviderV4 } from '@ai-sdk/provider';
 import type { AntigravityAccount } from '@ryangarber/ai-sdk-antigravity-proxy';
 
 export function createAntigravityProxyRelayProvider(
   url: string,
   account: AntigravityAccount,
-): ProviderV3 {
+): ProviderV4 {
   return {
-    specificationVersion: 'v3',
-    languageModel(modelId: string): LanguageModelV3 {
+    specificationVersion: 'v4',
+    languageModel(modelId: string): LanguageModelV4 {
       return {
-        specificationVersion: 'v3',
+        specificationVersion: 'v4',
         provider: 'antigravity-proxy-relay',
         modelId,
         supportedUrls: {},
@@ -33,7 +33,7 @@ export function createAntigravityProxyRelayProvider(
           if (!result.ok) throw new Error(`Remote: ${result.status}`);
 
           let buffer = '';
-          const stream = new ReadableStream<LanguageModelV3StreamPart>({
+          const stream = new ReadableStream<LanguageModelV4StreamPart>({
             async start(controller) {
               const reader = result.body!.pipeThrough(new TextDecoderStream()).getReader();
               while (true) {
@@ -45,8 +45,7 @@ export function createAntigravityProxyRelayProvider(
                 for (const line of lines) {
                   if (!line.startsWith('data: ')) continue;
                   const event = JSON.parse(line.slice(6)) as
-                    | TextStreamPart<any>
-                    | ObjectStreamPart<any>;
+                    TextStreamPart<any> | ObjectStreamPart<any>;
                   if (event.type === 'start-step') {
                     controller.enqueue({
                       type: 'stream-start',

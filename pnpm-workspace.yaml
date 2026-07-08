@@ -28,10 +28,11 @@ minimumReleaseAgeExclude:
   - '@opentelemetry/sdk-node@0.217.0'
   - '@opentelemetry/exporter-prometheus@0.217.0'
   - '@ryangarber/ai-sdk-antigravity-proxy@0.1.2'
-patchedDependencies:
-  '@ai-sdk/google': patches/@ai-sdk__google.patch
 peerDependencyRules:
   allowedVersions:
     'eslint-plugin-react-hooks>eslint': '10'
+    '@browser-ai/web-llm>ai': '7'
 overrides:
   'conventional-changelog-writer': '^9.1.1'
+patchedDependencies:
+  '@ai-sdk/google': patches/@ai-sdk__google.patch

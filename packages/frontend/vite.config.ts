@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import tsconfigPaths from 'vite-tsconfig-paths';
 import tailwindcss from '@tailwindcss/vite';
 import tailwindcssMantine from 'tailwind-preset-mantine/vite';
 import visualizer from 'rollup-plugin-visualizer';
@@ -20,50 +19,60 @@ export default defineConfig(() => ({
     react(),
     tailwindcss(),
     tailwindcssMantine({ input: 'src/theme.tsx' }),
-    tsconfigPaths(),
     visualizer({
       filename: 'dist/stats.html',
       template: 'flamegraph',
     }),
     inspect(),
   ],
+  resolve: {
+    tsconfigPaths: true,
+  },
   build: {
-    rollupOptions: {
-      external: ['fs', 'path', 'os', 'util'],
+    rolldownOptions: {
+      external: [/^(node:)?(path|fs)$/],
       output: {
-        manualChunks: {
-          vendor: [
-            'react',
-            'react-dom',
-            '@mantine/core',
-            '@mantine/hooks',
-            '@mantine/spotlight',
-            '@mantine/modals',
-            '@mantine/dates',
-            '@mantine/carousel',
-            '@mantine/dropzone',
-            '@gfazioli/mantine-json-tree',
-            'streamdown',
-            '@streamdown/math',
-            '@streamdown/mermaid',
-            '@streamdown/code',
-            'katex',
-            'ogl',
+        codeSplitting: {
+          groups: [
+            {
+              name: 'react',
+              test: /react/i,
+            },
+            {
+              name: 'mantine',
+              test: /mantine/i,
+            },
+            {
+              name: 'streamdown',
+              test: /(streamdown|katex|mermaid)/i,
+            },
+            {
+              name: 'shiki',
+              test: /shiki/i,
+              entriesAware: true,
+            },
+            {
+              name: 'ai',
+              test: /node_modules[\\/](ai[\\/]|@ai-sdk)/i,
+            },
+            {
+              name: 'webllm',
+              test: /webllm/i,
+            },
           ],
-          'vendor-llm': ['@mlc-ai/web-llm', '@browser-ai/web-llm'],
         },
       },
     },
   },
   server: {
-    port: parseInt(process.env.VITE_WEB_PORT),
+    port: parseInt(process.env.VITE_WEB_PORT!),
     strictPort: true,
     host: '0.0.0.0',
     hmr: host
       ? {
           protocol: 'ws',
           host: host, // must stay here
-          port: parseInt(process.env.VITE_WEB_PORT) + 1,
+          port: parseInt(process.env.VITE_WEB_PORT!) + 1,
         }
       : undefined,
   },

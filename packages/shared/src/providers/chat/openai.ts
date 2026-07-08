@@ -1,7 +1,7 @@
+import type { OpenAILanguageModelResponsesOptions } from '@ai-sdk/openai';
 import { createOpenAI } from '@ai-sdk/openai';
 import OpenAI from 'openai';
 import type { Model, ModelArg } from '../../types/chat.ts';
-import type { OpenAIResponsesProviderOptions } from '@ai-sdk/azure';
 import type { ChatProvider } from './index.ts';
 import { getBaseModelArgs, getBaseModelTransform, isModelVersion } from '../../utils.ts';
 
@@ -35,7 +35,7 @@ export const OpenAIProvider: ChatProvider = {
         reasoningEffort: config.args?.reasoning,
         reasoningSummary: 'detailed',
         include: ['reasoning.encrypted_content'],
-      } satisfies OpenAIResponsesProviderOptions,
+      } satisfies OpenAILanguageModelResponsesOptions,
     };
   },
 

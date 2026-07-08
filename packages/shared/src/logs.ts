@@ -21,12 +21,12 @@ export function initLogs(write?: LogWrite, writeToDisk = false) {
 
       write?.(time, level, ...data);
 
-      if (writeToDisk) {
+      if (typeof process !== 'undefined' && writeToDisk) {
         void (async () => {
-          const { appendFile, existsSync, mkdirSync } = await import('fs');
-          const { resolve } = await import('path');
-          const { tmpdir } = await import('os');
-          const { inspect } = await import('util');
+          const { appendFile, existsSync, mkdirSync } = await import(/* @vite-ignore */ 'node:fs');
+          const { resolve } = await import(/* @vite-ignore */ 'node:path');
+          const { tmpdir } = await import(/* @vite-ignore */ 'node:os');
+          const { inspect } = await import(/* @vite-ignore */ 'node:util');
 
           const date = new Date().toISOString().split('T')[0];
           const file = resolve(tmpdir(), `tiny-chat/${date}.log`);

@@ -17,11 +17,11 @@ import type { listAllFilesInChat } from '@tiny-chat/backend/src/routes/input.ts'
 import { mimeType, pathName } from '@tiny-chat/shared/src/utils/files.ts';
 import { useChatFiles } from '@/features/chat/hooks/useChatFiles.ts';
 import { useLayoutStore } from '@/core/stores/useLayoutStore.tsx';
-import { ReactNode, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useChatStore } from '@/features/chat/stores/useChatStore.ts';
 import { useThemes } from '@/features/settings/hooks/useThemes.ts';
-import { theme } from '@/utils/icon.ts';
+import { type Theme } from '@/utils/icon.ts';
 import { FilePreview, FilePreviewItem } from '@/features/uploads/components/FilePreview.tsx';
 
 type AllFilesData = Awaited<ReturnType<typeof listAllFilesInChat>>;
@@ -155,6 +155,11 @@ function FileTreeNode({
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewData, setPreviewData] = useState<FilePreviewItem | null>(null);
 
+  const [theme, setTheme] = useState<Theme>();
+  useEffect(() => {
+    import('@/utils/icon.ts').then(({ theme }) => setTheme(theme)).catch(console.error);
+  }, []);
+
   const segment =
     props.type === 'file'
       ? pathName(props.entry.file?.path ?? props.entry.uploadFile?.path ?? [])
@@ -165,9 +170,9 @@ function FileTreeNode({
 
   const iconId =
     props.type === 'file'
-      ? theme.getFileIconId(segment, undefined, false)
-      : theme.getFolderIconId(segment, expanded, false);
-  const icon = iconId ? theme.getIconContent(iconId, 'base64') : null;
+      ? theme?.getFileIconId(segment, undefined, false)
+      : theme?.getFolderIconId(segment, expanded, false);
+  const icon = iconId ? theme!.getIconContent(iconId, 'base64') : null;
 
   let options: ReactNode;
 

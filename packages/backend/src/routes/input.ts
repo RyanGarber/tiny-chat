@@ -136,6 +136,8 @@ export default router({
 		.mutation(async ({ ctx, input }): Promise<zUploadOutput> => {
 			console.log(`Preparing to handle upload: ${input.file.name}`);
 
+			// fix weird nbsp in macos files
+			const name = input.file.name.replace(/\s/g, " ");
 			const id = createId();
 
 			await globalThis.prisma.upload.create({
@@ -143,12 +145,12 @@ export default router({
 					id,
 					user: { connect: { id: ctx.session.user.id } },
 					type: input.type,
-					name: input.file.name,
+					name,
 				},
 			});
 
 			let files: Awaited<ReturnType<typeof handleFiles>>;
-			if (input.file.name.endsWith(".zip")) {
+			if (name.endsWith(".zip")) {
 				files = await handleFilesZipped(
 					ctx.session.user,
 					await input.file.arrayBuffer(),
@@ -158,7 +160,7 @@ export default router({
 			} else {
 				files = await handleFiles(
 					ctx.session.user,
-					[[input.file.name, await input.file.arrayBuffer()]],
+					[[name, await input.file.arrayBuffer()]],
 					[],
 					id,
 				);
@@ -186,7 +188,7 @@ export default router({
 			return {
 				type: "upload",
 				id,
-				name: input.file.name,
+				name,
 				thumbnail,
 			};
 		}),

@@ -19,12 +19,7 @@ import {
 	zWriteFile,
 } from "#shared/tools/system.ts";
 import type { Tool, ToolGroup } from "#shared/types/tool.ts";
-import {
-	decodeTextLossy,
-	fromChatUri,
-	isTextAdjacent,
-	mimeType,
-} from "#shared/utils/files.ts";
+import { decodeTextLossy, fromChatUri, mimeType } from "#shared/utils/files.ts";
 import { snippetText } from "#shared/utils.ts";
 
 const ReadFile: Tool<typeof zReadFileInput, typeof zReadFileOutput> = {
@@ -150,16 +145,16 @@ const SearchFiles: Tool<typeof zSearchFilesInput, typeof zSearchFilesOutput> = {
 			},
 			{
 				type: "json",
-				value: files
-					.filter((file) => isTextAdjacent(file.mime))
-					.map((file) => ({
-						path: file.path,
-						snippet: snippetText(
-							decodeTextLossy(file.content, file.mime),
-							input.query,
-							1000,
-						),
-					})),
+				value: files.flatMap((file) => {
+					const text = decodeTextLossy(file.content, file.mime);
+					if (!text) return [];
+					return [
+						{
+							path: file.path,
+							snippet: snippetText(text, input.query, 1000),
+						},
+					];
+				}),
 			},
 		];
 	},

@@ -1,5 +1,6 @@
 import { type HighlightResult, code as StreamdownCode } from "@streamdown/code";
 import type { Author } from "@tiny-chat/backend/generated/prisma/enums.ts";
+import flourite from "flourite";
 import { useEffect, useRef, useState } from "react";
 import type { BundledLanguage, BundledTheme } from "streamdown";
 import { trpc } from "#frontend/utils/api.ts";
@@ -92,24 +93,30 @@ export const unhighlight = (code: string): HighlightResult => {
 
 /**
  * Highlights `code` using Streamdown's Shiki-backed highlighter.
- *
- * Shiki loads languages/themes lazily, so a brand-new (language, theme, code)
- * combination is highlighted asynchronously: this function returns a plain
- * (unhighlighted) placeholder immediately, and - if `onReady` is provided -
- * invokes it once with the real result as soon as it's available. `onReady`
- * is called synchronously (before this function returns) when the result is
- * already known (cached, or the language isn't supported).
  */
 export const highlight = (
-	language: string,
-	codeTheme: string,
+	language: string | null,
+	codeTheme: string | null,
 	code: string,
 	onReady?: (result: HighlightResult) => void,
 ): HighlightResult => {
-	if (!StreamdownCode.supportsLanguage(language as BundledLanguage)) {
+	if (!codeTheme) {
 		const result = unhighlight(code);
 		onReady?.(result);
 		return result;
+	}
+
+	if (
+		!language ||
+		!StreamdownCode.supportsLanguage(language as BundledLanguage)
+	) {
+		const detected = flourite(code, { shiki: true });
+		return highlight(
+			detected.language === "unknown" ? "json" : detected.language,
+			codeTheme,
+			code,
+			onReady,
+		);
 	}
 
 	const cacheKey = `${language}-${codeTheme}-${code.trim()}`;

@@ -76,7 +76,7 @@ export const ToolCallInput = memo(
 						})
 						.then((file) => {
 							setWriteFileContents(
-								file ? decodeTextLossy(file.data, file.mime) : "",
+								file ? (decodeTextLossy(file.data, file.mime) ?? "") : "",
 							);
 						})
 						.catch((error) => {
@@ -91,7 +91,7 @@ export const ToolCallInput = memo(
 							mimeType(contents, pathName(write.path), "text/plain")
 								.then((mime) => {
 									console.log(`mime: ${mime}`);
-									setWriteFileContents(decodeTextLossy(contents, mime));
+									setWriteFileContents(decodeTextLossy(contents, mime) ?? "");
 								})
 								.catch((error) => {
 									console.error("Error getting mime type of file", error);

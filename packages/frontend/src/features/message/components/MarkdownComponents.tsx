@@ -1,4 +1,5 @@
 import { Anchor, Pill, Stack, Text, Tooltip } from "@mantine/core";
+import * as fuzzysort from "fuzzysort";
 import { type CSSProperties, type ReactNode, useContext } from "react";
 import type { Components } from "streamdown";
 import { format } from "timeago.js";
@@ -120,9 +121,10 @@ export const CiteComponent: Components["cite"] = ({ children, node }) => {
 		});
 	} else if (type === "web") {
 		pills = urls.map((url, i) => {
-			const web = webReferences.find(
-				(webSearchResult) => webSearchResult.url === url,
-			);
+			const web = webReferences.find((webSearchResult) => {
+				const score = fuzzysort.single(webSearchResult.url, url)?.score;
+				return score && score > 0.9;
+			});
 			if (!web) return unknown({ key: i, id: url });
 			let title = web.title;
 			if (!title) {

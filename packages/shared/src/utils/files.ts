@@ -86,6 +86,23 @@ mime.define({ "text/x-lean": ["lean"] }, true);
 mime.define({ "text/x-agda": ["agda"] }, true);
 mime.define({ "text/x-idris": ["idr", "lidr"] }, true);
 mime.define({ "text/x-rst": ["rst", "rest"] }, true);
+mime.define(
+	{
+		"text/other": [
+			"gitignore",
+			"gitconfig",
+			"gitattributes",
+			"gitmodules",
+			"editorconfig",
+			"prettierignore",
+			"prettierrc",
+			"eslintrc",
+			"properties",
+			"env",
+		],
+	},
+	true,
+);
 
 function ensureBytes(data: Uint8Array | string) {
 	if (typeof data === "string") {
@@ -131,41 +148,6 @@ export function mimeExtension(mimeType?: string | null, filename?: string) {
 		filename?.split(".").pop() ??
 		""
 	);
-}
-
-const TEXT_MIMES = new Set([
-	"application/json",
-	"application/jsonc",
-	"application/x-ndjson",
-	"application/xml",
-	"application/xhtml+xml",
-	"application/javascript", // legacy; text/javascript is now correct per RFC 9239
-	"application/ecmascript",
-	"application/typescript",
-	"application/toml", // RFC 9512
-	"application/graphql",
-	"application/rtf",
-	"application/x-sh",
-	"application/x-csh",
-	"application/x-powershell",
-	"application/dart",
-	"application/x-latex",
-	"application/x-tex",
-	"application/pgp-keys", // ASCII-armored, fully text
-	"application/pgp-signature", // ASCII-armored
-	"application/x-www-form-urlencoded",
-	"application/sparql-query",
-	"application/sparql-update",
-]);
-
-const TEXT_SUFFIXES = ["+json", "+xml", "+yaml", "+csv", "+turtle", "+ld+json"];
-
-export function isTextAdjacent(mime: string) {
-	const base = mime.split(";")[0].trim().toLowerCase();
-	if (base.startsWith("text/")) return true;
-	if (TEXT_MIMES.has(mime)) return true;
-	if (TEXT_SUFFIXES.some((s) => base.endsWith(s))) return true; // application/ld+json, atom+xml, etc.
-	return false;
 }
 
 function detectBOM(bytes: Uint8Array) {
@@ -215,7 +197,7 @@ export function decodeTextLossy(data: Uint8Array | string, mime: string) {
 		// ignore
 	}
 
-	return new TextDecoder("windows-1252").decode(data.buffer);
+	return null;
 }
 
 export function toChatUri(

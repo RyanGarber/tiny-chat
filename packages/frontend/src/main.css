@@ -197,36 +197,8 @@ body {
 	color: var(--mantine-color-white);
 }
 
-[data-slate-editor] {
-	align-content: center;
-}
-
-[data-slate-editor] p {
-	margin: 0;
-}
-
-[contenteditable] {
-	font-size: 16px; /* prevents iOS zoom I guess */
-}
-
 [contenteditable]:focus {
 	outline: 0 solid transparent !important;
-}
-
-[data-streamdown="table"] {
-	min-width: 300px;
-}
-
-[data-mantine-color-scheme="dark"] [data-streamdown="table"] th {
-	background: color-mix(
-		in srgb,
-		var(--tc-surface) 75%,
-		rgba(255, 255, 255, 0.01) 25%
-	);
-}
-
-[data-streamdown="code-block-body"] {
-	padding: 10px 5px !important;
 }
 
 /* ── Vidstack theme overrides ─────────────────────────────────── */
@@ -359,6 +331,90 @@ table[class*="react-diff"] {
 	width: 100% !important;
 }
 
+@keyframes shine {
+	to {
+		background-position: 200% center;
+	}
+}
+
+.tiptap {
+	ol {
+		@apply list-inside list-decimal whitespace-normal in-[li]:pl-6;
+	}
+	ul {
+		@apply list-inside list-disc whitespace-normal in-[li]:pl-6;
+	}
+	li {
+		@apply [&>p]:inline;
+	}
+	hr {
+		@apply my-3 border-border;
+	}
+	strong {
+		@apply font-semibold;
+	}
+	h1 {
+		@apply mt-6 mb-2 font-semibold text-3xl;
+	}
+	h2 {
+		@apply mt-6 mb-2 font-semibold text-2xl;
+	}
+	h3 {
+		@apply mt-6 mb-2 font-semibold text-xl;
+	}
+	h4 {
+		@apply mt-6 mb-2 font-semibold text-lg;
+	}
+	h5 {
+		@apply mt-6 mb-2 font-semibold text-base;
+	}
+	h6 {
+		@apply mt-6 mb-2 font-semibold text-sm;
+	}
+	/* TODO - table */
+	thead {
+		@apply bg-muted/80;
+	}
+	tbody {
+		@apply divide-y divide-border;
+	}
+	tr {
+		@apply border-border;
+	}
+	th {
+		@apply whitespace-nowrap px-4 py-2 text-left font-semibold text-sm;
+	}
+	td {
+		@apply px-4 py-2 text-sm;
+	}
+	sup {
+		@apply text-sm;
+	}
+	sub {
+		@apply text-sm;
+	}
+	:not(pre) > code {
+		@apply rounded bg-muted px-1.5 py-0.5 font-mono text-sm;
+	}
+	/* TODO - code block */
+}
+
+[data-streamdown="table"] {
+	min-width: 300px;
+}
+
+[data-mantine-color-scheme="dark"] [data-streamdown="table"] th {
+	background: color-mix(
+		in srgb,
+		var(--tc-surface) 75%,
+		rgba(255, 255, 255, 0.01) 25%
+	);
+}
+
+[data-streamdown="code-block-body"] {
+	padding: 10px 5px !important;
+}
+
 [data-streamdown="code-block"] {
 	background: var(--tc-surface);
 }
@@ -414,75 +470,4 @@ table[class*="react-diff"] {
 	background-clip: text;
 	-webkit-background-clip: text;
 	animation: shine 4s linear infinite;
-}
-
-@keyframes shine {
-	to {
-		background-position: 200% center;
-	}
-}
-
-.tiptap {
-	ol {
-		@apply list-inside list-decimal whitespace-normal [li_&]:pl-6;
-	}
-	ul {
-		@apply list-inside list-disc whitespace-normal in-[li]:pl-6;
-	}
-	li {
-		@apply py-1 [&>p]:inline;
-	}
-	hr {
-		@apply my-6 border-border;
-	}
-	strong {
-		@apply font-semibold;
-	}
-	a {
-		@apply wrap-anywhere font-medium text-primary underline;
-	}
-	h1 {
-		@apply mt-6 mb-2 font-semibold text-3xl;
-	}
-	h2 {
-		@apply mt-6 mb-2 font-semibold text-2xl;
-	}
-	h3 {
-		@apply mt-6 mb-2 font-semibold text-xl;
-	}
-	h4 {
-		@apply mt-6 mb-2 font-semibold text-lg;
-	}
-	h5 {
-		@apply mt-6 mb-2 font-semibold text-base;
-	}
-	h6 {
-		@apply mt-6 mb-2 font-semibold text-sm;
-	}
-	/* TODO - table */
-	thead {
-		@apply bg-muted/80;
-	}
-	tbody {
-		@apply divide-y divide-border;
-	}
-	tr {
-		@apply border-border;
-	}
-	th {
-		@apply whitespace-nowrap px-4 py-2 text-left font-semibold text-sm;
-	}
-	td {
-		@apply px-4 py-2 text-sm;
-	}
-	sup {
-		@apply text-sm;
-	}
-	sub {
-		@apply text-sm;
-	}
-	:not(pre) > code {
-		@apply rounded bg-muted px-1.5 py-0.5 font-mono text-sm;
-	}
-	/* TODO - code block */
 }

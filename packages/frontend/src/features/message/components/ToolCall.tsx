@@ -56,7 +56,6 @@ import type {
 import type { zDataPart } from "#shared/types/chat";
 import {
 	decodeTextLossy,
-	isTextAdjacent,
 	mimeExtension,
 	mimeTypeFromExtension,
 	pathName,
@@ -337,7 +336,7 @@ export const ToolCall = memo(
 				if (toolResult?.value[0].mime.startsWith("image/")) {
 					const uri = `data:${toolResult?.value[0].mime};base64,${toolResult?.value[0].data}`;
 					content = <Image src={uri} />;
-				} else if (isTextAdjacent(toolResult?.value[0].mime)) {
+				} else {
 					const text = decodeTextLossy(
 						toolResult?.value[0].data,
 						toolResult?.value[0].mime,
@@ -351,7 +350,7 @@ export const ToolCall = memo(
 									toolResult?.value[0].name,
 								) as BundledLanguage
 							}
-							code={text}
+							code={text ?? "// failed to decode file"}
 						/>
 					);
 				}

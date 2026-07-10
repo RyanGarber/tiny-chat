@@ -1,7 +1,9 @@
+import { Anchor } from "@mantine/core";
 import type { HighlightResult } from "@streamdown/code";
 import { Blockquote as _Blockquote } from "@tiptap/extension-blockquote";
 import { CodeBlock as _CodeBlock } from "@tiptap/extension-code-block";
 import { Document as _Document } from "@tiptap/extension-document";
+import { Link as _Link } from "@tiptap/extension-link";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { type EditorState, Plugin, PluginKey } from "@tiptap/pm/state";
 import {
@@ -11,17 +13,19 @@ import {
 	type EditorView,
 } from "@tiptap/pm/view";
 import {
+	MarkViewContent,
 	Node,
 	type NodeConfig,
 	NodeViewContent,
 	NodeViewWrapper,
+	ReactMarkViewRenderer,
 	ReactNodeViewRenderer,
 } from "@tiptap/react";
 import { useEffect } from "react";
 import { Blockquote } from "#frontend/core/components/Components.tsx";
 import { useThemes } from "#frontend/features/settings/hooks/useThemes.ts";
+import { openExternal } from "#frontend/utils/api.ts";
 import { createDirectiveSpec } from "#frontend/utils/input.ts";
-import { codeThemesByTheme } from "#frontend/utils/theme.ts";
 import { highlight } from "#frontend/utils/ui.tsx";
 
 export const DocumentNode = _Document.extend({
@@ -29,6 +33,23 @@ export const DocumentNode = _Document.extend({
 		if (!node.content) return "";
 		return h.renderChildren(node.content, "\n");
 	},
+});
+
+export const LinkNode = _Link.extend({
+	addMarkView: () =>
+		ReactMarkViewRenderer(({ mark }) => (
+			<Anchor
+				className="wrap-anywhere font-medium text-primary underline"
+				onClick={(e) => {
+					console.log(mark.attrs);
+					if (!mark.attrs.href) return;
+					e.preventDefault();
+					void openExternal(mark.attrs.href);
+				}}
+			>
+				<MarkViewContent />
+			</Anchor>
+		)),
 });
 
 export const BlockquoteNode = _Blockquote.extend({
@@ -83,9 +104,36 @@ export const CodeBlockKey = new PluginKey<CodeBlockPluginState>(
 export const CodeBlockNode = _CodeBlock
 	.configure({ enableTabIndentation: true, tabSize: 2 })
 	.extend({
-		addAttributes: () => ({
-			codeTheme: { default: codeThemesByTheme("dark")[0] },
-		}),
+		addAttributes() {
+			return {
+				codeTheme: { default: null },
+				language: {
+					default: null,
+					parseHTML: (element) => {
+						const { languageClassPrefix } = this.options;
+
+						if (!languageClassPrefix) {
+							return null;
+						}
+
+						const classNames = [
+							...(element.firstElementChild?.classList || []),
+						];
+						const languages = classNames
+							.filter((className) => className.startsWith(languageClassPrefix))
+							.map((className) => className.replace(languageClassPrefix, ""));
+						const language = languages[0];
+
+						if (!language) {
+							return null;
+						}
+
+						return language;
+					},
+					rendered: false,
+				},
+			};
+		},
 		// ArrowUp
 		addProseMirrorPlugins() {
 			let view: EditorView | null = null;
@@ -146,11 +194,13 @@ export const CodeBlockNode = _CodeBlock
 				}),
 			];
 		},
-		addNodeView: () =>
-			ReactNodeViewRenderer(({ updateAttributes }) => {
+		addNodeView() {
+			return ReactNodeViewRenderer(({ updateAttributes }) => {
 				const { codeTheme } = useThemes();
 				useEffect(() => {
-					updateAttributes({ codeTheme: codeTheme.data });
+					queueMicrotask(() => {
+						updateAttributes({ codeTheme: codeTheme.data });
+					});
 				}, [updateAttributes, codeTheme.data]);
 				return (
 					<NodeViewWrapper>
@@ -159,13 +209,14 @@ export const CodeBlockNode = _CodeBlock
 						</pre>
 					</NodeViewWrapper>
 				);
-			}),
+			});
+		},
 	});
 
 type CodeBlockEntry = {
 	from: number;
-	language: string;
-	theme: string;
+	language: string | null;
+	theme: string | null;
 	result: HighlightResult;
 };
 
@@ -186,8 +237,8 @@ function computeCodeBlockState(
 		if (node.type.name !== "codeBlock") return;
 
 		const text = node.textContent;
-		const language = (node.attrs.language as string) ?? "typescript";
-		const theme = node.attrs.codeTheme as string;
+		const language = node.attrs.language as string | null;
+		const theme = node.attrs.codeTheme as string | null;
 
 		const previous = previousBlocks.find(
 			(block) =>

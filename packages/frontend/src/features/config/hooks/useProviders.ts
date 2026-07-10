@@ -11,7 +11,7 @@ export const useProviders = () => {
 	const session = auth.useSession();
 
 	const providers = useQuery<zCache["providers"]>({
-		queryKey: providerCacheQueryKey,
+		queryKey: [...providerCacheQueryKey, session.data?.user?.id ?? ""],
 		queryFn: () => {
 			if (!session.data) return { chat: [], web: [], other: [] };
 			return ProviderService.getChatProviderCache(session.data.user);

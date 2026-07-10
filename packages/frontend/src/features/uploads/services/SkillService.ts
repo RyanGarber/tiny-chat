@@ -1,12 +1,7 @@
 import { invoke, isTauriDesktop, trpc } from "#frontend/utils/api.ts";
 import type { zSkill } from "#shared/types/skill.ts";
 import { wrapSkill } from "#shared/utils";
-import {
-	decodeTextLossy,
-	isTextAdjacent,
-	mimeType,
-	toChatUri,
-} from "#shared/utils/files.ts";
+import { decodeTextLossy, mimeType, toChatUri } from "#shared/utils/files.ts";
 
 export const SkillService = {
 	findLocal: async () => {
@@ -33,13 +28,13 @@ export const SkillService = {
 							if (await invoke<boolean>("is_dir", { path })) {
 								files.push(...(await walk(path)));
 							} else {
-								// TODO - do we need to keep any of this?
 								const data = await invoke<string>("read_file", { path });
 								const mime = await mimeType(data, path);
-								if (!isTextAdjacent(mime)) continue;
+								const text = decodeTextLossy(data, mime);
+								if (!text) continue;
 								files.push({
 									path: subpath,
-									data: decodeTextLossy(data, mime),
+									data: text,
 								});
 							}
 						}

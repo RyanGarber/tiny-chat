@@ -60,10 +60,12 @@ export function FilePreview({
 											items[selected].name,
 										) as BundledLanguage
 									}
-									code={decodeTextLossy(
-										items[selected].data,
-										items[selected].mime,
-									)}
+									code={
+										decodeTextLossy(
+											items[selected].data,
+											items[selected].mime,
+										) ?? "// failed to decode file"
+									}
 								/>
 							)}
 						</Group>

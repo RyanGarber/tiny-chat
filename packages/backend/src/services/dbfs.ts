@@ -280,8 +280,6 @@ export class DBFS implements IFileSystem {
 	async exists(path: string): Promise<boolean> {
 		console.log(`exists(${path})`);
 
-		if (path === "/" || path === "/mnt") return true;
-
 		const uri = fromChatUri(path, this.basePath);
 		if (!uri) return false;
 
@@ -293,17 +291,6 @@ export class DBFS implements IFileSystem {
 
 	async stat(path: string): Promise<FsStat> {
 		console.log(`stat(${path})`);
-
-		if (path === "/" || path === "/mnt" || path === "/tmp") {
-			return {
-				isFile: false,
-				isDirectory: true,
-				isSymbolicLink: false,
-				mode: 0o755,
-				size: 0,
-				mtime: new Date(0),
-			};
-		}
 
 		const uri = fromChatUri(path, this.basePath);
 		if (!uri) throw new Error("ENOENT: invalid path");
@@ -372,30 +359,6 @@ export class DBFS implements IFileSystem {
 
 	async readdirWithFileTypes(path: string) {
 		console.log(`readdirWithFileTypes(${path})`);
-
-		if (path === "/") {
-			return [
-				{
-					name: "mnt",
-					isFile: false,
-					isDirectory: true,
-					isSymbolicLink: false,
-					mtime: new Date(0),
-				},
-			];
-		}
-
-		if (path === "/mnt") {
-			return [
-				{
-					name: "chat",
-					isFile: false,
-					isDirectory: true,
-					isSymbolicLink: false,
-					mtime: new Date(0),
-				},
-			];
-		}
 
 		const uri = fromChatUri(path, this.basePath);
 		if (!uri) throw new Error("ENOENT: invalid path");

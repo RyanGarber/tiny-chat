@@ -23,14 +23,14 @@ describe("services - dbfs", () => {
 	beforeAll(async () => {
 		const data = new FormData();
 		data.set("type", "ATTACHMENT");
-		data.set("file", new File(["Files suck. I hate files."], "question.md"));
+		data.set(
+			"file",
+			new File(["Files suck. I hate files."], "question space.md"),
+		);
 		upload1 = await trpc.input.createUpload.mutate(data);
 		data.set(
 			"file",
-			new File(
-				["Files suck. I hate files."],
-				"Screenshot 2026-07-08 at 2.10.14 AM",
-			),
+			new File(["Files suck. I hate files."], "question nbsp.md"),
 		);
 		upload2 = await trpc.input.createUpload.mutate(data);
 		const message = await trpc.message.create.mutate({
@@ -49,7 +49,7 @@ describe("services - dbfs", () => {
 			name: ShellExec.name,
 			context,
 			input: {
-				command: "ls -l",
+				command: "ls -l /mnt/chat",
 				chat: true,
 			} satisfies zShellExecInput,
 			userInput: undefined,
@@ -70,7 +70,7 @@ describe("services - dbfs", () => {
 		});
 		expect.assert(output[0].type === "json");
 		expect((output[0].value as zShellExecOutput).stdout).toContain(
-			"question.md",
+			"question space.md",
 		);
 	});
 
@@ -99,7 +99,22 @@ describe("services - dbfs", () => {
 		);
 	});
 
-	it("reads a file with spaces", async () => {
+	it("finds the file in `ls -l`", async () => {
+		const output = await trpc.input.callTool.mutate({
+			name: ShellExec.name,
+			context,
+			input: {
+				command: `ls -l /mnt/chat/${upload2.id}`,
+				chat: true,
+			} satisfies zShellExecInput,
+			userInput: undefined,
+		});
+		expect.assert(output[0].type === "json");
+		console.log(output[0].value);
+		expect((output[0].value as zShellExecOutput).stdout).toContain(".md");
+	});
+
+	it("reads a file with nbsp", async () => {
 		const output = await trpc.input.callTool.mutate({
 			name: ReadFile.name,
 			context,
@@ -109,7 +124,8 @@ describe("services - dbfs", () => {
 			userInput: undefined,
 		});
 		expect.assert(output[0].type === "file");
-		expect(output[0].name).toEqual("Screenshot 2026-07-08 at 2.10.14 AM");
+		console.log(output[0]);
+		expect(output[0].name).toEqual("question nbsp.md");
 	});
 
 	it("runs a python script", async () => {

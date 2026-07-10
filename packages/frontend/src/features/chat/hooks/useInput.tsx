@@ -14,6 +14,7 @@ import {
 	BlockquoteNode,
 	CodeBlockNode,
 	DocumentNode,
+	LinkNode,
 	QuoteNode,
 } from "#frontend/features/chat/components/InputComponents.tsx";
 import { useMessaging } from "#frontend/features/chat/hooks/useMessaging.ts";
@@ -21,7 +22,7 @@ import { useUploads } from "#frontend/features/uploads/hooks/useUploads.ts";
 import { useInputStore } from "../stores/useInputStore";
 
 const TEST_CONTENT =
-	':::quote{model="claude-sonnet-5"}\n**Quote** from Claude Sonnet 5.\n:::';
+	"```tsx\n<Button className=\"primary\" onClick={() => doThing('value')} />\n```";
 
 export const useInput = ({
 	ref,
@@ -71,6 +72,7 @@ export const useInput = ({
 			}),
 			Markdown.configure({ markedOptions: { gfm: true, breaks: true } }),
 			DocumentNode,
+			LinkNode,
 			BlockquoteNode,
 			CodeBlockNode,
 			QuoteNode,

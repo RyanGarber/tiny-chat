@@ -10,7 +10,7 @@ import { zConfig, zData, zMetadata } from "./types/chat.ts";
 import type { zSkill } from "./types/skill.ts";
 import type { zTool, zToolContext, zToolGroup } from "./types/tool.ts";
 import type { zCache, zUser } from "./types/user.ts";
-import { decodeTextLossy, isTextAdjacent } from "./utils/files.ts";
+import { decodeTextLossy } from "./utils/files.ts";
 
 export { snippetText } from "./utils/snippet.ts";
 
@@ -107,12 +107,9 @@ export function getBaseModelTransform(
 ): zDataPart {
 	if (part.type === "file") {
 		if (!supportedMimes.some((m) => part.mime.startsWith(m))) {
-			if (isTextAdjacent(part.mime)) {
-				const text = decodeTextLossy(part.data, part.mime);
-				return { type: "text", value: text };
-			} else {
-				return { type: "text", value: `[Unsupported file: ${part.data}]` };
-			}
+			const text = decodeTextLossy(part.data, part.mime);
+			if (text) return { type: "text", value: text };
+			return { type: "text", value: `[Unsupported file: ${part.data}]` };
 		}
 	}
 	return part;

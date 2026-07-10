@@ -69,7 +69,7 @@ export default function Console({
 								>
 									{log.data.map((d) =>
 										typeof d === "object" ? (
-											<JsonTree data={d} key={String(d)} />
+											<JsonTree data={d} key={JSON.stringify(d)} />
 										) : (
 											<Text size="xs" key={String(d)}>
 												{String(d)}

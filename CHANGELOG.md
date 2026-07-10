@@ -1,3 +1,25 @@
+## [0.6.3](https://github.com/RyanGarber/tiny-chat/compare/0.6.2...0.6.3) (2026-07-10)
+
+### Features
+
+* automatic syntax highlighting in chat input ([fc03fb2](https://github.com/RyanGarber/tiny-chat/commit/fc03fb2532407c2e36567448660382bb3fe49f1a))
+* best-effort decoding of files ([fc03fb2](https://github.com/RyanGarber/tiny-chat/commit/fc03fb2532407c2e36567448660382bb3fe49f1a-1))
+* fuzzy matching of web references ([fc03fb2](https://github.com/RyanGarber/tiny-chat/commit/fc03fb2532407c2e36567448660382bb3fe49f1a-2))
+* improved tables, refs, code blocks, and diffs ([f15eac6](https://github.com/RyanGarber/tiny-chat/commit/f15eac671542dfca05cfb3cc35353f010f62cc67))
+* rich text editing ([610a607](https://github.com/RyanGarber/tiny-chat/commit/610a60752ab9379c31fe675d04d3669ac30b3fab))
+
+### Bug Fixes
+
+* bash commands returning wrong folder contents for basePath ([fc03fb2](https://github.com/RyanGarber/tiny-chat/commit/fc03fb2532407c2e36567448660382bb3fe49f1a-4))
+* incorrect width when diff lines are collapsed ([f15eac6](https://github.com/RyanGarber/tiny-chat/commit/f15eac671542dfca05cfb3cc35353f010f62cc67-3))
+* non-standard whitespace accepted in filenames ([fc03fb2](https://github.com/RyanGarber/tiny-chat/commit/fc03fb2532407c2e36567448660382bb3fe49f1a-3))
+* selected code theme ignored by streamdown ([f15eac6](https://github.com/RyanGarber/tiny-chat/commit/f15eac671542dfca05cfb3cc35353f010f62cc67-4))
+
+### Performance Improvements
+
+* optimized component rendering ([f15eac6](https://github.com/RyanGarber/tiny-chat/commit/f15eac671542dfca05cfb3cc35353f010f62cc67-2))
+
+
 ## [0.6.2](https://github.com/RyanGarber/tiny-chat/compare/0.6.1...0.6.2) (2026-07-07)
 
 ### Bug Fixes

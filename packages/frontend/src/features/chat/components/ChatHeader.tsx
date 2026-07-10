@@ -1,94 +1,94 @@
-import { ActionIcon, Burger, Group, Tooltip } from '@mantine/core';
-import { Icon } from '@iconify/react';
-import { useLayoutStore } from '@/core/stores/useLayoutStore';
-import { useChat } from '../hooks/useChat';
-import { useChatStore } from '../stores/useChatStore';
-import { ChatService } from '../services/ChatService';
-import { GLASS_STYLE, SHADOW } from '@/utils/theme.ts';
+import { Icon } from "@iconify/react";
+import { ActionIcon, Burger, Group, Tooltip } from "@mantine/core";
+import { useLayoutStore } from "#frontend/core/stores/useLayoutStore.tsx";
+import { GLASS_STYLE, SHADOW } from "#frontend/utils/theme.ts";
+import { useChat } from "../hooks/useChat";
+import { ChatService } from "../services/ChatService";
+import { useChatStore } from "../stores/useChatStore";
 
 export default function ChatHeader({ fixed }: { fixed: boolean }) {
-  const { chat } = useChat();
-  const isMobile = useLayoutStore((s) => s.isMobile);
-  const isSidebarOpen = useLayoutStore((s) => s.isSidebarOpen);
-  const setSidebarOpen = useLayoutStore((s) => s.setSidebarOpen);
-  const temporary = useChatStore((s) => s.createTemporary);
-  const setTemporary = useChatStore((s) => s.setCreateTemporary);
-  const incognito = useChatStore((s) => s.createIncognito);
-  const setIncognito = useChatStore((s) => s.setCreateIncognito);
+	const { chat } = useChat();
+	const isMobile = useLayoutStore((s) => s.isMobile);
+	const isSidebarOpen = useLayoutStore((s) => s.isSidebarOpen);
+	const setSidebarOpen = useLayoutStore((s) => s.setSidebarOpen);
+	const temporary = useChatStore((s) => s.createTemporary);
+	const setTemporary = useChatStore((s) => s.setCreateTemporary);
+	const incognito = useChatStore((s) => s.createIncognito);
+	const setIncognito = useChatStore((s) => s.setCreateIncognito);
 
-  const isTemporary = chat.data?.temporary ?? temporary;
-  const isIncognito = chat.data?.incognito ?? incognito;
+	const isTemporary = chat.data?.temporary ?? temporary;
+	const isIncognito = chat.data?.incognito ?? incognito;
 
-  return (
-    <Group
-      pos={fixed ? 'fixed' : 'sticky'}
-      top={0}
-      left={0}
-      right={0}
-      bottom={fixed ? undefined : 0}
-      p={10}
-      gap={5}
-      display={isMobile ? undefined : 'none'}
-      style={{
-        zIndex: 'calc(var(--mantine-z-index-app) + 1)',
-        ...GLASS_STYLE,
-        borderTop: 'none',
-        borderLeft: 'none',
-        borderRight: 'none',
-        boxShadow: SHADOW,
-      }}
-    >
-      <Burger
-        opened={isSidebarOpen}
-        onClick={() => setSidebarOpen(!isSidebarOpen)}
-        display={!isMobile || isSidebarOpen ? 'none' : undefined}
-        size="sm"
-      />
-      <Group justify="space-between" flex={1}>
-        <Group gap={4}>
-          <Tooltip label="New Chat" position="bottom" color="gray">
-            <ActionIcon
-              size={32}
-              variant="subtle"
-              className="nav-link-like filled"
-              onClick={() => ChatService.setChatId(null)}
-              data-active={!chat.data}
-            >
-              <Icon icon="lucide:message-circle-plus" height={18} />
-            </ActionIcon>
-          </Tooltip>
-        </Group>
-        <Group gap={4}>
-          <Tooltip label="Temporary" position="bottom" color="gray">
-            <ActionIcon
-              size={32}
-              variant="subtle"
-              className="nav-link-like"
-              onClick={() => {
-                if (chat.data) ChatService.setChatId(null);
-                setTemporary(!isTemporary);
-              }}
-              data-active={isTemporary}
-            >
-              <Icon icon="lucide:eye-off" height={18} />
-            </ActionIcon>
-          </Tooltip>
-          <Tooltip label="Anonymous" position="bottom" color="gray">
-            <ActionIcon
-              size={32}
-              variant="subtle"
-              className="nav-link-like"
-              onClick={() => {
-                if (chat.data) ChatService.setChatId(null);
-                setIncognito(!isIncognito);
-              }}
-              data-active={isIncognito}
-            >
-              <Icon icon="lucide:ghost" height={18} />
-            </ActionIcon>
-          </Tooltip>
-        </Group>
-      </Group>
-    </Group>
-  );
+	return (
+		<Group
+			pos={fixed ? "fixed" : "sticky"}
+			top={0}
+			left={0}
+			right={0}
+			bottom={fixed ? undefined : 0}
+			p={10}
+			gap={5}
+			display={isMobile ? undefined : "none"}
+			style={{
+				zIndex: "calc(var(--mantine-z-index-app) + 1)",
+				...GLASS_STYLE,
+				borderTop: "none",
+				borderLeft: "none",
+				borderRight: "none",
+				boxShadow: SHADOW,
+			}}
+		>
+			<Burger
+				opened={isSidebarOpen}
+				onClick={() => setSidebarOpen(!isSidebarOpen)}
+				display={!isMobile || isSidebarOpen ? "none" : undefined}
+				size="sm"
+			/>
+			<Group justify="space-between" flex={1}>
+				<Group gap={4}>
+					<Tooltip label="New Chat" position="bottom" color="gray">
+						<ActionIcon
+							size={32}
+							variant="subtle"
+							className="nav-link-like filled"
+							onClick={() => ChatService.setChatId(null)}
+							data-active={!chat.data}
+						>
+							<Icon icon="lucide:message-circle-plus" height={18} />
+						</ActionIcon>
+					</Tooltip>
+				</Group>
+				<Group gap={4}>
+					<Tooltip label="Temporary" position="bottom" color="gray">
+						<ActionIcon
+							size={32}
+							variant="subtle"
+							className="nav-link-like"
+							onClick={() => {
+								if (chat.data) ChatService.setChatId(null);
+								setTemporary(!isTemporary);
+							}}
+							data-active={isTemporary}
+						>
+							<Icon icon="lucide:eye-off" height={18} />
+						</ActionIcon>
+					</Tooltip>
+					<Tooltip label="Anonymous" position="bottom" color="gray">
+						<ActionIcon
+							size={32}
+							variant="subtle"
+							className="nav-link-like"
+							onClick={() => {
+								if (chat.data) ChatService.setChatId(null);
+								setIncognito(!isIncognito);
+							}}
+							data-active={isIncognito}
+						>
+							<Icon icon="lucide:ghost" height={18} />
+						</ActionIcon>
+					</Tooltip>
+				</Group>
+			</Group>
+		</Group>
+	);
 }

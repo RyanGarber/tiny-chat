@@ -1,66 +1,71 @@
-import { useTauriStore } from '@/core/stores/useTauriStore';
-import { isTauriDesktop as _isTauriDesktop } from '@/utils/api';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useTauriStore } from "#frontend/core/stores/useTauriStore.tsx";
+import { isTauriDesktop as _isTauriDesktop } from "#frontend/utils/api.ts";
 
 interface UpdateBoxed {
-  version: string;
-  currentVersion: string;
-  date: string | undefined;
+	version: string;
+	currentVersion: string;
+	date: string | undefined;
 }
 
 export const useTauri = () => {
-  const tauriUpdate = useQuery({
-    queryKey: ['tauriUpdate'],
-    queryFn: async () => {
-      if (!(await _isTauriDesktop())) return null;
+	const tauriUpdate = useQuery({
+		queryKey: ["tauriUpdate"],
+		queryFn: async () => {
+			if (!(await _isTauriDesktop())) return null;
 
-      const { check } = await import('@tauri-apps/plugin-updater');
-      const update = await check();
+			const { check } = await import("@tauri-apps/plugin-updater");
+			const update = await check();
 
-      return update as UpdateBoxed | null;
-    },
-  });
+			return update as UpdateBoxed | null;
+		},
+	});
 
-  const doTauriUpdate = useMutation({
-    mutationFn: async (data: UpdateBoxed) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const Update = (await import('@tauri-apps/plugin-updater')).Update.prototype;
-      const update = data as typeof Update | null;
+	const doTauriUpdate = useMutation({
+		mutationFn: async (data: UpdateBoxed) => {
+			const Update = (await import("@tauri-apps/plugin-updater")).Update
+				.prototype;
+			const update = data as typeof Update | null;
 
-      let current = 0;
-      let total: number | undefined;
+			if (!update) return;
 
-      // TODO - move
-      void useTauriStore
-        .getState()
-        .addTask(
-          'update',
-          `Downloading ${update?.version ? `v${update.version}` : 'update'}`,
-          'App will update and restart',
-        );
+			let current = 0;
+			let total: number | undefined;
 
-      await update!.downloadAndInstall((event) => {
-        if (event.event === 'Started') {
-          total = event.data.contentLength;
-        }
-        if (event.event === 'Progress') {
-          current += event.data.chunkLength;
-          if (total) void useTauriStore.getState().updateTask('update', (current / total) * 100);
-        }
-      });
+			// TODO - move
+			void useTauriStore
+				.getState()
+				.addTask(
+					"update",
+					`Downloading ${update?.version ? `v${update.version}` : "update"}`,
+					"App will update and restart",
+				);
 
-      await useTauriStore.getState().removeTask('update');
+			await update.downloadAndInstall((event) => {
+				if (event.event === "Started") {
+					total = event.data.contentLength;
+				}
+				if (event.event === "Progress") {
+					current += event.data.chunkLength;
+					if (total)
+						void useTauriStore
+							.getState()
+							.updateTask("update", (current / total) * 100);
+				}
+			});
 
-      await (await import('@tauri-apps/plugin-process')).relaunch();
-    },
-  });
+			await useTauriStore.getState().removeTask("update");
 
-  const isTauriDesktop = useQuery({
-    queryKey: ['isTauriDesktop'],
-    queryFn: async () => {
-      return await _isTauriDesktop();
-    },
-  });
+			await (await import("@tauri-apps/plugin-process")).relaunch();
+		},
+	});
 
-  return { tauriUpdate, doTauriUpdate, isTauriDesktop };
+	const isTauriDesktop = useQuery({
+		queryKey: ["isTauriDesktop"],
+		queryFn: async () => {
+			return await _isTauriDesktop();
+		},
+	});
+
+	return { tauriUpdate, doTauriUpdate, isTauriDesktop };
 };

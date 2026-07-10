@@ -1,222 +1,232 @@
-@import url('https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..700;1,300..700&display=swap');
+/** biome-ignore-all lint/complexity/noImportantStyles: necessary */
 
-@import './theme.css';
+@import url("https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..700;1,300..700&display=swap");
 
-@import '@mantine/spotlight/styles.layer.css';
-@import '@mantine/carousel/styles.layer.css';
-@import '@mantine/dates/styles.layer.css';
-@import '@gfazioli/mantine-json-tree/styles.layer.css';
-@import '@vidstack/react/player/styles/default/theme.css';
-@import '@vidstack/react/player/styles/default/layouts/audio.css';
-@import '@vidstack/react/player/styles/default/layouts/video.css';
+@import "./theme.css";
 
-@source '../node_modules/streamdown/dist/*.js';
-@source '../node_modules/@streamdown/math/dist/*.js';
-@source '../node_modules/@streamdown/mermaid/dist/*.js';
-@source '../node_modules/@streamdown/code/dist/*.js';
+@import "@mantine/spotlight/styles.layer.css";
+@import "@mantine/carousel/styles.layer.css";
+@import "@mantine/dates/styles.layer.css";
+@import "@gfazioli/mantine-json-tree/styles.layer.css";
+@import "@vidstack/react/player/styles/default/theme.css";
+@import "@vidstack/react/player/styles/default/layouts/audio.css";
+@import "@vidstack/react/player/styles/default/layouts/video.css";
+
+@source "../node_modules/streamdown/dist/*.js";
+@source "../node_modules/@streamdown/math/dist/*.js";
+@source "../node_modules/@streamdown/mermaid/dist/*.js";
+@source "../node_modules/@streamdown/code/dist/*.js";
 
 /* Map shadcn tokens used by Streamdown directly to Mantine's theme engine */
 @theme inline {
-  /* ── Base ── */
-  --color-background: var(--mantine-color-body);
-  --color-foreground: var(--mantine-color-text);
+	/* ── Base ── */
+	--color-background: var(--mantine-color-body);
+	--color-foreground: var(--mantine-color-text);
 
-  /* ── Card ── */
-  --color-card: var(--mantine-color-default);
-  --color-card-foreground: var(--mantine-color-text);
+	/* ── Card ── */
+	--color-card: var(--mantine-color-default);
+	--color-card-foreground: var(--mantine-color-text);
 
-  /* ── Popover ── */
-  --color-popover: var(--mantine-color-default);
-  --color-popover-foreground: var(--mantine-color-text);
+	/* ── Popover ── */
+	--color-popover: var(--mantine-color-default);
+	--color-popover-foreground: var(--mantine-color-text);
 
-  /* ── Primary ── */
-  --color-primary: var(--mantine-primary-color-filled);
-  --color-primary-foreground: var(--mantine-primary-color-contrast);
+	/* ── Primary ── */
+	--color-primary: var(--mantine-primary-color-filled);
+	--color-primary-foreground: var(--mantine-primary-color-contrast);
 
-  /* ── Secondary ── */
-  --color-secondary: var(--mantine-color-default-hover);
-  --color-secondary-foreground: var(--mantine-color-text);
+	/* ── Secondary ── */
+	--color-secondary: var(--mantine-color-default-hover);
+	--color-secondary-foreground: var(--mantine-color-text);
 
-  /* ── Muted ── */
-  --color-muted: var(--mantine-color-default-hover);
-  --color-muted-foreground: var(--mantine-color-dimmed);
+	/* ── Muted ── */
+	--color-muted: var(--mantine-color-default-hover);
+	--color-muted-foreground: var(--mantine-color-dimmed);
 
-  /* ── Accent ── */
-  --color-accent: var(--mantine-primary-color-light);
-  --color-accent-foreground: var(--mantine-primary-color-light-color);
+	/* ── Accent ── */
+	--color-accent: var(--mantine-primary-color-light);
+	--color-accent-foreground: var(--mantine-primary-color-light-color);
 
-  /* ── Destructive ── */
-  --color-destructive: var(--mantine-color-red-filled);
-  --color-destructive-foreground: var(--mantine-color-white);
+	/* ── Destructive ── */
+	--color-destructive: var(--mantine-color-red-filled);
+	--color-destructive-foreground: var(--mantine-color-white);
 
-  /* ── Border / Input / Ring ── */
-  --color-border: var(--mantine-color-default-border);
-  --color-input: var(--mantine-color-default-border);
-  --color-ring: var(--mantine-primary-color-filled);
+	/* ── Border / Input / Ring ── */
+	--color-border: var(--mantine-color-default-border);
+	--color-input: var(--mantine-color-default-border);
+	--color-ring: var(--mantine-primary-color-filled);
 
-  /* ── Chart palette (map to Mantine color scale stops) ── */
-  --color-chart-1: var(--mantine-color-blue-6);
-  --color-chart-2: var(--mantine-color-teal-6);
-  --color-chart-3: var(--mantine-color-orange-6);
-  --color-chart-4: var(--mantine-color-violet-6);
-  --color-chart-5: var(--mantine-color-pink-6);
+	/* ── Chart palette (map to Mantine color scale stops) ── */
+	--color-chart-1: var(--mantine-color-blue-6);
+	--color-chart-2: var(--mantine-color-teal-6);
+	--color-chart-3: var(--mantine-color-orange-6);
+	--color-chart-4: var(--mantine-color-violet-6);
+	--color-chart-5: var(--mantine-color-pink-6);
 
-  /* ── Sidebar ── */
-  --color-sidebar: var(--mantine-color-body);
-  --color-sidebar-foreground: var(--mantine-color-text);
-  --color-sidebar-primary: var(--mantine-primary-color-filled);
-  --color-sidebar-primary-foreground: var(--mantine-primary-color-contrast);
-  --color-sidebar-accent: var(--mantine-color-default-hover);
-  --color-sidebar-accent-foreground: var(--mantine-color-text);
-  --color-sidebar-border: var(--mantine-color-default-border);
-  --color-sidebar-ring: var(--mantine-primary-color-filled);
+	/* ── Sidebar ── */
+	--color-sidebar: var(--mantine-color-body);
+	--color-sidebar-foreground: var(--mantine-color-text);
+	--color-sidebar-primary: var(--mantine-primary-color-filled);
+	--color-sidebar-primary-foreground: var(--mantine-primary-color-contrast);
+	--color-sidebar-accent: var(--mantine-color-default-hover);
+	--color-sidebar-accent-foreground: var(--mantine-color-text);
+	--color-sidebar-border: var(--mantine-color-default-border);
+	--color-sidebar-ring: var(--mantine-primary-color-filled);
 
-  /* ── Radius ──────────────────────────────────────────────────────────────
+	/* ── Radius ──────────────────────────────────────────────────────────────
      shadcn derives its full scale from a single --radius base.
      We set that base to Mantine's md radius, then let shadcn's
      calc() multipliers do the rest. Override --radius in :root to
      shift the whole scale (e.g. var(--mantine-radius-sm) for sharper UI).
   ── */
-  --radius: var(--mantine-radius-md); /* base: ~0.5rem default */
+	--radius: var(--mantine-radius-md); /* base: ~0.5rem default */
 
-  --radius-sm: calc(var(--radius) * 0.6); /* ~xs equivalent        */
-  --radius-md: calc(var(--radius) * 0.8); /* between xs and md     */
-  --radius-lg: var(--radius); /* = --mantine-radius-md */
-  --radius-xl: calc(var(--radius) * 1.4); /* = --mantine-radius-lg */
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6); /* ~pill territory       */
+	--radius-sm: calc(var(--radius) * 0.6); /* ~xs equivalent        */
+	--radius-md: calc(var(--radius) * 0.8); /* between xs and md     */
+	--radius-lg: var(--radius); /* = --mantine-radius-md */
+	--radius-xl: calc(var(--radius) * 1.4); /* = --mantine-radius-lg */
+	--radius-2xl: calc(var(--radius) * 1.8);
+	--radius-3xl: calc(var(--radius) * 2.2);
+	--radius-4xl: calc(var(--radius) * 2.6); /* ~pill territory       */
 
-  /* ── Typography ──────────────────────────────────────────────────────────
+	/* ── Typography ──────────────────────────────────────────────────────────
      shadcn exposes font-family tokens for sans, serif, and mono.
      Mantine surfaces its font stacks via these vars.
   ── */
-  --font-sans: var(--mantine-font-family);
-  --font-mono: var(--mantine-font-family-monospace);
-  /* shadcn has no --font-serif equivalent in Mantine; fall back to a
+	--font-sans: var(--mantine-font-family);
+	--font-mono: var(--mantine-font-family-monospace);
+	/* shadcn has no --font-serif equivalent in Mantine; fall back to a
      sensible system stack: */
-  --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+	--font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
 
-  /* ── Spacing ─────────────────────────────────────────────────────────────
+	/* ── Spacing ─────────────────────────────────────────────────────────────
      shadcn components themselves don't define spacing CSS vars —
      they rely on Tailwind's built-in spacing scale (which is already
      available as --spacing-* in Tailwind v4). The one shadcn-specific
      spacing concept is the sidebar width tokens, added in newer releases.
   ── */
-  --sidebar-width: 16rem; /* shadcn default */
-  --sidebar-width-icon: 3rem;
-  --sidebar-width-mobile: 18rem;
+	--sidebar-width: 16rem; /* shadcn default */
+	--sidebar-width-icon: 3rem;
+	--sidebar-width-mobile: 18rem;
 
-  /* ── Shadows ─────────────────────────────────────────────────────────────
+	/* ── Shadows ─────────────────────────────────────────────────────────────
      shadcn components use Tailwind's shadow-* utilities directly,
      but some newer presets expose these semantic shadow tokens.
      Mantine doesn't have named shadow CSS vars, so we map to
      Tailwind v4's built-in shadow scale.
   ── */
-  --shadow-sm: var(--shadow-sm); /* Tailwind v4 built-in */
-  --shadow-md: var(--shadow-md);
-  --shadow-lg: var(--shadow-lg);
-  --shadow-xl: var(--shadow-xl);
+	--shadow-sm: var(--shadow-sm); /* Tailwind v4 built-in */
+	--shadow-md: var(--shadow-md);
+	--shadow-lg: var(--shadow-lg);
+	--shadow-xl: var(--shadow-xl);
 
-  /* ── Animation ───────────────────────────────────────────────────────────
+	/* ── Animation ───────────────────────────────────────────────────────────
      shadcn's accordion/collapsible components reference these
      keyframe-driven vars. No Mantine equivalent exists; these are
      just the shadcn defaults passed through unchanged.
   ── */
-  --animate-accordion-down: accordion-down 0.2s ease-out;
-  --animate-accordion-up: accordion-up 0.2s ease-out;
+	--animate-accordion-down: accordion-down 0.2s ease-out;
+	--animate-accordion-up: accordion-up 0.2s ease-out;
 }
 
 html,
 body {
-  overflow: hidden;
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  overscroll-behavior: none;
-  -webkit-overflow-scrolling: auto;
-  user-select: none;
-  -webkit-user-select: none;
+	overflow: hidden;
+	position: fixed;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	overscroll-behavior: none;
+	-webkit-overflow-scrolling: auto;
+	user-select: none;
+	-webkit-user-select: none;
 }
 
 .selectable * {
-  user-select: text;
-  -webkit-user-select: text;
+	user-select: text;
+	-webkit-user-select: text;
 }
 
 .mantine-AppShell-root,
 .mantine-AppShell-main {
-  min-height: 0 !important;
-  max-height: 100% !important;
+	min-height: 0 !important;
+	max-height: 100% !important;
 }
 
 .mantine-NavLink-label {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .section-on-hover .mantine-NavLink-section {
-  display: none;
+	display: none;
 }
 
 .section-on-hover:hover .mantine-NavLink-section,
 .section-on-hover.hover .mantine-NavLink-section {
-  display: flex;
+	display: flex;
 }
 
-[data-mantine-color-scheme='dark'] .mantine-NavLink-root:hover:not([data-active='true']),
-[data-mantine-color-scheme='dark'] .nav-link-like:is(:hover, [data-active='true']),
-[data-mantine-color-scheme='dark'] .chat-input Button:hover {
-  background-color: var(--mantine-color-dark-5);
+[data-mantine-color-scheme="dark"]
+	.mantine-NavLink-root:hover:not([data-active="true"]),
+[data-mantine-color-scheme="dark"]
+	.nav-link-like:is(:hover, [data-active="true"]),
+[data-mantine-color-scheme="dark"] .chat-input Button:hover {
+	background-color: var(--mantine-color-dark-5);
 }
 
-[data-mantine-color-scheme='light'] .mantine-NavLink-root:hover:not([data-active='true']),
-[data-mantine-color-scheme='light'] .nav-link-like:is(:hover, [data-active='true']),
-[data-mantine-color-scheme='light'] .chat-input Button:hover {
-  background-color: var(--mantine-color-gray-3);
+[data-mantine-color-scheme="light"]
+	.mantine-NavLink-root:hover:not([data-active="true"]),
+[data-mantine-color-scheme="light"]
+	.nav-link-like:is(:hover, [data-active="true"]),
+[data-mantine-color-scheme="light"] .chat-input Button:hover {
+	background-color: var(--mantine-color-gray-3);
 }
 
-.nav-link-like.filled[data-active='true'] {
-  background-color: var(--mantine-color-blue-filled);
+.nav-link-like.filled[data-active="true"] {
+	background-color: var(--mantine-color-blue-filled);
 }
 
-.nav-link-like.filled[data-active='true']:hover {
-  background-color: var(--mantine-color-blue-filled-hover);
+.nav-link-like.filled[data-active="true"]:hover {
+	background-color: var(--mantine-color-blue-filled-hover);
 }
 
-.nav-link-like.filled[data-active='true'] * {
-  color: var(--mantine-color-white);
+.nav-link-like.filled[data-active="true"] * {
+	color: var(--mantine-color-white);
 }
 
 [data-slate-editor] {
-  align-content: center;
+	align-content: center;
 }
 
 [data-slate-editor] p {
-  margin: 0;
+	margin: 0;
 }
 
 [contenteditable] {
-  font-size: 16px; /* prevents iOS zoom I guess */
+	font-size: 16px; /* prevents iOS zoom I guess */
 }
 
 [contenteditable]:focus {
-  outline: 0 solid transparent !important;
+	outline: 0 solid transparent !important;
 }
 
 [data-streamdown="table"] {
-  min-width: 300px;
+	min-width: 300px;
 }
 
-[data-mantine-color-scheme='dark'] [data-streamdown="table"] th {
-  background: color-mix(in srgb, var(--tc-surface) 75%, rgba(255, 255, 255, 0.01) 25%);
+[data-mantine-color-scheme="dark"] [data-streamdown="table"] th {
+	background: color-mix(
+		in srgb,
+		var(--tc-surface) 75%,
+		rgba(255, 255, 255, 0.01) 25%
+	);
 }
 
 [data-streamdown="code-block-body"] {
-  padding: 10px 5px !important;
+	padding: 10px 5px !important;
 }
 
 /* ── Vidstack theme overrides ─────────────────────────────────── */
@@ -224,190 +234,255 @@ body {
 /* Shared (applied to both themes via the layout root) */
 .vds-video-layout,
 .vds-audio-layout {
-  --video-brand: var(--mantine-color-blue-filled);
-  --video-focus-ring-color: var(--mantine-color-blue-filled);
+	--video-brand: var(--mantine-color-blue-filled);
+	--video-focus-ring-color: var(--mantine-color-blue-filled);
 
-  --audio-brand: var(--mantine-color-blue-filled);
-  --audio-focus-ring-color: var(--mantine-color-blue-filled);
+	--audio-brand: var(--mantine-color-blue-filled);
+	--audio-focus-ring-color: var(--mantine-color-blue-filled);
 }
 
 /* Dark theme */
-[data-mantine-color-scheme='dark'] .vds-video-layout,
-[data-mantine-color-scheme='dark'] .vds-audio-layout {
-  --video-bg: var(--tc-surface);
-  --audio-bg: var(--tc-surface);
+[data-mantine-color-scheme="dark"] .vds-video-layout,
+[data-mantine-color-scheme="dark"] .vds-audio-layout {
+	--video-bg: var(--tc-surface);
+	--audio-bg: var(--tc-surface);
 
-  --default-bg: var(--mantine-color-dark-7);
-  --default-border: var(--mantine-color-dark-5);
+	--default-bg: var(--mantine-color-dark-7);
+	--default-border: var(--mantine-color-dark-5);
 
-  --menu-bg: var(--mantine-color-dark-6);
-  --menu-bg-hover: var(--mantine-color-dark-5);
-  --menu-border-color: var(--mantine-color-dark-5);
+	--menu-bg: var(--mantine-color-dark-6);
+	--menu-bg-hover: var(--mantine-color-dark-5);
+	--menu-border-color: var(--mantine-color-dark-5);
 
-  --settings-bg: var(--mantine-color-dark-6);
-  --settings-bg-hover: var(--mantine-color-dark-5);
-  --settings-border-color: var(--mantine-color-dark-5);
-  --settings-focus-bg: var(--mantine-color-dark-5);
+	--settings-bg: var(--mantine-color-dark-6);
+	--settings-bg-hover: var(--mantine-color-dark-5);
+	--settings-border-color: var(--mantine-color-dark-5);
+	--settings-focus-bg: var(--mantine-color-dark-5);
 
-  --slider-track-bg: var(--mantine-color-dark-4);
-  --slider-track-fill-bg: var(--mantine-color-blue-filled);
-  --slider-thumb-bg: var(--mantine-color-blue-light);
+	--slider-track-bg: var(--mantine-color-dark-4);
+	--slider-track-fill-bg: var(--mantine-color-blue-filled);
+	--slider-thumb-bg: var(--mantine-color-blue-light);
 
-  --time-divider-color: var(--mantine-color-dark-3);
+	--time-divider-color: var(--mantine-color-dark-3);
 
-  --tooltip-bg: var(--mantine-color-dark-6);
-  --tooltip-border-color: var(--mantine-color-dark-5);
-  --tooltip-color: var(--mantine-color-dark-0);
+	--tooltip-bg: var(--mantine-color-dark-6);
+	--tooltip-border-color: var(--mantine-color-dark-5);
+	--tooltip-color: var(--mantine-color-dark-0);
 
-  --chapter-title-color: var(--mantine-color-dark-1);
-  --title-color: var(--mantine-color-dark-1);
+	--chapter-title-color: var(--mantine-color-dark-1);
+	--title-color: var(--mantine-color-dark-1);
 }
 
 /* Light theme */
-[data-mantine-color-scheme='light'] .vds-video-layout,
-[data-mantine-color-scheme='light'] .vds-audio-layout {
-  --video-bg: var(--tc-surface);
-  --audio-bg: var(--tc-surface);
+[data-mantine-color-scheme="light"] .vds-video-layout,
+[data-mantine-color-scheme="light"] .vds-audio-layout {
+	--video-bg: var(--tc-surface);
+	--audio-bg: var(--tc-surface);
 
-  --default-bg: #f4f5f8; /* matches your light body */
-  --default-border: var(--mantine-color-gray-3);
+	--default-bg: #f4f5f8; /* matches your light body */
+	--default-border: var(--mantine-color-gray-3);
 
-  --menu-bg: #ffffff;
-  --menu-bg-hover: var(--mantine-color-gray-1);
-  --menu-border-color: var(--mantine-color-gray-3);
+	--menu-bg: #ffffff;
+	--menu-bg-hover: var(--mantine-color-gray-1);
+	--menu-border-color: var(--mantine-color-gray-3);
 
-  --settings-bg: #ffffff;
-  --settings-bg-hover: var(--mantine-color-gray-1);
-  --settings-border-color: var(--mantine-color-gray-3);
-  --settings-focus-bg: var(--mantine-color-gray-1);
+	--settings-bg: #ffffff;
+	--settings-bg-hover: var(--mantine-color-gray-1);
+	--settings-border-color: var(--mantine-color-gray-3);
+	--settings-focus-bg: var(--mantine-color-gray-1);
 
-  --slider-track-bg: var(--mantine-color-gray-3);
-  --slider-track-fill-bg: var(--mantine-color-blue-filled);
-  --slider-thumb-bg: var(--mantine-color-blue-light);
+	--slider-track-bg: var(--mantine-color-gray-3);
+	--slider-track-fill-bg: var(--mantine-color-blue-filled);
+	--slider-thumb-bg: var(--mantine-color-blue-light);
 
-  --time-divider-color: var(--mantine-color-gray-5);
+	--time-divider-color: var(--mantine-color-gray-5);
 
-  --tooltip-bg: #ffffff;
-  --tooltip-border-color: var(--mantine-color-gray-3);
-  --tooltip-color: var(--mantine-color-gray-9);
+	--tooltip-bg: #ffffff;
+	--tooltip-border-color: var(--mantine-color-gray-3);
+	--tooltip-color: var(--mantine-color-gray-9);
 
-  --chapter-title-color: var(--mantine-color-gray-7);
-  --title-color: var(--mantine-color-gray-8);
+	--chapter-title-color: var(--mantine-color-gray-7);
+	--title-color: var(--mantine-color-gray-8);
 }
 
 :where(.vds-menu-items) {
-  --root-bg: var(--tc-surface);
+	--root-bg: var(--tc-surface);
 }
 
-[data-mantine-color-scheme='dark'] .vds-menu-items {
-  --default-gray-200: var(--mantine-color-dark-6);
-  --default-gray-300: var(--mantine-color-dark-7);
+[data-mantine-color-scheme="dark"] .vds-menu-items {
+	--default-gray-200: var(--mantine-color-dark-6);
+	--default-gray-300: var(--mantine-color-dark-7);
 }
 
-[data-mantine-color-scheme='light'] .vds-menu-items {
-  --default-gray-200: var(--mantine-color-white);
-  --default-gray-300: var(--mantine-color-gray-1);
+[data-mantine-color-scheme="light"] .vds-menu-items {
+	--default-gray-200: var(--mantine-color-white);
+	--default-gray-300: var(--mantine-color-gray-1);
 }
 
 .vds-audio-layout .vds-volume-popup {
-  --default-bg: var(--tc-surface) !important;
+	--default-bg: var(--tc-surface) !important;
 }
 
-[data-mantine-color-scheme='dark'] .vds-icon path {
-  fill: var(--mantine-color-gray-4);
+[data-mantine-color-scheme="dark"] .vds-icon path {
+	fill: var(--mantine-color-gray-4);
 }
 
-[data-mantine-color-scheme='light'] :not(.vds-play-button) > .vds-icon path {
-  fill: var(--mantine-color-dark-3);
+[data-mantine-color-scheme="light"] :not(.vds-play-button) > .vds-icon path {
+	fill: var(--mantine-color-dark-3);
 }
 
-table[class*='react-diff'] {
-  flex-shrink: 1 !important;
-  flex-grow: 1 !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  max-width: 100% !important;
-  max-height: 100% !important;
-  width: 100% !important;
-  height: 100% !important;
-  position: relative !important;
-  inset: 0 !important;
+table[class*="react-diff"] {
+	flex-shrink: 1 !important;
+	flex-grow: 1 !important;
+	min-width: 0 !important;
+	min-height: 0 !important;
+	max-width: 100% !important;
+	max-height: 100% !important;
+	width: 100% !important;
+	height: 100% !important;
+	position: relative !important;
+	inset: 0 !important;
 }
 
-[class*='react-diff'] td {
-  padding: 3px !important;
-  height: 20px !important;
+[class*="react-diff"] td {
+	padding: 3px !important;
+	height: 20px !important;
 }
 
-[class*='react-diff'] pre {
-  padding: 0 !important;
-  width: 100% !important;
-  text-align: center !important;
+[class*="react-diff"] pre {
+	padding: 0 !important;
+	width: 100% !important;
+	text-align: center !important;
 }
 
-[class*='react-diff'][class*='-content'] {
-  width: 100% !important;
+[class*="react-diff"][class*="-content"] {
+	width: 100% !important;
 }
 
-[data-streamdown='code-block'] {
-  background: var(--tc-surface);
+[data-streamdown="code-block"] {
+	background: var(--tc-surface);
 }
 
-[data-streamdown='code-block-body'] {
-  background: var(--tc-surface);
-  padding: 0;
+[data-streamdown="code-block-body"] {
+	background: var(--tc-surface);
+	padding: 0;
 }
 
-[data-streamdown='code-block-actions'] {
-  background: var(--tc-surface);
-  border: 0;
+[data-streamdown="code-block-actions"] {
+	background: var(--tc-surface);
+	border: 0;
 }
 
 .shimmer-text {
-  color: var(--mantine-color-dimmed);
+	color: var(--mantine-color-dimmed);
 }
 
 .sd-wrapper > * > *:last-child::after {
-  --streamdown-caret: '•••';
-  font-size: 25px;
+	--streamdown-caret: "•••";
+	font-size: 25px;
 }
 
 .shimmer-text.active,
 .sd-wrapper > * > *:last-child::after {
-  background: linear-gradient(
-    90deg,
-    rgba(0, 0, 0, 0.25) 0%,
-    rgba(0, 0, 0, 0.75) 25%,
-    rgba(0, 0, 0, 0.25) 50%,
-    rgba(0, 0, 0, 0.75) 75%,
-    rgba(0, 0, 0, 0.25) 100%
-  );
-  color: transparent;
-  background-size: 200% auto;
-  background-clip: text;
-  -webkit-background-clip: text;
-  animation: shine 4s linear infinite;
+	background: linear-gradient(
+		90deg,
+		rgba(0, 0, 0, 0.25) 0%,
+		rgba(0, 0, 0, 0.75) 25%,
+		rgba(0, 0, 0, 0.25) 50%,
+		rgba(0, 0, 0, 0.75) 75%,
+		rgba(0, 0, 0, 0.25) 100%
+	);
+	color: transparent;
+	background-size: 200% auto;
+	background-clip: text;
+	-webkit-background-clip: text;
+	animation: shine 4s linear infinite;
 }
 
-[data-mantine-color-scheme='dark'] .shimmer-text.active,
+[data-mantine-color-scheme="dark"] .shimmer-text.active,
 .sd-wrapper > * > *:last-child::after {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.25) 0%,
-    rgba(255, 255, 255, 0.75) 25%,
-    rgba(255, 255, 255, 0.25) 50%,
-    rgba(255, 255, 255, 0.75) 75%,
-    rgba(255, 255, 255, 0.25) 100%
-  );
-  color: transparent;
-  background-size: 200% auto;
-  background-clip: text;
-  -webkit-background-clip: text;
-  animation: shine 4s linear infinite;
+	background: linear-gradient(
+		90deg,
+		rgba(255, 255, 255, 0.25) 0%,
+		rgba(255, 255, 255, 0.75) 25%,
+		rgba(255, 255, 255, 0.25) 50%,
+		rgba(255, 255, 255, 0.75) 75%,
+		rgba(255, 255, 255, 0.25) 100%
+	);
+	color: transparent;
+	background-size: 200% auto;
+	background-clip: text;
+	-webkit-background-clip: text;
+	animation: shine 4s linear infinite;
 }
 
 @keyframes shine {
-  to {
-    background-position: 200% center;
-  }
+	to {
+		background-position: 200% center;
+	}
+}
+
+.tiptap {
+	ol {
+		@apply list-inside list-decimal whitespace-normal [li_&]:pl-6;
+	}
+	ul {
+		@apply list-inside list-disc whitespace-normal in-[li]:pl-6;
+	}
+	li {
+		@apply py-1 [&>p]:inline;
+	}
+	hr {
+		@apply my-6 border-border;
+	}
+	strong {
+		@apply font-semibold;
+	}
+	a {
+		@apply wrap-anywhere font-medium text-primary underline;
+	}
+	h1 {
+		@apply mt-6 mb-2 font-semibold text-3xl;
+	}
+	h2 {
+		@apply mt-6 mb-2 font-semibold text-2xl;
+	}
+	h3 {
+		@apply mt-6 mb-2 font-semibold text-xl;
+	}
+	h4 {
+		@apply mt-6 mb-2 font-semibold text-lg;
+	}
+	h5 {
+		@apply mt-6 mb-2 font-semibold text-base;
+	}
+	h6 {
+		@apply mt-6 mb-2 font-semibold text-sm;
+	}
+	/* TODO - table */
+	thead {
+		@apply bg-muted/80;
+	}
+	tbody {
+		@apply divide-y divide-border;
+	}
+	tr {
+		@apply border-border;
+	}
+	th {
+		@apply whitespace-nowrap px-4 py-2 text-left font-semibold text-sm;
+	}
+	td {
+		@apply px-4 py-2 text-sm;
+	}
+	sup {
+		@apply text-sm;
+	}
+	sub {
+		@apply text-sm;
+	}
+	:not(pre) > code {
+		@apply rounded bg-muted px-1.5 py-0.5 font-mono text-sm;
+	}
+	/* TODO - code block */
 }

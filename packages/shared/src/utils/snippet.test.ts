@@ -1,5 +1,5 @@
-import { describe } from 'vitest';
+import { describe } from "vitest";
 
-describe('utils - snippets', () => {
-  // TODO
+describe("utils - snippets", () => {
+	// TODO
 });

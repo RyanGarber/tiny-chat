@@ -1,16 +1,14 @@
 {
-  "compilerOptions": {
-    "types": ["vitest/importMeta"],
-    "skipLibCheck": true,
-    /* Bundler mode */
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "noEmit": true,
-    /* Linting */
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "esModuleInterop": true
-  }
+	"compilerOptions": {
+		"types": ["vitest/importMeta"],
+		"skipLibCheck": true,
+		"allowImportingTsExtensions": true,
+		"resolveJsonModule": true,
+		"noEmit": true,
+		"strict": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noFallthroughCasesInSwitch": true,
+		"esModuleInterop": true
+	}
 }

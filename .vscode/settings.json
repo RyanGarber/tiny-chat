@@ -1,21 +1,19 @@
 {
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit",
-    "source.fixAll.prettier": "explicit"
-  },
-  "eslint.validate": [
-    "typescript"
-  ],
-  "files.exclude": {
-    "**/.git": true,
-    "**/.DS_Store": true,
-    "**/Thumbs.db": true
-  },
-  "rust-analyzer.cargo.buildScripts.enable": true,
-  "rust-analyzer.procMacro.enable": true,
-  "rust-analyzer.linkedProjects": ["apps/tauri/Cargo.toml"],
-  "typescript.validate.enable": true,
-  "typescript.preferences.preferTypeOnlyAutoImports": true,
-  "editor.indentSize": "tabSize",
-  "editor.tabSize": 2,
+	"editor.insertSpaces": false,
+	"editor.defaultFormatter": "biomejs.biome",
+	"editor.formatOnSave": true,
+	"editor.codeActionsOnSave": {
+		"source.fixAll.biome": "explicit",
+		"source.organizeImports.biome": "explicit"
+	},
+	"rust-analyzer.cargo.buildScripts.enable": true,
+	"rust-analyzer.procMacro.enable": true,
+	"rust-analyzer.linkedProjects": ["apps/tauri/Cargo.toml"],
+	"typescript.validate.enable": true,
+	"typescript.preferences.preferTypeOnlyAutoImports": true,
+	"files.exclude": {
+		"**/.git": true,
+		"**/.DS_Store": true,
+		"**/Thumbs.db": true
+	}
 }

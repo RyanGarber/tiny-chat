@@ -1,41 +1,41 @@
 {
-  "name": "@tiny-chat/backend",
-  "type": "module",
-  "scripts": {
-    "dev": "node --watch --watch-preserve-output src/server.ts -- --dev",
-    "start": "node src/server.ts"
-  },
-  "dependencies": {
-    "@paralleldrive/cuid2": "^3.3.0",
-    "@prisma/adapter-pg": "^7.8.0",
-    "@prisma/client": "^7.8.0",
-    "@ryangarber/ai-sdk-antigravity-proxy": "^0.1.4",
-    "@ryangarber/legiscan-ts": "^2.1.0",
-    "@tiny-chat/shared": "workspace:*",
-    "@trpc/server": "^11.18.0",
-    "ai": "^7.0.16",
-    "better-auth": "^1.6.23",
-    "busboy": "^1.6.0",
-    "fflate": "^0.8.3",
-    "internal-ip": "^9.0.0",
-    "just-bash": "^3.0.2",
-    "markitdown-ts": "^0.0.10",
-    "nanoid": "^5.1.16",
-    "rrule": "^2.8.1",
-    "sharp": "^0.35.3",
-    "superjson": "^2.2.6",
-    "timeago.js": "^4.0.2",
-    "zod": "^4.4.3"
-  },
-  "devDependencies": {
-    "@trpc/client": "^11.18.0",
-    "@types/busboy": "^1.5.4",
-    "@types/node": "^26.1.0",
-    "@types/ws": "^8.18.1",
-    "dotenv": "^17.4.2",
-    "dotenv-cli": "^11.0.0",
-    "prisma": "^7.8.0",
-    "superjson": "^2.2.6",
-    "tsx": "^4.23.0"
-  }
+	"name": "@tiny-chat/backend",
+	"type": "module",
+	"scripts": {
+		"dev": "node --watch --watch-preserve-output src/server.ts -- --dev",
+		"start": "node src/server.ts"
+	},
+	"dependencies": {
+		"@paralleldrive/cuid2": "^3.3.0",
+		"@prisma/adapter-pg": "^7.8.0",
+		"@prisma/client": "^7.8.0",
+		"@ryangarber/ai-sdk-antigravity-proxy": "^0.1.4",
+		"@ryangarber/legiscan-ts": "^2.1.0",
+		"@tiny-chat/shared": "workspace:*",
+		"@trpc/server": "^11.18.0",
+		"ai": "^7.0.18",
+		"better-auth": "^1.6.23",
+		"busboy": "^1.6.0",
+		"fflate": "^0.8.3",
+		"internal-ip": "^9.0.0",
+		"just-bash": "^3.1.0",
+		"markitdown-ts": "^0.0.10",
+		"nanoid": "^5.1.16",
+		"rrule": "^2.8.1",
+		"sharp": "^0.35.3",
+		"superjson": "^2.2.6",
+		"timeago.js": "^4.0.2",
+		"zod": "^4.4.3"
+	},
+	"devDependencies": {
+		"@trpc/client": "^11.18.0",
+		"@types/busboy": "^1.5.4",
+		"@types/node": "^26.1.1",
+		"@types/ws": "^8.18.1",
+		"dotenv": "^17.4.2",
+		"dotenv-cli": "^11.0.0",
+		"prisma": "^7.8.0",
+		"superjson": "^2.2.6",
+		"tsx": "^4.23.0"
+	}
 }

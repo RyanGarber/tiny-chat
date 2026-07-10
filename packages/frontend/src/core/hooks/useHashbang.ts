@@ -1,50 +1,57 @@
-import { refetchActiveChat } from '@/features/chat/hooks/useChat';
-import { useChatStore } from '@/features/chat/stores/useChatStore';
-import { useEffect } from 'react';
+import { useEffect } from "react";
+import { refetchActiveChat } from "#frontend/features/chat/hooks/useChat.ts";
+import { useChatStore } from "#frontend/features/chat/stores/useChatStore.ts";
 
-export const getHashbang = (): { hash: string; query: Record<string, string> } => {
-  if (window.location.hash.length < 2) window.location.hash = '#/';
-  const hash = window.location.hash.split(/[?&]/);
-  new URLSearchParams(hash.slice(1).join('&'));
-  return {
-    hash: hash[0].slice(2),
-    query: Object.fromEntries(new URLSearchParams(hash.slice(1).join('&')).entries()),
-  };
+export const getHashbang = (): {
+	hash: string;
+	query: Record<string, string>;
+} => {
+	if (window.location.hash.length < 2) window.location.hash = "#/";
+	const hash = window.location.hash.split(/[?&]/);
+	new URLSearchParams(hash.slice(1).join("&"));
+	return {
+		hash: hash[0].slice(2),
+		query: Object.fromEntries(
+			new URLSearchParams(hash.slice(1).join("&")).entries(),
+		),
+	};
 };
 
-export const setHashbang = (hash: string | null, query?: Record<string, string | undefined>) => {
-  query ??= getHashbang().query;
-  const queryString = new URLSearchParams(
-    Object.fromEntries(Object.entries(query).filter(([_, value]) => value !== undefined)) as Record<
-      string,
-      string
-    >,
-  ).toString();
-  window.location.hash = `#/${hash ?? ''}${queryString ? `?${queryString}` : ''}`;
+export const setHashbang = (
+	hash: string | null,
+	query?: Record<string, string | undefined>,
+) => {
+	query ??= getHashbang().query;
+	const queryString = new URLSearchParams(
+		Object.fromEntries(
+			Object.entries(query).filter(([_, value]) => value !== undefined),
+		) as Record<string, string>,
+	).toString();
+	window.location.hash = `#/${hash ?? ""}${queryString ? `?${queryString}` : ""}`;
 };
 
 export const useHashbang = () => {
-  const chatId = useChatStore((s) => s.chatId);
-  const setChatId = useChatStore((s) => s.setChatId);
+	const chatId = useChatStore((s) => s.chatId);
+	const setChatId = useChatStore((s) => s.setChatId);
 
-  // 1. Sync: URL -> Zustand (On mount and on hash change)
-  useEffect(() => {
-    const handleHashChange = () => {
-      const { hash } = getHashbang();
-      if (hash !== chatId) {
-        setChatId(hash || null);
-        if (hash) {
-          void refetchActiveChat(hash);
-        }
-      }
-    };
+	// 1. Sync: URL -> Zustand (On mount and on hash change)
+	useEffect(() => {
+		const handleHashChange = () => {
+			const { hash } = getHashbang();
+			if (hash !== chatId) {
+				setChatId(hash || null);
+				if (hash) {
+					void refetchActiveChat(hash);
+				}
+			}
+		};
 
-    // Run once on load
-    handleHashChange();
+		// Run once on load
+		handleHashChange();
 
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [chatId, setChatId]);
+		window.addEventListener("hashchange", handleHashChange);
+		return () => window.removeEventListener("hashchange", handleHashChange);
+	}, [chatId, setChatId]);
 
-  return getHashbang();
+	return getHashbang();
 };

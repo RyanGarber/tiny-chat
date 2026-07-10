@@ -1,14 +1,13 @@
 {
-  "compilerOptions": {
-    "module": "nodenext",
-    "moduleResolution": "nodenext"
-  },
-  "include": [
-    "src",
-    "eslint.config.ts",
-    "drizzle.config.ts",
-    "generated/prisma/**/*",
-    "../shared/src/logs.ts"
-  ],
-  "extends": "../../tsconfig.base.json"
+	"compilerOptions": {
+		"module": "nodenext",
+		"moduleResolution": "nodenext"
+	},
+	"include": [
+		"src",
+		"drizzle.config.ts",
+		"generated/prisma/**/*",
+		"../shared/src/logs.ts"
+	],
+	"extends": "../../tsconfig.base.json"
 }

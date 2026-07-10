@@ -1,109 +1,115 @@
-import type { tRPCRouter } from '@tiny-chat/backend/src/routes/index.ts';
-import { createTRPCClient, httpLink } from '@trpc/client';
-import { createAuthClient } from 'better-auth/react';
-import { anonymousClient, inferAdditionalFields } from 'better-auth/client/plugins';
-import superjson from 'superjson';
-import type { auth as serverAuth } from '@tiny-chat/backend/src/services/auth.ts';
-import { QueryClient } from '@tanstack/react-query';
-import { createTRPCOptionsProxy } from '@trpc/tanstack-react-query';
+import { QueryClient } from "@tanstack/react-query";
+import { createTRPCClient, httpLink } from "@trpc/client";
+import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query";
+import {
+	anonymousClient,
+	inferAdditionalFields,
+} from "better-auth/client/plugins";
+import { createAuthClient } from "better-auth/react";
+import superjson from "superjson";
+import type { tRPCRouter } from "#backend/routes/index.ts";
+import type { auth as serverAuth } from "#backend/services/auth.ts";
 
 declare global {
-  interface Window {
-    __TAURI__?: unknown;
-  }
+	interface Window {
+		__TAURI__?: unknown;
+	}
 }
 declare const __TAURI_DEV_HOST__: string | undefined;
 
 export const webUrl: string = import.meta.env.DEV
-  ? `http://${__TAURI_DEV_HOST__ ?? 'localhost'}:${import.meta.env.VITE_WEB_PORT}`
-  : import.meta.env.VITE_WEB_URL;
+	? `http://${__TAURI_DEV_HOST__ ?? "localhost"}:${import.meta.env.VITE_WEB_PORT}`
+	: import.meta.env.VITE_WEB_URL;
 
 export const backendUrl: string = import.meta.env.DEV
-  ? `http://${__TAURI_DEV_HOST__ ?? 'localhost'}:${import.meta.env.VITE_BACKEND_PORT}`
-  : import.meta.env.VITE_BACKEND_URL;
+	? `http://${__TAURI_DEV_HOST__ ?? "localhost"}:${import.meta.env.VITE_BACKEND_PORT}`
+	: import.meta.env.VITE_BACKEND_URL;
 
 export const env = { ...import.meta.env, VITE_BACKEND_URL: backendUrl };
 
 export const queryClient = new QueryClient();
 
 export const trpc = createTRPCClient<tRPCRouter>({
-  links: [
-    httpLink({
-      url: import.meta.env.DEV
-        ? `http://${__TAURI_DEV_HOST__ ?? 'localhost'}:${import.meta.env.VITE_BACKEND_PORT}${import.meta.env.VITE_BACKEND_PATH_TRPC}`
-        : `${import.meta.env.VITE_BACKEND_URL}${import.meta.env.VITE_BACKEND_PATH_TRPC}`,
-      transformer: superjson,
-      headers: () => {
-        const token = localStorage.getItem('token');
-        return { Authorization: token ? `Bearer ${token}` : undefined };
-      },
-      methodOverride: 'POST',
-    }),
-  ],
+	links: [
+		httpLink({
+			url: import.meta.env.DEV
+				? `http://${__TAURI_DEV_HOST__ ?? "localhost"}:${import.meta.env.VITE_BACKEND_PORT}${import.meta.env.VITE_BACKEND_PATH_TRPC}`
+				: `${import.meta.env.VITE_BACKEND_URL}${import.meta.env.VITE_BACKEND_PATH_TRPC}`,
+			transformer: superjson,
+			headers: () => {
+				const token = localStorage.getItem("token");
+				return { Authorization: token ? `Bearer ${token}` : undefined };
+			},
+			methodOverride: "POST",
+		}),
+	],
 });
 
 export const query = createTRPCOptionsProxy({
-  client: trpc,
-  queryClient: queryClient,
+	client: trpc,
+	queryClient: queryClient,
 });
 
 export const auth = createAuthClient({
-  baseURL: import.meta.env.DEV
-    ? `http://${__TAURI_DEV_HOST__ ?? 'localhost'}:${import.meta.env.VITE_BACKEND_PORT}`
-    : import.meta.env.VITE_BACKEND_URL,
-  basePath: import.meta.env.VITE_BACKEND_PATH_AUTH,
-  fetchOptions: {
-    auth: {
-      type: 'Bearer',
-      token: () => localStorage.getItem('token') ?? undefined,
-    },
-  },
-  plugins: [anonymousClient(), inferAdditionalFields<typeof serverAuth>()],
+	baseURL: import.meta.env.DEV
+		? `http://${__TAURI_DEV_HOST__ ?? "localhost"}:${import.meta.env.VITE_BACKEND_PORT}`
+		: import.meta.env.VITE_BACKEND_URL,
+	basePath: import.meta.env.VITE_BACKEND_PATH_AUTH,
+	fetchOptions: {
+		auth: {
+			type: "Bearer",
+			token: () => localStorage.getItem("token") ?? undefined,
+		},
+	},
+	plugins: [anonymousClient(), inferAdditionalFields<typeof serverAuth>()],
 });
 
-export async function invoke<T>(command: string, args?: Record<string, unknown>): Promise<T> {
-  if (!isTauri()) throw new Error(`invoke(${command}) called outside of tauri`);
+export async function invoke<T>(
+	command: string,
+	args?: Record<string, unknown>,
+): Promise<T> {
+	if (!isTauri()) throw new Error(`invoke(${command}) called outside of tauri`);
 
-  const { invoke } = await import('@tauri-apps/api/core');
-  return await invoke<T>(command, args).catch((error) => {
-    throw new Error(
-      `invoke(${command}) failed: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  });
+	const { invoke } = await import("@tauri-apps/api/core");
+	return await invoke<T>(command, args).catch((error) => {
+		throw new Error(
+			`invoke(${command}) failed: ${error instanceof Error ? error.message : String(error)}`,
+		);
+	});
 }
 
 export async function listen<T>(event: string, callback: (data: T) => void) {
-  if (!isTauri()) throw new Error(`listen(${event}) called outside of tauri`);
+	if (!isTauri()) throw new Error(`listen(${event}) called outside of tauri`);
 
-  const { listen } = await import('@tauri-apps/api/event');
-  return await listen<T>(event, (event) => callback(event.payload));
+	const { listen } = await import("@tauri-apps/api/event");
+	return await listen<T>(event, (event) => callback(event.payload));
 }
 
 export function isTauri() {
-  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+	return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 }
 
 export async function isTauriDesktop() {
-  if (!isTauri()) return false;
-  const { type } = await import('@tauri-apps/plugin-os');
-  return ['linux', 'macos', 'windows'].includes(type());
+	if (!isTauri()) return false;
+	const { type } = await import("@tauri-apps/plugin-os");
+	return ["linux", "macos", "windows"].includes(type());
 }
 
 export async function isTauriWithAfm() {
-  if (!isTauri()) return false;
-  const { type } = await import('@tauri-apps/plugin-os');
-  if (!['macos', 'ios'].includes(type())) return false;
-  return await invoke<boolean>('afm_enabled');
+	if (!isTauri()) return false;
+	const { type } = await import("@tauri-apps/plugin-os");
+	if (!["macos", "ios"].includes(type())) return false;
+	return await invoke<boolean>("afm_enabled");
 }
 
 export async function openExternal(url: string) {
-  console.log(`Opening link externally: ${url}`);
+	console.log(`Opening link externally: ${url}`);
 
-  if (isTauri()) {
-    const { openUrl } = await import('@tauri-apps/plugin-opener');
-    await openUrl(url);
-    return;
-  } else {
-    window.open(url, '_blank', 'noopener,noreferrer');
-  }
+	if (isTauri()) {
+		const { openUrl } = await import("@tauri-apps/plugin-opener");
+		await openUrl(url);
+		return;
+	} else {
+		window.open(url, "_blank", "noopener,noreferrer");
+	}
 }

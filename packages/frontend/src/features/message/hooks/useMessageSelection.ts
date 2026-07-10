@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * Tracks text selection within a specific message container identified by
@@ -23,111 +23,121 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  */
 
 interface SelectionRect {
-  top: number;
-  left: number;
-  width: number;
-  height: number;
+	top: number;
+	left: number;
+	width: number;
+	height: number;
 }
 
 export interface UseMessageSelectionReturn {
-  rect: SelectionRect | null;
-  textRef: React.MutableRefObject<string>;
-  captureSelection: (e: React.MouseEvent | React.TouchEvent) => void;
-  getSelectedText: () => string;
+	rect: SelectionRect | null;
+	textRef: React.MutableRefObject<string>;
+	captureSelection: (e: React.MouseEvent | React.TouchEvent) => void;
+	getSelectedText: () => string;
 }
 
 const RECT_THRESHOLD = 2; // px – ignore sub-pixel jitter
 
 function rectsEqual(a: SelectionRect | null, b: SelectionRect): boolean {
-  if (a === null) return false;
-  return (
-    Math.abs(a.top - b.top) < RECT_THRESHOLD &&
-    Math.abs(a.left - b.left) < RECT_THRESHOLD &&
-    Math.abs(a.width - b.width) < RECT_THRESHOLD &&
-    Math.abs(a.height - b.height) < RECT_THRESHOLD
-  );
+	if (a === null) return false;
+	return (
+		Math.abs(a.top - b.top) < RECT_THRESHOLD &&
+		Math.abs(a.left - b.left) < RECT_THRESHOLD &&
+		Math.abs(a.width - b.width) < RECT_THRESHOLD &&
+		Math.abs(a.height - b.height) < RECT_THRESHOLD
+	);
 }
 
-export function useMessageSelection(messageId: string): UseMessageSelectionReturn {
-  const [rect, setRect] = useState<SelectionRect | null>(null);
+export function useMessageSelection(
+	messageId: string,
+): UseMessageSelectionReturn {
+	const [rect, setRect] = useState<SelectionRect | null>(null);
 
-  // Stores the last non-empty selection string so the quote button can read it
-  // even after iOS Safari clears the selection on pointerdown.
-  const textRef = useRef<string>('');
+	// Stores the last non-empty selection string so the quote button can read it
+	// even after iOS Safari clears the selection on pointerdown.
+	const textRef = useRef<string>("");
 
-  // rAF handle – we cancel the previous one if selectionchange fires again
-  // before the frame executes (avoids queuing multiple updates per burst).
-  const rafRef = useRef<number>(0);
+	// rAF handle – we cancel the previous one if selectionchange fires again
+	// before the frame executes (avoids queuing multiple updates per burst).
+	const rafRef = useRef<number>(0);
 
-  useEffect(() => {
-    const isInMessage = (node: Node | null): boolean => {
-      if (!node) return false;
-      const el = node.nodeType === Node.TEXT_NODE ? node.parentElement : (node as Element);
-      return !!el?.closest(`[data-message-id="${messageId}"]`);
-    };
+	useEffect(() => {
+		const isInMessage = (node: Node | null): boolean => {
+			if (!node) return false;
+			const el =
+				node.nodeType === Node.TEXT_NODE
+					? node.parentElement
+					: (node as Element);
+			return !!el?.closest(`[data-message-id="${messageId}"]`);
+		};
 
-    const handleSelectionChange = () => {
-      // Cancel any pending frame so we only do one update per burst.
-      cancelAnimationFrame(rafRef.current);
+		const handleSelectionChange = () => {
+			// Cancel any pending frame so we only do one update per burst.
+			cancelAnimationFrame(rafRef.current);
 
-      rafRef.current = requestAnimationFrame(() => {
-        const sel = window.getSelection();
+			rafRef.current = requestAnimationFrame(() => {
+				const sel = window.getSelection();
 
-        if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
-          // Only call setState if we were previously showing the button.
-          setRect((prev) => (prev !== null ? null : prev));
-          return;
-        }
+				if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
+					// Only call setState if we were previously showing the button.
+					setRect((prev) => (prev !== null ? null : prev));
+					return;
+				}
 
-        if (isInMessage(sel.anchorNode) && isInMessage(sel.focusNode)) {
-          const domRect = sel.getRangeAt(0).getBoundingClientRect();
-          // Capture text into the ref on every valid selection update.
-          const text = sel.toString();
-          if (text) textRef.current = text;
+				if (isInMessage(sel.anchorNode) && isInMessage(sel.focusNode)) {
+					const domRect = sel.getRangeAt(0).getBoundingClientRect();
+					// Capture text into the ref on every valid selection update.
+					const text = sel.toString();
+					if (text) textRef.current = text;
 
-          const next: SelectionRect = {
-            top: domRect.top,
-            left: domRect.left,
-            width: domRect.width,
-            height: domRect.height,
-          };
+					const next: SelectionRect = {
+						top: domRect.top,
+						left: domRect.left,
+						width: domRect.width,
+						height: domRect.height,
+					};
 
-          setRect((prev) =>
-            // Skip re-render if rect hasn't moved meaningfully.
-            rectsEqual(prev, next) ? prev : next,
-          );
-        } else {
-          setRect((prev) => (prev !== null ? null : prev));
-        }
-      });
-    };
+					setRect((prev) =>
+						// Skip re-render if rect hasn't moved meaningfully.
+						rectsEqual(prev, next) ? prev : next,
+					);
+				} else {
+					setRect((prev) => (prev !== null ? null : prev));
+				}
+			});
+		};
 
-    document.addEventListener('selectionchange', handleSelectionChange, { passive: true });
+		document.addEventListener("selectionchange", handleSelectionChange, {
+			passive: true,
+		});
 
-    return () => {
-      document.removeEventListener('selectionchange', handleSelectionChange);
-      cancelAnimationFrame(rafRef.current);
-    };
-  }, [messageId]);
+		return () => {
+			document.removeEventListener("selectionchange", handleSelectionChange);
+			cancelAnimationFrame(rafRef.current);
+		};
+	}, [messageId]);
 
-  /**
-   * Call on `onMouseDown` / `onTouchStart` of the quote button.
-   * Prevents the browser default that would clear the selection, and
-   * snapshots the current text into `textRef` as a safety net.
-   */
-  const captureSelection = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    const text = window.getSelection()?.toString();
-    if (text) textRef.current = text;
-  }, []);
+	/**
+	 * Call on `onMouseDown` / `onTouchStart` of the quote button.
+	 * Prevents the browser default that would clear the selection, and
+	 * snapshots the current text into `textRef` as a safety net.
+	 */
+	const captureSelection = useCallback(
+		(e: React.MouseEvent | React.TouchEvent) => {
+			e.preventDefault();
+			const text = window.getSelection()?.toString();
+			if (text) textRef.current = text;
+		},
+		[],
+	);
 
-  /**
-   * Call inside the quote button `onClick` handler to get the text.
-   * Falls back to `textRef` if the DOM selection was already cleared.
-   */
-  const getSelectedText = useCallback((): string => {
-    return (window.getSelection()?.toString() ?? textRef.current).trim();
-  }, []);
+	/**
+	 * Call inside the quote button `onClick` handler to get the text.
+	 * Falls back to `textRef` if the DOM selection was already cleared.
+	 */
+	const getSelectedText = useCallback((): string => {
+		return (window.getSelection()?.toString() ?? textRef.current).trim();
+	}, []);
 
-  return { rect, textRef, captureSelection, getSelectedText };
+	return { rect, textRef, captureSelection, getSelectedText };
 }

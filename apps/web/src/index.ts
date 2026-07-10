@@ -1,20 +1,23 @@
-import Fastify from 'fastify';
-import FastifyStatic from '@fastify/static';
-import { resolve } from 'path';
-import { config } from 'dotenv';
+import { resolve } from "node:path";
+import FastifyStatic from "@fastify/static";
+import { config } from "dotenv";
+import Fastify from "fastify";
 
-config({ path: '../../.env' });
+config({ path: "../../.env" });
 
 const fastify = Fastify();
 
 fastify.register(FastifyStatic, {
-  root: resolve(import.meta.dirname, '../dist'),
+	root: resolve(import.meta.dirname, "../dist"),
 });
 
-fastify.listen({ port: parseInt(process.env.VITE_WEB_PORT!) }, (err, address) => {
-  if (err) {
-    fastify.log.error(err);
-    process.exit(1);
-  }
-  console.log(`Web listening at ${address}`);
-});
+fastify.listen(
+	{ port: parseInt(process.env.VITE_WEB_PORT as string, 10) },
+	(err, address) => {
+		if (err) {
+			fastify.log.error(err);
+			process.exit(1);
+		}
+		console.log(`Web listening at ${address}`);
+	},
+);

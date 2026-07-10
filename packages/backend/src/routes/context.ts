@@ -1,22 +1,28 @@
-import { z } from 'zod';
-import { procedure, router } from '../index.ts';
-import { type Action, type Memory, Prisma } from '../../generated/prisma/client.ts';
-import { texts } from '@tiny-chat/shared/src/utils.ts';
-import type { MemorySearchResult } from '@tiny-chat/shared/src/types/chat.ts';
-import { zData } from '@tiny-chat/shared/src/types/chat.ts';
-import type { zUser } from '@tiny-chat/shared/src/types/user.ts';
-import { shouldIncludeFileSql } from '../utils/files.ts';
+import type { MemorySearchResult } from "@tiny-chat/shared/src/types/chat.ts";
+import { zData } from "@tiny-chat/shared/src/types/chat.ts";
+import type { zUser } from "@tiny-chat/shared/src/types/user.ts";
+import { texts } from "@tiny-chat/shared/src/utils.ts";
+import { z } from "zod";
+import {
+	type Action,
+	type Memory,
+	Prisma,
+} from "../../generated/prisma/client.ts";
+import { procedure, router } from "../index.ts";
+import { shouldIncludeFileSql } from "../utils/files.ts";
 
 export async function searchMemories(
-  user: zUser,
-  text?: string,
-  embedding?: number[],
-  limit = 20,
+	user: zUser,
+	text?: string,
+	embedding?: number[],
+	limit = 20,
 ): Promise<MemorySearchResult[]> {
-  console.log(`Searching for "${text}"${embedding ? ' (+embedding)' : ''} in all memories`);
+	console.log(
+		`Searching for "${text}"${embedding ? " (+embedding)" : ""} in all memories`,
+	);
 
-  // TODO - 1.5x normal websearch, 0.5x 'OR'-joined search as fallback when embeddings aren't available
-  const results = await globalThis.prisma.$queryRaw<MemorySearchResult[]>`
+	// TODO - 1.5x normal websearch, 0.5x 'OR'-joined search as fallback when embeddings aren't available
+	const results = await globalThis.prisma.$queryRaw<MemorySearchResult[]>`
     WITH search AS (
       SELECT websearch_to_tsquery('english', ${text}) AS query
     ),
@@ -97,60 +103,63 @@ export async function searchMemories(
     LIMIT ${limit}
   `;
 
-  console.log(`Found ${results.length} results`);
+	console.log(`Found ${results.length} results`);
 
-  return results;
+	return results;
 }
 
-export async function getEmbedding(user: zUser, { messageId }: { messageId?: string }) {
-  let embedding: string | undefined;
-  if (messageId) {
-    embedding = (
-      await globalThis.prisma.$queryRaw<
-        { embedding: string }[]
-      >`SELECT embedding FROM message WHERE id = ${messageId} AND "userId" = ${user.id}`
-    )[0]?.embedding;
-  }
-  if (embedding) return JSON.parse(embedding) as number[];
+export async function getEmbedding(
+	user: zUser,
+	{ messageId }: { messageId?: string },
+) {
+	let embedding: string | undefined;
+	if (messageId) {
+		embedding = (
+			await globalThis.prisma.$queryRaw<
+				{ embedding: string }[]
+			>`SELECT embedding FROM message WHERE id = ${messageId} AND "userId" = ${user.id}`
+		)[0]?.embedding;
+	}
+	if (embedding) return JSON.parse(embedding) as number[];
 }
 
 export default router({
-  listMemories: procedure.query(async ({ ctx }): Promise<Memory[]> => {
-    return globalThis.prisma.memory.findMany({
-      where: { userId: ctx.session.user.id },
-    });
-  }),
+	listMemories: procedure.query(async ({ ctx }): Promise<Memory[]> => {
+		return globalThis.prisma.memory.findMany({
+			where: { userId: ctx.session.user.id },
+		});
+	}),
 
-  searchMemories: procedure
-    .input(
-      z.object({
-        text: z.string().optional(),
-        embedding: z.array(z.number()).optional(),
-        limit: z.number().optional(),
-      }),
-    )
-    .query(({ ctx, input: { text, embedding, limit } }) => {
-      return searchMemories(ctx.session.user, text, embedding, limit);
-    }),
+	searchMemories: procedure
+		.input(
+			z.object({
+				text: z.string().optional(),
+				embedding: z.array(z.number()).optional(),
+				limit: z.number().optional(),
+			}),
+		)
+		.query(({ ctx, input: { text, embedding, limit } }) => {
+			return searchMemories(ctx.session.user, text, embedding, limit);
+		}),
 
-  getEmbedding: procedure
-    .input(z.custom<Parameters<typeof getEmbedding>[1]>())
-    .query(async ({ ctx, input }) => {
-      return getEmbedding(ctx.session.user, input);
-    }),
+	getEmbedding: procedure
+		.input(z.custom<Parameters<typeof getEmbedding>[1]>())
+		.query(async ({ ctx, input }) => {
+			return getEmbedding(ctx.session.user, input);
+		}),
 
-  listActions: procedure.query(async ({ ctx }): Promise<Action[]> => {
-    return globalThis.prisma.action.findMany({
-      where: { userId: ctx.session.user.id },
-    });
-  }),
+	listActions: procedure.query(async ({ ctx }): Promise<Action[]> => {
+		return globalThis.prisma.action.findMany({
+			where: { userId: ctx.session.user.id },
+		});
+	}),
 
-  listMissingEmbeddings: procedure
-    .input(z.object({ limit: z.number().optional() }))
-    .query(async ({ ctx, input }) => {
-      const messages = await globalThis.prisma.$queryRaw<
-        { id: string; data: any; total: number }[]
-      >`SELECT id, data, COUNT(*) OVER() as total
+	listMissingEmbeddings: procedure
+		.input(z.object({ limit: z.number().optional() }))
+		.query(async ({ ctx, input }) => {
+			const messages = await globalThis.prisma.$queryRaw<
+				{ id: string; data: any; total: number }[]
+			>`SELECT id, data, COUNT(*) OVER() as total
         FROM message
         WHERE "userId" = ${ctx.session.user.id}
           AND LENGTH((
@@ -162,11 +171,11 @@ export default router({
           AND embedding IS NULL
         ${input.limit ? Prisma.sql`LIMIT ${input.limit}` : Prisma.empty}`;
 
-      let actions: { id: string; data: any; total: number }[] = [];
-      if (!input.limit || messages.length < input.limit) {
-        actions = await globalThis.prisma.$queryRaw<
-          { id: string; data: any; total: number }[]
-        >`SELECT id, data, COUNT(*) OVER() as total
+			let actions: { id: string; data: any; total: number }[] = [];
+			if (!input.limit || messages.length < input.limit) {
+				actions = await globalThis.prisma.$queryRaw<
+					{ id: string; data: any; total: number }[]
+				>`SELECT id, data, COUNT(*) OVER() as total
         FROM action
         WHERE "userId" = ${ctx.session.user.id}
           AND LENGTH((
@@ -177,102 +186,120 @@ export default router({
           )) > 0
           AND embedding IS NULL
         ${input.limit ? Prisma.sql`LIMIT ${input.limit - messages.length}` : Prisma.empty}`;
-      }
+			}
 
-      let memories: { id: string; fact: string; total: number }[] = [];
-      if (!input.limit || messages.length + actions.length < input.limit) {
-        memories = await globalThis.prisma.$queryRaw<
-          typeof memories
-        >`SELECT id, fact, COUNT(*) OVER() as total
+			let memories: { id: string; fact: string; total: number }[] = [];
+			if (!input.limit || messages.length + actions.length < input.limit) {
+				memories = await globalThis.prisma.$queryRaw<
+					typeof memories
+				>`SELECT id, fact, COUNT(*) OVER() as total
           FROM memory
           WHERE "userId" = ${ctx.session.user.id}
             AND LENGTH(fact) > 0
             AND embedding IS NULL
           ${input.limit ? Prisma.sql`LIMIT ${input.limit - messages.length - actions.length}` : Prisma.empty}`;
-      }
+			}
 
-      let files: { id: string; data: Uint8Array; total: number }[] = [];
-      if (!input.limit || messages.length + actions.length + memories.length < input.limit) {
-        files = await globalThis.prisma.$queryRaw<
-          typeof files
-        >`SELECT id, data, COUNT(*) OVER() as total
+			let files: { id: string; data: Uint8Array; total: number }[] = [];
+			if (
+				!input.limit ||
+				messages.length + actions.length + memories.length < input.limit
+			) {
+				files = await globalThis.prisma.$queryRaw<
+					typeof files
+				>`SELECT id, data, COUNT(*) OVER() as total
           FROM file
           WHERE "userId" = ${ctx.session.user.id}
             AND ${shouldIncludeFileSql(true)}
             AND try_decode_utf8(data) IS NOT NULL
             AND embedding IS NULL
           ${input.limit ? Prisma.sql`LIMIT ${input.limit - messages.length - actions.length - memories.length}` : Prisma.empty}`;
-      }
+			}
 
-      if (!messages.length && !actions.length && !memories.length && !files.length) return null;
+			if (
+				!messages.length &&
+				!actions.length &&
+				!memories.length &&
+				!files.length
+			)
+				return null;
 
-      return {
-        messages: messages.map((m) => ({ ...m, text: texts(zData.parse(m.data), ' ') })),
-        actions: actions.map((a) => ({ ...a, text: texts(zData.parse(a.data), ' ') })),
-        memories: memories.map((m) => ({ ...m, text: m.fact })),
-        files: files.map((f) => ({ ...f, text: new TextDecoder().decode(f.data) })),
-      };
-    }),
+			return {
+				messages: messages.map((m) => ({
+					...m,
+					text: texts(zData.parse(m.data), " "),
+				})),
+				actions: actions.map((a) => ({
+					...a,
+					text: texts(zData.parse(a.data), " "),
+				})),
+				memories: memories.map((m) => ({ ...m, text: m.fact })),
+				files: files.map((f) => ({
+					...f,
+					text: new TextDecoder().decode(f.data),
+				})),
+			};
+		}),
 
-  saveEmbeddings: procedure
-    .input(
-      z.array(
-        z.object({
-          messageId: z.cuid2().optional(),
-          actionId: z.cuid2().optional(),
-          memoryId: z.cuid2().optional(),
-          fileId: z.cuid2().optional(),
-          embedding: z.array(z.number()),
-        }),
-      ),
-    )
-    .mutation(async ({ input, ctx }) => {
-      await globalThis.prisma.$transaction(
-        input.flatMap((item) => {
-          if (item.messageId) {
-            return globalThis.prisma.$executeRaw`
+	saveEmbeddings: procedure
+		.input(
+			z.array(
+				z.object({
+					messageId: z.cuid2().optional(),
+					actionId: z.cuid2().optional(),
+					memoryId: z.cuid2().optional(),
+					fileId: z.cuid2().optional(),
+					embedding: z.array(z.number()),
+				}),
+			),
+		)
+		.mutation(async ({ input, ctx }) => {
+			await globalThis.prisma.$transaction(
+				input.flatMap((item) => {
+					if (item.messageId) {
+						return globalThis.prisma.$executeRaw`
               UPDATE message
               SET embedding = ${JSON.stringify(item.embedding)}::vector
               WHERE id = ${item.messageId}
               AND "userId" = ${ctx.session.user.id}`;
-          }
-          if (item.actionId) {
-            return globalThis.prisma.$executeRaw`UPDATE action
+					}
+					if (item.actionId) {
+						return globalThis.prisma.$executeRaw`UPDATE action
               SET embedding = ${JSON.stringify(item.embedding)}::vector
               WHERE id = ${item.actionId}
               AND "userId" = ${ctx.session.user.id}`;
-          }
-          if (item.memoryId) {
-            return globalThis.prisma.$executeRaw`UPDATE memory
+					}
+					if (item.memoryId) {
+						return globalThis.prisma.$executeRaw`UPDATE memory
               SET embedding = ${JSON.stringify(item.embedding)}::vector
               WHERE id = ${item.memoryId}
               AND "userId" = ${ctx.session.user.id}`;
-          }
-          if (item.fileId) {
-            return globalThis.prisma.$executeRaw`UPDATE file
+					}
+					if (item.fileId) {
+						return globalThis.prisma.$executeRaw`UPDATE file
               SET embedding = ${JSON.stringify(item.embedding)}::vector
               WHERE id = ${item.fileId}
               AND "userId" = ${ctx.session.user.id}`;
-          }
-          return [];
-        }),
-      );
-    }),
+					}
+					return [];
+				}),
+			);
+		}),
 
-  resetEmbeddings: procedure.mutation(async ({ ctx }) => {
-    await globalThis.prisma.$transaction([
-      globalThis.prisma.$executeRaw`UPDATE message
+	resetEmbeddings: procedure.mutation(async ({ ctx }) => {
+		await globalThis.prisma.$transaction([
+			globalThis.prisma.$executeRaw`UPDATE message
                            SET embedding = NULL
                            WHERE "userId" = ${ctx.session.user.id}`,
-      globalThis.prisma.$executeRaw`UPDATE action
+			globalThis.prisma.$executeRaw`UPDATE action
                            SET embedding = NULL
                            WHERE "userId" = ${ctx.session.user.id}`,
-      globalThis.prisma.$executeRaw`UPDATE memory
+			globalThis.prisma.$executeRaw`UPDATE memory
                            SET embedding = NULL
                            WHERE "userId" = ${ctx.session.user.id}`,
-      globalThis.prisma.$executeRaw`UPDATE file
+			globalThis.prisma.$executeRaw`UPDATE file
                            SET embedding = NULL
                            WHERE "userId" = ${ctx.session.user.id}`,
-    ]);
-  }),
+		]);
+	}),
 });

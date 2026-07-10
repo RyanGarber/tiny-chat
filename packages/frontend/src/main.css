@@ -197,6 +197,10 @@ body {
 	color: var(--mantine-color-white);
 }
 
+[contenteditable] {
+	font-size: 16px;
+}
+
 [contenteditable]:focus {
 	outline: 0 solid transparent !important;
 }
@@ -396,7 +400,6 @@ table[class*="react-diff"] {
 	:not(pre) > code {
 		@apply rounded bg-muted px-1.5 py-0.5 font-mono text-sm;
 	}
-	/* TODO - code block */
 }
 
 [data-streamdown="table"] {

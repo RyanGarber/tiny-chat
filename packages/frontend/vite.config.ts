@@ -31,37 +31,6 @@ export default defineConfig(() => ({
 	build: {
 		rolldownOptions: {
 			external: [/^(node:)?(path|fs)$/],
-			output: {
-				codeSplitting: {
-					groups: [
-						{
-							name: "react",
-							test: /react/i,
-						},
-						{
-							name: "mantine",
-							test: /mantine/i,
-						},
-						{
-							name: "streamdown",
-							test: /(streamdown|katex|mermaid)/i,
-						},
-						{
-							name: "shiki",
-							test: /shiki/i,
-							entriesAware: true,
-						},
-						{
-							name: "ai",
-							test: /node_modules[\\/](ai[\\/]|@ai-sdk)/i,
-						},
-						{
-							name: "webllm",
-							test: /webllm/i,
-						},
-					],
-				},
-			},
 		},
 	},
 	server: {

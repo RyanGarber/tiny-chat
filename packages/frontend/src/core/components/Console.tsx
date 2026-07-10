@@ -67,11 +67,13 @@ export default function Console({
 												: "gray"
 									}
 								>
-									{log.data.map((d) =>
+									{log.data.map((d, i) =>
 										typeof d === "object" ? (
-											<JsonTree data={d} key={JSON.stringify(d)} />
+											// biome-ignore lint/suspicious/noArrayIndexKey: logs do not change
+											<JsonTree data={d} key={i} />
 										) : (
-											<Text size="xs" key={String(d)}>
+											// biome-ignore lint/suspicious/noArrayIndexKey: logs do not change
+											<Text size="xs" key={i}>
 												{String(d)}
 											</Text>
 										),

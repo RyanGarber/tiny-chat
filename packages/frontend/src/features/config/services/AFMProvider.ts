@@ -7,20 +7,24 @@ import type {
 	ProviderV4,
 } from "@ai-sdk/provider";
 import { Channel } from "@tauri-apps/api/core";
+import type {
+	ModelProvider,
+	zModel,
+	zModelArg,
+} from "@tiny-chat/shared/src/features/provider/types/model.ts";
+import { ModelProviderUtils } from "@tiny-chat/shared/src/features/provider/utils/ModelProviderUtils.ts";
 import { invoke } from "#frontend/utils/api.ts";
-import type { ChatProvider } from "#shared/providers/chat";
-import type { Model } from "#shared/types/chat.ts";
-import { getBaseModelArgs } from "#shared/utils.ts";
 
-export interface AfmProviderOptions {
+interface AfmProviderOptions {
 	reasoningLevel?: "light" | "moderate" | "deep";
 }
 
-export const AFMProvider: ChatProvider = {
+export const AFMProvider: ModelProvider<ProviderV4> = {
 	name: "apple",
+	type: "model",
 	settings: [],
 
-	getClient(_user, _env): ProviderV4 {
+	getSdk(): ProviderV4 {
 		return {
 			specificationVersion: "v4",
 
@@ -38,8 +42,6 @@ export const AFMProvider: ChatProvider = {
 						return Promise.resolve({
 							stream: new ReadableStream<LanguageModelV4StreamPart>({
 								async start(controller) {
-									console.log("invoking stream");
-
 									let streamId: string | null = null;
 									let activeReasoningId: string | null = null;
 									let activeTextId: string | null = null;
@@ -243,22 +245,19 @@ export const AFMProvider: ChatProvider = {
 		};
 	},
 
-	getClientOptions(_user, _config, _env) {
+	getSdkOptions() {
 		return {};
 	},
 
-	getClientGenerateModel(user, id, env) {
-		const client = this.getClient(user, env) as ProviderV4;
-		if (!client) return null;
-
-		return client.languageModel(id);
+	getLanguageModel({ user, model, env }) {
+		return this.getSdk({ user, model, env })?.languageModel(model) ?? null;
 	},
 
-	getClientEmbedModel() {
-		return null;
+	getEmbeddingModel({ user, model, env }) {
+		return this.getSdk({ user, model, env })?.embeddingModel(model) ?? null;
 	},
 
-	async getModels(_user): Promise<Model[]> {
+	async getStatus() {
 		/*const availability = await invoke<{
       onDevice: { available: boolean };
       privateCloudCompute: { available: boolean; reason: string };
@@ -271,41 +270,43 @@ export const AFMProvider: ChatProvider = {
 				available: false,
 			},
 		};
-		return Promise.resolve([
-			...(availability.onDevice.available
-				? [
-						{
-							name: "on-device",
-							features: ["generate", "toolCall"],
-							args: this.getModelArgs("on-device"),
-						} satisfies Model,
-					]
-				: []),
-			...(availability.privateCloudCompute.available
-				? [
-						{
-							name: "private-cloud-compute",
-							features: ["generate", "toolCall"],
-							args: this.getModelArgs("private-cloud-compute"),
-						} satisfies Model,
-					]
-				: []),
-		]);
+
+		const models: zModel[] = [];
+
+		if (availability.onDevice.available) {
+			models.push({
+				name: "on-device",
+				features: ["language", "language:tools"],
+				args: this.getModelArgs({ model: "on-device" }),
+			});
+		}
+
+		if (availability.privateCloudCompute.available) {
+			models.push({
+				name: "private-cloud-compute",
+				features: ["language", "language:tools"],
+				args: this.getModelArgs({ model: "private-cloud-compute" }),
+			});
+		}
+
+		return {
+			valid: true,
+			models,
+		};
 	},
 
-	getModelArgs(id) {
-		const args = [...getBaseModelArgs()];
-		if (id === "private-cloud-compute") {
-			return [
-				...args,
-				{
-					name: "reasoning",
-					type: "list",
-					values: ["light", "moderate", "deep"],
-					default: "moderate",
-				},
-			];
+	getModelArgs({ model }) {
+		const args: zModelArg[] = ModelProviderUtils.getModelArgs({});
+
+		if (model === "private-cloud-compute") {
+			args.push({
+				name: "reasoning",
+				type: "list",
+				values: ["light", "moderate", "deep"],
+				default: "moderate",
+			});
 		}
+
 		return args;
 	},
 };

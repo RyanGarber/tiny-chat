@@ -9,58 +9,39 @@ import {
 	Stack,
 	Text,
 } from "@mantine/core";
+import { DataUtils } from "@tiny-chat/shared/src/features/data/utils/DataUtils.ts";
+import { FileTypeUtils } from "@tiny-chat/shared/src/features/file/utils/FileTypeUtils.ts";
+import { FileUtils } from "@tiny-chat/shared/src/features/file/utils/FileUtils.ts";
+import { PathUtils } from "@tiny-chat/shared/src/features/file/utils/PathUtils.ts";
+import { create_action } from "@tiny-chat/shared/src/features/tool/tools/actions/create_action.ts";
+import { delete_action } from "@tiny-chat/shared/src/features/tool/tools/actions/delete_action.ts";
+import { list_actions } from "@tiny-chat/shared/src/features/tool/tools/actions/list_actions.ts";
+import { update_action } from "@tiny-chat/shared/src/features/tool/tools/actions/update_action.ts";
+import { read_dir } from "@tiny-chat/shared/src/features/tool/tools/filesystem/read_dir.ts";
+import { read_file } from "@tiny-chat/shared/src/features/tool/tools/filesystem/read_file.ts";
+import { search_files } from "@tiny-chat/shared/src/features/tool/tools/filesystem/search_files.ts";
+import { shell_exec } from "@tiny-chat/shared/src/features/tool/tools/filesystem/shell_exec";
+import { write_file } from "@tiny-chat/shared/src/features/tool/tools/filesystem/write_file.ts";
+import { create_memory } from "@tiny-chat/shared/src/features/tool/tools/memories/create_memory.ts";
+import { delete_memory } from "@tiny-chat/shared/src/features/tool/tools/memories/delete_memory.ts";
+import { search_chats } from "@tiny-chat/shared/src/features/tool/tools/memories/search_chats.ts";
+import { search_memories } from "@tiny-chat/shared/src/features/tool/tools/memories/search_memories.ts";
+import { update_memory } from "@tiny-chat/shared/src/features/tool/tools/memories/update_memory.ts";
+import { ask_question } from "@tiny-chat/shared/src/features/tool/tools/questions/ask_question.ts";
+import { search_web } from "@tiny-chat/shared/src/features/tool/tools/web/search_web.ts";
+import { view_web } from "@tiny-chat/shared/src/features/tool/tools/web/view_web.ts";
+import { ToolUtils } from "@tiny-chat/shared/src/features/tool/utils/ToolUtils.ts";
 import { memo, type ReactNode, useState } from "react";
 import type { BundledLanguage } from "streamdown";
 import { format } from "timeago.js";
-import type {
-	zAddActionInput,
-	zAddActionOutput,
-	zDeleteActionInput,
-	zDeleteActionOutput,
-	zListActionsOutput,
-	zUpdateActionInput,
-	zUpdateActionOutput,
-} from "#backend/tools/actions.ts";
-import type {
-	zAddMemoryInput,
-	zAddMemoryOutput,
-	zDeleteMemoryInput,
-	zDeleteMemoryOutput,
-	zSearchChatsInput,
-	zSearchChatsOutput,
-	zSearchMemoryInput,
-	zSearchMemoryOutput,
-	zUpdateMemoryInput,
-	zUpdateMemoryOutput,
-} from "#backend/tools/memories";
-import type {
-	zSearchWebInput,
-	zSearchWebOutput,
-	zViewWebInput,
-	zViewWebOutput,
-} from "#backend/tools/web";
+import type { z } from "zod";
 import { Code } from "#frontend/core/components/Components.tsx";
 import { useActions } from "#frontend/features/chat/hooks/useActions.ts";
 import { ChatService } from "#frontend/features/chat/services/ChatService.ts";
+import { useTools } from "#frontend/features/config/hooks/useTools.ts";
 import { openExternal } from "#frontend/utils/api.ts";
-import type {
-	zListFilesInput,
-	zListFilesOutput,
-	zReadFileInput,
-	zSearchFilesInput,
-	zSearchFilesOutput,
-	zShellExecInput,
-	zShellExecOutput,
-	zWriteFileInput,
-} from "#shared/tools/system.ts";
-import type { zDataPart } from "#shared/types/chat";
-import {
-	decodeTextLossy,
-	mimeExtension,
-	mimeTypeFromExtension,
-	pathName,
-} from "#shared/utils/files.ts";
-import { scrubText } from "#shared/utils.ts";
+import { theme } from "#frontend/utils/icon.ts";
+import type { zDataPart } from "#shared/features/data/types/message";
 
 const FZ = "14px";
 
@@ -72,19 +53,22 @@ export const ToolCall = memo(
 		toolCall: Extract<zDataPart, { type: "toolCall" }>;
 		toolResult?: Extract<zDataPart, { type: "toolResult" }>;
 	}) => {
-		const actions = useActions();
+		const { actions } = useActions();
+		const { toolsets } = useTools();
 
 		const [expanded, setExpanded] = useState(false);
 
 		let status: ReactNode;
 		let details: ReactNode;
 
-		if (toolCall.name === "search_web") {
+		const { tool } = ToolUtils.find({ toolsets, name: toolCall.name });
+
+		if (tool?.name === search_web.name) {
 			status = (
 				<>
 					{!toolResult ? "Searching" : "Searched"} web for{" "}
 					<span style={{ fontWeight: 500 }}>
-						{(toolCall.args as zSearchWebInput).query}
+						{(toolCall.args as z.infer<typeof search_web.input>).query}
 					</span>
 					{!toolResult ? "..." : ""}
 				</>
@@ -92,7 +76,9 @@ export const ToolCall = memo(
 			if (toolResult?.value?.[0].type === "json") {
 				details = (
 					<Stack>
-						{(toolResult.value[0].value as zSearchWebOutput).map((result) => (
+						{(
+							toolResult.value[0].value as z.infer<typeof search_web.output>
+						).map((result) => (
 							<Box key={result.url}>
 								{result.title && (
 									<Text fw={500} fz={FZ}>
@@ -121,18 +107,20 @@ export const ToolCall = memo(
 					</Stack>
 				);
 			}
-		} else if (toolCall.name === "view_web") {
+		} else if (tool?.name === view_web.name) {
 			status = (
 				<>
 					{!toolResult ? "Viewing" : "Viewed"}{" "}
 					<span style={{ fontWeight: 500 }}>
-						{new URL((toolCall.args as zViewWebInput).url).hostname}
+						{(toolCall.args as z.infer<typeof view_web.input>).url}
 					</span>
 					{!toolResult ? "..." : ""}
 				</>
 			);
 			if (toolResult?.value?.[0].type === "json") {
-				const output = toolResult.value[0].value as zViewWebOutput;
+				const output = toolResult.value[0].value as z.infer<
+					typeof view_web.output
+				>;
 				details = (
 					<Stack>
 						{output.title && (
@@ -161,13 +149,13 @@ export const ToolCall = memo(
 				);
 			}
 		} else if (
-			toolCall.name === "add_action" ||
-			toolCall.name === "update_action" ||
-			toolCall.name === "delete_action"
+			tool?.name === create_action.name ||
+			tool?.name === update_action.name ||
+			tool?.name === delete_action.name
 		) {
 			status = (
 				<>
-					{toolCall.name === "delete_action"
+					{tool.name === delete_action.name
 						? !toolResult
 							? "Canceling"
 							: "Canceled"
@@ -176,10 +164,15 @@ export const ToolCall = memo(
 							: "Scheduled"}{" "}
 					action{" "}
 					<span style={{ fontWeight: 500 }}>
-						{scrubText(
-							(toolCall.args as zAddActionInput | zUpdateActionInput).prompt ??
-								(toolCall.args as zDeleteActionInput).reason,
-						)}
+						{DataUtils.getTextCleaned({
+							data:
+								(
+									toolCall.args as
+										| z.infer<typeof create_action.input>
+										| z.infer<typeof update_action.input>
+								).prompt ??
+								(toolCall.args as z.infer<typeof delete_action.input>).reason,
+						})}
 					</span>
 					{!toolResult ? "..." : ""}
 				</>
@@ -187,17 +180,17 @@ export const ToolCall = memo(
 			if (toolResult?.value?.[0].type === "json") {
 				details = (
 					<Text fz={FZ}>
-						{toolCall.name === "add_action"
-							? `Created action with ID: ${(toolResult.value[0].value as zAddActionOutput).created_action_id}.`
-							: toolCall.name === "update_action"
-								? `Updated action with ID: ${(toolResult.value[0].value as zUpdateActionOutput).updated_action_id}.`
-								: toolCall.name === "delete_action"
-									? `Removed action with ID: ${(toolResult.value[0].value as zDeleteActionOutput).deleted_action_id}.`
+						{tool.name === create_action.name
+							? `Created action with ID: ${(toolResult.value[0].value as z.infer<typeof create_action.output>).created_action_id}.`
+							: tool.name === update_action.name
+								? `Updated action with ID: ${(toolResult.value[0].value as z.infer<typeof update_action.output>).updated_action_id}.`
+								: tool.name === delete_action.name
+									? `Removed action with ID: ${(toolResult.value[0].value as z.infer<typeof delete_action.output>).deleted_action_id}.`
 									: ""}
 					</Text>
 				);
 			}
-		} else if (toolCall.name === "list_actions") {
+		} else if (tool?.name === list_actions.name) {
 			status = (
 				<>
 					{!toolResult ? "Checking" : "Checked"} scheduled actions
@@ -207,7 +200,9 @@ export const ToolCall = memo(
 			if (toolResult?.value?.[0].type === "json") {
 				details = (
 					<Stack>
-						{(toolResult.value[0].value as zListActionsOutput).map((action) => {
+						{(
+							toolResult.value[0].value as z.infer<typeof list_actions.output>
+						).map((action) => {
 							const nextRunAt = actions.data?.find(
 								(a) => a.id === action.id,
 							)?.nextRunAt;
@@ -218,14 +213,14 @@ export const ToolCall = memo(
 									</Text>
 									<Anchor
 										truncate="end"
-										href={`/#/${action.chatId}`}
+										href={`/#/${action.chat_id}`}
 										target="_blank"
 										style={{
 											display: "block",
 										}}
 										onClick={(e) => {
 											e.preventDefault();
-											ChatService.setChatId(action.chatId);
+											ChatService.setChatId(action.chat_id);
 										}}
 									>
 										Go to chat
@@ -241,12 +236,12 @@ export const ToolCall = memo(
 					</Stack>
 				);
 			}
-		} else if (toolCall.name === "search_chats") {
+		} else if (tool?.name === search_chats.name) {
 			status = (
 				<>
 					{!toolResult ? "Searching" : "Searched"} chats for{" "}
 					<span style={{ fontWeight: 500 }}>
-						{(toolCall.args as zSearchChatsInput).query}
+						{(toolCall.args as z.infer<typeof search_chats.input>).query}
 					</span>
 					{!toolResult ? "..." : ""}
 				</>
@@ -254,10 +249,12 @@ export const ToolCall = memo(
 			if (toolResult?.value?.[0].type === "json") {
 				details = (
 					<Stack>
-						{(toolResult.value[0].value as zSearchChatsOutput).map((result) => (
+						{(
+							toolResult.value[0].value as z.infer<typeof search_chats.output>
+						).map((result) => (
 							<Box key={result.snippet}>
 								<Text fw={500} fz={FZ}>
-									{result.chatTitle}
+									{result.chat_title}
 								</Text>
 								<Text truncate="end" fz={FZ}>
 									{result.snippet}
@@ -268,16 +265,20 @@ export const ToolCall = memo(
 				);
 			}
 		} else if (
-			toolCall.name === "add_memory" ||
-			toolCall.name === "update_memory" ||
-			toolCall.name === "delete_memory"
+			tool?.name === create_memory.name ||
+			tool?.name === update_memory.name ||
+			tool?.name === delete_memory.name
 		) {
 			status = (
 				<>
 					{!toolResult ? "Remembering..." : "Remembered"}{" "}
 					<span style={{ fontWeight: 500 }}>
-						{(toolCall.args as zAddMemoryInput | zUpdateMemoryInput).fact ??
-							(toolCall.args as zDeleteMemoryInput).reason}
+						{(
+							toolCall.args as
+								| z.infer<typeof create_memory.input>
+								| z.infer<typeof update_memory.input>
+						).fact ??
+							(toolCall.args as z.infer<typeof delete_memory.input>).reason}
 					</span>
 					{!toolResult ? "..." : ""}
 				</>
@@ -285,22 +286,22 @@ export const ToolCall = memo(
 			if (toolResult?.value?.[0].type === "json") {
 				details = (
 					<Text fz={FZ}>
-						{toolCall.name === "add_memory"
-							? `Created memory with ID: ${(toolResult.value[0].value as zAddMemoryOutput).created_memory_id}.`
-							: toolCall.name === "update_memory"
-								? `Updated memory with ID: ${(toolResult.value[0].value as zUpdateMemoryOutput).updated_memory_id}.`
-								: toolCall.name === "delete_memory"
-									? `Removed memory with ID: ${(toolResult.value[0].value as zDeleteMemoryOutput).deleted_memory_id}.`
+						{tool.name === create_memory.name
+							? `Created memory with ID: ${(toolResult.value[0].value as z.infer<typeof create_memory.output>).created_memory_id}.`
+							: tool.name === update_memory.name
+								? `Updated memory with ID: ${(toolResult.value[0].value as z.infer<typeof update_memory.output>).updated_memory_id}.`
+								: tool.name === delete_memory.name
+									? `Removed memory with ID: ${(toolResult.value[0].value as z.infer<typeof delete_memory.output>).deleted_memory_id}.`
 									: ""}
 					</Text>
 				);
 			}
-		} else if (toolCall.name === "search_memory") {
+		} else if (tool?.name === search_memories.name) {
 			status = (
 				<>
 					{!toolResult ? "Searching" : "Searched"} memories for{" "}
 					<span style={{ fontWeight: 500 }}>
-						{(toolCall.args as zSearchMemoryInput).query}
+						{(toolCall.args as z.infer<typeof search_memories.input>).query}
 					</span>
 					{!toolResult ? "..." : ""}
 				</>
@@ -308,25 +309,28 @@ export const ToolCall = memo(
 			if (toolResult?.value?.[0].type === "json") {
 				details = (
 					<Stack>
-						{(toolResult.value[0].value as zSearchMemoryOutput).map(
-							(result) => (
-								<Stack key={result.fact} gap={0}>
-									<Text fz={FZ}>{result.fact}</Text>
-									<Text size="xs" c="dimmed">
-										(learned {format(result.createdAt)})
-									</Text>
-								</Stack>
-							),
-						)}
+						{(
+							toolResult.value[0].value as z.infer<
+								typeof search_memories.output
+							>
+						).map((result) => (
+							<Stack key={result.fact} gap={0}>
+								<Text fz={FZ}>{result.fact}</Text>
+								<Text size="xs" c="dimmed">
+									(learned {format(result.created_at)})
+								</Text>
+							</Stack>
+						))}
 					</Stack>
 				);
 			}
-		} else if (toolCall.name === "read_file") {
+		} else if (tool?.name === read_file.name && toolCall.args?.path) {
+			// TODO WIP - avoid mcp name conflicts
 			status = (
 				<>
 					{!toolResult ? "Reading" : "Read"} file{" "}
 					<span style={{ fontWeight: 500 }}>
-						{pathName((toolCall.args as zReadFileInput).path)}
+						{PathUtils.name(toolCall.args as z.infer<typeof read_file.input>)}
 					</span>
 					{!toolResult ? "..." : ""}
 				</>
@@ -337,17 +341,13 @@ export const ToolCall = memo(
 					const uri = `data:${toolResult?.value[0].mime};base64,${toolResult?.value[0].data}`;
 					content = <Image src={uri} />;
 				} else {
-					const text = decodeTextLossy(
-						toolResult?.value[0].data,
-						toolResult?.value[0].mime,
-					);
+					const text = FileUtils.getTextFromBytes(toolResult?.value[0]);
 					content = (
 						<Code
 							filename={toolResult?.value[0].name}
 							language={
-								mimeExtension(
-									toolResult?.value[0].mime,
-									toolResult?.value[0].name,
+								FileTypeUtils.getExtension(
+									toolResult?.value[0],
 								) as BundledLanguage
 							}
 							code={text ?? "// failed to decode file"}
@@ -358,81 +358,95 @@ export const ToolCall = memo(
 					details = (
 						<Stack>
 							<Text fw={500} fz={FZ}>
-								{(toolCall.args as zReadFileInput).path}
+								{(toolCall.args as z.infer<typeof read_file.input>).path}
 							</Text>
 							{content}
 						</Stack>
 					);
 				}
 			}
-		} else if (toolCall.name === "write_file") {
+		} else if (tool?.name === write_file.name) {
 			status = (
 				<>
 					{!toolResult ? "Writing" : "Wrote"} file{" "}
 					<span style={{ fontWeight: 500 }}>
-						{pathName((toolCall.args as zWriteFileInput).path)}
+						{PathUtils.name(toolCall.args as z.infer<typeof write_file.input>)}
 					</span>
 					{!toolResult ? "..." : ""}
 				</>
 			);
 			if (toolResult?.value[0]?.type === "json") {
-				const input = toolCall.args as zWriteFileInput;
+				const input = toolCall.args as z.infer<typeof write_file.input>;
 				details = (
 					<Stack>
 						<Text fw={500} fz={FZ}>
 							{input.path}
 						</Text>
 						<Code
-							filename={pathName(input.path)}
-							language={
-								mimeExtension(
-									mimeTypeFromExtension(input.path),
-									input.path,
-								) as BundledLanguage
-							}
+							filename={PathUtils.name(input)}
+							language={FileTypeUtils.getExtension(input) as BundledLanguage}
 							code={input.content}
 						/>
 					</Stack>
 				);
 			}
-		} else if (toolCall.name === "list_files") {
+		} else if (tool?.name === read_dir.name) {
 			status = (
 				<>
 					{!toolResult ? "Looking" : "Looked"} in folder{" "}
 					<span style={{ fontWeight: 500 }}>
-						{pathName((toolCall.args as zListFilesInput).path)}
+						{PathUtils.name(toolCall.args as z.infer<typeof read_dir.input>)}
 					</span>
 					{!toolResult ? "..." : ""}
 				</>
 			);
 			if (toolResult?.value[0].type === "json") {
-				const output = toolResult?.value[0].value as zListFilesOutput;
+				const output = toolResult?.value[0].value as z.infer<
+					typeof read_dir.output
+				>;
 				details = (
 					<Stack>
 						<Group gap="xs">
 							<Text fw={500} fz={FZ}>
-								{output.path}
+								{(toolCall.args as z.infer<typeof read_dir.input>).path}
 							</Text>
 							<Text c="dimmed" fz={FZ}>
-								{output.files.length} item{output.files.length === 1 ? "" : "s"}
+								{output.length} item{output.length === 1 ? "" : "s"}
 							</Text>
 						</Group>
-						{output.files.map((file) => (
-							<Box key={pathName(file)}>
-								<Text truncate="end" fz={FZ}>
-									{pathName(file)}
-								</Text>
-							</Box>
-						))}
+						{output.map((item) => {
+							const iconId = !item.is_dir
+								? theme?.getFileIconId(item.path, undefined, false)
+								: theme?.getFolderIconId(item.path, false, false);
+							const icon = iconId
+								? theme?.getIconContent(iconId, "base64")
+								: null;
+
+							return (
+								<Group key={PathUtils.name(item)} gap={5} miw={0}>
+									{icon && (
+										<Image
+											w="auto"
+											h={20}
+											src={`data:${icon.mimeType};base64,${icon.data}`}
+										/>
+									)}
+									<Text truncate="end" fz={FZ}>
+										{PathUtils.name(item)}
+										{item.is_dir ? "/" : ""}
+									</Text>
+								</Group>
+							);
+						})}
 					</Stack>
 				);
 			}
-		} else if (toolCall.name === "search_files") {
+		} else if (tool?.name === search_files.name) {
 			status = (
 				<>
 					{!toolResult ? "Searching" : "Searched"} files for{" "}
 					<span style={{ fontWeight: 500 }}>
-						{(toolCall.args as zSearchFilesInput).query}
+						{(toolCall.args as z.infer<typeof search_files.input>).query}
 					</span>
 					{!toolResult ? "..." : ""}
 				</>
@@ -440,8 +454,10 @@ export const ToolCall = memo(
 			if (toolResult?.value?.[0].type === "json") {
 				details = (
 					<Stack>
-						{(toolResult.value[0].value as zSearchFilesOutput).map((upload) => (
-							<Box key={pathName(upload.path)}>
+						{(
+							toolResult.value[0].value as z.infer<typeof search_files.output>
+						).map((upload) => (
+							<Box key={PathUtils.name(upload)}>
 								<Text fw={500} fz={FZ}>
 									{upload.path}
 								</Text>
@@ -453,21 +469,26 @@ export const ToolCall = memo(
 					</Stack>
 				);
 			}
-		} else if (toolCall.name.startsWith("ask_")) {
+		} else if (tool?.name === ask_question.name) {
 			status = !toolResult ? "Asking a question..." : "Asked a question";
-		} else if (toolCall.name === "shell_exec") {
+		} else if (tool?.name === shell_exec.name) {
 			status = (
 				<>
 					{!toolResult ? "Running" : "Ran"}{" "}
 					<span style={{ fontWeight: 500 }}>
-						{(toolCall.args as zShellExecInput).command.split(" ")[0]}
+						{
+							(toolCall.args as z.infer<typeof shell_exec.input>).command.split(
+								" ",
+							)[0]
+						}
 					</span>
 					{!toolResult ? "..." : ""}
 				</>
 			);
 			if (toolResult?.value[0]?.type === "json") {
-				const { stdout, stderr } = toolResult.value[0]
-					.value as zShellExecOutput;
+				const { stdout, stderr } = toolResult.value[0].value as z.infer<
+					typeof shell_exec.output
+				>;
 				const output = [
 					stdout ? `# stdout\n${stdout.trim()}` : "",
 					stderr ? `# stderr\n${stderr.trim()}` : "",
@@ -475,7 +496,7 @@ export const ToolCall = memo(
 				details = (
 					<Code
 						language="bash"
-						code={`# stdin\n${(toolCall.args as zShellExecInput).command.trim()}\n\n${output.join("\n\n")}`}
+						code={`# stdin\n${(toolCall.args as z.infer<typeof shell_exec.input>).command.trim()}\n\n${output.join("\n\n")}`}
 					/>
 				);
 			}

@@ -11,16 +11,14 @@ import {
 	TextInput,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
+import type { ChatState } from "@tiny-chat/shared/src/features/data/types/chat.ts";
 import { useCallback, useEffect, useState } from "react";
 import { useLayoutStore } from "#frontend/core/stores/useLayoutStore.tsx";
-import {
-	type ChatState,
-	useChat,
-} from "#frontend/features/chat/hooks/useChat.ts";
+import { useChat } from "#frontend/features/chat/hooks/useChat.ts";
 import { useChatList } from "#frontend/features/chat/hooks/useChatList.ts";
 import { ChatService } from "#frontend/features/chat/services/ChatService.ts";
 import { query } from "#frontend/utils/api.ts";
-import { GLASS_STYLE, SHADOW } from "#frontend/utils/theme.ts";
+import { GLASS_STYLE, SHADOW } from "#frontend/utils/style.ts";
 import { useSentinel } from "../hooks/useSentinel";
 import Sentinel from "./Sentinel";
 
@@ -55,7 +53,7 @@ export default function SidebarChatList() {
 
 	const { viewportRef, sentinelRef } = useSentinel({
 		query: folders,
-		queryKey: query.chat.list.pathKey(),
+		queryKey: query.chat.getChatList.pathKey(),
 	});
 
 	return (

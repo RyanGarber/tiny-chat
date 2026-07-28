@@ -1,9 +1,9 @@
 import { inject } from "vitest";
 import type { TestProject } from "vitest/node";
-import type { ChatProvider } from "./providers/chat/index.ts";
-import { TestProvider } from "./providers/chat/test.ts";
-import { zConfig } from "./types/chat.ts";
-import type { zUser } from "./types/user.ts";
+import { zConfig } from "./features/data/types/message.ts";
+import type { zUser } from "./features/data/types/user.ts";
+import { TestProvider } from "./features/provider/providers/model/TestProvider.ts";
+import type { ModelProvider } from "./features/provider/types/model.ts";
 
 declare module "vitest" {
 	interface ProvidedContext {
@@ -13,7 +13,7 @@ declare module "vitest" {
 }
 
 export async function setup(project: TestProject) {
-	console.log("[tests] setting up test user (mocked)");
+	console.log("setting up shared test user (mocked)...");
 	const user: zUser = {
 		id: "__TEST__",
 		name: "__TEST__",
@@ -21,9 +21,9 @@ export async function setup(project: TestProject) {
 		isEphemeral: true,
 	};
 
-	const models = await TestProvider.getModels(user);
-	const model = models.find((m) => m.features.includes("generate"));
-	if (!model) throw new Error("Failed to get test model");
+	const { models } = await TestProvider.getStatus({ user });
+	const model = models.find((m) => m.features.includes("language"));
+	if (!model) throw new Error("failed to get test model");
 
 	const config: zConfig = zConfig.parse({
 		provider: TestProvider.name,
@@ -34,7 +34,7 @@ export async function setup(project: TestProject) {
 		})),
 	});
 
-	console.log("[tests] test user ready", user);
+	console.log("shared test user ready", user);
 	project.provide("shared_user", user);
 	project.provide("shared_config", config);
 
@@ -44,7 +44,7 @@ export async function setup(project: TestProject) {
 }
 
 export function testConfig(
-	provider: ChatProvider,
+	provider: ModelProvider<any>,
 	model: string,
 	config = inject("shared_config"),
 ): zConfig {
@@ -54,7 +54,7 @@ export function testConfig(
 		model,
 		args: Object.fromEntries(
 			provider
-				.getModelArgs(model)
+				.getModelArgs({ model })
 				.map((arg) => [arg.name, arg.default] as const),
 		),
 	};

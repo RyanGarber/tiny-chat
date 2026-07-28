@@ -20,15 +20,3 @@ export const useMessageStream = (id: string | undefined) => {
 
 	return stream?.message;
 };
-
-export const useStreamingIds = () => {
-	return useSyncExternalStore(
-		StreamService.subscribe,
-		StreamService.getIds,
-		StreamService.getIds,
-	);
-};
-
-export const useIsStreaming = () => {
-	return useStreamingIds().length > 0;
-};

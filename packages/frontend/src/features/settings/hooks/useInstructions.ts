@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { auth, query, queryClient } from "#frontend/utils/api.ts";
-import { zSettings } from "#shared/types/user";
+import { zSettings } from "#shared/features/data/types/user.ts";
 
 export const useInstructions = () => {
 	const session = auth.useSession();

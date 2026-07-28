@@ -3,7 +3,7 @@ import FastifyStatic from "@fastify/static";
 import { config } from "dotenv";
 import Fastify from "fastify";
 
-config({ path: "../../.env" });
+config({ path: "../../.env", quiet: true });
 
 const fastify = Fastify();
 
@@ -18,6 +18,6 @@ fastify.listen(
 			fastify.log.error(err);
 			process.exit(1);
 		}
-		console.log(`Web listening at ${address}`);
+		console.log(`web live at:`, address);
 	},
 );

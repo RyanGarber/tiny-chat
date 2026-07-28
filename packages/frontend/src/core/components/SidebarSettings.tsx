@@ -20,6 +20,7 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useIsMutating, useMutationState } from "@tanstack/react-query";
+import { zConfig } from "@tiny-chat/shared/src/features/data/types/message.ts";
 import { type JSX, useEffect, useMemo, useState } from "react";
 import Console from "#frontend/core/components/Console.tsx";
 import { useLayoutStore } from "#frontend/core/stores/useLayoutStore.tsx";
@@ -39,15 +40,16 @@ import { useInstructions } from "#frontend/features/settings/hooks/useInstructio
 import { useProviderSettings } from "#frontend/features/settings/hooks/useProviderSettings.ts";
 import { useRetrieval } from "#frontend/features/settings/hooks/useRetrieval.ts";
 import { useThemes } from "#frontend/features/settings/hooks/useThemes.ts";
-import { hashText } from "#frontend/utils/data.ts";
 import {
 	codeThemesByTheme,
 	GLASS_STYLE,
 	INPUT_STYLE,
 	THEMES,
-} from "#frontend/utils/theme.ts";
-import { zConfig } from "#shared/types/chat.ts";
-import type { zCache } from "#shared/types/user.ts";
+} from "#frontend/utils/style.ts";
+import type {
+	ProviderState,
+	ProviderStatus,
+} from "#shared/features/provider/types/provider.ts";
 
 export default function SidebarSettings({
 	children,
@@ -100,7 +102,8 @@ export default function SidebarSettings({
 		useBrowserModels,
 		setUseBrowserModels,
 	} = useProviderSettings();
-	const { theme, setTheme, codeTheme, setCodeTheme } = useThemes();
+	const { theme, setTheme, codeTheme, setCodeTheme, blackout, setBlackout } =
+		useThemes();
 
 	const { nextEmbeddingBatch } = useEmbedding();
 	const embeddingMutationStatus =
@@ -127,9 +130,7 @@ export default function SidebarSettings({
 		};
 	}, [nextEmbeddingBatch.data]);
 
-	const ProviderSettings = (
-		providers: zCache["providers"]["chat" | "web" | "other"],
-	) => (
+	const ProviderSettings = (providers: ProviderState<ProviderStatus>[]) => (
 		<Stack>
 			{providers
 				.filter((s) => s.settings.length)
@@ -137,7 +138,7 @@ export default function SidebarSettings({
 					<Box
 						key={provider.name}
 						style={
-							provider.error
+							!provider.status.valid
 								? {
 										border: "1px solid var(--mantine-color-red-6)",
 										borderRadius: "var(--mantine-radius-md)",
@@ -148,9 +149,9 @@ export default function SidebarSettings({
 					>
 						<Group justify="space-between">
 							<Text size="sm">{provider.name}</Text>
-							{provider.error && (
+							{provider.status?.error && (
 								<Text size="xs" c="red">
-									{provider.error}
+									{provider.status.error}
 								</Text>
 							)}
 						</Group>
@@ -274,6 +275,24 @@ export default function SidebarSettings({
 									readOnly={setCodeTheme.isPending}
 								/>
 							</Tooltip>
+							<Tooltip
+								label="Replaces color with grayscale"
+								color="gray"
+								position="right"
+							>
+								<CheckboxCard
+									p="xs"
+									checked={blackout.data}
+									onChange={(value) => {
+										setBlackout.mutate({ blackout: value });
+									}}
+								>
+									<Group>
+										<CheckboxIndicator size="xs" />
+										<Text size="sm">Blackout</Text>
+									</Group>
+								</CheckboxCard>
+							</Tooltip>
 							<Space />
 							<Box>
 								<Text size="sm">Performance</Text>
@@ -333,15 +352,15 @@ export default function SidebarSettings({
 									<ModelMultiSelect
 										label="Generation"
 										styles={INPUT_STYLE}
-										feature="generate"
+										feature="language"
 										configValues={
-											hiddenModels.data?.generate.map((m) =>
+											hiddenModels.data?.language?.map((m) =>
 												zConfig.parse(m),
 											) ?? []
 										}
 										onConfigChange={(value) =>
 											setHiddenModels.mutate({
-												feature: "generate",
+												feature: "language",
 												models: value,
 											})
 										}
@@ -357,14 +376,15 @@ export default function SidebarSettings({
 									<ModelMultiSelect
 										label="Embedding"
 										styles={INPUT_STYLE}
-										feature="embed"
+										feature="embedding"
 										configValues={
-											hiddenModels.data?.embed.map((m) => zConfig.parse(m)) ??
-											[]
+											hiddenModels.data?.embedding?.map((m) =>
+												zConfig.parse(m),
+											) ?? []
 										}
 										onConfigChange={(value) =>
 											setHiddenModels.mutate({
-												feature: "embed",
+												feature: "embedding",
 												models: value,
 											})
 										}
@@ -385,7 +405,7 @@ export default function SidebarSettings({
 							</Box>
 							{instructions.data?.map((instruction, index) => (
 								<Textarea
-									key={hashText(index + instruction)}
+									key={instruction}
 									defaultValue={instruction}
 									autosize
 									onKeyDown={(e) =>
@@ -492,7 +512,7 @@ export default function SidebarSettings({
 										setEmbedChange(value ?? null);
 										openEmbedConfirm();
 									}}
-									feature="embed"
+									feature="embedding"
 									disabled={isEmbedConfirmOpen || setEmbeddingConfig.isPending}
 									readOnly={isEmbedConfirmOpen || setEmbeddingConfig.isPending}
 								/>
@@ -541,7 +561,9 @@ export default function SidebarSettings({
 									p="xs"
 									checked={useEmbeddingSearch.data}
 									onChange={(value) => {
-										setUseEmbeddingSearch.mutate({ useEmbeddingSearch: value });
+										setUseEmbeddingSearch.mutate({
+											useEmbeddingSearch: value,
+										});
 									}}
 									disabled={
 										!embeddingConfig.data || setUseEmbeddingSearch.isPending
@@ -573,8 +595,11 @@ export default function SidebarSettings({
 									styles={INPUT_STYLE}
 									allowDeselect={false}
 									data={
-										providers.data?.web
-											.filter((p) => p.available)
+										providers.data
+											?.filter(
+												(provider) =>
+													provider.type === "web" && provider.status.valid,
+											)
 											.map((p) => p.name) ?? []
 									}
 									value={preferredWebProvider.data}
@@ -619,7 +644,11 @@ export default function SidebarSettings({
 									</ActionIcon>
 								</Tooltip>
 							</Group>
-							{ProviderSettings(providers.data?.chat ?? [])}
+							{ProviderSettings(
+								providers.data?.filter(
+									(provider) => provider.type === "model",
+								) ?? [],
+							)}
 							<Space />
 							<Box>
 								<Text size="sm">Web</Text>
@@ -627,9 +656,14 @@ export default function SidebarSettings({
 									Enable web browsing for chat models
 								</Text>
 							</Box>
-							{ProviderSettings(providers.data?.web ?? [])}
-							{(providers.data?.other?.filter((p) => p.settings.length > 0)
-								.length ?? 0) > 0 && (
+							{ProviderSettings(
+								providers.data?.filter((provider) => provider.type === "web") ??
+									[],
+							)}
+							{(providers.data?.filter(
+								(provider) =>
+									provider.type === "other" && provider.settings.length > 0,
+							).length ?? 0) > 0 && (
 								<>
 									<Space />
 									<Box>
@@ -638,7 +672,13 @@ export default function SidebarSettings({
 											Enable extra features and integrations
 										</Text>
 									</Box>
-									{ProviderSettings(providers.data?.other ?? [])}
+									{ProviderSettings(
+										providers.data?.filter(
+											(provider) =>
+												provider.type === "other" &&
+												provider.settings.length > 0,
+										) ?? [],
+									)}
 								</>
 							)}
 						</Stack>

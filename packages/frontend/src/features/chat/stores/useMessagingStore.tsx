@@ -1,9 +1,9 @@
+import type { MessageState } from "@tiny-chat/shared/src/features/data/types/message.ts";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { InputService } from "#frontend/features/chat/services/InputService.ts";
-import { useInputStore } from "#frontend/features/chat/stores/useInputStore.ts";
 import { useConfigStore } from "#frontend/features/config/stores/useConfigStore.ts";
-import type { MessageState } from "#shared/types/chat.ts";
+import { useInputStore } from "#frontend/features/input/stores/useInputStore.ts";
 
 interface MessagingStore {
 	clearText: () => void;
@@ -57,7 +57,7 @@ export const useMessagingStore = create(
 		},
 
 		reset: () => {
-			console.log("Resetting messaging state");
+			console.log("[useMessagingStore] clearing state");
 			const { setEditing, setInsertingAfter } = get();
 			setEditing(null);
 			setInsertingAfter(null);

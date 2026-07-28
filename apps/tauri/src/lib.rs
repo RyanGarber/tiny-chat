@@ -20,7 +20,7 @@ pub fn run() {
         tools::is_dir,
         tools::make_dir,
         tools::read_file,
-        tools::list_files,
+        tools::read_dir,
         tools::write_file,
         tools::shell_exec,
         tools::search_files,

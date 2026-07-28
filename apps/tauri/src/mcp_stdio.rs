@@ -13,7 +13,7 @@ pub async fn mcp_start_stdio(
     command: Vec<String>,
     env: HashMap<String, String>,
 ) -> Result<(), crate::Error> {
-    let executable = command.get(0).unwrap();
+    let executable = command.first().unwrap();
 
     let mut client = tokio::process::Command::new(executable)
         .args(command.iter().skip(1))
@@ -54,7 +54,10 @@ pub async fn mcp_send_stdio(
 }
 
 #[tauri::command]
-pub async fn mcp_stop_stdio(stdio_sessions: tauri::State<'_, StdioSessions>, id: String) -> Result<(), crate::Error> {
+pub async fn mcp_stop_stdio(
+    stdio_sessions: tauri::State<'_, StdioSessions>,
+    id: String,
+) -> Result<(), crate::Error> {
     stdio_sessions.lock().await.remove(&id);
     Ok(())
 }

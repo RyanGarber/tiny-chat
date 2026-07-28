@@ -4,79 +4,61 @@ import {
 	Box,
 	Button,
 	Card,
-	ColorInput,
 	Grid,
 	Group,
-	NumberInput,
 	Radio,
 	Stack,
 	Text,
 	Textarea,
 } from "@mantine/core";
-import { DatePicker, DateTimePicker, TimePicker } from "@mantine/dates";
+import { FileTypeUtils } from "@tiny-chat/shared/src/features/file/utils/FileTypeUtils.ts";
+import { FileUtils } from "@tiny-chat/shared/src/features/file/utils/FileUtils.ts";
+import { PathUtils } from "@tiny-chat/shared/src/features/file/utils/PathUtils.ts";
+import { shell_exec } from "@tiny-chat/shared/src/features/tool/tools/filesystem/shell_exec.ts";
+import { write_file } from "@tiny-chat/shared/src/features/tool/tools/filesystem/write_file.ts";
+import { ask_question } from "@tiny-chat/shared/src/features/tool/tools/questions/ask_question.ts";
+import type { Tool } from "@tiny-chat/shared/src/features/tool/types/tool.ts";
 import { memo, type ReactNode, useEffect, useMemo, useState } from "react";
 import type { BundledLanguage } from "streamdown";
 import type { z } from "zod";
 import { Code, Diff } from "#frontend/core/components/Components.tsx";
 import { Markdown } from "#frontend/features/message/components/Markdown.tsx";
 import { invoke, trpc } from "#frontend/utils/api.ts";
-import { GLASS_STYLE } from "#frontend/utils/theme.ts";
+import { GLASS_STYLE } from "#frontend/utils/style.ts";
 import type {
-	zReplyColorInput,
-	zReplyColorOutput,
-	zReplyDatetimeInput,
-	zReplyDatetimeOutput,
-	zReplyNumberInput,
-	zReplyNumberOutput,
-	zReplyQuestionInput,
-	zReplyQuestionOutput,
-} from "#shared/tools/questions.ts";
-import { type zShellExecInput, zWriteFileInput } from "#shared/tools/system.ts";
-import type { MessageState, zDataPart } from "#shared/types/chat.ts";
-import type { Tool } from "#shared/types/tool.ts";
-import {
-	decodeTextLossy,
-	fromChatUri,
-	mimeExtension,
-	mimeType,
-	mimeTypeFromExtension,
-	pathName,
-} from "#shared/utils/files.ts";
+	MessageState,
+	zDataPart,
+} from "#shared/features/data/types/message";
 import { toolCallRejection, useToolInput } from "../hooks/useToolInput";
 
 export const ToolCallInput = memo(
 	({
 		message,
-		part,
-		result,
+		toolCall,
+		toolResult,
 		tool,
 	}: {
 		message: MessageState;
-		part: Extract<zDataPart, { type: "toolCall" }>;
-		result?: Extract<zDataPart, { type: "toolResult" }>;
+		toolCall: Extract<zDataPart, { type: "toolCall" }>;
+		toolResult?: Extract<zDataPart, { type: "toolResult" }>;
 		containerWidth: number;
-		tool?: Tool<z.ZodAny, z.ZodAny, z.ZodAny>;
+		tool?: Tool<any, any, any, any>;
 	}) => {
 		const { sendToolInput } = useToolInput();
 
-		const [inputValue, setInputValue] = useState<unknown>(result?.value);
-
+		const [inputValue, setInputValue] = useState<unknown>(toolResult?.value);
 		const [writeFileContents, setWriteFileContents] = useState<string>("");
 
 		useEffect(() => {
-			if (part.name === "write_file") {
-				const write = zWriteFileInput.parse(part.args);
-				const uri = fromChatUri(write.path);
+			if (tool?.name === write_file.name) {
+				const write = toolCall.args as z.infer<typeof write_file.input>;
+				const uri = PathUtils.fromMount(write);
 				if (uri) {
-					trpc.input.findFileInChat
-						.query({
-							chatId: message.chatId,
-							uploadId: uri.uploadId ?? null,
-							path: uri.path,
-						})
+					trpc.file.getFile
+						.query({ chat: message.chatId, path: uri.path })
 						.then((file) => {
 							setWriteFileContents(
-								file ? (decodeTextLossy(file.data, file.mime) ?? "") : "",
+								file ? (FileUtils.getTextFromBytes(file) ?? "") : "",
 							);
 						})
 						.catch((error) => {
@@ -84,210 +66,134 @@ export const ToolCallInput = memo(
 							setWriteFileContents("");
 						});
 				} else {
-					console.log(`calling read_file ${write.path}`);
-					invoke<string>("read_file", { path: write.path })
-						.then((contents) => {
-							console.log(`contents:`, contents);
-							mimeType(contents, pathName(write.path), "text/plain")
+					invoke<{ path: string; data: string }>("read_file", {
+						path: write.path,
+					})
+						.then(({ path, data }) => {
+							FileTypeUtils.getMime({
+								path,
+								data,
+								fallback: "text/plain",
+							})
 								.then((mime) => {
-									console.log(`mime: ${mime}`);
-									setWriteFileContents(decodeTextLossy(contents, mime) ?? "");
+									setWriteFileContents(
+										FileUtils.getTextFromBytes({ data, mime }) ?? "",
+									);
 								})
 								.catch((error) => {
-									console.error("Error getting mime type of file", error);
+									console.error("error getting file type:", error);
 									setWriteFileContents("");
 								});
 						})
 						.catch((error) => {
-							console.error("Error reading file", error);
+							console.error("error reading file:", error);
 							setWriteFileContents("");
 						});
 				}
 			}
-		}, [part.name, part.args, message.chatId]);
+		}, [tool?.name, toolCall.args, message.chatId]);
 
-		const disabled = result !== undefined;
+		const disabled = toolResult !== undefined;
 
 		const input: ReactNode | undefined = useMemo(() => {
-			if (part.name === "shell_exec" && !result) {
+			if (tool?.name === shell_exec.name && !toolResult) {
 				return (
-					<Code language="bash" code={(part.args as zShellExecInput).command} />
+					<Code
+						language="bash"
+						code={(toolCall.args as z.infer<typeof shell_exec.input>).command}
+					/>
 				);
-			} else if (part.name === "write_file" && !result) {
-				const args = part.args as zWriteFileInput;
+			} else if (tool?.name === write_file.name && !toolResult) {
+				const args = toolCall.args as z.infer<typeof write_file.input>;
 				return (
 					<Diff
-						filename={pathName(args.path)}
-						language={
-							mimeExtension(
-								mimeTypeFromExtension(args.path),
-								args.path,
-							) as BundledLanguage
-						}
+						filename={PathUtils.name(args)}
+						language={FileTypeUtils.getExtension(args) as BundledLanguage}
 						oldCode={writeFileContents}
 						newCode={args.content}
 					/>
 				);
-			} else if (part.name === "reply_question") {
+			} else if (tool?.name === ask_question.name) {
 				return (
 					<Stack gap="xs">
 						<Box>
-							<Markdown source={(part.args as zReplyQuestionInput).question} />
+							<Markdown
+								source={
+									(toolCall.args as z.infer<typeof ask_question.input>).question
+								}
+							/>
 						</Box>
 						<Grid grow>
-							{(part.args as zReplyQuestionInput).suggestions.map(
-								(suggestion) => (
-									<Grid.Col key={suggestion} span={4} align="stretch">
-										<Radio.Card
-											p="md"
-											h="100%"
-											checked={
-												(inputValue as zReplyQuestionOutput | undefined)
-													?.answer === suggestion
-											}
-											disabled={disabled}
-											defaultChecked={
-												(inputValue as zReplyQuestionOutput | undefined)
-													?.answer === suggestion
-											}
-											onClick={() =>
-												setInputValue({
-													answer: suggestion,
-												} satisfies zReplyQuestionOutput)
-											}
-										>
-											<Group wrap="nowrap" align="flex-start" h="100%">
-												<Radio.Indicator />
-												<Box>
-													<Text>{suggestion}</Text>
-												</Box>
-											</Group>
-										</Radio.Card>
-									</Grid.Col>
-								),
-							)}
+							{(
+								toolCall.args as z.infer<typeof ask_question.input>
+							).suggestions.map((suggestion) => (
+								<Grid.Col key={suggestion} span={4} align="stretch">
+									<Radio.Card
+										p="md"
+										h="100%"
+										checked={
+											(
+												inputValue as
+													| z.infer<NonNullable<typeof ask_question.feedback>>
+													| undefined
+											)?.answer === suggestion
+										}
+										disabled={disabled}
+										defaultChecked={
+											(
+												inputValue as
+													| z.infer<NonNullable<typeof ask_question.feedback>>
+													| undefined
+											)?.answer === suggestion
+										}
+										onClick={() =>
+											setInputValue({
+												answer: suggestion,
+											} satisfies z.infer<
+												NonNullable<typeof ask_question.feedback>
+											>)
+										}
+									>
+										<Group wrap="nowrap" align="flex-start" h="100%">
+											<Radio.Indicator />
+											<Box>
+												<Text>{suggestion}</Text>
+											</Box>
+										</Group>
+									</Radio.Card>
+								</Grid.Col>
+							))}
 						</Grid>
 						<Textarea
 							autosize
 							minRows={1}
 							maxRows={10}
 							placeholder="..."
-							value={(inputValue as zReplyQuestionOutput | undefined)?.answer}
+							value={
+								(
+									inputValue as
+										| z.infer<NonNullable<typeof ask_question.feedback>>
+										| undefined
+								)?.answer
+							}
 							disabled={disabled}
 							onChange={(e) =>
 								setInputValue({
 									answer: e.target.value,
-								} satisfies zReplyQuestionOutput)
-							}
-						/>
-					</Stack>
-				);
-			} else if (part.name === "reply_color") {
-				return (
-					<Stack gap="xs">
-						<Text>
-							<Markdown source={(part.args as zReplyColorInput).question} />
-						</Text>
-						<ColorInput
-							value={(inputValue as zReplyColorOutput | undefined)?.color}
-							defaultValue={
-								(inputValue as zReplyColorOutput | undefined)?.color
-							}
-							placeholder="..."
-							disabled={disabled}
-							onChange={(v) =>
-								setInputValue({
-									color: v,
-								} satisfies zReplyColorOutput)
-							}
-						/>
-					</Stack>
-				);
-			} else if (part.name === "reply_number") {
-				return (
-					<Stack gap="xs">
-						<Text>
-							<Markdown source={(part.args as zReplyNumberInput).question} />
-						</Text>
-						<NumberInput
-							value={(inputValue as zReplyNumberOutput | undefined)?.number}
-							defaultValue={
-								(inputValue as zReplyNumberOutput | undefined)?.number
-							}
-							placeholder="..."
-							disabled={disabled}
-							onChange={(v) =>
-								setInputValue({
-									number: Number(v),
-								} satisfies zReplyNumberOutput)
-							}
-						/>
-					</Stack>
-				);
-			} else if (part.name === "reply_datetime") {
-				return (
-					<Stack gap="xs">
-						<Text>
-							<Markdown source={(part.args as zReplyDatetimeInput).question} />
-						</Text>
-						<DateTimePicker
-							value={(inputValue as zReplyDatetimeOutput | undefined)?.date}
-							defaultValue={
-								(inputValue as zReplyDatetimeOutput | undefined)?.date
-							}
-							placeholder="..."
-							disabled={disabled}
-							onChange={(v) =>
-								v &&
-								setInputValue({
-									date: v.split(" ")[0],
-									time: v.split(" ")[1],
-								} satisfies zReplyDatetimeOutput)
-							}
-						/>
-					</Stack>
-				);
-			} else if (part.name === "reply_date") {
-				return (
-					<Stack gap="xs">
-						<Text>
-							<Markdown source={(part.args as zReplyDatetimeInput).question} />
-						</Text>
-						<DatePicker
-							value={(inputValue as zReplyDatetimeOutput | undefined)?.date}
-							defaultValue={
-								(inputValue as zReplyDatetimeOutput | undefined)?.date
-							}
-							onChange={(v) =>
-								setInputValue({
-									date: v ?? undefined,
-								} satisfies zReplyDatetimeOutput)
-							}
-						/>
-					</Stack>
-				);
-			} else if (part.name === "reply_time") {
-				return (
-					<Stack gap="xs">
-						<Text>
-							<Markdown source={(part.args as zReplyDatetimeInput).question} />
-						</Text>
-						<TimePicker
-							value={(inputValue as zReplyDatetimeOutput | undefined)?.time}
-							defaultValue={
-								(inputValue as zReplyDatetimeOutput | undefined)?.time
-							}
-							disabled={disabled}
-							onChange={(v) =>
-								setInputValue({
-									time: v,
-								} satisfies zReplyDatetimeOutput)
+								} satisfies z.infer<NonNullable<typeof ask_question.feedback>>)
 							}
 						/>
 					</Stack>
 				);
 			}
-		}, [part.name, part.args, result, writeFileContents, inputValue, disabled]);
+		}, [
+			tool?.name,
+			toolCall.args,
+			toolResult,
+			writeFileContents,
+			inputValue,
+			disabled,
+		]);
 
 		if (tool && input) {
 			return (
@@ -298,20 +204,20 @@ export const ToolCallInput = memo(
 						</Stack>
 					</Card>
 					<Group gap="xs" justify="flex-end">
-						{tool.requirements?.approval ? (
+						{tool.approval ? (
 							<Group gap="xs">
 								<Button
 									size="xs"
 									onClick={() =>
 										sendToolInput.mutate({
 											seed: message,
-											part,
+											part: toolCall,
 											approved: true,
 											value: inputValue,
 										})
 									}
 									leftSection={
-										JSON.stringify(result?.value) !==
+										JSON.stringify(toolResult?.value) !==
 										JSON.stringify(toolCallRejection) ? (
 											<Icon icon="lucide:check" />
 										) : undefined
@@ -330,14 +236,14 @@ export const ToolCallInput = memo(
 									onClick={() =>
 										sendToolInput.mutate({
 											seed: message,
-											part,
+											part: toolCall,
 											approved: false,
 											value: inputValue,
 										})
 									}
 									leftSection={
-										result?.error &&
-										JSON.stringify(result.value) ===
+										toolResult?.error &&
+										JSON.stringify(toolResult.value) ===
 											JSON.stringify(toolCallRejection) ? (
 											<Icon icon="lucide:check" />
 										) : undefined
@@ -346,7 +252,7 @@ export const ToolCallInput = memo(
 										sendToolInput.isPending &&
 										sendToolInput.variables?.approved === false
 									}
-									disabled={sendToolInput.isPending || result !== undefined}
+									disabled={sendToolInput.isPending || toolResult !== undefined}
 								>
 									Deny
 								</Button>
@@ -358,17 +264,17 @@ export const ToolCallInput = memo(
 								onClick={() =>
 									sendToolInput.mutate({
 										seed: message,
-										part,
+										part: toolCall,
 										value: inputValue,
 									})
 								}
 								leftSection={
-									result !== undefined ? (
+									toolResult !== undefined ? (
 										<Icon icon="lucide:check" />
 									) : undefined
 								}
 								loading={sendToolInput.isPending}
-								disabled={sendToolInput.isPending || result !== undefined}
+								disabled={sendToolInput.isPending || toolResult !== undefined}
 							>
 								Continue
 							</Button>
@@ -378,11 +284,10 @@ export const ToolCallInput = memo(
 			);
 		}
 
-		if (!result) {
+		if (!toolResult) {
 			return (
 				<Alert color="red" title="Error">
-					Tool <code>{part.name}</code> not recognized Tool{" "}
-					<code>{part.name}</code> not found
+					Tool <code>{tool?.name}</code> can't be used in this context.
 				</Alert>
 			);
 		}

@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { fetchNextEmbeddingBatch } from "#frontend/features/config/hooks/useEmbedding.ts";
 import { auth, query, queryClient, trpc } from "#frontend/utils/api.ts";
-import { zSettings } from "#shared/types/user";
+import { zSettings } from "#shared/features/data/types/user.ts";
 
 export const useRetrieval = () => {
 	const session = auth.useSession();
@@ -16,7 +16,7 @@ export const useRetrieval = () => {
 		...query.settings.setEmbeddingConfig.mutationOptions(),
 		onSuccess: async (data) => {
 			queryClient.setQueryData(query.settings.get.queryKey(), data);
-			await trpc.context.resetEmbeddings.mutate();
+			await trpc.embedding.resetAllEmbeddings.mutate();
 			await fetchNextEmbeddingBatch();
 		},
 	});

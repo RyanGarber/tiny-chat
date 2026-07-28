@@ -1,99 +1,99 @@
+import type { Client } from "@modelcontextprotocol/sdk/client";
 import { useQuery } from "@tanstack/react-query";
+import type { zToolData } from "@tiny-chat/shared/src/features/data/types/message.ts";
+import type { zMCPServers } from "@tiny-chat/shared/src/features/data/types/user.ts";
+import { ToolService } from "@tiny-chat/shared/src/features/tool/services/ToolService.ts";
+import type { Toolset } from "@tiny-chat/shared/src/features/tool/types/tool.ts";
 import { useMemo } from "react";
-import type { z } from "zod";
+import { useCapabilities } from "#frontend/features/capability/hooks/useCapabilities.ts";
+import { useChat } from "#frontend/features/chat/hooks/useChat.ts";
+import { useChatStore } from "#frontend/features/chat/stores/useChatStore.ts";
 import { useMcpServerSettings } from "#frontend/features/settings/hooks/useMcpServerSettings.ts";
-import frontend from "#frontend/tools/index.ts";
-import { query, trpc } from "#frontend/utils/api.ts";
-import shared from "#shared/tools";
-import type { Tool } from "#shared/types/tool.ts";
-import { McpService } from "../../uploads/services/McpService.ts";
+import { McpService } from "../services/McpService.ts";
 
+export interface McpToolset extends Toolset<void> {
+	server: NonNullable<zMCPServers>[keyof NonNullable<zMCPServers>];
+	client: Client<any>;
+}
+
+export const builtInToolsQueryKey = ["tools"] as const;
 export const mcpToolsQueryKey = ["mcp-servers"] as const;
 
 export const useTools = () => {
 	const { mcpServerSettings } = useMcpServerSettings();
 	const { data: mcpServerSettingsData } = mcpServerSettings;
+	const { presumedCapabilities: _presumedCapabilities } = useCapabilities();
+	const { chat } = useChat();
+	const createIncognito = useChatStore((s) => s.createIncognito);
 
-	const builtInTools = useQuery({
-		...query.input.listTools.queryOptions(),
-		select: (data) => [
-			...frontend,
-			...shared,
-			...data.map((g) => ({
-				...g,
-				tools: g.tools.map(
-					(t): Tool<z.ZodAny, z.ZodAny, z.ZodAny> => ({
-						...t,
-						run: (ctx, input, userInput) => {
-							return trpc.input.callTool.mutate({
-								name: t.name,
-								context: ctx,
-								input: input as never,
-								userInput: userInput as never,
-							});
-						},
-					}),
-				),
-			})),
-		],
+	const presumedCapabilities = useMemo(() => {
+		return _presumedCapabilities.data ?? {};
+	}, [_presumedCapabilities.data]);
+
+	const nativeTools = useQuery({
+		queryKey: [...builtInToolsQueryKey, presumedCapabilities],
+		queryFn: async () => {
+			return await ToolService.getTools({
+				capabilities: presumedCapabilities,
+				incognito: chat.data?.incognito ?? createIncognito,
+			});
+		},
 		staleTime: Infinity,
 		refetchOnWindowFocus: false,
 		refetchOnReconnect: false,
 	});
 
 	const mcpTools = useQuery({
+		queryKey: ["mcp-servers", JSON.stringify(mcpServerSettingsData)], // compare by value to prevent mcp server disconnects
 		queryFn: async () => {
 			const mcps = await McpService.connect(mcpServerSettingsData);
 			return (
-				mcps?.map(({ server, client, tools, error }, i) => ({
-					server,
-					client,
-					error,
-					toolGroup: {
-						name: `mcp:${server.name}`,
-						tools: tools.map(
-							(t): Tool<z.ZodAny, z.ZodAny, z.ZodAny> => ({
-								name: t.name,
-								description: t.description ?? "",
-								input: t.inputSchema,
-								output: t.outputSchema,
-								run: async (_, input) => {
-									console.log("Running tool from MCP:", _, input);
-									const output = await client.callTool({
-										name: t.name,
-										arguments: input as never,
-									});
-									console.log("Output:", _, output);
-									return [{ type: "json", value: output }];
-								},
-							}),
-						),
-						instructions: client.getInstructions()
-							? {
-									heading: `MCP Server ${i + 1} (${server.name})`,
-									body:
-										client.getInstructions() ??
-										"No instructions available for this server.",
-								}
-							: undefined,
-					},
-				})) ?? []
+				mcps.map(
+					({ name, server, client, tools, error }): McpToolset => ({
+						name: name.replace("-", "_").toLowerCase(),
+						prefix: name.replace("-", "_").toLowerCase(),
+						instructions: client.getInstructions(),
+
+						tools: tools.map((t) => ({
+							name: t.name,
+							description: t.description ?? "",
+
+							input: t.inputSchema,
+							output: t.outputSchema,
+
+							execute: async ({ input, ...rest }): Promise<zToolData> => {
+								console.log("[useTools] calling mcp tool:", { input, ...rest });
+								const { isError, content } = await client.callTool({
+									name: t.name,
+									arguments: input,
+								});
+								console.log("[useTools] mcp response:", { isError, content });
+								if (isError) throw new Error(JSON.stringify(content));
+								return [{ type: "json", value: content }];
+							},
+						})),
+						capabilities: void 0,
+						status: {
+							valid: !error,
+							error,
+						},
+
+						server,
+						client,
+					}),
+				) ?? []
 			);
 		},
-		queryKey: ["mcp-servers", JSON.stringify(mcpServerSettingsData)], // compare by value to prevent mcp server disconnects
 		staleTime: Infinity,
 		refetchOnWindowFocus: false,
 		refetchOnReconnect: false,
 	});
 
-	const { tools, toolGroups } = useMemo(() => {
-		const toolGroups = [
-			...(builtInTools.data ?? []),
-			...(mcpTools.data?.map((m) => m.toolGroup) ?? []),
-		];
-		const tools = toolGroups.flatMap((g) => g.tools);
-		return { tools, toolGroups };
-	}, [builtInTools.data, mcpTools.data]);
+	const { tools, toolsets } = useMemo(() => {
+		const toolsets = [...(nativeTools.data ?? []), ...(mcpTools.data ?? [])];
+		const tools = toolsets.flatMap((toolset) => toolset.tools);
+		return { tools, toolsets };
+	}, [nativeTools.data, mcpTools.data]);
 
-	return { builtInTools, mcpTools, tools, toolGroups };
+	return { nativeTools, mcpTools, tools, toolsets, presumedCapabilities };
 };

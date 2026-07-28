@@ -10,15 +10,15 @@ import {
 	Tooltip,
 } from "@mantine/core";
 import { useClipboard, useDisclosure } from "@mantine/hooks";
+import { DataUtils } from "@tiny-chat/shared/src/features/data/utils/DataUtils.ts";
 import { memo, type ReactNode } from "react";
 import { useChat } from "#frontend/features/chat/hooks/useChat.ts";
 import { useMessaging } from "#frontend/features/chat/hooks/useMessaging.ts";
 import { useMessagingStore } from "#frontend/features/chat/stores/useMessagingStore.tsx";
+import FileThumbnails from "#frontend/features/file/components/FileThumbnails.tsx";
 import MessageBody from "#frontend/features/message/components/MessageBody.tsx";
-import FileThumbnails from "#frontend/features/uploads/components/FileThumbnails.tsx";
-import { GLASS_STYLE } from "#frontend/utils/theme.ts";
-import { Author, type MessageState } from "#shared/types/chat.ts";
-import { texts } from "#shared/utils.ts";
+import { GLASS_STYLE } from "#frontend/utils/style.ts";
+import { Author, type MessageState } from "#shared/features/data/types/message";
 
 const Message = memo(
 	function Message({
@@ -30,7 +30,7 @@ const Message = memo(
 		opacity: number;
 		isLast: boolean;
 	}) {
-		const { chat, forkChat } = useChat();
+		const { chat, cloneChat } = useChat();
 		const { deleteMessage } = useMessaging();
 
 		const editing = useMessagingStore((s) => s.editing);
@@ -83,10 +83,10 @@ const Message = memo(
 						size={32}
 						onClick={() =>
 							chat.data &&
-							forkChat.mutate({ chat: chat.data, atMessage: message })
+							cloneChat.mutate({ chat: chat.data, upToMessage: message })
 						}
-						loading={forkChat.isPending}
-						disabled={forkChat.isPending}
+						loading={cloneChat.isPending}
+						disabled={cloneChat.isPending}
 					>
 						<Icon icon="lucide:split" width={20} />
 					</ActionIcon>
@@ -168,7 +168,12 @@ const Message = memo(
 											variant="subtle"
 											size={30}
 											onClick={() => {
-												clipboard.copy(texts(message.data, "\n"));
+												clipboard.copy(
+													DataUtils.getText({
+														data: message.data,
+														join: "\n",
+													}),
+												);
 											}}
 										>
 											<Icon icon="lucide:copy" height={18} />

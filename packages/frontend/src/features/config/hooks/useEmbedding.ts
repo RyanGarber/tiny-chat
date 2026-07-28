@@ -1,11 +1,11 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { ModelProviderService } from "@tiny-chat/shared/src/features/provider/services/ModelProviderService.ts";
 import { useEffect, useRef } from "react";
 import { ProviderService } from "#frontend/features/config/services/ProviderService.ts";
 import { useRetrieval } from "#frontend/features/settings/hooks/useRetrieval.ts";
 import { auth, backendUrl, queryClient, trpc } from "#frontend/utils/api.ts";
-import { embed } from "#shared/services/chat/embed.ts";
 
-export const nextEmbeddingBatchQueryKey = ["embedding", "next"] as const;
+const nextEmbeddingBatchQueryKey = ["embedding", "next"] as const;
 export const runEmbeddingBatchMutationKey = ["embedding", "run"] as const;
 
 export const fetchNextEmbeddingBatch = async () => {
@@ -21,10 +21,10 @@ export const useEmbedding = () => {
 		queryFn: async () => {
 			if (!session.data || !embeddingConfig.data) return null;
 
-			const missing = await trpc.context.listMissingEmbeddings.query({
+			const missing = await trpc.embedding.getMissingEmbeddings.query({
 				limit: 4,
 			});
-			console.log("Next batch:", missing);
+			console.log("[useEmbedding] incoming batch:", missing);
 			return missing;
 		},
 		staleTime: Infinity,
@@ -36,60 +36,69 @@ export const useEmbedding = () => {
 		mutationKey: runEmbeddingBatchMutationKey,
 		mutationFn: async (
 			batch: NonNullable<
-				Awaited<ReturnType<typeof trpc.context.listMissingEmbeddings.query>>
+				Awaited<ReturnType<typeof trpc.embedding.getMissingEmbeddings.query>>
 			>,
 		) => {
 			if (!session.data || !embeddingConfig.data) return;
 
 			const { messages, actions, memories, files } = batch;
-			console.log("Running batch:", batch);
+			console.log("[useEmbedding] starting batch:", batch);
 
 			const input = [
 				...messages.map((message) => ({
-					messageId: message.id,
+					type: "message" as const,
+					id: message.id,
 					text: message.text,
 				})),
 				...actions.map((action) => ({
-					actionId: action.id,
+					type: "action" as const,
+					id: action.id,
 					text: action.text,
 				})),
 				...memories.map((memory) => ({
-					memoryId: memory.id,
+					type: "memory" as const,
+					id: memory.id,
 					text: memory.text,
 				})),
-				...files.map((file) => ({ fileId: file.id, text: file.text })),
+				...files.map((file) => ({
+					type: "file" as const,
+					id: file.id,
+					text: file.text,
+				})),
 			];
 
-			const chatProviders = await ProviderService.getChatProviders(
+			const modelProviders = await ProviderService.getModelProviders(
 				session.data.user,
 			);
-			const chatProvider = chatProviders.find(
+			const modelProvider = modelProviders.find(
 				(p) => embeddingConfig.data && p.name === embeddingConfig.data.provider,
 			);
-			if (!chatProvider)
-				throw new Error(`Provider ${embeddingConfig.data.provider} not found`);
+			if (!modelProvider)
+				throw new Error(
+					`provider "${embeddingConfig.data.provider}" not found`,
+				);
 
-			const result = await embed(
-				session.data.user,
-				chatProvider,
-				input.map((item) => item.text),
-				embeddingConfig.data,
-				{
+			const result = await ModelProviderService.runEmbeddingModel({
+				user: session.data.user,
+				provider: modelProvider,
+				values: input.map((item) => item.text),
+				config: embeddingConfig.data,
+				env: {
 					...import.meta.env,
 					VITE_BACKEND_URL: backendUrl,
 				},
-			);
-			console.log("Embedding result:", result);
+			});
+			console.log("[useEmbedding] saving embeddings:", result);
 
-			const output = input.map((item, index) => ({
-				...item,
+			const output = input.map(({ text: _, ...rest }, index) => ({
+				...rest,
 				embedding: result[index],
 			}));
-			await trpc.context.saveEmbeddings.mutate(output);
+			await trpc.embedding.setEmbeddings.mutate(output);
 		},
 		onSuccess: () => setTimeout(() => void nextEmbeddingBatch.refetch(), 2000),
 		onError: (error) => {
-			console.warn("Embedding failed:", error);
+			console.warn("[useEmbedding] failed to embed:", error);
 			// Retry after a delay by refetching the batch — this re-triggers the effect
 			// and the pending guard ensures only one attempt runs at a time.
 			setTimeout(() => void nextEmbeddingBatch.refetch(), 5000);

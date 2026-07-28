@@ -3,33 +3,42 @@ import {
 	TreeSelect,
 	type TreeSelectProps,
 } from "@mantine/core";
+import {
+	DEFAULT_SKILLS,
+	DEFAULT_TOOLSETS,
+	zConfig,
+} from "@tiny-chat/shared/src/features/data/types/message.ts";
+import type {
+	ModelProviderStatus,
+	zModelFeature,
+} from "@tiny-chat/shared/src/features/provider/types/model";
+import type { ProviderState } from "@tiny-chat/shared/src/features/provider/types/provider";
 import { useCallback, useMemo } from "react";
 import { useProviders } from "#frontend/features/config/hooks/useProviders.ts";
 import { useHiddenModels } from "#frontend/features/settings/hooks/useHiddenModels.ts";
-import {
-	DEFAULT_SKILLS,
-	DEFAULT_TOOL_GROUPS,
-	zConfig,
-} from "#shared/types/chat.ts";
 
 const getData = (
-	feature: "generate" | "embed",
+	feature: zModelFeature,
 	includeHidden: boolean,
 	providers: ReturnType<typeof useProviders>["providers"],
 	hiddenModels: ReturnType<typeof useHiddenModels>["hiddenModels"],
 ): TreeNodeData[] => {
 	return (
-		providers.data?.chat
+		providers.data
+			?.filter(
+				(provider): provider is ProviderState<ModelProviderStatus> =>
+					provider.type === "model",
+			)
 			.sort((a, b) => a.name.localeCompare(b.name))
 			.filter(
 				(p) =>
-					p.models.length &&
+					p.status.models.length &&
 					(includeHidden ||
-						p.models
+						p.status.models
 							.filter((m) => m.features.includes(feature))
 							.some(
 								(m) =>
-									!hiddenModels.data?.[feature].find(
+									!hiddenModels.data?.[feature]?.find(
 										(h) => h.provider === p.name && h.model === m.name,
 									),
 							)),
@@ -37,12 +46,12 @@ const getData = (
 			.map((p) => ({
 				label: p.name,
 				value: p.name,
-				children: p.models
+				children: p.status.models
 					.filter((m) => m.features.includes(feature))
 					.filter(
 						(m) =>
 							includeHidden ||
-							!hiddenModels.data?.[feature].find(
+							!hiddenModels.data?.[feature]?.find(
 								(h) => h.provider === p.name && h.model === m.name,
 							),
 					)
@@ -55,8 +64,8 @@ const getData = (
 	);
 };
 
-interface ModelSelectProps extends Omit<TreeSelectProps<"single">, "data"> {
-	feature: "generate" | "embed";
+interface ModelSelectProps extends Omit<TreeSelectProps, "data"> {
+	feature: zModelFeature;
 	optional?: boolean;
 	configValue: zConfig | null | undefined;
 	onConfigChange: (value: zConfig | null | undefined) => void;
@@ -80,6 +89,7 @@ export default function ModelSelect({
 			allowDeselect={optional}
 			maxDropdownHeight={250}
 			expandOnClick
+			scrollAreaProps={{ type: "auto" }}
 			data={data}
 			value={
 				configValue
@@ -94,7 +104,8 @@ export default function ModelSelect({
 					v
 						? zConfig.parse({
 								...JSON.parse(v),
-								toolGroups: configValue?.toolGroups ?? DEFAULT_TOOL_GROUPS,
+								args: {},
+								toolsets: configValue?.toolsets ?? DEFAULT_TOOLSETS,
 								skills: configValue?.skills ?? DEFAULT_SKILLS,
 							})
 						: null,
@@ -107,7 +118,7 @@ export default function ModelSelect({
 
 interface ModelMultiSelectProps
 	extends Omit<TreeSelectProps<"checkbox">, "data"> {
-	feature: "generate" | "embed";
+	feature: zModelFeature;
 	configValues: zConfig[];
 	onConfigChange: (value: zConfig[]) => void;
 	includeHidden?: boolean;

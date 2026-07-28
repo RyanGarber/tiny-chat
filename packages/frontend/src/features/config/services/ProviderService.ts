@@ -1,42 +1,48 @@
 import { isTauriWithAfm, trpc } from "#frontend/utils/api.ts";
-import { chatProviders } from "#shared/providers/chat";
-import type { zUser } from "#shared/types/user.ts";
+import type { zUser } from "#shared/features/data/types/user.ts";
+import { ModelProviderService } from "#shared/features/provider/services/ModelProviderService.ts";
+import type {
+	ModelProvider,
+	ModelProviderStatus,
+} from "#shared/features/provider/types/model.ts";
+import type { ProviderState } from "#shared/features/provider/types/provider.ts";
 
 export const ProviderService = {
-	getChatProviders: async (user: zUser) => {
-		const providers = [...chatProviders];
+	getModelProviders: async (user: zUser) => {
+		const providers: ModelProvider<any>[] = [...ModelProviderService.providers];
+
 		if (user.settings.useBrowserModels) {
 			const { WebLLMProvider } = await import("./WebLLMProvider.ts");
 			providers.push(WebLLMProvider);
 		}
+
 		if (await isTauriWithAfm()) {
 			const { AFMProvider } = await import("./AFMProvider.ts");
 			providers.push(AFMProvider);
 		}
+
 		return providers;
 	},
 
-	getChatProviderCache: async (user: zUser) => {
-		const { providers } = await trpc.user.getCache.query();
+	getProviderStateCache: async (user: zUser, update = false) => {
+		const { providers } = await trpc.user.getCache.query({ update });
+
 		if (user.settings.useBrowserModels) {
 			const { WebLLMProvider } = await import("./WebLLMProvider.ts");
-			providers.chat.push({
+			providers.push({
 				...WebLLMProvider,
-				models: await WebLLMProvider.getModels(user),
-			});
+				status: await WebLLMProvider.getStatus({ user }),
+			} satisfies ProviderState<ModelProviderStatus>);
 		}
+
 		if (await isTauriWithAfm()) {
 			const { AFMProvider } = await import("./AFMProvider.ts");
-			providers.chat.push({
+			providers.push({
 				...AFMProvider,
-				models: await AFMProvider.getModels(user),
-			});
+				status: await AFMProvider.getStatus({ user }),
+			} satisfies ProviderState<ModelProviderStatus>);
 		}
-		return providers;
-	},
 
-	updateProviderCache: async () => {
-		const cache = await trpc.user.updateCache.mutate();
-		return cache.providers;
+		return providers;
 	},
 } as const;

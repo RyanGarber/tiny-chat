@@ -17,7 +17,7 @@ export class TauriStdioTransport implements Transport {
 
 	async start() {
 		this.unlisten = await listen<string>(`mcp-data:${this.id}`, (data) => {
-			console.log("Received message:", data);
+			console.log("[mcp] received message:", data);
 			try {
 				this.onmessage?.(JSON.parse(data) as JSONRPCMessage);
 			} catch (e) {
@@ -25,7 +25,7 @@ export class TauriStdioTransport implements Transport {
 			}
 		});
 
-		console.log("Starting transport:", this.id, this.command, this.env);
+		console.log("[mcp] starting stdio:", this.id, this.command, this.env);
 		await invoke("mcp_start_stdio", {
 			id: this.id,
 			command: this.command,
@@ -34,7 +34,7 @@ export class TauriStdioTransport implements Transport {
 	}
 
 	async send(data: JSONRPCMessage) {
-		console.log("Sending message:", data);
+		console.log("[mcp] sending message:", data);
 		await invoke("mcp_send_stdio", {
 			id: this.id,
 			data: JSON.stringify(data),
@@ -42,7 +42,7 @@ export class TauriStdioTransport implements Transport {
 	}
 
 	async close() {
-		console.log("Closing transport:", this.id);
+		console.log("[mcp] closing transport:", this.id);
 		this.unlisten?.();
 		await invoke("mcp_stop_stdio", { id: this.id });
 		this.onclose?.();
@@ -87,11 +87,10 @@ export class TauriHttpTransport implements Transport {
 			} else if (line === "") {
 				// end of event
 				if (dataLine !== null && dataLine !== "") {
-					console.log("[mcp] SSE message:", dataLine);
 					try {
 						this.onmessage?.(JSON.parse(dataLine) as JSONRPCMessage);
 					} catch (e) {
-						console.error("[mcp] JSON parse error:", e, "raw:", dataLine);
+						console.error("[mcp] json parse error:", e, "raw:", dataLine);
 						this.onerror?.(e as Error);
 					}
 				}
@@ -115,24 +114,22 @@ export class TauriHttpTransport implements Transport {
 		this.unlistenSseData = await listen<string>(
 			`mcp-data:${this.sseId}`,
 			(data) => {
-				console.log("[mcp:sse] data:", data);
 				this.handleChunk(data);
 			},
 		);
 		this.unlistenSseError = await listen<string>(
 			`mcp-error:${this.sseId}`,
 			(error) => {
-				console.log("[mcp:sse] error:", error);
+				console.log("[mcp] sse error:", error);
 				this.onerror?.(new Error(error));
 			},
 		);
 		this.unlistenSseEnd = await listen(`mcp-end:${this.sseId}`, () => {
 			// SSE channel closed by server — that's a real disconnect
-			console.log("[mcp:sse] end");
 			this.onclose?.();
 		});
 
-		console.log("[mcp] starting SSE session:", this.sseId, this.url);
+		console.log("[mcp] starting http:", this.sseId, this.url);
 		await invoke("mcp_start_http", {
 			id: this.sseId,
 			url: this.url,
@@ -143,31 +140,26 @@ export class TauriHttpTransport implements Transport {
 	async send(message: JSONRPCMessage) {
 		const postId = `${this.id}:post:${this.postCounter++}`;
 		const body = new TextEncoder().encode(JSON.stringify(message));
-		console.log("[mcp] sending:", message, "postId:", postId);
 
 		// Listen for the response headers to capture mcp-session-id
 		const unlistenResp = await listen<{
 			status: number;
 			headers: Record<string, string>;
 		}>(`mcp-response:${postId}`, (response) => {
-			console.log("[mcp:post] response meta:", response);
 			const sid =
 				response.headers["mcp-session-id"] ??
 				response.headers["Mcp-Session-Id"];
 			if (sid && !this.sessionId) {
-				console.log("[mcp] captured session ID:", sid);
 				this.sessionId = sid;
 			}
 		});
 
 		// POST response data goes to postId — completely separate from sseId
 		const unlistenData = await listen<string>(`mcp-data:${postId}`, (data) => {
-			console.log("[mcp:post] data:", data);
 			this.handleChunk(data);
 		});
 
 		const unlistenEnd = await listen(`mcp-end:${postId}`, () => {
-			console.log("[mcp:post] end, postId:", postId);
 			unlistenResp();
 			unlistenData();
 			unlistenEnd();
@@ -177,7 +169,7 @@ export class TauriHttpTransport implements Transport {
 		const unlistenError = await listen<string>(
 			`mcp-error:${postId}`,
 			(error) => {
-				console.log("[mcp:post] error:", error);
+				console.log("[mcp] error in streamable-http:", error);
 				this.onerror?.(new Error(error));
 				unlistenResp();
 				unlistenData();
@@ -200,7 +192,7 @@ export class TauriHttpTransport implements Transport {
 				body: Array.from(body),
 			});
 		} catch (e) {
-			console.error("[mcp] send error:", e);
+			console.error("[mcp] failed to send:", e);
 			unlistenResp();
 			unlistenData();
 			unlistenEnd();

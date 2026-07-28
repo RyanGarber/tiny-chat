@@ -1,6 +1,10 @@
-import type { zData, zDataPart } from "@tiny-chat/shared/src/types/chat.ts";
-import { texts } from "@tiny-chat/shared/src/utils.ts";
-import { useInputStore } from "#frontend/features/chat/stores/useInputStore.ts";
+import type {
+	zData,
+	zDataPart,
+} from "@tiny-chat/shared/src/features/data/types/message.ts";
+import { DataUtils } from "@tiny-chat/shared/src/features/data/utils/DataUtils.ts";
+import { hasPendingCommandNode } from "#frontend/features/input/hooks/useCommand.tsx";
+import { useInputStore } from "#frontend/features/input/stores/useInputStore.ts";
 
 export const InputService = {
 	insertQuote: (model: string, text: string) => {
@@ -28,9 +32,17 @@ export const InputService = {
 		const { editor, setAttachments } = useInputStore.getState();
 		if (!editor) return;
 
-		editor.commands.setContent(texts(data, "\n"), {
+		console.log(`[InputService] setData:`, data);
+		editor.commands.setContent(DataUtils.getText({ data, join: "\n" }), {
 			contentType: "markdown",
 		});
 		setAttachments(data.flat().filter((p) => p.type === "upload"));
+	},
+
+	getIncomplete: () => {
+		const { editor } = useInputStore.getState();
+		if (!editor) return false;
+
+		return hasPendingCommandNode(editor);
 	},
 } as const;

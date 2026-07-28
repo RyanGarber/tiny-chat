@@ -1,15 +1,13 @@
 import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
-import {
-	type ChatState,
-	getChatTimestamp,
-} from "#frontend/features/chat/hooks/useChat.ts";
+import type { ChatState } from "@tiny-chat/shared/src/features/data/types/chat.ts";
+import { getChatTimestamp } from "#frontend/features/chat/hooks/useChat.ts";
 import { query, queryClient, trpc } from "#frontend/utils/api.ts";
 import { ChatService } from "../services/ChatService";
 import { useChatStore } from "../stores/useChatStore";
 
 export const refetchChatList = () => {
 	return queryClient.invalidateQueries({
-		queryKey: query.chat.pathKey(),
+		queryKey: query.chat.getChatList.pathKey(),
 	});
 };
 
@@ -18,7 +16,7 @@ export const useChatList = () => {
 	const chatId = useChatStore((s) => s.chatId);
 
 	const folders = useInfiniteQuery({
-		...query.chat.list.infiniteQueryOptions(
+		...query.chat.getChatList.infiniteQueryOptions(
 			{ limit: 10 },
 			{
 				getNextPageParam: (lastPage, _pages) => lastPage.nextCursor,
@@ -52,7 +50,7 @@ export const useChatList = () => {
 
 	const deleteChat = useMutation({
 		mutationFn: async ({ chat }: { chat: ChatState }) => {
-			return trpc.chat.delete.mutate({ id: chat.id });
+			return trpc.chat.deleteChat.mutate(chat);
 		},
 		onSuccess: async (_, input) => {
 			await refetchChatList();
@@ -62,7 +60,7 @@ export const useChatList = () => {
 
 	const renameChat = useMutation({
 		mutationFn: async ({ chat, title }: { chat: ChatState; title: string }) => {
-			await trpc.chat.edit.mutate({ id: chat.id, title });
+			await trpc.chat.setChatTitle.mutate({ chat, title });
 		},
 		onSuccess: () => refetchChatList(),
 	});

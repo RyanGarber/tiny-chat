@@ -147,7 +147,7 @@ model Memory {
   userId     String
   folderId   String?
   chatId     String?
-  config     Json
+  config     Json?
   fact       String
   category   MemoryCategory
   stability  MemoryStability

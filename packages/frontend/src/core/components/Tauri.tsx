@@ -15,7 +15,7 @@ import {
 	type TauriTask,
 	useTauriStore,
 } from "#frontend/core/stores/useTauriStore.tsx";
-import { GLASS_STYLE, SHADOW } from "#frontend/utils/theme.ts";
+import { GLASS_STYLE, SHADOW } from "#frontend/utils/style.ts";
 import { useTauri } from "../hooks/useTauri";
 
 interface DisplayedTask extends TauriTask {

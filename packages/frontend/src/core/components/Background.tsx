@@ -1,10 +1,23 @@
-import { useEffect, useRef } from "react";
+import { Box } from "@mantine/core";
+import { useEffect, useMemo, useRef } from "react";
+import { useChat } from "#frontend/features/chat/hooks/useChat.ts";
+import { useChatStore } from "#frontend/features/chat/stores/useChatStore.ts";
+import { useThemes } from "#frontend/features/settings/hooks/useThemes.ts";
 
-export default function Background({ incognito }: { incognito: boolean }) {
+export default function Background() {
+	const createIncognito = useChatStore((s) => s.createIncognito);
+	const { chat } = useChat();
+	const { blackout } = useThemes();
+
+	const black = useMemo(
+		() => blackout.data || (chat.data?.incognito ?? createIncognito),
+		[blackout, chat.data?.incognito, createIncognito],
+	);
+
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 
 	useEffect(() => {
-		const colors = incognito ? ["#000000", "#000000"] : ["#3b79e7", "#21a7ff"];
+		const colors = black ? ["#000000", "#000000"] : ["#3b79e7", "#21a7ff"];
 
 		const canvas = canvasRef.current;
 		if (!canvas) return;
@@ -59,19 +72,30 @@ export default function Background({ incognito }: { incognito: boolean }) {
 			if (animFrameId !== undefined) cancelAnimationFrame(animFrameId);
 			window.removeEventListener("resize", resize);
 		};
-	}, [incognito]); // re-initializes if colors change
+	}, [black]); // re-initializes if colors change
 
 	return (
-		<canvas
-			ref={canvasRef}
+		<Box
+			pos="absolute"
+			inset={0}
 			style={{
-				position: "fixed",
-				top: 0,
-				left: 0,
-				width: "100%",
-				height: "100%",
 				zIndex: -1,
+				maskImage: `linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%)`,
+				opacity: chat.data ? 0.125 : 0.5,
+				transition: "opacity 0.3s ease",
 			}}
-		/>
+		>
+			<canvas
+				ref={canvasRef}
+				style={{
+					position: "fixed",
+					top: 0,
+					left: 0,
+					width: "100%",
+					height: "100%",
+					zIndex: -1,
+				}}
+			/>
+		</Box>
 	);
 }

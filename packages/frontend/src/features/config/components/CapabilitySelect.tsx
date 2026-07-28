@@ -14,38 +14,34 @@ import {
 	TextInput,
 } from "@mantine/core";
 import { useIsFetching } from "@tanstack/react-query";
-import {
-	memo,
-	useCallback,
-	useEffect,
-	useLayoutEffect,
-	useMemo,
-	useState,
-} from "react";
+import { memo, useEffect, useLayoutEffect, useState } from "react";
 import { ZodError } from "zod";
 import { useTauri } from "#frontend/core/hooks/useTauri.ts";
 import { useLayoutStore } from "#frontend/core/stores/useLayoutStore.tsx";
-import { useChat } from "#frontend/features/chat/hooks/useChat.ts";
-import { useChatStore } from "#frontend/features/chat/stores/useChatStore.ts";
 import { useConfig } from "#frontend/features/config/hooks/useConfig.ts";
-import { useProviders } from "#frontend/features/config/hooks/useProviders.ts";
 import {
+	type McpToolset,
 	mcpToolsQueryKey,
 	useTools,
 } from "#frontend/features/config/hooks/useTools.ts";
-import { useMcpServerSettings } from "#frontend/features/settings/hooks/useMcpServerSettings.ts";
-import Dropzone from "#frontend/features/uploads/components/Dropzone.tsx";
+import Dropzone from "#frontend/features/file/components/Dropzone.tsx";
 import {
 	localSkillFilesQueryKey,
 	useSkills,
-} from "#frontend/features/uploads/hooks/useSkills.ts";
-import { auth } from "#frontend/utils/api.ts";
-import { GLASS_STYLE } from "#frontend/utils/theme.ts";
-import type { zSkill } from "#shared/types/skill.ts";
-import type { zTool, zToolGroup } from "#shared/types/tool.ts";
-import { zMCPServers } from "#shared/types/user.ts";
-import { fromChatUriOrThrow } from "#shared/utils/files.ts";
-import { precheckAllToolRequirements, scrubText } from "#shared/utils.ts";
+} from "#frontend/features/file/hooks/useSkills.ts";
+import { useMcpServerSettings } from "#frontend/features/settings/hooks/useMcpServerSettings.ts";
+import { GLASS_STYLE } from "#frontend/utils/style.ts";
+import { CommonUtils } from "#shared/core/utils/CommonUtils.ts";
+import { zMCPServers } from "#shared/features/data/types/user.ts";
+import { DataUtils } from "#shared/features/data/utils/DataUtils.ts";
+import { PathUtils } from "#shared/features/file/utils/PathUtils.ts";
+import type { zSkill } from "#shared/features/skill/types/skill.ts";
+import { read_file } from "#shared/features/tool/tools/filesystem/read_file.ts";
+import type { Toolset } from "#shared/features/tool/types/tool.ts";
+import { ToolUtils } from "#shared/features/tool/utils/ToolUtils.ts";
+
+const CHAT_FILE_TOOLSET = "chat_system";
+const USER_FILE_TOOLSET = "user_system";
 
 export const CapabilitySelect = memo(
 	({ opened, onClose }: { opened: boolean; onClose: () => void }) => {
@@ -53,9 +49,8 @@ export const CapabilitySelect = memo(
 		const { isMobile } = useLayoutStore();
 		const { mcpServerSettingsUnparsed, setMcpServerSettings } =
 			useMcpServerSettings();
-		const { builtInTools, mcpTools } = useTools();
-		const { localSkills, remoteSkills, deleteRemoteSkill, skills } =
-			useSkills();
+		const { nativeTools, mcpTools } = useTools();
+		const { localSkills, remoteSkills, deleteRemoteSkill } = useSkills();
 
 		const areMcpToolsUpdating =
 			useIsFetching({ queryKey: mcpToolsQueryKey }) > 0;
@@ -65,91 +60,7 @@ export const CapabilitySelect = memo(
 		const [mcpInputActive, setMcpInputActive] = useState(false);
 		const [mcpInputError, setMcpInputError] = useState<string | null>(null);
 
-		const session = auth.useSession();
 		const { isTauriDesktop } = useTauri();
-		const { chat } = useChat();
-		const createIncognito = useChatStore((s) => s.createIncognito);
-		const incognito = chat.data?.incognito ?? createIncognito;
-
-		const { providers } = useProviders();
-		const builtInToolsSupported = useMemo(() => {
-			return precheckAllToolRequirements(
-				builtInTools.data,
-				session.data?.user,
-				chat.data,
-				incognito,
-				true,
-				isTauriDesktop.data,
-				providers.data,
-				skills,
-			);
-		}, [
-			builtInTools.data,
-			session.data?.user,
-			chat.data,
-			incognito,
-			isTauriDesktop.data,
-			providers.data,
-			skills,
-		]);
-
-		const isBuiltInToolSupported = useCallback(
-			(toolGroup: zToolGroup, tool?: zTool) => {
-				return builtInToolsSupported.some(
-					(g) =>
-						g.name === toolGroup.name &&
-						(!tool || g.tools.some((t) => t.name === tool.name)),
-				);
-			},
-			[builtInToolsSupported],
-		);
-
-		const Skill = ({ skill }: { skill: zSkill }) => {
-			return (
-				<Checkbox.Card
-					p="xs"
-					checked={config.skills?.includes(skill.name)}
-					disabled={!skill.name}
-					onClick={() => {
-						setConfig({
-							...config,
-							skills: !config.skills?.includes(skill.name)
-								? [...config.skills, skill.name]
-								: config.skills?.filter((cs) => cs !== skill.name),
-						});
-					}}
-					style={{ ...GLASS_STYLE }}
-				>
-					<Group wrap="nowrap" align="flex-start">
-						<Checkbox.Indicator />
-						<Stack gap={5} miw={0}>
-							<Text size="xs">{skill.name}</Text>
-							<Text
-								size="xs"
-								c="dimmed"
-								style={{
-									overflow: "hidden",
-									textOverflow: "ellipsis",
-									whiteSpace: "nowrap",
-								}}
-							>
-								{scrubText(skill.description)}
-							</Text>
-							{config.skills?.includes(skill.name) &&
-								!config.toolGroups?.includes("files") && (
-									<Group gap="xs" c="yellow">
-										<Icon icon="lucide:alert-triangle" width={12} />
-										<Text size="xs">
-											Missing tools:{" "}
-											<span style={{ fontWeight: 450 }}>read_file</span>
-										</Text>
-									</Group>
-								)}
-						</Stack>
-					</Group>
-				</Checkbox.Card>
-			);
-		};
 
 		const [mcpInputValue, setMcpInputValue] = useState<string>("[]");
 		useEffect(() => {
@@ -185,6 +96,149 @@ export const CapabilitySelect = memo(
 				setMcpInputValueOverride(null);
 			}
 		}, [mcpInputActive, mcpInputError, setMcpServerSettings.isPending]);
+
+		const SkillView = ({
+			skills,
+			native,
+		}: {
+			skills: zSkill[];
+			native?: boolean;
+		}) => {
+			return skills.map((skill) => (
+				<Group key={skill.name + skill.path}>
+					<Box flex={1} miw={0}>
+						<Checkbox.Card
+							p="xs"
+							checked={config.skills?.includes(skill.path)}
+							disabled={!skill.name}
+							onClick={() => {
+								setConfig({
+									...config,
+									skills: !config.skills?.includes(skill.path)
+										? [...config.skills, skill.path]
+										: config.skills?.filter((cs) => cs !== skill.path),
+								});
+							}}
+							style={{ ...GLASS_STYLE }}
+						>
+							<Group wrap="nowrap" align="flex-start">
+								<Checkbox.Indicator />
+								<Stack gap={5} miw={0}>
+									<Text size="xs">{skill.name}</Text>
+									<Text
+										size="xs"
+										c="dimmed"
+										style={{
+											overflow: "hidden",
+											textOverflow: "ellipsis",
+											whiteSpace: "nowrap",
+										}}
+									>
+										{DataUtils.getTextCleaned({ data: skill.description })}
+									</Text>
+									{config.skills?.includes(skill.path) &&
+										!config.toolsets?.includes(
+											PathUtils.fromMount(skill)
+												? CHAT_FILE_TOOLSET
+												: USER_FILE_TOOLSET,
+										) && (
+											<Group gap="xs" c="yellow">
+												<Icon icon="lucide:alert-triangle" width={12} />
+												<Text size="xs">
+													Missing tools:{" "}
+													<span style={{ fontWeight: 450 }}>
+														{read_file.name}
+													</span>
+												</Text>
+											</Group>
+										)}
+								</Stack>
+							</Group>
+						</Checkbox.Card>
+					</Box>
+					{native && (
+						<ActionIcon
+							variant="subtle"
+							color="red"
+							loading={
+								deleteRemoteSkill.isPending &&
+								deleteRemoteSkill.variables.id ===
+									(PathUtils.fromMountOrThrow(skill).uploadId as string)
+							}
+							disabled={
+								deleteRemoteSkill.isPending &&
+								deleteRemoteSkill.variables.id ===
+									(PathUtils.fromMountOrThrow(skill).uploadId as string)
+							}
+							onClick={() =>
+								deleteRemoteSkill.mutate({
+									id: PathUtils.fromMountOrThrow(skill).uploadId as string,
+								})
+							}
+						>
+							<Icon icon="lucide:trash" />
+						</ActionIcon>
+					)}
+				</Group>
+			));
+		};
+
+		const ToolsetView = ({
+			toolsets,
+		}: {
+			toolsets: McpToolset[] | Toolset<any>[];
+		}) => {
+			return toolsets.map((toolset) => {
+				const toolsetName = ToolUtils.name({ toolset });
+				const toolNames = toolset.tools.map((tool) =>
+					ToolUtils.name({ toolset, tool }),
+				);
+
+				return (
+					<Checkbox.Card
+						key={toolsetName}
+						p="xs"
+						checked={ToolUtils.checkOne({ toolset, config })}
+						onClick={() => {
+							setConfig({
+								...config,
+								toolsets: !config.toolsets.includes(toolsetName)
+									? [...config.toolsets, toolsetName]
+									: config.toolsets.filter((name) => name !== toolsetName),
+							});
+						}}
+						style={{
+							...GLASS_STYLE,
+							cursor: !toolset.status.valid ? "not-allowed" : undefined,
+						}}
+						disabled={!toolset.status.valid}
+						opacity={!toolset.status.valid ? 0.5 : 1}
+					>
+						<Group wrap="nowrap" align="flex-start">
+							<Checkbox.Indicator />
+							<Stack gap={5} miw={0}>
+								<Text size="xs">{toolsetName}</Text>
+								<Text size="xs" c="dimmed">
+									{toolNames.map((toolName, i) => (
+										<span key={toolName}>
+											{`${toolName}${i < toolset.tools.length - 1 ? ", " : ""}`}
+										</span>
+									))}
+								</Text>
+								{!!toolset.status.error && (
+									<Group gap="xs" c="red">
+										<Icon icon="lucide:alert-circle" width={12} />
+										<Text size="xs">
+											{CommonUtils.getErrorFormatted(toolset.status)}
+										</Text>
+									</Group>
+								)}
+							</Stack>
+						</Group>
+					</Checkbox.Card>
+				);
+			});
+		};
 
 		return (
 			<Modal
@@ -225,62 +279,7 @@ export const CapabilitySelect = memo(
 					<Tabs.Panel value="tools:built-in">
 						<ScrollArea type="auto" offsetScrollbars h={400}>
 							<Stack gap="xs">
-								{builtInTools.data?.map((toolGroup) => (
-									<Checkbox.Card
-										key={toolGroup.name} // use tool names?
-										p="xs"
-										checked={
-											isBuiltInToolSupported(toolGroup) &&
-											config.toolGroups?.includes(toolGroup.name)
-										}
-										disabled={!isBuiltInToolSupported(toolGroup)}
-										c={
-											!isBuiltInToolSupported(toolGroup) ? "dimmed" : undefined
-										}
-										onClick={() => {
-											setConfig({
-												...config,
-												toolGroups: !config.toolGroups.includes(toolGroup.name)
-													? [...config.toolGroups, toolGroup.name]
-													: config.toolGroups.filter(
-															(t) => t !== toolGroup.name,
-														),
-											});
-										}}
-										style={{
-											...GLASS_STYLE,
-											cursor: !isBuiltInToolSupported(toolGroup)
-												? "not-allowed"
-												: undefined,
-										}}
-									>
-										<Group wrap="nowrap" align="flex-start">
-											<Checkbox.Indicator />
-											<div>
-												<Text size="xs">
-													{toolGroup.instructions?.heading ?? "Unknown"}
-												</Text>
-												<Text size="xs" c="dimmed">
-													{toolGroup.tools.map((t, i) => (
-														<span key={t.name}>
-															{isBuiltInToolSupported(toolGroup, t) ? (
-																t.name +
-																(i < toolGroup.tools.length - 1 ? ", " : "")
-															) : (
-																<span style={{ opacity: 0.5 }}>
-																	{t.name +
-																		(i < toolGroup.tools.length - 1
-																			? ", "
-																			: "")}
-																</span>
-															)}
-														</span>
-													))}
-												</Text>
-											</div>
-										</Group>
-									</Checkbox.Card>
-								))}
+								<ToolsetView toolsets={nativeTools.data ?? []} />
 							</Stack>
 						</ScrollArea>
 					</Tabs.Panel>
@@ -361,60 +360,7 @@ export const CapabilitySelect = memo(
 										</ActionIcon>
 									}
 								/>
-								{mcpTools.data?.map((mcpServer) => (
-									<Checkbox.Card
-										key={mcpServer.server.name} // use tool names + error?
-										p="xs"
-										checked={config.toolGroups?.includes(
-											mcpServer.toolGroup.name,
-										)}
-										onClick={() => {
-											setConfig({
-												...config,
-												toolGroups: !config.toolGroups?.includes(
-													mcpServer.toolGroup.name,
-												)
-													? [...config.toolGroups, mcpServer.toolGroup.name]
-													: config.toolGroups?.filter(
-															(t) => t !== mcpServer.toolGroup.name,
-														),
-											});
-										}}
-										style={{
-											...GLASS_STYLE,
-											cursor:
-												mcpServer.error !== undefined
-													? "not-allowed"
-													: undefined,
-										}}
-										disabled={mcpServer.error !== undefined}
-									>
-										<Group wrap="nowrap" align="flex-start">
-											<Checkbox.Indicator />
-											<Stack gap={5} miw={0}>
-												<Text size="xs">{mcpServer.server.name}</Text>
-												<Text size="xs" c="dimmed">
-													{mcpServer.toolGroup.tools
-														.map((t) => t.name)
-														.join(", ")}
-												</Text>
-												{mcpServer.error !== undefined && (
-													<Group gap="xs" c="red">
-														<Icon icon="lucide:alert-circle" width={12} />
-														<Text size="xs">
-															{mcpServer.error instanceof Error
-																? mcpServer.error.message
-																: "Unknown error"}
-														</Text>
-													</Group>
-												)}
-											</Stack>
-											<div>
-												<Text size="xs"></Text>
-											</div>
-										</Group>
-									</Checkbox.Card>
-								))}
+								<ToolsetView toolsets={mcpTools.data ?? []} />
 							</Stack>
 						</ScrollArea>
 					</Tabs.Panel>
@@ -427,34 +373,7 @@ export const CapabilitySelect = memo(
 						<Space h="md" />
 						<ScrollArea type="auto" offsetScrollbars h={280}>
 							<Stack gap="xs">
-								{remoteSkills.data?.map((s) => (
-									<Group key={s.name}>
-										<Box flex={1} miw={0}>
-											<Skill skill={s} />
-										</Box>
-										<ActionIcon
-											variant="subtle"
-											color="red"
-											loading={
-												deleteRemoteSkill.isPending &&
-												deleteRemoteSkill.variables.id ===
-													(fromChatUriOrThrow(s.path).uploadId as string)
-											}
-											disabled={
-												deleteRemoteSkill.isPending &&
-												deleteRemoteSkill.variables.id ===
-													(fromChatUriOrThrow(s.path).uploadId as string)
-											}
-											onClick={() =>
-												deleteRemoteSkill.mutate({
-													id: fromChatUriOrThrow(s.path).uploadId as string,
-												})
-											}
-										>
-											<Icon icon="lucide:trash" />
-										</ActionIcon>
-									</Group>
-								))}
+								<SkillView skills={remoteSkills.data ?? []} native />
 							</Stack>
 						</ScrollArea>
 					</Tabs.Panel>
@@ -482,9 +401,7 @@ export const CapabilitySelect = memo(
 										</ActionIcon>
 									}
 								/>
-								{localSkills.data?.map((s) => (
-									<Skill key={s.name} skill={s} />
-								))}
+								<SkillView skills={localSkills.data ?? []} />
 							</Stack>
 						</ScrollArea>
 					</Tabs.Panel>

@@ -4,31 +4,38 @@
 // reformatting the rest of the file. This is the single source of truth for
 // the app version; semantic-release invokes this via its `exec` plugin.
 
-import { readFileSync, writeFileSync } from "node:fs";
-import path from "node:path";
+import { readFile, writeFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { Command } from "@commander-js/extra-typings";
 
-const nextVersion = process.argv[2];
-if (!nextVersion) {
-	console.error("Usage: bump-tauri-version.mjs <version>");
-	process.exit(1);
-}
+const VERSION_REGEX = /("version":\s*")([^"]*)(")/;
 
-const configPath = path.resolve(
-	path.dirname(fileURLToPath(import.meta.url)),
-	"../apps/tauri/tauri.conf.json",
-);
+await new Command()
+	.argument("<version>", "the new version to write")
+	.action(async (version) => {
+		console.log(`[write-version] reading existing version...`);
+		const configPath = resolve(
+			dirname(fileURLToPath(import.meta.url)),
+			"../apps/tauri/tauri.conf.json",
+		);
+		const configContent = await readFile(configPath, "utf8");
 
-const contents = readFileSync(configPath, "utf8");
-const updated = contents.replace(
-	/"version":\s*"[^"]*"/,
-	`"version": "${nextVersion}"`,
-);
+		const configVersion = VERSION_REGEX.exec(configContent);
+		if (configVersion) {
+			console.log(`[write-version] read existing version: ${configVersion[2]}`);
+		} else {
+			console.error(`[write-version] no existing version found`);
+			process.exit(1);
+		}
 
-if (updated === contents) {
-	console.error(`Could not find a "version" field to update in ${configPath}`);
-	process.exit(1);
-}
+		console.log(`[write-version] writing new version: ${version}...`);
+		await writeFile(
+			configPath,
+			configContent.replace(VERSION_REGEX, `$1${version}$3`),
+			"utf8",
+		);
 
-writeFileSync(configPath, updated);
-console.log(`Bumped ${configPath} to ${nextVersion}`);
+		console.log(`[write-version] wrote new version: ${version}`);
+	})
+	.parseAsync();

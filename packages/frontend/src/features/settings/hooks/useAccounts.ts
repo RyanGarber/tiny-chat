@@ -3,7 +3,7 @@ import { auth, query, queryClient } from "#frontend/utils/api.ts";
 
 export const useAccounts = () => {
 	const accounts = useQuery({
-		...query.settings.listAccounts.queryOptions(),
+		...query.user.getAccounts.queryOptions(),
 		select: (data) => data,
 	});
 
@@ -16,7 +16,7 @@ export const useAccounts = () => {
 		},
 		onSuccess: async () => {
 			await queryClient.invalidateQueries({
-				queryKey: query.settings.listAccounts.queryKey(),
+				queryKey: query.user.getAccounts.queryKey(),
 			});
 		},
 	});
@@ -27,7 +27,7 @@ export const useAccounts = () => {
 		},
 		onSuccess: async () => {
 			await queryClient.invalidateQueries({
-				queryKey: query.settings.listAccounts.queryKey(),
+				queryKey: query.user.getAccounts.queryKey(),
 			});
 		},
 	});
@@ -38,7 +38,7 @@ export const useAccounts = () => {
 		},
 		onSuccess: async () => {
 			await queryClient.invalidateQueries({
-				queryKey: query.settings.listAccounts.queryKey(),
+				queryKey: query.user.getAccounts.queryKey(),
 			});
 		},
 	});

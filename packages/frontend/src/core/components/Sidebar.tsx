@@ -16,6 +16,9 @@ import {
 	spotlight,
 } from "@mantine/spotlight";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { SnippetService } from "@tiny-chat/shared/src/features/data/services/SnippetService.ts";
+import { DataUtils } from "@tiny-chat/shared/src/features/data/utils/DataUtils.ts";
+import { ModelProviderService } from "@tiny-chat/shared/src/features/provider/services/ModelProviderService.ts";
 import { useCallback, useRef, useState } from "react";
 import SidebarAccount from "#frontend/core/components/SidebarAccount.tsx";
 import SidebarSettings from "#frontend/core/components/SidebarSettings.tsx";
@@ -26,9 +29,7 @@ import { useChatStore } from "#frontend/features/chat/stores/useChatStore.ts";
 import { ProviderService } from "#frontend/features/config/services/ProviderService.ts";
 import { useRetrieval } from "#frontend/features/settings/hooks/useRetrieval.ts";
 import { auth, env, query } from "#frontend/utils/api.ts";
-import { GLASS_STYLE } from "#frontend/utils/theme.ts";
-import { embed } from "#shared/services/chat/embed.ts";
-import { scrubText, snippetText, texts } from "#shared/utils.ts";
+import { GLASS_STYLE } from "#frontend/utils/style.ts";
 import { version } from "../../../../../apps/tauri/tauri.conf.json";
 import SidebarChatList from "./SidebarChatList.tsx";
 
@@ -74,19 +75,18 @@ export default function Sidebar() {
 
 			if (!session) return { text: debouncedQuery, embedding: undefined };
 			const provider = (
-				await ProviderService.getChatProviders(session.user)
+				await ProviderService.getModelProviders(session.user)
 			).find((p) => p.name === embeddingConfig.data?.provider);
 			if (!provider) return { text: debouncedQuery, embedding: undefined };
 
 			if (!embeddingCache.current.has(debouncedQuery)) {
-				console.log("Generating embedding for search:", debouncedQuery);
-				const embedding = await embed(
-					session.user,
+				const embedding = await ModelProviderService.runEmbeddingModel({
+					user: session.user,
 					provider,
-					[debouncedQuery],
-					embeddingConfig.data,
+					values: [debouncedQuery],
+					config: embeddingConfig.data,
 					env,
-				);
+				});
 				embeddingCache.current.set(debouncedQuery, embedding[0]);
 			}
 
@@ -99,10 +99,10 @@ export default function Sidebar() {
 	});
 
 	const spotlightActions = useInfiniteQuery({
-		...query.chat.search.infiniteQueryOptions(
+		...query.chat.searchChats.infiniteQueryOptions(
 			{
-				text: debouncedSearch?.data?.text,
-				embedding: debouncedSearch?.data?.embedding,
+				searchText: debouncedSearch?.data?.text,
+				searchEmbedding: debouncedSearch?.data?.embedding,
 				limit: 5,
 			},
 			{
@@ -116,12 +116,15 @@ export default function Sidebar() {
 								(result): SpotlightActionData => ({
 									id: result.id,
 									label: result.chatTitle
-										? scrubText(result.chatTitle, 50)
+										? DataUtils.getTextCleaned({
+												data: result.chatTitle,
+												maxLength: 50,
+											})
 										: undefined,
-									description: snippetText(
-										scrubText(texts(result.data)),
-										debouncedQuery,
-									),
+									description: SnippetService.getSnippet({
+										text: DataUtils.getTextCleaned(result),
+										query: debouncedQuery,
+									}),
 									onClick: () =>
 										closeAfter(() => ChatService.setChatId(result.chatId)),
 									group: result.chatTitle ?? undefined,
@@ -270,7 +273,7 @@ export default function Sidebar() {
 
 	const collapsed = (
 		<Stack align="center" justify="space-between" h="100%" py="xs">
-			<Stack align="center" gap="lg">
+			<Stack align="center" gap="sm">
 				<Burger
 					opened={isSidebarOpen}
 					onClick={() => setSidebarOpen(!isSidebarOpen)}

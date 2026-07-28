@@ -1,7 +1,9 @@
 import { useLocalStorage } from "@mantine/hooks";
+import { zConfig } from "@tiny-chat/shared/src/features/data/types/message.ts";
+import type { ModelProviderStatus } from "@tiny-chat/shared/src/features/provider/types/model.ts";
+import type { ProviderState } from "@tiny-chat/shared/src/features/provider/types/provider.ts";
 import { useCallback, useMemo } from "react";
 import { useMessages } from "#frontend/features/message/hooks/useMessages.ts";
-import { zConfig } from "#shared/types/chat.ts";
 import { useConfigStore } from "../stores/useConfigStore.ts";
 import { useProviders } from "./useProviders.ts";
 
@@ -35,11 +37,17 @@ export const useConfig = () => {
 
 	const { providers } = useProviders();
 	const fallbackConfig = useMemo(() => {
-		const provider = providers.data?.chat.find((s) => s.models.length > 0);
+		const provider = providers.data
+			?.filter(
+				(provider): provider is ProviderState<ModelProviderStatus> =>
+					provider.type === "model",
+			)
+			.find((s) => s.status.models.length > 0);
 		if (!provider) return null;
 		return {
 			provider: provider.name,
-			model: provider.models[0].name,
+			model: provider.status.models[0].name,
+			args: {},
 		};
 	}, [providers]);
 
@@ -52,7 +60,8 @@ export const useConfig = () => {
 			({
 				model: "",
 				provider: "",
-				toolGroups: [],
+				args: {},
+				toolsets: [],
 				skills: [],
 			} satisfies zConfig)
 		);
@@ -60,12 +69,36 @@ export const useConfig = () => {
 
 	const setConfig = useCallback(
 		(value: zConfig) => {
-			console.log("setConfig:", value);
+			console.log("[useConfig] set config:", value);
 			setOverrideConfig(value);
 			_setLastConfig(JSON.stringify(value));
 		},
 		[setOverrideConfig, _setLastConfig],
 	);
 
-	return { config, setConfig };
+	const modelArgs = useMemo(() => {
+		return (
+			providers.data
+				?.filter(
+					(provider): provider is ProviderState<ModelProviderStatus> =>
+						provider.type === "model",
+				)
+				.find((s) => s.name === config.provider)
+				?.status.models.find((m) => m.name === config.model)?.args ?? []
+		);
+	}, [config.provider, config.model, providers.data]);
+
+	const setModelArg = useCallback(
+		(name: string, value: unknown) => {
+			if (!config) return;
+			const newConfig = {
+				...config,
+				args: { ...config.args, [name]: value },
+			};
+			setConfig(newConfig);
+		},
+		[config, setConfig],
+	);
+
+	return { config, setConfig, modelArgs, setModelArg };
 };

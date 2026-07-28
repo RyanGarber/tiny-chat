@@ -1,4 +1,4 @@
-import type { MessageState } from "#shared/types/chat";
+import type { MessageState } from "@tiny-chat/shared/src/features/data/types/message.ts";
 
 const streams = new Map<string, Stream>();
 const listeners = new Set<() => void>();

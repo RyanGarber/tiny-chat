@@ -1,6 +1,9 @@
+use reqwest::{
+    Client, Method,
+    header::{HeaderMap, HeaderName, HeaderValue},
+};
 use std::collections::HashMap;
 use tauri::Emitter;
-use reqwest::{Client, Method, header::{HeaderMap, HeaderName, HeaderValue}};
 
 fn http_client() -> Client {
     Client::builder()
@@ -30,8 +33,11 @@ pub async fn mcp_start_http(
     let app_clone = app.clone();
     let id_clone = id.clone();
 
-    println!("Starting HTTP session: {}", id_clone);
-    println!("Base URL: {}", base_url);
+    println!(
+        "proxying http via tauri: {} at url: {}",
+        id_clone,
+        base_url.as_str()
+    );
 
     tokio::spawn(async move {
         while let Some(msg) = rx.recv().await {
@@ -48,7 +54,11 @@ pub async fn mcp_start_http(
                         let joined = format!(
                             "{}{}",
                             target.path().trim_end_matches('/'),
-                            if extra_path.starts_with('/') { extra_path.clone() } else { format!("/{extra_path}") }
+                            if extra_path.starts_with('/') {
+                                extra_path.clone()
+                            } else {
+                                format!("/{extra_path}")
+                            }
                         );
                         target.set_path(&joined);
                     }
@@ -58,15 +68,15 @@ pub async fn mcp_start_http(
                     let client2 = client.clone();
 
                     tokio::spawn(async move {
-                        println!("Spawning proxy request: {:?} {:?} {:?}", method, extra_path, req_headers);
-                        println!("Target: {}", target);
-                        println!("Body: {:?}", body);
-                        println!("App: {:?}", app2);
-                        println!("ID: {:?}", id2);
-                        println!("Client: {:?}", client2);
-                        println!("Redirects left: 5");
                         if let Err(e) = proxy_request(
-                            &client2, target, method, req_headers, body, &app2, &id2, 5,
+                            &client2,
+                            target,
+                            method,
+                            req_headers,
+                            body,
+                            &app2,
+                            &id2,
+                            5,
                         )
                         .await
                         {
@@ -82,6 +92,7 @@ pub async fn mcp_start_http(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn proxy_request(
     client: &Client,
     url: reqwest::Url,
@@ -92,13 +103,16 @@ async fn proxy_request(
     id: &str,
     redirects_left: u8,
 ) -> Result<(), crate::Error> {
-    let http_method = Method::from_bytes(method.as_bytes())
-        .map_err(|e| format!("invalid method: {e}"))?;
+    let http_method =
+        Method::from_bytes(method.as_bytes()).map_err(|e| format!("invalid method: {e}"))?;
 
     let mut header_map = HeaderMap::new();
     for (k, v) in &headers {
         let name_lower = k.to_lowercase();
-        if matches!(name_lower.as_str(), "host" | "content-length" | "transfer-encoding") {
+        if matches!(
+            name_lower.as_str(),
+            "host" | "content-length" | "transfer-encoding"
+        ) {
             continue;
         }
         if let (Ok(name), Ok(val)) = (
@@ -109,7 +123,10 @@ async fn proxy_request(
         }
     }
 
-    println!("Proxying request: {:?} {:?} {:?}", http_method, url, header_map);
+    println!(
+        "sending http request: {:?} {:?} {:?}",
+        http_method, url, header_map
+    );
 
     let req = client
         .request(http_method.clone(), url.clone())
@@ -120,25 +137,36 @@ async fn proxy_request(
     let resp = client.execute(req).await?;
     let status = resp.status().as_u16();
 
-    if matches!(status, 301 | 302 | 307 | 308) && redirects_left > 0 {
-        if let Some(location) = resp.headers().get("location") {
-            let location_str = location.to_str().map_err(|e| format!("bad location: {e}"))?;
-            let next_url = url.join(location_str).map_err(|e| format!("bad redirect url: {e}"))?;
-            // 307/308 preserve method+body; 301/302 collapse to GET
-            let (next_method, next_body) = if matches!(status, 307 | 308) {
-                (method, body)
-            } else {
-                ("GET".to_string(), vec![])
-            };
-            return Box::pin(proxy_request(
-                client, next_url, next_method, headers, next_body, app, id, redirects_left - 1,
-            ))
-            .await;
-        }
+    if matches!(status, 301 | 302 | 307 | 308)
+        && redirects_left > 0
+        && let Some(location) = resp.headers().get("location")
+    {
+        let location_str = location
+            .to_str()
+            .map_err(|e| format!("bad location: {e}"))?;
+        let next_url = url
+            .join(location_str)
+            .map_err(|e| format!("bad redirect url: {e}"))?;
+        // 307/308 preserve method+body; 301/302 collapse to GET
+        let (next_method, next_body) = if matches!(status, 307 | 308) {
+            (method, body)
+        } else {
+            ("GET".to_string(), vec![])
+        };
+        return Box::pin(proxy_request(
+            client,
+            next_url,
+            next_method,
+            headers,
+            next_body,
+            app,
+            id,
+            redirects_left - 1,
+        ))
+        .await;
     }
 
-    println!("Emitting response: {:?} {:?}", id, status);
-    println!("Headers: {:?}", resp.headers().iter().filter_map(|(k, v)| v.to_str().ok().map(|v| (k.to_string(), v.to_string()))).collect::<HashMap<String, String>>());
+    println!("returning http response: {:?} {:?}", id, status);
 
     app.emit(
         &format!("mcp-response:{}", id),
@@ -181,7 +209,10 @@ pub async fn mcp_send_http(
 ) -> Result<(), crate::Error> {
     let sessions = http_sessions.lock().await;
     let tx = sessions.get(&id).ok_or("unknown http session id")?;
-    println!("Sending request: {:?} {:?} {:?} {:?}", method, extra_path, headers, body);
+    println!(
+        "queuing http request: {:?} {:?} {:?} {:?}",
+        method, extra_path, headers, body
+    );
     tx.send(SessionMessage::Request {
         method,
         extra_path,

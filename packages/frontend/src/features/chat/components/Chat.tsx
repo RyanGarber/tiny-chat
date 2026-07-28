@@ -27,19 +27,16 @@ import Actions from "#frontend/features/chat/components/Actions.tsx";
 import ChatHeader from "#frontend/features/chat/components/ChatHeader.tsx";
 import { ChatInput } from "#frontend/features/chat/components/ChatInput.tsx";
 import ChatInputEffects from "#frontend/features/chat/components/ChatInputEffects.tsx";
-import {
-	refetchActiveChat,
-	useChat,
-} from "#frontend/features/chat/hooks/useChat.ts";
+import { refetchChat, useChat } from "#frontend/features/chat/hooks/useChat.ts";
 import { useChatStore } from "#frontend/features/chat/stores/useChatStore.ts";
-import { useInputStore } from "#frontend/features/chat/stores/useInputStore.ts";
 import { useMessagingStore } from "#frontend/features/chat/stores/useMessagingStore.tsx";
+import { uploadMutationKey } from "#frontend/features/file/hooks/useUploads.ts";
+import { useInputStore } from "#frontend/features/input/stores/useInputStore.ts";
 import Message from "#frontend/features/message/components/Message.tsx";
 import { useMessages } from "#frontend/features/message/hooks/useMessages.ts";
-import { uploadMutationKey } from "#frontend/features/uploads/hooks/useUploads.ts";
 import { query } from "#frontend/utils/api.ts";
 import { isMissingToolResult } from "#frontend/utils/data.ts";
-import { SHADOW } from "#frontend/utils/theme.ts";
+import { SHADOW } from "#frontend/utils/style.ts";
 import {
 	deleteMessageMutationKey,
 	sendMessageMutationKey,
@@ -97,7 +94,7 @@ export default function Chat() {
 	const [oldHeight, setOldHeight] = useState(-1);
 	const { viewportRef: viewportRef2, sentinelRef } = useSentinel({
 		query: messages,
-		queryKey: query.message.listInfinite.pathKey(),
+		queryKey: query.message.getMessages.pathKey(),
 		onFetchNextPage: useCallback(() => {
 			if (viewportNodeRef.current) {
 				setOldHeight(viewportNodeRef.current.scrollHeight);
@@ -111,7 +108,7 @@ export default function Chat() {
 			!messages.isFetchingNextPage
 		) {
 			const newHeight = viewportNodeRef.current.scrollHeight;
-			console.log("scrolling to", newHeight - oldHeight);
+			console.log("[Chat] scrolling to:", newHeight - oldHeight);
 			viewportNodeRef.current.scrollTo({
 				top: newHeight - oldHeight,
 				behavior: "instant",
@@ -382,9 +379,7 @@ export default function Chat() {
 									boxShadow: SHADOW,
 									...styles,
 								}}
-								onClick={() =>
-									chat.data && void refetchActiveChat(chat.data.id)
-								}
+								onClick={() => chat.data && void refetchChat(chat.data.id)}
 								loading={chat.isFetching}
 								disabled={chat.isFetching}
 							>

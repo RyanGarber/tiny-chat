@@ -20,7 +20,7 @@ import {
 	trpc,
 	webUrl,
 } from "#frontend/utils/api.ts";
-import { GLASS_STYLE } from "#frontend/utils/theme.ts";
+import { GLASS_STYLE } from "#frontend/utils/style.ts";
 
 export default function SidebarAccount({
 	children,
@@ -84,16 +84,16 @@ export default function SidebarAccount({
 	const clone = async (open: boolean) => {
 		if (!isCloning) {
 			setCloning(true);
-			const id = await trpc.user.startClone.mutate(); // TODO - use query
+			const id = await trpc.user.createClone.mutate(); // TODO - use query
 			if (open) void openExternal(`${webUrl}/#?clone=${id}`);
 			else void navigator.clipboard.writeText(`${webUrl}/#?clone=${id}`);
 			setCloneInterval(
 				setInterval(() => {
-					void trpc.user.finalizeClone.query({ id }).then((res) => {
-						if (res) {
-							clearInterval(cloneInterval);
-							window.location.reload();
-						}
+					void (async () => {
+						const result = await trpc.user.completeClone.mutate({ id });
+						if (!result) return;
+						clearInterval(cloneInterval);
+						window.location.reload();
 					});
 				}, 1000),
 			);
@@ -140,8 +140,10 @@ export default function SidebarAccount({
 							>
 								{isCloning ? "Cancel" : "Open Browser"}
 							</Button>
-							<Text size="xs" c="dimmed">
+							<Text size="xs" c="dimmed" m="0 auto">
 								<Button
+									size="compact-xs"
+									variant="transparent"
 									component="a"
 									onClick={(e) => {
 										e.preventDefault();

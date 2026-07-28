@@ -1,0 +1,57 @@
+import { z } from "zod";
+import type { UserContextCapability } from "../../../capability/types/capability.ts";
+import { SnippetService } from "../../../data/services/SnippetService.ts";
+import { Author } from "../../../data/types/message.ts";
+import { DataUtils } from "../../../data/utils/DataUtils.ts";
+import type { Tool } from "../../types/tool.ts";
+
+const input = z.object({
+	query: z.string(),
+});
+
+const output = z.array(
+	z.object({
+		id: z.cuid2(),
+		chat_id: z.cuid2(),
+		chat_title: z.string().nullable(),
+		author: z.enum(Author),
+		snippet: z.string(),
+		created_at: z.date(),
+	}),
+);
+
+export const search_chats: Tool<
+	typeof input,
+	void,
+	typeof output,
+	{ userContext: UserContextCapability }
+> = {
+	name: "search_chats",
+	description: "Search all known chats for a given query.",
+
+	input,
+	output,
+
+	execute: async ({ input, capabilities }) => {
+		const messages = await capabilities.userContext.searchChats({
+			searchText: input.query,
+		});
+		return [
+			{
+				type: "json",
+				value: messages.map((message) => ({
+					id: message.id,
+					chat_id: message.chatId,
+					chat_title: message.chatTitle,
+					author: message.author,
+					snippet: SnippetService.getSnippet({
+						text: DataUtils.getTextCleaned(message),
+						query: input.query,
+						baseWindow: 250,
+					}),
+					created_at: message.createdAt,
+				})),
+			},
+		];
+	},
+};

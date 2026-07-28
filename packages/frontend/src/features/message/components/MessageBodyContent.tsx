@@ -11,6 +11,10 @@ import {
 	Text,
 	Transition,
 } from "@mantine/core";
+import { DataUtils } from "@tiny-chat/shared/src/features/data/utils/DataUtils.ts";
+import { search_web } from "@tiny-chat/shared/src/features/tool/tools/web/search_web.ts";
+import { view_web } from "@tiny-chat/shared/src/features/tool/tools/web/view_web.ts";
+import { ToolUtils } from "@tiny-chat/shared/src/features/tool/utils/ToolUtils.ts";
 import { MediaPlayer, MediaProvider } from "@vidstack/react";
 import {
 	DefaultAudioLayout,
@@ -18,33 +22,29 @@ import {
 	defaultLayoutIcons,
 } from "@vidstack/react/player/layouts/default";
 import { type CSSProperties, memo, type ReactNode, useMemo } from "react";
-import {
-	SearchWeb,
-	ViewWeb,
-	type zSearchWebOutput,
-	type zViewWebOutput,
-} from "#backend/tools/web.ts";
+import type { z } from "zod";
+import { Code } from "#frontend/core/components/Components.tsx";
 import { useActions } from "#frontend/features/chat/hooks/useActions.ts";
 import { useChat } from "#frontend/features/chat/hooks/useChat.ts";
 import { useMemories } from "#frontend/features/chat/hooks/useMemories.ts";
 import { InputService } from "#frontend/features/chat/services/InputService.ts";
 import { useProviders } from "#frontend/features/config/hooks/useProviders.ts";
 import { useTools } from "#frontend/features/config/hooks/useTools.ts";
+import { useSkills } from "#frontend/features/file/hooks/useSkills.ts";
 import { Markdown } from "#frontend/features/message/components/Markdown.tsx";
 import { ToolCallInput } from "#frontend/features/message/components/ToolCallInput.tsx";
 import { useMessageSelection } from "#frontend/features/message/hooks/useMessageSelection.ts";
 import { useMessages } from "#frontend/features/message/hooks/useMessages.ts";
 import { useMessageStream } from "#frontend/features/message/hooks/useStreaming.ts";
-import { GenerateService } from "#frontend/features/message/services/GenerateService.ts";
+import { MessageHandlerService } from "#frontend/features/message/services/MessageHandlerService.ts";
 import { useThemes } from "#frontend/features/settings/hooks/useThemes.ts";
-import { useSkills } from "#frontend/features/uploads/hooks/useSkills.ts";
-import { SHADOW } from "#frontend/utils/theme.ts";
+import { auth } from "#frontend/utils/api.ts";
+import { SHADOW } from "#frontend/utils/style.ts";
 import {
 	Author,
 	type MessageState,
 	type zDataPart,
-} from "#shared/types/chat.ts";
-import { texts } from "#shared/utils.ts";
+} from "#shared/features/data/types/message";
 import { Thinking } from "./Thinking";
 import { ToolCall } from "./ToolCall";
 
@@ -58,8 +58,20 @@ export const MessageBodyContent = memo(
 		containerWidth: number;
 		style?: CSSProperties;
 	}) => {
+		const session = auth.useSession();
 		const { chat } = useChat();
 		const { theme } = useThemes();
+		const { toolsets, mcpTools } = useTools();
+		const { skills } = useSkills();
+		const { memories } = useMemories();
+		const { actions } = useActions();
+		const { providers } = useProviders();
+		const { messages } = useMessages();
+
+		const messageList = useMemo(
+			() => messages.data?.pages.flatMap((m) => m.messages) ?? [],
+			[messages.data],
+		);
 
 		const stream = useMessageStream(
 			message.author === Author.MODEL ? message.id : undefined,
@@ -78,12 +90,6 @@ export const MessageBodyContent = memo(
 			if (text) InputService.insertQuote(message.config.model, text);
 		};
 
-		const { messages } = useMessages();
-		const messageList = useMemo(
-			() => messages.data?.pages.flatMap((m) => m.messages) ?? [],
-			[messages.data],
-		);
-
 		const webContext = useMemo(
 			() =>
 				messageList.flatMap((m) =>
@@ -94,13 +100,13 @@ export const MessageBodyContent = memo(
 								p.type === "toolResult" && !p.error,
 						)
 						.flatMap((p) => {
-							if (p.name === SearchWeb.name && p.value[0]?.type === "json") {
-								return p.value[0].value as zSearchWebOutput;
+							if (p.name === search_web.name && p.value[0]?.type === "json") {
+								return p.value[0].value as z.infer<typeof search_web.output>;
 							} else if (
-								p.name === ViewWeb.name &&
+								p.name === view_web.name &&
 								p.value[0]?.type === "json"
 							) {
-								return p.value[0].value as zViewWebOutput;
+								return p.value[0].value as z.infer<typeof view_web.output>;
 							}
 							return [];
 						}),
@@ -108,19 +114,14 @@ export const MessageBodyContent = memo(
 			[messageList],
 		);
 
-		const { tools, toolGroups } = useTools();
-		const { skills } = useSkills();
-
-		const { providers } = useProviders();
-
-		const memories = useMemories();
-		const actions = useActions();
-
 		if (message.author === Author.USER) {
 			return (
 				<Box className="selectable">
 					<Markdown
-						source={texts(message.data, "\n")}
+						source={DataUtils.getText({
+							data: message.data,
+							join: "\n",
+						})}
 						boxProps={{ style: { maxWidth: containerWidth - 40 } }}
 					/>
 				</Box>
@@ -171,21 +172,21 @@ export const MessageBodyContent = memo(
 					<ToolCall key={i} toolCall={part} toolResult={result} />,
 				);
 
-				const tool = tools.find((t) => t.name === part.name);
-				if (tool?.userInput || tool?.requirements?.approval) {
+				const { tool } = ToolUtils.find({ toolsets, name: part.name });
+				if (tool?.feedback || tool?.approval) {
 					renderedParts.push(
 						<ToolCallInput
 							key={`${i}-tci`}
 							message={message}
-							part={part}
-							result={result}
+							toolCall={part}
+							toolResult={result}
 							containerWidth={containerWidth}
 							tool={tool}
 						/>,
 					);
 				}
 			} else if (part.type === "text") {
-				if (part.value.trim() !== "") {
+				if (part.value.trim().length) {
 					renderedParts.push(
 						<Markdown
 							key={i}
@@ -199,6 +200,10 @@ export const MessageBodyContent = memo(
 						/>,
 					);
 				}
+			} else if (part.type === "json") {
+				renderedParts.push(
+					<Code language="json" code={JSON.stringify(part.value, null, 4)} />,
+				);
 			} else if (part.type === "file") {
 				if (part.mime?.startsWith("image/")) {
 					renderedParts.push(
@@ -253,12 +258,14 @@ export const MessageBodyContent = memo(
 								variant="subtle"
 								color="dimmed"
 								onClick={() =>
+									session.data &&
 									chat.data &&
 									providers.data &&
-									void GenerateService.handle({
+									void MessageHandlerService.handle({
+										user: session.data.user,
 										message,
-										activeChat: chat.data,
-										tools: toolGroups,
+										chat: chat.data,
+										mcpTools: mcpTools.data,
 										skills,
 										providers: providers.data,
 									})
@@ -303,12 +310,14 @@ export const MessageBodyContent = memo(
 								<ActionIcon
 									variant="subtle"
 									onClick={() =>
+										session.data &&
 										chat.data &&
 										providers.data &&
-										void GenerateService.handle({
+										void MessageHandlerService.handle({
+											user: session.data.user,
 											message,
-											activeChat: chat.data,
-											tools: toolGroups,
+											chat: chat.data,
+											mcpTools: mcpTools.data,
 											skills,
 											providers: providers.data,
 										})

@@ -23,29 +23,33 @@ export function initLogs(write?: LogWrite, writeToDisk = false) {
 
 			if (typeof process !== "undefined" && writeToDisk) {
 				void (async () => {
-					const { appendFile, existsSync, mkdirSync } = await import(
-						/* @vite-ignore */ "node:fs"
-					);
-					const { resolve } = await import(/* @vite-ignore */ "node:path");
-					const { tmpdir } = await import(/* @vite-ignore */ "node:os");
-					const { inspect } = await import(/* @vite-ignore */ "node:util");
+					try {
+						const { appendFile, existsSync, mkdirSync } = await import(
+							/* @vite-ignore */ "node:fs"
+						);
+						const { resolve } = await import(/* @vite-ignore */ "node:path");
+						const { tmpdir } = await import(/* @vite-ignore */ "node:os");
+						const { inspect } = await import(/* @vite-ignore */ "node:util");
 
-					const date = new Date().toISOString().split("T")[0];
-					const file = resolve(tmpdir(), `tiny-chat/${date}.log`);
-					mkdirSync(resolve(tmpdir(), "tiny-chat"), { recursive: true });
-					if (!existsSync(file)) original("Logging to", file);
+						const date = new Date().toISOString().split("T")[0];
+						const file = resolve(tmpdir(), `tiny-chat/${date}.log`);
+						mkdirSync(resolve(tmpdir(), "tiny-chat"), { recursive: true });
+						if (!existsSync(file)) original("Logging to", file);
 
-					data = data.map((d) => {
-						return typeof d === "object" && d !== null ? inspect(d) : d;
-					});
+						data = data.map((d) => {
+							return typeof d === "object" && d !== null ? inspect(d) : d;
+						});
 
-					appendFile(
-						file,
-						`[${time}] ${level.toUpperCase()}: ${data.join(" ")}\n`,
-						(err) => {
-							if (err) original("Failed to write to log file:", err);
-						},
-					);
+						appendFile(
+							file,
+							`[${time}] ${level.toUpperCase()}: ${data.join(" ")}\n`,
+							(err) => {
+								if (err) original("Failed to write to log file:", err);
+							},
+						);
+					} catch (e) {
+						original("Internal logger error:", e);
+					}
 				})();
 			}
 		};
@@ -57,18 +61,23 @@ export function initLogs(write?: LogWrite, writeToDisk = false) {
 
 		if (level === "error") {
 			if (typeof window !== "undefined") {
+				console.log("browser environment detected");
 				window?.addEventListener("error", (e) =>
-					replaced("Uncaught error:", e),
+					console.error("[UNCAUGHT]", e),
 				);
 				window?.addEventListener("unhandledrejection", (e) =>
-					replaced("Uncaught rejection:", e.reason),
+					console.error("[UNCAUGHT]", e),
 				);
 			}
 
 			if (typeof process !== "undefined" && typeof process.on === "function") {
+				console.log("node environment detected");
 				process?.on("uncaughtException", (e) => {
-					replaced("Uncaught exception:", e);
+					console.error("[UNCAUGHT]", e);
 					process.exit(1);
+				});
+				process?.on("unhandledRejection", (reason, promise) => {
+					console.error("[UNCAUGHT]", promise, reason);
 				});
 			}
 		}

@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { auth, query, queryClient } from "#frontend/utils/api.ts";
-import { CODE_THEMES, THEMES } from "#frontend/utils/theme.ts";
-import { zSettings } from "#shared/types/user";
+import { CODE_THEMES, THEMES } from "#frontend/utils/style.ts";
+import { zSettings } from "#shared/features/data/types/user.ts";
 
 export const useThemes = () => {
 	const session = auth.useSession();
@@ -37,10 +37,27 @@ export const useThemes = () => {
 		},
 	});
 
+	const blackout = useQuery({
+		...query.settings.get.queryOptions(),
+		select: (data) => data.blackout ?? false,
+		initialData: zSettings.safeParse(session.data?.user?.settings).data ?? {
+			blackout: false,
+		},
+	});
+
+	const setBlackout = useMutation({
+		...query.settings.setBlackout.mutationOptions(),
+		onSuccess: (data) => {
+			queryClient.setQueryData(query.settings.get.queryKey(), data);
+		},
+	});
+
 	return {
 		theme,
 		setTheme,
 		codeTheme,
 		setCodeTheme,
+		blackout,
+		setBlackout,
 	};
 };

@@ -1,6 +1,6 @@
 #[cfg(all(any(target_os = "macos", target_os = "ios"), feature = "afm"))]
-mod afm {
-    use std::ffi::{c_char, c_void, CStr, CString};
+mod afm_real {
+    use std::ffi::{CStr, CString, c_char, c_void};
     use tauri::ipc::Channel;
 
     type EventCallback = unsafe extern "C" fn(*mut c_void, *const c_char);
@@ -78,6 +78,6 @@ mod afm_shims {
 }
 
 #[cfg(all(any(target_os = "macos", target_os = "ios"), feature = "afm"))]
-pub use afm::*;
+pub use afm_real::*;
 #[cfg(not(all(any(target_os = "macos", target_os = "ios"), feature = "afm")))]
 pub use afm_shims::*;

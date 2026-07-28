@@ -14,26 +14,53 @@ import {
 } from "streamdown";
 import { visit } from "unist-util-visit";
 import {
+	AComponent,
 	BlockquoteComponent,
 	CiteComponent,
 	LinkComponent,
+	SlotComponent,
 } from "#frontend/features/message/components/MarkdownComponents.tsx";
 import { useThemes } from "#frontend/features/settings/hooks/useThemes.ts";
 import { MarkdownContext } from "#frontend/utils/data.ts";
 import "katex/dist/katex.min.css";
-import type { Root } from "mdast";
-import { xmlToDirective } from "#shared/utils/text.ts";
+import type { Nodes, Root } from "mdast";
 
+import IntrinsicElements = React.JSX.IntrinsicElements;
+
+// TODO - verify <Code> is optimized enough to swap in for auto highlight
 const markdownComponents: Components = {
 	blockquote: BlockquoteComponent,
-	a: LinkComponent,
+	a: AComponent,
+	link: LinkComponent,
 	cite: CiteComponent,
+	slot: SlotComponent,
 };
 
 // reference tag passes id + animate index through sanitizer; all others blocked by default
-const CUSTOM_TAGS = {
+const CUSTOM_TAGS: Partial<Record<keyof IntrinsicElements, string[]>> = {
 	blockquote: ["model"],
-	cite: ["type", "id", "url", "inline"],
+	cite: ["sources"],
+	link: ["source", "is-directory"],
+	slot: ["name", "value", "accepts-content", "needs-run"],
+};
+
+const directive = (
+	node: Nodes,
+	name: string,
+	toName: keyof IntrinsicElements,
+) => {
+	if (
+		node.type !== "containerDirective" &&
+		node.type !== "leafDirective" &&
+		node.type !== "textDirective"
+	)
+		return;
+
+	if (node.name !== name) return;
+
+	node.data ??= {};
+	node.data.hName = toName;
+	node.data.hProperties = { ...node.attributes };
 };
 
 const REMARK_PLUGINS = [
@@ -43,21 +70,10 @@ const REMARK_PLUGINS = [
 	function directives() {
 		return (tree: Root) => {
 			visit(tree, (node) => {
-				if (
-					node.type === "containerDirective" ||
-					node.type === "textDirective"
-				) {
-					if (node.name === "quote" || node.name === "writing") {
-						node.data ??= {};
-						node.data.hName = "blockquote";
-						node.data.hProperties = { ...node.attributes };
-					}
-					if (node.name === "ref") {
-						node.data ??= {};
-						node.data.hName = "cite";
-						node.data.hProperties = { ...node.attributes };
-					}
-				}
+				directive(node, "quote", "blockquote");
+				directive(node, "writing", "blockquote");
+				directive(node, "command", "slot");
+				directive(node, "attachment", "link");
 			});
 		};
 	},
@@ -96,10 +112,6 @@ export const Markdown = memo(
 			[boxProps],
 		);
 
-		const content = useMemo(() => {
-			return xmlToDirective(source, ["ref"]);
-		}, [source]);
-
 		const plugins = useMemo<PluginConfig>(
 			() => ({
 				math: createMathPlugin({ singleDollarTextMath: false }),
@@ -126,7 +138,7 @@ export const Markdown = memo(
 						}}
 						className="selectable"
 					>
-						{content}
+						{source}
 					</Streamdown>
 				</Box>
 			</MarkdownContext.Provider>

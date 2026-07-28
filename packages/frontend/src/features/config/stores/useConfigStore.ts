@@ -1,5 +1,5 @@
+import type { zConfig } from "@tiny-chat/shared/src/features/data/types/message.ts";
 import { create } from "zustand";
-import type { zConfig } from "#shared/types/chat";
 
 interface ConfigStore {
 	overrideConfig: zConfig | null;

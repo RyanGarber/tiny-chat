@@ -3,6 +3,6 @@
 		"module": "nodenext",
 		"moduleResolution": "nodenext"
 	},
-	"include": ["src", "generated/prisma/**/*"],
+	"include": ["src"],
 	"extends": "../../tsconfig.base.json"
 }

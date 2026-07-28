@@ -1,0 +1,109 @@
+import type {
+	CapabilityFactory,
+	UserContextCapability,
+} from "@tiny-chat/shared/src/features/capability/types/capability.ts";
+import type { MessageLike } from "@tiny-chat/shared/src/features/data/types/message.ts";
+import type { zUser } from "@tiny-chat/shared/src/features/data/types/user.ts";
+import { ActionService } from "../../chat/services/ActionService.ts";
+import { ChatSearchService } from "../../chat/services/ChatSearchService.ts";
+import { MemorySearchService } from "../../chat/services/MemorySearchService.ts";
+import { MemoryService } from "../../chat/services/MemoryService.ts";
+
+export const userContext: CapabilityFactory<
+	{ user: zUser; message: MessageLike },
+	UserContextCapability
+> = async ({ user, message }) => {
+	return {
+		getActions: async () => {
+			return ActionService.getActions({ user });
+		},
+
+		updateAction: async ({ id, data, schedule, timezone }) => {
+			return ActionService.updateAction({
+				user,
+				message,
+				id,
+				data,
+				schedule,
+				timezone,
+			});
+		},
+
+		deleteAction: async ({ id }) => {
+			return ActionService.deleteAction({ user, id });
+		},
+
+		createAction: async ({ data, schedule, timezone }) => {
+			return ActionService.createAction({
+				user,
+				message,
+				data,
+				schedule,
+				timezone,
+			});
+		},
+
+		searchMemories: async ({ searchText, searchEmbedding }) => {
+			return await MemorySearchService.searchMemories({
+				user,
+				searchText,
+				searchEmbedding,
+			});
+		},
+
+		createMemory: async ({
+			fact,
+			category,
+			stability,
+			evidence,
+			confidence,
+		}) => {
+			return await MemoryService.createMemory({
+				user,
+				message,
+				fact,
+				category,
+				stability,
+				evidence,
+				confidence,
+			});
+		},
+
+		updateMemory: async ({
+			id,
+			fact,
+			category,
+			stability,
+			evidence,
+			confidence,
+		}) => {
+			return await MemoryService.updateMemory({
+				user,
+				message,
+				id,
+				fact,
+				category,
+				stability,
+				evidence,
+				confidence,
+			});
+		},
+
+		deleteMemory: async ({ id }) => {
+			return await MemoryService.deleteMemory({
+				user,
+				id,
+			});
+		},
+
+		searchChats: async ({ searchText, searchEmbedding }) => {
+			return (
+				await ChatSearchService.searchChats({
+					user,
+					searchText,
+					searchEmbedding,
+				})
+			).results;
+		},
+	};
+};

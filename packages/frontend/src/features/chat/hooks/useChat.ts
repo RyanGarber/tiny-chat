@@ -1,15 +1,11 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { refetchChatList } from "#frontend/features/chat/hooks/useChatList.ts";
+import type { ChatState } from "@tiny-chat/shared/src/features/data/types/chat.ts";
+import type { MessageState } from "@tiny-chat/shared/src/features/data/types/message.ts";
 import { ChatService } from "#frontend/features/chat/services/ChatService.ts";
 import { useChatStore } from "#frontend/features/chat/stores/useChatStore.ts";
 import { query, queryClient, trpc } from "#frontend/utils/api.ts";
-import type { Chat, MessageState } from "#shared/types/chat";
 
-export type ChatState = Chat & { unseen: boolean };
-
-export function getChatTimestamp(
-	chat: Awaited<ReturnType<typeof trpc.chat.find.query>>,
-) {
+export function getChatTimestamp(chat: ChatState) {
 	if (!chat) return -1;
 	return Math.max(
 		chat.createdAt.getTime(),
@@ -19,7 +15,7 @@ export function getChatTimestamp(
 	);
 }
 
-export async function refetchActiveChat(chatId: string) {
+export async function refetchChat(chatId: string) {
 	await queryClient.invalidateQueries({
 		queryKey: query.chat.pathKey(),
 	});
@@ -31,53 +27,48 @@ export const useChat = () => {
 	const lastSeen = useChatStore((s) => s.lastSeen);
 
 	const chat = useQuery({
-		...query.chat.find.queryOptions(
-			{ id: chatId },
-			{
-				enabled: !!chatId,
-				select: (data): ChatState | null => {
-					if (!data) return null;
-					if (!(data.id in lastSeen)) {
-						useChatStore
-							.getState()
-							.setLastSeen(data.id, getChatTimestamp(data));
-					}
-					return {
-						...data,
-						unseen: getChatTimestamp(data) > lastSeen[data.id],
-					};
-				},
-				initialData: queryClient
-					.getQueryData(query.chat.list.infiniteQueryKey({ limit: 10 }))
-					?.pages.flatMap((page) => page.folders)
-					.flatMap((folder) => folder.chats)
-					.find((chat) => chat.id === chatId),
-				staleTime: Infinity,
-				refetchOnWindowFocus: false,
-				refetchOnReconnect: false,
-			},
-		),
+		queryKey: ["chat", chatId],
+		queryFn: async () => {
+			if (!chatId) return null;
+			const data = await trpc.chat.getChat.query(chatId);
+			if (!(data.id in lastSeen)) {
+				useChatStore.getState().setLastSeen(data.id, getChatTimestamp(data));
+			}
+			return {
+				...data,
+				unseen: getChatTimestamp(data) > lastSeen[data.id],
+			};
+		},
+		initialData: queryClient
+			.getQueryData(query.chat.getChatList.infiniteQueryKey({ limit: 10 }))
+			?.pages.flatMap((page) => page.folders)
+			.flatMap((folder) => folder.chats)
+			.find((chat) => chat.id === chatId),
+		enabled: !!chatId,
+		staleTime: Infinity,
+		refetchOnWindowFocus: false,
+		refetchOnReconnect: false,
 	});
 
-	const forkChat = useMutation({
+	const cloneChat = useMutation({
 		mutationFn: async ({
 			chat,
-			atMessage,
+			upToMessage,
 		}: {
 			chat: ChatState;
-			atMessage: MessageState;
+			upToMessage: MessageState;
 		}) => {
-			return trpc.chat.clone.mutate({
-				id: chat.id,
-				untilMessageId: atMessage.id,
+			return trpc.chat.cloneChat.mutate({
+				chat,
+				upToMessage,
 				title: chat.title ? `Fork of ${chat.title}` : "Forked Chat",
 			});
 		},
 		onSuccess: async (clone, input) => {
-			await refetchChatList();
+			await refetchChat(clone.id);
 			if (input.chat.id === chatId) ChatService.setChatId(clone.id);
 		},
 	});
 
-	return { chat, forkChat };
+	return { chat, cloneChat };
 };

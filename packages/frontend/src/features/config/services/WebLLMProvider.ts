@@ -1,11 +1,16 @@
-import { createWebLLM } from "@browser-ai/web-llm";
+import {
+	type WebLLMProvider as _WebLLMProvider,
+	createWebLLM,
+} from "@browser-ai/web-llm";
 import type { AppConfig } from "@mlc-ai/web-llm";
 import { ModelType, prebuiltAppConfig } from "@mlc-ai/web-llm";
-import type { ChatProvider } from "#shared/providers/chat";
-import type { Model } from "#shared/types/chat.ts";
-import { getBaseModelArgs } from "#shared/utils.ts";
+import type {
+	ModelProvider,
+	zModel,
+} from "@tiny-chat/shared/src/features/provider/types/model.ts";
+import { ModelProviderUtils } from "@tiny-chat/shared/src/features/provider/utils/ModelProviderUtils.ts";
 
-export const WebLLMConfig: AppConfig = {
+const WebLLMConfig: AppConfig = {
 	...prebuiltAppConfig,
 	model_list: prebuiltAppConfig.model_list.map((model) => ({
 		...model,
@@ -16,52 +21,58 @@ export const WebLLMConfig: AppConfig = {
 	})),
 };
 
-export const WebLLMProvider: ChatProvider = {
+export const WebLLMProvider: ModelProvider<_WebLLMProvider> = {
 	name: "native",
+	type: "model",
 	settings: [],
 
-	getClient() {
+	getSdk() {
 		return createWebLLM();
 	},
 
-	getClientGenerateModel(user, id, env) {
-		const client = this.getClient(user, env) as ReturnType<typeof createWebLLM>;
-		return client.languageModel(id, {
-			appConfig: WebLLMConfig,
-			engineConfig: {
-				initProgressCallback: console.log,
-				appConfig: WebLLMConfig,
-			},
-		});
-	},
-
-	getClientEmbedModel(user, id, env) {
-		const client = this.getClient(user, env) as ReturnType<typeof createWebLLM>;
-		return client.embeddingModel(id, {
-			appConfig: WebLLMConfig,
-			engineConfig: {
-				initProgressCallback: console.log,
-				appConfig: WebLLMConfig,
-			},
-		});
-	},
-
-	getClientOptions() {
+	getSdkOptions() {
 		return {};
 	},
 
-	async getModels() {
-		return (WebLLMConfig.model_list.map((model) => ({
-			name: model.model_id,
-			features:
-				model.model_type === ModelType.embedding
-					? ["embed" as const]
-					: ["generate" as const, "toolCall" as const],
-			args: this.getModelArgs(model.model_id),
-		})) ?? []) satisfies Model[];
+	async getStatus() {
+		return {
+			valid: true,
+			models: (WebLLMConfig.model_list.map(({ model_id, model_type }) => ({
+				name: model_id,
+				features:
+					model_type === ModelType.embedding
+						? ["embedding"]
+						: ["language", "language:tools"],
+				args: this.getModelArgs({ model: model_id }),
+			})) ?? []) satisfies zModel[],
+		};
 	},
 
 	getModelArgs() {
-		return getBaseModelArgs(2);
+		return ModelProviderUtils.getModelArgs({ maxTemp: 2 });
+	},
+
+	getLanguageModel({ user, model, env }) {
+		return (
+			this.getSdk({ user, model, env })?.languageModel(model, {
+				appConfig: WebLLMConfig,
+				engineConfig: {
+					initProgressCallback: console.log,
+					appConfig: WebLLMConfig,
+				},
+			}) ?? null
+		);
+	},
+
+	getEmbeddingModel({ user, model, env }) {
+		return (
+			this.getSdk({ user, model, env })?.embeddingModel(model, {
+				appConfig: WebLLMConfig,
+				engineConfig: {
+					initProgressCallback: console.log,
+					appConfig: WebLLMConfig,
+				},
+			}) ?? null
+		);
 	},
 };

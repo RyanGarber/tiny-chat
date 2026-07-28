@@ -1,6 +1,8 @@
 import { Icon } from "@iconify/react";
-import { Group, Text } from "@mantine/core";
+import { Group, Image, Text } from "@mantine/core";
 import type { HighlightResult } from "@streamdown/code";
+import { CommonUtils } from "@tiny-chat/shared/src/core/utils/CommonUtils.ts";
+import { PathUtils } from "@tiny-chat/shared/src/features/file/utils/PathUtils.ts";
 import { type ComponentProps, memo, type ReactNode, useMemo } from "react";
 import ReactDiffViewer, {
 	type ReactDiffViewerStylesOverride,
@@ -14,7 +16,8 @@ import {
 } from "streamdown";
 import { useLayoutStore } from "#frontend/core/stores/useLayoutStore.tsx";
 import { useThemes } from "#frontend/features/settings/hooks/useThemes.ts";
-import { highlight, toCSSProperties } from "#frontend/utils/ui.tsx";
+import { theme } from "#frontend/utils/icon.ts";
+import { highlight } from "#frontend/utils/shiki.ts";
 
 const CodeBlockContent = ({
 	result,
@@ -23,18 +26,19 @@ const CodeBlockContent = ({
 	result: HighlightResult;
 	lineNumbers: boolean;
 }) => {
-	return result.tokens.map((row) => (
+	return result.tokens.map((row, i) => (
 		<span
 			className={
 				lineNumbers
 					? "block before:content-[counter(line)] before:inline-block before:[counter-increment:line] before:w-6 before:mr-4 before:text-[13px] before:text-right before:text-muted-foreground/50 before:font-mono before:select-none"
 					: undefined
 			}
-			key={row.map((token) => token.content).join(",")}
+			// biome-ignore lint/suspicious/noArrayIndexKey: repeats
+			key={i}
 		>
 			{row.length === 0 || (row.length === 1 && row[0].content === "")
 				? "\n"
-				: row.map((token) => {
+				: row.map((token, j) => {
 						const tokenStyle: Record<string, string> = {};
 						let hasBg = Boolean(token.bgColor);
 
@@ -61,7 +65,8 @@ const CodeBlockContent = ({
 						return (
 							<span
 								className={`text-(--sdm-c,inherit) dark:text-(--shiki-dark,var(--sdm-c,inherit)) ${hasBg ? "bg-(--sdm-tbg) dark:bg-(--shiki-dark-bg,var(--sdm-tbg))" : ""}`}
-								key={token.content}
+								// biome-ignore lint/suspicious/noArrayIndexKey: repeats
+								key={j}
 								style={tokenStyle}
 								{...token.htmlAttrs}
 							>
@@ -96,7 +101,7 @@ const CodeBlockBody = memo(
 			}
 
 			if (result.rootStyle) {
-				Object.assign(style, toCSSProperties(result.rootStyle));
+				Object.assign(style, CommonUtils.toStyleObject(result.rootStyle));
 			}
 
 			return style;
@@ -259,7 +264,7 @@ export const Diff = ({
 	);
 };
 
-export const Blockquote = ({
+export const Quote = ({
 	model,
 	children,
 	...props
@@ -282,5 +287,68 @@ export const Blockquote = ({
 			)}
 			{children}
 		</blockquote>
+	);
+};
+
+export const Attachment = ({
+	source,
+	directory,
+	grabbable,
+}: {
+	source: string;
+	directory?: boolean;
+	grabbable?: boolean;
+}) => {
+	const iconId = !directory
+		? theme?.getFileIconId(source, undefined, false)
+		: theme?.getFolderIconId(source, false, false);
+	const icon = iconId ? theme?.getIconContent(iconId, "base64") : null;
+
+	const web = !!PathUtils.hostname(source);
+
+	return (
+		<span
+			className={`inline-flex items-center gap-1 text-sm! font-medium rounded-xl px-2 bg-(--mantine-color-default-hover) ${grabbable ? "cursor-grab" : "cursor-default"}`}
+		>
+			{web ? (
+				<Icon icon="lucide:link" />
+			) : (
+				icon && (
+					<Image
+						src={`data:${icon.mimeType};base64,${icon.data}`}
+						alt={PathUtils.name(source)}
+						w="auto"
+						h={20}
+						mt={-5}
+						pt={5}
+					/>
+				)
+			)}{" "}
+			<span className={`py-1`}>
+				{PathUtils.name(source)}
+				{directory ? "/" : ""}
+			</span>
+		</span>
+	);
+};
+
+export const Command = ({
+	name,
+	content,
+}: {
+	name: string;
+	content?: ReactNode;
+}) => {
+	return (
+		<span className="inline-flex items-center gap-1 rounded-xl bg-muted cursor-default">
+			<span className="px-2 py-1 text-sm! font-medium" contentEditable={false}>
+				/{name}
+			</span>
+			{content && (
+				<span className="rounded-xl px-2 py-1 text-sm cursor-text bg-(--tc-surface) border border-(--tc-interior) min-w-1 min-h-7">
+					{content}
+				</span>
+			)}
+		</span>
 	);
 };

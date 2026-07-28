@@ -172,6 +172,10 @@ body {
 [data-mantine-color-scheme="dark"]
 	.mantine-NavLink-root:hover:not([data-active="true"]),
 [data-mantine-color-scheme="dark"]
+	.mantine-Combobox-option[data-combobox-selected="true"]:not(
+		[data-active="true"]
+	),
+[data-mantine-color-scheme="dark"]
 	.nav-link-like:is(:hover, [data-active="true"]),
 [data-mantine-color-scheme="dark"] .chat-input Button:hover {
 	background-color: var(--mantine-color-dark-5);
@@ -179,6 +183,10 @@ body {
 
 [data-mantine-color-scheme="light"]
 	.mantine-NavLink-root:hover:not([data-active="true"]),
+[data-mantine-color-scheme="light"]
+	.mantine-Combobox-option[data-combobox-selected="true"]:not(
+		[data-active="true"]
+	),
 [data-mantine-color-scheme="light"]
 	.nav-link-like:is(:hover, [data-active="true"]),
 [data-mantine-color-scheme="light"] .chat-input Button:hover {

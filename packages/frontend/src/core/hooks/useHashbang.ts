@@ -1,8 +1,8 @@
 import { useEffect } from "react";
-import { refetchActiveChat } from "#frontend/features/chat/hooks/useChat.ts";
+import { refetchChat } from "#frontend/features/chat/hooks/useChat.ts";
 import { useChatStore } from "#frontend/features/chat/stores/useChatStore.ts";
 
-export const getHashbang = (): {
+const getHashbang = (): {
 	hash: string;
 	query: Record<string, string>;
 } => {
@@ -41,7 +41,7 @@ export const useHashbang = () => {
 			if (hash !== chatId) {
 				setChatId(hash || null);
 				if (hash) {
-					void refetchActiveChat(hash);
+					void refetchChat(hash);
 				}
 			}
 		};

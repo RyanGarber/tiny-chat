@@ -1,24 +1,13 @@
+import "./env.ts";
+
 import { createServer } from "node:http";
-import { resolve } from "node:path";
 import { initLogs } from "@tiny-chat/shared/src/logs.ts";
-import { config } from "dotenv";
 import { internalIpV4 } from "internal-ip";
-
-config({ path: resolve(import.meta.dirname, "../../../.env"), quiet: true });
-
-const [
-	{ authHandler },
-	{ apiHandler },
-	{ antigravityHandler },
-	{ mcpHandler },
-	{ default: onTick },
-] = await Promise.all([
-	import("./services/auth.ts"),
-	import("./services/api.ts"),
-	import("./services/antigravity.ts"),
-	import("./services/mcp.ts"),
-	import("./services/worker.ts"),
-]);
+import { AuthService } from "./core/services/AuthService.ts";
+import { tRPCService } from "./core/services/tRPCService.ts";
+import { AntigravityService } from "./features/proxy/services/AntigravityService.ts";
+import { McpService } from "./features/proxy/services/McpService.ts";
+import { WorkerService } from "./features/worker/services/WorkerService.ts";
 
 if (import.meta.main) initLogs(undefined, true);
 
@@ -44,15 +33,15 @@ const server = createServer((req, res) => {
 	}
 
 	if (req.url?.startsWith(process.env.VITE_BACKEND_PATH_TRPC as string)) {
-		apiHandler(req, res);
+		tRPCService.handle(req, res);
 	} else if (
 		req.url?.startsWith(process.env.VITE_BACKEND_PATH_AUTH as string)
 	) {
-		void authHandler(req, res);
+		void AuthService.handle(req, res);
 	} else if (req.url?.startsWith("/@/antigravity")) {
-		void antigravityHandler(req, res);
+		void AntigravityService.handle(req, res);
 	} else if (req.url?.startsWith("/@/mcp")) {
-		void mcpHandler(req, res);
+		void McpService.handle(req, res);
 	} else {
 		res.writeHead(200);
 		res.end(`${req.method} ${req.url} OK`);
@@ -60,16 +49,16 @@ const server = createServer((req, res) => {
 });
 
 if (import.meta.main) {
-	const ipv4 = await internalIpV4();
+	const host = process.argv.some((arg) => /^['"]?--host['"]?$/.test(arg));
+	if (host) console.log("starting in host mode...");
+	const ipv4 = host ? await internalIpV4() : "localhost";
 	server.listen(process.env.VITE_BACKEND_PORT, () => {
-		console.log(
-			`Backend listening at ${ipv4}:${process.env.VITE_BACKEND_PORT}`,
-		);
-		const tick = async () => {
-			await onTick();
-			setTimeout(() => void tick(), 5 * 1000);
+		console.log(`backend live: ${ipv4}:${process.env.VITE_BACKEND_PORT}`);
+		const work = async () => {
+			await WorkerService.next({});
+			setTimeout(() => void work(), 5 * 1000);
 		};
-		void tick();
-		console.log("Actions worker running");
+		void work();
+		console.log("backend worker spawned");
 	});
 }

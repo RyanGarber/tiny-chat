@@ -1,22 +1,20 @@
-import { resolve } from "node:path";
-import { TestProvider } from "@tiny-chat/shared/src/providers/chat/test.ts";
-import { zConfig } from "@tiny-chat/shared/src/types/chat.ts";
-import { zUser } from "@tiny-chat/shared/src/types/user.ts";
+import "./env.ts";
+
+import { zConfig } from "@tiny-chat/shared/src/features/data/types/message.ts";
+import { zUser } from "@tiny-chat/shared/src/features/data/types/user.ts";
+import { TestProvider } from "@tiny-chat/shared/src/features/provider/providers/model/TestProvider.ts";
 import { createTRPCClient, httpLink } from "@trpc/client";
 import {
 	anonymousClient,
 	inferAdditionalFields,
 } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
-import { config } from "dotenv";
 import superjson from "superjson";
 import { inject } from "vitest";
 import type { TestProject } from "vitest/node";
 import waitOn from "wait-on";
-import type { tRPCRouter } from "./routes/index.ts";
-import type { auth as serverAuth } from "./services/auth.ts";
-
-config({ path: resolve(import.meta.dirname, "../../../../.env"), quiet: true });
+import type { tRPCRouter } from "./core/routes/index.ts";
+import type { AuthService } from "./core/services/AuthService.ts";
 
 declare module "vitest" {
 	export interface ProvidedContext {
@@ -49,8 +47,8 @@ export async function setup(project: TestProject) {
 	const user = zUser.parse({ ...session.data.user, isEphemeral: true });
 
 	console.log(`[tests] setting up test user with token:`, session.data.token);
-	const models = await TestProvider.getModels(user);
-	const model = models.find((m) => m.features.includes("generate"));
+	const { models } = await TestProvider.getStatus({ user });
+	const model = models.find((m) => m.features.includes("language"));
 	if (!model) throw new Error("Failed to get test model");
 	const config = zConfig.parse({
 		provider: TestProvider.name,
@@ -92,7 +90,10 @@ export function testAuth(
 				token: () => token ?? undefined,
 			},
 		},
-		plugins: [anonymousClient(), inferAdditionalFields<typeof serverAuth>()],
+		plugins: [
+			anonymousClient(),
+			inferAdditionalFields<typeof AuthService.auth>(),
+		],
 	});
 }
 

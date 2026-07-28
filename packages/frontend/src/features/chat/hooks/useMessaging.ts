@@ -1,4 +1,11 @@
 import { useMutation } from "@tanstack/react-query";
+import {
+	Author,
+	type MessageState,
+	type zData,
+} from "@tiny-chat/shared/src/features/data/types/message.ts";
+import { DataUtils } from "@tiny-chat/shared/src/features/data/utils/DataUtils.ts";
+import { ModelProviderService } from "@tiny-chat/shared/src/features/provider/services/ModelProviderService";
 import { useRef } from "react";
 import { InputService } from "#frontend/features/chat/services/InputService.ts";
 import { useMessagingStore } from "#frontend/features/chat/stores/useMessagingStore.tsx";
@@ -6,14 +13,11 @@ import { useConfig } from "#frontend/features/config/hooks/useConfig.ts";
 import { useProviders } from "#frontend/features/config/hooks/useProviders.ts";
 import { useTools } from "#frontend/features/config/hooks/useTools.ts";
 import { ProviderService } from "#frontend/features/config/services/ProviderService.ts";
+import { useSkills } from "#frontend/features/file/hooks/useSkills.ts";
 import { refetchMessages } from "#frontend/features/message/hooks/useMessages.ts";
-import { GenerateService } from "#frontend/features/message/services/GenerateService.ts";
+import { MessageHandlerService } from "#frontend/features/message/services/MessageHandlerService.ts";
 import { useRetrieval } from "#frontend/features/settings/hooks/useRetrieval.ts";
-import { useSkills } from "#frontend/features/uploads/hooks/useSkills.ts";
 import { auth, env, trpc } from "#frontend/utils/api.ts";
-import { embed } from "#shared/services/chat/embed.ts";
-import { Author, type MessageState, type zData } from "#shared/types/chat";
-import { scrubText, texts } from "#shared/utils";
 import { ChatService } from "../services/ChatService";
 import { useChatStore } from "../stores/useChatStore";
 import { refetchChatList } from "./useChatList";
@@ -23,7 +27,7 @@ export const deleteMessageMutationKey = ["delete-message"] as const;
 
 export const useMessaging = () => {
 	const session = auth.useSession();
-	const { toolGroups } = useTools();
+	const { mcpTools } = useTools();
 	const { skills } = useSkills();
 	const { providers } = useProviders();
 	const { embeddingConfig } = useRetrieval();
@@ -35,7 +39,7 @@ export const useMessaging = () => {
 		mutationKey: deleteMessageMutationKey,
 		mutationFn: async (message: MessageState) => {
 			deletingChatId.current = message.chatId;
-			return await trpc.message.delete.mutate({ id: message.id });
+			return await trpc.message.deleteMessage.mutate(message);
 		},
 		onSuccess: async (chatDeleted, message) => {
 			void refetchMessages(deletingChatId.current);
@@ -72,72 +76,73 @@ export const useMessaging = () => {
 
 			const chatId = useChatStore.getState().chatId ?? undefined;
 			const message = editing
-				? await trpc.message.edit.mutate({
-						id: editing.id,
+				? await trpc.message.updateMessage.mutate({
+						message: editing.id,
 						author: editing.author,
 						config: config,
 						data: data,
 						metadata: [],
 						truncate: truncating ?? false,
 					})
-				: await trpc.message.create.mutate({
-						chatId,
+				: await trpc.message.createMessage.mutate({
+						chat: chatId,
 						author: Author.USER,
 						config: config,
 						data: data,
 						metadata: [],
-						previousId: insertingAfter?.id,
+						previous: insertingAfter?.id,
 						temporary: createTemporary,
 						incognito: createIncognito,
 					});
 
-			const changed =
-				!editing || texts(message.data).trim() !== texts(editing.data).trim();
-			if (texts(message.data).trim().length && changed) {
+			const text = DataUtils.getText(message);
+			if (
+				text.length &&
+				(!editing || text.trim() !== DataUtils.getText(editing).trim())
+			) {
 				if (!session.data || !embeddingConfig.data) return;
 
 				const provider = (
-					await ProviderService.getChatProviders(session.data.user)
+					await ProviderService.getModelProviders(session.data.user)
 				).find((p) => p.name === embeddingConfig.data?.provider);
 
 				if (provider) {
 					console.log(`[messaging] message changed, embedding new message`);
-					const embeddings = await embed(
-						session.data.user,
+					const embeddings = await ModelProviderService.runEmbeddingModel({
+						user: session.data.user,
 						provider,
-						[texts(message.data)],
-						embeddingConfig.data,
+						values: [text],
+						config: embeddingConfig.data,
 						env,
-					);
+					});
 					if (embeddings[0]?.length) {
-						await trpc.context.saveEmbeddings.mutate([
-							{ messageId: message.id, embedding: embeddings[0] },
+						await trpc.embedding.setEmbeddings.mutate([
+							{ type: "message", id: message.id, embedding: embeddings[0] },
 						]);
-						console.log(
-							`[messaging] embedding succeeded for message ${message.id}`,
-						);
+						console.log(`[messaging] embedded succeeded`);
 					}
 				}
 			}
 
 			if (!chatId) {
 				ChatService.setChatId(message.chatId);
-				const title = scrubText(texts(data, " "), 100);
+				const title = DataUtils.getTextCleaned({ data, maxLength: 100 });
 				void (async () => {
-					await trpc.chat.edit.mutate({ id: message.chatId, title });
+					await trpc.chat.setChatTitle.mutate({ chat: message.chatId, title });
 					await refetchChatList();
 				})();
 			} else {
 				await refetchMessages(message.chatId);
 			}
 
-			const activeChat = await trpc.chat.find.query({ id: message.chatId });
-			if (!activeChat) throw new Error("Failed to create message or chat");
-			if (!providers.data) throw new Error("Failed to fetch providers");
-			await GenerateService.handle({
+			const chat = await trpc.chat.getChat.query(message);
+			if (!providers.data || !session.data)
+				throw new Error("missing provider or session data");
+			await MessageHandlerService.handle({
+				user: session.data.user,
 				message,
-				activeChat,
-				tools: toolGroups,
+				chat,
+				mcpTools: mcpTools.data,
 				providers: providers.data,
 				skills,
 			});

@@ -14,8 +14,8 @@ export const useMessages = () => {
 	const { chat } = useChat();
 
 	const messages = useInfiniteQuery({
-		...query.message.listInfinite.infiniteQueryOptions(
-			{ chatId: chat.data?.id, limit: 5 },
+		...query.message.getMessages.infiniteQueryOptions(
+			{ chat: chat.data, limit: 5 },
 			{
 				getNextPageParam: (lastPage, _pages) => lastPage.nextCursor,
 				select: (data) => {

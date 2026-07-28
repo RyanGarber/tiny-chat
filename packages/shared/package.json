@@ -10,8 +10,6 @@
 		"@ai-sdk/openai-compatible": "^3.0.6",
 		"@ai-sdk/provider": "^4.0.2",
 		"@anthropic-ai/sdk": "^0.110.0",
-		"@modelcontextprotocol/sdk": "^1.29.0",
-		"@paralleldrive/cuid2": "^3.3.0",
 		"@ryangarber/ai-sdk-antigravity-proxy": "^0.1.4",
 		"@ryangarber/legiscan-ts": "^2.1.0",
 		"ai": "^7.0.18",

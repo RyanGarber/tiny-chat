@@ -3,9 +3,9 @@ import {
 	createTheme,
 	type MantineColorsTuple,
 } from "@mantine/core";
-import { GLASS_STYLE } from "./utils/theme.ts";
+import { GLASS_STYLE } from "./utils/style.ts";
 
-export const darkPalette: MantineColorsTuple = [
+const darkPalette: MantineColorsTuple = [
 	"#C4C6CF", // [0]  near-white text — very slightly cool
 	"#A2A4AD", // [1]
 	"#858790", // [2]
@@ -29,6 +29,11 @@ export const theme = createTheme({
 		dark: darkPalette,
 	},
 	components: {
+		Paper: {
+			defaultProps: {
+				radius: "lg",
+			},
+		},
 		Modal: {
 			defaultProps: {
 				radius: "lg",
@@ -125,4 +130,5 @@ export const cssResolver: CSSVariablesResolver = () => ({
 	},
 });
 
+/** @lintignore */
 export default theme;

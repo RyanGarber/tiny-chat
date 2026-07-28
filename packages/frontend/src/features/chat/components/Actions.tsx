@@ -1,16 +1,16 @@
 import { Icon } from "@iconify/react";
 import { Box, Card, Divider, Group, Stack, Text } from "@mantine/core";
+import { zData } from "@tiny-chat/shared/src/features/data/types/message.ts";
+import { DataUtils } from "@tiny-chat/shared/src/features/data/utils/DataUtils.ts";
 import { useEffect, useMemo, useState } from "react";
 import { format } from "timeago.js";
 import { useActions } from "#frontend/features/chat/hooks/useActions.ts";
 import { useChat } from "#frontend/features/chat/hooks/useChat.ts";
-import { zData } from "#shared/types/chat.ts";
-import { scrubText, texts } from "#shared/utils.ts";
 
 export default function Actions() {
 	const { chat } = useChat();
+	const { actions } = useActions();
 
-	const actions = useActions();
 	const activeActions = useMemo(
 		() =>
 			actions.data?.filter(
@@ -53,7 +53,9 @@ export default function Actions() {
 										textOverflow: "ellipsis",
 									}}
 								>
-									{scrubText(texts(zData.parse(action.data)))}
+									{DataUtils.getTextCleaned({
+										data: zData.parse(action.data),
+									})}
 								</Text>
 								<Text size="sm" style={{ whiteSpace: "nowrap" }}>
 									{action.nextRunAt && format(action.nextRunAt)}

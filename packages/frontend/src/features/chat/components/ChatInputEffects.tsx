@@ -1,12 +1,12 @@
 import { Icon } from "@iconify/react";
 import { ActionIcon, Box, Group } from "@mantine/core";
+import { DataUtils } from "@tiny-chat/shared/src/features/data/utils/DataUtils.ts";
 import type { ReactNode, RefObject } from "react";
 import { useLayoutStore } from "#frontend/core/stores/useLayoutStore.tsx";
-import { useInputStore } from "#frontend/features/chat/stores/useInputStore.ts";
 import { useMessagingStore } from "#frontend/features/chat/stores/useMessagingStore.tsx";
-import FileThumbnails from "#frontend/features/uploads/components/FileThumbnails.tsx";
-import { GLASS_STYLE, SHADOW } from "#frontend/utils/theme.ts";
-import { scrubText, texts } from "#shared/utils.ts";
+import FileThumbnails from "#frontend/features/file/components/FileThumbnails.tsx";
+import { useInputStore } from "#frontend/features/input/stores/useInputStore.ts";
+import { GLASS_STYLE, SHADOW } from "#frontend/utils/style.ts";
 
 function ChatInputEffect({
 	content,
@@ -85,7 +85,10 @@ export default function ChatInputEffects({
 								<>
 									Editing{" "}
 									<span style={{ color: "#aaa" }}>
-										{scrubText(texts(editing.data), 20)}
+										{DataUtils.getTextCleaned({
+											data: editing.data,
+											maxLength: 20,
+										})}
 									</span>
 								</>
 							}
@@ -106,7 +109,10 @@ export default function ChatInputEffects({
 								<>
 									Inserting after{" "}
 									<span style={{ color: "#aaa" }}>
-										{scrubText(texts(insertingAfter.data), 20)}
+										{DataUtils.getTextCleaned({
+											data: insertingAfter.data,
+											maxLength: 20,
+										})}
 									</span>
 								</>
 							}

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export interface TauriTaskOptions {
+interface TauriTaskOptions {
 	crawlSpeed: number;
 	crawlMax: number;
 }

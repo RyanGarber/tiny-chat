@@ -1,29 +1,27 @@
 import { useMutation } from "@tanstack/react-query";
+import { ToolUtils } from "@tiny-chat/shared/src/features/tool/utils/ToolUtils.ts";
 import { useChat } from "#frontend/features/chat/hooks/useChat.ts";
 import { useProviders } from "#frontend/features/config/hooks/useProviders.ts";
 import { useTools } from "#frontend/features/config/hooks/useTools.ts";
-import { useSkills } from "#frontend/features/uploads/hooks/useSkills.ts";
+import { useSkills } from "#frontend/features/file/hooks/useSkills.ts";
 import { auth, trpc } from "#frontend/utils/api.ts";
 import type {
 	MessageState,
 	zDataPart,
-	zToolResultValue,
-} from "#shared/types/chat";
-import type { ToolContext } from "#shared/types/tool";
-import {
-	GenerateService,
-	getGenerationCallbacks,
-} from "../services/GenerateService";
+	zToolDataPart,
+} from "#shared/features/data/types/message";
+import { MessageHandlerService } from "../services/MessageHandlerService.ts";
+import { ToolInputHandlerService } from "../services/ToolInputHandlerService.ts";
 
-export const toolCallRejection: zToolResultValue = [
+export const toolCallRejection: zToolDataPart[] = [
 	{ type: "json", value: "Tool call rejected by user" },
 ];
-export const toolInputMutationKey = ["toolInput"] as const;
+const toolInputMutationKey = ["toolInput"] as const;
 
 export const useToolInput = () => {
 	const { providers } = useProviders();
 	const { skills } = useSkills();
-	const { toolGroups, tools } = useTools();
+	const { toolsets, mcpTools } = useTools();
 	const { chat } = useChat();
 	const session = auth.useSession();
 
@@ -40,38 +38,21 @@ export const useToolInput = () => {
 			value?: unknown;
 			approved?: boolean;
 		}) => {
-			console.log(
-				"[ToolInput] sending tool input",
-				seed,
-				part,
-				value,
-				approved,
-			);
+			console.log("[useToolInput] applying input:", part, value, approved);
 			if (!session.data || !chat.data || !providers.data) return;
-			const messages = await trpc.message.list.query({ chatId: chat.data.id });
-			const context: ToolContext = {
-				user: session.data.user,
+			const { messages } = await trpc.message.getMessages.query({
 				chat: chat.data,
-				generation: {
-					context: messages,
-					config: seed.config,
-					incognito: chat.data.incognito,
-					timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-					supportsUserInput: true,
-				},
-				skills,
-				callbacks: getGenerationCallbacks(session.data.user),
-			};
+			});
+			const message = messages.at(-1);
+			if (!message) throw new Error("missing message");
 
-			const matchedTools = tools.filter((t) => t.name === part.name);
-			const tool = tools.find(
-				(t) =>
-					t.name === part.name && (matchedTools.length === 1 || t.overrides),
-			);
-			if (!tool) throw new Error(`No unambiguous tool ${part.name} found`);
+			const { tool } = ToolUtils.find({ toolsets, name: part.name });
+			if (!tool) throw new Error(`tool ${part.name} not found`);
+
+			// TODO WIP - show notice if missing capability
 
 			let result: zDataPart;
-			if (tool.requirements?.approval && !approved) {
+			if (tool.approval && !approved) {
 				result = {
 					type: "toolResult",
 					id: part.id,
@@ -81,13 +62,20 @@ export const useToolInput = () => {
 				};
 			} else {
 				try {
-					const output = await tool.run(context, part.args, value);
 					result = {
 						type: "toolResult",
 						id: part.id,
 						name: part.name,
 						error: false,
-						value: output,
+						value: await ToolInputHandlerService.handle({
+							user: session.data.user,
+							chat: chat.data,
+							tool,
+							part,
+							value,
+							message: seed,
+							messages,
+						}),
 					};
 				} catch (e) {
 					result = {
@@ -105,11 +93,12 @@ export const useToolInput = () => {
 				}
 			}
 
-			await GenerateService.handle({
+			await MessageHandlerService.handle({
+				user: session.data.user,
 				message: seed,
-				activeChat: chat.data,
+				chat: chat.data,
 				append: [result],
-				tools: toolGroups,
+				mcpTools: mcpTools.data,
 				providers: providers.data,
 				skills,
 			});

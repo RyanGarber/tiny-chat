@@ -1,6 +1,6 @@
 import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
-import type { tRPCContext } from "./services/api.ts";
+import type { tRPCContext } from "./core/services/tRPCService.ts";
 
 const tRPC = initTRPC.context<tRPCContext>().create({
 	transformer: superjson,

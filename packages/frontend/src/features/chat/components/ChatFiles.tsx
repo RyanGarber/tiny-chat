@@ -14,39 +14,40 @@ import {
 	Tree,
 	type TreeNodeData,
 } from "@mantine/core";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
-import type { listAllFilesInChat } from "#backend/routes/input.ts";
+import type { FileNode } from "@tiny-chat/shared/src/features/file/types/file.ts";
+import { FileTypeUtils } from "@tiny-chat/shared/src/features/file/utils/FileTypeUtils.ts";
+import {
+	type Descendent,
+	FileUtils,
+} from "@tiny-chat/shared/src/features/file/utils/FileUtils.ts";
+import { PathUtils } from "@tiny-chat/shared/src/features/file/utils/PathUtils.ts";
+import { type ReactNode, useMemo, useState } from "react";
 import { useLayoutStore } from "#frontend/core/stores/useLayoutStore.tsx";
-import { useChatFiles } from "#frontend/features/chat/hooks/useChatFiles.ts";
 import { useChatStore } from "#frontend/features/chat/stores/useChatStore.ts";
-import { useThemes } from "#frontend/features/settings/hooks/useThemes.ts";
 import {
 	FilePreview,
 	type FilePreviewItem,
-} from "#frontend/features/uploads/components/FilePreview.tsx";
-import type { Theme } from "#frontend/utils/icon.ts";
-import { mimeType, pathName } from "#shared/utils/files.ts";
+} from "#frontend/features/file/components/FilePreview.tsx";
+import { useFilesystem } from "#frontend/features/file/hooks/useFilesystem.ts";
+import { theme } from "#frontend/utils/icon.ts";
 
-type AllFilesData = Awaited<ReturnType<typeof listAllFilesInChat>>;
-type FileEntry = AllFilesData[string][number];
-
-interface FileNodeProps {
+interface FileTreeNodeProps {
 	type: "file";
-	entry: FileEntry;
+	node: FileNode;
 }
-interface DirNodeProps {
-	type: "dir";
+interface DirTreeNodeProps {
+	type: "directory";
 	segment: string;
 	hasChanges: boolean;
 }
 
 /** Build the diff badge for a file entry. Returns null for upload-only files (no chat version). */
-function LineDiffBadge({ entry }: { entry: FileEntry }) {
-	const { file, uploadFile } = entry;
+function LineDiffBadge({ node }: { node: FileNode }) {
+	const { chatFile, uploadFile } = node;
 
-	if (!file) return null;
+	if (!chatFile) return null;
 
-	const diff = file.lines - (uploadFile?.lines ?? 0);
+	const diff = chatFile.lines - (uploadFile?.lines ?? 0);
 	if (diff === 0) return null;
 
 	const positive = diff > 0;
@@ -63,87 +64,61 @@ function LineDiffBadge({ entry }: { entry: FileEntry }) {
 	);
 }
 
-function entryHasChanges(entry: FileEntry): boolean {
-	if (!entry.file) return false;
-	return entry.file.lines !== (entry.uploadFile?.lines ?? 0);
+function nodeHasChanges(node: FileNode): boolean {
+	if (!node.chatFile) return false;
+	return node.chatFile.lines !== (node.uploadFile?.lines ?? 0);
 }
 
 /** Build pure-data tree nodes from file entries, nesting by path segments */
-function buildNodes(entries: FileEntry[], uploadName: string): TreeNodeData[] {
-	interface DirNode {
-		children: Map<string, DirNode>;
-		entry?: FileEntry;
-	}
-	const root: DirNode = { children: new Map() };
+function buildTreeNodes(nodes: FileNode[]): TreeNodeData[] {
+	const root = FileUtils.toTree({ nodes });
 
-	for (const entry of entries) {
-		const path = entry.file?.path ?? entry.uploadFile?.path ?? [];
-		let node = root;
-		for (let i = 0; i < path.length; i++) {
-			const segment = path[i];
-			if (!node.children.has(segment)) {
-				node.children.set(segment, { children: new Map() });
-			}
-			node = node.children.get(segment) as DirNode;
-			if (i === path.length - 1) {
-				node.entry = entry;
-			}
-		}
-	}
-
-	function nodeHasChanges(dirNode: DirNode): boolean {
-		if (dirNode.entry) return entryHasChanges(dirNode.entry);
-		for (const child of dirNode.children.values()) {
-			if (nodeHasChanges(child)) return true;
+	function directoryHasChanges(directory: Descendent<FileNode>): boolean {
+		if (directory.node) return nodeHasChanges(directory.node);
+		for (const child of directory.children.values()) {
+			if (directoryHasChanges(child)) return true;
 		}
 		return false;
 	}
 
-	function toTreeNodes(dirNode: DirNode, prefix: string): TreeNodeData[] {
-		const nodes: TreeNodeData[] = [];
-		for (const [segment, child] of dirNode.children) {
-			const value = `${prefix}/${segment}`;
-			if (child.entry) {
-				nodes.push({
+	function toTreeNodes(
+		descendent: Descendent<FileNode>,
+		prefix = "",
+	): TreeNodeData[] {
+		const treeNodes: TreeNodeData[] = [];
+		for (const [segment, child] of descendent.children) {
+			const value = prefix.length ? `${prefix}/${segment}` : segment;
+			if (child.node) {
+				treeNodes.push({
 					label: segment,
 					value,
 					nodeProps: {
 						type: "file",
-						entry: child.entry,
-					} satisfies FileNodeProps,
+						node: child.node,
+					} satisfies FileTreeNodeProps,
 				});
 			} else {
-				nodes.push({
+				treeNodes.push({
 					label: segment,
 					value,
 					nodeProps: {
-						type: "dir",
+						type: "directory",
 						segment,
-						hasChanges: nodeHasChanges(child),
-					} satisfies DirNodeProps,
+						hasChanges: directoryHasChanges(child),
+					} satisfies DirTreeNodeProps,
 					children: toTreeNodes(child, value),
 				});
 			}
 		}
-		return nodes;
+		return treeNodes;
 	}
 
-	return toTreeNodes(root, uploadName);
+	return toTreeNodes(root);
 }
 
 /** Reusable file tree that renders both file and directory nodes */
-function FileTree({
-	entries,
-	uploadName,
-}: {
-	entries: FileEntry[];
-	uploadName: string;
-	dark: boolean;
-}) {
-	const data = useMemo(
-		() => buildNodes(entries, uploadName),
-		[entries, uploadName],
-	);
+function FileTree({ nodes }: { nodes: FileNode[] }) {
+	const data = useMemo(() => buildTreeNodes(nodes), [nodes]);
 	return <Tree data={data} renderNode={FileTreeNode} />;
 }
 
@@ -156,33 +131,18 @@ function FileTreeNode({
 	expanded: boolean;
 	elementProps: RenderTreeNodePayload["elementProps"];
 }) {
-	const props = node.nodeProps as FileNodeProps | DirNodeProps;
+	const props = node.nodeProps as FileTreeNodeProps | DirTreeNodeProps;
 
 	const chatId = useChatStore((s) => s.chatId);
-	if (!chatId) throw new Error("File node rendered outside of chat");
 
-	const { loadChatFileData } = useChatFiles();
+	const { readChatFile } = useFilesystem();
 	const [isHovering, setIsHovering] = useState(false);
 	const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 	const [previewData, setPreviewData] = useState<FilePreviewItem | null>(null);
 
-	const [theme, setTheme] = useState<Theme>();
-	useEffect(() => {
-		import("#frontend/utils/icon.ts")
-			.then(({ theme }) => setTheme(theme))
-			.catch(console.error);
-	}, []);
-
 	const segment =
-		props.type === "file"
-			? pathName(props.entry.file?.path ?? props.entry.uploadFile?.path ?? [])
-			: props.segment;
-	const uploadId =
-		props.type === "file" ? (props.entry.uploadFile?.uploadId ?? null) : null;
-	const path =
-		props.type === "file"
-			? (props.entry.file?.path ?? props.entry.uploadFile?.path ?? [])
-			: [];
+		props.type === "file" ? PathUtils.name(props.node) : props.segment;
+	const path = props.type === "file" ? props.node.path : [];
 
 	const iconId =
 		props.type === "file"
@@ -192,27 +152,25 @@ function FileTreeNode({
 
 	let options: ReactNode;
 
+	if (!chatId) return;
+
 	if (props.type === "file") {
-		const isLoadingData =
-			loadChatFileData.isPending &&
-			loadChatFileData.variables.uploadId === uploadId &&
-			loadChatFileData.variables.path === path;
+		const isLoadingFile =
+			readChatFile.isPending && readChatFile.variables.path === path;
 
 		options =
-			isHovering || isLoadingData ? (
+			isHovering || isLoadingFile ? (
 				<>
 					<ActionIcon
 						variant="transparent"
 						bdrs={0}
 						size="xs"
-						disabled={isLoadingData}
-						loading={
-							isLoadingData && loadChatFileData.variables.reason === "copy"
-						}
+						disabled={isLoadingFile}
+						loading={isLoadingFile && readChatFile.variables.meta === "copy"}
 						onClick={(e) => {
 							e.stopPropagation();
-							loadChatFileData
-								.mutateAsync({ chatId, uploadId, path, reason: "copy" })
+							readChatFile
+								.mutateAsync({ chat: chatId, path, meta: "copy" })
 								.then((data) => {
 									if (data) {
 										navigator.clipboard
@@ -225,10 +183,10 @@ function FileTreeNode({
 													}),
 												}),
 											])
-											.catch((error) => console.log(error));
+											.catch((error) => console.error(error));
 									}
 								})
-								.catch((error) => console.log(error));
+								.catch((error) => console.error(error));
 						}}
 					>
 						<Icon icon="lucide:copy" width={14} />
@@ -237,33 +195,33 @@ function FileTreeNode({
 						variant="transparent"
 						bdrs={0}
 						size="xs"
-						disabled={isLoadingData}
+						disabled={isLoadingFile}
 						loading={
-							isLoadingData && loadChatFileData.variables.reason === "download"
+							isLoadingFile && readChatFile.variables.meta === "download"
 						}
 						onClick={(e) => {
 							e.stopPropagation();
-							loadChatFileData
-								.mutateAsync({ chatId, uploadId, path, reason: "download" })
+							readChatFile
+								.mutateAsync({ chat: chatId, path, meta: "download" })
 								.then((data) => {
 									if (data) {
 										const blob = new Blob([data.data], { type: data.mime });
 										const url = URL.createObjectURL(blob);
 										const a = document.createElement("a");
 										a.href = url;
-										a.download = pathName(path);
+										a.download = PathUtils.name({ path });
 										a.click();
 										URL.revokeObjectURL(url);
 									}
 								})
-								.catch((error) => console.log(error));
+								.catch((error) => console.error(error));
 						}}
 					>
 						<Icon icon="lucide:download" width={14} />
 					</ActionIcon>
 				</>
 			) : (
-				<LineDiffBadge entry={props.entry} />
+				<LineDiffBadge node={props.node} />
 			);
 	}
 
@@ -291,23 +249,20 @@ function FileTreeNode({
 				onMouseLeave={() => setIsHovering(false)}
 				onClick={() => {
 					if (props.type !== "file") return;
-					loadChatFileData
+					readChatFile
 						.mutateAsync({
-							chatId,
-							uploadId,
+							chat: chatId,
 							path,
-							reason: "preview",
+							meta: "preview",
 						})
-						.then((data) => {
-							if (!data) return;
-							let binary = "";
-							const length = data.data.length;
-							for (let i = 0; i < length; i++) {
-								binary += String.fromCharCode(data.data[i]);
-							}
-							mimeType(data.data, pathName(data.path), data.mime)
+						.then(({ data, path, mime }) => {
+							FileTypeUtils.getMime({ data, path, fallback: mime })
 								.then((mime) => {
-									setPreviewData({ name: segment, mime, data: btoa(binary) });
+									setPreviewData({
+										name: segment,
+										mime,
+										data: FileUtils.getBase64FromBytes({ data }),
+									});
 									setIsPreviewOpen(true);
 								})
 								.catch(console.error);
@@ -319,14 +274,14 @@ function FileTreeNode({
 					<Image
 						src={`data:${icon.mimeType};base64,${icon.data}`}
 						alt={segment}
-						w={16}
-						h={16}
+						w="auto"
+						h={20}
 					/>
 				)}
 				<Text flex={1} miw={0} size="sm" truncate>
 					{segment}
 				</Text>
-				{props.type === "dir" && props.hasChanges && (
+				{props.type === "directory" && props.hasChanges && (
 					<Box
 						w={6}
 						h={6}
@@ -344,16 +299,10 @@ function FileTreeNode({
 }
 
 export default function ChatFiles() {
-	const { chatFiles } = useChatFiles();
-	const { theme } = useThemes();
+	const { chatFiles } = useFilesystem();
 
 	const isAsideOpen = useLayoutStore((s) => s.isAsideOpen);
 	const setAsideOpen = useLayoutStore((s) => s.setAsideOpen);
-
-	const dark = theme.data === "dark";
-	const data = chatFiles.data ?? {};
-	const uploadKeys = Object.keys(data).filter((k) => k !== "");
-	const files = data[""] ?? [];
 
 	return (
 		<Stack flex={1} h="100%" p={5}>
@@ -370,40 +319,16 @@ export default function ChatFiles() {
 					{chatFiles.isFetching && <Loader size="xs" />}
 				</Group>
 
-				{files.length > 0 && (
+				{chatFiles.data && chatFiles.data.length > 0 && (
 					<Stack gap={4} mb="xs">
 						<Text size="xs" fw={600} c="dimmed" tt="uppercase">
-							Chat files
+							Files
 						</Text>
-						<FileTree entries={files} uploadName="chat" dark={dark} />
+						<FileTree nodes={chatFiles.data} />
 					</Stack>
 				)}
 
-				{uploadKeys.map((uploadId) => {
-					const entries = data[uploadId] ?? [];
-					const uploadName =
-						entries[0]?.file?.uploadName ??
-						entries[0]?.uploadFile?.uploadName ??
-						uploadId;
-
-					return (
-						<Stack key={uploadId} gap={4} mb="xs">
-							<Text
-								size="xs"
-								fw={600}
-								c="dimmed"
-								tt="uppercase"
-								truncate
-								title={uploadName}
-							>
-								{uploadName}
-							</Text>
-							<FileTree entries={entries} uploadName={uploadId} dark={dark} />
-						</Stack>
-					);
-				})}
-
-				{Object.keys(data).length === 0 && !chatFiles.isFetching && (
+				{chatFiles.data && chatFiles.data.length === 0 && (
 					<Text size="sm" c="dimmed">
 						No files
 					</Text>

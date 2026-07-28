@@ -7,8 +7,8 @@ import {
 } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 import superjson from "superjson";
-import type { tRPCRouter } from "#backend/routes/index.ts";
-import type { auth as serverAuth } from "#backend/services/auth.ts";
+import type { tRPCRouter } from "#backend/core/routes";
+import type { AuthService } from "#backend/core/services/AuthService";
 
 declare global {
 	interface Window {
@@ -61,7 +61,10 @@ export const auth = createAuthClient({
 			token: () => localStorage.getItem("token") ?? undefined,
 		},
 	},
-	plugins: [anonymousClient(), inferAdditionalFields<typeof serverAuth>()],
+	plugins: [
+		anonymousClient(),
+		inferAdditionalFields<typeof AuthService.auth>(),
+	],
 });
 
 export async function invoke<T>(
@@ -103,8 +106,6 @@ export async function isTauriWithAfm() {
 }
 
 export async function openExternal(url: string) {
-	console.log(`Opening link externally: ${url}`);
-
 	if (isTauri()) {
 		const { openUrl } = await import("@tauri-apps/plugin-opener");
 		await openUrl(url);

@@ -7,21 +7,19 @@ import {
 } from "@mantine/core";
 import { ModalsProvider } from "@mantine/modals";
 import { useDrag } from "@use-gesture/react";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import Background from "#frontend/core/components/Background.tsx";
 import Sidebar from "#frontend/core/components/Sidebar.tsx";
 import Tauri from "#frontend/core/components/Tauri.tsx";
 import { useExperiments } from "#frontend/core/hooks/useExperiments.tsx";
+import { useViewport } from "#frontend/core/hooks/useViewport.ts";
 import { useLayoutStore } from "#frontend/core/stores/useLayoutStore.tsx";
 import Chat from "#frontend/features/chat/components/Chat.tsx";
 import ChatFiles from "#frontend/features/chat/components/ChatFiles.tsx";
-import { useChat } from "#frontend/features/chat/hooks/useChat.ts";
-import { useChatStore } from "#frontend/features/chat/stores/useChatStore.ts";
 import { useThemes } from "#frontend/features/settings/hooks/useThemes.ts";
 import { cssResolver, theme as mantineTheme } from "#frontend/theme.tsx";
 import { auth, trpc } from "#frontend/utils/api.ts";
-import { GLASS_STYLE, SHADOW } from "#frontend/utils/theme.ts";
-import { useViewport } from "#frontend/utils/ui.tsx";
+import { GLASS_STYLE, SHADOW } from "#frontend/utils/style.ts";
 import { setHashbang, useHashbang } from "../hooks/useHashbang";
 
 export default function App() {
@@ -62,27 +60,21 @@ export default function App() {
 			}
 
 			setInitializing(false);
-			console.log(">> session:", session.data);
 
 			if (!session.data.session?.token) {
 				return;
 			}
 
-			console.log(">> session token:", session.data.session?.token);
 			const oldToken = localStorage.getItem("token");
 			localStorage.setItem("token", session.data.session.token);
 			if (session.data.session.token !== oldToken) {
-				console.log(
-					">> session token changed:",
-					`${oldToken} -> ${session.data.session.token}`,
-				);
 				window.location.reload();
 				return;
 			}
 
-			if (query.clone) {
-				console.log("Accepting clone", query.clone);
-				void trpc.user.acceptClone.mutate({ id: query.clone });
+			if (query.clone && !session.data.user.isAnonymous) {
+				console.log("[App] continuing clone:", query.clone);
+				void trpc.user.continueClone.mutate({ id: query.clone });
 				setHashbang(hash, { ...query, clone: undefined });
 			}
 		}
@@ -140,13 +132,6 @@ export default function App() {
 			}
 		},
 		{ axis: "x", filterTaps: true },
-	);
-
-	const createIncognito = useChatStore((s) => s.createIncognito);
-	const { chat } = useChat();
-	const incognito = useMemo(
-		() => chat.data?.incognito ?? createIncognito,
-		[chat.data?.incognito, createIncognito],
 	);
 
 	const { height: viewportHeight, containerRef } = useViewport();
@@ -275,18 +260,7 @@ export default function App() {
 						</AppShell.Aside>
 					</AppShell>
 				</Box>
-				<Box
-					pos="absolute"
-					inset={0}
-					style={{
-						zIndex: -1,
-						maskImage: `linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%)`,
-						opacity: chat.data ? 0.125 : 0.5,
-						transition: "opacity 0.3s ease",
-					}}
-				>
-					<Background incognito={incognito} />
-				</Box>
+				<Background />
 			</ModalsProvider>
 		</MantineProvider>
 	);

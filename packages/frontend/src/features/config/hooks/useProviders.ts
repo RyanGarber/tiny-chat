@@ -1,20 +1,23 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
+import type {
+	ProviderState,
+	ProviderStatus,
+} from "@tiny-chat/shared/src/features/provider/types/provider.ts";
 import { ProviderService } from "#frontend/features/config/services/ProviderService.ts";
 import { queryClient } from "#frontend/utils/api.ts";
-import type { zCache } from "#shared/types/user.ts";
 import { auth } from "../../../utils/api.ts";
 
-export const providerCacheQueryKey = ["cache", "providers"] as const;
+const providerCacheQueryKey = ["cache", "providers"] as const;
 export const providerCacheMutationKey = ["cache", "providers"] as const;
 
 export const useProviders = () => {
 	const session = auth.useSession();
 
-	const providers = useQuery<zCache["providers"]>({
+	const providers = useQuery<ProviderState<ProviderStatus>[]>({
 		queryKey: [...providerCacheQueryKey, session.data?.user?.id ?? ""],
 		queryFn: () => {
-			if (!session.data) return { chat: [], web: [], other: [] };
-			return ProviderService.getChatProviderCache(session.data.user);
+			if (!session.data) return [];
+			return ProviderService.getProviderStateCache(session.data.user);
 		},
 		staleTime: Infinity,
 		refetchOnWindowFocus: false,
@@ -24,10 +27,11 @@ export const useProviders = () => {
 	const updateProviders = useMutation({
 		mutationKey: providerCacheMutationKey,
 		mutationFn: () => {
-			return ProviderService.updateProviderCache();
+			if (!session.data) throw new Error("missing session");
+			return ProviderService.getProviderStateCache(session.data.user, true);
 		},
-		onSuccess: (data) => {
-			queryClient.setQueryData(providerCacheQueryKey, data);
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({ queryKey: providerCacheQueryKey });
 		},
 	});
 

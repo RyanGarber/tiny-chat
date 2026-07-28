@@ -10,7 +10,7 @@ import {
 	Text,
 } from "@mantine/core";
 import { useLogStore } from "#frontend/core/stores/useLogStore.tsx";
-import { GLASS_STYLE } from "#frontend/utils/theme.ts";
+import { GLASS_STYLE } from "#frontend/utils/style.ts";
 import { Level } from "#shared/logs.ts";
 
 export default function Console({

@@ -1,7 +1,7 @@
 import { Icon } from "@iconify/react";
 import { ActionIcon, Burger, Group, Tooltip } from "@mantine/core";
 import { useLayoutStore } from "#frontend/core/stores/useLayoutStore.tsx";
-import { GLASS_STYLE, SHADOW } from "#frontend/utils/theme.ts";
+import { GLASS_STYLE, SHADOW } from "#frontend/utils/style.ts";
 import { useChat } from "../hooks/useChat";
 import { ChatService } from "../services/ChatService";
 import { useChatStore } from "../stores/useChatStore";

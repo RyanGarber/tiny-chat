@@ -17,6 +17,7 @@ import {
 	Text,
 } from "@mantine/core";
 import { useIsMutating } from "@tanstack/react-query";
+import { ToolUtils } from "@tiny-chat/shared/src/features/tool/utils/ToolUtils.ts";
 import { Tiptap } from "@tiptap/react";
 import {
 	type CSSProperties,
@@ -27,79 +28,50 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { useTauri } from "#frontend/core/hooks/useTauri.ts";
 import { useChat } from "#frontend/features/chat/hooks/useChat.ts";
-import { useInput } from "#frontend/features/chat/hooks/useInput.tsx";
-import { useInputStore } from "#frontend/features/chat/stores/useInputStore.ts";
 import { CapabilitySelect } from "#frontend/features/config/components/CapabilitySelect.tsx";
 import ModelSelect from "#frontend/features/config/components/ModelSelect.tsx";
 import { useConfig } from "#frontend/features/config/hooks/useConfig.ts";
-import { useProviders } from "#frontend/features/config/hooks/useProviders.ts";
 import { useTools } from "#frontend/features/config/hooks/useTools.ts";
-import { GenerateService } from "#frontend/features/message/services/GenerateService.ts";
-import { StreamService } from "#frontend/features/message/services/StreamService.ts";
 import Upload, {
 	FileMenuItem,
 	RepositoryMenuItem,
 	ScreenshotMenuItem,
-} from "#frontend/features/uploads/components/Upload.tsx";
-import { useSkills } from "#frontend/features/uploads/hooks/useSkills.ts";
-import { uploadMutationKey } from "#frontend/features/uploads/hooks/useUploads.ts";
-import { auth } from "#frontend/utils/api.ts";
-import { GLASS_STYLE, SHADOW } from "#frontend/utils/theme.ts";
-import { precheckAllToolRequirements } from "#shared/utils";
+} from "#frontend/features/file/components/Upload.tsx";
+import { useSkills } from "#frontend/features/file/hooks/useSkills.ts";
+import { uploadMutationKey } from "#frontend/features/file/hooks/useUploads.ts";
+import { useInput } from "#frontend/features/input/hooks/useInput.tsx";
+import { useInputStore } from "#frontend/features/input/stores/useInputStore.ts";
+import { MessageHandlerService } from "#frontend/features/message/services/MessageHandlerService.ts";
+import { StreamService } from "#frontend/features/message/services/StreamService.ts";
+import { GLASS_STYLE, SHADOW } from "#frontend/utils/style.ts";
 import { useMessaging } from "../hooks/useMessaging";
-import { useChatStore } from "../stores/useChatStore";
 
 export const ChatInput = memo(
 	({ isAny, ...props }: InputWrapperProps & { isAny: boolean }) => {
-		const session = auth.useSession();
 		const { chat } = useChat();
-		const { config, setConfig } = useConfig();
+		const { config, setConfig, modelArgs, setModelArg } = useConfig();
 
 		const stream = StreamService.getChat(chat.data?.id ?? "");
 
-		const createIncognito = useChatStore((s) => s.createIncognito);
 		const isEmpty = useInputStore((s) => s.isEmpty);
+		const isIncomplete = useInputStore((s) => s.isIncomplete);
 
-		const { isTauriDesktop } = useTauri();
-		const { providers } = useProviders();
 		const { sendMessage } = useMessaging();
-		const { toolGroups } = useTools();
+		const { toolsets } = useTools();
 
 		const { skills } = useSkills();
 		const enabledSkills = useMemo(
 			() =>
 				skills
-					.filter((s) => config.skills?.includes(s.name))
+					.filter((s) => config.skills?.includes(s.path))
 					.map((s) => s.name),
 			[skills, config.skills],
 		);
 
 		const enabledTools = useMemo(
-			() =>
-				precheckAllToolRequirements(
-					toolGroups,
-					session.data?.user,
-					chat.data,
-					createIncognito,
-					true,
-					isTauriDesktop.data,
-					providers.data,
-					skills,
-				)
-					.filter((g) => config.toolGroups?.includes(g.name))
-					.flatMap((g) => g.tools),
-			[
-				toolGroups,
-				config.toolGroups,
-				session.data?.user,
-				chat.data,
-				createIncognito,
-				isTauriDesktop.data,
-				providers.data,
-				skills,
-			],
+			() => ToolUtils.checkAll({ toolsets, config }).tools,
+			[toolsets, config],
 		);
 
 		const [uploadOpen, setUploadOpen] = useState(false);
@@ -108,7 +80,10 @@ export const ChatInput = memo(
 		const leftSectionRef = useRef<HTMLDivElement>(null);
 		const rightSectionRef = useRef<HTMLDivElement>(null);
 
-		const { editor, isMultiline } = useInput({ ref: scrollRef });
+		const { editor, isMultiline } = useInput({
+			ref: scrollRef,
+			disabled: isAny,
+		});
 
 		const [sectionWidths, setSectionWidths] = useState({ left: 42, right: 42 });
 		useLayoutEffect(() => {
@@ -126,26 +101,6 @@ export const ChatInput = memo(
 
 			return () => observer.disconnect();
 		}, []);
-
-		const args = useMemo(() => {
-			return (
-				providers.data?.chat
-					.find((s) => s.name === config.provider)
-					?.models.find((m) => m.name === config.model)?.args ?? []
-			);
-		}, [config.provider, config.model, providers.data]);
-
-		const setArg = useCallback(
-			(name: string, value: unknown) => {
-				if (!config) return;
-				const newConfig = {
-					...config,
-					args: { ...config.args, [name]: value },
-				};
-				setConfig(newConfig);
-			},
-			[config, setConfig],
-		);
 
 		const isUploading = useIsMutating({ mutationKey: uploadMutationKey }) > 0;
 
@@ -230,7 +185,7 @@ export const ChatInput = memo(
 								}}
 								configValue={config}
 								onConfigChange={(value) => value && setConfig(value)}
-								feature="generate"
+								feature="language"
 								disabled={isAny}
 							/>
 							<Button
@@ -245,7 +200,7 @@ export const ChatInput = memo(
 								{enabledSkills.length !== 1 ? "S" : ""}
 							</Button>
 							<Stack gap="xs" mt={5}>
-								{args?.map((arg) => (
+								{modelArgs?.map((arg) => (
 									<Box key={arg.name}>
 										{arg.type === "list" && (
 											<>
@@ -275,7 +230,7 @@ export const ChatInput = memo(
 														offset: 0,
 														transitionProps: { transition: "fade-up" },
 													}}
-													onChange={(value) => setArg(arg.name, value)}
+													onChange={(value) => setModelArg(arg.name, value)}
 													disabled={isAny}
 												/>
 											</>
@@ -288,13 +243,13 @@ export const ChatInput = memo(
 												<Slider
 													min={arg.min}
 													max={arg.max}
-													step={arg.step}
+													step={(arg.max - arg.min) / 50}
 													value={
 														(
 															config.args as Record<string, number> | undefined
 														)?.[arg.name] ?? arg.default
 													}
-													onChange={(value) => setArg(arg.name, value)}
+													onChange={(value) => setModelArg(arg.name, value)}
 													disabled={isAny}
 												/>
 											</>
@@ -309,12 +264,12 @@ export const ChatInput = memo(
 						size={40}
 						radius={20}
 						onClick={() => {
-							if (stream) void GenerateService.abort(stream.id);
+							if (stream) void MessageHandlerService.abort(stream.id);
 							else sendMessage.mutate();
 						}}
 						loading={sendMessage.isPending}
 						disabled={
-							(isEmpty || isAny) &&
+							(isEmpty || isIncomplete || isAny) &&
 							(stream === undefined || stream.abort.signal.aborted)
 						}
 					>
@@ -333,12 +288,13 @@ export const ChatInput = memo(
 				config,
 				enabledTools.length,
 				enabledSkills.length,
-				args,
-				setArg,
 				setConfig,
 				stream,
 				isEmpty,
 				sendMessage,
+				modelArgs?.map,
+				setModelArg,
+				isIncomplete,
 			],
 		);
 
@@ -427,6 +383,7 @@ export const ChatInput = memo(
 								pointerEvents: "none",
 							},
 						}}
+						onClick={() => editor.commands.focus()}
 					>
 						<ScrollAreaAutosize
 							ref={scrollRef}
@@ -441,10 +398,14 @@ export const ChatInput = memo(
 								cursor: isAny ? "not-allowed" : "text",
 								transition: "padding-left 200ms ease, padding-right 200ms ease",
 							}}
-							onClick={() => editor.commands.focus()}
 						>
 							<Tiptap editor={editor}>
-								<Tiptap.Content />
+								<Tiptap.Content
+									autoCapitalize="on"
+									autoComplete="off"
+									autoCorrect="off"
+									spellCheck={false}
+								/>
 							</Tiptap>
 						</ScrollAreaAutosize>
 						<div

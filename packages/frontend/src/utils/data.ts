@@ -1,15 +1,13 @@
 import { createContext } from "react";
-import type { useActions } from "#frontend/features/chat/hooks/useActions.ts";
-import type { useMemories } from "#frontend/features/chat/hooks/useMemories.ts";
-import type { MessageState } from "#shared/types/chat.ts";
-import type { zWebContext } from "#shared/types/web.ts";
-
-export const DIFF_MARKER = "\uE001";
+import type { ActionState } from "#shared/features/data/types/action.ts";
+import type { MemoryState } from "#shared/features/data/types/memory.ts";
+import type { MessageState } from "#shared/features/data/types/message.ts";
+import type { zWebContext } from "#shared/features/provider/types/web.ts";
 
 export interface MarkdownContext {
 	webReferences: zWebContext[];
-	memoryReferences: NonNullable<ReturnType<typeof useMemories>["data"]>;
-	actionReferences: NonNullable<ReturnType<typeof useActions>["data"]>;
+	memoryReferences: MemoryState[];
+	actionReferences: ActionState[];
 	isGenerating: boolean;
 }
 
@@ -19,15 +17,6 @@ export const MarkdownContext = createContext<MarkdownContext>({
 	actionReferences: [],
 	isGenerating: false,
 });
-
-export const hashText = (text: string) => {
-	let hash = 0;
-	for (let i = 0; i < text.length; i++) {
-		const char = text.charCodeAt(i);
-		hash = (hash << 5) - hash + char;
-	}
-	return (hash >>> 0).toString(36).padStart(7, "0");
-};
 
 export function isMissingToolResult(message: MessageState) {
 	const parts = message.data.flat();

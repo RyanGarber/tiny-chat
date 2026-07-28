@@ -1,12 +1,10 @@
 {
   "name": "@tiny-chat/tauri",
   "scripts": {
-    "tauri": "tauri"
-  },
-  "dependencies": {
-    "@tauri-apps/plugin-os": "^2.3.2",
-    "@tauri-apps/plugin-process": "^2.3.1",
-    "@tauri-apps/plugin-updater": "^2.10.0"
+    "tauri": "tauri",
+    "lint": "cargo clippy --fix --allow-dirty && cargo fmt",
+    "check": "cargo check",
+    "test": "cargo test"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.4"

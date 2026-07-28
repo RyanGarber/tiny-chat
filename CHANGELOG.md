@@ -1,3 +1,24 @@
+## [0.7.0](https://github.com/RyanGarber/tiny-chat/compare/0.6.4...0.7.0) (2026-07-28)
+
+### ⚠ BREAKING CHANGES
+
+* redesigned tools, providers, and settings
+
+### Features
+
+* improved model performance ([ea48c77](https://github.com/RyanGarber/tiny-chat/commit/ea48c77a337b325bc27a0786d2dad5a67fc886c3-1))
+* slash commands and attachments ([ea48c77](https://github.com/RyanGarber/tiny-chat/commit/ea48c77a337b325bc27a0786d2dad5a67fc886c3))
+* tool prefixes for naming conflicts ([ea48c77](https://github.com/RyanGarber/tiny-chat/commit/ea48c77a337b325bc27a0786d2dad5a67fc886c3-4))
+
+### Bug Fixes
+
+* some models not recognizing tool schema ([ea48c77](https://github.com/RyanGarber/tiny-chat/commit/ea48c77a337b325bc27a0786d2dad5a67fc886c3-5))
+
+### Code Refactoring
+
+* redesigned tools, providers, and settings ([ea48c77](https://github.com/RyanGarber/tiny-chat/commit/ea48c77a337b325bc27a0786d2dad5a67fc886c3-3))
+
+
 ## [0.6.4](https://github.com/RyanGarber/tiny-chat/compare/0.6.3...0.6.4) (2026-07-10)
 
 ### Bug Fixes

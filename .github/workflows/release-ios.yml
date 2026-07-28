@@ -1,153 +1,153 @@
 name: release-ios
 
 on:
-  workflow_call:
-    inputs:
-      version:
-        description: 'Version number to use for the release tag/name'
-        required: true
-        type: string
-      notes:
-        description: 'Release notes/changelog to include in the release body'
-        required: false
-        type: string
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version number to use for the release tag/name (defaults to tauri.conf.json)'
-        required: false
-        type: string
-      notes:
-        description: 'Release notes/changelog to include in the release body'
-        required: false
-        type: string
+    workflow_call:
+        inputs:
+            version:
+                description: 'Version number to use for the release tag/name'
+                required: true
+                type: string
+            notes:
+                description: 'Release notes/changelog to include in the release body'
+                required: false
+                type: string
+    workflow_dispatch:
+        inputs:
+            version:
+                description: 'Version number to use for the release tag/name (defaults to tauri.conf.json)'
+                required: false
+                type: string
+            notes:
+                description: 'Release notes/changelog to include in the release body'
+                required: false
+                type: string
 
 jobs:
-  release:
-    runs-on: macos-latest
-    environment: production
-    permissions:
-      contents: write
+    release:
+        runs-on: macos-latest
+        environment: production
+        permissions:
+            contents: write
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.version || github.ref }}
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v6
+                with:
+                    ref: ${{ inputs.version || github.ref }}
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-apple-ios
-          toolchain: stable
+            -   name: Install Rust
+                uses: dtolnay/rust-toolchain@stable
+                with:
+                    targets: aarch64-apple-ios
+                    toolchain: stable
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v6
+            -   name: Install pnpm
+                uses: pnpm/action-setup@v6
 
-      - name: Install Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: lts/*
-          cache: pnpm
+            -   name: Install Node
+                uses: actions/setup-node@v6
+                with:
+                    node-version: lts/*
+                    cache: pnpm
 
-      - name: Create .env
-        run: |
-          cat << EOF > .env
-          PG_HOST=${{ secrets.PG_HOST }}
-          PG_PORT=${{ secrets.PG_PORT }}
-          PG_USER=${{ secrets.PG_USER }}
-          PG_PASSWORD=${{ secrets.PG_PASSWORD }}
-          PG_DATABASE=${{ secrets.PG_DATABASE }}
-          VITE_BACKEND_URL=${{ secrets.VITE_BACKEND_URL }}
-          VITE_BACKEND_PORT=${{ secrets.VITE_BACKEND_PORT }}
-          VITE_BACKEND_PATH_TRPC=${{ secrets.VITE_BACKEND_PATH_TRPC }}
-          VITE_BACKEND_PATH_AUTH=${{ secrets.VITE_BACKEND_PATH_AUTH }}
-          VITE_WEB_URL=${{ secrets.VITE_WEB_URL }}
-          VITE_WEB_PORT=${{ secrets.VITE_WEB_PORT }}
-          AUTH_GITHUB_CLIENT=${{ secrets.AUTH_GITHUB_CLIENT }}
-          AUTH_GITHUB_SECRET=${{ secrets.AUTH_GITHUB_SECRET }}
-          AUTH_GOOGLE_CLIENT=${{ secrets.AUTH_GOOGLE_CLIENT }}
-          AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}
-          AUTH_HUGGINGFACE_CLIENT=${{ secrets.AUTH_HUGGINGFACE_CLIENT }}
-          AUTH_HUGGINGFACE_SECRET=${{ secrets.AUTH_HUGGINGFACE_SECRET }}
-          EOF
+            -   name: Create .env
+                run: |
+                    cat << EOF > .env
+                    PG_HOST=${{ secrets.PG_HOST }}
+                    PG_PORT=${{ secrets.PG_PORT }}
+                    PG_USER=${{ secrets.PG_USER }}
+                    PG_PASSWORD=${{ secrets.PG_PASSWORD }}
+                    PG_DATABASE=${{ secrets.PG_DATABASE }}
+                    VITE_BACKEND_URL=${{ secrets.VITE_BACKEND_URL }}
+                    VITE_BACKEND_PORT=${{ secrets.VITE_BACKEND_PORT }}
+                    VITE_BACKEND_PATH_TRPC=${{ secrets.VITE_BACKEND_PATH_TRPC }}
+                    VITE_BACKEND_PATH_AUTH=${{ secrets.VITE_BACKEND_PATH_AUTH }}
+                    VITE_WEB_URL=${{ secrets.VITE_WEB_URL }}
+                    VITE_WEB_PORT=${{ secrets.VITE_WEB_PORT }}
+                    AUTH_GITHUB_CLIENT=${{ secrets.AUTH_GITHUB_CLIENT }}
+                    AUTH_GITHUB_SECRET=${{ secrets.AUTH_GITHUB_SECRET }}
+                    AUTH_GOOGLE_CLIENT=${{ secrets.AUTH_GOOGLE_CLIENT }}
+                    AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}
+                    AUTH_HUGGINGFACE_CLIENT=${{ secrets.AUTH_HUGGINGFACE_CLIENT }}
+                    AUTH_HUGGINGFACE_SECRET=${{ secrets.AUTH_HUGGINGFACE_SECRET }}
+                    EOF
 
-      - name: Install packages
-        run: pnpm install --frozen-lockfile
+            -   name: Install dependencies
+                run: pnpm ci
 
-      - name: Build project
-        run: |
-          echo "Mocking open command..."
-          mkdir -p /tmp/mock-open
-          echo '#!/bin/bash' > /tmp/mock-open/open
-          echo 'exit 0' >> /tmp/mock-open/open
-          chmod +x /tmp/mock-open/open
-          export PATH="/tmp/mock-open:$PATH"
-          echo "Starting Tauri build..."
-          LOG_FILE="/tmp/tauri_build.log"
-          pnpm --filter @tiny-chat/tauri run tauri ios build --open > "$LOG_FILE" 2>&1 &
-          echo "TAURI_PID=$!" >> $GITHUB_ENV
-          TIMEOUT=300
-          ELAPSED=0
-          while ! grep -q "Opening Xcode" "$LOG_FILE"; do
-            sleep 10
-            ELAPSED=$((ELAPSED + 10))
-            echo "Still waiting for Tauri build (${ELAPSED}s)..."
-            if [ "$ELAPSED" -ge "$TIMEOUT" ]; then
-              echo "Timed out waiting for build"
-              echo "=== BEGIN OUTPUT ==="
-              cat "$LOG_FILE"
-              kill $TAURI_PID
-              exit 1
-            fi
-          done
-          echo "Tauri build complete"
-          echo "=== BEGIN OUTPUT ==="
-          cat "$LOG_FILE"
+            -   name: Build project
+                run: |
+                    echo "Mocking open command..."
+                    mkdir -p /tmp/mock-open
+                    echo '#!/bin/bash' > /tmp/mock-open/open
+                    echo 'exit 0' >> /tmp/mock-open/open
+                    chmod +x /tmp/mock-open/open
+                    export PATH="/tmp/mock-open:$PATH"
+                    echo "Starting Tauri build..."
+                    LOG_FILE="/tmp/tauri_build.log"
+                    pnpm --filter @tiny-chat/tauri run tauri ios build --open > "$LOG_FILE" 2>&1 &
+                    echo "TAURI_PID=$!" >> $GITHUB_ENV
+                    TIMEOUT=300
+                    ELAPSED=0
+                    while ! grep -q "Opening Xcode" "$LOG_FILE"; do
+                      sleep 10
+                      ELAPSED=$((ELAPSED + 10))
+                      echo "Still waiting for Tauri build (${ELAPSED}s)..."
+                      if [ "$ELAPSED" -ge "$TIMEOUT" ]; then
+                        echo "Timed out waiting for build"
+                        echo "=== BEGIN OUTPUT ==="
+                        cat "$LOG_FILE"
+                        kill $TAURI_PID
+                        exit 1
+                      fi
+                    done
+                    echo "Tauri build complete"
+                    echo "=== BEGIN OUTPUT ==="
+                    cat "$LOG_FILE"
 
-      - name: Compile app
-        run: |
-          cd apps/tauri/gen/apple
-          xcodebuild \
-            -scheme tiny-chat_iOS \
-            -workspace tiny-chat.xcodeproj/project.xcworkspace \
-            -sdk iphoneos \
-            -configuration release \
-            -archivePath "$RUNNER_TEMP/tiny-chat_iOS.xcarchive" \
-            archive \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            AD_HOC_CODE_SIGNING_ALLOWED=YES \
-            ONLY_ACTIVE_ARCH=NO \
-            DEVELOPMENT_TEAM=""
-          kill $TAURI_PID
+            -   name: Compile app
+                run: |
+                    cd apps/tauri/gen/apple
+                    xcodebuild \
+                      -scheme tiny-chat_iOS \
+                      -workspace tiny-chat.xcodeproj/project.xcworkspace \
+                      -sdk iphoneos \
+                      -configuration release \
+                      -archivePath "$RUNNER_TEMP/tiny-chat_iOS.xcarchive" \
+                      archive \
+                      CODE_SIGN_IDENTITY="" \
+                      CODE_SIGNING_REQUIRED=NO \
+                      CODE_SIGNING_ALLOWED=NO \
+                      AD_HOC_CODE_SIGNING_ALLOWED=YES \
+                      ONLY_ACTIVE_ARCH=NO \
+                      DEVELOPMENT_TEAM=""
+                    kill $TAURI_PID
 
-      - name: Package app
-        run: |
-          APP_PATH=$(find "$RUNNER_TEMP/tiny-chat_iOS.xcarchive/Products/Applications" \
-            -maxdepth 1 -name "*.app" | head -1)
-          echo "Packaging: $APP_PATH"
-          mkdir -p "$RUNNER_TEMP/Payload"
-          cp -r "$APP_PATH" "$RUNNER_TEMP/Payload/"
-          cd "$RUNNER_TEMP"
-            zip -9 -r "Tiny.Chat_iOS.ipa" Payload/
-          echo "IPA size: $(du -sh Tiny.Chat_iOS.ipa | cut -f1)"
+            -   name: Package app
+                run: |
+                    APP_PATH=$(find "$RUNNER_TEMP/tiny-chat_iOS.xcarchive/Products/Applications" \
+                      -maxdepth 1 -name "*.app" | head -1)
+                    echo "Packaging: $APP_PATH"
+                    mkdir -p "$RUNNER_TEMP/Payload"
+                    cp -r "$APP_PATH" "$RUNNER_TEMP/Payload/"
+                    cd "$RUNNER_TEMP"
+                      zip -9 -r "Tiny.Chat_iOS.ipa" Payload/
+                    echo "IPA size: $(du -sh Tiny.Chat_iOS.ipa | cut -f1)"
 
-      - name: Resolve version
-        id: version
-        run: |
-          VERSION="${{ inputs.version }}"
-          if [ -z "$VERSION" ]; then
-            VERSION=$(node -pe "require('./apps/tauri/tauri.conf.json').version")
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+            -   name: Resolve version
+                id: version
+                run: |
+                    VERSION="${{ inputs.version }}"
+                    if [ -z "$VERSION" ]; then
+                      VERSION=$(node -pe "require('./apps/tauri/tauri.conf.json').version")
+                    fi
+                    echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Create release
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: ${{ steps.version.outputs.version }}
-          name: ${{ steps.version.outputs.version }}
-          body: ${{ inputs.notes }}
-          files: ${{ runner.temp }}/Tiny.Chat_iOS.ipa
-          fail_on_unmatched_files: true
+            -   name: Create release
+                uses: softprops/action-gh-release@v3
+                with:
+                    tag_name: ${{ steps.version.outputs.version }}
+                    name: ${{ steps.version.outputs.version }}
+                    body: ${{ inputs.notes }}
+                    files: ${{ runner.temp }}/Tiny.Chat_iOS.ipa
+                    fail_on_unmatched_files: true

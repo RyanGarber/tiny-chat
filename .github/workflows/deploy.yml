@@ -1,131 +1,131 @@
 name: deploy
 on:
-  workflow_call:
-    inputs:
-      version:
-        description: 'Version number to use for the release tag/name'
-        required: true
-        type: string
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version number to use for the release tag/name (defaults to tauri.conf.json)'
-        required: false
-        type: string
+    workflow_call:
+        inputs:
+            version:
+                description: 'Version number to use for the release tag/name'
+                required: true
+                type: string
+    workflow_dispatch:
+        inputs:
+            version:
+                description: 'Version number to use for the release tag/name (defaults to tauri.conf.json)'
+                required: false
+                type: string
 
 jobs:
-  predeploy:
-    runs-on: ubuntu-latest
-    environment: production
+    predeploy:
+        runs-on: ubuntu-latest
+        environment: production
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.version || github.ref }}
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v6
+                with:
+                    ref: ${{ inputs.version || github.ref }}
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v6
+            -   name: Install pnpm
+                uses: pnpm/action-setup@v6
 
-      - name: Install Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: lts/*
-          cache: pnpm
+            -   name: Install Node
+                uses: actions/setup-node@v6
+                with:
+                    node-version: lts/*
+                    cache: pnpm
 
-      - name: Create .env
-        run: |
-          cat << EOF > .env
-          PG_HOST=${{ secrets.PG_HOST }}
-          PG_PORT=${{ secrets.PG_PORT }}
-          PG_USER=${{ secrets.PG_USER }}
-          PG_PASSWORD=${{ secrets.PG_PASSWORD }}
-          PG_DATABASE=${{ secrets.PG_DATABASE }}
-          VITE_BACKEND_URL=${{ secrets.VITE_BACKEND_URL }}
-          VITE_BACKEND_PORT=${{ secrets.VITE_BACKEND_PORT }}
-          VITE_BACKEND_PATH_TRPC=${{ secrets.VITE_BACKEND_PATH_TRPC }}
-          VITE_BACKEND_PATH_AUTH=${{ secrets.VITE_BACKEND_PATH_AUTH }}
-          VITE_WEB_URL=${{ secrets.VITE_WEB_URL }}
-          VITE_WEB_PORT=${{ secrets.VITE_WEB_PORT }}
-          AUTH_GITHUB_CLIENT=${{ secrets.AUTH_GITHUB_CLIENT }}
-          AUTH_GITHUB_SECRET=${{ secrets.AUTH_GITHUB_SECRET }}
-          AUTH_GOOGLE_CLIENT=${{ secrets.AUTH_GOOGLE_CLIENT }}
-          AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}
-          AUTH_HUGGINGFACE_CLIENT=${{ secrets.AUTH_HUGGINGFACE_CLIENT }}
-          AUTH_HUGGINGFACE_SECRET=${{ secrets.AUTH_HUGGINGFACE_SECRET }}
-          EOF
+            -   name: Create .env
+                run: |
+                    cat << EOF > .env
+                    PG_HOST=${{ secrets.PG_HOST }}
+                    PG_PORT=${{ secrets.PG_PORT }}
+                    PG_USER=${{ secrets.PG_USER }}
+                    PG_PASSWORD=${{ secrets.PG_PASSWORD }}
+                    PG_DATABASE=${{ secrets.PG_DATABASE }}
+                    VITE_BACKEND_URL=${{ secrets.VITE_BACKEND_URL }}
+                    VITE_BACKEND_PORT=${{ secrets.VITE_BACKEND_PORT }}
+                    VITE_BACKEND_PATH_TRPC=${{ secrets.VITE_BACKEND_PATH_TRPC }}
+                    VITE_BACKEND_PATH_AUTH=${{ secrets.VITE_BACKEND_PATH_AUTH }}
+                    VITE_WEB_URL=${{ secrets.VITE_WEB_URL }}
+                    VITE_WEB_PORT=${{ secrets.VITE_WEB_PORT }}
+                    AUTH_GITHUB_CLIENT=${{ secrets.AUTH_GITHUB_CLIENT }}
+                    AUTH_GITHUB_SECRET=${{ secrets.AUTH_GITHUB_SECRET }}
+                    AUTH_GOOGLE_CLIENT=${{ secrets.AUTH_GOOGLE_CLIENT }}
+                    AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}
+                    AUTH_HUGGINGFACE_CLIENT=${{ secrets.AUTH_HUGGINGFACE_CLIENT }}
+                    AUTH_HUGGINGFACE_SECRET=${{ secrets.AUTH_HUGGINGFACE_SECRET }}
+                    EOF
 
-      - name: Install packages
-        run: pnpm install --frozen-lockfile
+            -   name: Install dependencies
+                run: pnpm ci
 
-      - name: Build deployment
-        run: |
-          pnpm run build:web
-          cp -r packages/frontend/dist apps/web/dist
+            -   name: Build deployment
+                run: |
+                    pnpm run build:web
+                    cp -r packages/frontend/dist apps/web/dist
 
-      - name: Package deployment
-        run: |
-          mkdir deploy
-          cp package.json deploy/
-          cp pnpm-lock.yaml deploy/
-          cp pnpm-workspace.yaml deploy/
-          cp -r patches deploy/patches
-          mkdir deploy/packages
-          cp -r packages/shared deploy/packages/shared
-          cp -r packages/backend deploy/packages/backend
-          mkdir deploy/apps
-          cp -r apps/web deploy/apps/web
-          tar -czf deploy.tar.gz deploy
+            -   name: Package deployment
+                run: |
+                    mkdir deploy
+                    cp package.json deploy/
+                    cp pnpm-lock.yaml deploy/
+                    cp pnpm-workspace.yaml deploy/
+                    cp -r patches deploy/patches
+                    mkdir deploy/packages
+                    cp -r packages/shared deploy/packages/shared
+                    cp -r packages/backend deploy/packages/backend
+                    mkdir deploy/apps
+                    cp -r apps/web deploy/apps/web
+                    tar -czf deploy.tar.gz deploy
 
-      - name: Upload deployment
-        uses: actions/upload-artifact@v6
-        with:
-          name: deploy
-          path: deploy.tar.gz
+            -   name: Upload deployment
+                uses: actions/upload-artifact@v6
+                with:
+                    name: deploy
+                    path: deploy.tar.gz
 
-  deploy:
-    runs-on: self-hosted
-    needs: predeploy
-    environment: production
+    deploy:
+        runs-on: self-hosted
+        needs: predeploy
+        environment: production
 
-    steps:
-      - name: Download deployment
-        uses: actions/download-artifact@v8
-        with:
-          name: deploy
-          path: artifact
+        steps:
+            -   name: Download deployment
+                uses: actions/download-artifact@v8
+                with:
+                    name: deploy
+                    path: artifact
 
-      - name: Extract deployment
-        run: |
-          rm -rf ~/deploy
-          tar -xzf artifact/deploy.tar.gz -C ~
+            -   name: Extract deployment
+                run: |
+                    rm -rf ~/deploy
+                    tar -xzf artifact/deploy.tar.gz -C ~
 
-      - name: Create .env
-        run: |
-          cat << EOF > ~/deploy/.env
-          PG_HOST=${{ secrets.PG_HOST }}
-          PG_PORT=${{ secrets.PG_PORT }}
-          PG_USER=${{ secrets.PG_USER }}
-          PG_PASSWORD=${{ secrets.PG_PASSWORD }}
-          PG_DATABASE=${{ secrets.PG_DATABASE }}
-          VITE_BACKEND_URL=${{ secrets.VITE_BACKEND_URL }}
-          VITE_BACKEND_PORT=${{ secrets.VITE_BACKEND_PORT }}
-          VITE_BACKEND_PATH_TRPC=${{ secrets.VITE_BACKEND_PATH_TRPC }}
-          VITE_BACKEND_PATH_AUTH=${{ secrets.VITE_BACKEND_PATH_AUTH }}
-          VITE_WEB_URL=${{ secrets.VITE_WEB_URL }}
-          VITE_WEB_PORT=${{ secrets.VITE_WEB_PORT }}
-          AUTH_GITHUB_CLIENT=${{ secrets.AUTH_GITHUB_CLIENT }}
-          AUTH_GITHUB_SECRET=${{ secrets.AUTH_GITHUB_SECRET }}
-          AUTH_GOOGLE_CLIENT=${{ secrets.AUTH_GOOGLE_CLIENT }}
-          AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}
-          AUTH_HUGGINGFACE_CLIENT=${{ secrets.AUTH_HUGGINGFACE_CLIENT }}
-          AUTH_HUGGINGFACE_SECRET=${{ secrets.AUTH_HUGGINGFACE_SECRET }}
-          EOF
+            -   name: Create .env
+                run: |
+                    cat << EOF > ~/deploy/.env
+                    PG_HOST=${{ secrets.PG_HOST }}
+                    PG_PORT=${{ secrets.PG_PORT }}
+                    PG_USER=${{ secrets.PG_USER }}
+                    PG_PASSWORD=${{ secrets.PG_PASSWORD }}
+                    PG_DATABASE=${{ secrets.PG_DATABASE }}
+                    VITE_BACKEND_URL=${{ secrets.VITE_BACKEND_URL }}
+                    VITE_BACKEND_PORT=${{ secrets.VITE_BACKEND_PORT }}
+                    VITE_BACKEND_PATH_TRPC=${{ secrets.VITE_BACKEND_PATH_TRPC }}
+                    VITE_BACKEND_PATH_AUTH=${{ secrets.VITE_BACKEND_PATH_AUTH }}
+                    VITE_WEB_URL=${{ secrets.VITE_WEB_URL }}
+                    VITE_WEB_PORT=${{ secrets.VITE_WEB_PORT }}
+                    AUTH_GITHUB_CLIENT=${{ secrets.AUTH_GITHUB_CLIENT }}
+                    AUTH_GITHUB_SECRET=${{ secrets.AUTH_GITHUB_SECRET }}
+                    AUTH_GOOGLE_CLIENT=${{ secrets.AUTH_GOOGLE_CLIENT }}
+                    AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}
+                    AUTH_HUGGINGFACE_CLIENT=${{ secrets.AUTH_HUGGINGFACE_CLIENT }}
+                    AUTH_HUGGINGFACE_SECRET=${{ secrets.AUTH_HUGGINGFACE_SECRET }}
+                    EOF
 
-      - name: Install packages
-        run: |
-          cd ~/deploy
-          pnpm install --frozen-lockfile
+            -   name: Install dependencies
+                run: |
+                    cd ~/deploy
+                    pnpm ci
 
-      - name: Activate deployment
-        run: pm2 restart all
+            -   name: Activate deployment
+                run: pm2 restart all

@@ -9,7 +9,7 @@ import type {
 import { zConfig } from "./message.ts";
 
 export const zCache = z.object({
-	providers: z.array(z.custom<ProviderState<ProviderStatus>>()),
+	providers: z.array(z.custom<ProviderState<ProviderStatus>>()).default([]),
 });
 export type zCache = z.infer<typeof zCache>;
 

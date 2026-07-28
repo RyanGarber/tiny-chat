@@ -1,110 +1,119 @@
 name: release
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+    workflow_run:
+        workflows:
+            - check
+        types:
+            - completed
+        branches:
+            - main
+    workflow_dispatch:
 
 concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: false
+    group: release-${{ github.ref }}
+    cancel-in-progress: false
 
 jobs:
-  version:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    outputs:
-      released: ${{ steps.diff.outputs.released }}
-      version: ${{ steps.diff.outputs.version }}
-      notes: ${{ steps.notes.outputs.notes }}
+    version:
+        if: >-
+            github.event_name == 'workflow_dispatch' ||
+            (github.event.workflow_run.conclusion == 'success' &&
+            github.event.workflow_run.event == 'push')
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        outputs:
+            released: ${{ steps.diff.outputs.released }}
+            version: ${{ steps.diff.outputs.version }}
+            notes: ${{ steps.notes.outputs.notes }}
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v6
+                with:
+                    ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+                    fetch-depth: 0
+                    persist-credentials: true
+
+            -   name: Install pnpm
+                uses: pnpm/action-setup@v6
+
+            -   name: Install Node
+                uses: actions/setup-node@v6
+                with:
+                    node-version: lts/*
+                    cache: pnpm
+
+            -   name: Install dependencies
+                run: pnpm ci
+
+            -   name: Configure git
+                run: |
+                    git config user.name "github-actions[bot]"
+                    git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+            -   name: Read version
+                id: before
+                run: echo "version=$(node -pe "require('./apps/tauri/tauri.conf.json').version")" >> "$GITHUB_OUTPUT"
+
+            -   name: Start release
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                run: pnpm exec semantic-release
+
+            -   name: Determine outcome
+                id: diff
+                run: |
+                    VERSION=$(node -pe "require('./apps/tauri/tauri.conf.json').version")
+                    if [ "$VERSION" != "${{ steps.before.outputs.version }}" ]; then
+                      echo "released=true" >> "$GITHUB_OUTPUT"
+                    else
+                      echo "released=false" >> "$GITHUB_OUTPUT"
+                    fi
+                    echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+            -   name: Read release notes
+                id: notes
+                run: |
+                    DELIMITER="EOF_$(uuidgen)"
+                    {
+                      echo "notes<<$DELIMITER"
+                      cat CHANGES.md 2>/dev/null || true
+                      echo "$DELIMITER"
+                    } >> "$GITHUB_OUTPUT"
+
+    desktop:
+        needs: version
+        if: needs.version.outputs.released == 'true'
+        uses: ./.github/workflows/release-desktop.yml
         with:
-          fetch-depth: 0
-          persist-credentials: true
+            version: ${{ needs.version.outputs.version }}
+            notes: ${{ needs.version.outputs.notes }}
+        secrets: inherit
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Install Node
-        uses: actions/setup-node@v6
+    android:
+        needs: version
+        if: needs.version.outputs.released == 'true'
+        uses: ./.github/workflows/release-android.yml
         with:
-          node-version: lts/*
-          cache: pnpm
+            version: ${{ needs.version.outputs.version }}
+            notes: ${{ needs.version.outputs.notes }}
+        secrets: inherit
 
-      - name: Install packages
-        run: pnpm install --frozen-lockfile
+    ios:
+        needs: version
+        if: needs.version.outputs.released == 'true'
+        uses: ./.github/workflows/release-ios.yml
+        with:
+            version: ${{ needs.version.outputs.version }}
+            notes: ${{ needs.version.outputs.notes }}
+        secrets: inherit
 
-      - name: Configure git identity
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-      - name: Read current version
-        id: before
-        run: echo "version=$(node -pe "require('./apps/tauri/tauri.conf.json').version")" >> "$GITHUB_OUTPUT"
-
-      - name: Run semantic-release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm exec semantic-release
-
-      - name: Determine release outcome
-        id: diff
-        run: |
-          VERSION=$(node -pe "require('./apps/tauri/tauri.conf.json').version")
-          if [ "$VERSION" != "${{ steps.before.outputs.version }}" ]; then
-            echo "released=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "released=false" >> "$GITHUB_OUTPUT"
-          fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Read release notes
-        id: notes
-        run: |
-          DELIMITER="EOF_$(uuidgen)"
-          {
-            echo "notes<<$DELIMITER"
-            cat CHANGES.md 2>/dev/null || true
-            echo "$DELIMITER"
-          } >> "$GITHUB_OUTPUT"
-
-  desktop:
-    needs: version
-    if: needs.version.outputs.released == 'true'
-    uses: ./.github/workflows/release-desktop.yml
-    with:
-      version: ${{ needs.version.outputs.version }}
-      notes: ${{ needs.version.outputs.notes }}
-    secrets: inherit
-
-  android:
-    needs: version
-    if: needs.version.outputs.released == 'true'
-    uses: ./.github/workflows/release-android.yml
-    with:
-      version: ${{ needs.version.outputs.version }}
-      notes: ${{ needs.version.outputs.notes }}
-    secrets: inherit
-
-  ios:
-    needs: version
-    if: needs.version.outputs.released == 'true'
-    uses: ./.github/workflows/release-ios.yml
-    with:
-      version: ${{ needs.version.outputs.version }}
-      notes: ${{ needs.version.outputs.notes }}
-    secrets: inherit
-
-  deploy:
-    needs: version
-    if: needs.version.outputs.released == 'true'
-    uses: ./.github/workflows/deploy.yml
-    with:
-      version: ${{ needs.version.outputs.version }}
-    secrets: inherit
+    deploy:
+        needs: version
+        if: needs.version.outputs.released == 'true'
+        uses: ./.github/workflows/deploy.yml
+        with:
+            version: ${{ needs.version.outputs.version }}
+        secrets: inherit

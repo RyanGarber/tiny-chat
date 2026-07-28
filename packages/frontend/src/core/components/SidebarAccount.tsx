@@ -94,7 +94,7 @@ export default function SidebarAccount({
 						if (!result) return;
 						clearInterval(cloneInterval);
 						window.location.reload();
-					});
+					})();
 				}, 1000),
 			);
 		} else {

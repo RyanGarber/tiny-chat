@@ -8,7 +8,6 @@ export const SkillService = {
 	findLocal: async () => {
 		const skills: zSkill[] = [];
 
-		console.log("local skills:", await isTauriDesktop());
 		if (await isTauriDesktop()) {
 			try {
 				const walk = async (path: string) => {
@@ -40,18 +39,28 @@ export const SkillService = {
 				).filter((e) => e.is_dir);
 
 				for (const { path } of paths) {
-					const skill = SkillUtils.buildSkill({
-						files: await walk(path),
-					});
-
-					if (skill) skills.push(skill);
+					try {
+						const skill = SkillUtils.buildSkill({
+							files: await walk(path),
+						});
+						skills.push(
+							skill ?? {
+								path: PathUtils.toMount({ path }),
+								name: "",
+								description: "Error: unrecognized format",
+								attributes: {},
+							},
+						);
+					} catch (error) {
+						console.warn("failed to build local skill:", error);
+					}
 				}
 			} catch (error) {
-				console.warn("error reading local skills:", error);
+				console.warn("failed to discover local skills:", error);
 			}
 		}
 
-		console.log("local skills:", skills);
+		console.log("[Skill Service] built local skills:", skills);
 		return skills;
 	},
 
@@ -62,7 +71,6 @@ export const SkillService = {
 			where: { type: UploadType.SKILL },
 			files: { where: { path: { has: "SKILL.md" } } },
 		});
-		console.log("remote skills:", remoteSkills);
 		for (const { id, files } of remoteSkills.uploads) {
 			let skill: zSkill | null = null;
 			try {
@@ -72,9 +80,8 @@ export const SkillService = {
 						data: file.data,
 					})),
 				});
-				console.log("remote skill:", skill);
 			} catch (error) {
-				console.warn("error reading remote skill:", error);
+				console.warn("failed to build native skill:", error);
 			}
 			skills.push(
 				skill ?? {
@@ -86,6 +93,7 @@ export const SkillService = {
 			);
 		}
 
+		console.log("[SkillService] built native skills:", skills);
 		return skills;
 	},
 };

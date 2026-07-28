@@ -1,3 +1,11 @@
+## [0.7.1](https://github.com/RyanGarber/tiny-chat/compare/0.7.0...0.7.1) (2026-07-28)
+
+### Bug Fixes
+
+* io error potentially prevents skills from loading ([26f4ad3](https://github.com/RyanGarber/tiny-chat/commit/26f4ad30796c4e92f6d67f521734e1143a9c1cbf-1))
+* sign-in via magic link not completing ([26f4ad3](https://github.com/RyanGarber/tiny-chat/commit/26f4ad30796c4e92f6d67f521734e1143a9c1cbf-2))
+
+
 ## [0.7.0](https://github.com/RyanGarber/tiny-chat/compare/0.6.4...0.7.0) (2026-07-28)
 
 ### ⚠ BREAKING CHANGES

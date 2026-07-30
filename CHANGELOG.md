@@ -1,3 +1,20 @@
+## [0.7.2](https://github.com/RyanGarber/tiny-chat/compare/0.7.1...0.7.2) (2026-07-30)
+
+### Features
+
+* cli prototype ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c))
+* file citations ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c-3))
+* jina web provider ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c-1))
+* per-feature web providers choices ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c-2))
+
+### Bug Fixes
+
+* ENOENTs in chat shell due to path mismatch ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c-5))
+* markdown not rendering inside citations ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c-6))
+* thoughts not round-tripped back to model ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c-7))
+* tool capabilities with custom names not working ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c-4))
+
+
 ## [0.7.1](https://github.com/RyanGarber/tiny-chat/compare/0.7.0...0.7.1) (2026-07-28)
 
 ### Bug Fixes

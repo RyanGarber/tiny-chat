@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "../../../core/hooks/useSession.ts";
-import { useStatusStore } from "../../../core/stores/useStatusStore.ts";
+import { useAppStore } from "../../../core/stores/useAppStore.ts";
 import type { CompletionItem } from "../components/Completions.tsx";
 
 export interface Command extends CompletionItem {
@@ -35,6 +35,7 @@ export const useCommands = ({
 	const [commands, setCommands] = useState<Command[]>([]);
 
 	const { cloneSession } = useSession();
+	const setPage = useAppStore((state) => state.setPage);
 
 	const getCommands = useCallback(async (): Promise<Command[]> => {
 		return [
@@ -49,15 +50,11 @@ export const useCommands = ({
 				name: "chats",
 				value: "chats",
 				execute: () => {
-					useStatusStore.getState().setStatus({ id: "test" });
-					setTimeout(
-						() => useStatusStore.getState().unsetStatus({ id: "test" }),
-						2000,
-					);
+					setPage("chat-list");
 				},
 			},
 		];
-	}, [cloneSession.mutate]);
+	}, [cloneSession.mutate, setPage]);
 
 	useEffect(() => {
 		const query = getQuery(content, cursor);

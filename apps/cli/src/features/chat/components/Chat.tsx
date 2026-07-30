@@ -1,6 +1,6 @@
-import { Box, Text, useStdout } from "ink";
+import { Text, useStdout } from "ink";
 import { ScrollView, type ScrollViewRef } from "ink-scroll-view";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useScrollWheel } from "../../../core/hooks/useScrollWheel.ts";
 import { useChat } from "../hooks/useChat.ts";
 import { useMessages } from "../hooks/useMessages.tsx";
@@ -36,6 +36,7 @@ export default function Chat() {
 				.map((message) => (
 					<Message key={message.id} message={message} />
 				))}
+			<Text dimColor>[end of chat]</Text>
 		</ScrollView>
 	);
 }

@@ -1,0 +1,10 @@
+{
+	"compilerOptions": {
+		"lib": ["ES2022"],
+		"module": "nodenext",
+		"moduleResolution": "nodenext",
+		"jsx": "react-jsx"
+	},
+	"include": ["src"],
+	"extends": "../../tsconfig.base.json"
+}

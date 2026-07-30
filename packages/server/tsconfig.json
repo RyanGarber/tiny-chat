@@ -1,0 +1,13 @@
+{
+	"compilerOptions": {
+		"module": "nodenext",
+		"moduleResolution": "nodenext"
+	},
+	"include": [
+		"src",
+		"drizzle.config.ts",
+		"generated/prisma/**/*",
+		"../core/src/logger.ts"
+	],
+	"extends": "../../tsconfig.base.json"
+}

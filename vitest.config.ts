@@ -19,8 +19,8 @@ export default defineConfig({
 	test: {
 		include: ["packages/**/*.test.ts"],
 		globalSetup: [
-			"packages/backend/src/tests.ts",
-			"packages/shared/src/tests.ts",
+			"packages/core/src/tests.ts",
+			"packages/server/src/tests.ts",
 		],
 		testTimeout: 30_000,
 		hookTimeout: 30_000,

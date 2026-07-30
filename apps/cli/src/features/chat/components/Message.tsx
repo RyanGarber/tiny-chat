@@ -1,8 +1,8 @@
 import {
 	Author,
 	type MessageState,
-} from "@tiny-chat/shared/src/features/data/types/message.ts";
-import { DataUtils } from "@tiny-chat/shared/src/features/data/utils/DataUtils.ts";
+} from "@tiny-chat/core/src/features/data/types/message.ts";
+import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { Box, Text, useWindowSize } from "ink";
 import { Task, TaskList } from "ink-task-list";
 import { marked } from "marked";

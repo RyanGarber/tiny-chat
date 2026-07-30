@@ -1,14 +1,14 @@
 import type {
 	CapabilityFactory,
-	FilesystemCapability,
+	ShellCapability,
 } from "@tiny-chat/shared/src/features/capability/types/capability.ts";
 import { SnippetService } from "@tiny-chat/shared/src/features/data/services/SnippetService.ts";
 import { FileUtils } from "@tiny-chat/shared/src/features/file/utils/FileUtils.ts";
 import { invoke } from "#frontend/utils/api.ts";
 
-export const userFilesystem: CapabilityFactory<
+export const createShellCapability: CapabilityFactory<
 	void,
-	FilesystemCapability
+	ShellCapability
 > = async () => {
 	return {
 		readFile: async ({ path }) => {

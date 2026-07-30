@@ -28,7 +28,9 @@ export const PathUtils = {
 			path = path.split(/[\\/]+/);
 		}
 
-		if (!path.length || !path.some((part) => part.length)) {
+		path = [...path];
+
+		if (!path.some(Boolean)) {
 			return "";
 		}
 
@@ -72,7 +74,7 @@ export const PathUtils = {
 	equals: (...paths: (string[] | string)[]) => {
 		const [reference, ...rest] = paths.map((path) => {
 			if (typeof path === "string") path = path.split(/[\\/]+/);
-			return path.filter((part) => part.length);
+			return path.filter(Boolean);
 		});
 
 		return rest.every((path) => path.join("/") === reference.join("/"));
@@ -97,17 +99,15 @@ export const PathUtils = {
 		if (child && !descendent) {
 			if (!parent?.length) return child.length === 1;
 			return (
-				child
-					.filter((part) => part.length)
-					.slice(0, -1)
-					.join("/") === parent.filter((part) => part.length).join("/")
+				child.filter(Boolean).slice(0, -1).join("/") ===
+				parent.filter(Boolean).join("/")
 			);
 		}
 
 		if (!child && descendent) {
-			if (!parent?.length) return true;
-			return `${descendent.filter((part) => part.length).join("/")}/`.startsWith(
-				`${parent.filter((part) => part.length).join("/")}/`,
+			if (!parent?.length) return !!descendent.length;
+			return `${descendent.filter(Boolean).join("/")}/`.startsWith(
+				`${parent.filter(Boolean).join("/")}/`,
 			);
 		}
 
@@ -136,7 +136,7 @@ export const PathUtils = {
 				});
 				path = path.split(/[\\/]+/);
 			}
-			return path.filter((part) => part.length);
+			return path.filter(Boolean);
 		});
 
 		return [...(isMount ? [mount] : []), ...reference, ...rest]
@@ -149,7 +149,7 @@ export const PathUtils = {
 	 */
 	split: (path: { path: string } | string) => {
 		if (typeof path !== "string") path = path.path;
-		return path.split(/[\\/]+/);
+		return path.split(/[\\/]/).filter(Boolean);
 	},
 
 	/**
@@ -167,11 +167,11 @@ export const PathUtils = {
 		if (!path.startsWith(mount)) return null;
 
 		path = path.replace(
-			new RegExp(`^${mount.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`),
+			new RegExp(`^${CommonUtils.getRegexEscaped(mount)}`),
 			"",
 		);
 
-		const parts = path.split(/[\\/]/).filter((part) => part.length);
+		const parts = path.split(/[\\/]/).filter(Boolean);
 
 		let uploadId: string | undefined;
 		let uploadPath: string[] = [];
@@ -213,11 +213,15 @@ export const PathUtils = {
 	}) => {
 		if (typeof path === "string") path = path.split(/[\\/]/);
 
+		path = [...path];
+
+		if (mount.endsWith("/")) mount = mount.slice(0, -1);
+
 		if (uploadId && path[0] === uploadId) {
 			path.shift();
 		}
 
-		return `${mount}/${[uploadId, ...path].filter((part) => part?.length).join("/")}`;
+		return `${mount}/${[uploadId, ...path].filter(Boolean).join("/")}`;
 	},
 
 	/**
@@ -225,6 +229,9 @@ export const PathUtils = {
 	 */
 	asMount: (from: PathLike, mount = MOUNT): string | undefined => {
 		if (typeof from === "string") from = { uri: from };
+
+		if (mount.endsWith("/")) mount = mount.slice(0, -1);
+
 		if (Array.isArray(from)) from = { path: from };
 		return from.path
 			? `${mount}/${from.path.join("/")}`
@@ -244,7 +251,7 @@ export const PathUtils = {
 		);
 
 		return from.uri
-			? from.uri.split("/").filter(Boolean)
+			? from.uri.split(/[\\/]/).filter(Boolean)
 			: (from.path ?? undefined);
 	},
 

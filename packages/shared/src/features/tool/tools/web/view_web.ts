@@ -1,32 +1,28 @@
 import { z } from "zod";
-import type { WebProviderCapability } from "../../../capability/types/capability.ts";
+import type { WebCapability } from "../../../capability/types/capability.ts";
 import { zWebContext } from "../../../provider/types/web.ts";
-import type { Tool } from "../../types/tool.ts";
+import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
-const input = z.object({
-	url: z.string(),
-});
-
-const output = zWebContext;
-
-export const view_web: Tool<
-	typeof input,
-	void,
-	typeof output,
-	{ webProvider: WebProviderCapability }
-> = {
+export const view_web = {
 	name: "view_web",
 	description: "View the contents of any URL.",
+	input: z.object({
+		url: z.string(),
+	}),
+	output: zWebContext,
+} as const satisfies ToolDefinition;
 
-	input,
-	output,
-
-	execute: async ({ input, capabilities }) => {
+export const createViewWebTool: ToolFactory<
+	Tool<typeof view_web, { provider: WebCapability }>
+> = (options) => ({
+	...view_web,
+	...options,
+	execute: async ({ input }) => {
 		return [
 			{
 				type: "json",
-				value: await capabilities.webProvider.view({ url: input.url }),
+				value: await options.capabilities.provider.view({ url: input.url }),
 			},
 		];
 	},
-};
+});

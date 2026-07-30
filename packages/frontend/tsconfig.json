@@ -1,12 +1,11 @@
 {
 	"compilerOptions": {
 		"target": "ES2022",
-		"useDefineForClassFields": true,
 		"lib": ["ES2022", "DOM", "DOM.Iterable"],
 		"module": "ESNext",
-		/* Bundler mode */
 		"moduleResolution": "bundler",
 		"isolatedModules": true,
+		"useDefineForClassFields": true,
 		"jsx": "react-jsx"
 	},
 	"include": ["src"],

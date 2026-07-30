@@ -1,5 +1,6 @@
 import { ToolService } from "@tiny-chat/shared/src/features/tool/services/ToolService";
 import { smoothStream } from "ai";
+import { CommonUtils } from "#frontend/core/utils/CommonUtils.ts";
 import { FrontendCapabilityService } from "#frontend/features/capability/services/FrontendCapabilityService.ts";
 import { refetchActions } from "#frontend/features/chat/hooks/useActions.ts";
 import { refetchChatList } from "#frontend/features/chat/hooks/useChatList.ts";
@@ -11,7 +12,7 @@ import {
 	type Stream,
 	StreamService,
 } from "#frontend/features/message/services/StreamService.ts";
-import { env, isTauriDesktop, trpc } from "#frontend/utils/api.ts";
+import { isTauriDesktop, trpc } from "#frontend/utils/api.ts";
 import { isMissingToolResult } from "#frontend/utils/data.ts";
 import { AgentService } from "#shared/features/agent/services/AgentService.ts";
 import type {
@@ -100,7 +101,6 @@ export const MessageHandlerService = {
 				chat,
 				messages,
 				timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-				supportsUserInput: true,
 			},
 			chat,
 			seed,
@@ -225,12 +225,6 @@ export const MessageHandlerService = {
 		if (!provider)
 			throw new Error(`Provider "${stream.message.config.provider}" not found`);
 
-		// TODO WIP - should probably get capabilities and tools here (and useToolInput) and use a shim elsewhere,
-		//          - but that requires somehow making clear that the tools in useTools are 'fake' and will not run.
-		//          - perhaps renaming it (useToolDefinitions?) and converting the tools to a non-runnable type?
-		//          - for now, we'll just accept the hook's current value, because race conditions aside,
-		//          - it might just work well enough. and it keeps data deduplicated and logic simpler.
-
 		const capabilities = await FrontendCapabilityService.getCapabilities({
 			user,
 			chat,
@@ -256,7 +250,7 @@ export const MessageHandlerService = {
 			skills,
 			data: stream.message.data,
 			metadata: stream.message.metadata,
-			env,
+			env: CommonUtils.env,
 			options: {
 				abortSignal: stream.abort.signal,
 				experimental_transform: [smoothStream({ delayInMs: 20 })],

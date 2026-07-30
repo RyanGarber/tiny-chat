@@ -14,6 +14,7 @@ import {
 	TextInput,
 } from "@mantine/core";
 import { useIsFetching } from "@tanstack/react-query";
+import { read_file } from "@tiny-chat/shared/src/features/tool/tools/shell/read_file.ts";
 import { memo, useEffect, useLayoutEffect, useState } from "react";
 import { ZodError } from "zod";
 import { useTauri } from "#frontend/core/hooks/useTauri.ts";
@@ -36,7 +37,6 @@ import { zMCPServers } from "#shared/features/data/types/user.ts";
 import { DataUtils } from "#shared/features/data/utils/DataUtils.ts";
 import { PathUtils } from "#shared/features/file/utils/PathUtils.ts";
 import type { zSkill } from "#shared/features/skill/types/skill.ts";
-import { read_file } from "#shared/features/tool/tools/filesystem/read_file.ts";
 import type { Toolset } from "#shared/features/tool/types/tool.ts";
 import { ToolUtils } from "#shared/features/tool/utils/ToolUtils.ts";
 

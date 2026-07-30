@@ -1,52 +1,48 @@
 /** biome-ignore-all lint/suspicious/noConfusingVoidType: no input expected */
 
-import { z } from "zod";
+import type { z } from "zod";
 import type { zAgentContext } from "../../agent/types/agent.ts";
 import type { Capabilities } from "../../capability/types/capability.ts";
 import type { zToolDataPart } from "../../data/types/message.ts";
 
-export const zTool = z.object({
-	name: z.string(),
-	description: z.string(),
-
-	input: z.unknown(),
-	output: z.unknown(),
-	feedback: z.unknown().optional(),
-});
-export type zTool = z.infer<typeof zTool>;
+export interface ToolDefinition {
+	name: string;
+	description: string;
+	input: z.ZodType;
+	feedback?: z.ZodType | void;
+	output: z.ZodType;
+}
 
 export interface Tool<
-	TInput extends z.ZodType,
-	TFeedback extends z.ZodType | void,
-	TOutput extends z.ZodType,
+	TDefinition extends ToolDefinition,
 	TCapabilities extends Record<string, Capabilities[keyof Capabilities]> | void,
-> extends zTool {
-	input: TInput;
+> extends ToolDefinition {
+	prefix?: string;
+
+	capabilities: TCapabilities;
 	approval?: boolean;
-	feedback?: TFeedback;
-	output: TOutput;
+
+	input: TDefinition["input"];
+	feedback?: TDefinition["feedback"];
+	output: TDefinition["output"];
 
 	execute: (_: {
-		input: z.infer<TInput>;
-		feedback: z.infer<TFeedback>;
+		input: z.infer<TDefinition["input"]>;
+		feedback: z.infer<TDefinition["feedback"]>;
 		context: zAgentContext;
-		capabilities: TCapabilities;
 	}) => Promise<
 		(
 			| Exclude<zToolDataPart, { type: "json" }>
-			| { type: "json"; value: z.infer<TOutput> }
+			| { type: "json"; value: z.infer<TDefinition["output"]> }
 		)[]
 	>;
 }
 
-export const zToolset = z.object({
-	name: z.string(),
-	instructions: z.string().optional(),
-	prefix: z.string().optional(),
-
-	tools: z.array(zTool),
-});
-export type zToolset = z.infer<typeof zToolset>;
+export type ToolFactory<T extends Tool<any, any>> = (options: {
+	prefix?: string;
+	approval?: boolean;
+	capabilities: T["capabilities"];
+}) => T | Promise<T>;
 
 export interface ToolsetStatus {
 	valid: boolean;
@@ -55,17 +51,19 @@ export interface ToolsetStatus {
 
 export interface Toolset<
 	TCapabilities extends Record<string, Capabilities[keyof Capabilities]> | void,
-> extends zToolset {
-	tools: Tool<any, any, any, TCapabilities>[];
+> {
+	name: string;
+	instructions?: string;
+	prefix?: string;
+	tools: Tool<any, TCapabilities>[];
 	capabilities: TCapabilities;
 	status: ToolsetStatus;
 }
 
-export type ToolsetFactory<
-	TCapabilities extends Record<string, Capabilities[keyof Capabilities]> | void,
-> = (options: {
+export type ToolsetFactory<T extends Toolset<any>> = (options: {
 	prefix?: string;
 	instructions?: string;
-	capabilities: TCapabilities;
+	approval?: boolean;
+	capabilities: T["capabilities"];
 	status: ToolsetStatus;
-}) => Toolset<TCapabilities> | Promise<Toolset<TCapabilities>>;
+}) => T | Promise<T>;

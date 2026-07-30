@@ -21,7 +21,6 @@
 		"rrule": "^2.8.1",
 		"timeago.js": "^4.0.2",
 		"unique-names-generator": "^4.7.1",
-		"voyage-ai-provider": "^4.0.0",
-		"zod": "^4.4.3"
+		"voyage-ai-provider": "^4.0.0"
 	}
 }

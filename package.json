@@ -6,6 +6,7 @@
 		"dev:backend": "dotenv -- pnpm --filter @tiny-chat/backend run dev",
 		"start:backend": "dotenv -- pnpm --filter @tiny-chat/backend run start",
 		"dev:web": "dotenv -- node scripts/use-backend.ts --start \"[web] pnpm --filter @tiny-chat/web run dev\"",
+		"dev:cli": "dotenv -- pnpm --filter @tiny-chat/cli run dev",
 		"dev:tauri": "dotenv -- node scripts/use-backend.ts --start \"[tauri] pnpm --filter @tiny-chat/tauri run tauri dev\"",
 		"dev:tauri:ios": "dotenv -- node scripts/use-backend.ts --start --host \"[tauri] pnpm --filter @tiny-chat/tauri run tauri ios dev --host\"",
 		"dev:tauri:android": "dotenv -- node scripts/use-backend.ts --start --host \"[tauri] pnpm --filter @tiny-chat/tauri run tauri android dev --host\"",
@@ -54,6 +55,12 @@
 	},
 	"packageManager": "pnpm@11.17.0+sha512.cca3cea332ad254bb84145f966d19f4879615210346fc92c79a047f23a0d7b3cca3c3792f0076ba1f1831d277efbcf0a9119b31a9a60eca7fb3d6231f331ef72",
 	"dependencies": {
-		"@commander-js/extra-typings": "^15.0.0"
+		"@commander-js/extra-typings": "^15.0.0",
+		"@trpc/client": "^11.18.0",
+		"@trpc/server": "^11.18.0",
+		"better-auth": "^1.6.23",
+		"dotenv": "^17.4.2",
+		"superjson": "^2.2.6",
+		"zod": "^4.4.3"
 	}
 }

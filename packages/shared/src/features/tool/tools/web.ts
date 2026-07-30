@@ -1,14 +1,14 @@
-import type { WebProviderCapability } from "../../capability/types/capability.ts";
-import type { ToolsetFactory } from "../types/tool.ts";
-import { search_web } from "./web/search_web.ts";
-import { view_web } from "./web/view_web.ts";
+import type { WebCapability } from "../../capability/types/capability.ts";
+import type { Toolset, ToolsetFactory } from "../types/tool.ts";
+import { createSearchWebTool } from "./web/search_web.ts";
+import { createViewWebTool } from "./web/view_web.ts";
 
-export const createWebToolset: ToolsetFactory<{
-	webProvider: WebProviderCapability;
-}> = (options) => {
-	return {
-		name: "web",
-		tools: [search_web, view_web],
-		...options,
-	};
-};
+export const createWebToolset: ToolsetFactory<
+	Toolset<{
+		provider: WebCapability;
+	}>
+> = async (options) => ({
+	name: "web",
+	tools: [await createSearchWebTool(options), await createViewWebTool(options)],
+	...options,
+});

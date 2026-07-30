@@ -2,7 +2,8 @@ import { Client } from "@modelcontextprotocol/sdk/client";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport";
 import type { Tool } from "@modelcontextprotocol/sdk/types";
-import { backendUrl, isTauriDesktop } from "#frontend/utils/api.ts";
+import { CommonUtils } from "#frontend/core/utils/CommonUtils.ts";
+import { isTauriDesktop } from "#frontend/utils/api.ts";
 import {
 	TauriHttpTransport,
 	TauriStdioTransport,
@@ -98,11 +99,17 @@ export const McpService = {
 						];
 				} else {
 					transports = [
-						new StreamableHTTPClientTransport(new URL(`${backendUrl}/@/mcp`), {
-							requestInit: {
-								headers: { "X-Mcp-Url": server.url, ...(server.headers ?? {}) },
+						new StreamableHTTPClientTransport(
+							new URL(`${CommonUtils.backendUrl}/@/mcp`),
+							{
+								requestInit: {
+									headers: {
+										"X-Mcp-Url": server.url,
+										...(server.headers ?? {}),
+									},
+								},
 							},
-						}),
+						),
 					];
 				}
 

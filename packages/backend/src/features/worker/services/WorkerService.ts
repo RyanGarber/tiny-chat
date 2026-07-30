@@ -81,7 +81,6 @@ export const WorkerService = {
 						}),
 					),
 					timezone: action.timezone,
-					supportsUserInput: false,
 				};
 
 				const skills = (
@@ -125,14 +124,16 @@ export const WorkerService = {
 					incognito: chat.incognito,
 				});
 
+				const toolsets = await ToolService.getTools({
+					capabilities,
+					incognito: chat.incognito,
+				});
+
 				const agent = AgentService.generate({
 					provider: modelProvider,
 					context,
 					capabilities,
-					toolsets: await ToolService.getTools({
-						capabilities,
-						incognito: chat.incognito,
-					}),
+					toolsets,
 					skills,
 					data,
 					metadata,

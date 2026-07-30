@@ -1,12 +1,11 @@
 import { CommonUtils } from "@tiny-chat/shared/src/core/utils/CommonUtils.ts";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { toNodeHandler } from "better-auth/node";
 import { anonymous, bearer } from "better-auth/plugins";
 import { internalIpV4 } from "internal-ip";
 import { prisma } from "../../db.ts";
 
-const auth = betterAuth({
+export const AuthService = betterAuth({
 	baseURL: process.argv.includes("--dev")
 		? `http://${process.argv.includes("--host") ? await internalIpV4() : "localhost"}:${process.env.VITE_BACKEND_PORT}`
 		: process.env.VITE_BACKEND_URL,
@@ -130,8 +129,3 @@ const auth = betterAuth({
 		},
 	],
 });
-
-export const AuthService = {
-	auth,
-	handle: toNodeHandler(auth),
-} as const;

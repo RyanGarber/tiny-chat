@@ -30,6 +30,7 @@ import { useMemories } from "#frontend/features/chat/hooks/useMemories.ts";
 import { InputService } from "#frontend/features/chat/services/InputService.ts";
 import { useProviders } from "#frontend/features/config/hooks/useProviders.ts";
 import { useTools } from "#frontend/features/config/hooks/useTools.ts";
+import { useFilesystem } from "#frontend/features/file/hooks/useFilesystem.ts";
 import { useSkills } from "#frontend/features/file/hooks/useSkills.ts";
 import { Markdown } from "#frontend/features/message/components/Markdown.tsx";
 import { ToolCallInput } from "#frontend/features/message/components/ToolCallInput.tsx";
@@ -67,6 +68,7 @@ export const MessageBodyContent = memo(
 		const { actions } = useActions();
 		const { providers } = useProviders();
 		const { messages } = useMessages();
+		const { chatFiles } = useFilesystem();
 
 		const messageList = useMemo(
 			() => messages.data?.pages.flatMap((m) => m.messages) ?? [],
@@ -156,6 +158,7 @@ export const MessageBodyContent = memo(
 							webReferences: webContext,
 							memoryReferences: memories.data ?? [],
 							actionReferences: actions.data ?? [],
+							fileReferences: chatFiles.data ?? [],
 							isGenerating: isGenerating,
 						}}
 					/>,
@@ -195,6 +198,7 @@ export const MessageBodyContent = memo(
 								webReferences: webContext,
 								memoryReferences: memories.data ?? [],
 								actionReferences: actions.data ?? [],
+								fileReferences: chatFiles.data ?? [],
 								isGenerating: isGenerating,
 							}}
 						/>,

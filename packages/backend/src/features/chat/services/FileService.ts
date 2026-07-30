@@ -15,7 +15,10 @@ import { FileSearchService } from "../../upload/services/FileSearchService.ts";
 import { FilesystemService } from "../../upload/services/FilesystemService.ts";
 import { ChatService } from "./ChatService.ts";
 
-// TODO WIP
+// TODO - instance caching
+//  for now, uncached due to complications
+//  with keeping uploads up-to-date in ongoing chats
+
 type Instance = { bash: Bash; filesystem: FilesystemService };
 const instances = new Map<string, Instance>();
 
@@ -28,6 +31,8 @@ export const FileService = {
 		chat: ChatLike;
 	}): Promise<Instance> => {
 		if (typeof _chat === "string") _chat = { id: _chat };
+
+		let instance: Instance | undefined;
 
 		if (!instances.has(_chat.id)) {
 			console.log(`creating vm for chat: ${_chat.id}`);
@@ -45,24 +50,22 @@ export const FileService = {
 					base: new InMemoryFs(),
 					mounts: [
 						{
-							mountPoint: PathUtils.mount,
-							filesystem,
+							mountPoint: `${PathUtils.mount}/`,
+							filesystem: filesystem.clone("/"),
 						},
 					],
 				}),
 				defenseInDepth: { enabled: true, auditMode: true },
 				python: true,
-				cwd: PathUtils.mount,
+				cwd: `${PathUtils.mount}/`,
 			});
 
-			instances.set(chat.id, {
-				filesystem,
-				bash,
-			});
+			instance = { bash, filesystem };
+			// instances.set(_chat.id, instance);
 		}
 
-		const instance = instances.get(_chat.id);
-		if (!instance) throw new Error();
+		// const instance = instances.get(_chat.id);
+		if (!instance) throw new Error("missing vm instance");
 
 		return instance;
 	},
@@ -79,14 +82,7 @@ export const FileService = {
 		chat: ChatLike;
 		path: PathLike;
 	}): Promise<FileState> => {
-		const { messages } = await MessageService.getMessages({ user, chat });
-		const uploads = AgentUtils.getAllUploadIds({ messages });
-		const filesystem = new FilesystemService(
-			user,
-			await ChatService.getChat({ user, chat }),
-			uploads,
-		);
-		await filesystem.fetch();
+		const { filesystem } = await FileService.get({ user, chat });
 		const file = await filesystem.getFile(PathUtils.asMount(path) ?? "");
 		return {
 			...file,
@@ -105,7 +101,7 @@ export const FileService = {
 		chat: ChatLike;
 	}): Promise<FileNode[]> => {
 		const { filesystem } = await FileService.get({ user, chat });
-		return filesystem.nodes;
+		return filesystem.getAllNodes();
 	},
 
 	getDirectory: async ({

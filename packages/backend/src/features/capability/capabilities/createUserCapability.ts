@@ -1,6 +1,6 @@
 import type {
 	CapabilityFactory,
-	UserContextCapability,
+	UserCapability,
 } from "@tiny-chat/shared/src/features/capability/types/capability.ts";
 import type { MessageLike } from "@tiny-chat/shared/src/features/data/types/message.ts";
 import type { zUser } from "@tiny-chat/shared/src/features/data/types/user.ts";
@@ -9,9 +9,9 @@ import { ChatSearchService } from "../../chat/services/ChatSearchService.ts";
 import { MemorySearchService } from "../../chat/services/MemorySearchService.ts";
 import { MemoryService } from "../../chat/services/MemoryService.ts";
 
-export const userContext: CapabilityFactory<
+export const createUserCapability: CapabilityFactory<
 	{ user: zUser; message: MessageLike },
-	UserContextCapability
+	UserCapability
 > = async ({ user, message }) => {
 	return {
 		getActions: async () => {

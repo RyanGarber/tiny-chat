@@ -1,39 +1,35 @@
 import { z } from "zod";
-import type { UserContextCapability } from "../../../capability/types/capability.ts";
+import type { UserCapability } from "../../../capability/types/capability.ts";
 import { SnippetService } from "../../../data/services/SnippetService.ts";
 import { Author } from "../../../data/types/message.ts";
 import { DataUtils } from "../../../data/utils/DataUtils.ts";
-import type { Tool } from "../../types/tool.ts";
+import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
-const input = z.object({
-	query: z.string(),
-});
-
-const output = z.array(
-	z.object({
-		id: z.cuid2(),
-		chat_id: z.cuid2(),
-		chat_title: z.string().nullable(),
-		author: z.enum(Author),
-		snippet: z.string(),
-		created_at: z.date(),
-	}),
-);
-
-export const search_chats: Tool<
-	typeof input,
-	void,
-	typeof output,
-	{ userContext: UserContextCapability }
-> = {
+export const search_chats = {
 	name: "search_chats",
 	description: "Search all known chats for a given query.",
+	input: z.object({
+		query: z.string(),
+	}),
+	output: z.array(
+		z.object({
+			id: z.cuid2(),
+			chat_id: z.cuid2(),
+			chat_title: z.string().nullable(),
+			author: z.enum(Author),
+			snippet: z.string(),
+			created_at: z.date(),
+		}),
+	),
+} as const satisfies ToolDefinition;
 
-	input,
-	output,
-
-	execute: async ({ input, capabilities }) => {
-		const messages = await capabilities.userContext.searchChats({
+export const createSearchChatsTool: ToolFactory<
+	Tool<typeof search_chats, { user: UserCapability }>
+> = (options) => ({
+	...search_chats,
+	...options,
+	execute: async ({ input }) => {
+		const messages = await options.capabilities.user.searchChats({
 			searchText: input.query,
 		});
 		return [
@@ -54,4 +50,4 @@ export const search_chats: Tool<
 			},
 		];
 	},
-};
+});

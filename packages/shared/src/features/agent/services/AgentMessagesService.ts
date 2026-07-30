@@ -17,7 +17,7 @@ export const AgentMessagesService = {
 		context: zAgentContext;
 		capabilities: Capabilities;
 	}) => {
-		const files = await capabilities.chatFilesystem?.getFiles?.();
+		const files = await capabilities.chatShell?.getFiles?.();
 		console.log(`[AgentMessagesService] files in chat:`, files);
 
 		const messages: zAgentMessage[] = [];
@@ -31,27 +31,7 @@ export const AgentMessagesService = {
 			const transformedParts: zDataPart[] = [];
 
 			for (const part of parts) {
-				if (part.type === "upload") {
-					if (!files)
-						throw new Error(
-							"failed to get files for upload part (was the chatFilesystem capability provided?)",
-						);
-					const uploadFiles = files.filter((file) => file.uploadId === part.id);
-					console.log(
-						`[AgentMessagesService] transforming upload '${part.name}' with ${uploadFiles.length ?? 0} file(s)`,
-					);
-					if (uploadFiles.length) {
-						const xml = AgentMessagesService.buildUploadBlock({
-							upload: part,
-							files: uploadFiles,
-						});
-						console.log("[AgentMessagesService] upload tree:", xml);
-						transformedParts.push({
-							type: "text",
-							value: xml,
-						});
-					}
-				} else if (part.type === "text") {
+				if (part.type === "text") {
 					const directives = DirectiveUtils.extractFromMarkdown(
 						part.value,
 						"command",
@@ -103,10 +83,10 @@ export const AgentMessagesService = {
 									path: directive.attributes.source,
 								});
 								const filesystem = chat
-									? capabilities.chatFilesystem
-									: capabilities.userFilesystem;
+									? capabilities.chatShell
+									: capabilities.shell;
 								if (directive.attributes.source?.startsWith("web:")) {
-									const web = await capabilities.webProvider?.view({
+									const web = await capabilities.web?.view({
 										url: directive.attributes.source.slice(4),
 									});
 									if (web) {
@@ -168,6 +148,28 @@ export const AgentMessagesService = {
 							transformedParts.push({ ...part, value: text });
 						}
 					}
+				} else if (part.type === "upload") {
+					if (!files)
+						throw new Error(
+							"failed to get files for upload part (was the chatShell capability provided?)",
+						);
+					const uploadFiles = files.filter((file) => file.uploadId === part.id);
+					console.log(
+						`[AgentMessagesService] transforming upload '${part.name}' with ${uploadFiles.length ?? 0} file(s)`,
+					);
+					if (uploadFiles.length) {
+						const xml = AgentMessagesService.buildUploadBlock({
+							upload: part,
+							files: uploadFiles,
+						});
+						console.log("[AgentMessagesService] upload tree:", xml);
+						transformedParts.push({
+							type: "text",
+							value: xml,
+						});
+					}
+				} else {
+					transformedParts.push(part);
 				}
 			}
 

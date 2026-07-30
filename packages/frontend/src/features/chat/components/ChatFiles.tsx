@@ -88,7 +88,7 @@ function buildTreeNodes(nodes: FileNode[]): TreeNodeData[] {
 		const treeNodes: TreeNodeData[] = [];
 		for (const [segment, child] of descendent.children) {
 			const value = prefix.length ? `${prefix}/${segment}` : segment;
-			if (child.node) {
+			if (child.node && !child.node.isDirectory) {
 				treeNodes.push({
 					label: segment,
 					value,

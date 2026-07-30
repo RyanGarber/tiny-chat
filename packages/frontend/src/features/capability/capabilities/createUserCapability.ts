@@ -1,13 +1,13 @@
 import type {
 	CapabilityFactory,
-	UserContextCapability,
+	UserCapability,
 } from "@tiny-chat/shared/src/features/capability/types/capability.ts";
 import type { MessageLike } from "@tiny-chat/shared/src/features/data/types/message.ts";
 import { trpc } from "#frontend/utils/api.ts";
 
-export const userContext: CapabilityFactory<
+export const createUserCapability: CapabilityFactory<
 	{ message: MessageLike },
-	UserContextCapability
+	UserCapability
 > = async ({ message }) => {
 	return {
 		getActions: async () => {

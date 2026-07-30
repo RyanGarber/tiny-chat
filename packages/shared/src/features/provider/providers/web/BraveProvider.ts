@@ -5,10 +5,10 @@ export const BraveProvider: WebProvider = {
 	name: "brave",
 	type: "web",
 	settings: ["apiKey"],
-	features: ["search"],
 
 	async getStatus({ user }) {
-		if (!user?.settings?.providers?.brave?.apiKey) return { valid: false };
+		if (!user?.settings?.providers?.brave?.apiKey)
+			return { valid: false, features: [] };
 
 		try {
 			const response = await fetch(
@@ -24,14 +24,16 @@ export const BraveProvider: WebProvider = {
 			if (response.status === 422) {
 				return {
 					valid: false,
+					features: [],
 					error: `${response.status} ${response.statusText}`,
 				};
 			}
 
-			return { valid: true };
+			return { valid: true, features: ["search"] };
 		} catch (error) {
 			return {
 				valid: false,
+				features: [],
 				error: CommonUtils.getErrorFormatted({ error }),
 			};
 		}
@@ -68,6 +70,6 @@ export const BraveProvider: WebProvider = {
 	},
 
 	async view() {
-		throw new Error("Unsupported");
+		throw new Error("not supported");
 	},
 };

@@ -23,7 +23,7 @@ export const GitHubService = {
 	 * Get an up-to-date access token for a user's GitHub.
 	 */
 	getToken: async ({ user }: { user: zUser }) => {
-		const result = await AuthService.auth.api.getAccessToken({
+		const result = await AuthService.api.getAccessToken({
 			body: {
 				providerId: "github",
 				userId: user.id,

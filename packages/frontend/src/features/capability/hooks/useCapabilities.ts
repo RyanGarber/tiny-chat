@@ -12,7 +12,13 @@ export const useCapabilities = () => {
 	const createIncognito = useChatStore((s) => s.createIncognito);
 
 	const presumedCapabilities = useQuery({
-		queryKey: ["capabilities", session.data?.user.id, isTauriDesktop.data],
+		queryKey: [
+			"capabilities",
+			session.data?.user.id,
+			isTauriDesktop.data,
+			providers.data,
+			createIncognito,
+		],
 		queryFn: async () => {
 			if (!session.data) return {};
 			return FrontendCapabilityService.getPresumedCapabilities({

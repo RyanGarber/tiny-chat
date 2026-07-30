@@ -1,10 +1,17 @@
 import type { Capabilities } from "@tiny-chat/shared/src/features/capability/types/capability.ts";
 import type { ChatLike } from "@tiny-chat/shared/src/features/data/types/chat.ts";
 import type { zUser } from "@tiny-chat/shared/src/features/data/types/user.ts";
+import { WebProviderService } from "@tiny-chat/shared/src/features/provider/services/WebProviderService.ts";
+import type {
+	ProviderState,
+	ProviderStatus,
+} from "@tiny-chat/shared/src/features/provider/types/provider.ts";
+import type { zWebFeature } from "@tiny-chat/shared/src/features/provider/types/web.ts";
 import { CacheService } from "../../user/services/CacheService.ts";
-import { chatFilesystem } from "../capabilities/chatFilesystem.ts";
-import { userContext } from "../capabilities/userContext.ts";
-import { webProvider } from "../capabilities/webProvider.ts";
+import { createEmbeddingCapability } from "../capabilities/createEmbeddingCapability.ts";
+import { createShellCapability } from "../capabilities/createShellCapability.ts";
+import { createUserCapability } from "../capabilities/createUserCapability.ts";
+import { createWebCapability } from "../capabilities/createWebCapability.ts";
 
 export const BackendCapabilityService = {
 	getCapabilities: async ({
@@ -12,35 +19,51 @@ export const BackendCapabilityService = {
 		chat,
 		message,
 		incognito,
+		providers,
 	}: {
 		user: zUser;
 		chat: ChatLike | null | undefined;
 		message: ChatLike | null | undefined;
 		incognito: boolean | undefined;
+		providers?: ProviderState<ProviderStatus>[];
 	}): Promise<Capabilities> => {
 		const capabilities: Capabilities = {};
 
 		if (message && !incognito) {
-			capabilities.userContext = await userContext({
+			capabilities.user = await createUserCapability({
 				user,
 				message,
 			});
 		}
 
 		if (chat) {
-			capabilities.chatFilesystem = await chatFilesystem({
+			capabilities.chatShell = await createShellCapability({
 				user,
 				chat,
 			});
 		}
 
-		const { providers } = await CacheService.getCache({ user });
-		if (
-			providers?.some(
-				(provider) => provider.type === "web" && provider.status.valid,
-			)
-		) {
-			capabilities.webProvider = await webProvider({ user });
+		providers ??= (await CacheService.getCache({ user })).providers;
+		const embeddingConfig = user.settings.embeddingConfig;
+		const embed = providers.some(
+			(provider) =>
+				provider.name === embeddingConfig?.provider && provider.status.valid,
+		);
+
+		if (embed) {
+			capabilities.embedding = await createEmbeddingCapability({ user });
+		}
+
+		const web = (["search", "view"] satisfies zWebFeature[]).some((feature) =>
+			WebProviderService.getBestProvider({
+				user,
+				providers,
+				feature,
+			}),
+		);
+
+		if (web) {
+			capabilities.web = await createWebCapability({ user });
 		}
 
 		return capabilities;

@@ -1,10 +1,10 @@
-import type { ToolsetFactory } from "../types/tool.ts";
-import { ask_question } from "./questions/ask_question.ts";
+import type { Toolset, ToolsetFactory } from "../types/tool.ts";
+import { createAskQuestionTool } from "./questions/ask_question.ts";
 
-export const createQuestionsToolset: ToolsetFactory<void> = (options) => {
-	return {
-		name: "questions",
-		tools: [ask_question],
-		...options,
-	};
-};
+export const createQuestionsToolset: ToolsetFactory<Toolset<void>> = async (
+	options,
+) => ({
+	name: "questions",
+	tools: [await createAskQuestionTool(options)],
+	...options,
+});

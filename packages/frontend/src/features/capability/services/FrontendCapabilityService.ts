@@ -2,14 +2,17 @@ import type { Capabilities } from "@tiny-chat/shared/src/features/capability/typ
 import type { ChatLike } from "@tiny-chat/shared/src/features/data/types/chat.ts";
 import type { MessageLike } from "@tiny-chat/shared/src/features/data/types/message.ts";
 import type { zUser } from "@tiny-chat/shared/src/features/data/types/user.ts";
+import { WebProviderService } from "@tiny-chat/shared/src/features/provider/services/WebProviderService.ts";
 import type {
 	ProviderState,
 	ProviderStatus,
 } from "@tiny-chat/shared/src/features/provider/types/provider.ts";
-import { chatFilesystem } from "#frontend/features/capability/capabilities/chatFilesystem.ts";
-import { userContext } from "#frontend/features/capability/capabilities/userContext.ts";
-import { userFilesystem } from "#frontend/features/capability/capabilities/userFilesystem.ts";
-import { webProvider } from "#frontend/features/capability/capabilities/webProvider.ts";
+import type { zWebFeature } from "@tiny-chat/shared/src/features/provider/types/web.ts";
+import { createChatShellCapability } from "#frontend/features/capability/capabilities/createChatShellCapability.ts";
+import { createEmbeddingCapability } from "#frontend/features/capability/capabilities/createEmbeddingCapability.ts";
+import { createShellCapability } from "#frontend/features/capability/capabilities/createShellCapability.ts";
+import { createUserCapability } from "#frontend/features/capability/capabilities/createUserCapability.ts";
+import { createWebCapability } from "#frontend/features/capability/capabilities/createWebCapability.ts";
 import { ProviderService } from "#frontend/features/config/services/ProviderService.ts";
 
 export const FrontendCapabilityService = {
@@ -31,24 +34,41 @@ export const FrontendCapabilityService = {
 		const capabilities: Capabilities = {};
 
 		if (message && !incognito) {
-			capabilities.userContext = await userContext({ message });
+			capabilities.user = await createUserCapability({ message });
 		}
 
 		if (chat) {
-			capabilities.chatFilesystem = await chatFilesystem({ chat });
+			capabilities.chatShell = await createChatShellCapability({
+				chat,
+			});
 		}
 
 		if (desktop) {
-			capabilities.userFilesystem = await userFilesystem();
+			capabilities.shell = await createShellCapability();
 		}
 
 		providers ??= await ProviderService.getProviderStateCache(user);
-		if (
-			providers?.some(
-				(provider) => provider.type === "web" && provider.status.valid,
-			)
-		) {
-			capabilities.webProvider = await webProvider();
+
+		const embeddingConfig = user.settings.embeddingConfig;
+		const embed = providers.some(
+			(provider) =>
+				provider.name === embeddingConfig?.provider && provider.status.valid,
+		);
+
+		const web = (["search", "view"] satisfies zWebFeature[]).some(
+			(feature) =>
+				!!WebProviderService.getBestProvider({
+					user,
+					providers,
+					feature,
+				}),
+		);
+		if (web) {
+			capabilities.web = await createWebCapability();
+		}
+
+		if (embed) {
+			capabilities.embedding = await createEmbeddingCapability({ user });
 		}
 
 		return capabilities;

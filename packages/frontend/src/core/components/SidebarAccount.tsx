@@ -12,14 +12,9 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import { type JSX, useEffect, useState } from "react";
 import { useLayoutStore } from "#frontend/core/stores/useLayoutStore.tsx";
+import { CommonUtils } from "#frontend/core/utils/CommonUtils.ts";
 import { useAccounts } from "#frontend/features/settings/hooks/useAccounts.ts";
-import {
-	auth,
-	isTauri,
-	openExternal,
-	trpc,
-	webUrl,
-} from "#frontend/utils/api.ts";
+import { auth, isTauri, openExternal, trpc } from "#frontend/utils/api.ts";
 import { GLASS_STYLE } from "#frontend/utils/style.ts";
 
 export default function SidebarAccount({
@@ -85,8 +80,11 @@ export default function SidebarAccount({
 		if (!isCloning) {
 			setCloning(true);
 			const id = await trpc.user.createClone.mutate(); // TODO - use query
-			if (open) void openExternal(`${webUrl}/#?clone=${id}`);
-			else void navigator.clipboard.writeText(`${webUrl}/#?clone=${id}`);
+			if (open) void openExternal(`${CommonUtils.webUrl}/#?clone=${id}`);
+			else
+				void navigator.clipboard.writeText(
+					`${CommonUtils.webUrl}/#?clone=${id}`,
+				);
 			setCloneInterval(
 				setInterval(() => {
 					void (async () => {
@@ -134,7 +132,7 @@ export default function SidebarAccount({
 										}
 										void clone(true);
 									} else {
-										void openExternal(`${webUrl}`);
+										void openExternal(`${CommonUtils.webUrl}`);
 									}
 								}}
 							>
@@ -155,7 +153,7 @@ export default function SidebarAccount({
 											}
 											void clone(false);
 										} else {
-											void openExternal(`${webUrl}`);
+											void openExternal(CommonUtils.webUrl);
 										}
 									}}
 								>

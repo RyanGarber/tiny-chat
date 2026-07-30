@@ -3,7 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import type { zToolData } from "@tiny-chat/shared/src/features/data/types/message.ts";
 import type { zMCPServers } from "@tiny-chat/shared/src/features/data/types/user.ts";
 import { ToolService } from "@tiny-chat/shared/src/features/tool/services/ToolService.ts";
-import type { Toolset } from "@tiny-chat/shared/src/features/tool/types/tool.ts";
+import type {
+	Tool,
+	Toolset,
+} from "@tiny-chat/shared/src/features/tool/types/tool.ts";
 import { useMemo } from "react";
 import { useCapabilities } from "#frontend/features/capability/hooks/useCapabilities.ts";
 import { useChat } from "#frontend/features/chat/hooks/useChat.ts";
@@ -22,19 +25,15 @@ export const mcpToolsQueryKey = ["mcp-servers"] as const;
 export const useTools = () => {
 	const { mcpServerSettings } = useMcpServerSettings();
 	const { data: mcpServerSettingsData } = mcpServerSettings;
-	const { presumedCapabilities: _presumedCapabilities } = useCapabilities();
+	const { presumedCapabilities } = useCapabilities();
 	const { chat } = useChat();
 	const createIncognito = useChatStore((s) => s.createIncognito);
 
-	const presumedCapabilities = useMemo(() => {
-		return _presumedCapabilities.data ?? {};
-	}, [_presumedCapabilities.data]);
-
 	const nativeTools = useQuery({
-		queryKey: [...builtInToolsQueryKey, presumedCapabilities],
+		queryKey: [...builtInToolsQueryKey, presumedCapabilities.data],
 		queryFn: async () => {
 			return await ToolService.getTools({
-				capabilities: presumedCapabilities,
+				capabilities: presumedCapabilities.data ?? {},
 				incognito: chat.data?.incognito ?? createIncognito,
 			});
 		},
@@ -53,31 +52,36 @@ export const useTools = () => {
 						name: name.replace("-", "_").toLowerCase(),
 						prefix: name.replace("-", "_").toLowerCase(),
 						instructions: client.getInstructions(),
-
-						tools: tools.map((t) => ({
-							name: t.name,
-							description: t.description ?? "",
-
-							input: t.inputSchema,
-							output: t.outputSchema,
-
-							execute: async ({ input, ...rest }): Promise<zToolData> => {
-								console.log("[useTools] calling mcp tool:", { input, ...rest });
-								const { isError, content } = await client.callTool({
-									name: t.name,
-									arguments: input,
-								});
-								console.log("[useTools] mcp response:", { isError, content });
-								if (isError) throw new Error(JSON.stringify(content));
-								return [{ type: "json", value: content }];
-							},
-						})),
 						capabilities: void 0,
 						status: {
 							valid: !error,
 							error,
 						},
+						tools: tools.map(
+							(t): Tool<any, void> => ({
+								name: t.name,
+								description: t.description ?? "",
 
+								input: t.inputSchema,
+								output: t.outputSchema,
+
+								execute: async ({ input, ...rest }): Promise<zToolData> => {
+									console.log("[useTools] calling mcp tool:", {
+										input,
+										...rest,
+									});
+									const { isError, content } = await client.callTool({
+										name: t.name,
+										arguments: input,
+									});
+									console.log("[useTools] mcp response:", { isError, content });
+									if (isError) throw new Error(JSON.stringify(content));
+									return [{ type: "json", value: content }];
+								},
+
+								capabilities: void 0,
+							}),
+						),
 						server,
 						client,
 					}),

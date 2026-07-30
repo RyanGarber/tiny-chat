@@ -23,12 +23,13 @@ import { useCallback, useRef, useState } from "react";
 import SidebarAccount from "#frontend/core/components/SidebarAccount.tsx";
 import SidebarSettings from "#frontend/core/components/SidebarSettings.tsx";
 import { useLayoutStore } from "#frontend/core/stores/useLayoutStore.tsx";
+import { CommonUtils } from "#frontend/core/utils/CommonUtils.ts";
 import { useChat } from "#frontend/features/chat/hooks/useChat.ts";
 import { ChatService } from "#frontend/features/chat/services/ChatService.ts";
 import { useChatStore } from "#frontend/features/chat/stores/useChatStore.ts";
 import { ProviderService } from "#frontend/features/config/services/ProviderService.ts";
 import { useRetrieval } from "#frontend/features/settings/hooks/useRetrieval.ts";
-import { auth, env, query } from "#frontend/utils/api.ts";
+import { auth, query } from "#frontend/utils/api.ts";
 import { GLASS_STYLE } from "#frontend/utils/style.ts";
 import { version } from "../../../../../apps/tauri/tauri.conf.json";
 import SidebarChatList from "./SidebarChatList.tsx";
@@ -85,7 +86,7 @@ export default function Sidebar() {
 					provider,
 					values: [debouncedQuery],
 					config: embeddingConfig.data,
-					env,
+					env: CommonUtils.env,
 				});
 				embeddingCache.current.set(debouncedQuery, embedding[0]);
 			}

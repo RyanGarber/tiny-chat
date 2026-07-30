@@ -4,7 +4,7 @@ import type { Capabilities } from "../../capability/types/capability.ts";
 import { type zConfig, zData } from "../../data/types/message.ts";
 import { DataUtils } from "../../data/utils/DataUtils.ts";
 import type { zSkill } from "../../skill/types/skill.ts";
-import type { zToolset } from "../../tool/types/tool.ts";
+import type { Toolset } from "../../tool/types/tool.ts";
 import type { zAgentContext } from "../types/agent.ts";
 import { AgentUtils } from "../utils/AgentUtils.ts";
 
@@ -19,7 +19,7 @@ export const AgentInstructionsService = {
 		context: zAgentContext;
 		config: zConfig;
 		capabilities: Capabilities;
-		enabledToolsets: zToolset[];
+		enabledToolsets: Toolset<any>[];
 		enabledSkills: zSkill[];
 	}) => {
 		const { prompt } = AgentUtils.getLastPrompt(context);
@@ -28,7 +28,7 @@ export const AgentInstructionsService = {
 			? await capabilities.embedding?.getEmbedding({
 					message: { id: prompt.id },
 				})
-			: await capabilities.embedding?.embed({ text: promptText });
+			: await capabilities.embedding?.runEmbedding({ text: promptText });
 
 		console.log(
 			`[InstructionsService] prompt [${prompt.id}]: '${promptText.slice(0, 100)}...' (embedding: ${!!promptEmbedding?.length})`,
@@ -36,14 +36,14 @@ export const AgentInstructionsService = {
 
 		// TODO WIP - remove capability when incognito or keep direct incognito check?
 		const memories = !context.chat?.incognito
-			? await capabilities.userContext?.searchMemories({
+			? await capabilities.user?.searchMemories({
 					searchText: promptText,
-					searchEmbedding: promptEmbedding,
+					searchEmbedding: promptEmbedding ?? undefined,
 				})
 			: undefined;
 
 		const actions = !context.chat?.incognito
-			? await capabilities.userContext?.getActions()
+			? await capabilities.user?.getActions()
 			: undefined;
 
 		const userInstructions = !context.chat?.incognito

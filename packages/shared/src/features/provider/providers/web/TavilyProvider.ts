@@ -5,10 +5,10 @@ export const TavilyProvider: WebProvider = {
 	name: "tavily",
 	type: "web",
 	settings: ["apiKey"],
-	features: ["search", "view"],
 
 	async getStatus({ user }) {
-		if (!user?.settings?.providers?.tavily?.apiKey) return { valid: false };
+		if (!user?.settings?.providers?.tavily?.apiKey)
+			return { valid: false, features: [] };
 
 		try {
 			const usage = await fetch(`https://api.tavily.com/usage`, {
@@ -18,12 +18,20 @@ export const TavilyProvider: WebProvider = {
 			});
 
 			if (!usage.ok) {
-				return { valid: false, error: `${usage.status} ${usage.statusText}` };
+				return {
+					valid: false,
+					features: [],
+					error: `${usage.status} ${usage.statusText}`,
+				};
 			}
 
-			return { valid: true };
+			return { valid: true, features: ["search", "view"] };
 		} catch (error) {
-			return { valid: false, error: CommonUtils.getErrorFormatted({ error }) };
+			return {
+				valid: false,
+				features: [],
+				error: CommonUtils.getErrorFormatted({ error }),
+			};
 		}
 	},
 

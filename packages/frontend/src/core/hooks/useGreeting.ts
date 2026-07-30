@@ -1,3 +1,4 @@
+import { GreetingUtils } from "@tiny-chat/shared/src/features/ui/utils/GreetingUtils.ts";
 import { useMemo } from "react";
 import { useChatStore } from "#frontend/features/chat/stores/useChatStore.ts";
 import { auth } from "#frontend/utils/api.ts";
@@ -11,38 +12,5 @@ export function useGreeting() {
 			? session.data.user?.name.split(" ")[0]
 			: undefined;
 
-	const time = getTime();
-
-	return useMemo(() => {
-		const greetings: string[] = [];
-
-		const add = (withName: string, withoutName: string) => {
-			if (name) greetings.push(withName.replace("@", name));
-			else greetings.push(withoutName);
-		};
-
-		if (time === "morning" || time === "afternoon") {
-			add("@ returns", "Hi there");
-			add("Let's get to it, @", "Let's get to it");
-			add("What's the plan, @", "What's the plan?");
-		} else if (time === "evening") {
-			add("@'s still at it", "Still at it");
-			add("@ working late?", "Working late?");
-			add("What's next for @?", "What's next?");
-		} else if (time === "overnight") {
-			add("@ the night owl", "Hi night owl");
-			add("No sleep for @", "No sleep for you");
-			add("@ gets it done", "You get it done");
-		}
-
-		return greetings[Date.now() % greetings.length].replace("@", name ?? "");
-	}, [name, time]);
-}
-
-function getTime(): "morning" | "afternoon" | "evening" | "overnight" {
-	const time = new Date().getHours();
-	if (time >= 6 && time < 12) return "morning";
-	if (time >= 12 && time < 18) return "afternoon";
-	if (time >= 18 && time < 22) return "evening";
-	return "overnight";
+	return useMemo(() => GreetingUtils.get({ name }), [name]);
 }

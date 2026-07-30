@@ -1,13 +1,13 @@
 import type {
 	CapabilityFactory,
-	WebProviderCapability,
+	WebCapability,
 } from "@tiny-chat/shared/src/features/capability/types/capability.ts";
 import type { zUser } from "@tiny-chat/shared/src/features/data/types/user.ts";
 import { WebService } from "../../proxy/services/WebService.ts";
 
-export const webProvider: CapabilityFactory<
+export const createWebCapability: CapabilityFactory<
 	{ user: zUser },
-	WebProviderCapability
+	WebCapability
 > = async ({ user }) => {
 	return {
 		search: async ({ query }) => {

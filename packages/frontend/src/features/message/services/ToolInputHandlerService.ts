@@ -4,7 +4,8 @@ import type {
 	zDataPart,
 } from "@tiny-chat/shared/src/features/data/types/message.ts";
 import type { zUser } from "@tiny-chat/shared/src/features/data/types/user.ts";
-import type { Tool } from "@tiny-chat/shared/src/features/tool/types/tool.ts";
+import { ToolService } from "@tiny-chat/shared/src/features/tool/services/ToolService.ts";
+import { ToolUtils } from "@tiny-chat/shared/src/features/tool/utils/ToolUtils.ts";
 import { FrontendCapabilityService } from "#frontend/features/capability/services/FrontendCapabilityService.ts";
 import { isTauriDesktop } from "#frontend/utils/api.ts";
 
@@ -12,7 +13,6 @@ export const ToolInputHandlerService = {
 	handle: async ({
 		user,
 		chat,
-		tool,
 		part,
 		value,
 		message,
@@ -20,7 +20,6 @@ export const ToolInputHandlerService = {
 	}: {
 		user: zUser;
 		chat: ChatState;
-		tool: Tool<any, any, any, any>;
 		part: Extract<zDataPart, { type: "toolCall" }>;
 		value: unknown;
 		message: MessageState;
@@ -33,17 +32,24 @@ export const ToolInputHandlerService = {
 			desktop: await isTauriDesktop(),
 			incognito: chat.incognito,
 		});
+
+		const toolsets = await ToolService.getTools({
+			capabilities,
+			incognito: chat.incognito,
+		});
+
+		const { tool } = ToolUtils.find({ toolsets, name: part.name });
+		if (!tool) throw new Error("missing tool");
+
 		return await tool.execute({
 			input: part.args,
 			feedback: value,
 			context: {
 				user,
 				chat,
-				messages: messages,
+				messages,
 				timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-				supportsUserInput: true,
 			},
-			capabilities,
 		});
 	},
 } as const;

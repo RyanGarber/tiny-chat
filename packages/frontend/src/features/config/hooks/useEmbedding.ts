@@ -1,9 +1,10 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ModelProviderService } from "@tiny-chat/shared/src/features/provider/services/ModelProviderService.ts";
 import { useEffect, useRef } from "react";
+import { CommonUtils } from "#frontend/core/utils/CommonUtils.ts";
 import { ProviderService } from "#frontend/features/config/services/ProviderService.ts";
 import { useRetrieval } from "#frontend/features/settings/hooks/useRetrieval.ts";
-import { auth, backendUrl, queryClient, trpc } from "#frontend/utils/api.ts";
+import { auth, queryClient, trpc } from "#frontend/utils/api.ts";
 
 const nextEmbeddingBatchQueryKey = ["embedding", "next"] as const;
 export const runEmbeddingBatchMutationKey = ["embedding", "run"] as const;
@@ -83,10 +84,7 @@ export const useEmbedding = () => {
 				provider: modelProvider,
 				values: input.map((item) => item.text),
 				config: embeddingConfig.data,
-				env: {
-					...import.meta.env,
-					VITE_BACKEND_URL: backendUrl,
-				},
+				env: CommonUtils.env,
 			});
 			console.log("[useEmbedding] saving embeddings:", result);
 

@@ -90,10 +90,7 @@ export function testAuth(
 				token: () => token ?? undefined,
 			},
 		},
-		plugins: [
-			anonymousClient(),
-			inferAdditionalFields<typeof AuthService.auth>(),
-		],
+		plugins: [anonymousClient(), inferAdditionalFields<typeof AuthService>()],
 	});
 }
 

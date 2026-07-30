@@ -1,5 +1,6 @@
 import { Anchor, Pill, Stack, Text, Tooltip } from "@mantine/core";
 import { DataUtils } from "@tiny-chat/shared/src/features/data/utils/DataUtils.ts";
+import { PathUtils } from "@tiny-chat/shared/src/features/file/utils/PathUtils.ts";
 import * as fuzzysort from "fuzzysort";
 import { type CSSProperties, useContext } from "react";
 import type { Components } from "streamdown";
@@ -12,6 +13,7 @@ import {
 import { openExternal } from "#frontend/utils/api.ts";
 import { MarkdownContext } from "#frontend/utils/data.ts";
 import { GLASS_STYLE, SHADOW } from "#frontend/utils/style.ts";
+import { trim } from "#frontend/utils/trim.ts";
 import { zData } from "#shared/features/data/types/message";
 
 const TOOLTIP_PROPS = {
@@ -33,7 +35,7 @@ const PILL_BASE: CSSProperties = {
 };
 
 export const CiteComponent: Components["cite"] = ({ children, node }) => {
-	const { webReferences, memoryReferences, actionReferences } =
+	const { webReferences, memoryReferences, actionReferences, fileReferences } =
 		useContext(MarkdownContext);
 	const sources = ((node?.properties.sources ?? "") as string)
 		.replace("user-content-", "")
@@ -41,7 +43,7 @@ export const CiteComponent: Components["cite"] = ({ children, node }) => {
 
 	return (
 		<span>
-			{children}
+			{trim(children)}
 			{sources.map((id) => {
 				const memory = memoryReferences.find((memory) => {
 					const score = fuzzysort.single(id, memory.id)?.score;
@@ -106,14 +108,7 @@ export const CiteComponent: Components["cite"] = ({ children, node }) => {
 					return score && score > 0.9;
 				});
 				if (web) {
-					let title = web.title;
-					if (!title) {
-						try {
-							title = new URL(web.url).hostname;
-						} catch {
-							title = web.url;
-						}
-					}
+					const title = web.title ?? PathUtils.name({ path: web.url });
 					return (
 						<Tooltip
 							key={id}
@@ -147,6 +142,40 @@ export const CiteComponent: Components["cite"] = ({ children, node }) => {
 								}}
 							>
 								🔗
+							</Pill>
+						</Tooltip>
+					);
+				}
+
+				const file = fileReferences.find((file) => {
+					const score = fuzzysort.single(file.uri, id)?.score;
+					return score && score > 0.9;
+				});
+				if (file) {
+					return (
+						<Tooltip
+							key={id}
+							{...TOOLTIP_PROPS}
+							label={
+								<Stack gap="xs" maw={300}>
+									<Text size="sm" fw={500} lineClamp={2}>
+										{PathUtils.name(file.uri)}
+									</Text>
+									<Text size="xs" c="dimmed">
+										{file.uri}
+									</Text>
+								</Stack>
+							}
+						>
+							<Pill
+								size="xs"
+								style={{ ...PILL_BASE, cursor: "pointer" }}
+								onClick={(e) => {
+									e.preventDefault();
+									// TODO WIP - open file preview
+								}}
+							>
+								📎
 							</Pill>
 						</Tooltip>
 					);

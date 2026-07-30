@@ -1,12 +1,12 @@
 import type {
 	CapabilityFactory,
-	WebProviderCapability,
+	WebCapability,
 } from "@tiny-chat/shared/src/features/capability/types/capability.ts";
 import { trpc } from "#frontend/utils/api.ts";
 
-export const webProvider: CapabilityFactory<
+export const createWebCapability: CapabilityFactory<
 	void,
-	WebProviderCapability
+	WebCapability
 > = async () => {
 	return {
 		search: async ({ query, maxResults }) => {

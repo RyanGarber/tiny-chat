@@ -12,9 +12,12 @@ export type zWebContext = z.infer<typeof zWebContext>;
 export const zWebFeature = z.enum(["search", "view"]);
 export type zWebFeature = z.infer<typeof zWebFeature>;
 
-export interface WebProvider extends Provider<ProviderStatus> {
-	type: "web";
+export interface WebProviderStatus extends ProviderStatus {
 	features: zWebFeature[];
+}
+
+export interface WebProvider extends Provider<WebProviderStatus> {
+	type: "web";
 
 	search: (_: {
 		user: zUser;

@@ -32,14 +32,14 @@ const markdownComponents: Components = {
 	blockquote: BlockquoteComponent,
 	a: AComponent,
 	link: LinkComponent,
-	cite: CiteComponent,
+	mark: CiteComponent,
 	slot: SlotComponent,
 };
 
 // reference tag passes id + animate index through sanitizer; all others blocked by default
 const CUSTOM_TAGS: Partial<Record<keyof IntrinsicElements, string[]>> = {
 	blockquote: ["model"],
-	cite: ["sources"],
+	mark: ["sources"],
 	link: ["source", "is-directory"],
 	slot: ["name", "value", "accepts-content", "needs-run"],
 };
@@ -95,6 +95,7 @@ export const Markdown = memo(
 			webReferences: [],
 			memoryReferences: [],
 			actionReferences: [],
+			fileReferences: [],
 			isGenerating: false,
 		},
 	}: {
@@ -121,6 +122,11 @@ export const Markdown = memo(
 			[codeTheme.data],
 		);
 
+		// TODO WIP - replace this
+		const content = useMemo(() => {
+			return source.replace(/<cite([/ ])/g, "<mark$1");
+		}, [source]);
+
 		return (
 			<MarkdownContext.Provider value={context}>
 				<Box {...props}>
@@ -138,17 +144,11 @@ export const Markdown = memo(
 						}}
 						className="selectable"
 					>
-						{source}
+						{content}
 					</Streamdown>
 				</Box>
 			</MarkdownContext.Provider>
 		);
 	},
-	(prev, next) =>
-		prev.source === next.source &&
-		prev.boxProps === next.boxProps &&
-		prev.context?.isGenerating === next.context?.isGenerating &&
-		prev.context?.webReferences === next.context?.webReferences &&
-		prev.context?.memoryReferences === next.context?.memoryReferences &&
-		prev.context?.actionReferences === next.context?.actionReferences,
+	(previous, next) => previous.source === next.source,
 );

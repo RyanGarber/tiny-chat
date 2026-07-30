@@ -9,7 +9,7 @@ export const DEFAULT_TOOLSETS = [
 	"actions",
 	"memories",
 	"web",
-	"chat_system",
+	"chat_shell",
 ];
 
 export const DEFAULT_SKILLS: string[] = [];

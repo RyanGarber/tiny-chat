@@ -21,7 +21,6 @@ export function testGenerationContext(
 		},
 		messages: overrides.messages ?? [],
 		timezone: "America/New_York",
-		supportsUserInput: false,
 		...overrides,
 	};
 }

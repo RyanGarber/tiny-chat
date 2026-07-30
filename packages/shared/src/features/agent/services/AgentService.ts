@@ -97,7 +97,7 @@ export const AgentService = {
 					env,
 					options: {
 						...options,
-						system: context.overrideInstructions ?? instructions,
+						system: instructions,
 					},
 				});
 
@@ -210,7 +210,6 @@ export const AgentService = {
 						input: toolCall.args,
 						feedback: undefined,
 						context,
-						capabilities,
 					});
 					console.log(
 						`[AgentService] tool ${toolCall.name} finished with result:`,

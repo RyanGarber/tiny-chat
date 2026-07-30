@@ -3,8 +3,8 @@ import "./env.ts";
 import { createServer } from "node:http";
 import { initLogs } from "@tiny-chat/shared/src/logs.ts";
 import { internalIpV4 } from "internal-ip";
-import { AuthService } from "./core/services/AuthService.ts";
 import { tRPCService } from "./core/services/tRPCService.ts";
+import { AuthUtils } from "./core/utils/AuthUtils.ts";
 import { AntigravityService } from "./features/proxy/services/AntigravityService.ts";
 import { McpService } from "./features/proxy/services/McpService.ts";
 import { WorkerService } from "./features/worker/services/WorkerService.ts";
@@ -37,7 +37,7 @@ const server = createServer((req, res) => {
 	} else if (
 		req.url?.startsWith(process.env.VITE_BACKEND_PATH_AUTH as string)
 	) {
-		void AuthService.handle(req, res);
+		void AuthUtils.handle(req, res);
 	} else if (req.url?.startsWith("/@/antigravity")) {
 		void AntigravityService.handle(req, res);
 	} else if (req.url?.startsWith("/@/mcp")) {

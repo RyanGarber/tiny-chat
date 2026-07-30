@@ -1,6 +1,6 @@
 import type { Capabilities } from "../../capability/types/capability.ts";
 import { createActionsToolset } from "../tools/actions.ts";
-import { createFilesystemToolset } from "../tools/filesystem.ts";
+import { createShellToolset } from "../tools/filesystem.ts";
 import { createMemoriesToolset } from "../tools/memories.ts";
 import { createQuestionsToolset } from "../tools/questions.ts";
 import { createWebToolset } from "../tools/web.ts";
@@ -14,54 +14,53 @@ export const ToolService = {
 		capabilities: Capabilities;
 		incognito: boolean;
 	}): Promise<Toolset<any>[]> => {
-		if (incognito) capabilities.userContext = undefined;
+		if (incognito) capabilities.user = undefined;
 
 		return await Promise.all([
 			await createActionsToolset({
 				instructions:
 					"Actions are recurring prompts, good for reminders and regular updates on topics. When a topic would benefit from such updates, ask the user if they'd like an action.",
 				capabilities: {
-					userContext: capabilities.userContext ?? (void 0 as never),
+					user: capabilities.user ?? (void 0 as never),
 				},
-				status: { valid: !!capabilities.userContext },
+				status: { valid: !!capabilities.user },
 			}),
 
 			await createMemoriesToolset({
 				instructions:
 					"You're in charge of storing memories. The system will curate and surface relevant facts for you, so do not hesitate to store any potentially useful fact you encounter.",
 				capabilities: {
-					userContext: capabilities.userContext ?? (void 0 as never),
+					user: capabilities.user ?? (void 0 as never),
 				},
-				status: { valid: !!capabilities.userContext },
+				status: { valid: !!capabilities.user },
 			}),
 
 			await createWebToolset({
 				instructions:
 					"You have full access to the web. While you should rely training knowledge for basic, historical, and static facts, always search when a topic could benefit from a more well-rounded or up-to-date answer.",
 				capabilities: {
-					webProvider: capabilities.webProvider ?? (void 0 as never),
+					provider: capabilities.web ?? (void 0 as never),
 				},
-				status: { valid: !!capabilities.webProvider },
+				status: { valid: !!capabilities.web },
 			}),
 
-			await createFilesystemToolset({
+			await createShellToolset({
 				prefix: "chat",
 				instructions:
-					"You have access to a full virtual filesystem and shell scoped to this chat. Use this as a scratch pad, or to provide files to the user.",
+					"You have access to a virtual chat filesystem and shell. Use this to read uploads, as a scratch pad, or to provide files to the user.",
 				capabilities: {
-					filesystem: capabilities.chatFilesystem ?? (void 0 as never),
+					shell: capabilities.chatShell ?? (void 0 as never),
 				},
-				status: { valid: !!capabilities.chatFilesystem },
+				status: { valid: !!capabilities.chatShell },
 			}),
 
-			await createFilesystemToolset({
-				prefix: "user",
+			await createShellToolset({
 				instructions:
-					"You have access to the user's personal filesystem and shell. Use this whenever the user requests a task to be completed that requires it.",
+					"You have access to the user's filesystem and shell. Use this whenever the user requests a task to be completed that requires it.",
 				capabilities: {
-					filesystem: capabilities.userFilesystem ?? (void 0 as never),
+					shell: capabilities.shell ?? (void 0 as never),
 				},
-				status: { valid: !!capabilities.userFilesystem },
+				status: { valid: !!capabilities.shell },
 			}),
 
 			await createQuestionsToolset({

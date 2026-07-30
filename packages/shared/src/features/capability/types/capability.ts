@@ -13,19 +13,19 @@ import type {
 } from "../../data/types/message.ts";
 import type { zWebContext } from "../../provider/types/web.ts";
 
-export interface WebProviderCapability {
+export interface WebCapability {
 	search: (_: { query: string; maxResults?: number }) => Promise<zWebContext[]>;
 
 	view: (_: { url: string }) => Promise<zWebContext>;
 }
 
 export interface EmbeddingCapability {
-	embed: (_: { text: string }) => Promise<number[]>;
+	getEmbedding: (_: { message: MessageLike }) => Promise<number[] | null>;
 
-	getEmbedding: (_: { message: MessageLike }) => Promise<number[]>;
+	runEmbedding: (_: { text: string }) => Promise<number[]>;
 }
 
-export interface UserContextCapability {
+export interface UserCapability {
 	getActions: () => Promise<ActionState[]>;
 
 	createAction: (_: {
@@ -73,7 +73,7 @@ export interface UserContextCapability {
 	}) => Promise<MessageSearchResult[]>;
 }
 
-export interface FilesystemCapability {
+export interface ShellCapability {
 	getFiles?: () => Promise<FileNode[]>;
 
 	readFile: (_: {
@@ -101,11 +101,11 @@ export interface FilesystemCapability {
 }
 
 export interface Capabilities {
-	webProvider?: WebProviderCapability;
+	web?: WebCapability;
 	embedding?: EmbeddingCapability;
-	userContext?: UserContextCapability;
-	chatFilesystem?: FilesystemCapability;
-	userFilesystem?: FilesystemCapability;
+	user?: UserCapability;
+	chatShell?: ShellCapability;
+	shell?: ShellCapability;
 }
 
 export type CapabilityFactory<T, TCapability> = (

@@ -18,7 +18,7 @@ export class FilesystemService implements IFileSystem {
 	readonly uploads: string[];
 	readonly mount: string;
 
-	readonly nodes: FileNode[] = [];
+	protected nodes: FileNode[] = [];
 
 	constructor(
 		user: zUser,
@@ -30,6 +30,18 @@ export class FilesystemService implements IFileSystem {
 		this.chat = chat ?? null;
 		this.uploads = uploads;
 		this.mount = mount;
+	}
+
+	clone(mount?: string): FilesystemService {
+		const clone = new FilesystemService(
+			this.user,
+			this.chat,
+			[...this.uploads],
+			mount ?? this.mount,
+		);
+		clone.nodes = [...this.nodes];
+		clone.setMounts();
+		return clone;
 	}
 
 	async fetch(): Promise<void> {
@@ -60,7 +72,7 @@ export class FilesystemService implements IFileSystem {
             array_length(
               string_to_array(try_decode_utf8(f.data), E'\n'),
               1
-            ) - 1,
+            ),
             0
           ) AS lines,
           u.name AS upload_name
@@ -79,7 +91,7 @@ export class FilesystemService implements IFileSystem {
             array_length(
               string_to_array(try_decode_utf8(f.data), E'\n'),
               1
-            ) - 1,
+            ),
             0
           ) AS lines,
           u.name AS upload_name
@@ -108,7 +120,7 @@ export class FilesystemService implements IFileSystem {
   `;
 
 		this.nodes.push({
-			uri: this.mount,
+			uri: "",
 			path: [],
 			isDirectory: true,
 			chatFile: null,
@@ -118,13 +130,17 @@ export class FilesystemService implements IFileSystem {
 			createdAt: new Date(0),
 		});
 
+		console.log(rows);
+
 		for (const row of rows) {
+			console.log("creating", {
+				path: [
+					...(row.upload_id ? [row.upload_id] : []),
+					...(row.chat_file_path ?? row.upload_file_path ?? []),
+				],
+			});
 			this.nodes.push({
-				uri: PathUtils.toMount({
-					uploadId: row.upload_id,
-					path: row.chat_file_path ?? row.upload_file_path ?? [],
-					mount: this.mount,
-				}),
+				uri: "",
 				path: [
 					...(row.upload_id ? [row.upload_id] : []),
 					...(row.chat_file_path ?? row.upload_file_path ?? []),
@@ -146,6 +162,18 @@ export class FilesystemService implements IFileSystem {
 				uploadName: row.upload_name,
 				createdAt:
 					row.chat_file_created_at ?? row.upload_file_created_at ?? new Date(0),
+			});
+		}
+
+		this.setMounts();
+	}
+
+	setMounts() {
+		for (const node of this.nodes) {
+			node.uri = PathUtils.toMount({
+				uploadId: node.uploadId,
+				path: node.path,
+				mount: this.mount,
 			});
 		}
 	}
@@ -242,33 +270,39 @@ export class FilesystemService implements IFileSystem {
 		const { exact } = this.locate(uri.path);
 		const id = exact?.chatFile?.id ?? createId();
 
-		await globalThis.prisma.file.upsert({
-			where: {
-				id,
-			},
-			create: {
-				id,
-				user: { connect: { id: this.user.id } },
-				chat: { connect: { id: this.chat.id } },
-				...(uri.uploadId ? { upload: { connect: { id: uri.uploadId } } } : {}),
-				path: uri.path,
-				data: Buffer.from(data),
-				mime: await FileTypeUtils.getMime({
-					data,
-					path: uri.path,
-					fallback: "text/plain",
-				}),
-			},
-			update: {
-				data: Buffer.from(data),
-				mime: await FileTypeUtils.getMime({
-					data,
-					path: uri.path,
-					fallback: "text/plain",
-				}),
-				createdAt: new Date(),
-			},
-		});
+		console.log(
+			"INSERTED:",
+			await globalThis.prisma.file.upsert({
+				where: {
+					id,
+				},
+				create: {
+					id,
+					user: { connect: { id: this.user.id } },
+					chat: { connect: { id: this.chat.id } },
+					...(uri.uploadId
+						? { upload: { connect: { id: uri.uploadId } } }
+						: {}),
+					path: uri.uploadId ? uri.uploadPath : uri.path,
+					data: Buffer.from(data),
+					mime: await FileTypeUtils.getMime({
+						data,
+						path: uri.path,
+						fallback: "text/plain",
+					}),
+				},
+				update: {
+					path: uri.uploadId ? uri.uploadPath : uri.path,
+					data: Buffer.from(data),
+					mime: await FileTypeUtils.getMime({
+						data,
+						path: uri.path,
+						fallback: "text/plain",
+					}),
+					createdAt: new Date(),
+				},
+			}),
+		);
 
 		await this.fetch();
 	}
@@ -310,6 +344,7 @@ export class FilesystemService implements IFileSystem {
 				user: { connect: { id: this.user.id } },
 				chat: { connect: { id: this.chat.id } },
 				...(uri.uploadId ? { upload: { connect: { id: uri.uploadId } } } : {}),
+				path: uri.uploadId ? uri.uploadPath : uri.path,
 				data: appendedData,
 				mime: await FileTypeUtils.getMime({
 					data: appendedData,
@@ -318,6 +353,7 @@ export class FilesystemService implements IFileSystem {
 				}),
 			},
 			update: {
+				path: uri.uploadId ? uri.uploadPath : uri.path,
 				data: appendedData,
 				mime: await FileTypeUtils.getMime({
 					data: appendedData,
@@ -339,7 +375,7 @@ export class FilesystemService implements IFileSystem {
 
 		const { exact, hasDeeper } = this.locate(uri.path);
 		const result = !!exact || hasDeeper;
-		console.log(result);
+
 		return Promise.resolve(result);
 	}
 
@@ -355,7 +391,7 @@ export class FilesystemService implements IFileSystem {
 		// directory if other, deeper paths exist within it (or it's flagged as one).
 		if (exact && !exact.isDirectory) {
 			const file = await this.getFile(path);
-			const result = {
+			return {
 				isFile: true,
 				isDirectory: false,
 				isSymbolicLink: false,
@@ -363,8 +399,6 @@ export class FilesystemService implements IFileSystem {
 				size: file.data.byteLength,
 				mtime: file.createdAt,
 			};
-			console.log(result);
-			return result;
 		}
 
 		if (hasDeeper || exact?.isDirectory) {
@@ -374,7 +408,7 @@ export class FilesystemService implements IFileSystem {
 				)
 				.map((f) => f.createdAt);
 			mtime.sort((a, b) => b.getTime() - a.getTime());
-			const result = {
+			return {
 				isFile: false,
 				isDirectory: true,
 				isSymbolicLink: false,
@@ -382,8 +416,6 @@ export class FilesystemService implements IFileSystem {
 				size: 0,
 				mtime: mtime[0] ?? new Date(0),
 			};
-			console.log(result);
-			return result;
 		}
 
 		throw new Error("ENOENT: no such file or directory");
@@ -391,9 +423,8 @@ export class FilesystemService implements IFileSystem {
 
 	async lstat(path: string): Promise<FsStat> {
 		console.log(`lstat(${path})`);
-		const result = await this.stat(path);
-		console.log(result);
-		return result;
+
+		return await this.stat(path);
 	}
 
 	async mkdir(
@@ -407,9 +438,8 @@ export class FilesystemService implements IFileSystem {
 	async readdir(path: string): Promise<string[]> {
 		console.log(`readdir(${path})`);
 		const entries = await this.readdirWithFileTypes(path);
-		const result = entries.map((e) => e.name);
-		console.log(result);
-		return result;
+
+		return entries.map((e) => e.name);
 	}
 
 	async readdirWithFileTypes(path: string) {
@@ -454,7 +484,7 @@ export class FilesystemService implements IFileSystem {
 					uri: childUri,
 				};
 			});
-		console.log(result);
+
 		return Promise.resolve(result);
 	}
 
@@ -614,15 +644,19 @@ export class FilesystemService implements IFileSystem {
 
 	getAllPaths(): string[] {
 		console.log("getAllPaths()");
-		const result = this.nodes
+
+		return this.nodes
 			.filter((file) => file.path.length > 0)
 			.map((file) => PathUtils.toMount(file));
-		console.log(result);
-		return result;
+	}
+
+	getAllNodes() {
+		return this.nodes;
 	}
 
 	resolvePath(base: string, path: string): string {
 		console.log(`resolvePath(${base}, ${path})`);
+
 		// hardcoded `/mnt/chat` prefix replaced 7/18/26
 		const prefix = this.mount.replace(/\/$/, "");
 		base = base.replace(prefix, "");
@@ -633,10 +667,7 @@ export class FilesystemService implements IFileSystem {
 			return result;
 		}
 
-		const combined = base === "/" ? `/${path}` : `${base}/${path}`;
-		const result = `${prefix}${normalizePath(combined)}`;
-		console.log(result);
-		return result;
+		return `${prefix}${normalizePath(`${base}/${path}`)}`;
 	}
 }
 

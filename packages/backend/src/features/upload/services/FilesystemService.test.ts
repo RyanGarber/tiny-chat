@@ -1,6 +1,6 @@
-import { read_file } from "@tiny-chat/shared/src/features/tool/tools/filesystem/read_file.ts";
-import { shell_exec } from "@tiny-chat/shared/src/features/tool/tools/filesystem/shell_exec.ts";
-import { write_file } from "@tiny-chat/shared/src/features/tool/tools/filesystem/write_file.ts";
+import { read_file } from "@tiny-chat/shared/src/features/tool/tools/shell/read_file.ts";
+import { shell_exec } from "@tiny-chat/shared/src/features/tool/tools/shell/shell_exec.ts";
+import { write_file } from "@tiny-chat/shared/src/features/tool/tools/shell/write_file.ts";
 import { beforeAll, describe, expect, inject, it } from "vitest";
 import type { z } from "zod";
 import { testGenerationContext } from "../../../tests.helpers.ts";
@@ -45,7 +45,7 @@ describe("services - dbfs", () => {
 		command: string,
 	): Promise<z.infer<typeof shell_exec.output>> => {
 		const output = await trpc.test.tool.mutate({
-			name: shell_exec.name,
+			name: `chat_${shell_exec.name}`,
 			context,
 			input: {
 				command,
@@ -73,7 +73,7 @@ describe("services - dbfs", () => {
 
 	it("reads a file with nbsp", async () => {
 		const output = await trpc.test.tool.mutate({
-			name: read_file.name,
+			name: `chat_${read_file.name}`,
 			context,
 			input: {
 				path: `/mnt/chat/${upload2.id}/${upload2.name}`,
@@ -115,7 +115,7 @@ describe("services - dbfs", () => {
 		if (!chat) throw new Error("Test chat not found");
 
 		await trpc.test.tool.mutate({
-			name: write_file.name,
+			name: `chat_${write_file.name}`,
 			context: testGenerationContext({ chat, messages: [message] }),
 			input: {
 				path: `/mnt/chat/${upload1.id}/uploadFile1.txt`,
@@ -124,7 +124,7 @@ describe("services - dbfs", () => {
 		});
 
 		await trpc.test.tool.mutate({
-			name: write_file.name,
+			name: `chat_${write_file.name}`,
 			context: testGenerationContext({ chat, messages: [message] }),
 			input: {
 				path: `/mnt/chat/file1.txt`,

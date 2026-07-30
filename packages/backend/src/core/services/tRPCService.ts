@@ -12,13 +12,13 @@ const tRPCContext = async ({
 	req: IncomingMessage;
 	res: ServerResponse;
 }) => {
-	const session = await AuthService.auth.api.getSession({
+	const session = await AuthService.api.getSession({
 		headers: AuthUtils.getHeaders(req.headers),
 	});
 	if (!session?.user) {
 		throw new TRPCError({
 			code: "UNAUTHORIZED",
-			message: `Not authenticated. Headers: ${JSON.stringify(req.headers)}`,
+			message: `Not authenticated.`,
 		});
 	}
 	return { req, res, session };

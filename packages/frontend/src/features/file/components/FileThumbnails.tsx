@@ -12,7 +12,7 @@ import { theme } from "#frontend/utils/icon.ts";
 import { UploadType } from "#shared/features/file/types/upload.ts";
 
 // TODO - getUploads returns out-of-order.
-// TODO - lazy load each upload in the preview component itself
+//      - lazy load each upload in the preview component itself
 
 export default function FileThumbnails({
 	uploads,
@@ -36,6 +36,7 @@ export default function FileThumbnails({
 						in: uploads.map((upload) => upload.id),
 					},
 				},
+				files: true,
 			});
 		},
 	});

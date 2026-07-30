@@ -8,24 +8,7 @@ import {
 import { createAuthClient } from "better-auth/react";
 import superjson from "superjson";
 import type { tRPCRouter } from "#backend/core/routes";
-import type { AuthService } from "#backend/core/services/AuthService";
-
-declare global {
-	interface Window {
-		__TAURI__?: unknown;
-	}
-}
-declare const __TAURI_DEV_HOST__: string | undefined;
-
-export const webUrl: string = import.meta.env.DEV
-	? `http://${__TAURI_DEV_HOST__ ?? "localhost"}:${import.meta.env.VITE_WEB_PORT}`
-	: import.meta.env.VITE_WEB_URL;
-
-export const backendUrl: string = import.meta.env.DEV
-	? `http://${__TAURI_DEV_HOST__ ?? "localhost"}:${import.meta.env.VITE_BACKEND_PORT}`
-	: import.meta.env.VITE_BACKEND_URL;
-
-export const env = { ...import.meta.env, VITE_BACKEND_URL: backendUrl };
+import type { AuthService as BackendAuthService } from "#backend/core/services/AuthService";
 
 export const queryClient = new QueryClient();
 
@@ -50,6 +33,7 @@ export const query = createTRPCOptionsProxy({
 	queryClient: queryClient,
 });
 
+// TODO WIP
 export const auth = createAuthClient({
 	baseURL: import.meta.env.DEV
 		? `http://${__TAURI_DEV_HOST__ ?? "localhost"}:${import.meta.env.VITE_BACKEND_PORT}`
@@ -63,7 +47,7 @@ export const auth = createAuthClient({
 	},
 	plugins: [
 		anonymousClient(),
-		inferAdditionalFields<typeof AuthService.auth>(),
+		inferAdditionalFields<typeof BackendAuthService>(),
 	],
 });
 

@@ -1,3 +1,4 @@
+import type { FileNode } from "@tiny-chat/shared/src/features/file/types/file.ts";
 import { createContext } from "react";
 import type { ActionState } from "#shared/features/data/types/action.ts";
 import type { MemoryState } from "#shared/features/data/types/memory.ts";
@@ -8,6 +9,7 @@ export interface MarkdownContext {
 	webReferences: zWebContext[];
 	memoryReferences: MemoryState[];
 	actionReferences: ActionState[];
+	fileReferences: FileNode[];
 	isGenerating: boolean;
 }
 
@@ -15,6 +17,7 @@ export const MarkdownContext = createContext<MarkdownContext>({
 	webReferences: [],
 	memoryReferences: [],
 	actionReferences: [],
+	fileReferences: [],
 	isGenerating: false,
 });
 

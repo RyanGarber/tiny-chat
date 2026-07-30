@@ -1,27 +1,23 @@
 import type {
 	CapabilityFactory,
-	FilesystemCapability,
+	ShellCapability,
 } from "@tiny-chat/shared/src/features/capability/types/capability.ts";
 import { SnippetService } from "@tiny-chat/shared/src/features/data/services/SnippetService.ts";
 import type { ChatLike } from "@tiny-chat/shared/src/features/data/types/chat.ts";
-import type { zUser } from "@tiny-chat/shared/src/features/data/types/user.ts";
 import { FileUtils } from "@tiny-chat/shared/src/features/file/utils/FileUtils.ts";
-import { FileService } from "../../chat/services/FileService.ts";
+import { trpc } from "#frontend/utils/api.ts";
 
-export const chatFilesystem: CapabilityFactory<
-	{
-		user: zUser;
-		chat: ChatLike;
-	},
-	FilesystemCapability
-> = async ({ user, chat }) => {
+export const createChatShellCapability: CapabilityFactory<
+	{ chat: ChatLike },
+	ShellCapability
+> = async ({ chat }) => {
 	return {
 		getFiles: async () => {
-			return await FileService.getFiles({ user, chat });
+			return await trpc.file.getFiles.query({ chat });
 		},
 
 		readFile: async ({ path }) => {
-			const file = await FileService.getFile({ user, chat, path });
+			const file = await trpc.file.getFile.query({ chat, path });
 			return {
 				path: file.uri,
 				data: file.data,
@@ -29,7 +25,7 @@ export const chatFilesystem: CapabilityFactory<
 		},
 
 		readDir: async ({ path }) => {
-			const dir = await FileService.getDirectory({ user, chat, path });
+			const dir = await trpc.file.getDirectory.query({ chat, path });
 			return dir.map((item) => ({
 				path: item.uri,
 				is_dir: item.isDirectory,
@@ -37,8 +33,7 @@ export const chatFilesystem: CapabilityFactory<
 		},
 
 		searchFiles: async ({ path, query, mode }) => {
-			const files = await FileService.searchFiles({
-				user,
+			const files = await trpc.file.searchFiles.query({
 				chat,
 				path,
 				mode,
@@ -56,12 +51,12 @@ export const chatFilesystem: CapabilityFactory<
 		},
 
 		writeFile: async ({ path, content }) => {
-			await FileService.writeFile({ user, chat, path, content });
+			await trpc.file.writeFile.mutate({ chat, path, content });
 			return { path, success: true };
 		},
 
 		exec: async ({ command }) => {
-			return await FileService.exec({ user, chat, command });
+			return await trpc.file.exec.mutate({ chat, command });
 		},
 	};
 };

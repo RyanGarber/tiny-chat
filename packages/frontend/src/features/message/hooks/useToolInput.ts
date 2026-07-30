@@ -70,7 +70,6 @@ export const useToolInput = () => {
 						value: await ToolInputHandlerService.handle({
 							user: session.data.user,
 							chat: chat.data,
-							tool,
 							part,
 							value,
 							message: seed,

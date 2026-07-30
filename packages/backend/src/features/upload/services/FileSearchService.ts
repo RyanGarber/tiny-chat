@@ -29,7 +29,8 @@ export const FileSearchService = {
 			throw new Error("only standard mode is supported for now");
 		}
 
-		const files = filesystem.nodes
+		const files = filesystem
+			.getAllNodes()
 			.filter((node) =>
 				PathUtils.contains({
 					descendent: node.path,

@@ -7,6 +7,7 @@ import {
 import { DataUtils } from "@tiny-chat/shared/src/features/data/utils/DataUtils.ts";
 import { ModelProviderService } from "@tiny-chat/shared/src/features/provider/services/ModelProviderService";
 import { useRef } from "react";
+import { CommonUtils } from "#frontend/core/utils/CommonUtils.ts";
 import { InputService } from "#frontend/features/chat/services/InputService.ts";
 import { useMessagingStore } from "#frontend/features/chat/stores/useMessagingStore.tsx";
 import { useConfig } from "#frontend/features/config/hooks/useConfig.ts";
@@ -17,7 +18,7 @@ import { useSkills } from "#frontend/features/file/hooks/useSkills.ts";
 import { refetchMessages } from "#frontend/features/message/hooks/useMessages.ts";
 import { MessageHandlerService } from "#frontend/features/message/services/MessageHandlerService.ts";
 import { useRetrieval } from "#frontend/features/settings/hooks/useRetrieval.ts";
-import { auth, env, trpc } from "#frontend/utils/api.ts";
+import { auth, trpc } from "#frontend/utils/api.ts";
 import { ChatService } from "../services/ChatService";
 import { useChatStore } from "../stores/useChatStore";
 import { refetchChatList } from "./useChatList";
@@ -113,7 +114,7 @@ export const useMessaging = () => {
 						provider,
 						values: [text],
 						config: embeddingConfig.data,
-						env,
+						env: CommonUtils.env,
 					});
 					if (embeddings[0]?.length) {
 						await trpc.embedding.setEmbeddings.mutate([

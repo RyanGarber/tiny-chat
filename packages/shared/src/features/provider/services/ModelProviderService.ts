@@ -10,7 +10,7 @@ import type { Env } from "../../../core/types/common.ts";
 import type { zAgentEvent } from "../../agent/types/agent.ts";
 import type { zConfig } from "../../data/types/message.ts";
 import type { zUser } from "../../data/types/user.ts";
-import type { zTool } from "../../tool/types/tool.ts";
+import type { ToolDefinition } from "../../tool/types/tool.ts";
 import { AnthropicProvider } from "../providers/model/AnthropicProvider.ts";
 import { AntigravityProvider } from "../providers/model/AntigravityProvider.ts";
 import { AwsProvider } from "../providers/model/AwsProvider.ts";
@@ -61,7 +61,7 @@ export const ModelProviderService = {
 		provider: ModelProvider<any>;
 		messages: zModelMessage[];
 		config: zConfig;
-		tools: zTool[];
+		tools: ToolDefinition[];
 		env: Env;
 		options?: Partial<RunLanguageModelOptions>;
 	}): AsyncGenerator<zAgentEvent> {

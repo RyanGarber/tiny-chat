@@ -1,6 +1,6 @@
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 import type { zConfig, zDataPart } from "../../data/types/message.ts";
-import type { Tool, Toolset, zTool } from "../types/tool.ts";
+import type { Tool, ToolDefinition, Toolset } from "../types/tool.ts";
 
 export const ToolUtils = {
 	name: ({
@@ -8,17 +8,18 @@ export const ToolUtils = {
 		tool,
 	}: {
 		toolset: Toolset<any>;
-		tool?: Tool<any, any, any, any>;
+		tool?: Tool<any, any>;
 	}) => {
+		const prefix = tool?.prefix ?? toolset.prefix;
 		let name = tool?.name ?? toolset.name;
-		if (toolset.prefix === name) return name;
-		if (toolset.prefix) {
+		if (prefix === name) return name;
+		if (prefix) {
 			name = name.replace(
-				new RegExp(`^${CommonUtils.getRegexEscaped(toolset.prefix)}[_-]?`),
+				new RegExp(`^${CommonUtils.getRegexEscaped(prefix)}[_-]?`),
 				"",
 			);
 		}
-		return `${toolset.prefix ? `${toolset.prefix}_` : ""}${name}`;
+		return `${prefix ? `${prefix}_` : ""}${name}`;
 	},
 
 	find: ({ toolsets, name }: { toolsets: Toolset<any>[]; name: string }) => {
@@ -40,7 +41,7 @@ export const ToolUtils = {
 	}: {
 		toolsets: Toolset<any>[];
 		toolCall: Extract<zDataPart, { type: "toolCall" }>;
-		isTool: zTool | string;
+		isTool: ToolDefinition | string;
 	}) => {
 		if (typeof isTool !== "string") isTool = isTool.name;
 		const { tool } = ToolUtils.find({ toolsets, name: toolCall.name });

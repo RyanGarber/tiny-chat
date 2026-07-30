@@ -1,36 +1,32 @@
 import { z } from "zod";
-import type { UserContextCapability } from "../../../capability/types/capability.ts";
-import type { Tool } from "../../types/tool.ts";
+import type { UserCapability } from "../../../capability/types/capability.ts";
+import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
-const input = z.object({
-	id: z.cuid2(),
-	reason: z
-		.string()
-		.describe(
-			"The new fact that warranted deleting the old fact about the user.",
-		),
-});
-
-const output = z.object({
-	deleted_memory_id: z.cuid2(),
-});
-
-export const delete_memory: Tool<
-	typeof input,
-	void,
-	typeof output,
-	{ userContext: UserContextCapability }
-> = {
+export const delete_memory = {
 	name: "delete_memory",
 	description: "Delete a fact about the user.",
+	input: z.object({
+		id: z.cuid2(),
+		reason: z
+			.string()
+			.describe(
+				"The new fact that warranted deleting the old fact about the user.",
+			),
+	}),
+	output: z.object({
+		deleted_memory_id: z.cuid2(),
+	}),
+} as const satisfies ToolDefinition;
 
-	input,
-	output,
-
-	execute: async ({ input, capabilities }) => {
-		const memory = await capabilities.userContext.deleteMemory({
+export const createDeleteMemoryTool: ToolFactory<
+	Tool<typeof delete_memory, { user: UserCapability }>
+> = (options) => ({
+	...delete_memory,
+	...options,
+	execute: async ({ input }) => {
+		const memory = await options.capabilities.user.deleteMemory({
 			id: input.id,
 		});
 		return [{ type: "json", value: { deleted_memory_id: memory.id } }];
 	},
-};
+});

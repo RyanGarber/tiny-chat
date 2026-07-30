@@ -49,7 +49,6 @@ export const test = router({
 				input: input.input,
 				feedback: input.feedback,
 				context: input.context,
-				capabilities,
 			});
 		}),
 });

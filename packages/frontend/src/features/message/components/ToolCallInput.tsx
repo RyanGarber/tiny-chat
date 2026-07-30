@@ -14,9 +14,9 @@ import {
 import { FileTypeUtils } from "@tiny-chat/shared/src/features/file/utils/FileTypeUtils.ts";
 import { FileUtils } from "@tiny-chat/shared/src/features/file/utils/FileUtils.ts";
 import { PathUtils } from "@tiny-chat/shared/src/features/file/utils/PathUtils.ts";
-import { shell_exec } from "@tiny-chat/shared/src/features/tool/tools/filesystem/shell_exec.ts";
-import { write_file } from "@tiny-chat/shared/src/features/tool/tools/filesystem/write_file.ts";
 import { ask_question } from "@tiny-chat/shared/src/features/tool/tools/questions/ask_question.ts";
+import { shell_exec } from "@tiny-chat/shared/src/features/tool/tools/shell/shell_exec.ts";
+import { write_file } from "@tiny-chat/shared/src/features/tool/tools/shell/write_file.ts";
 import type { Tool } from "@tiny-chat/shared/src/features/tool/types/tool.ts";
 import { memo, type ReactNode, useEffect, useMemo, useState } from "react";
 import type { BundledLanguage } from "streamdown";
@@ -42,7 +42,7 @@ export const ToolCallInput = memo(
 		toolCall: Extract<zDataPart, { type: "toolCall" }>;
 		toolResult?: Extract<zDataPart, { type: "toolResult" }>;
 		containerWidth: number;
-		tool?: Tool<any, any, any, any>;
+		tool?: Tool<any, any>;
 	}) => {
 		const { sendToolInput } = useToolInput();
 

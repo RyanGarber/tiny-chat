@@ -7,7 +7,7 @@ import { CloneService } from "../services/CloneService.ts";
 
 export const user = router({
 	getAccounts: procedure.query(async ({ ctx }) => {
-		return AuthService.auth.api.listUserAccounts({
+		return AuthService.api.listUserAccounts({
 			headers: AuthUtils.getHeaders(ctx.req.headers),
 		});
 	}),

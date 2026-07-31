@@ -1,14 +1,16 @@
+import { useChat } from "@tiny-chat/react/src/features/chat/hooks/useChat.ts";
+import { useMessages } from "@tiny-chat/react/src/features/chat/hooks/useMessages.ts";
 import { Text, useStdout } from "ink";
 import { ScrollView, type ScrollViewRef } from "ink-scroll-view";
 import { useEffect, useRef } from "react";
+import { useLoadingStatus } from "../../../core/hooks/useLoadingStatus.ts";
 import { useScrollWheel } from "../../../core/hooks/useScrollWheel.ts";
-import { useChat } from "../hooks/useChat.ts";
-import { useMessages } from "../hooks/useMessages.tsx";
 import Message from "./Message.tsx";
 
 export default function Chat() {
 	const { chat } = useChat();
 	const { messages } = useMessages();
+	useLoadingStatus(messages);
 
 	const scrollRef = useRef<ScrollViewRef>(null);
 	const { stdout } = useStdout();

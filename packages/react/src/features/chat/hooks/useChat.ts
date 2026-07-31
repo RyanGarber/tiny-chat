@@ -1,28 +1,15 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { ChatState } from "@tiny-chat/core/src/features/data/types/chat.ts";
 import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
-import { client } from "#ui/client.ts";
-import { ChatService } from "#ui/features/chat/services/ChatService.ts";
-import { useChatStore } from "#ui/features/chat/stores/useChatStore.ts";
-
-export function getChatTimestamp(chat: ChatState) {
-	if (!chat) return -1;
-	return Math.max(
-		chat.createdAt.getTime(),
-		...(chat.messages as { createdAt: Date }[]).map((m) =>
-			m.createdAt.getTime(),
-		),
-	);
-}
-
-export async function refetchChat(chatId: string) {
-	await client.queryClient.invalidateQueries({
-		queryKey: client.query.chat.pathKey(),
-	});
-	useChatStore.getState().setLastSeen(chatId, Date.now());
-}
+import { ChatUtils } from "@tiny-chat/core/src/features/data/utils/ChatUtils.ts";
+import { useContext } from "react";
+import { ClientProvider } from "../../../client.ts";
+import { ChatService } from "../services/ChatService.ts";
+import { useChatStore } from "../stores/useChatStore.ts";
 
 export const useChat = () => {
+	const client = useContext(ClientProvider);
+
 	const chatId = useChatStore((s) => s.chatId);
 	const lastSeen = useChatStore((s) => s.lastSeen);
 
@@ -32,11 +19,13 @@ export const useChat = () => {
 			if (!chatId) return null;
 			const data = await client.api.chat.getChat.query(chatId);
 			if (!(data.id in lastSeen)) {
-				useChatStore.getState().setLastSeen(data.id, getChatTimestamp(data));
+				useChatStore
+					.getState()
+					.setLastSeen(data.id, ChatUtils.getTimestamp(data));
 			}
 			return {
 				...data,
-				unseen: getChatTimestamp(data) > lastSeen[data.id],
+				unseen: ChatUtils.getTimestamp(data) > lastSeen[data.id],
 			};
 		},
 		initialData: client.queryClient
@@ -67,7 +56,7 @@ export const useChat = () => {
 			});
 		},
 		onSuccess: async (clone, input) => {
-			await refetchChat(clone.id);
+			await ChatService.refetchChat(client, clone.id);
 			if (input.chat.id === chatId) ChatService.setChatId(clone.id);
 		},
 	});

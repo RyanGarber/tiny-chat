@@ -1,9 +1,10 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { zSettings } from "#core/features/data/types/user.ts";
+import { useSession } from "#react/src/core/hooks/useSession.ts";
 import { client } from "#ui/client.ts";
 
 export const useMcpServerSettings = () => {
-	const session = client.auth.useSession();
+	const { session } = useSession();
 
 	const mcpServerSettings = useQuery({
 		...client.query.settings.get.queryOptions(),

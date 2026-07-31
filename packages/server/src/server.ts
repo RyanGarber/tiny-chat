@@ -9,7 +9,7 @@ import { AntigravityService } from "./features/proxy/services/AntigravityService
 import { McpService } from "./features/proxy/services/McpService.ts";
 import { WorkerService } from "./features/worker/services/WorkerService.ts";
 
-if (import.meta.main) createLogger();
+if (import.meta.main) createLogger({logToDisk: true});
 
 const server = createServer((req, res) => {
 	res.setHeader(

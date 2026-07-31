@@ -1,6 +1,7 @@
-import { useEffect } from "react";
-import { refetchChat } from "#ui/features/chat/hooks/useChat.ts";
-import { useChatStore } from "#ui/features/chat/stores/useChatStore.ts";
+import { ChatService } from "@tiny-chat/react/src/features/chat/services/ChatService.ts";
+import { useChatStore } from "@tiny-chat/react/src/features/chat/stores/useChatStore.ts";
+import { useEffect, useRef } from "react";
+import { client } from "#ui/client.ts";
 
 const getHashbang = (): {
 	hash: string;
@@ -32,26 +33,31 @@ export const setHashbang = (
 
 export const useHashbang = () => {
 	const chatId = useChatStore((s) => s.chatId);
-	const setChatId = useChatStore((s) => s.setChatId);
 
-	// 1. Sync: URL -> Zustand (On mount and on hash change)
+	const lastChatIdRef = useRef(chatId);
+	const lastHashbangRef = useRef(getHashbang());
+
+	// 1. Sync: Zustand -> URL
 	useEffect(() => {
-		const handleHashChange = () => {
+		if (chatId !== lastChatIdRef.current) {
+			setHashbang(chatId);
+			lastChatIdRef.current = chatId;
+		}
+
+		const onHashChange = () => {
 			const { hash } = getHashbang();
-			if (hash !== chatId) {
-				setChatId(hash || null);
-				if (hash) {
-					void refetchChat(hash);
-				}
+			if (hash !== lastHashbangRef.current.hash) {
+				ChatService.setChatId(hash);
 			}
+			lastHashbangRef.current = getHashbang();
 		};
 
 		// Run once on load
-		handleHashChange();
+		onHashChange();
 
-		window.addEventListener("hashchange", handleHashChange);
-		return () => window.removeEventListener("hashchange", handleHashChange);
-	}, [chatId, setChatId]);
+		window.addEventListener("hashchange", onHashChange);
+		return () => window.removeEventListener("hashchange", onHashChange);
+	}, [chatId]);
 
 	return getHashbang();
 };

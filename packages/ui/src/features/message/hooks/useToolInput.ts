@@ -5,8 +5,9 @@ import type {
 	zDataPart,
 	zToolDataPart,
 } from "#core/features/data/types/message";
+import { useSession } from "#react/src/core/hooks/useSession.ts";
 import { client } from "#ui/client.ts";
-import { useChat } from "#ui/features/chat/hooks/useChat.ts";
+import { useChat } from "@tiny-chat/react/src/features/chat/hooks/useChat.ts";
 import { useProviders } from "#ui/features/config/hooks/useProviders.ts";
 import { useTools } from "#ui/features/config/hooks/useTools.ts";
 import { useSkills } from "#ui/features/file/hooks/useSkills.ts";
@@ -23,7 +24,7 @@ export const useToolInput = () => {
 	const { skills } = useSkills();
 	const { toolsets, mcpTools } = useTools();
 	const { chat } = useChat();
-	const session = client.auth.useSession();
+	const { session } = useSession();
 
 	const sendToolInput = useMutation({
 		mutationKey: toolInputMutationKey,

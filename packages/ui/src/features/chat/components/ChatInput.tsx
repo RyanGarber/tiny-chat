@@ -18,6 +18,7 @@ import {
 } from "@mantine/core";
 import { useIsMutating } from "@tanstack/react-query";
 import { ToolUtils } from "@tiny-chat/core/src/features/tool/utils/ToolUtils.ts";
+import { useChat } from "@tiny-chat/react/src/features/chat/hooks/useChat.ts";
 import { Tiptap } from "@tiptap/react";
 import {
 	type CSSProperties,
@@ -28,7 +29,6 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { useChat } from "#ui/features/chat/hooks/useChat.ts";
 import { CapabilitySelect } from "#ui/features/config/components/CapabilitySelect.tsx";
 import ModelSelect from "#ui/features/config/components/ModelSelect.tsx";
 import { useConfig } from "#ui/features/config/hooks/useConfig.ts";
@@ -43,8 +43,8 @@ import { uploadMutationKey } from "#ui/features/file/hooks/useUploads.ts";
 import { useInput } from "#ui/features/input/hooks/useInput.tsx";
 import { useInputStore } from "#ui/features/input/stores/useInputStore.ts";
 import { MessageHandlerService } from "#ui/features/message/services/MessageHandlerService.ts";
-import { StreamService } from "#ui/features/message/services/StreamService.ts";
 import { GLASS_STYLE, SHADOW } from "#ui/utils/style.ts";
+import { StreamService } from "../../../../../react/src/features/chat/services/StreamService.ts";
 import { useMessaging } from "../hooks/useMessaging";
 
 export const ChatInput = memo(

@@ -16,12 +16,12 @@ export type LogWriter = (
 
 export function createLogger({
 	logWriter,
-	logToDisk = true,
+	logToDisk,
 }: {
 	logWriter?: LogWriter;
 	logToDisk?: boolean;
 } = {}) {
-	console.log("injecting log handlers...");
+	console.log("setting up logs...");
 
 	const levels = Object.values(LogLevel);
 
@@ -73,7 +73,7 @@ export function createLogger({
 
 		if (level === "error") {
 			if (typeof window !== "undefined") {
-				console.log("detected browser, injecting logger into window");
+				console.log("logging to browser");
 				window?.addEventListener("error", (e) =>
 					console.error("[UNCAUGHT]", e),
 				);
@@ -83,7 +83,7 @@ export function createLogger({
 			}
 
 			if (typeof process !== "undefined" && typeof process.on === "function") {
-				console.log("detected node, injecting logger into process");
+				console.log("logging to process");
 				process?.on("uncaughtException", (e) => {
 					console.error("[UNCAUGHT]", e);
 					process.exit(1);

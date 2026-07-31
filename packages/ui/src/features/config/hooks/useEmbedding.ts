@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ModelProviderService } from "@tiny-chat/core/src/features/provider/services/ModelProviderService.ts";
 import { useEffect, useRef } from "react";
+import { useSession } from "#react/src/core/hooks/useSession.ts";
 import { client } from "#ui/client.ts";
 import { ProviderService } from "#ui/features/config/services/ProviderService.ts";
 import { useRetrieval } from "#ui/features/settings/hooks/useRetrieval.ts";
@@ -15,7 +16,7 @@ export const fetchNextEmbeddingBatch = async () => {
 };
 
 export const useEmbedding = () => {
-	const session = client.auth.useSession();
+	const { session } = useSession();
 	const { embeddingConfig } = useRetrieval();
 
 	const nextEmbeddingBatch = useQuery({

@@ -3,6 +3,7 @@ import type {
 	ProviderState,
 	ProviderStatus,
 } from "@tiny-chat/core/src/features/provider/types/provider.ts";
+import { useSession } from "#react/src/core/hooks/useSession.ts";
 import { client } from "#ui/client.ts";
 import { ProviderService } from "#ui/features/config/services/ProviderService.ts";
 
@@ -10,7 +11,7 @@ const providerCacheQueryKey = ["cache", "providers"] as const;
 export const providerCacheMutationKey = ["cache", "providers"] as const;
 
 export const useProviders = () => {
-	const session = client.auth.useSession();
+	const { session } = useSession();
 
 	const providers = useQuery<ProviderState<ProviderStatus>[]>({
 		queryKey: [...providerCacheQueryKey, session.data?.user?.id ?? ""],

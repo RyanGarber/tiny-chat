@@ -21,9 +21,9 @@ import {
 	FileUtils,
 } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
+import { useChatStore } from "@tiny-chat/react/src/features/chat/stores/useChatStore.ts";
 import { type ReactNode, useMemo, useState } from "react";
 import { useLayoutStore } from "#ui/core/stores/useLayoutStore.tsx";
-import { useChatStore } from "#ui/features/chat/stores/useChatStore.ts";
 import {
 	FilePreview,
 	type FilePreviewItem,

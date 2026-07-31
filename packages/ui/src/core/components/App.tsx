@@ -8,7 +8,7 @@ import {
 import { ModalsProvider } from "@mantine/modals";
 import { useDrag } from "@use-gesture/react";
 import { useEffect } from "react";
-import { client } from "#ui/client.ts";
+import { useSession } from "#react/src/core/hooks/useSession.ts";
 import Background from "#ui/core/components/Background.tsx";
 import Sidebar from "#ui/core/components/Sidebar.tsx";
 import Tauri from "#ui/core/components/Tauri.tsx";
@@ -35,46 +35,23 @@ export default function App() {
 	const isInitializing = useLayoutStore((s) => s.isInitializing);
 	const setInitializing = useLayoutStore((s) => s.setInitializing);
 
-	const session = client.auth.useSession();
-
 	const { hash, query } = useHashbang();
-	useExperiments();
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: lifecycle
+	const { session, acceptClone } = useSession({
+		setToken: query.token ? decodeURIComponent(query.token) : undefined,
+	});
+
 	useEffect(() => {
+		if (!session.data) return;
+
 		if (query.token) {
-			sessionStorage.setItem("token", decodeURIComponent(query.token));
 			setHashbang(hash, { ...query, token: undefined });
 		}
 
 		if (isInitializing) {
-			if (session.isPending) return;
-
-			if (!session.data || session.error) {
-				void (async () => {
-					const result = await client.auth.signIn.anonymous();
-					if (result.data?.token)
-						sessionStorage.setItem("token", result.data.token);
-				})();
-				return;
-			}
-
 			setInitializing(false);
-
-			if (!session.data.session?.token) {
-				return;
-			}
-
-			const oldToken = sessionStorage.getItem("token");
-			sessionStorage.setItem("token", session.data.session.token);
-			if (session.data.session.token !== oldToken) {
-				window.location.reload();
-				return;
-			}
-
 			if (query.clone && !session.data.user.isAnonymous) {
-				console.log("[App] continuing clone:", query.clone);
-				void client.api.user.continueClone.mutate({ id: query.clone });
+				acceptClone.mutate(query.clone);
 				setHashbang(hash, { ...query, clone: undefined });
 			}
 		}
@@ -82,11 +59,14 @@ export default function App() {
 		isInitializing,
 		setInitializing,
 		session.data,
-		session.isPending,
-		session.error,
+		hash,
+		query,
+		acceptClone.mutate,
 	]);
 
-	// TODO - maybe drag area should be bigger (but it blocks)
+	useExperiments();
+
+	// TODO - find a way to increase this drag area without blocking mouse events
 	const navbarDragOpen = useDrag(
 		({ movement: [movementX], direction: [directionX], cancel }) => {
 			if (movementX > 50 && directionX > 0 && !totalGestureBlocks) {

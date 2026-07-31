@@ -1,17 +1,14 @@
 import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
 import type { ChatState } from "@tiny-chat/core/src/features/data/types/chat.ts";
-import { client } from "#ui/client.ts";
-import { getChatTimestamp } from "#ui/features/chat/hooks/useChat.ts";
-import { ChatService } from "../services/ChatService";
-import { useChatStore } from "../stores/useChatStore";
-
-export const refetchChatList = () => {
-	return client.queryClient.invalidateQueries({
-		queryKey: client.query.chat.getChatList.pathKey(),
-	});
-};
+import { ChatUtils } from "@tiny-chat/core/src/features/data/utils/ChatUtils.ts";
+import { useContext } from "react";
+import { ClientProvider } from "../../../client.ts";
+import { ChatService } from "../services/ChatService.ts";
+import { useChatStore } from "../stores/useChatStore.ts";
 
 export const useChatList = () => {
+	const client = useContext(ClientProvider);
+
 	const lastSeen = useChatStore((s) => s.lastSeen);
 	const chatId = useChatStore((s) => s.chatId);
 
@@ -30,10 +27,10 @@ export const useChatList = () => {
 									if (!(chat.id in lastSeen))
 										useChatStore
 											.getState()
-											.setLastSeen(chat.id, getChatTimestamp(chat));
+											.setLastSeen(chat.id, ChatUtils.getTimestamp(chat));
 									return {
 										...chat,
-										unseen: getChatTimestamp(chat) > lastSeen[chat.id],
+										unseen: ChatUtils.getTimestamp(chat) > lastSeen[chat.id],
 									};
 								}),
 							})),
@@ -53,7 +50,7 @@ export const useChatList = () => {
 			return client.api.chat.deleteChat.mutate(chat);
 		},
 		onSuccess: async (_, input) => {
-			await refetchChatList();
+			await ChatService.refetchChatList(client);
 			if (chatId === input.chat.id) ChatService.setChatId(null);
 		},
 	});
@@ -62,7 +59,7 @@ export const useChatList = () => {
 		mutationFn: async ({ chat, title }: { chat: ChatState; title: string }) => {
 			await client.api.chat.setChatTitle.mutate({ chat, title });
 		},
-		onSuccess: () => refetchChatList(),
+		onSuccess: () => ChatService.refetchChatList(client),
 	});
 
 	return { folders, deleteChat, renameChat };

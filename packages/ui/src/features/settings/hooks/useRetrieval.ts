@@ -1,10 +1,11 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { zSettings } from "@tiny-chat/core/src/features/data/types/user.ts";
+import { useSession } from "#react/src/core/hooks/useSession.ts";
 import { client } from "#ui/client.ts";
 import { fetchNextEmbeddingBatch } from "#ui/features/config/hooks/useEmbedding.ts";
 
 export const useRetrieval = () => {
-	const session = client.auth.useSession();
+	const { session } = useSession();
 
 	const embeddingConfig = useQuery({
 		...client.query.settings.get.queryOptions(),

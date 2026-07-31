@@ -1,7 +1,7 @@
 import { Box } from "@mantine/core";
+import { useChat } from "@tiny-chat/react/src/features/chat/hooks/useChat.ts";
+import { useChatStore } from "@tiny-chat/react/src/features/chat/stores/useChatStore.ts";
 import { useEffect, useMemo, useRef } from "react";
-import { useChat } from "#ui/features/chat/hooks/useChat.ts";
-import { useChatStore } from "#ui/features/chat/stores/useChatStore.ts";
 import { useThemes } from "#ui/features/settings/hooks/useThemes.ts";
 
 export default function Background() {

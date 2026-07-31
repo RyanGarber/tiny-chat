@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useChat } from "@tiny-chat/react/src/features/chat/hooks/useChat.ts";
 import { client } from "#ui/client.ts";
-import { useChat } from "#ui/features/chat/hooks/useChat.ts";
-import { useMessages } from "#ui/features/message/hooks/useMessages.ts";
+import { useMessages } from "../../../../../react/src/features/chat/hooks/useMessages.ts";
 
 const chatFilesQueryKey = ["chat-files"] as const;
 const chatFileDataQueryKey = ["chat-file-data"] as const;

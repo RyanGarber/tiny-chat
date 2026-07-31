@@ -1,10 +1,10 @@
 import { Icon } from "@iconify/react";
 import { ActionIcon, Burger, Group, Tooltip } from "@mantine/core";
+import { useChat } from "@tiny-chat/react/src/features/chat/hooks/useChat.ts";
+import { useChatStore } from "@tiny-chat/react/src/features/chat/stores/useChatStore.ts";
 import { useLayoutStore } from "#ui/core/stores/useLayoutStore.tsx";
 import { GLASS_STYLE, SHADOW } from "#ui/utils/style.ts";
-import { useChat } from "../hooks/useChat";
-import { ChatService } from "../services/ChatService";
-import { useChatStore } from "../stores/useChatStore";
+import { ChatService } from "../../../../../react/src/features/chat/services/ChatService.ts";
 
 export default function ChatHeader({ fixed }: { fixed: boolean }) {
 	const { chat } = useChat();

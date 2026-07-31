@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { StreamService } from "../services/StreamService";
+import { StreamService } from "../services/StreamService.ts";
 
 const noopSubscribe = (): (() => void) => () => {};
 const returnUndefined = (): undefined => undefined;

@@ -2,8 +2,8 @@ import { useLocalStorage } from "@mantine/hooks";
 import { zConfig } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { ModelProviderStatus } from "@tiny-chat/core/src/features/provider/types/model.ts";
 import type { ProviderState } from "@tiny-chat/core/src/features/provider/types/provider.ts";
+import { useMessages } from "@tiny-chat/react/src/features/chat/hooks/useMessages.ts";
 import { useCallback, useMemo } from "react";
-import { useMessages } from "#ui/features/message/hooks/useMessages.ts";
 import { useConfigStore } from "../stores/useConfigStore.ts";
 import { useProviders } from "./useProviders.ts";
 

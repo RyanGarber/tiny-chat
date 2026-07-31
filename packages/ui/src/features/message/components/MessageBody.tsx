@@ -4,8 +4,8 @@ import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts"
 import { type CSSProperties, memo } from "react";
 import { Author, type MessageState } from "#core/features/data/types/message";
 import { MessageBodyContent } from "#ui/features/message/components/MessageBodyContent.tsx";
-import { useMessageStream } from "#ui/features/message/hooks/useStreaming.ts";
 import { GLASS_STYLE, SHADOW } from "#ui/utils/style.ts";
+import { useMessageStream } from "../../../../../react/src/features/chat/hooks/useStreaming.ts";
 
 const MessageBody = memo(
 	function MessageBody({

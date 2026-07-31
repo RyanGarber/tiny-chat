@@ -4,6 +4,9 @@
 	"scripts": {
 		"dev": "tsx --watch src/index.ts"
 	},
+	"bin": {
+		"tiny-chat": "./src/index.js"
+	},
 	"dependencies": {
 		"@napi-rs/keyring": "^1.3.0",
 		"@tanstack/react-query": "^5.101.2",

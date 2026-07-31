@@ -1,10 +1,11 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { zSettings } from "#core/features/data/types/user.ts";
+import { useSession } from "#react/src/core/hooks/useSession.ts";
 import { client } from "#ui/client.ts";
 import { CODE_THEMES, THEMES } from "#ui/utils/style.ts";
 
 export const useThemes = () => {
-	const session = client.auth.useSession();
+	const { session } = useSession();
 
 	const theme = useQuery({
 		...client.query.settings.get.queryOptions(),

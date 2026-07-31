@@ -12,13 +12,13 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import type { ChatState } from "@tiny-chat/core/src/features/data/types/chat.ts";
+import { useChat } from "@tiny-chat/react/src/features/chat/hooks/useChat.ts";
+import { useChatList } from "@tiny-chat/react/src/features/chat/hooks/useChatList.ts";
 import { useCallback, useEffect, useState } from "react";
 import { client } from "#ui/client.ts";
 import { useLayoutStore } from "#ui/core/stores/useLayoutStore.tsx";
-import { useChat } from "#ui/features/chat/hooks/useChat.ts";
-import { useChatList } from "#ui/features/chat/hooks/useChatList.ts";
-import { ChatService } from "#ui/features/chat/services/ChatService.ts";
 import { GLASS_STYLE, SHADOW } from "#ui/utils/style.ts";
+import { ChatService } from "../../../../react/src/features/chat/services/ChatService.ts";
 import { useSentinel } from "../hooks/useSentinel";
 import Sentinel from "./Sentinel";
 

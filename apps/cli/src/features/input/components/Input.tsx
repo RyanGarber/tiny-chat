@@ -1,15 +1,13 @@
 import { useState } from "react";
 import { TextArea } from "react-ink-textarea";
-import { useStatusStore } from "../../../core/stores/useStatusStore.ts";
+import { useAppStore } from "../../../core/stores/useAppStore.ts";
 import { useCommands } from "../hooks/useCommands.ts";
-import { useInput } from "../hooks/useInput.ts";
+import { InputService } from "../services/InputService.ts";
 import { useInputStore } from "../stores/useInputStore.ts";
 import Completions from "./Completions.tsx";
 
 export default function Input() {
-	const { send } = useInput();
-
-	const statuses = useStatusStore((state) => state.statuses);
+	const statuses = useAppStore((state) => state.statuses);
 
 	const content = useInputStore((state) => state.content);
 	const setContent = useInputStore((state) => state.setContent);
@@ -39,9 +37,10 @@ export default function Input() {
 						setContent(value.replace(/\x1b?\[<(\d+);(\d+);(\d+)[Mm]/g, ""));
 					});
 				}}
-				onSubmit={() => send.mutate()}
+				onSubmit={() => console.log("[send]", InputService.getData())}
 				onCursorChange={(...cursor) => setCursor(cursor)}
 				disableArrowNavigation={commands.length > 0}
+				viewportLines={1}
 				placeholder="Send a message or try /help"
 			/>
 		</>

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import type { LogLevel, LogWriter } from "#core/client.ts";
+import type { LogLevel, LogWriter } from "#core/logger.ts";
 
 interface LogStore {
 	logs: { id: number; time: string; level: LogLevel; data: unknown[] }[];

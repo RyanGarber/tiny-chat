@@ -37,7 +37,7 @@ export default function Completions<T extends CompletionItem>({
 	return (
 		<ScrollList
 			selectedIndex={selected}
-			height={Math.min(items.length + 3, rows - 2)}
+			height={7}
 			borderColor="blueBright"
 			borderStyle="round"
 		>

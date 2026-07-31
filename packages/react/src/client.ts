@@ -1,5 +1,5 @@
 import { QueryClient } from "@tanstack/react-query";
-import { zEnv, zServerEnv } from "@tiny-chat/core/src/core/types/env.ts";
+import { zEnv } from "@tiny-chat/core/src/core/types/env.ts";
 import type { ApiRouter } from "@tiny-chat/server/src/core/ApiRouter.ts";
 import type { AuthServer } from "@tiny-chat/server/src/core/AuthServer.ts";
 import { createTRPCClient, httpLink } from "@trpc/client";
@@ -9,18 +9,20 @@ import {
 	inferAdditionalFields,
 } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
+import { createContext } from "react";
 import superjson from "superjson";
 import { z } from "zod";
 
-// TODO - verify env gets bundled
 export const createClient = ({
 	env: _env,
 	host = "localhost",
 	getToken,
+	setToken,
 }: {
 	env: Record<string, string | undefined>;
 	host?: string;
 	getToken: () => string | null | undefined;
+	setToken: (token: string | null | undefined) => void;
 }) => {
 	const env = zEnv.safeParse(_env);
 	if (!env.success) {
@@ -85,5 +87,11 @@ export const createClient = ({
 		queryClient,
 		auth,
 		providerEnv,
+		getToken,
+		setToken,
 	};
 };
+
+export type Client = Awaited<ReturnType<typeof createClient>>;
+
+export const ClientProvider = createContext<Client>(null as any);

@@ -10,6 +10,11 @@ import {
 } from "@mantine/core";
 import { useMergedRef } from "@mantine/hooks";
 import { useIsMutating } from "@tanstack/react-query";
+import { useGreeting } from "@tiny-chat/react/src/core/hooks/useGreeting.ts";
+import { useChat } from "@tiny-chat/react/src/features/chat/hooks/useChat.ts";
+import { useMessages } from "@tiny-chat/react/src/features/chat/hooks/useMessages.ts";
+import { ChatService } from "@tiny-chat/react/src/features/chat/services/ChatService.ts";
+import { useChatStore } from "@tiny-chat/react/src/features/chat/stores/useChatStore.ts";
 import {
 	type RefObject,
 	useCallback,
@@ -21,20 +26,16 @@ import {
 import { client } from "#ui/client.ts";
 import Sentinel from "#ui/core/components/Sentinel.tsx";
 import { useAutoScroll } from "#ui/core/hooks/useAutoScroll.ts";
-import { useGreeting } from "#ui/core/hooks/useGreeting.ts";
 import { useSentinel } from "#ui/core/hooks/useSentinel.ts";
 import { useLayoutStore } from "#ui/core/stores/useLayoutStore.tsx";
 import Actions from "#ui/features/chat/components/Actions.tsx";
 import ChatHeader from "#ui/features/chat/components/ChatHeader.tsx";
 import { ChatInput } from "#ui/features/chat/components/ChatInput.tsx";
 import ChatInputEffects from "#ui/features/chat/components/ChatInputEffects.tsx";
-import { refetchChat, useChat } from "#ui/features/chat/hooks/useChat.ts";
-import { useChatStore } from "#ui/features/chat/stores/useChatStore.ts";
 import { useMessagingStore } from "#ui/features/chat/stores/useMessagingStore.tsx";
 import { uploadMutationKey } from "#ui/features/file/hooks/useUploads.ts";
 import { useInputStore } from "#ui/features/input/stores/useInputStore.ts";
 import Message from "#ui/features/message/components/Message.tsx";
-import { useMessages } from "#ui/features/message/hooks/useMessages.ts";
 import { isMissingToolResult } from "#ui/utils/data.ts";
 import { SHADOW } from "#ui/utils/style.ts";
 import {
@@ -379,7 +380,10 @@ export default function Chat() {
 									boxShadow: SHADOW,
 									...styles,
 								}}
-								onClick={() => chat.data && void refetchChat(chat.data.id)}
+								onClick={() =>
+									chat.data &&
+									void ChatService.refetchChat(client, chat.data.id)
+								}
 								loading={chat.isFetching}
 								disabled={chat.isFetching}
 							>

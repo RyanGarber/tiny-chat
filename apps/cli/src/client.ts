@@ -4,4 +4,5 @@ import { KeyringService } from "./core/services/KeyringService.ts";
 export const client = createClient({
 	env: process.env,
 	getToken: () => KeyringService.getSessionToken(),
+	setToken: (token) => KeyringService.setSessionToken(token ?? ""),
 });

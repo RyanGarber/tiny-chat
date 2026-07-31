@@ -5,7 +5,7 @@ import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts"
 import { useEffect, useMemo, useState } from "react";
 import { format } from "timeago.js";
 import { useActions } from "#ui/features/chat/hooks/useActions.ts";
-import { useChat } from "#ui/features/chat/hooks/useChat.ts";
+import { useChat } from "@tiny-chat/react/src/features/chat/hooks/useChat.ts";
 
 export default function Actions() {
 	const { chat } = useChat();

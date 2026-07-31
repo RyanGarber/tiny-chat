@@ -19,18 +19,19 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { SnippetService } from "@tiny-chat/core/src/features/data/services/SnippetService.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { ModelProviderService } from "@tiny-chat/core/src/features/provider/services/ModelProviderService.ts";
+import { useChat } from "@tiny-chat/react/src/features/chat/hooks/useChat.ts";
+import { useChatStore } from "@tiny-chat/react/src/features/chat/stores/useChatStore.ts";
 import { useCallback, useRef, useState } from "react";
+import { useSession } from "#react/src/core/hooks/useSession.ts";
 import { client } from "#ui/client.ts";
 import SidebarAccount from "#ui/core/components/SidebarAccount.tsx";
 import SidebarSettings from "#ui/core/components/SidebarSettings.tsx";
 import { useLayoutStore } from "#ui/core/stores/useLayoutStore.tsx";
-import { useChat } from "#ui/features/chat/hooks/useChat.ts";
-import { ChatService } from "#ui/features/chat/services/ChatService.ts";
-import { useChatStore } from "#ui/features/chat/stores/useChatStore.ts";
 import { ProviderService } from "#ui/features/config/services/ProviderService.ts";
 import { useRetrieval } from "#ui/features/settings/hooks/useRetrieval.ts";
 import { GLASS_STYLE } from "#ui/utils/style.ts";
 import { version } from "../../../../../apps/tauri/tauri.conf.json";
+import { ChatService } from "../../../../react/src/features/chat/services/ChatService.ts";
 import SidebarChatList from "./SidebarChatList.tsx";
 
 export default function Sidebar() {
@@ -48,7 +49,7 @@ export default function Sidebar() {
 	const isSidebarOpen = useLayoutStore((s) => s.isSidebarOpen);
 	const setSidebarOpen = useLayoutStore((s) => s.setSidebarOpen);
 
-	const { data: session } = client.auth.useSession();
+	const { session } = useSession();
 
 	const closeAfter = useCallback(
 		(action?: () => void) => {
@@ -73,15 +74,15 @@ export default function Sidebar() {
 				return { text: debouncedQuery, embedding: undefined };
 			}
 
-			if (!session) return { text: debouncedQuery, embedding: undefined };
+			if (!session.data) return { text: debouncedQuery, embedding: undefined };
 			const provider = (
-				await ProviderService.getModelProviders(session.user)
+				await ProviderService.getModelProviders(session.data.user)
 			).find((p) => p.name === embeddingConfig.data?.provider);
 			if (!provider) return { text: debouncedQuery, embedding: undefined };
 
 			if (!embeddingCache.current.has(debouncedQuery)) {
 				const embedding = await ModelProviderService.runEmbeddingModel({
-					user: session.user,
+					user: session.data.user,
 					provider,
 					values: [debouncedQuery],
 					config: embeddingConfig.data,
@@ -232,13 +233,13 @@ export default function Sidebar() {
 						mt="lg"
 						c="dimmed"
 						label={
-							!session?.user || session.user.isAnonymous
+							!session?.data?.user || session.data.user.isAnonymous
 								? "Sign In"
-								: session.user.name.split(" ")[0]
+								: session.data.user.name.split(" ")[0]
 						}
 						leftSection={
-							session?.user?.image ? (
-								<Avatar src={session.user.image} size={18} />
+							session?.data?.user?.image ? (
+								<Avatar src={session.data.user.image} size={18} />
 							) : (
 								<Icon icon="lucide:circle-user" height={18} />
 							)
@@ -331,9 +332,9 @@ export default function Sidebar() {
 					{(openAccount) => (
 						<Tooltip
 							label={
-								!session?.user || session.user.isAnonymous
+								!session?.data?.user || session.data.user.isAnonymous
 									? "Sign In"
-									: session.user.name.split(" ")[0]
+									: session.data.user.name.split(" ")[0]
 							}
 							position="right"
 							color="gray"
@@ -345,8 +346,8 @@ export default function Sidebar() {
 								className="nav-link-like"
 								onClick={openAccount}
 							>
-								{session?.user?.image ? (
-									<Avatar src={session.user.image} size={18} />
+								{session?.data?.user?.image ? (
+									<Avatar src={session.data.user.image} size={18} />
 								) : (
 									<Icon icon="lucide:user-x" height={18} />
 								)}

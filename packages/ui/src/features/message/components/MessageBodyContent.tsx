@@ -15,6 +15,7 @@ import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts"
 import { search_web } from "@tiny-chat/core/src/features/tool/tools/web/search_web.ts";
 import { view_web } from "@tiny-chat/core/src/features/tool/tools/web/view_web.ts";
 import { ToolUtils } from "@tiny-chat/core/src/features/tool/utils/ToolUtils.ts";
+import { useChat } from "@tiny-chat/react/src/features/chat/hooks/useChat.ts";
 import { MediaPlayer, MediaProvider } from "@vidstack/react";
 import {
 	DefaultAudioLayout,
@@ -28,10 +29,9 @@ import {
 	type MessageState,
 	type zDataPart,
 } from "#core/features/data/types/message";
-import { client } from "#ui/client.ts";
+import { useSession } from "#react/src/core/hooks/useSession.ts";
 import { Code } from "#ui/core/components/Components.tsx";
 import { useActions } from "#ui/features/chat/hooks/useActions.ts";
-import { useChat } from "#ui/features/chat/hooks/useChat.ts";
 import { useMemories } from "#ui/features/chat/hooks/useMemories.ts";
 import { InputService } from "#ui/features/chat/services/InputService.ts";
 import { useProviders } from "#ui/features/config/hooks/useProviders.ts";
@@ -41,11 +41,11 @@ import { useSkills } from "#ui/features/file/hooks/useSkills.ts";
 import { Markdown } from "#ui/features/message/components/Markdown.tsx";
 import { ToolCallInput } from "#ui/features/message/components/ToolCallInput.tsx";
 import { useMessageSelection } from "#ui/features/message/hooks/useMessageSelection.ts";
-import { useMessages } from "#ui/features/message/hooks/useMessages.ts";
-import { useMessageStream } from "#ui/features/message/hooks/useStreaming.ts";
 import { MessageHandlerService } from "#ui/features/message/services/MessageHandlerService.ts";
 import { useThemes } from "#ui/features/settings/hooks/useThemes.ts";
 import { SHADOW } from "#ui/utils/style.ts";
+import { useMessages } from "../../../../../react/src/features/chat/hooks/useMessages.ts";
+import { useMessageStream } from "../../../../../react/src/features/chat/hooks/useStreaming.ts";
 import { Thinking } from "./Thinking";
 import { ToolCall } from "./ToolCall";
 
@@ -59,7 +59,7 @@ export const MessageBodyContent = memo(
 		containerWidth: number;
 		style?: CSSProperties;
 	}) => {
-		const session = client.auth.useSession();
+		const { session } = useSession();
 		const { chat } = useChat();
 		const { theme } = useThemes();
 		const { toolsets, mcpTools } = useTools();

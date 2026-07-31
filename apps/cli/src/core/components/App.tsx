@@ -1,13 +1,13 @@
-import { GreetingUtils } from "@tiny-chat/core/src/features/ui/utils/GreetingUtils.ts";
+import { useGreeting } from "@tiny-chat/react/src/core/hooks/useGreeting.ts";
+import { useSession } from "@tiny-chat/react/src/core/hooks/useSession.ts";
+import { useChatStore } from "@tiny-chat/react/src/features/chat/stores/useChatStore.ts";
 import { Box, Text, useInput, useWindowSize } from "ink";
+import Spinner from "ink-spinner";
 import { useMemo } from "react";
 import Chat from "../../features/chat/components/Chat.tsx";
 import ChatList from "../../features/chat/components/ChatList.tsx";
-import { useChatStore } from "../../features/chat/stores/useChatStore.ts";
 import Input from "../../features/input/components/Input.tsx";
-import { useSession } from "../hooks/useSession.ts";
 import { useAppStore } from "../stores/useAppStore.ts";
-import Status from "./Status.tsx";
 
 export default function App() {
 	const { rows } = useWindowSize();
@@ -15,11 +15,10 @@ export default function App() {
 
 	const page = useAppStore((state) => state.page);
 	const setPage = useAppStore((state) => state.setPage);
-	const chatId = useChatStore((state) => state.chatId);
+	const statuses = useAppStore((state) => state.statuses);
 
-	const greeting = useMemo(() => {
-		return GreetingUtils.get({ name: session.data?.user?.name.split(" ")[0] });
-	}, [session.data]);
+	const chatId = useChatStore((state) => state.chatId);
+	const greeting = useGreeting();
 
 	useInput((_, key) => {
 		if (key.escape && page !== "chat") {
@@ -38,7 +37,12 @@ export default function App() {
 						<Text>{greeting}</Text>
 					</Box>
 				))}
-			<Status />
+			{statuses.map((status, index) => (
+				<Box key={status.id}>
+					<Spinner type="bluePulse" />
+					<Text>{status.text ?? "Working..."}</Text>
+				</Box>
+			))}
 			{page === "chat" && <Input />}
 		</Box>
 	);

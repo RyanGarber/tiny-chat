@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
-import { useSession } from "../../../core/hooks/useSession.ts";
+import { useSession } from "@tiny-chat/react/src/core/hooks/useSession.ts";
+import clipboard from "clipboardy";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { client } from "../../../client.ts";
 import { useAppStore } from "../../../core/stores/useAppStore.ts";
 import type { CompletionItem } from "../components/Completions.tsx";
 
@@ -32,20 +34,18 @@ export const useCommands = ({
 	setContent: (content: string) => void;
 	cursor?: [number, number];
 }) => {
+	const { session, requestClone } = useSession();
+	const sessionRef = useRef(session.data);
+	sessionRef.current = session.data;
+
+	const setPage = useAppStore((state) => state.setPage);
+	const setStatus = useAppStore((state) => state.setStatus);
+	const unsetStatus = useAppStore((state) => state.unsetStatus);
+
 	const [commands, setCommands] = useState<Command[]>([]);
 
-	const { cloneSession } = useSession();
-	const setPage = useAppStore((state) => state.setPage);
-
 	const getCommands = useCallback(async (): Promise<Command[]> => {
-		return [
-			{
-				name: "auth",
-				value: "auth",
-				execute: () => {
-					cloneSession.mutate();
-				},
-			},
+		const commands: Command[] = [
 			{
 				name: "chats",
 				value: "chats",
@@ -54,7 +54,37 @@ export const useCommands = ({
 				},
 			},
 		];
-	}, [cloneSession.mutate, setPage]);
+
+		if (sessionRef.current?.user && !sessionRef.current.user.isAnonymous) {
+			commands.push({
+				name: "logout",
+				value: "logout",
+				execute: () => {
+					client.auth.signOut();
+				},
+			});
+		} else {
+			commands.push({
+				name: "login",
+				value: "login",
+				execute: () => {
+					requestClone.mutate(
+						(id) => {
+							clipboard.write(`${client.webUrl}#/?clone=${id}`);
+							setStatus({ id: "clone", text: "Waiting for you to sign in..." });
+						},
+						{
+							onSettled: () => {
+								unsetStatus({ id: "clone" });
+							},
+						},
+					);
+				},
+			});
+		}
+
+		return commands;
+	}, [requestClone.mutate, setPage, setStatus, unsetStatus]);
 
 	useEffect(() => {
 		const query = getQuery(content, cursor);

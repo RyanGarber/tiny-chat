@@ -7,10 +7,10 @@ import type {
 	Tool,
 	Toolset,
 } from "@tiny-chat/core/src/features/tool/types/tool.ts";
+import { useChat } from "@tiny-chat/react/src/features/chat/hooks/useChat.ts";
+import { useChatStore } from "@tiny-chat/react/src/features/chat/stores/useChatStore.ts";
 import { useMemo } from "react";
 import { useCapabilities } from "#ui/features/capability/hooks/useCapabilities.ts";
-import { useChat } from "#ui/features/chat/hooks/useChat.ts";
-import { useChatStore } from "#ui/features/chat/stores/useChatStore.ts";
 import { useMcpServerSettings } from "#ui/features/settings/hooks/useMcpServerSettings.ts";
 import { McpService } from "../services/McpService.ts";
 

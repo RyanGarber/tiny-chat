@@ -10,7 +10,8 @@ import {
 	Tooltip,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { type JSX, useEffect, useState } from "react";
+import { type JSX, useEffect } from "react";
+import { useSession } from "#react/src/core/hooks/useSession.ts";
 import { client } from "#ui/client.ts";
 import { useLayoutStore } from "#ui/core/stores/useLayoutStore.tsx";
 import { useAccounts } from "#ui/features/settings/hooks/useAccounts.ts";
@@ -22,14 +23,11 @@ export default function SidebarAccount({
 }: {
 	children: (open: () => void) => JSX.Element;
 }) {
-	const [isCloning, setCloning] = useState(false);
-	const [cloneInterval, setCloneInterval] = useState<NodeJS.Timeout>();
-
+	const { session, requestClone } = useSession();
 	const { accounts, linkAccount, unlinkAccount, deleteUser } = useAccounts();
 
 	const setGestureBlock = useLayoutStore((s) => s.setGestureBlock);
 	const setDrawerCloser = useLayoutStore((s) => s.setDrawerCloser);
-	const { data: session } = client.auth.useSession();
 
 	const [opened, { open, close }] = useDisclosure(false);
 	const [isDeleteOpen, { open: openDelete, close: closeDelete }] =
@@ -76,28 +74,6 @@ export default function SidebarAccount({
 		</Group>
 	);
 
-	const clone = async (open: boolean) => {
-		if (!isCloning) {
-			setCloning(true);
-			const id = await client.api.user.createClone.mutate(); // TODO - use query
-			if (open) void TauriUtils.open(`${client.webUrl}/#?clone=${id}`);
-			else void navigator.clipboard.writeText(`${client.webUrl}/#?clone=${id}`);
-			setCloneInterval(
-				setInterval(() => {
-					void (async () => {
-						const result = await client.api.user.completeClone.mutate({ id });
-						if (!result) return;
-						clearInterval(cloneInterval);
-						window.location.reload();
-					})();
-				}, 1000),
-			);
-		} else {
-			setCloning(false);
-			clearInterval(cloneInterval);
-		}
-	};
-
 	return (
 		<>
 			{children(open)}
@@ -105,35 +81,41 @@ export default function SidebarAccount({
 				opened={opened}
 				onClose={close}
 				title={
-					session?.user && !session.user.isAnonymous ? "Account" : "Sign In"
+					session.data?.user && !session.data.user.isAnonymous
+						? "Account"
+						: "Sign In"
 				}
 			>
 				<Stack>
 					{TauriUtils.isTauri() ? (
 						<>
-							{isCloning ? (
+							{requestClone.isPending ? (
 								<Text size="sm">Waiting for you to sign in...</Text>
 							) : (
 								<Text c="dimmed" size="sm">
-									Use the web to manage your account.
+									Use the web to sign in and manage your account.
 								</Text>
 							)}
 							<Button
 								variant="default"
 								fullWidth
 								onClick={() => {
-									if (session?.user?.isAnonymous) {
-										if (isCloning) {
-											clearInterval(cloneInterval);
-											setCloning(false);
+									if (session.data?.user?.isAnonymous) {
+										if (requestClone.isPending) {
+											requestClone.reset();
+										} else {
+											requestClone.mutate(async (id) => {
+												return await TauriUtils.open(
+													`${client.webUrl}/#?clone=${id}`,
+												);
+											});
 										}
-										void clone(true);
 									} else {
 										void TauriUtils.open(`${client.webUrl}`);
 									}
 								}}
 							>
-								{isCloning ? "Cancel" : "Open Browser"}
+								{requestClone.isPending ? "Cancel" : "Open Browser"}
 							</Button>
 							<Text size="xs" c="dimmed" m="0 auto">
 								<Button
@@ -142,13 +124,14 @@ export default function SidebarAccount({
 									component="a"
 									onClick={(e) => {
 										e.preventDefault();
-
-										if (session?.user?.isAnonymous) {
-											if (isCloning) {
-												clearInterval(cloneInterval);
-												setCloning(false);
+										if (session.data?.user?.isAnonymous) {
+											if (!requestClone.isPending) {
+												requestClone.mutate(async (id) => {
+													await navigator.clipboard.writeText(
+														`${client.webUrl}/#?clone=${id}`,
+													);
+												});
 											}
-											void clone(false);
 										} else {
 											void TauriUtils.open(client.webUrl);
 										}
@@ -172,7 +155,7 @@ export default function SidebarAccount({
 							)}
 						</>
 					)}
-					{session?.user && !session.user.isAnonymous && (
+					{session.data?.user && !session.data.user.isAnonymous && (
 						<>
 							<Divider />
 							<Button

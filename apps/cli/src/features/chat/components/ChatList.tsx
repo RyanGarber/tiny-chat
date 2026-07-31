@@ -1,18 +1,25 @@
+import { useChatList } from "@tiny-chat/react/src/features/chat/hooks/useChatList.ts";
+import { ChatService } from "@tiny-chat/react/src/features/chat/services/ChatService.ts";
 import { Box, Text, useInput, useWindowSize } from "ink";
 import { ScrollList } from "ink-scroll-list";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useLoadingStatus } from "../../../core/hooks/useLoadingStatus.ts";
 import { useAppStore } from "../../../core/stores/useAppStore.ts";
-import { useChatList } from "../hooks/useChatList.ts";
 
 export default function ChatList() {
-	const { folders, setChat } = useChatList();
 	const { rows } = useWindowSize();
 
-	const chats = useMemo(() => {
-		return folders.data?.pages.flat().flatMap((page) => page.folders) ?? [];
-	}, [folders.data]);
+	const { folders } = useChatList();
+	useLoadingStatus(folders);
 
 	const setPage = useAppStore((state) => state.setPage);
+
+	const { folderList, chatList } = useMemo(() => {
+		const folderList =
+			folders.data?.pages.flatMap((page) => page.folders) ?? [];
+		const chatList = folderList.flatMap((folder) => folder.chats);
+		return { folderList, chatList };
+	}, [folders.data]);
 
 	const [selected, setSelected] = useState(0);
 
@@ -21,10 +28,10 @@ export default function ChatList() {
 			setSelected((previous) => Math.max(previous - 1, 0));
 		}
 		if (key.downArrow) {
-			setSelected((previous) => Math.min(previous + 1, chats.length - 1));
+			setSelected((previous) => Math.min(previous + 1, chatList.length - 1));
 		}
 		if (key.return) {
-			setChat.mutate(chats[selected].id);
+			ChatService.setChatId(chatList[selected].id);
 			setPage("chat");
 		}
 	});
@@ -36,12 +43,18 @@ export default function ChatList() {
 			borderColor="blueBright"
 			borderStyle="round"
 		>
-			{chats.map((chat, index) => (
-				<Box key={chat.id}>
-					<Text color={selected === index ? "blue" : "white"}>
-						{selected === index ? "▶ " : "  "}
-						{chat.title}
-					</Text>
+			{folderList.map((folder) => (
+				<Box key={folder.id} borderLeft={true}>
+					{folder.chats.map((chat) => (
+						<Box key={chat.id}>
+							<Text
+								color={selected === chatList.indexOf(chat) ? "blue" : "white"}
+							>
+								{selected === chatList.indexOf(chat) ? "▶ " : "  "}
+								{chat.title}
+							</Text>
+						</Box>
+					))}
 				</Box>
 			))}
 		</ScrollList>

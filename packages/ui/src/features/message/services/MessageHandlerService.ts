@@ -1,4 +1,9 @@
 import { ToolService } from "@tiny-chat/core/src/features/tool/services/ToolService";
+import { ChatService } from "@tiny-chat/react/src/features/chat/services/ChatService.ts";
+import {
+	type Stream,
+	StreamService,
+} from "@tiny-chat/react/src/features/chat/services/StreamService.ts";
 import { smoothStream } from "ai";
 import { AgentService } from "#core/features/agent/services/AgentService.ts";
 import type {
@@ -24,15 +29,9 @@ import type { Toolset } from "#core/features/tool/types/tool.ts";
 import { client } from "#ui/client.ts";
 import { ClientCapabilityService } from "#ui/features/capability/services/ClientCapabilityService.ts";
 import { refetchActions } from "#ui/features/chat/hooks/useActions.ts";
-import { refetchChatList } from "#ui/features/chat/hooks/useChatList.ts";
 import { refetchMemories } from "#ui/features/chat/hooks/useMemories.ts";
 import { fetchNextEmbeddingBatch } from "#ui/features/config/hooks/useEmbedding.ts";
 import { ProviderService } from "#ui/features/config/services/ProviderService.ts";
-import { refetchMessages } from "#ui/features/message/hooks/useMessages.ts";
-import {
-	type Stream,
-	StreamService,
-} from "#ui/features/message/services/StreamService.ts";
 import { TauriUtils } from "#ui/features/tauri/utils/TauriUtils.ts";
 import { isMissingToolResult } from "#ui/utils/data.ts";
 
@@ -158,7 +157,7 @@ export const MessageHandlerService = {
 			reply = { ...created };
 		}
 
-		await refetchMessages(seed.chatId);
+		await ChatService.refetchMessages(client, seed.chatId);
 
 		// Re-fetch to ensure the context reflects the inserted/edited reply.
 		const { messages: updatedMessages } =
@@ -310,8 +309,8 @@ export const MessageHandlerService = {
 			truncate: false,
 		});
 		console.log("[MessageHandlerService] saved to chat, refetching");
-		await refetchChatList();
-		await refetchMessages(message.chatId);
+		await ChatService.refetchChatList(client);
+		await ChatService.refetchMessages(client, message.chatId);
 		void refetchActions();
 		void refetchMemories();
 		void fetchNextEmbeddingBatch();

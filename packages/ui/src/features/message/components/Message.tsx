@@ -13,7 +13,7 @@ import { useClipboard, useDisclosure } from "@mantine/hooks";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { memo, type ReactNode } from "react";
 import { Author, type MessageState } from "#core/features/data/types/message";
-import { useChat } from "#ui/features/chat/hooks/useChat.ts";
+import { useChat } from "@tiny-chat/react/src/features/chat/hooks/useChat.ts";
 import { useMessaging } from "#ui/features/chat/hooks/useMessaging.ts";
 import { useMessagingStore } from "#ui/features/chat/stores/useMessagingStore.tsx";
 import FileThumbnails from "#ui/features/file/components/FileThumbnails.tsx";

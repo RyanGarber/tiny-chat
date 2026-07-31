@@ -38,10 +38,10 @@ import type { z } from "zod";
 import type { zDataPart } from "#core/features/data/types/message";
 import { Code } from "#ui/core/components/Components.tsx";
 import { useActions } from "#ui/features/chat/hooks/useActions.ts";
-import { ChatService } from "#ui/features/chat/services/ChatService.ts";
 import { useTools } from "#ui/features/config/hooks/useTools.ts";
 import { TauriUtils } from "#ui/features/tauri/utils/TauriUtils.ts";
 import { theme } from "#ui/utils/icon.ts";
+import { ChatService } from "../../../../../react/src/features/chat/services/ChatService.ts";
 
 const FZ = "14px";
 

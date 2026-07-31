@@ -6,7 +6,10 @@ import {
 } from "@tiny-chat/core/src/features/data/types/message.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { ModelProviderService } from "@tiny-chat/core/src/features/provider/services/ModelProviderService";
+import { ChatService } from "@tiny-chat/react/src/features/chat/services/ChatService.ts";
+import { useChatStore } from "@tiny-chat/react/src/features/chat/stores/useChatStore";
 import { useRef } from "react";
+import { useSession } from "#react/src/core/hooks/useSession.ts";
 import { client } from "#ui/client.ts";
 import { InputService } from "#ui/features/chat/services/InputService.ts";
 import { useMessagingStore } from "#ui/features/chat/stores/useMessagingStore.tsx";
@@ -15,18 +18,14 @@ import { useProviders } from "#ui/features/config/hooks/useProviders.ts";
 import { useTools } from "#ui/features/config/hooks/useTools.ts";
 import { ProviderService } from "#ui/features/config/services/ProviderService.ts";
 import { useSkills } from "#ui/features/file/hooks/useSkills.ts";
-import { refetchMessages } from "#ui/features/message/hooks/useMessages.ts";
 import { MessageHandlerService } from "#ui/features/message/services/MessageHandlerService.ts";
 import { useRetrieval } from "#ui/features/settings/hooks/useRetrieval.ts";
-import { ChatService } from "../services/ChatService";
-import { useChatStore } from "../stores/useChatStore";
-import { refetchChatList } from "./useChatList";
 
 export const sendMessageMutationKey = ["send-message"] as const;
 export const deleteMessageMutationKey = ["delete-message"] as const;
 
 export const useMessaging = () => {
-	const session = client.auth.useSession();
+	const { session } = useSession();
 	const { mcpTools } = useTools();
 	const { skills } = useSkills();
 	const { providers } = useProviders();
@@ -42,9 +41,10 @@ export const useMessaging = () => {
 			return await client.api.message.deleteMessage.mutate(message);
 		},
 		onSuccess: async (chatDeleted, message) => {
-			void refetchMessages(deletingChatId.current);
+			if (!deletingChatId.current) return;
+			void ChatService.refetchMessages(client, deletingChatId.current);
 			if (chatDeleted) {
-				await refetchChatList();
+				await ChatService.refetchChatList(client);
 				if (deletingChatId.current === message.chatId)
 					ChatService.setChatId(null);
 			}
@@ -132,10 +132,10 @@ export const useMessaging = () => {
 						chat: message.chatId,
 						title,
 					});
-					await refetchChatList();
+					await ChatService.refetchChatList(client);
 				})();
 			} else {
-				await refetchMessages(message.chatId);
+				await ChatService.refetchMessages(client, message.chatId);
 			}
 
 			const chat = await client.api.chat.getChat.query(message);

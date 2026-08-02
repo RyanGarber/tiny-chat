@@ -21,11 +21,10 @@ export const client = createClient({
 		DEV: String(import.meta.env.DEV),
 	},
 	host: __TAURI_DEV_HOST__,
-	getToken: () => sessionStorage.getItem("token"),
-	setToken: (token) => sessionStorage.setItem("token", token ?? ""),
-	getStorage: (key) => JSON.parse(sessionStorage.getItem(key) ?? "null"),
-	setStorage: (key, value) =>
-		sessionStorage.setItem(key, JSON.stringify(value)),
+	getToken: () => localStorage.getItem("token"),
+	setToken: (token) => localStorage.setItem("token", token ?? ""),
+	getStorage: (key) => JSON.parse(localStorage.getItem(key) ?? "null"),
+	setStorage: (key, value) => localStorage.setItem(key, JSON.stringify(value)),
 	providers: {
 		getModelProviders: async ({ user }) => {
 			const providers: ModelProvider<any>[] = [];

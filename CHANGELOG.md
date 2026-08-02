@@ -1,3 +1,13 @@
+## [0.7.3](https://github.com/RyanGarber/tiny-chat/compare/0.7.2...0.7.3) (2026-08-02)
+
+### Features
+
+* autoscroll in cli ([ac6efbf](https://github.com/RyanGarber/tiny-chat/commit/ac6efbfe2456fc992230a295f32435f2b9caa182-1))
+* chat list, message view in cli ([51aaba2](https://github.com/RyanGarber/tiny-chat/commit/51aaba26645fecb7c3bf57d2ed27f350a580112e))
+* mcp tools, skills, and messaging in cli ([59c18ad](https://github.com/RyanGarber/tiny-chat/commit/59c18ad3daa1f255f312f5b8b26fc617af978c3c))
+* unified cli and app commands, attachments, and tools ([ac6efbf](https://github.com/RyanGarber/tiny-chat/commit/ac6efbfe2456fc992230a295f32435f2b9caa182))
+
+
 ## [0.7.2](https://github.com/RyanGarber/tiny-chat/compare/0.7.1...0.7.2) (2026-07-30)
 
 ### Features

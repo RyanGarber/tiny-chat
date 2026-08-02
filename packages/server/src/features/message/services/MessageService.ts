@@ -39,17 +39,20 @@ export const MessageService = {
 		chat,
 		limit,
 		cursor,
+		omit,
 	}: {
 		user: zUser;
 		chat: ChatLike;
 		limit?: number;
 		cursor?: string;
+		omit?: boolean;
 	}) => {
 		if (typeof chat === "string") chat = { id: chat };
 
 		const messages = MessageUtils.toMessageStates(
 			await globalThis.prisma.message.findMany({
 				where: { chatId: chat.id, userId: user.id },
+				omit: omit ? { metadata: true } : {},
 			}),
 		);
 

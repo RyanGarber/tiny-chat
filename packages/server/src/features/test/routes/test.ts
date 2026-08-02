@@ -1,3 +1,4 @@
+import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { zAgentContext } from "@tiny-chat/core/src/features/agent/types/agent.ts";
 import { ToolService } from "@tiny-chat/core/src/features/tool/services/ToolService.ts";
 import { ToolUtils } from "@tiny-chat/core/src/features/tool/utils/ToolUtils.ts";
@@ -7,7 +8,7 @@ import { ServerCapabilityService } from "../../capability/services/ServerCapabil
 
 export const test = router({
 	worker: procedure.mutation(async ({ ctx }) => {
-		if (!process.env.DEV)
+		if (!CommonUtils.isTruthy(process.env.DEV))
 			throw new Error("tests not allowed in this environment");
 
 		const { WorkerService } = await import(
@@ -26,7 +27,7 @@ export const test = router({
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
-			if (!process.env.DEV)
+			if (!CommonUtils.isTruthy(process.env.DEV))
 				throw new Error("tests not allowed in this environment");
 
 			const capabilities = await ServerCapabilityService.getCapabilities({

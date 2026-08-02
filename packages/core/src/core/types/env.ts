@@ -1,23 +1,22 @@
 import { z } from "zod";
-import { zStringify } from "./common.ts";
 
 export const zEnv = z.object({
 	VITE_SERVER_URL: z.string().max(255),
-	VITE_SERVER_PORT: z.string().regex(/^\d+$/).transform(Number),
-	VITE_SERVER_PATH_API: z.string().max(255),
-	VITE_SERVER_PATH_AUTH: z.string().max(255),
-	VITE_SERVER_PATH_MCP: z.string().max(255),
+	VITE_SERVER_PORT: z.string().regex(/^\d+$/),
 	VITE_WEB_URL: z.string().max(255),
-	VITE_WEB_PORT: z.string().regex(/^\d+$/).transform(Number),
-	DEV: zStringify
-		.transform((value) => value === "true" || value === "1")
-		.default(false),
+	VITE_WEB_PORT: z.string().regex(/^\d+$/),
+	DEV: z.string().default(""),
 });
 export type zEnv = z.infer<typeof zEnv>;
 
+export const zProviderEnv = zEnv.extend({
+	PROVIDER_RELAY_URL: z.string().max(255).default(""),
+});
+export type zProviderEnv = z.infer<typeof zProviderEnv>;
+
 export const zServerEnv = zEnv.extend({
 	PG_HOST: z.string().max(255),
-	PG_PORT: z.string().regex(/^\d+$/).transform(Number),
+	PG_PORT: z.string().regex(/^\d+$/),
 	PG_USER: z.string().max(255),
 	PG_PASSWORD: z.string().max(255),
 	PG_DATABASE: z.string().max(255),

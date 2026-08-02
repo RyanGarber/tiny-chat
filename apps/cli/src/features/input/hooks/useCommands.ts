@@ -1,4 +1,5 @@
-import { useSession } from "@tiny-chat/react/src/core/hooks/useSession.ts";
+import { useSession } from "@tiny-chat/client/src/core/hooks/useSession.ts";
+import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
 import clipboard from "clipboardy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { client } from "../../../client.ts";
@@ -35,6 +36,7 @@ export const useCommands = ({
 	cursor?: [number, number];
 }) => {
 	const { session, requestClone } = useSession();
+
 	const sessionRef = useRef(session.data);
 	sessionRef.current = session.data;
 
@@ -47,10 +49,31 @@ export const useCommands = ({
 	const getCommands = useCallback(async (): Promise<Command[]> => {
 		const commands: Command[] = [
 			{
-				name: "chats",
-				value: "chats",
+				name: "chat",
+				value: "chat",
 				execute: () => {
 					setPage("chat-list");
+				},
+			},
+			{
+				name: "clear",
+				value: "clear",
+				execute: () => {
+					ChatService.setChat({ id: null });
+				},
+			},
+			{
+				name: "model",
+				value: "model",
+				execute: () => {
+					setPage("model-list");
+				},
+			},
+			{
+				name: "quit",
+				value: "quit",
+				execute: () => {
+					process.exit(0);
 				},
 			},
 		];

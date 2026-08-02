@@ -14,5 +14,5 @@ export const useLoadingStatus = (
 	useEffect(() => {
 		if (query.isFetching) setStatus({ id: "loading" });
 		else unsetStatus({ id: "loading" });
-	}, [query.isFetching]);
+	}, [query.isFetching, setStatus, unsetStatus]);
 };

@@ -5,21 +5,22 @@
 - PNPM workspace monorepo (`pnpm-workspace.yaml`) with:
 	- `packages/server`: Node HTTP server exposing **tRPC** + **better-auth** + small `/@/antigravity` and `/@/upload`
 	  endpoints.
-	- `packages/ui`: Vite + React (Mantine) UI; ships inside Tauri or as web build.
+	- `packages/app`: Vite + React (Mantine) UI; ships inside Tauri or as web build.
 	- `apps/tauri`: Tauri v2 shell for desktop/iOS/Android.
-	- `apps/web`: Fastify static host for `packages/ui` build output.
+	- `apps/web`: Fastify static host for `packages/app` build output.
 
 ## How components talk
 
 - Frontend calls backend over HTTP:
-	- tRPC base path: `VITE_SERVER_PATH_API` (server delegates to a tRPC HTTP handler created with `createHTTPHandler`
+	- tRPC base path: `CommonUtils.endpoints.api` (server delegates to a tRPC HTTP handler created with
+	  `createHTTPHandler`
 	  in `packages/server/src/core/services/ApiService.ts`, mounted by `packages/server/src/server.ts`).
-	- Auth base path: `VITE_SERVER_PATH_AUTH` (better-auth handler in same file).
+	- Auth base path: `CommonUtils.endpoints.auth`.
 - Auth is **Bearer token** driven:
-	- UI stores `token` in `sessionStorage` (see `packages/ui/src/App.tsx`).
-	- tRPC client sends `Authorization: Bearer <token>` (see `packages/ui/src/client.ts`).
+	- UI stores `token` in `sessionStorage` (see `packages/app/src/App.tsx`).
+	- tRPC client sends `Authorization: Bearer <token>` (see `packages/app/src/client.ts`).
 - In dev, URLs are computed from ports/hosts; Tauri dev host uses `TAURI_DEV_HOST` / `__TAURI_DEV_HOST__` (see
-  `packages/ui/vite.config.ts` + `/client.ts`).
+  `packages/app/vite.config.ts` + `/client.ts`).
 
 ## Dev/build "golden paths" (root `package.json`)
 
@@ -43,9 +44,8 @@
 - Backend loads `.env` explicitly: `packages/server/src/server.ts` resolves `../../../.env`.
 - Required backend env (observed in code):
 	- Postgres: `PG_USER`, `PG_PASSWORD`, `PG_HOST`, `PG_PORT`, `PG_DATABASE`
-	- URLs/ports/paths: `VITE_SERVER_PORT`, `VITE_SERVER_URL`, `VITE_WEB_PORT`, `VITE_WEB_URL`,
-	  `VITE_SERVER_PATH_API`, `VITE_SERVER_PATH_AUTH`
-	- OAuth: `AUTH_GITHUB_CLIENT`, `AUTH_GITHUB_SECRET`, `AUTH_GOOGLE_CLIENT`, `AUTH_GOOGLE_SECRET`
+	- URLs/ports/paths: `VITE_SERVER_PORT`, `VITE_SERVER_URL`, `VITE_WEB_PORT`, `VITE_WEB_URL`
+	- OAuth: `AUTH_GITHUB_CLIENT`, `AUTH_GITHUB_SECRET`, `AUTH_GOOGLE_CLIENT`, `AUTH_GOOGLE_SECRET`, ...
 
 ## Persistence / data model
 
@@ -57,7 +57,7 @@
 ## Monorepo & dependencies
 
 - **pnpm workspace** with package filters: `pnpm --filter @tiny-chat/<package> <script>` targets specific workspaces
-- **Workspace packages**: `@tiny-chat/ui`, `@tiny-chat/server`, `@tiny-chat/tauri`, `@tiny-chat/web`, `@tiny-chat/cli`,
+- **Workspace packages**: `@tiny-chat/app`, `@tiny-chat/server`, `@tiny-chat/tauri`, `@tiny-chat/web`, `@tiny-chat/cli`,
   `@tiny-chat/core`
 - **Internal imports**: Use workspace protocol (`"@tiny-chat/core": "workspace:*"`); frontend imports backend
   types/utils via `@tiny-chat/core/src/...`
@@ -101,28 +101,28 @@
 - **Worker**: `packages/server/src/worker.ts` + timed tick in `server.ts` for scheduled actions:
 	- Runs every 5 seconds checking `prisma.action` for due tasks
 	- Executes stored chats with predefined configs (scheduling/reminders)
-- **UI Routing**: Hash-based (`wouter` + `useHashLocation` in `packages/ui/src/main.tsx`):
+- **UI Routing**: Hash-based (`wouter` + `useHashLocation` in `packages/app/src/main.tsx`):
 	- Enables file-based hosting in Tauri and web builds
 	- Deep linking works via `window.location.hash`
-- **State Management**: Zustand stores in `packages/ui/src/stores/`:
+- **State Management**: Zustand stores in `packages/app/src/stores/`:
 	- Patterns: `useStore.getState().init()` for hydration, subscriptions for UI sync
 	- Main stores: `chats`, `folders`, `messages`, `settings`, `tasks`, `providers`, `persistence`, `layout`
 - **Log Plumbing**: Shared between backend and frontend:
 	- Backend initializes via `initLogs(write?, writeToDisk)` in `packages/core/src/logger.ts`
-	- Frontend initializes in `packages/ui/src/main.tsx` passing logger callback
+	- Frontend initializes in `packages/app/src/main.tsx` passing logger callback
 	- Console methods (log, info, warn, error, trace) are intercepted and streamed to UI
 
 ## When changing APIs
 
 - **tRPC routes**: Keep server+client in lockstep:
 	- Route type exported from backend (`type ApiRouter` from `packages/server/src/core/ApiRouter.ts`)
-	- Frontend imports into `packages/ui/client.ts` for type-safe client generation
+	- Frontend imports into `packages/app/client.ts` for type-safe client generation
 	- Always include `.input(zod schema)` for validation; Zod type is inferred on client
 - **Adding new routes**: Create file in `packages/server/src/routes/`, export `router({ ... })`, then add to
   `server.ts` router composition
 - **Auth changes** impact:
 	- `packages/server/src/server.ts` (better-auth config, basePath, trustedOrigins, socialProvider keys)
-	- `packages/ui/src/App.tsx` (token storage, session bootstrap, anonymous sign-in fallback)
+	- `packages/app/src/App.tsx` (token storage, session bootstrap, anonymous sign-in fallback)
 	- Better-auth plugins: `anonymous()` (data migration on account link) + `bearer()` (token auth)
 - **Services & endpoints**: Keep in sync:
 	- `/@/antigravity` → `AntigravityService.ts` (streaming AI responses via SSE). The endpoint expects a JSON payload

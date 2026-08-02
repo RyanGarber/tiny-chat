@@ -9,7 +9,7 @@ export const AuthServer = betterAuth({
 	baseURL: process.argv.includes("--dev")
 		? `http://${process.argv.includes("--host") ? await internalIpV4() : "localhost"}:${process.env.VITE_SERVER_PORT}`
 		: process.env.VITE_SERVER_URL,
-	basePath: process.env.VITE_SERVER_PATH_AUTH,
+	basePath: CommonUtils.endpoints.auth,
 	database: prismaAdapter(prisma, {
 		provider: "postgresql",
 	}),

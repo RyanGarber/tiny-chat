@@ -1,13 +1,16 @@
+import { useConfig } from "@tiny-chat/client/src/features/agent/hooks/useConfig.ts";
+import { useMessaging } from "@tiny-chat/client/src/features/chat/hooks/useMessaging.ts";
 import { useState } from "react";
 import { TextArea } from "react-ink-textarea";
 import { useAppStore } from "../../../core/stores/useAppStore.ts";
 import { useCommands } from "../hooks/useCommands.ts";
-import { InputService } from "../services/InputService.ts";
 import { useInputStore } from "../stores/useInputStore.ts";
 import Completions from "./Completions.tsx";
 
 export default function Input() {
 	const statuses = useAppStore((state) => state.statuses);
+	const { config } = useConfig();
+	const { sendMessage } = useMessaging();
 
 	const content = useInputStore((state) => state.content);
 	const setContent = useInputStore((state) => state.setContent);
@@ -37,11 +40,11 @@ export default function Input() {
 						setContent(value.replace(/\x1b?\[<(\d+);(\d+);(\d+)[Mm]/g, ""));
 					});
 				}}
-				onSubmit={() => console.log("[send]", InputService.getData())}
+				onSubmit={() => sendMessage.mutate()}
 				onCursorChange={(...cursor) => setCursor(cursor)}
 				disableArrowNavigation={commands.length > 0}
 				viewportLines={1}
-				placeholder="Send a message or try /help"
+				placeholder={`Send a message${config?.model ? ` to ${config.model}` : ""}`}
 			/>
 		</>
 	);

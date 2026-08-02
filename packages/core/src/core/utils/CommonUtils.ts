@@ -15,9 +15,28 @@ const getRandomName = () => {
 };
 
 export const CommonUtils = {
+	endpoints: {
+		api: "/@/api",
+		auth: "/@/auth",
+		mcp: "/@/mcp",
+		antigravity: "/@/antigravity",
+	},
+
+	isTruthy: (value?: string) => {
+		return value === "true" || value === "1";
+	},
+
 	defaultName: getRandomName(),
 
 	getRandomName,
+
+	getHash: (data: string) => {
+		let hash = 5381;
+		for (let i = 0; i < data.length; i++) {
+			hash = (hash * 33) ^ data.charCodeAt(i);
+		}
+		return hash >>> 0;
+	},
 
 	getDateFormatted: ({
 		date = new Date(),

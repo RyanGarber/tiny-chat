@@ -1,3 +1,4 @@
+import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { createHTTPHandler } from "@trpc/server/adapters/standalone";
 import { ApiContext } from "../ApiContext.ts";
 import { ApiRouter } from "../ApiRouter.ts";
@@ -5,7 +6,7 @@ import { ApiRouter } from "../ApiRouter.ts";
 export const ApiService = {
 	handle: createHTTPHandler({
 		router: ApiRouter,
-		basePath: `${process.env.VITE_SERVER_PATH_API}/`,
+		basePath: `${CommonUtils.endpoints.api}/`,
 		createContext: ApiContext,
 		maxBodySize: 50 * 1024 * 1024,
 		onError: ({ error }) => {

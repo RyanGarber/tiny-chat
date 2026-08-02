@@ -2,16 +2,17 @@
 	"name": "@tiny-chat/cli",
 	"type": "module",
 	"scripts": {
-		"dev": "tsx --watch src/index.ts"
+		"dev": "tsx --watch src/index.ts",
+		"build": "tsup"
 	},
 	"bin": {
-		"tiny-chat": "./src/index.js"
+		"tiny-chat": "./dist/index.js"
 	},
 	"dependencies": {
 		"@napi-rs/keyring": "^1.3.0",
 		"@tanstack/react-query": "^5.101.2",
+		"@tiny-chat/client": "workspace:*",
 		"@tiny-chat/core": "workspace:*",
-		"@tiny-chat/react": "workspace:*",
 		"@tiny-chat/server": "workspace:*",
 		"@trpc/tanstack-react-query": "^11.18.0",
 		"cli-spinners": "2.9.2",
@@ -25,10 +26,12 @@
 		"marked-terminal": "^7.3.0",
 		"react": "^19.2.7",
 		"react-ink-textarea": "^0.3.0",
+		"shell-quote": "^1.10.0",
 		"zustand": "^5.0.14"
 	},
 	"devDependencies": {
 		"@types/node": "^26.1.1",
-		"@types/react": "^19.2.17"
+		"@types/react": "^19.2.17",
+		"tsup": "^8.5.1"
 	}
 }

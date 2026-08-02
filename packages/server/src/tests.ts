@@ -1,5 +1,6 @@
 import "./env.ts";
 
+import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { zConfig } from "@tiny-chat/core/src/features/data/types/message.ts";
 import { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { TestProvider } from "@tiny-chat/core/src/features/provider/providers/model/TestProvider.ts";
@@ -85,7 +86,7 @@ export function testClient(
 		api: createTRPCClient<ApiRouter>({
 			links: [
 				httpLink({
-					url: `${backendUrl}${process.env.VITE_SERVER_PATH_API}/`,
+					url: `${backendUrl}${CommonUtils.endpoints.api}/`,
 					transformer: superjson,
 					headers: () => ({ Authorization: `Bearer ${token}` }),
 					methodOverride: "POST",
@@ -94,7 +95,7 @@ export function testClient(
 		}),
 		auth: createAuthClient({
 			baseURL: backendUrl,
-			basePath: process.env.VITE_SERVER_PATH_AUTH,
+			basePath: CommonUtils.endpoints.auth,
 			fetchOptions: {
 				auth: {
 					type: "Bearer",

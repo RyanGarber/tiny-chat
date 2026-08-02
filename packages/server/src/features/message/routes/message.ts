@@ -29,6 +29,7 @@ export const message = router({
 				chat: input.chat,
 				limit: input.limit,
 				cursor: input.cursor,
+				omit: !!input.limit,
 			});
 		}),
 

@@ -1,6 +1,7 @@
 import "./env.ts";
 
 import { createServer } from "node:http";
+import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { createLogger } from "@tiny-chat/core/src/logger.ts";
 import { internalIpV4 } from "internal-ip";
 import { ApiService } from "./core/services/ApiService.ts";
@@ -9,7 +10,7 @@ import { AntigravityService } from "./features/proxy/services/AntigravityService
 import { McpService } from "./features/proxy/services/McpService.ts";
 import { WorkerService } from "./features/worker/services/WorkerService.ts";
 
-if (import.meta.main) createLogger({logToDisk: true});
+if (import.meta.main) createLogger({ logToDisk: true });
 
 const server = createServer((req, res) => {
 	res.setHeader(
@@ -32,13 +33,13 @@ const server = createServer((req, res) => {
 		return;
 	}
 
-	if (req.url?.startsWith(process.env.VITE_SERVER_PATH_API as string)) {
+	if (req.url?.startsWith(CommonUtils.endpoints.api as string)) {
 		ApiService.handle(req, res);
-	} else if (req.url?.startsWith(process.env.VITE_SERVER_PATH_AUTH as string)) {
+	} else if (req.url?.startsWith(CommonUtils.endpoints.auth as string)) {
 		void AuthService.handle(req, res);
-	} else if (req.url?.startsWith(process.env.VITE_SERVER_PATH_MCP as string)) {
+	} else if (req.url?.startsWith(CommonUtils.endpoints.mcp as string)) {
 		void McpService.handle(req, res);
-	} else if (req.url?.startsWith("/@/antigravity")) {
+	} else if (req.url?.startsWith(CommonUtils.endpoints.antigravity)) {
 		void AntigravityService.handle(req, res);
 	} else {
 		res.writeHead(200);

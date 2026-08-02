@@ -2,8 +2,8 @@
 	"name": "@tiny-chat/web",
 	"type": "module",
 	"scripts": {
-		"dev": "pnpm --filter @tiny-chat/ui run dev",
-		"build": "pnpm --filter @tiny-chat/ui run build",
+		"dev": "pnpm --filter @tiny-chat/app run dev",
+		"build": "pnpm --filter @tiny-chat/app run build",
 		"start": "node src/index.ts"
 	},
 	"dependencies": {

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-type Page = "chat" | "chat-list";
+type Page = "chat" | "chat-list" | "model-list";
 
 export interface Status {
 	id: string;

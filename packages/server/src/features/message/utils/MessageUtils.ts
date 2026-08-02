@@ -6,6 +6,8 @@ import {
 } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { Message } from "../../../../generated/prisma/client.ts";
 
+type MessageMaybeOmit = Message | Omit<Message, "metadata">;
+
 export const MessageUtils = {
 	/**
 	 * Wrap a raw message row into a {@link MessageState}.
@@ -15,7 +17,7 @@ export const MessageUtils = {
 			...message,
 			config: zConfig.parse(message.config),
 			data: zData.parse(message.data),
-			metadata: zMetadata.parse(message.metadata),
+			metadata: zMetadata.parse(message.metadata ?? [[{ _omit: true }]]),
 			state: {
 				any: false,
 				thinking: false,

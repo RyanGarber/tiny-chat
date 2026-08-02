@@ -39,9 +39,9 @@
 		}
 	},
 	"build": {
-		"beforeDevCommand": "pnpm run --filter @tiny-chat/ui dev",
+		"beforeDevCommand": "pnpm run --filter @tiny-chat/app dev",
 		"devUrl": "http://localhost:8010",
-		"beforeBuildCommand": "pnpm run --filter @tiny-chat/ui build",
-		"frontendDist": "../../packages/ui/dist"
+		"beforeBuildCommand": "pnpm run --filter @tiny-chat/app build",
+		"frontendDist": "../../packages/app/dist"
 	}
 }

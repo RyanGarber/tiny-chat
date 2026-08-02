@@ -1,8 +1,8 @@
-import { useChatList } from "@tiny-chat/react/src/features/chat/hooks/useChatList.ts";
-import { ChatService } from "@tiny-chat/react/src/features/chat/services/ChatService.ts";
+import { useChatList } from "@tiny-chat/client/src/features/chat/hooks/useChatList.ts";
+import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
 import { Box, Text, useInput, useWindowSize } from "ink";
 import { ScrollList } from "ink-scroll-list";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useLoadingStatus } from "../../../core/hooks/useLoadingStatus.ts";
 import { useAppStore } from "../../../core/stores/useAppStore.ts";
 
@@ -31,7 +31,7 @@ export default function ChatList() {
 			setSelected((previous) => Math.min(previous + 1, chatList.length - 1));
 		}
 		if (key.return) {
-			ChatService.setChatId(chatList[selected].id);
+			ChatService.setChat(chatList[selected]);
 			setPage("chat");
 		}
 	});
@@ -43,20 +43,23 @@ export default function ChatList() {
 			borderColor="blueBright"
 			borderStyle="round"
 		>
-			{folderList.map((folder) => (
-				<Box key={folder.id} borderLeft={true}>
-					{folder.chats.map((chat) => (
-						<Box key={chat.id}>
-							<Text
-								color={selected === chatList.indexOf(chat) ? "blue" : "white"}
-							>
-								{selected === chatList.indexOf(chat) ? "▶ " : "  "}
-								{chat.title}
-							</Text>
-						</Box>
-					))}
-				</Box>
-			))}
+			{chatList.map((chat) => {
+				const folder = folderList.find((folder) => folder.chats.includes(chat));
+				const isFirstChat = folder && folder.chats.indexOf(chat) === 0;
+				return (
+					<Box key={chat.id} flexDirection="column">
+						{isFirstChat && folder.chats.length > 1 && (
+							<Text color="gray">--- {folder?.title} ---</Text>
+						)}
+						<Text
+							color={selected === chatList.indexOf(chat) ? "blue" : "white"}
+						>
+							{selected === chatList.indexOf(chat) ? "▶ " : "  "}
+							{chat.title}
+						</Text>
+					</Box>
+				);
+			})}
 		</ScrollList>
 	);
 }

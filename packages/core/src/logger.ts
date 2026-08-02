@@ -17,11 +17,13 @@ export type LogWriter = (
 export function createLogger({
 	logWriter,
 	logToDisk,
+	silent,
 }: {
 	logWriter?: LogWriter;
 	logToDisk?: boolean;
+	silent?: boolean;
 } = {}) {
-	console.log("setting up logs...");
+	if (!silent) console.log("setting up logs...");
 
 	const levels = Object.values(LogLevel);
 
@@ -73,7 +75,7 @@ export function createLogger({
 
 		if (level === "error") {
 			if (typeof window !== "undefined") {
-				console.log("logging to browser");
+				if (!silent) console.log("logging to browser");
 				window?.addEventListener("error", (e) =>
 					console.error("[UNCAUGHT]", e),
 				);
@@ -83,7 +85,7 @@ export function createLogger({
 			}
 
 			if (typeof process !== "undefined" && typeof process.on === "function") {
-				console.log("logging to process");
+				if (!silent) console.log("logging to process");
 				process?.on("uncaughtException", (e) => {
 					console.error("[UNCAUGHT]", e);
 					process.exit(1);

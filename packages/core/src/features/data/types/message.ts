@@ -3,7 +3,6 @@ import type { Message } from "../../../../../server/generated/prisma/browser.ts"
 
 export { Author } from "../../../../../server/generated/prisma/browser.ts";
 
-// TODO
 export const DEFAULT_TOOLSETS = [
 	"questions",
 	"actions",

@@ -4,6 +4,7 @@ import {
 	type ServerResponse,
 } from "node:http";
 import { request as httpsRequest } from "node:https";
+import {CommonUtils} from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 
 /**
  * A thin wrapper around MCP streams, preventing CORS errors.
@@ -14,7 +15,7 @@ export const McpService = {
 			const url = new URL(req.headers["x-mcp-url"] as string);
 			delete req.headers["x-mcp-url"];
 
-			const extraPath = req.url?.replace("/@/mcp", "") ?? "";
+			const extraPath = req.url?.replace(CommonUtils.endpoints.mcp, "") ?? "";
 			url.pathname = url.pathname + extraPath;
 
 			const chunks: Buffer[] = [];

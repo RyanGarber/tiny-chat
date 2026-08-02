@@ -57,7 +57,7 @@ export const zSettings = z
 		codeTheme: z.string(),
 		blackout: z.boolean(),
 		providers: zProviderSettings,
-		mcpServers: zMCPServers.catch(() => undefined),
+		mcpServers: zMCPServers.catch(() => ({})),
 		presets: z.record(z.string(), zConfig),
 	})
 	.partial();

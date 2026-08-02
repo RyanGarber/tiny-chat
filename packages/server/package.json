@@ -12,7 +12,6 @@
 		"@ryangarber/ai-sdk-antigravity-proxy": "^0.1.4",
 		"@ryangarber/legiscan-ts": "^2.1.0",
 		"@tiny-chat/core": "workspace:*",
-		"ai": "^7.0.18",
 		"fflate": "^0.8.3",
 		"internal-ip": "^9.0.0",
 		"just-bash": "^3.1.0",

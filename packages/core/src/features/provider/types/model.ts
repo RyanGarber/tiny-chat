@@ -1,7 +1,7 @@
 import type { ProviderV3, ProviderV4 } from "@ai-sdk/provider";
 import type { EmbeddingModel, LanguageModel, TextStreamPart } from "ai";
 import { z } from "zod";
-import type { zEnv } from "../../../core/types/env.ts";
+import type { zProviderEnv } from "../../../core/types/env.ts";
 import {
 	Author,
 	type zConfig,
@@ -63,13 +63,13 @@ export interface ModelProvider<T extends ProviderV3 | ProviderV4>
 	getSdk: (args: {
 		user: zUser;
 		model: string;
-		env: Partial<zEnv>;
+		env: Partial<zProviderEnv>;
 	}) => T | null;
 
 	getSdkOptions: (args: {
 		user: zUser;
 		config: zConfig;
-		env: Partial<zEnv>;
+		env: Partial<zProviderEnv>;
 	}) => Record<string, any> | undefined;
 
 	getModelArgs: (args: { model: string }) => zModelArg[];
@@ -77,13 +77,13 @@ export interface ModelProvider<T extends ProviderV3 | ProviderV4>
 	getLanguageModel: (args: {
 		user: zUser;
 		model: string;
-		env: Partial<zEnv>;
+		env: Partial<zProviderEnv>;
 	}) => LanguageModel | null;
 
 	getEmbeddingModel: (args: {
 		user: zUser;
 		model: string;
-		env: Partial<zEnv>;
+		env: Partial<zProviderEnv>;
 	}) => EmbeddingModel | null;
 
 	getPartTransformed?: (args: {

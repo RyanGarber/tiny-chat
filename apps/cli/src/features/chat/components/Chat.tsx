@@ -1,6 +1,6 @@
-import { useChat } from "@tiny-chat/react/src/features/chat/hooks/useChat.ts";
-import { useMessages } from "@tiny-chat/react/src/features/chat/hooks/useMessages.ts";
-import { Text, useStdout } from "ink";
+import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
+import { useMessages } from "@tiny-chat/client/src/features/chat/hooks/useMessages.ts";
+import { useStdout } from "ink";
 import { ScrollView, type ScrollViewRef } from "ink-scroll-view";
 import { useEffect, useRef } from "react";
 import { useLoadingStatus } from "../../../core/hooks/useLoadingStatus.ts";
@@ -38,7 +38,6 @@ export default function Chat() {
 				.map((message) => (
 					<Message key={message.id} message={message} />
 				))}
-			<Text dimColor>[end of chat]</Text>
 		</ScrollView>
 	);
 }

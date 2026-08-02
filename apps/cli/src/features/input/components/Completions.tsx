@@ -1,4 +1,4 @@
-import { Box, Text, useInput, useWindowSize } from "ink";
+import { Box, Text, useInput } from "ink";
 import { ScrollList } from "ink-scroll-list";
 import { useEffect, useState } from "react";
 
@@ -14,7 +14,6 @@ export default function Completions<T extends CompletionItem>({
 	items: T[];
 	onSelect: (item: T) => void;
 }) {
-	const { rows } = useWindowSize();
 	const [selected, setSelected] = useState(0);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: item change should reset selection

@@ -8,6 +8,7 @@ import {
 	AntigravityProxyModel,
 } from "@ryangarber/ai-sdk-antigravity-proxy";
 import type { TextStreamPart } from "ai";
+import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
 import type { ModelProvider, zModel } from "../../types/model.ts";
 import { ModelProviderUtils } from "../../utils/ModelProviderUtils.ts";
 import { GoogleProvider } from "./GoogleProvider.ts";
@@ -20,10 +21,10 @@ export const AntigravityProvider: ModelProvider<ProviderV4> = {
 	getSdk({ user, env }) {
 		if (!user?.settings?.providers?.gemini?.refreshToken) return null;
 		console.log(
-			`[AntigravityProvider] using relay: ${env.VITE_SERVER_URL}/@/antigravity`,
+			`[AntigravityProvider] using relay: ${env.PROVIDER_RELAY_URL}${CommonUtils.endpoints.antigravity}`,
 		);
 		return createAntigravityProxyRelayProvider(
-			`${env.VITE_SERVER_URL}/@/antigravity`,
+			`${env.PROVIDER_RELAY_URL}${CommonUtils.endpoints.antigravity}`,
 			{
 				refreshToken: user.settings.providers.antigravity
 					.refreshToken as string,

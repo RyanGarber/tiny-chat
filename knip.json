@@ -8,6 +8,6 @@
 		"**/generated/**",
 		"**/scripts/**",
 		"**/pm2.config.mjs",
-		"**/src/utils/icon.ts"
+		"**/src/core/utils/IconUtils.ts"
 	]
 }

@@ -1,5 +1,4 @@
-import type { Transport } from "@modelcontextprotocol/sdk/shared/transport";
-import type { JSONRPCMessage } from "@modelcontextprotocol/sdk/types";
+import type { JSONRPCMessage, Transport } from "@modelcontextprotocol/client";
 import { TauriUtils } from "#ui/features/tauri/utils/TauriUtils.ts";
 
 export class TauriStdioTransport implements Transport {

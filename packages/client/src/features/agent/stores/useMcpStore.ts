@@ -1,4 +1,4 @@
-import type { Client } from "@modelcontextprotocol/sdk/client";
+import type { Client } from "@modelcontextprotocol/client";
 import { create } from "zustand";
 
 interface McpStore {

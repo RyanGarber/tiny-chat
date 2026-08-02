@@ -53,16 +53,16 @@ jobs:
                     git config user.name "github-actions[bot]"
                     git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-            -   name: Read version
+            -   name: Read existing version
                 id: before
                 run: echo "version=$(node -pe "require('./apps/tauri/tauri.conf.json').version")" >> "$GITHUB_OUTPUT"
 
-            -   name: Start release
+            -   name: Determine new version
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                 run: pnpm exec semantic-release
 
-            -   name: Determine outcome
+            -   name: Write release status
                 id: diff
                 run: |
                     VERSION=$(node -pe "require('./apps/tauri/tauri.conf.json').version")
@@ -73,7 +73,7 @@ jobs:
                     fi
                     echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-            -   name: Read release notes
+            -   name: Write release notes
                 id: notes
                 run: |
                     DELIMITER="EOF_$(uuidgen)"
@@ -83,8 +83,41 @@ jobs:
                       echo "$DELIMITER"
                     } >> "$GITHUB_OUTPUT"
 
-    desktop:
+    create-release:
         needs: version
+        if: needs.version.outputs.released == 'true'
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        steps:
+            -   name: Create GitHub release
+                env:
+                    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    # This job has no checkout, so gh cannot infer the repo from a git
+                    # remote. GH_REPO tells it explicitly (avoids "not a git repository").
+                    GH_REPO: ${{ github.repository }}
+                    VERSION: ${{ needs.version.outputs.version }}
+                    NOTES: ${{ needs.version.outputs.notes }}
+                run: |
+                    if gh release view "$VERSION" >/dev/null 2>&1; then
+                      echo "Release $VERSION already exists"
+                      exit 0
+                    fi
+                    NOTES_FILE=$(mktemp)
+                    printf '%s' "$NOTES" > "$NOTES_FILE"
+                    # No --verify-tag: it shells out to local git, which isn't present
+                    # here. The tag was already pushed by semantic-release in the version
+                    # job, so we don't need to re-verify it.
+                    if ! gh release create "$VERSION" \
+                        --title "$VERSION" \
+                        --notes-file "$NOTES_FILE"; then
+                      gh release view "$VERSION" >/dev/null 2>&1 \
+                        || { echo "Failed to create or find release $VERSION"; exit 1; }
+                      echo "Release $VERSION already exists, continuing"
+                    fi
+
+    desktop:
+        needs: [ version, create-release ]
         if: needs.version.outputs.released == 'true'
         uses: ./.github/workflows/release-desktop.yml
         with:
@@ -93,7 +126,7 @@ jobs:
         secrets: inherit
 
     android:
-        needs: version
+        needs: [ version, create-release ]
         if: needs.version.outputs.released == 'true'
         uses: ./.github/workflows/release-android.yml
         with:
@@ -102,7 +135,7 @@ jobs:
         secrets: inherit
 
     ios:
-        needs: version
+        needs: [ version, create-release ]
         if: needs.version.outputs.released == 'true'
         uses: ./.github/workflows/release-ios.yml
         with:

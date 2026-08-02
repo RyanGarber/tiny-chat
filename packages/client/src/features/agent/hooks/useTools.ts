@@ -1,6 +1,6 @@
-import type { Client } from "@modelcontextprotocol/sdk/client";
+import type { Client } from "@modelcontextprotocol/client";
 import { useQuery } from "@tanstack/react-query";
-import type { zToolData } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { zDataInnerPart } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { zMCPServers } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { ToolService } from "@tiny-chat/core/src/features/tool/services/ToolService.ts";
 import type {
@@ -15,7 +15,7 @@ import { useMcp } from "./useMcp.ts";
 
 export interface McpToolset extends Toolset<void> {
 	server: NonNullable<zMCPServers>[keyof NonNullable<zMCPServers>];
-	client: Client<any>;
+	client: Client;
 }
 
 export const nativeToolsQueryKey = ["useTools", "nativeTools"] as const;
@@ -66,7 +66,10 @@ export const useTools = () => {
 								input: t.inputSchema,
 								output: t.outputSchema,
 
-								execute: async ({ input, ...rest }): Promise<zToolData> => {
+								execute: async ({
+									input,
+									...rest
+								}): Promise<zDataInnerPart[]> => {
 									console.log("[useTools] calling mcp tool:", {
 										input,
 										...rest,

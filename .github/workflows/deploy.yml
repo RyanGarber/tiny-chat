@@ -58,7 +58,7 @@ jobs:
 
             -   name: Build deployment
                 run: |
-                    pnpm run build:ui
+                    pnpm run build:app
                     cp -r packages/app/dist apps/web/dist
 
             -   name: Package deployment

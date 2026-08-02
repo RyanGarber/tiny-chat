@@ -42,7 +42,7 @@ export const zConfig = z.object({
 });
 export type zConfig = z.infer<typeof zConfig>;
 
-export const zToolDataPart = z.discriminatedUnion("type", [
+export const zDataInnerPart = z.discriminatedUnion("type", [
 	z.object({ type: z.literal("text"), value: z.string() }),
 	z.object({
 		type: z.literal("file"),
@@ -52,10 +52,7 @@ export const zToolDataPart = z.discriminatedUnion("type", [
 	}),
 	z.object({ type: z.literal("json"), value: z.any() }),
 ]);
-export type zToolDataPart = z.infer<typeof zToolDataPart>;
-
-export const zToolData = z.array(zToolDataPart);
-export type zToolData = z.infer<typeof zToolData>;
+export type zDataInnerPart = z.infer<typeof zDataInnerPart>;
 
 export const zSignature = z.object({
 	model: z.string().optional(),
@@ -95,8 +92,9 @@ export const zDataPart = z.discriminatedUnion("type", [
 		id: z.string(),
 		name: z.string(),
 		value: z
-			.array(zToolDataPart)
+			.array(zDataInnerPart)
 			.catch(({ value }) => [{ type: "json", value: value }]),
+		append: z.array(zDataInnerPart).optional(),
 		error: z.boolean().optional(),
 	}),
 	z.object({

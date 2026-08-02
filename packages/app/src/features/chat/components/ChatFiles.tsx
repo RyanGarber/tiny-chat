@@ -14,6 +14,7 @@ import {
 	Tree,
 	type TreeNodeData,
 } from "@mantine/core";
+import { useChatFiles } from "@tiny-chat/client/src/features/chat/hooks/useChatFiles.ts";
 import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
 import type { FileNode } from "@tiny-chat/core/src/features/file/types/file.ts";
 import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeUtils.ts";
@@ -29,7 +30,6 @@ import {
 	FilePreview,
 	type FilePreviewItem,
 } from "#ui/features/upload/components/FilePreview.tsx";
-import { useFilesystem } from "#ui/features/upload/hooks/useFilesystem.ts";
 
 interface FileTreeNodeProps {
 	type: "file";
@@ -135,7 +135,7 @@ function FileTreeNode({
 
 	const chatId = useChatStore((s) => s.chatId);
 
-	const { readChatFile } = useFilesystem();
+	const { readChatFile } = useChatFiles();
 	const [isHovering, setIsHovering] = useState(false);
 	const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 	const [previewData, setPreviewData] = useState<FilePreviewItem | null>(null);
@@ -299,7 +299,7 @@ function FileTreeNode({
 }
 
 export default function ChatFiles() {
-	const { chatFiles } = useFilesystem();
+	const { chatFiles } = useChatFiles();
 
 	const isAsideOpen = useLayoutStore((s) => s.isAsideOpen);
 	const setAsideOpen = useLayoutStore((s) => s.setAsideOpen);

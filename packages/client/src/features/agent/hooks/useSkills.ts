@@ -6,7 +6,6 @@ import type { zSkill } from "@tiny-chat/core/src/features/skill/types/skill.ts";
 import { SkillUtils } from "@tiny-chat/core/src/features/skill/utils/SkillUtils.ts";
 import { useContext, useMemo } from "react";
 import { ClientProvider } from "../../../client.ts";
-import { useCapabilities } from "../../capability/hooks/useCapabilities.ts";
 
 export const localSkillsQueryKey = ["skills", "local"] as const;
 export const nativeSkillsQueryKey = ["skills", "native"] as const;

@@ -11,12 +11,16 @@ import {
 	Author,
 	type zConfig,
 	zData,
+	zDataInnerPart,
 	type zDataPart,
-	zToolData,
 } from "../../data/types/message.ts";
 import type { zUser } from "../../data/types/user.ts";
 import type { ModelProvider, zModelMessage } from "../types/model.ts";
 import { ModelProviderUtils } from "../utils/ModelProviderUtils.ts";
+
+type SdkMessage = ModelMessage & {
+	content: Exclude<ModelMessage["content"][number], string>[];
+};
 
 export const ModelTransformService = {
 	toSdkMessages: ({
@@ -29,10 +33,10 @@ export const ModelTransformService = {
 		provider: ModelProvider<any>;
 		messages: zModelMessage[];
 		config: zConfig;
-	}): ModelMessage[] => {
-		const sdkMessages: ModelMessage[] = [];
+	}): SdkMessage[] => {
+		const sdkMessages: SdkMessage[] = [];
 		for (const message of messages) {
-			const sdkMessage: ModelMessage = {
+			const sdkMessage: SdkMessage = {
 				role: message.author === Author.MODEL ? "assistant" : "user",
 				content: [],
 			};
@@ -41,6 +45,12 @@ export const ModelTransformService = {
 				provider.getPartTransformed?.({ user, config, part }) ??
 				ModelProviderUtils.getPartTransformed({ part });
 			const parts = zData.parse(message.data).flat().flatMap(transform);
+
+			type SdkInnerPart =
+				| TextPart
+				| (FilePart & { data: Extract<FilePart["data"], { type: "data" }> });
+
+			const appendUserParts: SdkInnerPart[] = [];
 
 			for (const part of parts) {
 				const isToolResult = part.type === "toolResult";
@@ -66,6 +76,32 @@ export const ModelTransformService = {
 				});
 				providerOptions =
 					ModelProviderUtils.getSignatureReturnPruned(providerOptions);
+
+				const toSdkInnerPart = (part: zDataInnerPart[]): SdkInnerPart[] => {
+					return part.flatMap(transform).flatMap((part): SdkInnerPart[] => {
+						if (part.type === "text") {
+							return [{ type: "text", text: part.value }];
+						} else if (part.type === "file") {
+							return [
+								{
+									type: "file",
+									filename: part.name,
+									mediaType: part.mime,
+									data: { type: "data", data: part.data },
+								},
+							];
+						} else if (part.type === "json") {
+							return [
+								{
+									type: "text",
+									text: JSON.stringify(part.value),
+								},
+							];
+						}
+						console.warn("[ModelTransformService] invalid tool output:", part);
+						return [];
+					});
+				};
 
 				const toSdkPart = (
 					part: zDataPart,
@@ -115,7 +151,11 @@ export const ModelTransformService = {
 							},
 						];
 					} else if (part.type === "toolResult") {
-						const parsed = zToolData.safeParse(part.value);
+						const parsed = zDataInnerPart.array().safeParse(part.value);
+						// Store for appending in a new user part
+						if (part.append) {
+							appendUserParts.push(...toSdkInnerPart(part.append));
+						}
 						return [
 							{
 								type: "tool-result",
@@ -126,41 +166,7 @@ export const ModelTransformService = {
 									: parsed.success
 										? {
 												type: "content",
-												value: parsed.data
-													.flatMap(transform)
-													.flatMap(
-														(
-															part,
-														): Extract<
-															ToolResultPart["output"],
-															{ type: "content" }
-														>["value"] => {
-															if (part.type === "text") {
-																return [{ type: "text", text: part.value }];
-															} else if (part.type === "file") {
-																return [
-																	{
-																		type: "file",
-																		filename: part.name,
-																		mediaType: part.mime,
-																		data: { type: "data", data: part.data },
-																	},
-																];
-															} else if (part.type === "json") {
-																return [
-																	{
-																		type: "text",
-																		text: JSON.stringify(part.value),
-																	},
-																];
-															}
-															console.warn(
-																"[ModelTransformService] invalid tool output:",
-																part,
-															);
-															return [];
-														},
-													),
+												value: toSdkInnerPart(parsed.data),
 											}
 										: { type: "json", value: part.value },
 								providerOptions,
@@ -170,11 +176,18 @@ export const ModelTransformService = {
 					return [];
 				};
 
-				(sdkMessage.content as any[]).push(...toSdkPart(part));
+				sdkMessage.content.push(...toSdkPart(part));
 			}
 
 			if (sdkMessage.content.length) {
 				sdkMessages.push(sdkMessage);
+			}
+
+			if (appendUserParts.length) {
+				sdkMessages.push({
+					role: "user",
+					content: appendUserParts,
+				});
 			}
 		}
 

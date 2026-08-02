@@ -28,7 +28,6 @@ import { Tiptap } from "@tiptap/react";
 import {
 	type CSSProperties,
 	memo,
-	useCallback,
 	useLayoutEffect,
 	useMemo,
 	useRef,
@@ -39,6 +38,7 @@ import { client } from "#ui/client.ts";
 import { StyleUtils } from "#ui/core/utils/StyleUtils.ts";
 import { CapabilitySelect } from "#ui/features/agent/components/CapabilitySelect.tsx";
 import ModelSelect from "#ui/features/agent/components/ModelSelect.tsx";
+import { useCapabilitySelectStore } from "#ui/features/agent/stores/useCapabilitySelectStore.ts";
 import { useEditor } from "#ui/features/editor/hooks/useEditor.tsx";
 import { useEditorStore } from "#ui/features/editor/stores/useEditorStore.ts";
 import Upload, {
@@ -105,11 +105,10 @@ export const ChatInput = memo(
 
 		const isUploading = useIsMutating({ mutationKey: uploadMutationKey }) > 0;
 
-		const [capabilitySelectOpen, setCapabilitySelectOpen] = useState(false);
-
-		const onCapabilitySelectClose = useCallback(() => {
-			setCapabilitySelectOpen(false);
-		}, []);
+		const capabilitySelectOpen = useCapabilitySelectStore((s) => s.opened);
+		const capabilitySelectTab = useCapabilitySelectStore((s) => s.tab);
+		const openCapabilitySelect = useCapabilitySelectStore((s) => s.open);
+		const closeCapabilitySelect = useCapabilitySelectStore((s) => s.close);
 
 		const leftActionContent = useMemo(
 			() => (
@@ -153,7 +152,8 @@ export const ChatInput = memo(
 				<>
 					<CapabilitySelect
 						opened={capabilitySelectOpen}
-						onClose={onCapabilitySelectClose}
+						onClose={closeCapabilitySelect}
+						defaultTab={capabilitySelectTab}
 					/>
 					<Popover position="top" transitionProps={{ transition: "fade-up" }}>
 						<PopoverTarget>
@@ -194,7 +194,7 @@ export const ChatInput = memo(
 								variant="transparent"
 								c="dimmed"
 								size="xs"
-								onClick={() => setCapabilitySelectOpen(true)}
+								onClick={() => openCapabilitySelect()}
 							>
 								{enabledTools.length} TOOL{enabledTools.length !== 1 ? "S" : ""}{" "}
 								&middot; {enabledSkills.length} SKILL
@@ -285,7 +285,9 @@ export const ChatInput = memo(
 			),
 			[
 				capabilitySelectOpen,
-				onCapabilitySelectClose,
+				capabilitySelectTab,
+				closeCapabilitySelect,
+				openCapabilitySelect,
 				isAny,
 				config,
 				enabledTools.length,

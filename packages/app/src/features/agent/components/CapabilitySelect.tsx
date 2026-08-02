@@ -37,6 +37,7 @@ import type { Toolset } from "#core/features/tool/types/tool.ts";
 import { ToolUtils } from "#core/features/tool/utils/ToolUtils.ts";
 import { useLayoutStore } from "#ui/core/stores/useLayoutStore.tsx";
 import { StyleUtils } from "#ui/core/utils/StyleUtils.ts";
+import type { CapabilitySelectTab } from "#ui/features/agent/stores/useCapabilitySelectStore.ts";
 import { useTauri } from "#ui/features/tauri/hooks/useTauri.ts";
 import Dropzone from "#ui/features/upload/components/Dropzone.tsx";
 
@@ -44,7 +45,15 @@ const CHAT_FILE_TOOLSET = "chat_system";
 const USER_FILE_TOOLSET = "user_system";
 
 export const CapabilitySelect = memo(
-	({ opened, onClose }: { opened: boolean; onClose: () => void }) => {
+	({
+		opened,
+		onClose,
+		defaultTab = "tools:built-in",
+	}: {
+		opened: boolean;
+		onClose: () => void;
+		defaultTab?: CapabilitySelectTab;
+	}) => {
 		const { config, setConfig } = useConfig();
 		const { isMobile } = useLayoutStore();
 		const { mcpServerSettingsUnparsed, setMcpServerSettings } =
@@ -250,7 +259,7 @@ export const CapabilitySelect = memo(
 				styles={{ content: { ...StyleUtils.glass } }}
 				centered
 			>
-				<Tabs defaultValue="tools:built-in" variant="pills">
+				<Tabs key={defaultTab} defaultValue={defaultTab} variant="pills">
 					<Tabs.List mb="md">
 						<Group gap={10}>
 							<Group gap={7} mr={10}>

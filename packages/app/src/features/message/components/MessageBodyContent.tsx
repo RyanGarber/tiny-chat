@@ -15,6 +15,7 @@ import { useProviders } from "@tiny-chat/client/src/features/agent/hooks/useProv
 import { useTools } from "@tiny-chat/client/src/features/agent/hooks/useTools.ts";
 import { AgentMessageService } from "@tiny-chat/client/src/features/agent/services/AgentMessageService.ts";
 import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
+import { useChatFiles } from "@tiny-chat/client/src/features/chat/hooks/useChatFiles.ts";
 import { useMessages } from "@tiny-chat/client/src/features/chat/hooks/useMessages.ts";
 import { useMessageStream } from "@tiny-chat/client/src/features/chat/hooks/useStreaming.ts";
 import { useThemes } from "@tiny-chat/client/src/features/settings/hooks/useThemes.ts";
@@ -46,7 +47,6 @@ import { EditorUtils } from "#ui/features/editor/utils/EditorUtils.ts";
 import { Markdown } from "#ui/features/message/components/Markdown.tsx";
 import { ToolCallInput } from "#ui/features/message/components/ToolCallInput.tsx";
 import { useMessageSelection } from "#ui/features/message/hooks/useMessageSelection.ts";
-import { useFilesystem } from "#ui/features/upload/hooks/useFilesystem.ts";
 import { Thinking } from "./Thinking";
 import { ToolCall } from "./ToolCall";
 
@@ -69,7 +69,7 @@ export const MessageBodyContent = memo(
 		const { actions } = useActions();
 		const { providers } = useProviders();
 		const { messages } = useMessages();
-		const { chatFiles } = useFilesystem();
+		const { chatFiles } = useChatFiles();
 
 		const messageList = useMemo(
 			() => messages.data?.pages.flatMap((m) => m.messages) ?? [],

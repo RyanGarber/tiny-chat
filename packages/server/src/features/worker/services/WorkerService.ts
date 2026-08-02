@@ -1,5 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
-import { zEnv, zProviderEnv } from "@tiny-chat/core/src/core/types/env.ts";
+import { zProviderEnv } from "@tiny-chat/core/src/core/types/env.ts";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { AgentService } from "@tiny-chat/core/src/features/agent/services/AgentService.ts";
 import type {

@@ -1,15 +1,15 @@
 import { exec } from "node:child_process";
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
+import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { createClient } from "@tiny-chat/client/src/client.ts";
 import type { zEnv } from "@tiny-chat/core/src/core/types/env.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { quote } from "shell-quote";
 import { KeyringService } from "./core/services/KeyringService.ts";
 import { StorageService } from "./core/services/StorageService.ts";
-import { useInputStore } from "./features/input/stores/useInputStore.ts";
+import { useInputStore } from "./features/editor/stores/useInputStore.ts";
 
 export const client = createClient({
 	env: {

@@ -1,4 +1,5 @@
 import { Group, Image, Text } from "@mantine/core";
+import { useChatFiles } from "@tiny-chat/client/src/features/chat/hooks/useChatFiles.ts";
 import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import { PluginKey } from "@tiptap/pm/state";
@@ -15,7 +16,6 @@ import {
 import { NodeUtils } from "#ui/features/editor/utils/NodeUtils.ts";
 import { useTauri } from "#ui/features/tauri/hooks/useTauri.ts";
 import { TauriUtils } from "#ui/features/tauri/utils/TauriUtils.ts";
-import { useFilesystem } from "#ui/features/upload/hooks/useFilesystem.ts";
 
 interface AttachmentItem extends CompletionItem {
 	directory?: boolean;
@@ -198,7 +198,7 @@ const Attachment = Node.create({
 });
 
 export const useAttachment = () => {
-	const { chatFiles } = useFilesystem();
+	const { chatFiles } = useChatFiles();
 	const chatFilesRef = useRef(chatFiles);
 	chatFilesRef.current = chatFiles;
 

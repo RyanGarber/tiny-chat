@@ -32,21 +32,6 @@ import {
 import { UserService } from "../../user/services/UserService.ts";
 import { ProviderService } from "./ProviderService.ts";
 
-const schedule = (callback: () => void) => {
-	const globals = globalThis as typeof globalThis & {
-		requestAnimationFrame?: (_: () => void) => number;
-		cancelAnimationFrame?: (_: number) => void;
-	};
-
-	if (globals.requestAnimationFrame && globals.cancelAnimationFrame) {
-		const handle = globals.requestAnimationFrame(callback);
-		return () => globals.cancelAnimationFrame?.(handle);
-	}
-
-	const timeout = setTimeout(callback, 1000 / 60);
-	return () => clearTimeout(timeout);
-};
-
 /**
  * Agent orchestration for messages.
  */
@@ -282,35 +267,23 @@ export const AgentMessageService = {
 			},
 		});
 
-		let scheduled: (() => void) | null = null;
-		scheduled = schedule(() => {}); // fix dumb ass typescript error
-
-		const scheduleApply = (apply?: (m: MessageState) => void) => {
-			if (scheduled) {
-				return;
-			}
-			scheduled = schedule(() => {
-				stream.apply(apply);
-				scheduled = null;
-			});
-		};
+		let lastNotifyAt = 0;
 
 		for await (const event of agent) {
-			scheduleApply((m) => {
-				if (event.type === "data") {
-					if (event.value.type === "text" || event.value.type === "json") {
-						m.state.thinking = false;
-						m.state.generating = true;
-					} else if (event.value.type === "thought") {
-						m.state.thinking = true;
-					}
+			if (event.type === "data") {
+				if (event.value.type === "text" || event.value.type === "json") {
+					stream.message.state.thinking = false;
+					stream.message.state.generating = true;
+				} else if (event.value.type === "thought") {
+					stream.message.state.thinking = true;
 				}
-			});
-		}
+			}
 
-		if (scheduled !== null) {
-			scheduled();
-			scheduled = null;
+			const now = Date.now();
+			if (now - lastNotifyAt >= 1000 / 60) {
+				lastNotifyAt = now;
+				stream.apply();
+			}
 		}
 
 		stream.apply((m) => {

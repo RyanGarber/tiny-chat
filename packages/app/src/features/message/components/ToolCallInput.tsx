@@ -11,26 +11,23 @@ import {
 	Text,
 	Textarea,
 } from "@mantine/core";
-import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeUtils.ts";
-import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
-import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
-import { ask_question } from "@tiny-chat/core/src/features/tool/tools/questions/ask_question.ts";
-import { shell_exec } from "@tiny-chat/core/src/features/tool/tools/shell/shell_exec.ts";
-import { write_file } from "@tiny-chat/core/src/features/tool/tools/shell/write_file.ts";
+import { useToolCallInput } from "@tiny-chat/client/src/features/chat/hooks/useToolCallInput.ts";
+import {
+	toolCallRejection,
+	useToolInput,
+} from "@tiny-chat/client/src/features/chat/hooks/useToolInput.ts";
+import type { ask_question } from "@tiny-chat/core/src/features/tool/tools/questions/ask_question.ts";
 import type { Tool } from "@tiny-chat/core/src/features/tool/types/tool.ts";
-import { memo, type ReactNode, useEffect, useMemo, useState } from "react";
+import { memo, type ReactNode, useMemo, useState } from "react";
 import type { BundledLanguage } from "streamdown";
 import type { z } from "zod";
 import type {
 	MessageState,
 	zDataPart,
 } from "#core/features/data/types/message";
-import { client } from "#ui/client.ts";
 import { Code, Diff } from "#ui/core/components/Components.tsx";
 import { StyleUtils } from "#ui/core/utils/StyleUtils.ts";
 import { Markdown } from "#ui/features/message/components/Markdown.tsx";
-import { TauriUtils } from "#ui/features/tauri/utils/TauriUtils.ts";
-import { toolCallRejection, useToolInput } from "../hooks/useToolInput";
 
 export const ToolCallInput = memo(
 	({
@@ -47,87 +44,38 @@ export const ToolCallInput = memo(
 	}) => {
 		const { sendToolInput } = useToolInput();
 
-		const [inputValue, setInputValue] = useState<unknown>(toolResult?.value);
-		const [writeFileContents, setWriteFileContents] = useState<string>("");
+		const { input: display, contents } = useToolCallInput({
+			message,
+			toolCall,
+			toolResult,
+		});
 
-		useEffect(() => {
-			if (tool?.name === write_file.name) {
-				const write = toolCall.args as z.infer<typeof write_file.input>;
-				const uri = PathUtils.fromMount(write);
-				if (uri) {
-					client.api.file.getFile
-						.query({ chat: message.chatId, path: uri.path })
-						.then((file) => {
-							setWriteFileContents(
-								file ? (FileUtils.getTextFromBytes(file) ?? "") : "",
-							);
-						})
-						.catch((error) => {
-							console.error("Error loading file", error);
-							setWriteFileContents("");
-						});
-				} else {
-					TauriUtils.invoke<{ path: string; data: string }>("read_file", {
-						path: write.path,
-					})
-						.then(({ path, data }) => {
-							FileTypeUtils.getMime({
-								path,
-								data,
-								fallback: "text/plain",
-							})
-								.then((mime) => {
-									setWriteFileContents(
-										FileUtils.getTextFromBytes({ data, mime }) ?? "",
-									);
-								})
-								.catch((error) => {
-									console.error("error getting file type:", error);
-									setWriteFileContents("");
-								});
-						})
-						.catch((error) => {
-							console.error("error reading file:", error);
-							setWriteFileContents("");
-						});
-				}
-			}
-		}, [tool?.name, toolCall.args, message.chatId]);
+		const [inputValue, setInputValue] = useState<unknown>(toolResult?.value);
 
 		const disabled = toolResult !== undefined;
 
+		const details = display?.details;
+
 		const input: ReactNode | undefined = useMemo(() => {
-			if (tool?.name === shell_exec.name && !toolResult) {
-				return (
-					<Code
-						language="bash"
-						code={(toolCall.args as z.infer<typeof shell_exec.input>).command}
-					/>
-				);
-			} else if (tool?.name === write_file.name && !toolResult) {
-				const args = toolCall.args as z.infer<typeof write_file.input>;
+			if (details?.kind === "shell_exec") {
+				return <Code language="bash" code={details.command} />;
+			} else if (details?.kind === "write_file") {
 				return (
 					<Diff
-						filename={PathUtils.name(args)}
-						language={FileTypeUtils.getExtension(args) as BundledLanguage}
-						oldCode={writeFileContents}
-						newCode={args.content}
+						filename={details.name}
+						language={details.extension as BundledLanguage}
+						oldCode={contents}
+						newCode={details.content}
 					/>
 				);
-			} else if (tool?.name === ask_question.name) {
+			} else if (details?.kind === "ask_question") {
 				return (
 					<Stack gap="xs">
 						<Box>
-							<Markdown
-								source={
-									(toolCall.args as z.infer<typeof ask_question.input>).question
-								}
-							/>
+							<Markdown source={details.question} />
 						</Box>
 						<Grid grow>
-							{(
-								toolCall.args as z.infer<typeof ask_question.input>
-							).suggestions.map((suggestion) => (
+							{details.suggestions.map((suggestion) => (
 								<Grid.Col key={suggestion} span={4} align="stretch">
 									<Radio.Card
 										p="md"
@@ -187,14 +135,7 @@ export const ToolCallInput = memo(
 					</Stack>
 				);
 			}
-		}, [
-			tool?.name,
-			toolCall.args,
-			toolResult,
-			writeFileContents,
-			inputValue,
-			disabled,
-		]);
+		}, [details, contents, inputValue, disabled]);
 
 		if (tool && input) {
 			return (
@@ -205,7 +146,7 @@ export const ToolCallInput = memo(
 						</Stack>
 					</Card>
 					<Group gap="xs" justify="flex-end">
-						{tool.approval ? (
+						{display?.approval ? (
 							<Group gap="xs">
 								<Button
 									size="xs"
@@ -243,9 +184,7 @@ export const ToolCallInput = memo(
 										})
 									}
 									leftSection={
-										toolResult?.error &&
-										JSON.stringify(toolResult.value) ===
-											JSON.stringify(toolCallRejection) ? (
+										toolResult?.error && display.rejected ? (
 											<Icon icon="lucide:check" />
 										) : undefined
 									}

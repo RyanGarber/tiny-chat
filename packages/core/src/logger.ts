@@ -74,25 +74,34 @@ export function createLogger({
 		};
 
 		if (level === "error") {
-			if (typeof window !== "undefined") {
+			const globals = globalThis as any;
+
+			if (typeof globals.window !== "undefined") {
 				if (!silent) console.log("logging to browser");
-				window?.addEventListener("error", (e) =>
-					console.error("[UNCAUGHT]", e),
+				globals.window?.addEventListener("error", (error: unknown) =>
+					console.error("[UNCAUGHT]", error),
 				);
-				window?.addEventListener("unhandledrejection", (e) =>
-					console.error("[UNCAUGHT]", e),
+				globals.window?.addEventListener(
+					"unhandledrejection",
+					(error: unknown) => console.error("[UNCAUGHT]", error),
 				);
 			}
 
-			if (typeof process !== "undefined" && typeof process.on === "function") {
+			if (
+				typeof globals.process !== "undefined" &&
+				typeof globals.process.on === "function"
+			) {
 				if (!silent) console.log("logging to process");
-				process?.on("uncaughtException", (e) => {
-					console.error("[UNCAUGHT]", e);
-					process.exit(1);
+				globals.process?.on("uncaughtException", (error: unknown) => {
+					console.error("[UNCAUGHT]", error);
+					globals.process.exit(1);
 				});
-				process?.on("unhandledRejection", (reason, promise) => {
-					console.error("[UNCAUGHT]", promise, reason);
-				});
+				globals.process?.on(
+					"unhandledRejection",
+					(reason: unknown, promise: Promise<unknown>) => {
+						console.error("[UNCAUGHT]", promise, reason);
+					},
+				);
 			}
 		}
 	}

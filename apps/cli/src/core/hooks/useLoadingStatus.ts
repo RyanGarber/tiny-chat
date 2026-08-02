@@ -6,13 +6,15 @@ import { useEffect } from "react";
 import { useAppStore } from "../stores/useAppStore.ts";
 
 export const useLoadingStatus = (
-	query: UseQueryResult<any, any> | UseInfiniteQueryResult<any, any>,
+	...queries: (UseQueryResult<any, any> | UseInfiniteQueryResult<any, any>)[]
 ) => {
 	const setStatus = useAppStore((state) => state.setStatus);
 	const unsetStatus = useAppStore((state) => state.unsetStatus);
 
+	const isFetching = queries.some((query) => query.isFetching);
+
 	useEffect(() => {
-		if (query.isFetching) setStatus({ id: "loading" });
+		if (isFetching) setStatus({ id: "loading" });
 		else unsetStatus({ id: "loading" });
-	}, [query.isFetching, setStatus, unsetStatus]);
+	}, [isFetching, setStatus, unsetStatus]);
 };

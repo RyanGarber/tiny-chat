@@ -7,6 +7,10 @@ import {
 	Text,
 	useCombobox,
 } from "@mantine/core";
+import type {
+	CompletionGroup,
+	CompletionItem,
+} from "@tiny-chat/client/src/features/editor/types/command.ts";
 import { type Editor, type Range, ReactRenderer } from "@tiptap/react";
 import type { SuggestionOptions, SuggestionProps } from "@tiptap/suggestion";
 import {
@@ -19,20 +23,11 @@ import {
 } from "react";
 import { useCompletionsStore } from "#ui/features/editor/stores/useCompletionsStore.ts";
 
+export type { CompletionGroup, CompletionItem };
+
 export type SuggestionRenderer<T1, T2> = ReturnType<
 	NonNullable<SuggestionOptions<T1, T2>["render"]>
 >;
-
-export interface CompletionItem {
-	name?: string;
-	value: string;
-	active?: boolean;
-}
-
-export interface CompletionGroup<T2 extends CompletionItem> {
-	name?: string;
-	items: T2[];
-}
 
 export interface CompletionProps<
 	T1 extends CompletionGroup<T2>,

@@ -1,3 +1,4 @@
+import type { JsonValue } from "@prisma/client/runtime/client";
 import {
 	type MessageState,
 	zConfig,
@@ -6,13 +7,13 @@ import {
 } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { Message } from "../../../../generated/prisma/client.ts";
 
-type MessageMaybeOmit = Message | Omit<Message, "metadata">;
+type MessageWithMetadataOptional = Message & { metadata?: JsonValue | null };
 
 export const MessageUtils = {
 	/**
 	 * Wrap a raw message row into a {@link MessageState}.
 	 */
-	toMessageState: (message: Message): MessageState => {
+	toMessageState: (message: MessageWithMetadataOptional): MessageState => {
 		return {
 			...message,
 			config: zConfig.parse(message.config),
@@ -29,7 +30,9 @@ export const MessageUtils = {
 	/**
 	 * Wrap raw message rows into sorted {@link MessageState MessageStates}.
 	 */
-	toMessageStates: (messages: Message[]): MessageState[] => {
+	toMessageStates: (
+		messages: MessageWithMetadataOptional[],
+	): MessageState[] => {
 		if (messages.length <= 1) return messages.map(MessageUtils.toMessageState);
 
 		const firstMessage = messages.find((m) => m.previousId === null);

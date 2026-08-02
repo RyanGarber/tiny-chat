@@ -1,4 +1,4 @@
-import type { Transport } from "@modelcontextprotocol/sdk/shared/transport";
+import type { Transport } from "@modelcontextprotocol/client";
 import { QueryClient } from "@tanstack/react-query";
 import { zEnv, type zProviderEnv } from "@tiny-chat/core/src/core/types/env.ts";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";

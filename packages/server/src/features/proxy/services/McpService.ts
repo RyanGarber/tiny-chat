@@ -4,7 +4,7 @@ import {
 	type ServerResponse,
 } from "node:http";
 import { request as httpsRequest } from "node:https";
-import {CommonUtils} from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
+import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 
 /**
  * A thin wrapper around MCP streams, preventing CORS errors.

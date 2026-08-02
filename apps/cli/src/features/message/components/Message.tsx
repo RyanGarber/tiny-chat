@@ -5,37 +5,13 @@ import {
 } from "@tiny-chat/core/src/features/data/types/message.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import cliSpinners from "cli-spinners";
-import { Box, Text, useWindowSize } from "ink";
+import { Box, Text } from "ink";
 import Spinner from "ink-spinner";
 import { Task, TaskList } from "ink-task-list";
-import { marked } from "marked";
-import { type MarkedTerminalOptions, markedTerminal } from "marked-terminal";
-import { useEffect, useState } from "react";
-
-const OPTIONS: Partial<MarkedTerminalOptions> = {
-	emoji: true,
-	showSectionPrefix: true,
-	reflowText: false,
-};
-
-marked.use(markedTerminal(OPTIONS));
+import { MarkdownUtils } from "../../../core/utils/MarkdownUtils.ts";
+import ToolCall from "./ToolCall.tsx";
 
 export default function Message({ message }: { message: MessageState }) {
-	const { columns } = useWindowSize();
-
-	const [_, setRendered] = useState(false);
-
-	useEffect(() => {
-		marked.use(
-			markedTerminal({
-				...OPTIONS,
-				reflowText: true,
-				width: columns - 3,
-			}),
-		);
-		queueMicrotask(() => setRendered(true));
-	}, [columns]);
-
 	const stream = useMessageStream(
 		message.author === Author.MODEL ? message.id : undefined,
 	);
@@ -71,43 +47,41 @@ export default function Message({ message }: { message: MessageState }) {
 											spinner={cliSpinners.bluePulse}
 										/>
 									) : (
-										<Task
+										<ToolCall
 											key={part.id}
-											label={`${!part.result ? "Using" : "Used"} ${part.name}`}
-											state={
-												!part.result
-													? "loading"
-													: part.result.error
-														? "error"
-														: "success"
-											}
-											spinner={cliSpinners.bluePulse}
+											toolCall={part}
+											toolResult={part.result}
 										/>
 									),
 								)}
 							</TaskList>
 						);
 					} else if (part.type === "text") {
-						return (
-							<Text>
-								{marked.parse(DataUtils.getText(message), {
-									gfm: true,
-								})}
-							</Text>
-						);
+						return <Text>{MarkdownUtils.render(part.value)}</Text>;
 					} else if (part.type === "abort") {
 						return (
 							<Box
 								borderStyle="round"
 								borderColor={part.reason === "error" ? "redBright" : "gray"}
+								flexDirection="column"
+								paddingX={1}
 							>
-								{part.message ?? `Response ended due to ${part.reason}.`}
+								<Text bold>
+									{part.reason === "error" ? "Failed" : "Stopped"}
+								</Text>
+								<Text>
+									{part.message ?? `Response ended due to ${part.reason}.`}
+								</Text>
 							</Box>
 						);
 					}
 					return [];
 				})}
-				{live.state.generating && <Spinner type="bluePulse" />}
+				{live.state.any && (
+					<Text>
+						<Spinner type="bluePulse" />
+					</Text>
+				)}
 			</Box>
 			<Text dimColor>{message.config.model}</Text>
 		</Box>

@@ -1,5 +1,4 @@
-import type { Transport } from "@modelcontextprotocol/sdk/shared/transport";
-import type { JSONRPCMessage } from "@modelcontextprotocol/sdk/types";
+import type { JSONRPCMessage, Transport } from "@modelcontextprotocol/client";
 import { TauriUtils } from "#ui/features/tauri/utils/TauriUtils.ts";
 
 export class TauriHttpTransport implements Transport {
@@ -13,7 +12,7 @@ export class TauriHttpTransport implements Transport {
 
 	sessionId: string | undefined = undefined;
 	private sseBuffer = "";
-	private sseId: string;
+	private readonly sseId: string;
 	private postCounter = 0;
 
 	constructor(

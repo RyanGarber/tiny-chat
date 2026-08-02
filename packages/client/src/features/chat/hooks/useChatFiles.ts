@@ -1,12 +1,15 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
-import { useMessages } from "#client/src/features/chat/hooks/useMessages.ts";
-import { client } from "#ui/client.ts";
+import { useContext } from "react";
+import { ClientProvider } from "../../../client.ts";
+import { useChat } from "./useChat.ts";
+import { useMessages } from "./useMessages.ts";
 
-const chatFilesQueryKey = ["chat-files"] as const;
-const chatFileDataQueryKey = ["chat-file-data"] as const;
+const chatFilesQueryKey = ["useChatFiles", "chatFiles"] as const;
+const readChatFileQueryKey = ["useChatFiles", "readChatFile"] as const;
 
-export const useFilesystem = () => {
+export const useChatFiles = () => {
+	const client = useContext(ClientProvider);
+
 	const { chat } = useChat();
 	const { messages } = useMessages();
 
@@ -40,7 +43,7 @@ export const useFilesystem = () => {
 	});
 
 	const readChatFile = useMutation({
-		mutationKey: chatFileDataQueryKey,
+		mutationKey: readChatFileQueryKey,
 		mutationFn: async (
 			options: Parameters<typeof client.api.file.getFile.query>[0] & {
 				meta: string;

@@ -32,7 +32,7 @@
 - Desktop build: `pnpm build:tauri`
 - Mobile build (iOS): `pnpm build:tauri:ios`
 - Mobile build (Android): `pnpm build:tauri:android`
-- Web build (Vite): `pnpm build:ui`
+- Web build (Vite): `pnpm build:app`
 - Lint: `pnpm lint` (or `pnpm lint:frontend`, `pnpm lint:backend`)
 - Backend standalone: `pnpm dev:server` (runs via `node --watch` for hot reload)
 - Backend production: `pnpm start:server`

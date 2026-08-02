@@ -1,7 +1,9 @@
-import { Client } from "@modelcontextprotocol/sdk/client";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp";
-import type { Transport } from "@modelcontextprotocol/sdk/shared/transport";
-import type { Tool } from "@modelcontextprotocol/sdk/types";
+import {
+	Client,
+	StreamableHTTPClientTransport,
+	type Tool,
+	type Transport,
+} from "@modelcontextprotocol/client";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import type { zMCPServers } from "@tiny-chat/core/src/features/data/types/user.ts";

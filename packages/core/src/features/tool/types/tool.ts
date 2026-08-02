@@ -3,7 +3,7 @@
 import type { z } from "zod";
 import type { zAgentContext } from "../../agent/types/agent.ts";
 import type { Capabilities } from "../../capability/types/capability.ts";
-import type { zToolDataPart } from "../../data/types/message.ts";
+import type { zDataInnerPart } from "../../data/types/message.ts";
 
 export interface ToolDefinition {
 	name: string;
@@ -32,7 +32,7 @@ export interface Tool<
 		context: zAgentContext;
 	}) => Promise<
 		(
-			| Exclude<zToolDataPart, { type: "json" }>
+			| Exclude<zDataInnerPart, { type: "json" }>
 			| { type: "json"; value: z.infer<TDefinition["output"]> }
 		)[]
 	>;

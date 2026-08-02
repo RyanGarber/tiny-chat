@@ -1,3 +1,10 @@
+## [0.7.4](https://github.com/RyanGarber/tiny-chat/compare/0.7.3...0.7.4) (2026-08-02)
+
+### Bug Fixes
+
+* use persistent storage in app ([99d31e6](https://github.com/RyanGarber/tiny-chat/commit/99d31e66c3f22f98ae2b9793d08c255d9db97667))
+
+
 ## [0.7.3](https://github.com/RyanGarber/tiny-chat/compare/0.7.2...0.7.3) (2026-08-02)
 
 ### Features

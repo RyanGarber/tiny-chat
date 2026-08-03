@@ -120,6 +120,17 @@ export const client = createClient({
 					await TauriUtils.invoke("write_file", { path, content });
 					return { path, success: true };
 				},
+				editFile: async ({ path, old_string, new_string, replace_all }) => {
+					const { replacements } = await TauriUtils.invoke<{
+						replacements: number;
+					}>("edit_file", {
+						path,
+						oldString: old_string,
+						newString: new_string,
+						replaceAll: replace_all ?? false,
+					});
+					return { path, success: true, replacements };
+				},
 				searchFiles: async ({ path, query, mode }) => {
 					const files = await TauriUtils.invoke<
 						{ path: string; data: string }[]
@@ -127,7 +138,7 @@ export const client = createClient({
 						path,
 						pattern: query,
 						mode,
-						max_results: 10,
+						maxResults: 10,
 					});
 					return files.map((file) => ({
 						path: file.path,

@@ -106,8 +106,11 @@ export const PathUtils = {
 
 		if (!child && descendent) {
 			if (!parent?.length) return !!descendent.length;
-			return `${descendent.filter(Boolean).join("/")}/`.startsWith(
-				`${parent.filter(Boolean).join("/")}/`,
+			if (parent === descendent) return false;
+			const parentPath = `${parent.filter(Boolean).join("/")}/`;
+			const descendentPath = `${descendent.filter(Boolean).join("/")}/`;
+			return (
+				descendentPath !== parentPath && descendentPath.startsWith(parentPath)
 			);
 		}
 

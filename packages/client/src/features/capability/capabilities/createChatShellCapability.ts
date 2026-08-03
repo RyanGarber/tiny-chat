@@ -55,6 +55,17 @@ export const createChatShellCapability: CapabilityFactory<
 			return { path, success: true };
 		},
 
+		editFile: async ({ path, old_string, new_string, replace_all }) => {
+			const { replacements } = await client.api.file.editFile.mutate({
+				chat,
+				path,
+				old_string,
+				new_string,
+				replace_all,
+			});
+			return { path, success: true, replacements };
+		},
+
 		exec: async ({ command }) => {
 			return await client.api.file.exec.mutate({ chat, command });
 		},

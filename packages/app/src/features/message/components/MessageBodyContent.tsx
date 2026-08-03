@@ -99,22 +99,26 @@ export const MessageBodyContent = memo(
 					m.data
 						.flat()
 						.filter(
-							(p): p is Extract<zDataPart, { type: "toolResult" }> =>
-								p.type === "toolResult" && !p.error,
+							(part): part is Extract<zDataPart, { type: "toolResult" }> =>
+								part.type === "toolResult" && !part.error,
 						)
-						.flatMap((p) => {
-							if (p.name === search_web.name && p.value[0]?.type === "json") {
-								return p.value[0].value as z.infer<typeof search_web.output>;
-							} else if (
-								p.name === view_web.name &&
-								p.value[0]?.type === "json"
+						.flatMap((part) => {
+							const { tool } = ToolUtils.find({ toolsets, part });
+							if (
+								tool?.name === search_web.name &&
+								part.value[0]?.type === "json"
 							) {
-								return p.value[0].value as z.infer<typeof view_web.output>;
+								return part.value[0].value as z.infer<typeof search_web.output>;
+							} else if (
+								tool?.name === view_web.name &&
+								part.value[0]?.type === "json"
+							) {
+								return part.value[0].value as z.infer<typeof view_web.output>;
 							}
 							return [];
 						}),
 				),
-			[messageList],
+			[messageList, toolsets],
 		);
 
 		if (message.author === Author.USER) {
@@ -200,7 +204,7 @@ export const MessageBodyContent = memo(
 								/>
 							);
 						} else if (part.type === "toolCall") {
-							const { tool } = ToolUtils.find({ toolsets, name: part.name });
+							const { tool } = ToolUtils.find({ toolsets, part });
 							return (
 								<div key={index}>
 									<ToolCall toolCall={part} toolResult={part.result} />

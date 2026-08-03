@@ -22,7 +22,17 @@ export const ToolUtils = {
 		return `${prefix ? `${prefix}_` : ""}${name}`;
 	},
 
-	find: ({ toolsets, name }: { toolsets: Toolset<any>[]; name: string }) => {
+	find: ({
+		toolsets,
+		name,
+		part,
+	}: {
+		toolsets: Toolset<any>[];
+		name?: string;
+		part?: Extract<zDataPart, { type: "toolCall" | "toolResult" }>;
+	}) => {
+		name ??= part?.name;
+
 		const toolset = toolsets.find((toolset) =>
 			toolset.tools.some((tool) => ToolUtils.name({ toolset, tool }) === name),
 		);
@@ -36,15 +46,15 @@ export const ToolUtils = {
 
 	is: ({
 		toolsets,
-		toolCall,
+		part,
 		isTool,
 	}: {
 		toolsets: Toolset<any>[];
-		toolCall: Extract<zDataPart, { type: "toolCall" }>;
+		part: Extract<zDataPart, { type: "toolCall" | "toolResult" }>;
 		isTool: ToolDefinition | string;
 	}) => {
 		if (typeof isTool !== "string") isTool = isTool.name;
-		const { tool } = ToolUtils.find({ toolsets, name: toolCall.name });
+		const { tool } = ToolUtils.find({ toolsets, part });
 		return tool?.name === isTool;
 	},
 

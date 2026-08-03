@@ -21,26 +21,30 @@ describe("PathUtils", () => {
 	it("parses mount paths", () => {
 		expect(PathUtils.fromMount({ path: "/file.txt" })).toBeNull();
 		expect(PathUtils.fromMount({ path: "/mnt/chat" })).toEqual({
-			uploadId: undefined,
 			path: [],
+			uploadId: undefined,
+			uploadPath: [],
 		});
 		expect(PathUtils.fromMount({ path: "/mnt/chat/file" })).toEqual({
-			uploadId: undefined,
 			path: ["file"],
+			uploadId: undefined,
+			uploadPath: [],
 		});
 		expect(
 			PathUtils.fromMount({ path: "/mnt/chat/zzzzzzzzzzzzzzzzzzzzzzzz" }),
 		).toEqual({
+			path: ["zzzzzzzzzzzzzzzzzzzzzzzz"],
 			uploadId: "zzzzzzzzzzzzzzzzzzzzzzzz",
-			path: [],
+			uploadPath: [],
 		});
 		expect(
 			PathUtils.fromMount({
 				path: "/mnt/chat/zzzzzzzzzzzzzzzzzzzzzzzz/src/index.ts",
 			}),
 		).toEqual({
+			path: ["zzzzzzzzzzzzzzzzzzzzzzzz", "src", "index.ts"],
 			uploadId: "zzzzzzzzzzzzzzzzzzzzzzzz",
-			path: ["src", "index.ts"],
+			uploadPath: ["src", "index.ts"],
 		});
 	});
 

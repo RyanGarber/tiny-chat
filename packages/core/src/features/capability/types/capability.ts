@@ -95,6 +95,13 @@ export interface ShellCapability {
 		content: string;
 	}) => Promise<{ path: string; success: true }>;
 
+	editFile: (_: {
+		path: string;
+		old_string: string;
+		new_string: string;
+		replace_all?: boolean;
+	}) => Promise<{ path: string; success: true; replacements: number }>;
+
 	exec: (_: {
 		command: string;
 	}) => Promise<{ code?: number; stdout: string; stderr: string }>;

@@ -18,7 +18,7 @@ import { ToolCallUtils } from "@tiny-chat/core/src/features/tool/utils/ToolCallU
 import { memo, type ReactNode, useState } from "react";
 import type { BundledLanguage } from "streamdown";
 import { format } from "timeago.js";
-import { Code } from "#app/core/components/Components.tsx";
+import { Code, Diff } from "#app/core/components/Components.tsx";
 import { theme } from "#app/core/utils/IconUtils.ts";
 import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
 
@@ -225,6 +225,20 @@ export const ToolCall = memo(
 						filename={details.name}
 						language={details.extension as BundledLanguage}
 						code={details.content}
+					/>
+				</Stack>
+			);
+		} else if (details?.kind === "edit_file") {
+			detailsNode = (
+				<Stack>
+					<Text fw={500} fz={FZ}>
+						{details.path}
+					</Text>
+					<Diff
+						filename={details.name}
+						language={details.extension as BundledLanguage}
+						oldCode={details.old_string}
+						newCode={details.new_string}
 					/>
 				</Stack>
 			);

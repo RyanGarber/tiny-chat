@@ -79,6 +79,27 @@ export const file = router({
 			});
 		}),
 
+	editFile: procedure
+		.input(
+			z.object({
+				chat: ChatLike,
+				path: PathLike,
+				old_string: z.string(),
+				new_string: z.string(),
+				replace_all: z.boolean().optional(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			return await FileService.editFile({
+				user: ctx.session.user,
+				chat: input.chat,
+				path: input.path,
+				old_string: input.old_string,
+				new_string: input.new_string,
+				replace_all: input.replace_all,
+			});
+		}),
+
 	exec: procedure
 		.input(z.object({ chat: ChatLike, command: z.string() }))
 		.mutation(async ({ ctx, input }) => {

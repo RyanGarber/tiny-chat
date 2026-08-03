@@ -1,6 +1,10 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { edit_file } from "@tiny-chat/core/src/features/tool/tools/shell/edit_file.ts";
+import { write_file } from "@tiny-chat/core/src/features/tool/tools/shell/write_file.ts";
+import { ToolUtils } from "@tiny-chat/core/src/features/tool/utils/ToolUtils.ts";
 import { useContext } from "react";
 import { ClientProvider } from "../../../client.ts";
+import { useTools } from "../../agent/hooks/useTools.ts";
 import { useChat } from "./useChat.ts";
 import { useMessages } from "./useMessages.ts";
 
@@ -12,6 +16,7 @@ export const useChatFiles = () => {
 
 	const { chat } = useChat();
 	const { messages } = useMessages();
+	const { toolsets } = useTools();
 
 	const chatFiles = useQuery({
 		queryKey: [
@@ -19,14 +24,14 @@ export const useChatFiles = () => {
 			chat.data?.id,
 			...(messages.data?.pages.flatMap(({ messages }) =>
 				messages.flatMap((m) =>
-					m.data
-						.flat()
-						.flatMap((part) =>
-							part.type === "upload" ||
-							(part.type === "toolResult" && part.name === "write_file")
-								? [part.id]
-								: [],
-						),
+					m.data.flat().flatMap((part) =>
+						part.type === "upload" ||
+						(part.type === "toolResult" &&
+							(ToolUtils.is({ toolsets, part, isTool: write_file }) ||
+								ToolUtils.is({ toolsets, part, isTool: edit_file })))
+							? [part.id]
+							: [],
+					),
 				),
 			) ?? []),
 		],

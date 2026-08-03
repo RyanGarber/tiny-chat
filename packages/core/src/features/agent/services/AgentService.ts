@@ -180,7 +180,7 @@ export const AgentService = {
 			for (const toolCall of toolCalls) {
 				const { tool } = ToolUtils.find({
 					toolsets: enabledToolsets,
-					name: toolCall.name,
+					part: toolCall,
 				});
 
 				if (!tool) {

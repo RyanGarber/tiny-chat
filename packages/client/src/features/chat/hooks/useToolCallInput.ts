@@ -3,6 +3,7 @@ import type {
 	MessageState,
 	zDataPart,
 } from "@tiny-chat/core/src/features/data/types/message.ts";
+import { FileEditUtils } from "@tiny-chat/core/src/features/file/utils/FileEditUtils.ts";
 import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeUtils.ts";
 import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
@@ -14,7 +15,7 @@ import { useTools } from "../../agent/hooks/useTools.ts";
 
 /**
  * Resolves what to show for a tool call that asks the user for something,
- * along with the file a `write_file` call would overwrite.
+ * along with the file a `write_file` or `edit_file` call would change.
  */
 export const useToolCallInput = ({
 	message,
@@ -29,7 +30,7 @@ export const useToolCallInput = ({
 
 	const { toolsets } = useTools();
 
-	const { tool } = ToolUtils.find({ toolsets, name: toolCall.name });
+	const { tool } = ToolUtils.find({ toolsets, part: toolCall });
 
 	const input = useMemo(
 		() => ToolCallUtils.getInput({ toolCall, toolResult, toolsets }),
@@ -37,7 +38,10 @@ export const useToolCallInput = ({
 	);
 
 	const path =
-		input?.details?.kind === "write_file" ? input.details.path : undefined;
+		input?.details?.kind === "write_file" ||
+		input?.details?.kind === "edit_file"
+			? input.details.path
+			: undefined;
 
 	const contents = useQuery({
 		queryKey: ["toolCallInput", "contents", message.chatId, path],
@@ -74,5 +78,23 @@ export const useToolCallInput = ({
 		refetchOnReconnect: false,
 	});
 
-	return { tool, input, contents: contents.data ?? "" };
+	/** What the file would look like once an `edit_file` call goes through. */
+	const edited = useMemo(() => {
+		const content = contents.data ?? "";
+		if (input?.details?.kind !== "edit_file") return content;
+		try {
+			return FileEditUtils.apply({
+				content,
+				old_string: input.details.old_string,
+				new_string: input.details.new_string,
+				replace_all: input.details.replace_all,
+			}).content;
+		} catch (error) {
+			// The edit won't apply, so there is nothing to preview.
+			console.warn("[useToolCallInput] could not apply edit:", error);
+			return content;
+		}
+	}, [input?.details, contents.data]);
+
+	return { tool, input, contents: contents.data ?? "", edited };
 };

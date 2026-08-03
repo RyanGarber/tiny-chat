@@ -14,6 +14,7 @@ import { search_chats } from "../tools/memories/search_chats.ts";
 import { search_memories } from "../tools/memories/search_memories.ts";
 import { update_memory } from "../tools/memories/update_memory.ts";
 import { ask_question } from "../tools/questions/ask_question.ts";
+import { edit_file } from "../tools/shell/edit_file.ts";
 import { read_dir } from "../tools/shell/read_dir.ts";
 import { read_file } from "../tools/shell/read_file.ts";
 import { search_files } from "../tools/shell/search_files.ts";
@@ -77,6 +78,15 @@ export type ToolCallDetails =
 			extension?: string;
 	  }
 	| {
+			kind: "edit_file";
+			path: string;
+			name: string;
+			old_string: string;
+			new_string: string;
+			replacements: number;
+			extension?: string;
+	  }
+	| {
 			kind: "read_dir";
 			path: string;
 			items: Array<{ path: string; name: string; is_dir: boolean }>;
@@ -123,6 +133,15 @@ export type ToolCallInputDetails =
 			path: string;
 			name: string;
 			content: string;
+			extension?: string;
+	  }
+	| {
+			kind: "edit_file";
+			path: string;
+			name: string;
+			old_string: string;
+			new_string: string;
+			replace_all: boolean;
 			extension?: string;
 	  }
 	| {
@@ -189,7 +208,7 @@ export const ToolCallUtils = {
 	}): ToolCallDisplay => {
 		const pending = !toolResult;
 		const error = toolResult?.error;
-		const { tool } = ToolUtils.find({ toolsets, name: toolCall.name });
+		const { tool } = ToolUtils.find({ toolsets, part: toolCall });
 
 		const base = { pending, error };
 
@@ -430,6 +449,34 @@ export const ToolCallUtils = {
 			};
 		}
 
+		if (tool?.name === edit_file.name) {
+			const input = toolCall.args as z.infer<typeof edit_file.input>;
+			const name = PathUtils.name(input);
+			const output =
+				ToolCallUtils.getOutput<z.infer<typeof edit_file.output>>(toolResult);
+			return {
+				...base,
+				...ToolCallUtils.getStatus({
+					pending,
+					active: "Editing",
+					done: "Edited",
+					highlight: name,
+					around: ["file "],
+				}),
+				details: output
+					? {
+							kind: "edit_file",
+							path: input.path,
+							name,
+							old_string: input.old_string,
+							new_string: input.new_string,
+							replacements: output.replacements,
+							extension: FileTypeUtils.getExtension(input),
+						}
+					: undefined,
+			};
+		}
+
 		if (tool?.name === read_dir.name) {
 			const input = toolCall.args as z.infer<typeof read_dir.input>;
 			const name = PathUtils.name(input);
@@ -554,7 +601,7 @@ export const ToolCallUtils = {
 		toolResult?: Extract<zDataPart, { type: "toolResult" }>;
 		toolsets: Toolset<any>[];
 	}): ToolCallInputDisplay | undefined => {
-		const { tool } = ToolUtils.find({ toolsets, name: toolCall.name });
+		const { tool } = ToolUtils.find({ toolsets, part: toolCall });
 		if (!tool?.feedback && !tool?.approval) return undefined;
 
 		const pending = !toolResult;
@@ -582,6 +629,22 @@ export const ToolCallUtils = {
 					path: input.path,
 					name: PathUtils.name(input),
 					content: input.content,
+					extension: FileTypeUtils.getExtension(input),
+				},
+			};
+		}
+
+		if (tool.name === edit_file.name) {
+			const input = toolCall.args as z.infer<typeof edit_file.input>;
+			return {
+				...base,
+				details: {
+					kind: "edit_file",
+					path: input.path,
+					name: PathUtils.name(input),
+					old_string: input.old_string,
+					new_string: input.new_string,
+					replace_all: input.replace_all ?? false,
 					extension: FileTypeUtils.getExtension(input),
 				},
 			};

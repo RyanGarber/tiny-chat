@@ -46,7 +46,11 @@ export const ToolCallInput = memo(
 	}) => {
 		const { sendToolInput } = useToolInput();
 
-		const { input: display, contents } = useToolCallInput({
+		const {
+			input: display,
+			contents,
+			edited,
+		} = useToolCallInput({
 			message,
 			toolCall,
 			toolResult,
@@ -98,6 +102,15 @@ export const ToolCallInput = memo(
 						language={details.extension as BundledLanguage}
 						oldCode={contents}
 						newCode={details.content}
+					/>
+				);
+			} else if (details?.kind === "edit_file" && display?.pending) {
+				return (
+					<Diff
+						filename={details.name}
+						language={details.extension as BundledLanguage}
+						oldCode={contents}
+						newCode={edited}
 					/>
 				);
 			} else if (details?.kind === "ask_question") {
@@ -167,7 +180,7 @@ export const ToolCallInput = memo(
 					</Stack>
 				);
 			}
-		}, [details, contents, inputValue, disabled, display?.pending]);
+		}, [details, contents, edited, inputValue, disabled, display?.pending]);
 
 		if (tool && input) {
 			return (

@@ -51,7 +51,7 @@ export const useToolInput = () => {
 			const message = messages.at(-1);
 			if (!message) throw new Error("missing message");
 
-			const { tool } = ToolUtils.find({ toolsets, name: part.name });
+			const { tool } = ToolUtils.find({ toolsets, part });
 			if (!tool) throw new Error(`tool ${part.name} not found`);
 
 			if (append && !Array.isArray(append)) {

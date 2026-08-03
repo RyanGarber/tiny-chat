@@ -22,6 +22,7 @@ pub fn run() {
         tools::read_file,
         tools::read_dir,
         tools::write_file,
+        tools::edit_file,
         tools::shell_exec,
         tools::search_files,
         mcp_http::mcp_start_http,

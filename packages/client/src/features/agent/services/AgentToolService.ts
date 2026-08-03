@@ -43,7 +43,7 @@ export const AgentToolService = {
 			incognito: chat.incognito,
 		});
 
-		const { tool } = ToolUtils.find({ toolsets, name: part.name });
+		const { tool } = ToolUtils.find({ toolsets, part });
 		if (!tool) throw new Error("missing tool");
 
 		return await tool.execute({

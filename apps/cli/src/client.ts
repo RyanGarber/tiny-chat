@@ -5,6 +5,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { createClient } from "@tiny-chat/client/src/client.ts";
 import type { zEnv } from "@tiny-chat/core/src/core/types/env.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
+import { FileEditUtils } from "@tiny-chat/core/src/features/file/utils/FileEditUtils.ts";
 import { quote } from "shell-quote";
 import { KeyringService } from "./core/services/KeyringService.ts";
 import { StorageService } from "./core/services/StorageService.ts";
@@ -57,6 +58,21 @@ export const client = createClient({
 			return {
 				path,
 				success: true,
+			};
+		},
+		editFile: async ({ path, old_string, new_string, replace_all }) => {
+			path = OsUtils.resolve(path);
+			const edit = FileEditUtils.apply({
+				content: await readFile(path, "utf8"),
+				old_string,
+				new_string,
+				replace_all,
+			});
+			await writeFile(path, edit.content);
+			return {
+				path,
+				success: true,
+				replacements: edit.replacements,
 			};
 		},
 		readDir: async ({ path }) => {

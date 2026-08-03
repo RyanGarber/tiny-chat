@@ -8,7 +8,7 @@ import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
 import { FileService } from "../../chat/services/FileService.ts";
 
-export const createShellCapability: CapabilityFactory<
+export const createChatShellCapability: CapabilityFactory<
 	{
 		user: zUser;
 		chat: ChatLike;
@@ -58,6 +58,18 @@ export const createShellCapability: CapabilityFactory<
 		writeFile: async ({ path, content }) => {
 			await FileService.writeFile({ user, chat, path, content });
 			return { path, success: true };
+		},
+
+		editFile: async ({ path, old_string, new_string, replace_all }) => {
+			const { replacements } = await FileService.editFile({
+				user,
+				chat,
+				path,
+				old_string,
+				new_string,
+				replace_all,
+			});
+			return { path, success: true, replacements };
 		},
 
 		exec: async ({ command }) => {

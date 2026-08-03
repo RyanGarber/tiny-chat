@@ -109,7 +109,7 @@ export const WorkerService = {
 				const metadata: zMetadata = [];
 
 				const modelProvider = ModelProviderService.providers.find(
-					(p) => p.name === userMessage.config.provider,
+					(provider) => provider.name === userMessage.config.provider,
 				);
 				if (!modelProvider) {
 					console.error(

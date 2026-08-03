@@ -181,8 +181,8 @@ export class FilesystemService implements IFileSystem {
 	/** Whether `path` exists as a known leaf, and/or has deeper known paths beneath it. */
 	locate(path: string[]) {
 		const exact = this.nodes.find((f) => PathUtils.equals(f.path, path));
-		const hasDeeper = this.nodes.some((f) =>
-			PathUtils.contains({ descendent: f.path, parent: path }),
+		const hasDeeper = this.nodes.some((other) =>
+			PathUtils.contains({ descendent: other.path, parent: path }),
 		);
 		return { exact, hasDeeper };
 	}

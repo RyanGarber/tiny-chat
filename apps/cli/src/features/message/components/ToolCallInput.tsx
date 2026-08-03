@@ -22,10 +22,13 @@ interface Option {
 const Preview = ({
 	details,
 	contents,
+	edited,
 	limit,
 }: {
 	details: ToolCallInputDetails;
 	contents: string;
+	/** The file as it would look after an `edit_file` call */
+	edited: string;
 	/** Rows the preview may take before the chat above it gets squeezed */
 	limit: number;
 }) => {
@@ -44,11 +47,11 @@ const Preview = ({
 		);
 	}
 
-	if (details.kind === "write_file") {
+	if (details.kind === "write_file" || details.kind === "edit_file") {
 		const lines = DiffUtils.collapse({
 			lines: DiffUtils.getLines({
 				before: contents,
-				after: details.content,
+				after: details.kind === "write_file" ? details.content : edited,
 			}),
 		});
 		const shown = lines.slice(0, limit);
@@ -96,7 +99,7 @@ export default function ToolCallInput({
 }) {
 	const { rows } = useWindowSize();
 
-	const { input, contents } = useToolCallInput({ message, toolCall });
+	const { input, contents, edited } = useToolCallInput({ message, toolCall });
 	const { sendToolInput } = useToolInput();
 	useWorkingStatus(sendToolInput);
 
@@ -137,10 +140,12 @@ export default function ToolCallInput({
 					{details.kind === "write_file" && (
 						<Text>Write to {details.path}?</Text>
 					)}
+					{details.kind === "edit_file" && <Text>Edit {details.path}?</Text>}
 					{details.kind === "shell_exec" && <Text>Run this command?</Text>}
 					<Preview
 						details={details}
 						contents={contents}
+						edited={edited}
 						limit={Math.max(Math.floor(rows / 3), 4)}
 					/>
 				</Box>

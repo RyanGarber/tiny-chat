@@ -1,3 +1,16 @@
+## [0.7.5](https://github.com/RyanGarber/tiny-chat/compare/0.7.4...0.7.5) (2026-08-03)
+
+### Features
+
+* follow-ups during tool calls ([8c92e83](https://github.com/RyanGarber/tiny-chat/commit/8c92e838b587fee8d020c19df0ea19a52edc83f4))
+* improved menus in cli ([8c92e83](https://github.com/RyanGarber/tiny-chat/commit/8c92e838b587fee8d020c19df0ea19a52edc83f4-1))
+
+### Bug Fixes
+
+* null chat id could prevent message creation ([6a0a46e](https://github.com/RyanGarber/tiny-chat/commit/6a0a46e281007e8d5c8813559cfcae16e770ccbd-2))
+* tool result not transformed ([6a0a46e](https://github.com/RyanGarber/tiny-chat/commit/6a0a46e281007e8d5c8813559cfcae16e770ccbd-1))
+
+
 ## [0.7.4](https://github.com/RyanGarber/tiny-chat/compare/0.7.3...0.7.4) (2026-08-02)
 
 ### Bug Fixes

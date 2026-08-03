@@ -82,7 +82,7 @@ export const AgentMessagesService = {
 								const chat = !!PathUtils.fromMount({
 									path: directive.attributes.source,
 								});
-								const filesystem = chat
+								const shell = chat
 									? capabilities.chatShell
 									: capabilities.shell;
 								if (directive.attributes.source?.startsWith("web:")) {
@@ -96,7 +96,7 @@ export const AgentMessagesService = {
 										};
 									}
 								} else if (directive.attributes["is-directory"] === "true") {
-									const directory = await filesystem?.readDir({
+									const directory = await shell?.readDir({
 										path: directive.attributes.source,
 									});
 									if (directory) {
@@ -113,7 +113,7 @@ export const AgentMessagesService = {
 										};
 									}
 								} else {
-									const file = await filesystem?.readFile({
+									const file = await shell?.readFile({
 										path: directive.attributes.source,
 									});
 									if (file) {

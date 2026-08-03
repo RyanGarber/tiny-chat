@@ -17,6 +17,7 @@
 		"build:tauri:android": "dotenv -- pnpm --filter @tiny-chat/tauri run tauri android build",
 		"build:app": "dotenv -- pnpm --filter @tiny-chat/app run build",
 		"build:cli": "dotenv -- pnpm --filter @tiny-chat/cli run build",
+		"build:cli:bun": "dotenv -- pnpm --filter @tiny-chat/cli build:bun",
 		"lint:core": "pnpm --filter @tiny-chat/core exec biome check --write",
 		"lint:server": "pnpm --filter @tiny-chat/server exec biome check --write",
 		"lint:client": "pnpm --filter @tiny-chat/client exec biome check --write",

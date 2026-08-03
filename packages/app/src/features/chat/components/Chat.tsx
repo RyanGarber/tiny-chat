@@ -18,7 +18,6 @@ import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChat
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import {
 	type RefObject,
-	useCallback,
 	useLayoutEffect,
 	useMemo,
 	useRef,
@@ -84,7 +83,6 @@ export default function Chat() {
 
 	const {
 		viewportRef: viewportRef1,
-		viewportNodeRef,
 		isAtBottom,
 		scrollToBottom,
 	} = useAutoScroll({
@@ -92,31 +90,11 @@ export default function Chat() {
 		isInitializing,
 	});
 
-	const [oldHeight, setOldHeight] = useState(-1);
+	// useAutoScroll holds the position across the prepended page.
 	const { viewportRef: viewportRef2, sentinelRef } = useSentinel({
 		query: messages,
 		queryKey: client.query.message.getMessages.pathKey(),
-		onFetchNextPage: useCallback(() => {
-			if (viewportNodeRef.current) {
-				setOldHeight(viewportNodeRef.current.scrollHeight);
-			}
-		}, [viewportNodeRef]),
 	});
-	useLayoutEffect(() => {
-		if (
-			viewportNodeRef.current &&
-			oldHeight >= 0 &&
-			!messages.isFetchingNextPage
-		) {
-			const newHeight = viewportNodeRef.current.scrollHeight;
-			console.log("[Chat] scrolling to:", newHeight - oldHeight);
-			viewportNodeRef.current.scrollTo({
-				top: newHeight - oldHeight,
-				behavior: "instant",
-			});
-			setOldHeight(-1);
-		}
-	}, [viewportNodeRef, oldHeight, messages.isFetchingNextPage]);
 
 	const viewportRef = useMergedRef(viewportRef1, viewportRef2);
 

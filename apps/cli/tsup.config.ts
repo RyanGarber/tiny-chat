@@ -26,8 +26,6 @@ const require = createRequire(import.meta.url);`,
 
 	noExternal: ["@tiny-chat/core", "@tiny-chat/client", "@tiny-chat/server"],
 
-	external: ["@napi-rs/keyring", "ai", "@modelcontextprotocol/client"],
-
 	env: {
 		...Object.fromEntries(
 			Object.entries(zEnv.parse(process.env)).map(([key, value]) => [

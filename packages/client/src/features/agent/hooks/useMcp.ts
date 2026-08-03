@@ -109,7 +109,9 @@ export const useMcp = () => {
 				}
 
 				for (const transport of transports) {
-					console.log("[useMcp] starting transport:", name, transport);
+					console.log(
+						`[useMcp] trying transport for ${name}: ${transport.constructor.name}`,
+					);
 					try {
 						const onerror = transport.onerror;
 						await new Promise((resolve, reject) => {
@@ -122,10 +124,10 @@ export const useMcp = () => {
 						transport.onerror = onerror;
 						connections.push(mcpClient);
 						tools = (await mcpClient.listTools()).tools;
-						console.log("[useMcp] started:", name, tools);
+						console.log(`[useMcp] connected: ${name} (${tools.length} tools)`);
 						break;
 					} catch (e) {
-						console.log("[useMcp] failed to start:", e);
+						console.log("[useMcp] failed to connect:", e);
 						error = new Error("failed to connect");
 						await mcpClient.close();
 					}

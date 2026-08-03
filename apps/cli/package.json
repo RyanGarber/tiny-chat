@@ -3,7 +3,8 @@
 	"type": "module",
 	"scripts": {
 		"dev": "tsx --watch src/index.ts",
-		"build": "tsup"
+		"build": "tsup",
+		"build:bun": "bun build --compile ./src/index.ts --outfile ./dist/tiny-chat-bun --env inline"
 	},
 	"bin": {
 		"tiny-chat": "./dist/index.js"
@@ -32,6 +33,7 @@
 	"devDependencies": {
 		"@types/node": "^26.1.1",
 		"@types/react": "^19.2.17",
+		"react-devtools-core": "^7.0.1",
 		"tsup": "^8.5.1"
 	}
 }

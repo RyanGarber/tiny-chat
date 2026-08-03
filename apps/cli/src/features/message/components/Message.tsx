@@ -44,7 +44,7 @@ export default function Message({ message }: { message: MessageState }) {
 											key={part.id}
 											label={part.active ? "Thinking" : "Thought"}
 											state={part.active ? "loading" : "success"}
-											spinner={cliSpinners.bluePulse}
+											spinner={cliSpinners.dots}
 										>
 											<Text dimColor>{part.value}</Text>
 										</Task>
@@ -81,7 +81,7 @@ export default function Message({ message }: { message: MessageState }) {
 				})}
 				{live.state.any && (
 					<Text>
-						<Spinner type="bluePulse" />
+						<Spinner type="simpleDotsScrolling" />
 					</Text>
 				)}
 			</Box>

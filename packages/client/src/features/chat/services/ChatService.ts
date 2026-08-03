@@ -14,7 +14,7 @@ export const ChatService = {
 	fetchChat: async ({ client, id }: { client: Client; id: string }) => {
 		useChatStore.getState().setLastSeen(id, Date.now());
 		await client.queryClient.invalidateQueries({
-			queryKey: client.query.chat.pathKey(),
+			queryKey: client.query.chat.getChat.pathKey(),
 		});
 	},
 

@@ -1,6 +1,5 @@
 import { exec } from "node:child_process";
 import { readdir, readFile, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { createClient } from "@tiny-chat/client/src/client.ts";
@@ -9,6 +8,7 @@ import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts"
 import { quote } from "shell-quote";
 import { KeyringService } from "./core/services/KeyringService.ts";
 import { StorageService } from "./core/services/StorageService.ts";
+import { OsUtils } from "./core/utils/OsUtils.ts";
 import { useInputStore } from "./features/editor/stores/useInputStore.ts";
 
 export const client = createClient({
@@ -45,14 +45,14 @@ export const client = createClient({
 	},
 	shell: {
 		readFile: async ({ path }) => {
-			path = resolve(path);
+			path = OsUtils.resolve(path);
 			return {
 				path,
 				data: await readFile(path),
 			};
 		},
 		writeFile: async ({ path, content }) => {
-			path = resolve(path);
+			path = OsUtils.resolve(path);
 			await writeFile(path, content);
 			return {
 				path,
@@ -60,10 +60,10 @@ export const client = createClient({
 			};
 		},
 		readDir: async ({ path }) => {
-			path = resolve(path);
+			path = OsUtils.resolve(path);
 			const entries = await readdir(path, { withFileTypes: true });
 			return entries.map((entry) => ({
-				path: resolve(path, entry.name),
+				path: OsUtils.resolve(path, entry.name),
 				is_dir: entry.isDirectory(),
 			}));
 		},

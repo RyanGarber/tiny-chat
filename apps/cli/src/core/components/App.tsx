@@ -31,8 +31,10 @@ export default function App() {
 				</Box>
 			)}
 			{statuses.map((status) => (
-				<Box key={status.id}>
-					<Spinner type="bluePulse" />
+				<Box key={status.id} gap={1} marginLeft={1}>
+					<Text color="blueBright">
+						<Spinner type="circleQuarters" />
+					</Text>
 					<Text>{status.text ?? "Working..."}</Text>
 				</Box>
 			))}

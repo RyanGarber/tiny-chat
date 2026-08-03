@@ -5,6 +5,12 @@ const SCROLL_BOTTOM_THRESHOLD = 80;
 const SCROLL_REENGAGE_THRESHOLD = 2;
 const PROGRAMMATIC_SCROLL_GUARD_MS = 800;
 
+/** A node inside the viewport plus where it sat relative to the viewport's top edge. */
+interface ScrollAnchor {
+	node: Element;
+	offset: number;
+}
+
 /**
  * Manages autoscroll behavior for a vertically-scrolling container.
  *
@@ -12,6 +18,7 @@ const PROGRAMMATIC_SCROLL_GUARD_MS = 800;
  * - Tracks whether the container is at the bottom (via native scroll listener)
  * - Scrolls to the bottom on new content (if already at bottom)
  * - Disengages autoscroll on intentional upward scroll (wheel/touch)
+ * - Holds the position the user picked when content above it changes
  * - Compensates for visual viewport resizes (mobile keyboard)
  * - Responds to an external "scroll requested" signal
  */
@@ -31,6 +38,8 @@ export function useAutoScroll({
 	const scrollSessionRef = useRef(0);
 	const lastHandledScrollRequestRef = useRef(0);
 	const suppressScrollDisengageUntilRef = useRef(0);
+	const anchorRef = useRef<ScrollAnchor | null>(null);
+	const desiredScrollTopRef = useRef(0);
 
 	const [isAtBottom, setIsAtBottom] = useState(true);
 	const [viewportEl, setViewportEl] = useState<HTMLDivElement | null>(null);
@@ -54,12 +63,100 @@ export function useAutoScroll({
 		[getDistanceFromBottom],
 	);
 
+	const getMaxScrollTop = useCallback(() => {
+		const el = viewportNodeRef.current;
+		if (!el) return 0;
+		return Math.max(0, el.scrollHeight - el.clientHeight);
+	}, []);
+
 	const syncNearBottomState = useCallback((nearBottom: boolean) => {
 		if (isNearBottomRef.current !== nearBottom) {
 			isNearBottomRef.current = nearBottom;
 			setIsAtBottom(nearBottom);
 		}
 	}, []);
+
+	/**
+	 * Remember a node that is currently on screen so the same view can be
+	 * reproduced after content above it is added, removed or re-rendered.
+	 * The previous anchor is reused while it stays visible, which keeps this
+	 * cheap enough to run on every scroll event.
+	 */
+	const captureAnchor = useCallback(() => {
+		const el = viewportNodeRef.current;
+		if (!el) return;
+
+		const viewportTop = el.getBoundingClientRect().top;
+		const viewportBottom = viewportTop + el.clientHeight;
+
+		const anchor = anchorRef.current;
+		if (anchor && el.contains(anchor.node)) {
+			const rect = anchor.node.getBoundingClientRect();
+			if (rect.bottom > viewportTop && rect.top < viewportBottom) {
+				anchor.offset = rect.top - viewportTop;
+				return;
+			}
+		}
+
+		// Descend through wrappers (Mantine's ScrollArea adds a couple) until we
+		// reach the element that actually holds the list.
+		let list: Element = el;
+		while (list.children.length === 1) list = list.children[0];
+
+		// Topmost child that still reaches into the viewport.
+		const children = list.children;
+		let low = 0;
+		let high = children.length - 1;
+		let index = 0;
+		while (low <= high) {
+			const middle = (low + high) >> 1;
+			if (children[middle].getBoundingClientRect().bottom <= viewportTop) {
+				low = middle + 1;
+				index = low;
+			} else {
+				high = middle - 1;
+			}
+		}
+
+		// Content grows in after any leading header — the loading sentinel here —
+		// so the first child never moves and cannot reveal that growth. Anchoring
+		// one further down keeps prepended pages measurable.
+		if (index === 0 && children.length > 1) index = 1;
+
+		const node = children.item(index);
+		anchorRef.current = node
+			? { node, offset: node.getBoundingClientRect().top - viewportTop }
+			: null;
+	}, []);
+
+	/**
+	 * Put the viewport back where the user left it after the content changed.
+	 * Falls back to the raw offset when the anchor did not survive the update
+	 * (a full list re-render, for example). While the content is still too short
+	 * to honour the target the anchor is left untouched, so a later growth can
+	 * finish the restore instead of settling for a clamped position.
+	 */
+	const restorePosition = useCallback(() => {
+		const el = viewportNodeRef.current;
+		if (!el) return;
+
+		const anchor = anchorRef.current;
+		let target = desiredScrollTopRef.current;
+		if (anchor && el.contains(anchor.node)) {
+			const viewportTop = el.getBoundingClientRect().top;
+			const drift =
+				anchor.node.getBoundingClientRect().top - viewportTop - anchor.offset;
+			target = el.scrollTop + drift;
+		}
+
+		const next = Math.min(Math.max(target, 0), getMaxScrollTop());
+		if (Math.abs(next - el.scrollTop) >= 0.5) el.scrollTop = next;
+
+		if (Math.abs(next - target) < 1) {
+			desiredScrollTopRef.current = next;
+			captureAnchor();
+		}
+	}, [captureAnchor, getMaxScrollTop]);
 
 	const cancelScrollLoop = useCallback(() => {
 		scrollSessionRef.current += 1;
@@ -76,7 +173,8 @@ export function useAutoScroll({
 			isAtBottomRef.current = false;
 		}
 		syncNearBottomState(checkIsAtBottom());
-	}, [cancelScrollLoop, checkIsAtBottom, syncNearBottomState]);
+		captureAnchor();
+	}, [cancelScrollLoop, captureAnchor, checkIsAtBottom, syncNearBottomState]);
 
 	const animateScrollToBottom = useCallback(() => {
 		const el = viewportNodeRef.current;
@@ -113,6 +211,10 @@ export function useAutoScroll({
 
 			isAtBottomRef.current = true;
 			syncNearBottomState(true);
+			// The bottom is the position to hold from here on, so anything we were
+			// restoring towards is obsolete.
+			anchorRef.current = null;
+			desiredScrollTopRef.current = getMaxScrollTop();
 			suppressScrollDisengageUntilRef.current =
 				performance.now() + PROGRAMMATIC_SCROLL_GUARD_MS;
 
@@ -126,7 +228,12 @@ export function useAutoScroll({
 				animateScrollToBottom();
 			}
 		},
-		[animateScrollToBottom, cancelScrollLoop, syncNearBottomState],
+		[
+			animateScrollToBottom,
+			cancelScrollLoop,
+			getMaxScrollTop,
+			syncNearBottomState,
+		],
 	);
 
 	// Native scroll listener tracking manual upward scrolls
@@ -137,9 +244,18 @@ export function useAutoScroll({
 		let prevScrollTop = el.scrollTop;
 
 		const onScroll = () => {
+			// Content that shrinks drags scrollTop down with it. That is the browser
+			// clamping the viewport rather than the user moving it, so ignore the
+			// event completely and keep holding the position we are restoring to.
+			const max = Math.max(0, el.scrollHeight - el.clientHeight);
+			if (desiredScrollTopRef.current > max + 1 && el.scrollTop >= max - 1) {
+				return;
+			}
+
 			const currentScrollTop = el.scrollTop;
 			const isScrollingUp = currentScrollTop < prevScrollTop;
 			prevScrollTop = currentScrollTop;
+			desiredScrollTopRef.current = currentScrollTop;
 
 			const nearBottom = checkIsAtBottom();
 			const atBottom = checkIsAtBottom(SCROLL_REENGAGE_THRESHOLD);
@@ -163,10 +279,18 @@ export function useAutoScroll({
 			if (atBottom) {
 				suppressScrollDisengageUntilRef.current = 0;
 			}
+
+			if (!isAtBottomRef.current) captureAnchor();
 		};
 		el.addEventListener("scroll", onScroll, { passive: true });
 		return () => el.removeEventListener("scroll", onScroll);
-	}, [viewportEl, checkIsAtBottom, disengage, syncNearBottomState]);
+	}, [
+		viewportEl,
+		captureAnchor,
+		checkIsAtBottom,
+		disengage,
+		syncNearBottomState,
+	]);
 
 	// Compensate for visual viewport resizing
 	useEffect(() => {
@@ -198,7 +322,17 @@ export function useAutoScroll({
 		const el = viewportEl;
 		if (!el) return;
 
+		// A real gesture outranks a restore that is still pending because the
+		// content has not grown back yet: the user's new position wins.
+		const takeOver = () => {
+			if (desiredScrollTopRef.current > getMaxScrollTop()) {
+				desiredScrollTopRef.current = el.scrollTop;
+				anchorRef.current = null;
+			}
+		};
+
 		const onWheel = (e: WheelEvent) => {
+			takeOver();
 			if (e.deltaY < 0) {
 				suppressScrollDisengageUntilRef.current = 0;
 				disengage();
@@ -210,6 +344,7 @@ export function useAutoScroll({
 			touchStartY = e.touches[0].clientY;
 		};
 		const onTouchMove = (e: TouchEvent) => {
+			takeOver();
 			const deltaY = touchStartY - e.touches[0].clientY;
 			if (deltaY < 0) {
 				suppressScrollDisengageUntilRef.current = 0;
@@ -225,9 +360,10 @@ export function useAutoScroll({
 			el.removeEventListener("touchstart", onTouchStart);
 			el.removeEventListener("touchmove", onTouchMove);
 		};
-	}, [viewportEl, disengage]);
+	}, [viewportEl, disengage, getMaxScrollTop]);
 
-	// Auto-scroll natively when content height changes
+	// React to content height changes: follow the bottom while locked, otherwise
+	// hold the position the user picked.
 	useEffect(() => {
 		const el = viewportEl;
 		if (!el) return;
@@ -241,16 +377,22 @@ export function useAutoScroll({
 			const delta = newHeight - prevHeight;
 			prevHeight = newHeight;
 
-			if (delta > 0 && isAtBottomRef.current) {
-				isAtBottomRef.current = true;
-				syncNearBottomState(true);
-				animateScrollToBottom();
+			if (isAtBottomRef.current) {
+				if (delta > 0) {
+					syncNearBottomState(true);
+					animateScrollToBottom();
+				}
+				return;
 			}
+
+			// Runs before paint, so pagination and re-renders never flash the
+			// viewport at the wrong offset.
+			restorePosition();
 		});
 
 		observer.observe(contentEl);
 		return () => observer.disconnect();
-	}, [viewportEl, animateScrollToBottom, syncNearBottomState]);
+	}, [viewportEl, animateScrollToBottom, restorePosition, syncNearBottomState]);
 
 	// Respond to explicit scroll-to-bottom (e.g. after sending a message)
 	useEffect(() => {
@@ -271,7 +413,6 @@ export function useAutoScroll({
 
 	return {
 		viewportRef,
-		viewportNodeRef,
 		isAtBottom,
 		scrollToBottom,
 	};

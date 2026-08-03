@@ -19,6 +19,8 @@ export const useSkills = () => {
 			const skills: zSkill[] = [];
 
 			if (client.shell) {
+				console.log("[useSkills] reading local skills");
+
 				const walk = async (path: string) => {
 					const files: { path: string; data: string }[] = [];
 
@@ -39,6 +41,7 @@ export const useSkills = () => {
 							}
 						}
 					}
+
 					return files;
 				};
 
@@ -48,6 +51,10 @@ export const useSkills = () => {
 					})
 				).filter((e) => e.is_dir);
 
+				console.log(
+					"[useSkills] reading local skills from:",
+					paths.map((p) => p.path).join(","),
+				);
 				for (const { path } of paths) {
 					try {
 						const skill = SkillUtils.buildSkill({
@@ -106,7 +113,7 @@ export const useSkills = () => {
 				);
 			}
 
-			console.log("[SkillService] built native skills:", skills);
+			console.log("[useSkills] built native skills:", skills);
 			return skills;
 		},
 		staleTime: Infinity,

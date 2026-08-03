@@ -143,6 +143,15 @@ jobs:
             notes: ${{ needs.version.outputs.notes }}
         secrets: inherit
 
+    cli:
+        needs: [ version, create-release ]
+        if: needs.version.outputs.released == 'true'
+        uses: ./.github/workflows/release-cli.yml
+        with:
+            version: ${{ needs.version.outputs.version }}
+            notes: ${{ needs.version.outputs.notes }}
+        secrets: inherit
+
     deploy:
         needs: version
         if: needs.version.outputs.released == 'true'

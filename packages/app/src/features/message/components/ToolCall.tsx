@@ -18,9 +18,9 @@ import { ToolCallUtils } from "@tiny-chat/core/src/features/tool/utils/ToolCallU
 import { memo, type ReactNode, useState } from "react";
 import type { BundledLanguage } from "streamdown";
 import { format } from "timeago.js";
-import { Code } from "#ui/core/components/Components.tsx";
-import { theme } from "#ui/core/utils/IconUtils.ts";
-import { TauriUtils } from "#ui/features/tauri/utils/TauriUtils.ts";
+import { Code } from "#app/core/components/Components.tsx";
+import { theme } from "#app/core/utils/IconUtils.ts";
+import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
 
 const FZ = "14px";
 

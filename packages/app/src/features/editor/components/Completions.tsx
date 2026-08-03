@@ -7,10 +7,11 @@ import {
 	Text,
 	useCombobox,
 } from "@mantine/core";
+import { useCompletionStore } from "@tiny-chat/client/src/features/editor/stores/useCompletionStore.ts";
 import type {
 	CompletionGroup,
 	CompletionItem,
-} from "@tiny-chat/client/src/features/editor/types/command.ts";
+} from "@tiny-chat/client/src/features/editor/types/completion.ts";
 import { type Editor, type Range, ReactRenderer } from "@tiptap/react";
 import type { SuggestionOptions, SuggestionProps } from "@tiptap/suggestion";
 import {
@@ -21,7 +22,6 @@ import {
 	useImperativeHandle,
 	useMemo,
 } from "react";
-import { useCompletionsStore } from "#ui/features/editor/stores/useCompletionsStore.ts";
 
 export type { CompletionGroup, CompletionItem };
 
@@ -122,10 +122,10 @@ function Completions<
 				combobox.selectFirstOption();
 			}, [groups, combobox.selectFirstOption]);
 
-			const setIsCompletionsOpen = useCompletionsStore(
+			const setIsCompletionsOpen = useCompletionStore(
 				(s) => s.setIsCompletionsOpen,
 			);
-			const setIsCompletionsEmpty = useCompletionsStore(
+			const setIsCompletionsEmpty = useCompletionStore(
 				(s) => s.setIsCompletionsEmpty,
 			);
 			useEffect(() => {

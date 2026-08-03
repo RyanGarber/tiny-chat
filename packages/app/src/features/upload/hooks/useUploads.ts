@@ -1,8 +1,8 @@
 import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
 import { UserService } from "@tiny-chat/client/src/features/user/services/UserService.ts";
+import { client } from "#app/client.ts";
 import { useMessagingStore } from "#client/src/features/chat/stores/useMessagingStore.ts";
 import { UploadType } from "#core/features/file/types/upload";
-import { client } from "#ui/client.ts";
 
 export const uploadMutationKey = ["upload"] as const;
 

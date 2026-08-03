@@ -3,9 +3,9 @@ import { useElementSize } from "@mantine/hooks";
 import { useMessageStream } from "@tiny-chat/client/src/features/chat/hooks/useStreaming.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { type CSSProperties, memo } from "react";
+import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
+import { MessageBodyContent } from "#app/features/message/components/MessageBodyContent.tsx";
 import { Author, type MessageState } from "#core/features/data/types/message";
-import { StyleUtils } from "#ui/core/utils/StyleUtils.ts";
-import { MessageBodyContent } from "#ui/features/message/components/MessageBodyContent.tsx";
 
 const MessageBody = memo(
 	function MessageBody({

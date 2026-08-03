@@ -1,13 +1,4 @@
-export interface CompletionItem {
-	name?: string;
-	value: string;
-	active?: boolean;
-}
-
-export interface CompletionGroup<T extends CompletionItem = CompletionItem> {
-	name?: string;
-	items: T[];
-}
+import type { CompletionGroup, CompletionItem } from "./completion.ts";
 
 export interface CommandChoiceItem extends CompletionItem {
 	run?: (command: CommandItem) => unknown;

@@ -5,11 +5,11 @@ import { useProviders } from "@tiny-chat/client/src/features/agent/hooks/useProv
 import { useTools } from "@tiny-chat/client/src/features/agent/hooks/useTools.ts";
 import { AgentMessageService } from "@tiny-chat/client/src/features/agent/services/AgentMessageService.ts";
 import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
+import { client } from "#app/client.ts";
+import { useEditorStore } from "#app/features/editor/stores/useEditorStore.ts";
 import { useSession } from "#client/src/core/hooks/useSession.ts";
 import { useSkills } from "#client/src/features/agent/hooks/useSkills.ts";
 import { useMessages } from "#client/src/features/chat/hooks/useMessages.ts";
-import { client } from "#ui/client.ts";
-import { useEditorStore } from "#ui/features/editor/stores/useEditorStore.ts";
 
 export const useExperiments = () => {
 	const { session } = useSession();

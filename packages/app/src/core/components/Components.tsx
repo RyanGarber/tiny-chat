@@ -14,9 +14,9 @@ import {
 	CodeBlockDownloadButton,
 	CodeBlockHeader,
 } from "streamdown";
-import { useLayoutStore } from "#ui/core/stores/useLayoutStore.tsx";
-import { CodeUtils } from "#ui/core/utils/CodeUtils.ts";
-import { theme } from "#ui/core/utils/IconUtils.ts";
+import { useLayoutStore } from "#app/core/stores/useLayoutStore.tsx";
+import { CodeUtils } from "#app/core/utils/CodeUtils.ts";
+import { theme } from "#app/core/utils/IconUtils.ts";
 import { useThemes } from "../../../../client/src/features/settings/hooks/useThemes.ts";
 
 const CodeBlockContent = ({

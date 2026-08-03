@@ -7,10 +7,10 @@ import type {
 	ModelProviderStatus,
 } from "@tiny-chat/core/src/features/provider/types/model.ts";
 import type { ProviderState } from "@tiny-chat/core/src/features/provider/types/provider.ts";
-import { useEditorStore } from "#ui/features/editor/stores/useEditorStore.ts";
-import { TauriHttpTransport } from "#ui/features/tauri/services/TauriHttpTransport.ts";
-import { TauriStdioTransport } from "#ui/features/tauri/services/TauriStdioTransport.ts";
-import { TauriUtils } from "#ui/features/tauri/utils/TauriUtils.ts";
+import { useEditorStore } from "#app/features/editor/stores/useEditorStore.ts";
+import { TauriHttpTransport } from "#app/features/tauri/services/TauriHttpTransport.ts";
+import { TauriStdioTransport } from "#app/features/tauri/services/TauriStdioTransport.ts";
+import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
 
 export const client = createClient({
 	env: {

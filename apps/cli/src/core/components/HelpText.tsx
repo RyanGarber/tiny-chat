@@ -1,11 +1,27 @@
 import { Text } from "ink";
 
-export default function HelpText({
-	actions,
-}: {
-	actions: { key: string; name: string; when?: boolean }[];
-}) {
+export type Action =
+	| { key: string; name: string; when?: boolean }
+	| "choose"
+	| "select"
+	| "back";
+
+export default function HelpText({ actions: _actions }: { actions: Action[] }) {
+	const actions = _actions.map((action) => {
+		if (action === "choose") {
+			return { key: "↑↓", name: "choose" };
+		}
+		if (action === "select") {
+			return { key: "enter", name: "select" };
+		}
+		if (action === "back") {
+			return { key: "esc", name: "back" };
+		}
+		return action;
+	});
+
 	const active = actions.filter((action) => action.when ?? true);
+
 	return (
 		<Text>
 			{active.map((action, index) => (

@@ -16,18 +16,20 @@ import {
 	toolCallRejection,
 	useToolInput,
 } from "@tiny-chat/client/src/features/chat/hooks/useToolInput.ts";
+import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import type { ask_question } from "@tiny-chat/core/src/features/tool/tools/questions/ask_question.ts";
 import type { Tool } from "@tiny-chat/core/src/features/tool/types/tool.ts";
 import { memo, type ReactNode, useMemo, useState } from "react";
 import type { BundledLanguage } from "streamdown";
 import type { z } from "zod";
+import { Code, Diff } from "#app/core/components/Components.tsx";
+import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
+import { Markdown } from "#app/features/message/components/Markdown.tsx";
 import type {
 	MessageState,
+	zDataBasicPart,
 	zDataPart,
 } from "#core/features/data/types/message";
-import { Code, Diff } from "#ui/core/components/Components.tsx";
-import { StyleUtils } from "#ui/core/utils/StyleUtils.ts";
-import { Markdown } from "#ui/features/message/components/Markdown.tsx";
 
 export const ToolCallInput = memo(
 	({
@@ -40,7 +42,7 @@ export const ToolCallInput = memo(
 		toolCall: Extract<zDataPart, { type: "toolCall" }>;
 		toolResult?: Extract<zDataPart, { type: "toolResult" }>;
 		containerWidth: number;
-		tool?: Tool<any, any>;
+		tool?: Tool<any, any> | null;
 	}) => {
 		const { sendToolInput } = useToolInput();
 
@@ -51,15 +53,45 @@ export const ToolCallInput = memo(
 		});
 
 		const [inputValue, setInputValue] = useState<unknown>(toolResult?.value);
+		const [appendValue, setAppendValue] = useState<Extract<
+			zDataBasicPart,
+			{ type: "text" }
+		> | null>();
+
+		const followUp = (
+			<Box
+				style={{ borderLeft: "2px solid var(--tc-interior)" }}
+				pl={15}
+				ml={7.5}
+			>
+				<Textarea
+					autosize
+					disabled={!!toolResult}
+					placeholder="Add follow-up..."
+					value={
+						toolResult?.append
+							? DataUtils.getText({ data: [toolResult.append] })
+							: appendValue?.value
+					}
+					onChange={(event) =>
+						setAppendValue(
+							event.target.value.trim().length
+								? { type: "text", value: event.target.value }
+								: null,
+						)
+					}
+				/>
+			</Box>
+		);
 
 		const disabled = toolResult !== undefined;
 
 		const details = display?.details;
 
 		const input: ReactNode | undefined = useMemo(() => {
-			if (details?.kind === "shell_exec") {
+			if (details?.kind === "shell_exec" && display?.pending) {
 				return <Code language="bash" code={details.command} />;
-			} else if (details?.kind === "write_file") {
+			} else if (details?.kind === "write_file" && display?.pending) {
 				return (
 					<Diff
 						filename={details.name}
@@ -135,7 +167,7 @@ export const ToolCallInput = memo(
 					</Stack>
 				);
 			}
-		}, [details, contents, inputValue, disabled]);
+		}, [details, contents, inputValue, disabled, display?.pending]);
 
 		if (tool && input) {
 			return (
@@ -145,6 +177,7 @@ export const ToolCallInput = memo(
 							<Box>{input}</Box>
 						</Stack>
 					</Card>
+					{followUp}
 					<Group gap="xs" justify="flex-end">
 						{display?.approval ? (
 							<Group gap="xs">
@@ -156,6 +189,7 @@ export const ToolCallInput = memo(
 											part: toolCall,
 											approved: true,
 											value: inputValue,
+											append: appendValue,
 										})
 									}
 									leftSection={
@@ -173,14 +207,15 @@ export const ToolCallInput = memo(
 									Approve
 								</Button>
 								<Button
-									variant="default"
 									size="xs"
+									variant="default"
 									onClick={() =>
 										sendToolInput.mutate({
 											seed: message,
 											part: toolCall,
 											approved: false,
 											value: inputValue,
+											append: appendValue,
 										})
 									}
 									leftSection={
@@ -206,6 +241,7 @@ export const ToolCallInput = memo(
 										seed: message,
 										part: toolCall,
 										value: inputValue,
+										append: appendValue,
 									})
 								}
 								leftSection={
@@ -224,7 +260,9 @@ export const ToolCallInput = memo(
 			);
 		}
 
-		if (!toolResult) {
+		if (toolResult) {
+			return !!toolResult.append?.length && followUp;
+		} else {
 			return (
 				<Alert color="red" title="Error">
 					Tool <code>{tool?.name}</code> can't be used in this context.

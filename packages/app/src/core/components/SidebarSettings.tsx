@@ -32,16 +32,16 @@ import {
 import { ThemeUtils } from "@tiny-chat/core/src/core/utils/ThemeUtils.ts";
 import { zConfig } from "@tiny-chat/core/src/features/data/types/message.ts";
 import { type JSX, useEffect, useMemo, useState } from "react";
+import Console from "#app/core/components/Console.tsx";
+import { useLayoutStore } from "#app/core/stores/useLayoutStore.tsx";
+import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
+import ModelSelect, {
+	ModelMultiSelect,
+} from "#app/features/agent/components/ModelSelect.tsx";
 import type {
 	ProviderState,
 	ProviderStatus,
 } from "#core/features/provider/types/provider.ts";
-import Console from "#ui/core/components/Console.tsx";
-import { useLayoutStore } from "#ui/core/stores/useLayoutStore.tsx";
-import { StyleUtils } from "#ui/core/utils/StyleUtils.ts";
-import ModelSelect, {
-	ModelMultiSelect,
-} from "#ui/features/agent/components/ModelSelect.tsx";
 import { useHiddenModels } from "../../../../client/src/features/settings/hooks/useHiddenModels.ts";
 import { useInstructions } from "../../../../client/src/features/settings/hooks/useInstructions.ts";
 import { useProviderSettings } from "../../../../client/src/features/settings/hooks/useProviderSettings.ts";

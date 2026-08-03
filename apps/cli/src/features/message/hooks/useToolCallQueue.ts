@@ -34,5 +34,5 @@ export const useToolCallQueue = () => {
 		});
 	}, [message, live, toolsets]);
 
-	return { queue, active: queue[0] };
+	return { queue, toolCall: queue[0] };
 };

@@ -11,11 +11,11 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { type JSX, useEffect } from "react";
+import { client } from "#app/client.ts";
+import { useLayoutStore } from "#app/core/stores/useLayoutStore.tsx";
+import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
+import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
 import { useSession } from "#client/src/core/hooks/useSession.ts";
-import { client } from "#ui/client.ts";
-import { useLayoutStore } from "#ui/core/stores/useLayoutStore.tsx";
-import { StyleUtils } from "#ui/core/utils/StyleUtils.ts";
-import { TauriUtils } from "#ui/features/tauri/utils/TauriUtils.ts";
 import { useAccounts } from "../hooks/useAccounts.ts";
 
 export default function SidebarAccount({

@@ -2,17 +2,21 @@ import { useSession } from "@tiny-chat/client/src/core/hooks/useSession.ts";
 import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
 import { useCommands } from "@tiny-chat/client/src/features/editor/hooks/useCommands.ts";
 import type {
+	CommandChoiceGroup,
+	CommandChoiceItem,
 	CommandEdit,
+	CommandGroup,
 	CommandItem,
-	CompletionGroup,
 } from "@tiny-chat/client/src/features/editor/types/command.ts";
+import type { CompletionGroup } from "@tiny-chat/client/src/features/editor/types/completion.ts";
 import { CommandUtils } from "@tiny-chat/client/src/features/editor/utils/CommandUtils.ts";
 import clipboard from "clipboardy";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { client } from "../../../client.ts";
 import { useAppStore } from "../../../core/stores/useAppStore.ts";
+import Completions from "./Completions.tsx";
 
-export const useCommand = ({
+export default function Commands({
 	content,
 	setContent,
 	cursor,
@@ -22,7 +26,7 @@ export const useCommand = ({
 	setContent: (content: string) => void;
 	cursor: [row: number, column: number];
 	setCursor: (cursor: [row: number, column: number]) => void;
-}) => {
+}) {
 	const { session, requestClone } = useSession();
 
 	const setPage = useAppStore((state) => state.setPage);
@@ -32,12 +36,12 @@ export const useCommand = ({
 	const isAnonymous =
 		!session.data?.user || session.data.user.isAnonymous === true;
 
-	const commands = useMemo<CommandItem[]>(
+	const cliCommands = useMemo<CommandItem[]>(
 		() => [
 			{
-				name: "chat",
-				value: "chat",
-				run: () => setPage("chat-list"),
+				name: "chats",
+				value: "chats",
+				run: () => setPage("chats"),
 			},
 			{
 				name: "clear",
@@ -53,7 +57,7 @@ export const useCommand = ({
 				? {
 						name: "login",
 						value: "login",
-						run: () =>
+						run: async () =>
 							requestClone.mutate(
 								(id) => {
 									clipboard.write(`${client.webUrl}#/?clone=${id}`);
@@ -75,18 +79,18 @@ export const useCommand = ({
 	);
 
 	const { getCommands } = useCommands({
-		commands,
+		commands: cliCommands,
 		onOpenTools: () => setPage("tools"),
 		onOpenSkills: () => setPage("skills"),
 	});
 
-	const all = getCommands();
-	const query = CommandUtils.query({ content, cursor, groups: all });
+	const commands = getCommands();
+	const query = CommandUtils.query({ content, cursor, groups: commands });
 
 	const commandGroups =
 		!query || query.command
 			? []
-			: CommandUtils.filter({ groups: all, query: query.text });
+			: CommandUtils.filter({ groups: commands, query: query.text });
 
 	const choiceGroups = CommandUtils.filterChoices({
 		command: query?.command ?? null,
@@ -96,25 +100,6 @@ export const useCommand = ({
 	const groups: CompletionGroup[] = query?.command
 		? choiceGroups
 		: commandGroups;
-
-	const count = groups.reduce((total, group) => total + group.items.length, 0);
-
-	const [selected, setSelected] = useState(0);
-	const index = Math.min(selected, Math.max(count - 1, 0));
-
-	// biome-ignore lint/correctness/useExhaustiveDependencies: a new query starts at the top
-	useEffect(() => {
-		setSelected(0);
-	}, [query?.text, query?.command?.value]);
-
-	const move = useCallback(
-		(offset: number) => {
-			setSelected((previous) =>
-				Math.min(Math.max(previous + offset, 0), Math.max(count - 1, 0)),
-			);
-		},
-		[count],
-	);
 
 	const apply = useCallback(
 		(edit: CommandEdit | null) => {
@@ -126,41 +111,71 @@ export const useCommand = ({
 		[setContent, setCursor],
 	);
 
-	/**
-	 * Take the highlighted completion, or the argument written for a command
-	 * when there is nothing to highlight. Returns false when the input should
-	 * be handled as regular text instead.
-	 */
-	const select = useCallback(
-		({ complete }: { complete?: boolean } = {}) => {
-			if (!query) return false;
+	if (!query) return null;
 
-			if (query.command) {
-				const choice = choiceGroups.flatMap((group) => group.items)[index];
-				if (choice) {
-					return apply(
-						CommandUtils.applyChoice({ content, query, choice, complete }),
-					);
-				}
-				if (complete) return false;
-				return apply(CommandUtils.applyContent({ content, query }));
-			}
-
-			const command = commandGroups.flatMap((group) => group.items)[index];
-			if (!command) return false;
-			return apply(
-				CommandUtils.applyCommand({ content, query, command, complete }),
-			);
-		},
-		[apply, choiceGroups, commandGroups, content, index, query],
-	);
-
-	return {
-		groups,
-		selected: index,
-		/** whether the command being written owns the input's keys */
-		isCommanding: count > 0 || !!query?.command,
-		move,
-		select,
-	};
-};
+	if (query.command) {
+		return (
+			<Completions<CommandChoiceGroup, CommandChoiceItem>
+				groups={groups}
+				renderEmpty={() => {
+					return "no matches";
+				}}
+				onInput={({ item, key }) => {
+					if (key.return && !item) {
+						apply(CommandUtils.applyContent({ content, query }));
+					}
+					if (key.return && item) {
+						apply(
+							CommandUtils.applyChoice({
+								content,
+								query,
+								choice: item,
+								complete: false,
+							}),
+						);
+					}
+					if (key.tab && item) {
+						apply(
+							CommandUtils.applyChoice({
+								content,
+								query,
+								choice: item,
+								complete: true,
+							}),
+						);
+					}
+				}}
+			/>
+		);
+	} else {
+		return (
+			<Completions<CommandGroup, CommandItem>
+				groups={groups}
+				renderEmpty={() => "No matches"}
+				onInput={({ key, item }) => {
+					if (key.return && item) {
+						apply(
+							CommandUtils.applyCommand({
+								content,
+								query,
+								command: item,
+								complete: false,
+							}),
+						);
+					}
+					if (key.tab && item) {
+						apply(
+							CommandUtils.applyCommand({
+								content,
+								query,
+								command: item,
+								complete: true,
+							}),
+						);
+					}
+				}}
+				actions={[{ key: "tab", name: "fill" }]}
+			/>
+		);
+	}
+}

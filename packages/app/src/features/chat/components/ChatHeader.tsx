@@ -3,8 +3,8 @@ import { ActionIcon, Burger, Group, Tooltip } from "@mantine/core";
 import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
 import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
 import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
-import { useLayoutStore } from "#ui/core/stores/useLayoutStore.tsx";
-import { StyleUtils } from "#ui/core/utils/StyleUtils.ts";
+import { useLayoutStore } from "#app/core/stores/useLayoutStore.tsx";
+import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 
 export default function ChatHeader({ fixed }: { fixed: boolean }) {
 	const { chat } = useChat();

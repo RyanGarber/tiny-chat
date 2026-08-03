@@ -1,4 +1,5 @@
 import { useCommands } from "@tiny-chat/client/src/features/editor/hooks/useCommands.ts";
+import { useCompletionStore } from "@tiny-chat/client/src/features/editor/stores/useCompletionStore.ts";
 import type {
 	CommandChoiceGroup,
 	CommandChoiceItem,
@@ -18,11 +19,10 @@ import {
 } from "@tiptap/react";
 import { Suggestion } from "@tiptap/suggestion";
 import { useMemo } from "react";
-import { Command as CommandView } from "#ui/core/components/Components.tsx";
-import { useCapabilitySelectStore } from "#ui/features/agent/stores/useCapabilitySelectStore.ts";
-import { renderCompletions } from "#ui/features/editor/components/Completions.tsx";
-import { useCompletionsStore } from "#ui/features/editor/stores/useCompletionsStore.ts";
-import { NodeUtils } from "#ui/features/editor/utils/NodeUtils.ts";
+import { Command as CommandView } from "#app/core/components/Components.tsx";
+import { useCapabilitySelectStore } from "#app/features/agent/stores/useCapabilitySelectStore.ts";
+import { renderCompletions } from "#app/features/editor/components/Completions.tsx";
+import { NodeUtils } from "#app/features/editor/utils/NodeUtils.ts";
 
 interface CommandOptions {
 	getCommands: () => CommandGroup[];
@@ -261,7 +261,7 @@ const Command = Node.create({
 				}
 
 				const { isCompletionsOpen, isCompletionsEmpty } =
-					useCompletionsStore.getState();
+					useCompletionStore.getState();
 				if (isCompletionsOpen && !isCompletionsEmpty) {
 					return false;
 				}

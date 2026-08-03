@@ -4,15 +4,15 @@ import { useStdout } from "ink";
 import { ScrollView, type ScrollViewRef } from "ink-scroll-view";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useAutoScroll } from "../../../core/hooks/useAutoScroll.ts";
-import { useLoadingStatus } from "../../../core/hooks/useLoadingStatus.ts";
 import { useScrollWheel } from "../../../core/hooks/useScrollWheel.ts";
 import { useSentinel } from "../../../core/hooks/useSentinel.ts";
+import { useWorkingStatus } from "../../../core/hooks/useWorkingStatus.ts";
 import Message from "../../message/components/Message.tsx";
 
 export default function Chat() {
 	const { chat } = useChat();
 	const { messages } = useMessages();
-	useLoadingStatus(messages);
+	useWorkingStatus(messages);
 
 	const scrollRef = useRef<ScrollViewRef>(null);
 	const { stdout } = useStdout();

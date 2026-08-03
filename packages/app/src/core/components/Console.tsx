@@ -9,9 +9,9 @@ import {
 	Stack,
 	Text,
 } from "@mantine/core";
+import { useLogStore } from "#app/core/stores/useLogStore.tsx";
+import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import { LogLevel } from "#core/logger.ts";
-import { useLogStore } from "#ui/core/stores/useLogStore.tsx";
-import { StyleUtils } from "#ui/core/utils/StyleUtils.ts";
 
 export default function Console({
 	opened,

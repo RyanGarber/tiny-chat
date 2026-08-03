@@ -1,14 +1,14 @@
-import "#ui/main.css";
+import "#app/main.css";
 import "streamdown/styles.css";
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ClientProvider } from "@tiny-chat/client/src/client.ts";
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { client } from "#app/client.ts";
+import App from "#app/core/components/App.tsx";
+import { useLogStore } from "#app/core/stores/useLogStore.tsx";
 import { createLogger } from "#core/logger.ts";
-import { client } from "#ui/client.ts";
-import App from "#ui/core/components/App.tsx";
-import { useLogStore } from "#ui/core/stores/useLogStore.tsx";
 
 createLogger({ logWriter: useLogStore.getState().writer });
 

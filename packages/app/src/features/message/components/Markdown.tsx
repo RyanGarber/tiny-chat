@@ -20,8 +20,8 @@ import {
 	CiteComponent,
 	LinkComponent,
 	SlotComponent,
-} from "#ui/features/message/components/MarkdownComponents.tsx";
-import { MarkdownContext } from "#ui/features/message/components/MarkdownContext.tsx";
+} from "#app/features/message/components/MarkdownComponents.tsx";
+import { MarkdownContext } from "#app/features/message/components/MarkdownContext.tsx";
 import "katex/dist/katex.min.css";
 import type { Nodes, Root } from "mdast";
 

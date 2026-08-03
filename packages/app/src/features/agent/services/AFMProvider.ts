@@ -13,7 +13,7 @@ import type {
 	zModelArg,
 } from "@tiny-chat/core/src/features/provider/types/model.ts";
 import { ModelProviderUtils } from "@tiny-chat/core/src/features/provider/utils/ModelProviderUtils.ts";
-import { TauriUtils } from "#ui/features/tauri/utils/TauriUtils.ts";
+import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
 
 interface AfmProviderOptions {
 	reasoningLevel?: "light" | "moderate" | "deep";

@@ -1,5 +1,5 @@
 import type { JSONRPCMessage, Transport } from "@modelcontextprotocol/client";
-import { TauriUtils } from "#ui/features/tauri/utils/TauriUtils.ts";
+import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
 
 export class TauriHttpTransport implements Transport {
 	onmessage?: (message: JSONRPCMessage) => void;

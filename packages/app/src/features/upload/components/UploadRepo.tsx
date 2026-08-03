@@ -14,10 +14,10 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { UserService } from "@tiny-chat/client/src/features/user/services/UserService.ts";
 import { useState } from "react";
 import { format } from "timeago.js";
+import { client } from "#app/client.ts";
+import Sentinel from "#app/core/components/Sentinel.tsx";
+import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import { useMessagingStore } from "#client/src/features/chat/stores/useMessagingStore.ts";
-import { client } from "#ui/client.ts";
-import Sentinel from "#ui/core/components/Sentinel.tsx";
-import { StyleUtils } from "#ui/core/utils/StyleUtils.ts";
 import { useUploads } from "../hooks/useUploads";
 
 export function UploadRepo({ onClose }: { onClose: () => void }) {

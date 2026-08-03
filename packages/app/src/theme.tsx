@@ -3,7 +3,7 @@ import {
 	createTheme,
 	type MantineColorsTuple,
 } from "@mantine/core";
-import { StyleUtils } from "#ui/core/utils/StyleUtils.ts";
+import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 
 const darkPalette: MantineColorsTuple = [
 	"#C4C6CF", // [0]  near-white text — very slightly cool

@@ -1,4 +1,4 @@
-import type { CompletionGroup, CompletionItem } from "./command.ts";
+import type { CompletionGroup, CompletionItem } from "./completion.ts";
 
 export interface AttachmentItem extends CompletionItem {
 	directory?: boolean;

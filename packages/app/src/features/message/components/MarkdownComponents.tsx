@@ -5,11 +5,15 @@ import * as fuzzysort from "fuzzysort";
 import { type CSSProperties, useContext } from "react";
 import type { Components } from "streamdown";
 import { format } from "timeago.js";
+import {
+	Attachment,
+	Command,
+	Quote,
+} from "#app/core/components/Components.tsx";
+import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
+import { MarkdownContext } from "#app/features/message/components/MarkdownContext.tsx";
+import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
 import { zData } from "#core/features/data/types/message";
-import { Attachment, Command, Quote } from "#ui/core/components/Components.tsx";
-import { StyleUtils } from "#ui/core/utils/StyleUtils.ts";
-import { MarkdownContext } from "#ui/features/message/components/MarkdownContext.tsx";
-import { TauriUtils } from "#ui/features/tauri/utils/TauriUtils.ts";
 
 const TOOLTIP_PROPS = {
 	multiline: true,

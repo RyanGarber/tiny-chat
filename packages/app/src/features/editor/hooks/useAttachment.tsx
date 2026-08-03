@@ -6,16 +6,16 @@ import { PluginKey } from "@tiptap/pm/state";
 import { Node, NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import { Suggestion } from "@tiptap/suggestion";
 import { useMemo, useRef } from "react";
-import { Attachment as AttachmentView } from "#ui/core/components/Components.tsx";
-import { theme } from "#ui/core/utils/IconUtils.ts";
+import { Attachment as AttachmentView } from "#app/core/components/Components.tsx";
+import { theme } from "#app/core/utils/IconUtils.ts";
 import {
 	type CompletionGroup,
 	type CompletionItem,
 	renderCompletions,
-} from "#ui/features/editor/components/Completions.tsx";
-import { NodeUtils } from "#ui/features/editor/utils/NodeUtils.ts";
-import { useTauri } from "#ui/features/tauri/hooks/useTauri.ts";
-import { TauriUtils } from "#ui/features/tauri/utils/TauriUtils.ts";
+} from "#app/features/editor/components/Completions.tsx";
+import { NodeUtils } from "#app/features/editor/utils/NodeUtils.ts";
+import { useTauri } from "#app/features/tauri/hooks/useTauri.ts";
+import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
 
 interface AttachmentItem extends CompletionItem {
 	directory?: boolean;

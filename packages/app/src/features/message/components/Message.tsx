@@ -14,13 +14,13 @@ import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
 import { MessagingService } from "@tiny-chat/client/src/features/chat/services/MessagingService.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { memo, type ReactNode } from "react";
+import { client } from "#app/client.ts";
+import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
+import MessageBody from "#app/features/message/components/MessageBody.tsx";
+import FileThumbnails from "#app/features/upload/components/FileThumbnails.tsx";
 import { useMessaging } from "#client/src/features/chat/hooks/useMessaging.ts";
 import { useMessagingStore } from "#client/src/features/chat/stores/useMessagingStore.ts";
 import { Author, type MessageState } from "#core/features/data/types/message";
-import { client } from "#ui/client.ts";
-import { StyleUtils } from "#ui/core/utils/StyleUtils.ts";
-import MessageBody from "#ui/features/message/components/MessageBody.tsx";
-import FileThumbnails from "#ui/features/upload/components/FileThumbnails.tsx";
 
 const Message = memo(
 	function Message({

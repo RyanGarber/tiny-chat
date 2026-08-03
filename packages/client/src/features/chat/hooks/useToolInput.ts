@@ -41,7 +41,7 @@ export const useToolInput = () => {
 			part: Extract<zDataPart, { type: "toolCall" }>;
 			value?: unknown;
 			approved?: boolean;
-			append?: zDataBasicPart[];
+			append?: zDataBasicPart[] | zDataBasicPart | null;
 		}) => {
 			console.log("[useToolInput] applying input:", part, value, approved);
 			if (!session.data || !chat.data || !providers.data) return;
@@ -54,7 +54,10 @@ export const useToolInput = () => {
 			const { tool } = ToolUtils.find({ toolsets, name: part.name });
 			if (!tool) throw new Error(`tool ${part.name} not found`);
 
-			// TODO WIP - show notice if missing capability
+			if (append && !Array.isArray(append)) {
+				append = [append];
+			}
+			if (!append?.length) append = null;
 
 			let result: zDataPart;
 			if (tool.approval && !approved) {
@@ -64,7 +67,7 @@ export const useToolInput = () => {
 					name: part.name,
 					error: true,
 					value: toolCallRejection,
-					append,
+					append: append ?? undefined,
 				};
 			} else {
 				try {
@@ -82,7 +85,7 @@ export const useToolInput = () => {
 							message: seed,
 							messages,
 						}),
-						append,
+						append: append ?? undefined,
 					};
 				} catch (e) {
 					result = {
@@ -96,7 +99,7 @@ export const useToolInput = () => {
 								value: e instanceof Error ? e.message : JSON.stringify(e),
 							},
 						],
-						append,
+						append: append ?? undefined,
 					};
 				}
 			}

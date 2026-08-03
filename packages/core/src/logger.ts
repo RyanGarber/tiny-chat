@@ -69,7 +69,7 @@ export function createLogger({
 		};
 
 		console[level] = (...data: unknown[]) => {
-			original(...data);
+			if (!silent) original(...data);
 			replaced(...data);
 		};
 
@@ -77,7 +77,7 @@ export function createLogger({
 			const globals = globalThis as any;
 
 			if (typeof globals.window !== "undefined") {
-				if (!silent) console.log("logging to browser");
+				console.log("logging to browser");
 				globals.window?.addEventListener("error", (error: unknown) =>
 					console.error("[UNCAUGHT]", error),
 				);
@@ -91,7 +91,7 @@ export function createLogger({
 				typeof globals.process !== "undefined" &&
 				typeof globals.process.on === "function"
 			) {
-				if (!silent) console.log("logging to process");
+				console.log("logging to process");
 				globals.process?.on("uncaughtException", (error: unknown) => {
 					console.error("[UNCAUGHT]", error);
 					globals.process.exit(1);

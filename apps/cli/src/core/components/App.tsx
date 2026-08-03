@@ -1,6 +1,6 @@
 import { useGreeting } from "@tiny-chat/client/src/core/hooks/useGreeting.ts";
 import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
-import { Box, Text, useInput, useWindowSize } from "ink";
+import { Box, Text, useWindowSize } from "ink";
 import Spinner from "ink-spinner";
 import CapabilitySelect from "../../features/agent/components/CapabilitySelect.tsx";
 import Chat from "../../features/chat/components/Chat.tsx";
@@ -14,48 +14,38 @@ export default function App() {
 	const { rows } = useWindowSize();
 
 	const page = useAppStore((state) => state.page);
-	const setPage = useAppStore((state) => state.setPage);
 	const statuses = useAppStore((state) => state.statuses);
 
 	const chatId = useChatStore((state) => state.chatId);
 	const greeting = useGreeting();
 
-	const { queue, active } = useToolCallQueue();
-
-	useInput((_, key) => {
-		if ((key.escape || key.backspace) && page !== "chat") {
-			setPage("chat");
-		}
-	});
+	const { toolCall } = useToolCallQueue();
 
 	return (
 		<Box flexDirection="column" height={rows}>
-			{page === "chat-list" && <ChatList />}
-			{page === "tools" && <CapabilitySelect mode="tools" />}
-			{page === "skills" && <CapabilitySelect mode="skills" />}
-			{page === "chat" &&
-				(chatId ? (
-					<Chat />
-				) : (
-					<Box flexGrow={1} justifyContent="center" alignItems="center">
-						<Text>{greeting}</Text>
-					</Box>
-				))}
+			{chatId ? (
+				<Chat />
+			) : (
+				<Box flexGrow={1} justifyContent="center" alignItems="center">
+					<Text>{greeting}</Text>
+				</Box>
+			)}
 			{statuses.map((status) => (
 				<Box key={status.id}>
 					<Spinner type="bluePulse" />
 					<Text>{status.text ?? "Working..."}</Text>
 				</Box>
 			))}
-			{page === "chat" && active && (
+			{page === "chat" && toolCall && (
 				<ToolCallInput
-					key={active.toolCall.id}
-					message={active.message}
-					toolCall={active.toolCall}
-					waiting={queue.length - 1}
+					key={toolCall.toolCall.id}
+					message={toolCall.message}
+					toolCall={toolCall.toolCall}
 				/>
 			)}
-			{page === "chat" && <Input disabled={!!active} />}
+			{page === "chats" && <ChatList />}
+			{(page === "tools" || page === "skills") && <CapabilitySelect />}
+			<Input disabled={page !== "chat" || !!toolCall || !!statuses.length} />
 		</Box>
 	);
 }

@@ -1,7 +1,7 @@
 import { Icon } from "@iconify/react";
 import { Box, Collapse, Group, Text } from "@mantine/core";
 import { memo, useMemo, useState } from "react";
-import type { MarkdownContext } from "#ui/features/message/components/MarkdownContext.tsx";
+import type { MarkdownContext } from "#app/features/message/components/MarkdownContext.tsx";
 import { Markdown } from "./Markdown.tsx";
 
 const FZ = "14px";

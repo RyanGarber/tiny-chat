@@ -25,12 +25,12 @@ import { SnippetService } from "@tiny-chat/core/src/features/data/services/Snipp
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { ModelProviderService } from "@tiny-chat/core/src/features/provider/services/ModelProviderService.ts";
 import { useCallback, useRef, useState } from "react";
+import { client } from "#app/client.ts";
+import SidebarAccount from "#app/core/components/SidebarAccount.tsx";
+import SidebarSettings from "#app/core/components/SidebarSettings.tsx";
+import { useLayoutStore } from "#app/core/stores/useLayoutStore.tsx";
+import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import { useSession } from "#client/src/core/hooks/useSession.ts";
-import { client } from "#ui/client.ts";
-import SidebarAccount from "#ui/core/components/SidebarAccount.tsx";
-import SidebarSettings from "#ui/core/components/SidebarSettings.tsx";
-import { useLayoutStore } from "#ui/core/stores/useLayoutStore.tsx";
-import { StyleUtils } from "#ui/core/utils/StyleUtils.ts";
 import { version } from "../../../../../apps/tauri/tauri.conf.json";
 import SidebarChatList from "./SidebarChatList.tsx";
 

@@ -24,24 +24,24 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { client } from "#app/client.ts";
+import Sentinel from "#app/core/components/Sentinel.tsx";
+import { useAutoScroll } from "#app/core/hooks/useAutoScroll.ts";
+import { useSentinel } from "#app/core/hooks/useSentinel.ts";
+import { useLayoutStore } from "#app/core/stores/useLayoutStore.tsx";
+import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
+import Actions from "#app/features/chat/components/Actions.tsx";
+import ChatHeader from "#app/features/chat/components/ChatHeader.tsx";
+import { ChatInput } from "#app/features/chat/components/ChatInput.tsx";
+import ChatInputEffects from "#app/features/chat/components/ChatInputEffects.tsx";
+import { useEditorStore } from "#app/features/editor/stores/useEditorStore.ts";
+import Message from "#app/features/message/components/Message.tsx";
+import { uploadMutationKey } from "#app/features/upload/hooks/useUploads.ts";
 import {
 	deleteMessageMutationKey,
 	sendMessageMutationKey,
 } from "#client/src/features/chat/hooks/useMessaging.ts";
 import { useMessagingStore } from "#client/src/features/chat/stores/useMessagingStore.ts";
-import { client } from "#ui/client.ts";
-import Sentinel from "#ui/core/components/Sentinel.tsx";
-import { useAutoScroll } from "#ui/core/hooks/useAutoScroll.ts";
-import { useSentinel } from "#ui/core/hooks/useSentinel.ts";
-import { useLayoutStore } from "#ui/core/stores/useLayoutStore.tsx";
-import { StyleUtils } from "#ui/core/utils/StyleUtils.ts";
-import Actions from "#ui/features/chat/components/Actions.tsx";
-import ChatHeader from "#ui/features/chat/components/ChatHeader.tsx";
-import { ChatInput } from "#ui/features/chat/components/ChatInput.tsx";
-import ChatInputEffects from "#ui/features/chat/components/ChatInputEffects.tsx";
-import { useEditorStore } from "#ui/features/editor/stores/useEditorStore.ts";
-import Message from "#ui/features/message/components/Message.tsx";
-import { uploadMutationKey } from "#ui/features/upload/hooks/useUploads.ts";
 
 function useElementHeight(initialHeight = 0): {
 	ref: RefObject<HTMLDivElement | null>;

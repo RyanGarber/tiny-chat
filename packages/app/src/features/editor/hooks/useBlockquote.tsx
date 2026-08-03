@@ -5,8 +5,8 @@ import {
 	NodeViewWrapper,
 	ReactNodeViewRenderer,
 } from "@tiptap/react";
-import { Quote } from "#ui/core/components/Components.tsx";
-import { NodeUtils } from "#ui/features/editor/utils/NodeUtils.ts";
+import { Quote } from "#app/core/components/Components.tsx";
+import { NodeUtils } from "#app/features/editor/utils/NodeUtils.ts";
 
 const Blockquote = _Blockquote.extend({
 	addNodeView() {

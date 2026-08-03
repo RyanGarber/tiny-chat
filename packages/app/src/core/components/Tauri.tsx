@@ -11,11 +11,11 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { format } from "timeago.js";
-import { StyleUtils } from "#ui/core/utils/StyleUtils.ts";
+import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import {
 	type TauriTask,
 	useTauriStore,
-} from "#ui/features/tauri/stores/useTauriStore.ts";
+} from "#app/features/tauri/stores/useTauriStore.ts";
 import { useTauri } from "../../features/tauri/hooks/useTauri.ts";
 
 interface DisplayedTask extends TauriTask {

@@ -1,7 +1,7 @@
 import { Anchor } from "@mantine/core";
 import { Link as _Link } from "@tiptap/extension-link";
 import { MarkViewContent, ReactMarkViewRenderer } from "@tiptap/react";
-import { TauriUtils } from "#ui/features/tauri/utils/TauriUtils.ts";
+import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
 
 const Link = _Link
 	.configure({

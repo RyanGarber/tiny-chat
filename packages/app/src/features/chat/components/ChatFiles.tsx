@@ -24,12 +24,12 @@ import {
 } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import { type ReactNode, useMemo, useState } from "react";
-import { useLayoutStore } from "#ui/core/stores/useLayoutStore.tsx";
-import { theme } from "#ui/core/utils/IconUtils.ts";
+import { useLayoutStore } from "#app/core/stores/useLayoutStore.tsx";
+import { theme } from "#app/core/utils/IconUtils.ts";
 import {
 	FilePreview,
 	type FilePreviewItem,
-} from "#ui/features/upload/components/FilePreview.tsx";
+} from "#app/features/upload/components/FilePreview.tsx";
 
 interface FileTreeNodeProps {
 	type: "file";

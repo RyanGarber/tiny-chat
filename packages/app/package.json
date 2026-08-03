@@ -2,7 +2,7 @@
 	"name": "@tiny-chat/app",
 	"type": "module",
 	"imports": {
-		"#ui/*": "./src/*",
+		"#app/*": "./src/*",
 		"#server/*": "@tiny-chat/server/*",
 		"#client/*": "@tiny-chat/client/*",
 		"#core/*": "@tiny-chat/core/src/*"

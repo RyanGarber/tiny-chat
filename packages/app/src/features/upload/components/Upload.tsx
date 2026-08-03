@@ -2,11 +2,11 @@ import { Icon } from "@iconify/react";
 import { Group, Menu, Modal, Overlay, Stack, Tabs, Text } from "@mantine/core";
 import { Dropzone } from "@mantine/dropzone";
 import { useCallback, useState } from "react";
+import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
+import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
+import { UploadFile } from "#app/features/upload/components/UploadFile.tsx";
+import { UploadRepo } from "#app/features/upload/components/UploadRepo.tsx";
 import { UploadType } from "#core/features/file/types/upload";
-import { StyleUtils } from "#ui/core/utils/StyleUtils.ts";
-import { TauriUtils } from "#ui/features/tauri/utils/TauriUtils.ts";
-import { UploadFile } from "#ui/features/upload/components/UploadFile.tsx";
-import { UploadRepo } from "#ui/features/upload/components/UploadRepo.tsx";
 import { useUploads } from "../hooks/useUploads";
 
 export default function Upload({

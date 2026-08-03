@@ -3,13 +3,13 @@ import { useDisclosure } from "@mantine/hooks";
 import { useMutation } from "@tanstack/react-query";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import { useState } from "react";
-import { UploadType } from "#core/features/file/types/upload.ts";
-import { client } from "#ui/client.ts";
-import { theme } from "#ui/core/utils/IconUtils.ts";
+import { client } from "#app/client.ts";
+import { theme } from "#app/core/utils/IconUtils.ts";
 import {
 	FilePreview,
 	type FilePreviewItem,
-} from "#ui/features/upload/components/FilePreview.tsx";
+} from "#app/features/upload/components/FilePreview.tsx";
+import { UploadType } from "#core/features/file/types/upload.ts";
 
 // TODO - getUploads returns out-of-order.
 //      - lazy load each upload in the preview component itself

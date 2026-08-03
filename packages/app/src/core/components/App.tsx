@@ -8,17 +8,17 @@ import {
 import { ModalsProvider } from "@mantine/modals";
 import { useDrag } from "@use-gesture/react";
 import { useEffect } from "react";
+import Background from "#app/core/components/Background.tsx";
+import Sidebar from "#app/core/components/Sidebar.tsx";
+import Tauri from "#app/core/components/Tauri.tsx";
+import { useExperiments } from "#app/core/hooks/useExperiments.tsx";
+import { useViewport } from "#app/core/hooks/useViewport.ts";
+import { useLayoutStore } from "#app/core/stores/useLayoutStore.tsx";
+import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
+import Chat from "#app/features/chat/components/Chat.tsx";
+import ChatFiles from "#app/features/chat/components/ChatFiles.tsx";
+import { cssResolver, theme as mantineTheme } from "#app/theme.tsx";
 import { useSession } from "#client/src/core/hooks/useSession.ts";
-import Background from "#ui/core/components/Background.tsx";
-import Sidebar from "#ui/core/components/Sidebar.tsx";
-import Tauri from "#ui/core/components/Tauri.tsx";
-import { useExperiments } from "#ui/core/hooks/useExperiments.tsx";
-import { useViewport } from "#ui/core/hooks/useViewport.ts";
-import { useLayoutStore } from "#ui/core/stores/useLayoutStore.tsx";
-import { StyleUtils } from "#ui/core/utils/StyleUtils.ts";
-import Chat from "#ui/features/chat/components/Chat.tsx";
-import ChatFiles from "#ui/features/chat/components/ChatFiles.tsx";
-import { cssResolver, theme as mantineTheme } from "#ui/theme.tsx";
 import { useThemes } from "../../../../client/src/features/settings/hooks/useThemes.ts";
 import { setHashbang, useHashbang } from "../hooks/useHashbang";
 

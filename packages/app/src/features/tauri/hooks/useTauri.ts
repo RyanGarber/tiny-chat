@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useTauriStore } from "#ui/features/tauri/stores/useTauriStore.ts";
-import { TauriUtils } from "#ui/features/tauri/utils/TauriUtils.ts";
+import { useTauriStore } from "#app/features/tauri/stores/useTauriStore.ts";
+import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
 
 interface UpdateBoxed {
 	version: string;

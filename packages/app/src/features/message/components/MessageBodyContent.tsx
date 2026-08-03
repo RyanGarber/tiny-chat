@@ -33,6 +33,13 @@ import {
 } from "@vidstack/react/player/layouts/default";
 import { type CSSProperties, memo, useMemo } from "react";
 import type { z } from "zod";
+import { client } from "#app/client.ts";
+import { Code } from "#app/core/components/Components.tsx";
+import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
+import { EditorUtils } from "#app/features/editor/utils/EditorUtils.ts";
+import { Markdown } from "#app/features/message/components/Markdown.tsx";
+import { ToolCallInput } from "#app/features/message/components/ToolCallInput.tsx";
+import { useMessageSelection } from "#app/features/message/hooks/useMessageSelection.ts";
 import { useSession } from "#client/src/core/hooks/useSession.ts";
 import { useSkills } from "#client/src/features/agent/hooks/useSkills.ts";
 import {
@@ -40,13 +47,6 @@ import {
 	type MessageState,
 	type zDataPart,
 } from "#core/features/data/types/message";
-import { client } from "#ui/client.ts";
-import { Code } from "#ui/core/components/Components.tsx";
-import { StyleUtils } from "#ui/core/utils/StyleUtils.ts";
-import { EditorUtils } from "#ui/features/editor/utils/EditorUtils.ts";
-import { Markdown } from "#ui/features/message/components/Markdown.tsx";
-import { ToolCallInput } from "#ui/features/message/components/ToolCallInput.tsx";
-import { useMessageSelection } from "#ui/features/message/hooks/useMessageSelection.ts";
 import { Thinking } from "./Thinking";
 import { ToolCall } from "./ToolCall";
 
@@ -204,7 +204,9 @@ export const MessageBodyContent = memo(
 							return (
 								<div key={index}>
 									<ToolCall toolCall={part} toolResult={part.result} />
-									{(tool?.feedback || tool?.approval) && (
+									{(tool?.feedback ||
+										tool?.approval ||
+										part.result?.append) && (
 										<ToolCallInput
 											message={message}
 											toolCall={part}

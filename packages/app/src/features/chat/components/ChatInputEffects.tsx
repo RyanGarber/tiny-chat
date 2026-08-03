@@ -2,12 +2,12 @@ import { Icon } from "@iconify/react";
 import { ActionIcon, Box, Group } from "@mantine/core";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import type { ReactNode, RefObject } from "react";
+import { client } from "#app/client.ts";
+import { useLayoutStore } from "#app/core/stores/useLayoutStore.tsx";
+import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
+import FileThumbnails from "#app/features/upload/components/FileThumbnails.tsx";
 import { MessagingService } from "#client/src/features/chat/services/MessagingService.ts";
 import { useMessagingStore } from "#client/src/features/chat/stores/useMessagingStore.ts";
-import { client } from "#ui/client.ts";
-import { useLayoutStore } from "#ui/core/stores/useLayoutStore.tsx";
-import { StyleUtils } from "#ui/core/utils/StyleUtils.ts";
-import FileThumbnails from "#ui/features/upload/components/FileThumbnails.tsx";
 
 function ChatInputEffect({
 	content,

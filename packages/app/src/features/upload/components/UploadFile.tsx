@@ -1,12 +1,12 @@
 import { Icon } from "@iconify/react";
 import { ActionIcon, Group, ScrollArea, Stack, Text } from "@mantine/core";
 import { format } from "timeago.js";
+import { client } from "#app/client.ts";
+import Sentinel from "#app/core/components/Sentinel.tsx";
+import { useSentinel } from "#app/core/hooks/useSentinel.ts";
+import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
+import Dropzone from "#app/features/upload/components/Dropzone.tsx";
 import { useMessagingStore } from "#client/src/features/chat/stores/useMessagingStore.ts";
-import { client } from "#ui/client.ts";
-import Sentinel from "#ui/core/components/Sentinel.tsx";
-import { useSentinel } from "#ui/core/hooks/useSentinel.ts";
-import { StyleUtils } from "#ui/core/utils/StyleUtils.ts";
-import Dropzone from "#ui/features/upload/components/Dropzone.tsx";
 import { useUploads } from "../hooks/useUploads";
 import FileThumbnails from "./FileThumbnails.tsx";
 

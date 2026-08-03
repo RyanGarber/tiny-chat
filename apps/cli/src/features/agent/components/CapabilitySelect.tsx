@@ -1,107 +1,117 @@
 import { useConfig } from "@tiny-chat/client/src/features/agent/hooks/useConfig.ts";
 import { useSkills } from "@tiny-chat/client/src/features/agent/hooks/useSkills.ts";
 import { useTools } from "@tiny-chat/client/src/features/agent/hooks/useTools.ts";
+import type {
+	CompletionGroup,
+	CompletionItem,
+} from "@tiny-chat/client/src/features/editor/types/completion.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import type { zSkill } from "@tiny-chat/core/src/features/skill/types/skill.ts";
 import type { Toolset } from "@tiny-chat/core/src/features/tool/types/tool.ts";
 import { ToolUtils } from "@tiny-chat/core/src/features/tool/utils/ToolUtils.ts";
-import { Box, Text, useInput, useWindowSize } from "ink";
-import { ScrollList } from "ink-scroll-list";
-import { useMemo, useState } from "react";
-import HelpText from "../../../core/components/HelpText.tsx";
-import { useLoadingStatus } from "../../../core/hooks/useLoadingStatus.ts";
+import { Text } from "ink";
+import { useMemo } from "react";
+import { useWorkingStatus } from "../../../core/hooks/useWorkingStatus.ts";
+import { useAppStore } from "../../../core/stores/useAppStore.ts";
+import Completions from "../../editor/components/Completions.tsx";
 
-type Mode = "tools" | "skills";
+interface CapabilityGroup extends CompletionGroup<CapabilityItem> {}
 
-interface MenuItem {
-	key: string;
-	group: string;
-	label: string;
+interface CapabilityItem extends CompletionItem {
 	detail?: string;
 	enabled: boolean;
 	disabled?: boolean;
 	toggle: () => void;
 }
 
-export default function CapabilitySelect({ mode }: { mode: Mode }) {
-	const { rows } = useWindowSize();
-
+export default function CapabilitySelect() {
 	const { config, setConfig } = useConfig();
 	const { nativeTools, mcpTools } = useTools();
 	const { nativeSkills, localSkills } = useSkills();
 
-	useLoadingStatus(nativeTools, mcpTools, nativeSkills, localSkills);
+	const page = useAppStore((state) => state.page);
+	const setPage = useAppStore((state) => state.setPage);
 
-	const items = useMemo((): MenuItem[] => {
-		if (mode === "tools") {
-			const toToolItems = (
-				group: string,
+	useWorkingStatus(nativeTools, mcpTools, nativeSkills, localSkills);
+
+	const groups = useMemo((): CapabilityGroup[] => {
+		if (page === "tools") {
+			const buildToolsets = (
+				type: string,
 				toolsets: Toolset<any>[],
-			): MenuItem[] =>
-				toolsets.map((toolset) => {
-					const name = ToolUtils.name({ toolset });
-					const toolNames = toolset.tools.map((tool) =>
-						ToolUtils.name({ toolset, tool }),
-					);
-					const enabled = ToolUtils.checkOne({ toolset, config });
-					return {
-						key: `tool:${name}`,
-						group,
-						label: name,
-						detail: toolNames.join(", "),
-						enabled,
-						disabled: !toolset.status.valid,
-						toggle: () => {
-							if (!toolset.status.valid) return;
-							const toolsets = config.toolsets ?? [];
-							setConfig({
-								...config,
-								toolsets: enabled
-									? toolsets.filter((other) => other !== name)
-									: [...toolsets, name],
-							});
-						},
-					};
-				});
+			): CapabilityGroup => {
+				return {
+					name: type,
+					items: toolsets.map((toolset) => {
+						const name = ToolUtils.name({ toolset });
+						const toolNames = toolset.tools.map((tool) =>
+							ToolUtils.name({ toolset, tool }),
+						);
+						const enabled = ToolUtils.checkOne({ toolset, config });
+
+						return {
+							name,
+							value: name,
+							detail: toolNames.join(", "),
+							enabled,
+							disabled: !toolset.status.valid,
+							toggle: () => {
+								if (!toolset.status.valid) return;
+								const toolsets = config.toolsets ?? [];
+								setConfig({
+									...config,
+									toolsets: enabled
+										? toolsets.filter((other) => other !== name)
+										: [...toolsets, name],
+								});
+							},
+						};
+					}),
+				};
+			};
 
 			return [
-				...toToolItems("Native", nativeTools.data ?? []),
-				...toToolItems("MCP", mcpTools.data ?? []),
+				buildToolsets("Native", nativeTools.data ?? []),
+				buildToolsets("MCP", mcpTools.data ?? []),
+			];
+		} else if (page === "skills") {
+			const buildSkills = (type: string, skills: zSkill[]): CapabilityGroup => {
+				return {
+					name: type,
+					items: skills.map((skill) => {
+						const enabled = !!config.skills?.includes(skill.path);
+						return {
+							name: skill.name,
+							value: skill.path,
+							detail: DataUtils.getTextCleaned({
+								data: skill.description,
+								maxLength: 60,
+							}),
+							enabled,
+							disabled: !skill.name,
+							toggle: () => {
+								if (!skill.name) return;
+								const skills = config.skills ?? [];
+								setConfig({
+									...config,
+									skills: enabled
+										? skills.filter((path) => path !== skill.path)
+										: [...skills, skill.path],
+								});
+							},
+						};
+					}),
+				};
+			};
+			return [
+				buildSkills("Native", nativeSkills.data ?? []),
+				buildSkills("Local", localSkills.data ?? []),
 			];
 		}
 
-		const toSkillItems = (group: string, skills: zSkill[]): MenuItem[] =>
-			skills.map((skill) => {
-				const enabled = !!config.skills?.includes(skill.path);
-				return {
-					key: `skill:${skill.path}`,
-					group,
-					label: skill.name || "(unnamed)",
-					detail: DataUtils.getTextCleaned({
-						data: skill.description,
-						maxLength: 60,
-					}),
-					enabled,
-					disabled: !skill.name,
-					toggle: () => {
-						if (!skill.name) return;
-						const skills = config.skills ?? [];
-						setConfig({
-							...config,
-							skills: enabled
-								? skills.filter((path) => path !== skill.path)
-								: [...skills, skill.path],
-						});
-					},
-				};
-			});
-
-		return [
-			...toSkillItems("Native", nativeSkills.data ?? []),
-			...toSkillItems("Local", localSkills.data ?? []),
-		];
+		return [];
 	}, [
-		mode,
+		page,
 		config,
 		setConfig,
 		nativeTools.data,
@@ -110,69 +120,37 @@ export default function CapabilitySelect({ mode }: { mode: Mode }) {
 		localSkills.data,
 	]);
 
-	const [selected, setSelected] = useState(0);
-	const index = Math.min(selected, Math.max(items.length - 1, 0));
-
-	useInput((input, key) => {
-		if (key.upArrow) {
-			setSelected((previous) => Math.max(previous - 1, 0));
-		}
-		if (key.downArrow) {
-			setSelected((previous) =>
-				Math.min(previous + 1, Math.max(items.length - 1, 0)),
-			);
-		}
-		if (key.return || input === " ") {
-			items[index]?.toggle();
-		}
-	});
-
 	return (
-		<Box flexDirection="column" flexGrow={1}>
-			<ScrollList
-				selectedIndex={index}
-				height={Math.max(rows - 3, 5)}
-				borderColor="blueBright"
-				borderStyle="round"
-			>
-				{items.length === 0 ? (
-					<Text color="gray">Nothing here yet</Text>
-				) : (
-					items.map((item, itemIndex) => {
-						const showGroup =
-							itemIndex === 0 || items[itemIndex - 1]?.group !== item.group;
-						const isSelected = itemIndex === index;
-						return (
-							<Box key={item.key} flexDirection="column">
-								{showGroup && <Text color="gray">--- {item.group} ---</Text>}
-								<Text
-									color={
-										item.disabled
-											? "gray"
-											: isSelected
-												? "blue"
-												: item.enabled
-													? "green"
-													: "white"
-									}
-									dimColor={item.disabled}
-								>
-									{isSelected ? "▶ " : "  "}
-									{item.enabled ? "[x]" : "[ ]"} {item.label}
-									{item.detail ? ` · ${item.detail}` : ""}
-								</Text>
-							</Box>
-						);
-					})
-				)}
-			</ScrollList>
-			<HelpText
-				actions={[
-					{ key: "↑↓", name: "choose" },
-					{ key: "space", name: "toggle" },
-					{ key: "esc", name: "back" },
-				]}
-			/>
-		</Box>
+		<Completions<CapabilityGroup, CapabilityItem>
+			groups={groups}
+			renderItem={({ item, selected, color }) => {
+				return (
+					<Text
+						color={
+							item.disabled
+								? "gray"
+								: selected
+									? color
+									: item.enabled
+										? "blue"
+										: "white"
+						}
+						dimColor={item.disabled}
+					>
+						{item.enabled ? "[x]" : "[ ]"} {item.name}
+						<Text dimColor>{item.detail ? ` · ${item.detail}` : ""}</Text>
+					</Text>
+				);
+			}}
+			renderEmpty={() => "nothing here yet"}
+			onInput={({ item, key, input }) => {
+				if ((key.return || input === " ") && item && !item.disabled) {
+					item.toggle();
+				}
+				if (key.escape || key.backspace) {
+					setPage("chat");
+				}
+			}}
+		/>
 	);
 }

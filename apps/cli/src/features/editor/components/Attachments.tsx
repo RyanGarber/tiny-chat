@@ -1,11 +1,15 @@
 import { useAttachments } from "@tiny-chat/client/src/features/editor/hooks/useAttachments.ts";
-import type { AttachmentGroup } from "@tiny-chat/client/src/features/editor/types/attachment.ts";
+import type {
+	AttachmentGroup,
+	AttachmentItem,
+} from "@tiny-chat/client/src/features/editor/types/attachment.ts";
 import type { CommandEdit } from "@tiny-chat/client/src/features/editor/types/command.ts";
 import { AttachmentUtils } from "@tiny-chat/client/src/features/editor/utils/AttachmentUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import { useCallback, useEffect, useState } from "react";
+import Completions from "./Completions.tsx";
 
-export const useAttachment = ({
+export default function Attachments({
 	content,
 	setContent,
 	cursor,
@@ -15,7 +19,7 @@ export const useAttachment = ({
 	setContent: (content: string) => void;
 	cursor: [row: number, column: number];
 	setCursor: (cursor: [row: number, column: number]) => void;
-}) => {
+}) {
 	const { getAttachables } = useAttachments();
 
 	const query = AttachmentUtils.query({ content, cursor });
@@ -58,25 +62,6 @@ export const useAttachment = ({
 		return () => controller.abort();
 	}, [getAttachables, query?.text]);
 
-	const count = groups.reduce((total, group) => total + group.items.length, 0);
-
-	const [selected, setSelected] = useState(0);
-	const index = Math.min(selected, Math.max(count - 1, 0));
-
-	// biome-ignore lint/correctness/useExhaustiveDependencies: a new query starts at the top
-	useEffect(() => {
-		setSelected(0);
-	}, [query?.text]);
-
-	const move = useCallback(
-		(offset: number) => {
-			setSelected((previous) =>
-				Math.min(Math.max(previous + offset, 0), Math.max(count - 1, 0)),
-			);
-		},
-		[count],
-	);
-
 	const apply = useCallback(
 		(edit: CommandEdit | null) => {
 			if (!edit) return false;
@@ -87,33 +72,26 @@ export const useAttachment = ({
 		[setContent, setCursor],
 	);
 
-	/**
-	 * Take the highlighted attachment: finalize it as a directive, or
-	 * continue traversing into it when completing. Returns false when the
-	 * input should be handled as regular text instead.
-	 */
-	const select = useCallback(
-		({ complete }: { complete?: boolean } = {}) => {
-			if (!query) return false;
+	if (!query) return null;
 
-			const item = groups.flatMap((group) => group.items)[index];
-			if (!item) return false;
-
-			return apply(
-				complete
-					? AttachmentUtils.complete({ content, query, item })
-					: AttachmentUtils.apply({ content, query, item }),
-			);
-		},
-		[apply, content, groups, index, query],
+	return (
+		<Completions<AttachmentGroup, AttachmentItem>
+			groups={groups}
+			renderItem={({ item }) => {
+				return `${item.name}${item.directory ? "/" : ""}`;
+			}}
+			renderEmpty={() => {
+				return "no matches";
+			}}
+			onInput={({ item, key }) => {
+				if (key.return && item) {
+					apply(AttachmentUtils.apply({ content, query, item }));
+				}
+				if (key.tab && item) {
+					apply(AttachmentUtils.complete({ content, query, item }));
+				}
+			}}
+			actions={[{ key: "tab", name: "fill" }]}
+		/>
 	);
-
-	return {
-		groups,
-		selected: index,
-		/** whether the attachment being typed owns the input's keys */
-		isAttaching: !!query,
-		move,
-		select,
-	};
-};
+}

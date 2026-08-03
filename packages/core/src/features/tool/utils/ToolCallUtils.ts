@@ -569,7 +569,7 @@ export const ToolCallUtils = {
 			const { command } = toolCall.args as z.infer<typeof shell_exec.input>;
 			return {
 				...base,
-				details: pending ? { kind: "shell_exec", command } : undefined,
+				details: { kind: "shell_exec", command },
 			};
 		}
 
@@ -577,15 +577,13 @@ export const ToolCallUtils = {
 			const input = toolCall.args as z.infer<typeof write_file.input>;
 			return {
 				...base,
-				details: pending
-					? {
-							kind: "write_file",
-							path: input.path,
-							name: PathUtils.name(input),
-							content: input.content,
-							extension: FileTypeUtils.getExtension(input),
-						}
-					: undefined,
+				details: {
+					kind: "write_file",
+					path: input.path,
+					name: PathUtils.name(input),
+					content: input.content,
+					extension: FileTypeUtils.getExtension(input),
+				},
 			};
 		}
 

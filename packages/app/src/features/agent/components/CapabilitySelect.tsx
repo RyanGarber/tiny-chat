@@ -24,6 +24,11 @@ import { useMcpServerSettings } from "@tiny-chat/client/src/features/settings/ho
 import { read_file } from "@tiny-chat/core/src/features/tool/tools/shell/read_file.ts";
 import { memo, useEffect, useLayoutEffect, useState } from "react";
 import { ZodError } from "zod";
+import { useLayoutStore } from "#app/core/stores/useLayoutStore.tsx";
+import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
+import type { CapabilitySelectTab } from "#app/features/agent/stores/useCapabilitySelectStore.ts";
+import { useTauri } from "#app/features/tauri/hooks/useTauri.ts";
+import Dropzone from "#app/features/upload/components/Dropzone.tsx";
 import {
 	localSkillsQueryKey,
 	useSkills,
@@ -35,11 +40,6 @@ import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
 import type { zSkill } from "#core/features/skill/types/skill.ts";
 import type { Toolset } from "#core/features/tool/types/tool.ts";
 import { ToolUtils } from "#core/features/tool/utils/ToolUtils.ts";
-import { useLayoutStore } from "#ui/core/stores/useLayoutStore.tsx";
-import { StyleUtils } from "#ui/core/utils/StyleUtils.ts";
-import type { CapabilitySelectTab } from "#ui/features/agent/stores/useCapabilitySelectStore.ts";
-import { useTauri } from "#ui/features/tauri/hooks/useTauri.ts";
-import Dropzone from "#ui/features/upload/components/Dropzone.tsx";
 
 const CHAT_FILE_TOOLSET = "chat_system";
 const USER_FILE_TOOLSET = "user_system";

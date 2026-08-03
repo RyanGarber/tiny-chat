@@ -33,20 +33,20 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { useSkills } from "#client/src/features/agent/hooks/useSkills.ts";
-import { client } from "#ui/client.ts";
-import { StyleUtils } from "#ui/core/utils/StyleUtils.ts";
-import { CapabilitySelect } from "#ui/features/agent/components/CapabilitySelect.tsx";
-import ModelSelect from "#ui/features/agent/components/ModelSelect.tsx";
-import { useCapabilitySelectStore } from "#ui/features/agent/stores/useCapabilitySelectStore.ts";
-import { useEditor } from "#ui/features/editor/hooks/useEditor.tsx";
-import { useEditorStore } from "#ui/features/editor/stores/useEditorStore.ts";
+import { client } from "#app/client.ts";
+import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
+import { CapabilitySelect } from "#app/features/agent/components/CapabilitySelect.tsx";
+import ModelSelect from "#app/features/agent/components/ModelSelect.tsx";
+import { useCapabilitySelectStore } from "#app/features/agent/stores/useCapabilitySelectStore.ts";
+import { useEditor } from "#app/features/editor/hooks/useEditor.tsx";
+import { useEditorStore } from "#app/features/editor/stores/useEditorStore.ts";
 import Upload, {
 	FileMenuItem,
 	RepositoryMenuItem,
 	ScreenshotMenuItem,
-} from "#ui/features/upload/components/Upload.tsx";
-import { uploadMutationKey } from "#ui/features/upload/hooks/useUploads.ts";
+} from "#app/features/upload/components/Upload.tsx";
+import { uploadMutationKey } from "#app/features/upload/hooks/useUploads.ts";
+import { useSkills } from "#client/src/features/agent/hooks/useSkills.ts";
 
 export const ChatInput = memo(
 	({ isAny, ...props }: InputWrapperProps & { isAny: boolean }) => {

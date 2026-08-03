@@ -16,7 +16,7 @@ import {
 	ReactNodeViewRenderer,
 } from "@tiptap/react";
 import { useEffect } from "react";
-import { CodeUtils } from "#ui/core/utils/CodeUtils.ts";
+import { CodeUtils } from "#app/core/utils/CodeUtils.ts";
 
 type CodeBlockEntry = {
 	from: number;

@@ -45,7 +45,9 @@ export default function Message({ message }: { message: MessageState }) {
 											label={part.active ? "Thinking" : "Thought"}
 											state={part.active ? "loading" : "success"}
 											spinner={cliSpinners.bluePulse}
-										/>
+										>
+											<Text dimColor>{part.value}</Text>
+										</Task>
 									) : (
 										<ToolCall
 											key={part.id}

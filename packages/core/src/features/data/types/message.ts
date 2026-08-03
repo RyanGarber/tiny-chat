@@ -42,18 +42,6 @@ export const zConfig = z.object({
 });
 export type zConfig = z.infer<typeof zConfig>;
 
-export const zDataInnerPart = z.discriminatedUnion("type", [
-	z.object({ type: z.literal("text"), value: z.string() }),
-	z.object({
-		type: z.literal("file"),
-		name: z.string().optional(),
-		mime: z.string(),
-		data: z.base64(),
-	}),
-	z.object({ type: z.literal("json"), value: z.any() }),
-]);
-export type zDataInnerPart = z.infer<typeof zDataInnerPart>;
-
 export const zSignature = z.object({
 	model: z.string().optional(),
 	item: z.string().optional(),
@@ -61,7 +49,47 @@ export const zSignature = z.object({
 });
 export type zSignature = z.infer<typeof zSignature>;
 
-export const zDataPart = z.discriminatedUnion("type", [
+export type zDataPart =
+	| { type: "thought"; id?: string; value: string; signature?: zSignature }
+	| { type: "text"; id?: string; value: string; signature?: zSignature }
+	| { type: "json"; id?: string; value: any; signature?: zSignature }
+	| {
+			type: "file";
+			id?: string;
+			name?: string;
+			mime: string;
+			data: string;
+			signature?: zSignature;
+	  }
+	| { type: "upload"; id: string; name: string; thumbnail?: string }
+	| {
+			type: "toolCall";
+			id: string;
+			name: string;
+			args: any;
+			signature?: zSignature;
+	  }
+	| {
+			type: "toolResult";
+			id: string;
+			name: string;
+			value: zDataBasicPart[];
+			append?: zDataBasicPart[];
+			error?: boolean;
+	  }
+	| {
+			type: "abort";
+			reason: "user" | "content" | "length" | "error" | "other";
+			message?: string;
+			details?: any;
+	  };
+
+export type zDataBasicPart = Extract<
+	zDataPart,
+	{ type: "text" | "json" | "file" }
+>;
+
+export const zDataPart: z.ZodType<zDataPart> = z.discriminatedUnion("type", [
 	z.object({
 		type: z.literal("thought"),
 		id: z.string().optional(),
@@ -81,23 +109,6 @@ export const zDataPart = z.discriminatedUnion("type", [
 		signature: zSignature.optional(),
 	}),
 	z.object({
-		type: z.literal("toolCall"),
-		id: z.string(),
-		name: z.string(),
-		args: z.any(),
-		signature: zSignature.optional(),
-	}),
-	z.object({
-		type: z.literal("toolResult"),
-		id: z.string(),
-		name: z.string(),
-		value: z
-			.array(zDataInnerPart)
-			.catch(({ value }) => [{ type: "json", value: value }]),
-		append: z.array(zDataInnerPart).optional(),
-		error: z.boolean().optional(),
-	}),
-	z.object({
 		type: z.literal("file"),
 		id: z.string().optional(),
 		name: z.string().optional(),
@@ -112,13 +123,34 @@ export const zDataPart = z.discriminatedUnion("type", [
 		thumbnail: z.string().optional(),
 	}),
 	z.object({
+		type: z.literal("toolCall"),
+		id: z.string(),
+		name: z.string(),
+		args: z.any(),
+		signature: zSignature.optional(),
+	}),
+	z.object({
+		type: z.literal("toolResult"),
+		id: z.string(),
+		name: z.string(),
+		value: z
+			.lazy(() => zDataBasicPart.array())
+			.catch(({ value }) => [{ type: "json", value: value }]),
+		append: z.lazy(() => zDataBasicPart.array()).optional(),
+		error: z.boolean().optional(),
+	}),
+	z.object({
 		type: z.literal("abort"),
 		reason: z.enum(["user", "content", "length", "error", "other"]),
 		message: z.string().optional(),
 		details: z.any().optional(),
 	}),
 ]);
-export type zDataPart = z.infer<typeof zDataPart>;
+
+export const zDataBasicPart = zDataPart.refine(
+	(part) =>
+		part.type === "text" || part.type === "json" || part.type === "file",
+);
 
 export const zData = z.array(z.array(zDataPart));
 export type zData = z.infer<typeof zData>;

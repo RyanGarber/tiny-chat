@@ -1,25 +1,24 @@
-import type {
-	FilePart,
-	ModelMessage,
-	TextPart,
-	TextStreamPart,
-	ToolCallPart,
-	ToolResultPart,
-} from "ai";
+import type { FilePart, ModelMessage, TextStreamPart } from "ai";
 import type { zAgentEvent } from "../../agent/types/agent.ts";
 import {
 	Author,
 	type zConfig,
 	zData,
-	zDataInnerPart,
+	zDataBasicPart,
 	type zDataPart,
 } from "../../data/types/message.ts";
 import type { zUser } from "../../data/types/user.ts";
 import type { ModelProvider, zModelMessage } from "../types/model.ts";
 import { ModelProviderUtils } from "../utils/ModelProviderUtils.ts";
 
+type SdkPart =
+	| Exclude<Exclude<ModelMessage["content"][number], string>, FilePart>
+	| (FilePart & { data: Extract<FilePart["data"], { type: "data" }> });
+
+type SdkBasicPart = Extract<SdkPart, { type: "text" | "file" }>;
+
 type SdkMessage = ModelMessage & {
-	content: Exclude<ModelMessage["content"][number], string>[];
+	content: SdkPart[];
 };
 
 export const ModelTransformService = {
@@ -41,28 +40,32 @@ export const ModelTransformService = {
 				content: [],
 			};
 
-			const transform = (part: zDataPart) =>
-				provider.getPartTransformed?.({ user, config, part }) ??
-				ModelProviderUtils.getPartTransformed({ part });
-			const parts = zData.parse(message.data).flat().flatMap(transform);
+			// transform based on model: full parts at the root, 'basic' parts for everything inside
+			function transform(part: zDataPart): zDataPart[];
+			function transform(part: zDataBasicPart): zDataBasicPart[];
+			function transform(part: zDataPart): zDataPart[] | zDataBasicPart[] {
+				const result =
+					provider.getPartTransformed?.({ user, config, part }) ??
+					ModelProviderUtils.getPartTransformed({ part });
+				// a provider could accidentally transform a 'basic' part into a non-basic one,
+				// but in practice this shouldn't really happen, so we just cast it and move on
+				return result as zDataPart[] | zDataBasicPart[];
+			}
 
-			type SdkInnerPart =
-				| TextPart
-				| (FilePart & { data: Extract<FilePart["data"], { type: "data" }> });
-
-			const appendUserParts: SdkInnerPart[] = [];
+			const parts = zData.parse(message.data).flat();
+			const appendParts: SdkBasicPart[] = [];
 
 			for (const part of parts) {
 				const isToolResult = part.type === "toolResult";
 				const isToolRole = sdkMessage.role === "tool";
 
-				// If transitioning between toolResult and non-toolResult blocks, push and reset
+				// if transitioning between toolResult and non-toolResult blocks, push and reset
 				if ((isToolResult && !isToolRole) || (!isToolResult && isToolRole)) {
 					sdkMessages.push({ ...sdkMessage });
 					sdkMessage.content = [];
 				}
 
-				// Correctly assign the author for the current block
+				// correctly assign the author for the current block
 				sdkMessage.role = isToolResult
 					? "tool"
 					: message.author === "MODEL"
@@ -77,41 +80,10 @@ export const ModelTransformService = {
 				providerOptions =
 					ModelProviderUtils.getSignatureReturnPruned(providerOptions);
 
-				const toSdkInnerPart = (part: zDataInnerPart[]): SdkInnerPart[] => {
-					return part.flatMap(transform).flatMap((part): SdkInnerPart[] => {
-						if (part.type === "text") {
-							return [{ type: "text", text: part.value }];
-						} else if (part.type === "file") {
-							return [
-								{
-									type: "file",
-									filename: part.name,
-									mediaType: part.mime,
-									data: { type: "data", data: part.data },
-								},
-							];
-						} else if (part.type === "json") {
-							return [
-								{
-									type: "text",
-									text: JSON.stringify(part.value),
-								},
-							];
-						}
-						console.warn("[ModelTransformService] invalid tool output:", part);
-						return [];
-					});
-				};
-
-				const toSdkPart = (
-					part: zDataPart,
-				): (
-					| TextPart
-					| (Omit<TextPart, "type"> & { type: "reasoning" })
-					| ToolCallPart
-					| ToolResultPart
-					| FilePart
-				)[] => {
+				// convert to sdk parts with an equivalent basic/non-basic distinction
+				function toSdkPart(part: zDataPart): SdkPart[];
+				function toSdkPart(part: zDataBasicPart): SdkBasicPart[];
+				function toSdkPart(part: zDataPart): SdkPart[] | SdkBasicPart[] {
 					if (part.type === "text") {
 						return [{ type: "text", text: part.value, providerOptions }];
 					} else if (part.type === "json") {
@@ -128,65 +100,73 @@ export const ModelTransformService = {
 								type: "file",
 								filename: part.name,
 								mediaType: part.mime,
-								data: part.data,
+								data: { type: "data", data: part.data },
 								providerOptions,
 							},
 						];
-					} else if (part.type === "thought") {
-						return [
-							{
-								type: "reasoning",
-								text: part.value,
-								providerOptions,
-							},
-						];
-					} else if (part.type === "toolCall") {
-						return [
-							{
-								type: "tool-call",
-								toolCallId: part.id,
-								toolName: part.name,
-								input: part.args,
-								providerOptions,
-							},
-						];
-					} else if (part.type === "toolResult") {
-						const parsed = zDataInnerPart.array().safeParse(part.value);
-						// Store for appending in a new user part
-						if (part.append) {
-							appendUserParts.push(...toSdkInnerPart(part.append));
+					} else {
+						if (part.type === "thought") {
+							return [
+								{
+									type: "reasoning",
+									text: part.value,
+									providerOptions,
+								},
+							];
+						} else if (part.type === "toolCall") {
+							return [
+								{
+									type: "tool-call",
+									toolCallId: part.id,
+									toolName: part.name,
+									input: part.args,
+									providerOptions,
+								},
+							];
+						} else if (part.type === "toolResult") {
+							// Store for appending in a new user part
+							if (part.append) {
+								appendParts.push(
+									...part.append.flatMap(transform).flatMap(toSdkPart),
+								);
+							}
+							const parsed = zDataBasicPart.array().safeParse(part.value);
+							return [
+								{
+									type: "tool-result",
+									toolCallId: part.id,
+									toolName: part.name,
+									output: part.error
+										? { type: "error-json", value: part.value }
+										: parsed.success
+											? {
+													type: "content",
+													value: parsed.data
+														.flatMap(transform)
+														.flatMap(toSdkPart),
+												}
+											: { type: "json", value: part.value },
+									providerOptions,
+								},
+							];
 						}
-						return [
-							{
-								type: "tool-result",
-								toolCallId: part.id,
-								toolName: part.name,
-								output: part.error
-									? { type: "error-json", value: part.value }
-									: parsed.success
-										? {
-												type: "content",
-												value: toSdkInnerPart(parsed.data),
-											}
-										: { type: "json", value: part.value },
-								providerOptions,
-							},
-						];
 					}
 					return [];
-				};
+				}
 
-				sdkMessage.content.push(...toSdkPart(part));
+				sdkMessage.content.push(
+					...transform(part).flatMap((part) => toSdkPart(part)),
+				);
 			}
 
 			if (sdkMessage.content.length) {
 				sdkMessages.push(sdkMessage);
 			}
 
-			if (appendUserParts.length) {
+			if (appendParts.length) {
 				sdkMessages.push({
 					role: "user",
-					content: appendUserParts,
+					content: appendParts,
 				});
 			}
 		}

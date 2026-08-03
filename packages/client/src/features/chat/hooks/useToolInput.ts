@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import type {
 	MessageState,
-	zDataInnerPart,
+	zDataBasicPart,
 	zDataPart,
 } from "@tiny-chat/core/src/features/data/types/message.ts";
 import { ToolCallUtils } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
@@ -41,7 +41,7 @@ export const useToolInput = () => {
 			part: Extract<zDataPart, { type: "toolCall" }>;
 			value?: unknown;
 			approved?: boolean;
-			append?: zDataInnerPart[];
+			append?: zDataBasicPart[];
 		}) => {
 			console.log("[useToolInput] applying input:", part, value, approved);
 			if (!session.data || !chat.data || !providers.data) return;

@@ -1,5 +1,6 @@
 import type { Capabilities } from "@tiny-chat/core/src/features/capability/types/capability.ts";
 import type { ChatLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
+import type { MessageLike } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { WebProviderService } from "@tiny-chat/core/src/features/provider/services/WebProviderService.ts";
 import type {
@@ -23,20 +24,23 @@ export const ServerCapabilityService = {
 	}: {
 		user: zUser;
 		chat: ChatLike | null | undefined;
-		message: ChatLike | null | undefined;
+		message: MessageLike | null | undefined;
 		incognito: boolean | undefined;
 		providers?: ProviderState<ProviderStatus>[];
 	}): Promise<Capabilities> => {
+		if (typeof chat === "string") chat = { id: chat };
+		if (typeof message === "string") message = { id: message };
+
 		const capabilities: Capabilities = {};
 
-		if (message && !incognito) {
+		if (message?.id && !incognito) {
 			capabilities.user = await createUserCapability({
 				user,
 				message,
 			});
 		}
 
-		if (chat) {
+		if (chat?.id) {
 			capabilities.chatShell = await createShellCapability({
 				user,
 				chat,

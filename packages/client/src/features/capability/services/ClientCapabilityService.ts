@@ -32,13 +32,16 @@ export const ClientCapabilityService = {
 		incognito: boolean | undefined;
 		providers?: ProviderState<ProviderStatus>[];
 	}): Promise<Capabilities> => {
+		if (typeof chat === "string") chat = {id: chat};
+		if (typeof message === "string") message = {id: message};
+
 		const capabilities: Capabilities = {};
 
-		if (message && !incognito) {
+		if (message?.id && !incognito) {
 			capabilities.user = await createUserCapability({ client, message });
 		}
 
-		if (chat) {
+		if (chat?.id) {
 			capabilities.chatShell = await createChatShellCapability({
 				client,
 				chat,

@@ -109,7 +109,7 @@ export const MessageService = {
 
 		let message: Message;
 
-		if (chat) {
+		if (chat?.id) {
 			const existingChat = await ChatService.getChat({ user, chat });
 
 			if (temporary && !existingChat.temporary)

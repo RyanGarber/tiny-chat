@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import type { zDataInnerPart, zDataPart } from "../../data/types/message.ts";
+import type { zDataBasicPart, zDataPart } from "../../data/types/message.ts";
 import { DataUtils } from "../../data/utils/DataUtils.ts";
 import { FileTypeUtils } from "../../file/utils/FileTypeUtils.ts";
 import { FileUtils } from "../../file/utils/FileUtils.ts";
@@ -149,7 +149,7 @@ export type ToolCallInputDisplay = {
 export const ToolCallUtils = {
 	rejection: [
 		{ type: "json", value: "Tool call rejected by user" },
-	] satisfies zDataInnerPart[],
+	] satisfies zDataBasicPart[],
 
 	getStatus: ({
 		pending,

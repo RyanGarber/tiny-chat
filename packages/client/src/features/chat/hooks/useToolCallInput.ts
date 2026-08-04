@@ -7,7 +7,10 @@ import { FileEditUtils } from "@tiny-chat/core/src/features/file/utils/FileEditU
 import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeUtils.ts";
 import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
-import { ToolCallUtils } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
+import {
+	type ToolCallInputDetails,
+	ToolCallUtils,
+} from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
 import { ToolUtils } from "@tiny-chat/core/src/features/tool/utils/ToolUtils.ts";
 import { useContext, useMemo } from "react";
 import { ClientProvider } from "../../../client.ts";
@@ -46,8 +49,29 @@ export const useToolCallInput = ({
 	const contents = useQuery({
 		queryKey: ["toolCallInput", "contents", message.chatId, path],
 		enabled: path !== undefined,
-		queryFn: async () => {
-			if (path === undefined) return "";
+		queryFn: async (): Promise<{ fileBefore?: string; fileAfter?: string }> => {
+			const edit = (
+				before: string | null,
+				details: Extract<ToolCallInputDetails, { kind: "edit_file" }>,
+			) => {
+				if (!before) return undefined;
+				try {
+					return FileEditUtils.apply({
+						content: before,
+						old_string: details.old_string,
+						new_string: details.new_string,
+						replace_all: details.replace_all,
+					}).content;
+				} catch (error) {
+					console.warn("[useToolCallInput] could not apply edit:", error);
+					return undefined;
+				}
+			};
+
+			if (path === undefined) {
+				return {};
+			}
+
 			try {
 				const uri = PathUtils.fromMount({ path });
 				if (uri) {
@@ -55,10 +79,19 @@ export const useToolCallInput = ({
 						chat: message.chatId,
 						path: uri.path,
 					});
-					return FileUtils.getTextFromBytes(file) ?? "";
+					const before = FileUtils.getTextFromBytes(file);
+					return {
+						fileBefore: before ?? undefined,
+						fileAfter:
+							input?.details?.kind === "edit_file"
+								? edit(before, input.details)
+								: input?.details?.kind === "write_file"
+									? input.details.content
+									: undefined,
+					};
 				}
 
-				if (!client.shell) return "";
+				if (!client.shell) return {};
 
 				const file = await client.shell.readFile({ path });
 				const mime = await FileTypeUtils.getMime({
@@ -66,11 +99,20 @@ export const useToolCallInput = ({
 					path: file.path,
 					fallback: "text/plain",
 				});
-				return FileUtils.getTextFromBytes({ data: file.data, mime }) ?? "";
+				const before = FileUtils.getTextFromBytes({ data: file.data, mime });
+				return {
+					fileBefore: before ?? undefined,
+					fileAfter:
+						input?.details?.kind === "edit_file"
+							? edit(before, input.details)
+							: input?.details?.kind === "write_file"
+								? input.details.content
+								: undefined,
+				};
 			} catch (error) {
 				// A new file has nothing to diff against.
 				console.warn("[useToolCallInput] could not read file:", error);
-				return "";
+				return {};
 			}
 		},
 		staleTime: Infinity,
@@ -78,23 +120,5 @@ export const useToolCallInput = ({
 		refetchOnReconnect: false,
 	});
 
-	/** What the file would look like once an `edit_file` call goes through. */
-	const edited = useMemo(() => {
-		const content = contents.data ?? "";
-		if (input?.details?.kind !== "edit_file") return content;
-		try {
-			return FileEditUtils.apply({
-				content,
-				old_string: input.details.old_string,
-				new_string: input.details.new_string,
-				replace_all: input.details.replace_all,
-			}).content;
-		} catch (error) {
-			// The edit won't apply, so there is nothing to preview.
-			console.warn("[useToolCallInput] could not apply edit:", error);
-			return content;
-		}
-	}, [input?.details, contents.data]);
-
-	return { tool, input, contents: contents.data ?? "", edited };
+	return { tool, input, contents };
 };

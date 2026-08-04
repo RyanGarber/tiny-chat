@@ -100,8 +100,8 @@ export const ToolCallInput = memo(
 					<Diff
 						filename={details.name}
 						language={details.extension as BundledLanguage}
-						oldCode={contents}
-						newCode={details.content}
+						before={contents}
+						after={details.content}
 					/>
 				);
 			} else if (details?.kind === "edit_file" && display?.pending) {
@@ -109,8 +109,8 @@ export const ToolCallInput = memo(
 					<Diff
 						filename={details.name}
 						language={details.extension as BundledLanguage}
-						oldCode={contents}
-						newCode={edited}
+						before={contents}
+						after={edited}
 					/>
 				);
 			} else if (details?.kind === "ask_question") {

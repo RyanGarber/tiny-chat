@@ -237,8 +237,8 @@ export const ToolCall = memo(
 					<Diff
 						filename={details.name}
 						language={details.extension as BundledLanguage}
-						oldCode={details.old_string}
-						newCode={details.new_string}
+						before={details.old_string}
+						after={details.new_string}
 					/>
 				</Stack>
 			);

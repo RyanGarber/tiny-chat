@@ -9,15 +9,23 @@ interface UpdateBoxed {
 }
 
 export const useTauri = () => {
+	const dismissedUpdate = useTauriStore((state) => state.dismissedUpdate);
+
 	const tauriUpdate = useQuery({
 		queryKey: ["tauriUpdate"],
-		queryFn: async () => {
-			if (!(await TauriUtils.isTauriDesktop())) return null;
+		queryFn: async (): Promise<UpdateBoxed | null> => {
+			if (!(await TauriUtils.isTauriDesktop()) || import.meta.env.DEV) {
+				return null;
+			}
 
 			const { check } = await import("@tauri-apps/plugin-updater");
 			const update = await check();
 
-			return update as UpdateBoxed | null;
+			if (update?.version && update.version !== dismissedUpdate) {
+				return update as UpdateBoxed;
+			}
+
+			return null;
 		},
 	});
 
@@ -27,7 +35,9 @@ export const useTauri = () => {
 				.prototype;
 			const update = data as typeof Update | null;
 
-			if (!update) return;
+			if (!update) {
+				return;
+			}
 
 			let current = 0;
 			let total: number | undefined;

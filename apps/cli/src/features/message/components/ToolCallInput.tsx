@@ -19,17 +19,15 @@ interface Option {
 	approved?: boolean;
 }
 
-const Preview = ({
+export const Preview = ({
 	details,
 	contents,
-	edited,
 	limit,
 }: {
 	details: ToolCallInputDetails;
-	contents: string;
-	/** The file as it would look after an `edit_file` call */
-	edited: string;
-	/** Rows the preview may take before the chat above it gets squeezed */
+	contents: NonNullable<
+		ReturnType<typeof useToolCallInput>["contents"]["data"]
+	>;
 	limit: number;
 }) => {
 	// biome-ignore-start lint/suspicious/noArrayIndexKey: lines stay in order
@@ -48,40 +46,86 @@ const Preview = ({
 	}
 
 	if (details.kind === "write_file" || details.kind === "edit_file") {
-		const lines = DiffUtils.collapse({
-			lines: DiffUtils.getLines({
-				before: contents,
-				after: details.kind === "write_file" ? details.content : edited,
+		const diff = DiffUtils.context(
+			DiffUtils.diff({
+				before: contents.fileBefore ?? "",
+				after: contents.fileAfter ?? "",
 			}),
-		});
-		const shown = lines.slice(0, limit);
-		const hidden = lines.length - shown.length;
+		);
+		const diffShown = diff.slice(0, limit);
+		const diffHiddenCount = diff.length - diffShown.length;
 
 		return (
 			<Box flexDirection="column">
-				{shown.map((line, index) =>
-					line.type === "gap" ? (
-						<Text key={index} dimColor>
-							{` ⋮ ${line.count} unchanged line${line.count === 1 ? "" : "s"}`}
-						</Text>
-					) : (
+				{diffShown.map((change, index) => {
+					if (change.type === "unchanged") {
+						return (
+							<Text key={index} dimColor>
+								{` ⋮ ${change.lines.length} unchanged line${change.lines.length === 1 ? "" : "s"}`}
+							</Text>
+						);
+					}
+
+					if (change.type === "changed") {
+						return (
+							<Text key={index}>
+								{"~ "}
+								{change.parts.map((part, partIndex) => {
+									if (part.type === "changed") {
+										return (
+											<Text key={partIndex}>
+												<Text color="red" underline>
+													{part.partBefore}
+												</Text>
+												<Text color="green" underline>
+													{part.partAfter}
+												</Text>
+											</Text>
+										);
+									}
+
+									return (
+										<Text
+											key={partIndex}
+											color={
+												part.type === "added"
+													? "green"
+													: part.type === "removed"
+														? "red"
+														: undefined
+											}
+										>
+											{part.part}
+										</Text>
+									);
+								})}
+							</Text>
+						);
+					}
+
+					return (
 						<Text
 							key={index}
 							color={
-								line.type === "add"
+								change.type === "added"
 									? "green"
-									: line.type === "remove"
+									: change.type === "removed"
 										? "red"
 										: undefined
 							}
-							dimColor={line.type === "context"}
 						>
-							{line.type === "add" ? "+" : line.type === "remove" ? "-" : " "}
-							{line.value}
+							{change.type === "added"
+								? "+ "
+								: change.type === "removed"
+									? "- "
+									: "  "}
+							{change.line}
 						</Text>
-					),
+					);
+				})}
+				{diffHiddenCount > 0 && (
+					<Text dimColor>{` ⋮ ${diffHiddenCount} more lines`}</Text>
 				)}
-				{hidden > 0 && <Text dimColor>{` ⋮ ${hidden} more lines`}</Text>}
 			</Box>
 		);
 	}
@@ -99,9 +143,9 @@ export default function ToolCallInput({
 }) {
 	const { rows } = useWindowSize();
 
-	const { input, contents, edited } = useToolCallInput({ message, toolCall });
+	const { input, contents } = useToolCallInput({ message, toolCall });
 	const { sendToolInput } = useToolInput();
-	useWorkingStatus(sendToolInput);
+	useWorkingStatus(contents, sendToolInput);
 
 	const sendToolInputRef = useRef(sendToolInput);
 
@@ -142,12 +186,13 @@ export default function ToolCallInput({
 					)}
 					{details.kind === "edit_file" && <Text>Edit {details.path}?</Text>}
 					{details.kind === "shell_exec" && <Text>Run this command?</Text>}
-					<Preview
-						details={details}
-						contents={contents}
-						edited={edited}
-						limit={Math.max(Math.floor(rows / 3), 4)}
-					/>
+					{contents.data && (
+						<Preview
+							details={details}
+							contents={contents.data}
+							limit={Math.max(Math.floor(rows / 3), 4)}
+						/>
+					)}
 				</Box>
 			}
 			groups={[

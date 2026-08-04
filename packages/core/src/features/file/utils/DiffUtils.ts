@@ -1,106 +1,246 @@
-export type DiffLine =
-	| { type: "add" | "remove" | "context"; value: string }
-	| { type: "gap"; count: number };
+import { diffLines, diffWords } from "diff";
+import { distance } from "fastest-levenshtein";
 
-/** Above this many cells the diff table is not worth building. */
-const MAX_CELLS = 4_000_000;
+type Diff =
+	| { type: "unchanged"; line: string }
+	| { type: "removed"; line: string }
+	| { type: "added"; line: string }
+	| {
+			type: "changed";
+			lineBefore: string;
+			lineAfter: string;
+			parts: (
+				| { type: "unchanged"; part: string }
+				| { type: "removed"; part: string }
+				| { type: "added"; part: string }
+				| { type: "changed"; partBefore: string; partAfter: string }
+			)[];
+	  };
 
-const toLines = (text: string) => {
-	const lines = text.split("\n");
-	if (lines.at(-1) === "") lines.pop();
-	return lines;
-};
+type DiffContext =
+	| Exclude<Diff, { type: "unchanged" }>
+	| { type: "unchanged"; lines: string[] }
+	| { type: "context"; line: string };
 
 export const DiffUtils = {
 	/**
-	 * Line diff between two texts, longest common subsequence based.
+	 * Create a diff between two strings.
 	 */
-	getLines: ({ before, after }: { before: string; after: string }) => {
-		const removed = toLines(before);
-		const added = toLines(after);
+	diff: ({ before, after }: { before: string; after: string }) => {
+		const lineDiff = diffLines(before, after, {
+			ignoreWhitespace: true,
+			stripTrailingCr: true,
+		});
 
-		const n = removed.length;
-		const m = added.length;
+		const result: Diff[] = [];
 
-		if ((n + 1) * (m + 1) > MAX_CELLS) {
-			return [
-				...removed.map((value): DiffLine => ({ type: "remove", value })),
-				...added.map((value): DiffLine => ({ type: "add", value })),
-			];
-		}
+		for (let i = 0; i < lineDiff.length; i++) {
+			const lineChange = lineDiff[i];
 
-		const width = m + 1;
-		const table = new Int32Array((n + 1) * width);
+			if (lineChange.removed) {
+				const nextLineChange = lineDiff[i + 1];
 
-		for (let i = n - 1; i >= 0; i--) {
-			for (let j = m - 1; j >= 0; j--) {
-				table[i * width + j] =
-					removed[i] === added[j]
-						? table[(i + 1) * width + j + 1] + 1
-						: Math.max(table[(i + 1) * width + j], table[i * width + j + 1]);
+				if (nextLineChange?.added) {
+					const removedLines = DiffUtils.split(lineChange.value);
+					const addedLines = DiffUtils.split(nextLineChange.value);
+					const pairs = Math.min(removedLines.length, addedLines.length);
+
+					for (let j = 0; j < pairs; j++) {
+						const removedLine = removedLines[j];
+						const addedLine = addedLines[j];
+
+						if (DiffUtils.change(removedLine, addedLine)) {
+							const partDiff = diffWords(removedLine, addedLine);
+
+							// nasty leftward shift so that changes are grouped together
+							for (let l = partDiff.length - 1; l > 0; l--) {
+								if (partDiff[l].value === partDiff[l - 1].value) {
+									if (
+										(partDiff[l].added || partDiff[l].removed) &&
+										!partDiff[l - 1].added &&
+										!partDiff[l - 1].removed
+									) {
+										partDiff[l - 1].added = partDiff[l].added;
+										partDiff[l - 1].removed = partDiff[l].removed;
+										partDiff[l].added = false;
+										partDiff[l].removed = false;
+									}
+								} else {
+									if (
+										(partDiff[l].added && partDiff[l - 1].added) ||
+										(partDiff[l].removed && partDiff[l - 1].removed)
+									) {
+										partDiff[l - 1].value += partDiff[l].value;
+										partDiff.splice(l, 1);
+									}
+								}
+							}
+
+							const parts: Extract<Diff, { type: "changed" }>["parts"] = [];
+
+							for (let k = 0; k < partDiff.length; k++) {
+								const wordChange = partDiff[k];
+
+								if (wordChange.removed) {
+									const nextWordChange = partDiff[k + 1];
+
+									if (nextWordChange?.added) {
+										parts.push({
+											type: "changed",
+											partBefore: wordChange.value,
+											partAfter: nextWordChange.value,
+										});
+
+										k++; // consumed nextWordChange
+										continue;
+									}
+
+									parts.push({ type: "removed", part: wordChange.value });
+									continue;
+								}
+
+								if (wordChange.added) {
+									parts.push({ type: "added", part: wordChange.value });
+									continue;
+								}
+
+								parts.push({ type: "unchanged", part: wordChange.value });
+							}
+
+							result.push({
+								type: "changed",
+								lineBefore: removedLine,
+								lineAfter: addedLine,
+								parts,
+							});
+						} else {
+							result.push({ type: "removed", line: removedLine });
+							result.push({ type: "added", line: addedLine });
+						}
+					}
+
+					for (let j = pairs; j < removedLines.length; j++) {
+						result.push({ type: "removed", line: removedLines[j] });
+					}
+
+					for (let j = pairs; j < addedLines.length; j++) {
+						result.push({ type: "added", line: addedLines[j] });
+					}
+
+					i++; // consumed nextLineChange
+					continue;
+				}
+
+				for (const line of DiffUtils.split(lineChange.value)) {
+					result.push({ type: "removed", line });
+				}
+				continue;
+			}
+
+			if (lineChange.added) {
+				for (const line of DiffUtils.split(lineChange.value)) {
+					result.push({ type: "added", line });
+				}
+				continue;
+			}
+
+			for (const line of DiffUtils.split(lineChange.value)) {
+				result.push({
+					type: "unchanged",
+					line,
+				});
 			}
 		}
 
-		const lines: DiffLine[] = [];
-		let i = 0;
-		let j = 0;
-
-		while (i < n && j < m) {
-			if (removed[i] === added[j]) {
-				lines.push({ type: "context", value: removed[i] });
-				i++;
-				j++;
-			} else if (table[(i + 1) * width + j] >= table[i * width + j + 1]) {
-				lines.push({ type: "remove", value: removed[i] });
-				i++;
-			} else {
-				lines.push({ type: "add", value: added[j] });
-				j++;
-			}
-		}
-
-		while (i < n) lines.push({ type: "remove", value: removed[i++] });
-		while (j < m) lines.push({ type: "add", value: added[j++] });
-
-		return lines;
+		return result;
 	},
 
 	/**
-	 * Replaces long runs of unchanged lines with a gap.
+	 * Collapses consecutive unchanged lines and includes context around changes.
 	 */
-	collapse: ({
-		lines,
-		context = 3,
-	}: {
-		lines: DiffLine[];
-		context?: number;
-	}) => {
-		const kept = lines.map((line) => line.type !== "context");
+	context: (
+		diff: Diff[],
+		{ contextLines = 3 }: { contextLines?: number } = {},
+	): DiffContext[] => {
+		// collapse unchanged
+		const collapsed: Exclude<DiffContext, { type: "context" }>[] = [];
 
-		lines.forEach((line, index) => {
-			if (line.type === "context" || line.type === "gap") return;
-			const start = Math.max(index - context, 0);
-			const end = Math.min(index + context, lines.length - 1);
-			for (let i = start; i <= end; i++) kept[i] = true;
-		});
-
-		const collapsed: DiffLine[] = [];
-		let gap = 0;
-
-		for (let index = 0; index < lines.length; index++) {
-			if (!kept[index]) {
-				gap++;
-				continue;
+		for (const change of diff) {
+			if (change.type === "unchanged") {
+				const last = collapsed[collapsed.length - 1];
+				if (last?.type === "unchanged") {
+					last.lines.push(change.line);
+				} else {
+					collapsed.push({ type: "unchanged", lines: [change.line] });
+				}
+			} else {
+				collapsed.push(change);
 			}
-			if (gap) {
-				collapsed.push({ type: "gap", count: gap });
-				gap = 0;
-			}
-			collapsed.push(lines[index]);
 		}
 
-		if (gap) collapsed.push({ type: "gap", count: gap });
+		// move unchanged to context
+		const result: DiffContext[] = [];
+		const push = (type: "context" | "unchanged", lines: string[]) => {
+			if (lines.length > 0) {
+				if (type === "context") {
+					for (const line of lines) {
+						result.push({ type, line });
+					}
+				} else if (type === "unchanged") {
+					result.push({ type, lines });
+				}
+			}
+		};
 
-		return collapsed;
+		for (let i = 0; i < collapsed.length; i++) {
+			const item = collapsed[i];
+
+			if (item.type !== "unchanged") {
+				result.push(item);
+				continue;
+			}
+
+			const hasBefore = i > 0;
+			const hasAfter = i < collapsed.length - 1;
+			const { lines } = item;
+
+			if (!hasBefore && !hasAfter) {
+				push("unchanged", lines);
+			} else if (hasBefore && hasAfter) {
+				if (lines.length <= contextLines * 2) {
+					push("context", lines);
+				} else {
+					push("context", lines.slice(0, contextLines));
+					push(
+						"unchanged",
+						lines.slice(contextLines, lines.length - contextLines),
+					);
+					push("context", lines.slice(lines.length - contextLines));
+				}
+			} else if (hasBefore) {
+				push("context", lines.slice(0, contextLines));
+				push("unchanged", lines.slice(contextLines));
+			} else {
+				const splitAt = Math.max(0, lines.length - contextLines);
+				push("unchanged", lines.slice(0, splitAt));
+				push("context", lines.slice(splitAt));
+			}
+		}
+
+		return result;
+	},
+
+	change: (before: string, after: string) => {
+		const length = Math.max(before.length, after.length);
+		const difference = distance(before, after);
+		return difference / length < 0.75;
+	},
+
+	split: (value: string): string[] => {
+		const lines = value.split("\n");
+		if (lines.length && lines[lines.length - 1] === "") {
+			lines.pop();
+		}
+		return lines;
 	},
 } as const;

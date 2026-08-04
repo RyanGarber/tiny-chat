@@ -14,7 +14,7 @@ export const useChat = () => {
 	const lastSeen = useChatStore((s) => s.lastSeen);
 
 	const chat = useQuery({
-		queryKey: client.query.chat.getChat.pathKey(),
+		queryKey: client.query.chat.getChat.queryKey({ id: chatId || undefined }),
 		queryFn: async () => {
 			if (!chatId) return null;
 			const data = await client.api.chat.getChat.query(chatId);

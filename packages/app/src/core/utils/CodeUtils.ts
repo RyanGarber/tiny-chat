@@ -1,68 +1,67 @@
-import { type HighlightResult, code as StreamdownCode } from "@streamdown/code";
+import {
+	createCodePlugin,
+	type HighlightResult,
+	code as StreamdownCode,
+} from "@streamdown/code";
 import flourite from "flourite";
 import type { BundledLanguage, BundledTheme } from "streamdown";
 
-const highlightCache: Record<string, HighlightResult> = {};
-
 export const CodeUtils = {
 	/**
-	 * Highlights `code` using Streamdown's Shiki-backed highlighter.
+	 * Streamdown Code with language detection.
+	 */
+	plugin: (theme: BundledTheme): ReturnType<typeof createCodePlugin> => {
+		return {
+			...createCodePlugin({
+				themes: [theme, theme],
+			}),
+			supportsLanguage: () => {
+				return true;
+			},
+			highlight: ({ language, code }, callback): HighlightResult | null => {
+				return CodeUtils.highlight(language, theme, code, callback);
+			},
+		};
+	},
+
+	/**
+	 * Highlights code using Streamdown Code, detecting the language if one is not provided.
 	 */
 	highlight: (
 		language: string | null,
 		codeTheme: string | null,
 		code: string,
-		onReady?: (result: HighlightResult) => void,
+		callback?: (result: HighlightResult) => void,
 	): HighlightResult => {
-		if (!codeTheme) {
-			const result = CodeUtils.unhighlight(code);
-			onReady?.(result);
-			return result;
-		}
-
 		if (
 			!language ||
 			!StreamdownCode.supportsLanguage(language as BundledLanguage)
 		) {
 			const detected = flourite(code, { shiki: true });
-			return CodeUtils.highlight(
-				detected.language === "unknown" ? "json" : detected.language,
-				codeTheme,
-				code,
-				onReady,
-			);
+			if (detected.language !== "unknown") {
+				language = detected.language;
+			}
 		}
 
-		const cacheKey = `${language}-${codeTheme}-${code.trim()}`;
-		const cached = highlightCache[cacheKey];
-		if (cached) {
-			onReady?.(cached);
-			return cached;
-		}
+		const highlight = !!codeTheme && !!language;
+		const highlightResult = highlight
+			? StreamdownCode.highlight(
+					{
+						code,
+						language: language as BundledLanguage,
+						themes: [codeTheme as BundledTheme, codeTheme as BundledTheme],
+					},
+					callback,
+				)
+			: null;
 
-		const result = StreamdownCode.highlight(
-			{
-				code,
-				language: language as BundledLanguage,
-				themes: [codeTheme as BundledTheme, codeTheme as BundledTheme],
-			},
-			(asyncResult) => {
-				// Only cache the genuine result - never the placeholder below, or
-				// this key would be stuck returning unhighlighted code forever.
-				highlightCache[cacheKey] = asyncResult;
-				onReady?.(asyncResult);
-			},
-		);
-
-		if (!result) return CodeUtils.unhighlight(code);
-
-		highlightCache[cacheKey] = result;
-		onReady?.(result);
+		const result = highlightResult ?? CodeUtils.unhighlight(code);
+		if (!highlight || highlightResult) callback?.(result);
 		return result;
 	},
 
 	/**
-	 * Highlights `code` as a plaintext fallback.
+	 * Returns code with no highlighting applied.
 	 */
 	unhighlight: (code: string): HighlightResult => {
 		return {

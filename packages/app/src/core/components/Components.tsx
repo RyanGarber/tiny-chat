@@ -1,12 +1,18 @@
 import { Icon } from "@iconify/react";
-import { Group, Image, Text } from "@mantine/core";
+import { Box, Button, Group, Image, Text } from "@mantine/core";
 import type { HighlightResult } from "@streamdown/code";
+import { useThemes } from "@tiny-chat/client/src/features/settings/hooks/useThemes.ts";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
+import { DiffUtils } from "@tiny-chat/core/src/features/file/utils/DiffUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
-import { type ComponentProps, memo, type ReactNode, useMemo } from "react";
-import ReactDiffViewer, {
-	type ReactDiffViewerStylesOverride,
-} from "react-diff-viewer-continued";
+import {
+	type ComponentProps,
+	memo,
+	type ReactNode,
+	useEffect,
+	useMemo,
+	useState,
+} from "react";
 import {
 	type BundledLanguage,
 	CodeBlockContainer,
@@ -14,10 +20,8 @@ import {
 	CodeBlockDownloadButton,
 	CodeBlockHeader,
 } from "streamdown";
-import { useLayoutStore } from "#app/core/stores/useLayoutStore.tsx";
 import { CodeUtils } from "#app/core/utils/CodeUtils.ts";
 import { theme } from "#app/core/utils/IconUtils.ts";
-import { useThemes } from "../../../../client/src/features/settings/hooks/useThemes.ts";
 
 const CodeBlockContent = ({
 	result,
@@ -81,11 +85,13 @@ const CodeBlockContent = ({
 const CodeBlockBody = memo(
 	({
 		result,
+		children,
 		language,
 		startLine = 1,
 		lineNumbers = true,
 	}: {
 		result: ReturnType<typeof CodeUtils.highlight>;
+		children?: ReactNode;
 		language: string;
 		startLine?: number;
 		lineNumbers?: boolean;
@@ -129,7 +135,9 @@ const CodeBlockBody = memo(
 								: undefined
 						}
 					>
-						<CodeBlockContent result={result} lineNumbers={lineNumbers} />
+						{children ?? (
+							<CodeBlockContent result={result} lineNumbers={lineNumbers} />
+						)}
 					</code>
 				</pre>
 			</div>
@@ -156,7 +164,18 @@ export const Code = ({
 	lineNumbers?: boolean;
 }) => {
 	const { codeTheme } = useThemes();
-	const result = CodeUtils.highlight(language, codeTheme.data, code);
+
+	const unhighlighted = useMemo(() => CodeUtils.unhighlight(code), [code]);
+
+	const [highlighted, setHighlighted] =
+		useState<HighlightResult>(unhighlighted);
+
+	useEffect(() => {
+		CodeUtils.highlight(language, codeTheme.data, code, (result) => {
+			setHighlighted(result);
+		});
+	}, [code, codeTheme, language]);
+
 	return (
 		<CodeBlockContainer language={language} style={{ marginTop: 0 }}>
 			<CodeBlockHeader language={filename ?? language} />
@@ -176,56 +195,195 @@ export const Code = ({
 				</div>
 			</div>
 			<CodeBlockBody
-				result={result}
 				language={language}
 				lineNumbers={lineNumbers}
 				startLine={startLine}
-			/>
+				result={highlighted}
+			>
+				<InlineCode code={highlighted} language={language} />
+			</CodeBlockBody>
 		</CodeBlockContainer>
+	);
+};
+
+export const InlineCode = ({
+	code,
+	language,
+}: {
+	code: HighlightResult | string;
+	language: BundledLanguage;
+}) => {
+	const { codeTheme } = useThemes();
+
+	const raw = typeof code === "string" ? code : null;
+
+	const unhighlighted = useMemo(() => {
+		if (raw === null) return null;
+		return CodeUtils.unhighlight(raw);
+	}, [raw]);
+
+	const [highlighted, setHighlighted] = useState<HighlightResult | null>(
+		unhighlighted,
+	);
+
+	useEffect(() => {
+		if (raw === null) return;
+		CodeUtils.highlight(language, codeTheme.data, raw, (result) => {
+			setHighlighted(result);
+		});
+	}, [raw, codeTheme.data, language]);
+
+	return (
+		<CodeBlockContent
+			result={
+				typeof code === "string" ? (highlighted as HighlightResult) : code
+			}
+			lineNumbers={false}
+		/>
 	);
 };
 
 export const Diff = ({
 	filename,
 	language,
-	oldCode,
-	newCode,
+	before,
+	after,
 }: {
 	filename?: string;
 	language: BundledLanguage;
-	oldCode: string;
-	newCode: string;
+	before: string;
+	after: string;
 }) => {
-	const { theme, codeTheme } = useThemes();
-	const isMobile = useLayoutStore((s) => s.isMobile);
+	const { codeTheme } = useThemes();
+
+	const [expanded, setExpanded] = useState<number[]>([]);
 
 	const result = CodeUtils.highlight(language, codeTheme.data, "");
-	const styles: ReactDiffViewerStylesOverride | undefined = result
-		? {
-				variables: {
-					light: {
-						diffViewerTitleBackground: result?.bg,
-						diffViewerTitleColor: result?.fg,
-						diffViewerBackground: result?.bg,
-						diffViewerColor: result?.fg,
-						gutterColor: result?.fg,
-						emptyLineBackground: result?.bg,
-						wordAddedBackground: "rgba(0, 0, 0, 0.1)",
-						wordRemovedBackground: "rgba(0, 0, 0, 0.1)",
-					},
-					dark: {
-						diffViewerTitleBackground: result?.bg,
-						diffViewerTitleColor: result?.fg,
-						diffViewerBackground: result?.bg,
-						diffViewerColor: result?.fg,
-						gutterColor: result?.fg,
-						emptyLineBackground: result?.bg,
-						wordAddedBackground: "rgba(100, 255, 100, 0.1)",
-						wordRemovedBackground: "rgba(255, 100, 100, 0.1)",
-					},
-				},
-			}
-		: undefined;
+	const diff = DiffUtils.context(DiffUtils.diff({ before, after }));
+
+	const bg = (type: ReturnType<typeof DiffUtils.context>[number]["type"]) => {
+		switch (type) {
+			case "added":
+				return "rgba(0, 255, 0, 0.1)";
+			case "removed":
+				return "rgba(255, 0, 0, 0.1)";
+			default:
+				return undefined;
+		}
+	};
+
+	const Line = ({
+		children,
+		type,
+		expanded,
+	}: {
+		children: ReactNode;
+		type: ReturnType<typeof DiffUtils.context>[number]["type"];
+		expanded?: boolean;
+	}) => {
+		return (
+			<Group
+				gap={0}
+				align="flex-start"
+				wrap="nowrap"
+				miw="100%"
+				bg={bg(type)}
+				p={2}
+			>
+				{(type !== "unchanged" || expanded) && (
+					<Box
+						w={20}
+						miw={20}
+						h={20}
+						fz="sm"
+						c="dimmed"
+						style={{ textAlign: "center" }}
+					>
+						{type === "removed" && "-"}
+						{type === "added" && "+"}
+						{type === "changed" && "~"}
+					</Box>
+				)}
+				{children}
+			</Group>
+		);
+	};
+
+	// biome-ignore-start lint/suspicious/noArrayIndexKey: lines stay in order
+	const Lines = ({ diff }: { diff: ReturnType<typeof DiffUtils.context> }) => {
+		return diff.flatMap((change, index) => (
+			<Box key={index}>
+				{change.type === "unchanged" &&
+					expanded.includes(index) &&
+					change.lines.map((line, lineIndex) => (
+						<Line key={lineIndex} type={change.type} expanded>
+							<Box flex={1}>
+								<InlineCode language={language} code={line} />
+							</Box>
+						</Line>
+					))}
+				{(change.type !== "unchanged" || !expanded.includes(index)) && (
+					<Line key={index} type={change.type}>
+						{change.type === "unchanged" && (
+							<Button
+								variant="transparent"
+								bg="rgba(0, 0, 0, 0.1)"
+								flex={1}
+								size="xs"
+								onClick={() => setExpanded((previous) => [...previous, index])}
+							>
+								{change.lines.length} unchanged line
+								{change.lines.length === 1 ? "" : "s"}
+							</Button>
+						)}
+						{change.type !== "unchanged" && (
+							<Box flex={1}>
+								{change.type === "changed" &&
+									change.parts.map((part, partIndex) => (
+										<span key={partIndex}>
+											{part.type === "changed" && (
+												<span style={{ backgroundColor: bg(part.type) }}>
+													<span
+														style={{
+															backgroundColor: bg("removed"),
+															padding: "2px 4px",
+														}}
+													>
+														{part.partBefore}
+													</span>
+													<span
+														style={{
+															backgroundColor: bg("added"),
+															padding: "2px 4px",
+														}}
+													>
+														{part.partAfter}
+													</span>
+												</span>
+											)}
+											{part.type !== "changed" && (
+												<span
+													style={{
+														backgroundColor: bg(part.type),
+														padding: "2px 0",
+													}}
+												>
+													{part.part}
+												</span>
+											)}
+										</span>
+									))}
+								{change.type !== "changed" && (
+									<InlineCode language={language} code={change.line} />
+								)}
+							</Box>
+						)}
+					</Line>
+				)}
+			</Box>
+		));
+	};
+	// biome-ignore-end lint/suspicious/noArrayIndexKey: lines stay in order
 
 	return (
 		<CodeBlockContainer language="diff" style={{ marginTop: 0 }}>
@@ -241,25 +399,14 @@ export const Diff = ({
 					}
 					data-streamdown="code-block-actions"
 				>
-					<CodeBlockCopyButton code={newCode} />
-					<CodeBlockDownloadButton code={newCode} language={language} />
+					<CodeBlockCopyButton code={after} />
+					<CodeBlockDownloadButton code={after} language={language} />
 				</div>
 			</div>
-			<ReactDiffViewer
-				oldValue={oldCode}
-				newValue={newCode}
-				splitView={!isMobile}
-				useDarkTheme={theme.data === "dark"}
-				renderContent={(code) => (
-					<CodeBlockContent
-						result={CodeUtils.highlight(language, codeTheme.data, code)}
-						lineNumbers={false}
-					/>
-				)}
-				hideLineNumbers={true}
-				disableWordDiff={true}
-				styles={styles}
-			/>
+
+			<CodeBlockBody result={result} language={language}>
+				<Lines diff={diff} />
+			</CodeBlockBody>
 		</CodeBlockContainer>
 	);
 };

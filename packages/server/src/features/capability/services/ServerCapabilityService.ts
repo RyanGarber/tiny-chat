@@ -9,8 +9,8 @@ import type {
 } from "@tiny-chat/core/src/features/provider/types/provider.ts";
 import type { zWebFeature } from "@tiny-chat/core/src/features/provider/types/web.ts";
 import { CacheService } from "../../user/services/CacheService.ts";
+import { createChatShellCapability } from "../capabilities/createChatShellCapability.ts";
 import { createEmbeddingCapability } from "../capabilities/createEmbeddingCapability.ts";
-import { createShellCapability } from "../capabilities/createShellCapability.ts";
 import { createUserCapability } from "../capabilities/createUserCapability.ts";
 import { createWebCapability } from "../capabilities/createWebCapability.ts";
 
@@ -41,7 +41,7 @@ export const ServerCapabilityService = {
 		}
 
 		if (chat?.id) {
-			capabilities.chatShell = await createShellCapability({
+			capabilities.chatShell = await createChatShellCapability({
 				user,
 				chat,
 			});

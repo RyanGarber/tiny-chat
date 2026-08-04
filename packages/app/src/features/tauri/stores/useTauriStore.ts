@@ -34,6 +34,9 @@ interface TauriStore {
 		name?: string,
 	) => Promise<void>;
 	removeTask: (id: string) => Promise<void>;
+
+	dismissedUpdate?: string;
+	setDismissedUpdate: (update: string) => void;
 }
 
 export const useTauriStore = create<TauriStore>((set, get) => ({
@@ -104,4 +107,7 @@ export const useTauriStore = create<TauriStore>((set, get) => ({
 		const { [id]: _, ...rest } = get().tasks;
 		set({ tasks: rest });
 	},
+
+	dismissedUpdate: undefined,
+	setDismissedUpdate: (update) => set({ dismissedUpdate: update }),
 }));

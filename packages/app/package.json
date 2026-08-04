@@ -57,7 +57,6 @@
 		"fuzzysort": "^3.1.0",
 		"katex": "^0.17.0",
 		"react": "^19.2.7",
-		"react-diff-viewer-continued": "^4.2.2",
 		"react-dom": "^19.2.7",
 		"remark-breaks": "^4.0.0",
 		"remark-directive": "^4.0.0",

@@ -1,5 +1,4 @@
 import { Box, type BoxProps } from "@mantine/core";
-import { createCodePlugin } from "@streamdown/code";
 import { createMathPlugin } from "@streamdown/math";
 import { mermaid } from "@streamdown/mermaid";
 import { useThemes } from "@tiny-chat/client/src/features/settings/hooks/useThemes.ts";
@@ -24,11 +23,10 @@ import {
 import { MarkdownContext } from "#app/features/message/components/MarkdownContext.tsx";
 import "katex/dist/katex.min.css";
 import type { Nodes, Root } from "mdast";
+import type { JSX } from "react";
+import { CodeUtils } from "#app/core/utils/CodeUtils.ts";
 
-import IntrinsicElements = React.JSX.IntrinsicElements;
-
-// TODO - verify <Code> is optimized enough to swap in for auto highlight
-const markdownComponents: Components = {
+const COMPONENTS: Components = {
 	blockquote: BlockquoteComponent,
 	a: AComponent,
 	link: LinkComponent,
@@ -37,7 +35,7 @@ const markdownComponents: Components = {
 };
 
 // reference tag passes id + animate index through sanitizer; all others blocked by default
-const CUSTOM_TAGS: Partial<Record<keyof IntrinsicElements, string[]>> = {
+const ALLOWED_TAGS: Partial<Record<keyof JSX.IntrinsicElements, string[]>> = {
 	blockquote: ["model"],
 	mark: ["sources"],
 	link: ["source", "is-directory"],
@@ -47,7 +45,7 @@ const CUSTOM_TAGS: Partial<Record<keyof IntrinsicElements, string[]>> = {
 const directive = (
 	node: Nodes,
 	name: string,
-	toName: keyof IntrinsicElements,
+	toName: keyof JSX.IntrinsicElements,
 ) => {
 	if (
 		node.type !== "containerDirective" &&
@@ -117,7 +115,7 @@ export const Markdown = memo(
 			() => ({
 				math: createMathPlugin({ singleDollarTextMath: false }),
 				mermaid,
-				code: createCodePlugin({ themes: [codeTheme.data, codeTheme.data] }),
+				code: CodeUtils.plugin(codeTheme.data),
 			}),
 			[codeTheme.data],
 		);
@@ -134,8 +132,8 @@ export const Markdown = memo(
 						animated={ANIMATE_OPTIONS}
 						isAnimating={context.isGenerating}
 						mode={context.isGenerating ? "streaming" : "static"}
-						components={markdownComponents}
-						allowedTags={CUSTOM_TAGS}
+						components={COMPONENTS}
+						allowedTags={ALLOWED_TAGS}
 						plugins={plugins}
 						remarkPlugins={REMARK_PLUGINS}
 						shikiTheme={[codeTheme.data, codeTheme.data]}

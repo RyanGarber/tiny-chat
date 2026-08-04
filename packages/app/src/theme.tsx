@@ -121,10 +121,12 @@ export const cssResolver: CSSVariablesResolver = () => ({
 		"--mantine-color-body": "var(--tc-surface)",
 	},
 	light: {
+		"--tc-exterior": "var(--mantine-color-gray-0)",
 		"--tc-surface": "var(--mantine-color-gray-1)",
 		"--tc-interior": "var(--mantine-color-gray-2)",
 	},
 	dark: {
+		"--tc-exterior": "var(--mantine-color-dark-7)",
 		"--tc-surface": "var(--mantine-color-dark-6)",
 		"--tc-interior": "var(--mantine-color-dark-5)",
 	},

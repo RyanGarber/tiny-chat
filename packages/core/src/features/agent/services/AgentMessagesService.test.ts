@@ -1,18 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
+import { zConfig } from "../../data/types/message.ts";
 import { PathUtils } from "../../file/utils/PathUtils.ts";
 import type { zAgentMessage } from "../types/agent.ts";
 import { AgentMessagesService } from "./AgentMessagesService.ts";
 
-describe("services - context", () => {
+describe("AgentMessagesService", () => {
 	it("builds a message tree from context", () => {
-		const config = {
+		const config = zConfig.parse({
 			provider: "openai",
 			model: "gpt-5",
 			args: {},
 			toolsets: [],
 			skills: [],
-		};
+		});
 
 		const context: zAgentMessage[] = [
 			{

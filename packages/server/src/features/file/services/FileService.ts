@@ -11,10 +11,10 @@ import {
 	PathUtils,
 } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import { Bash, InMemoryFs, MountableFs } from "just-bash";
+import { ChatService } from "../../chat/services/ChatService.ts";
 import { MessageService } from "../../message/services/MessageService.ts";
-import { FileSearchService } from "../../upload/services/FileSearchService.ts";
-import { FilesystemService } from "../../upload/services/FilesystemService.ts";
-import { ChatService } from "./ChatService.ts";
+import { FileSearchService } from "./FileSearchService.ts";
+import { FilesystemService } from "./FilesystemService.ts";
 
 // TODO - instance caching
 //  for now, uncached due to complications

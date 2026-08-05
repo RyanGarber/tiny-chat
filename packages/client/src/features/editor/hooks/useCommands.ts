@@ -1,7 +1,4 @@
-import {
-	DEFAULT_SKILLS,
-	DEFAULT_TOOLSETS,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
+import { zConfig } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { ModelProviderStatus } from "@tiny-chat/core/src/features/provider/types/model.ts";
 import type { ProviderState } from "@tiny-chat/core/src/features/provider/types/provider.ts";
 import { useCallback, useRef } from "react";
@@ -80,13 +77,14 @@ export const useCommands = ({
 							configRef.current.provider === provider.name &&
 							configRef.current.model === model.name,
 						run: () =>
-							setConfigRef.current({
-								provider: provider.name,
-								model: model.name,
-								args: {},
-								toolsets: configRef.current.toolsets ?? DEFAULT_TOOLSETS,
-								skills: configRef.current.skills ?? DEFAULT_SKILLS,
-							}),
+							setConfigRef.current(
+								zConfig.parse({
+									provider: provider.name,
+									model: model.name,
+									toolsets: configRef.current.toolsets,
+									skills: configRef.current.skills,
+								}),
+							),
 					})),
 				})) ?? [];
 

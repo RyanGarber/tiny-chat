@@ -6,7 +6,7 @@ import { SnippetService } from "@tiny-chat/core/src/features/data/services/Snipp
 import type { ChatLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
-import { FileService } from "../../chat/services/FileService.ts";
+import { FileService } from "../../file/services/FileService.ts";
 
 export const createChatShellCapability: CapabilityFactory<
 	{

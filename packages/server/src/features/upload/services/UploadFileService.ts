@@ -19,7 +19,7 @@ export type UploadCreateOptions = Partial<
 /**
  * File preprocessing and upload handling.
  */
-export const FileService = {
+export const UploadFileService = {
 	/**
 	 * Unzip a zip file and upload its contents.
 	 */
@@ -47,7 +47,7 @@ export const FileService = {
 			UploadUtils.shouldIncludeFile({ path: path, extras: false }),
 		);
 
-		return await FileService.upload({
+		return await UploadFileService.upload({
 			user,
 			create,
 			files: files.map(([name, data]) => [
@@ -117,7 +117,7 @@ export const FileService = {
 				PathUtils.equals(file.path, path),
 			);
 
-			const preprocessed = await FileService._preprocess({
+			const preprocessed = await UploadFileService._preprocess({
 				data: Buffer.from(content),
 				filename: PathUtils.name({ path }),
 			});

@@ -16,7 +16,7 @@ export const AgentMessagesService = {
 	}: {
 		context: zAgentContext;
 		capabilities: Capabilities;
-	}) => {
+	}): Promise<{ messages: zAgentMessage[]; customInstructions?: string }> => {
 		const files = await capabilities.chatShell?.getFiles?.();
 		console.log(`[AgentMessagesService] files in chat:`, files);
 

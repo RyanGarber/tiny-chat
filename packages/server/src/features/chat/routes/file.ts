@@ -6,7 +6,7 @@ import type {
 import { PathLike } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import { z } from "zod";
 import { procedure, router } from "../../../index.ts";
-import { FileService } from "../services/FileService.ts";
+import { FileService } from "../../file/services/FileService.ts";
 
 export const file = router({
 	getFile: procedure

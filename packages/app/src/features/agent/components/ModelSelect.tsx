@@ -5,11 +5,7 @@ import {
 } from "@mantine/core";
 import { useProviders } from "@tiny-chat/client/src/features/agent/hooks/useProviders.ts";
 import { useHiddenModels } from "@tiny-chat/client/src/features/settings/hooks/useHiddenModels.ts";
-import {
-	DEFAULT_SKILLS,
-	DEFAULT_TOOLSETS,
-	zConfig,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
+import { zConfig } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type {
 	ModelProviderStatus,
 	zModelFeature,
@@ -104,9 +100,8 @@ export default function ModelSelect({
 					v
 						? zConfig.parse({
 								...JSON.parse(v),
-								args: {},
-								toolsets: configValue?.toolsets ?? DEFAULT_TOOLSETS,
-								skills: configValue?.skills ?? DEFAULT_SKILLS,
+								toolsets: configValue?.toolsets,
+								skills: configValue?.skills,
 							})
 						: null,
 				)

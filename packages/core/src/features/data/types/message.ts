@@ -35,10 +35,23 @@ export const MessageLike = z.custom<MessageLike>();
 export const zConfig = z.object({
 	provider: z.string(),
 	model: z.string(),
-	args: z.any().default({}),
-	schema: z.any().optional(), // z.custom<ZodStandardJSONSchemaPayload<any>>()
-	toolsets: z.array(z.string()).default(DEFAULT_TOOLSETS),
-	skills: z.array(z.string()).default(DEFAULT_SKILLS),
+	schema: z.any().nullish(), // z.custom<ZodStandardJSONSchemaPayload<any>>()
+	args: z
+		.any()
+		.nullish()
+		.transform((args) => args ?? {}),
+	toolsets: z
+		.array(z.string())
+		.nullish()
+		.transform((toolsets) => toolsets ?? DEFAULT_TOOLSETS),
+	skills: z
+		.array(z.string())
+		.nullish()
+		.transform((skills) => skills ?? DEFAULT_SKILLS),
+	tokens: z
+		.number()
+		.nullish()
+		.transform((compaction) => compaction ?? 100000),
 });
 export type zConfig = z.infer<typeof zConfig>;
 

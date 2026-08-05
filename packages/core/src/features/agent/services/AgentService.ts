@@ -13,6 +13,7 @@ import type { zAgentContext, zAgentEvent } from "../types/agent.ts";
 import { AgentUtils } from "../utils/AgentUtils.ts";
 import { AgentInstructionsService } from "./AgentInstructionsService.ts";
 import { AgentMessagesService } from "./AgentMessagesService.ts";
+import { AgentTokensService } from "./AgentTokensService.ts";
 
 export const AgentService = {
 	generate: async function* ({
@@ -86,7 +87,10 @@ export const AgentService = {
 				const stream = ModelProviderService.runLanguageModel({
 					user: context.user,
 					provider,
-					messages,
+					messages: await AgentTokensService.trimMessages({
+						messages,
+						config,
+					}),
 					config,
 					tools: enabledToolsets.flatMap((toolset) =>
 						toolset.tools.map((tool) => ({

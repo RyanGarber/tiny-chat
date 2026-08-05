@@ -1,15 +1,12 @@
 import { useGreeting } from "@tiny-chat/client/src/core/hooks/useGreeting.ts";
 import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
-import { DiffUtils } from "@tiny-chat/core/src/features/file/utils/DiffUtils.ts";
 import { Box, Text, useWindowSize } from "ink";
 import Spinner from "ink-spinner";
 import CapabilitySelect from "../../features/agent/components/CapabilitySelect.tsx";
 import Chat from "../../features/chat/components/Chat.tsx";
 import ChatList from "../../features/chat/components/ChatList.tsx";
 import Input from "../../features/editor/components/Input.tsx";
-import ToolCallInput, {
-	Preview,
-} from "../../features/message/components/ToolCallInput.tsx";
+import ToolCallInput from "../../features/message/components/ToolCallInput.tsx";
 import { useToolCallQueue } from "../../features/message/hooks/useToolCallQueue.ts";
 import { useAppStore } from "../stores/useAppStore.ts";
 

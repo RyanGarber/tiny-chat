@@ -24,14 +24,16 @@ export const useChatFiles = () => {
 			chat.data?.id,
 			...(messages.data?.pages.flatMap(({ messages }) =>
 				messages.flatMap((m) =>
-					m.data.flat().flatMap((part) =>
-						part.type === "upload" ||
-						(part.type === "toolResult" &&
-							(ToolUtils.is({ toolsets, part, isTool: write_file }) ||
-								ToolUtils.is({ toolsets, part, isTool: edit_file })))
-							? [part.id]
-							: [],
-					),
+					m.data
+						.flat()
+						.flatMap((part) =>
+							part.type === "upload" ||
+							(part.type === "toolResult" &&
+								(ToolUtils.is({ toolsets, part, isTool: write_file }) ||
+									ToolUtils.is({ toolsets, part, isTool: edit_file })))
+								? [part.id]
+								: [],
+						),
 				),
 			) ?? []),
 		],

@@ -6,7 +6,7 @@ import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeU
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import type { ByteString, FileContent, FsStat, IFileSystem } from "just-bash";
 import { type File, Prisma } from "../../../../generated/prisma/client.ts";
-import { UploadUtils } from "../utils/UploadUtils.ts";
+import { UploadUtils } from "../../upload/utils/UploadUtils.ts";
 
 /**
  * Virtual filesystem for skills, uploads, repos, and chat files.

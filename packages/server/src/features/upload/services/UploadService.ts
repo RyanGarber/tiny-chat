@@ -4,7 +4,7 @@ import type {
 	UploadInclude,
 	UploadWhereInput,
 } from "../../../../generated/prisma/models/Upload.ts";
-import { FileService } from "./FileService.ts";
+import { UploadFileService } from "./UploadFileService.ts";
 
 /**
  * Upload management.
@@ -53,14 +53,14 @@ export const UploadService = {
 		file: File;
 	}) => {
 		return file.name.endsWith(".zip")
-			? await FileService.uploadZip({
+			? await UploadFileService.uploadZip({
 					user,
 					create: {
 						type,
 					},
 					zip: await file.arrayBuffer(),
 				})
-			: await FileService.upload({
+			: await UploadFileService.upload({
 					user,
 					create: {
 						type,

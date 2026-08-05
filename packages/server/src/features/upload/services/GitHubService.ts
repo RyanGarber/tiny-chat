@@ -2,7 +2,7 @@ import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { UploadType } from "../../../../generated/prisma/enums.ts";
 import { AuthServer } from "../../../core/AuthServer.ts";
 import { UploadUtils } from "../utils/UploadUtils.ts";
-import { FileService } from "./FileService.ts";
+import { UploadFileService } from "./UploadFileService.ts";
 
 interface GitHubRepository {
 	id: number;
@@ -104,7 +104,7 @@ export const GitHubService = {
 
 		console.log(`cloning repo: ${uploadName}`);
 
-		return await FileService.uploadZip({
+		return await UploadFileService.uploadZip({
 			user,
 			zip: await result.arrayBuffer(),
 			create: {

@@ -46,11 +46,7 @@ export const ToolCallInput = memo(
 	}) => {
 		const { sendToolInput } = useToolInput();
 
-		const {
-			input: display,
-			contents,
-			edited,
-		} = useToolCallInput({
+		const { input: display, contents } = useToolCallInput({
 			message,
 			toolCall,
 			toolResult,
@@ -95,23 +91,20 @@ export const ToolCallInput = memo(
 		const input: ReactNode | undefined = useMemo(() => {
 			if (details?.kind === "shell_exec" && display?.pending) {
 				return <Code language="bash" code={details.command} />;
-			} else if (details?.kind === "write_file" && display?.pending) {
+			} else if (
+				(details?.kind === "write_file" || details?.kind === "edit_file") &&
+				display?.pending
+			) {
 				return (
-					<Diff
-						filename={details.name}
-						language={details.extension as BundledLanguage}
-						before={contents}
-						after={details.content}
-					/>
-				);
-			} else if (details?.kind === "edit_file" && display?.pending) {
-				return (
-					<Diff
-						filename={details.name}
-						language={details.extension as BundledLanguage}
-						before={contents}
-						after={edited}
-					/>
+					contents.data?.fileBefore &&
+					contents.data?.fileAfter && (
+						<Diff
+							filename={details.name}
+							language={details.extension as BundledLanguage}
+							before={contents.data.fileBefore}
+							after={contents.data.fileAfter}
+						/>
+					)
 				);
 			} else if (details?.kind === "ask_question") {
 				return (
@@ -180,7 +173,7 @@ export const ToolCallInput = memo(
 					</Stack>
 				);
 			}
-		}, [details, contents, edited, inputValue, disabled, display?.pending]);
+		}, [details, contents.data, inputValue, disabled, display?.pending]);
 
 		if (tool && input) {
 			return (

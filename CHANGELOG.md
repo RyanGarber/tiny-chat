@@ -1,3 +1,16 @@
+## [0.7.7](https://github.com/RyanGarber/tiny-chat/compare/0.7.6...0.7.7) (2026-08-05)
+
+### Features
+
+* /reload command for providers, skills, and mcp servers ([14ad737](https://github.com/RyanGarber/tiny-chat/commit/14ad737517b3336491313f8bae36053424ede741-1))
+* input tokens model arg ([14ad737](https://github.com/RyanGarber/tiny-chat/commit/14ad737517b3336491313f8bae36053424ede741))
+* model arg defaults shown in cli input ([14ad737](https://github.com/RyanGarber/tiny-chat/commit/14ad737517b3336491313f8bae36053424ede741-2))
+
+### Bug Fixes
+
+* unable to manually trigger provider updates ([14ad737](https://github.com/RyanGarber/tiny-chat/commit/14ad737517b3336491313f8bae36053424ede741-3))
+
+
 ## [0.7.6](https://github.com/RyanGarber/tiny-chat/compare/0.7.5...0.7.6) (2026-08-05)
 
 ### Features

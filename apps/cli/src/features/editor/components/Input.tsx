@@ -9,7 +9,7 @@ import Attachments from "./Attachments.tsx";
 import Commands from "./Commands.tsx";
 
 export default function Input({ disabled }: { disabled?: boolean }) {
-	const { config } = useConfig();
+	const { config, modelArgs } = useConfig();
 	const { sendMessage } = useMessaging();
 
 	const content = useInputStore((state) => state.content);
@@ -26,10 +26,13 @@ export default function Input({ disabled }: { disabled?: boolean }) {
 
 	const placeholder = useMemo(() => {
 		if (!config) return "";
-		return `${config.model} · ${Object.entries(config.args)
-			.map(([key, value]) => `${key} ${value}`)
-			.join(" · ")}`;
-	}, [config]);
+		return [
+			config.model,
+			...modelArgs.map(
+				(arg) => `${arg.name} ${config.args?.[arg.name] ?? arg.default}`,
+			),
+		].join(" · ");
+	}, [config, modelArgs]);
 
 	return (
 		<>

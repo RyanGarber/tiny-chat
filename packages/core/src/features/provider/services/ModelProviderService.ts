@@ -102,7 +102,7 @@ export const ModelProviderService = {
 		const input = {
 			...options,
 			model: sdkModel,
-			maxOutputTokens: config.args?.["max-tokens"],
+			maxOutputTokens: config.args?.["tokens-out"],
 			temperature: config.args?.temperature as number,
 			providerOptions: provider?.getSdkOptions({ user, config, env }),
 			output: config.schema

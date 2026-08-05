@@ -5,6 +5,7 @@ import { useCallback, useRef } from "react";
 import { useConfig } from "../../agent/hooks/useConfig.ts";
 import { useProviders } from "../../agent/hooks/useProviders.ts";
 import { useSkills } from "../../agent/hooks/useSkills.ts";
+import { useTools } from "../../agent/hooks/useTools.ts";
 import { usePresets } from "../../settings/hooks/usePresets.ts";
 import type {
 	CommandChoiceGroup,
@@ -25,8 +26,9 @@ export const useCommands = ({
 	onOpenTools?: () => void;
 	onOpenSkills?: () => void;
 } = {}) => {
-	const { providers } = useProviders();
-	const { skills } = useSkills();
+	const { providers, updateProviders } = useProviders();
+	const { skills, localSkills } = useSkills();
+	const { mcpTools } = useTools();
 	const { config, setConfig, modelArgs, setModelArg } = useConfig();
 	const { presets, setPreset, unsetPreset } = usePresets();
 
@@ -40,6 +42,8 @@ export const useCommands = ({
 
 	const providersRef = useRef(providers.data);
 	providersRef.current = providers.data;
+	const updateProvidersRef = useRef(updateProviders);
+	updateProvidersRef.current = updateProviders;
 
 	const configRef = useRef(config);
 	configRef.current = config;
@@ -60,6 +64,11 @@ export const useCommands = ({
 
 	const skillsRef = useRef(skills);
 	skillsRef.current = skills;
+	const localSkillsRef = useRef(localSkills);
+	localSkillsRef.current = localSkills;
+
+	const mcpToolsRef = useRef(mcpTools);
+	mcpToolsRef.current = mcpTools;
 
 	const getCommands = useCallback((): CommandGroup[] => {
 		const models: CommandChoiceGroup[] =
@@ -76,7 +85,22 @@ export const useCommands = ({
 						active:
 							configRef.current.provider === provider.name &&
 							configRef.current.model === model.name,
-						run: () =>
+						run: () => {
+							console.log(
+								"[useCommands] setting config:",
+								{
+									provider: provider.name,
+									model: model.name,
+									toolsets: configRef.current.toolsets,
+									skills: configRef.current.skills,
+								},
+								zConfig.parse({
+									provider: provider.name,
+									model: model.name,
+									toolsets: configRef.current.toolsets,
+									skills: configRef.current.skills,
+								}),
+							);
 							setConfigRef.current(
 								zConfig.parse({
 									provider: provider.name,
@@ -84,7 +108,8 @@ export const useCommands = ({
 									toolsets: configRef.current.toolsets,
 									skills: configRef.current.skills,
 								}),
-							),
+							);
+						},
 					})),
 				})) ?? [];
 
@@ -156,6 +181,15 @@ export const useCommands = ({
 					...commandsRef.current,
 					{ name: "model", value: "model", choices: models },
 					...modelArgs,
+					{
+						name: "reload",
+						value: "reload",
+						run: () => {
+							updateProvidersRef.current.mutate();
+							void localSkillsRef.current.refetch();
+							void mcpToolsRef.current.refetch();
+						},
+					},
 					{
 						name: "set-preset",
 						value: "set-preset",

@@ -28,18 +28,16 @@ export const useProviders = () => {
 
 	const updateProviders = useMutation({
 		mutationKey: providerCacheMutationKey,
-		mutationFn: () => {
+		mutationFn: async () => {
 			if (!session.data) throw new Error("missing session");
-			return ProviderService.getProviderStates({
+			console.log("[useProviders] updating providers...");
+			await ProviderService.getProviderStates({
 				client,
 				user: session.data.user,
 				update: true,
 			});
-		},
-		onSuccess: async () => {
-			await client.queryClient.invalidateQueries({
-				queryKey: providerCacheQueryKey,
-			});
+			await providers.refetch();
+			console.log("[useProviders] updated:", providers.data);
 		},
 	});
 

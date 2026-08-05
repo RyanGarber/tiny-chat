@@ -48,10 +48,6 @@ export const zConfig = z.object({
 		.array(z.string())
 		.nullish()
 		.transform((skills) => skills ?? DEFAULT_SKILLS),
-	tokens: z
-		.number()
-		.nullish()
-		.transform((tokens) => tokens ?? 100000),
 });
 export type zConfig = z.infer<typeof zConfig>;
 

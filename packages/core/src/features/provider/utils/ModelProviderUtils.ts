@@ -19,10 +19,17 @@ export const ModelProviderUtils = {
 		const args: zModelArg[] = [
 			{
 				type: "range",
-				name: "max-tokens",
-				min: 2500,
-				max: 50000,
-				default: 10000,
+				name: "tokens-in",
+				min: 1_000,
+				max: 1_000_000,
+				default: 100_000,
+			},
+			{
+				type: "range",
+				name: "tokens-out",
+				min: 1_000,
+				max: 250_000,
+				default: 25_000,
 			},
 		];
 		if (maxTemp > 0) {

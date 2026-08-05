@@ -200,9 +200,17 @@ export const AgentTokensService = {
 		messages: zAgentMessage[];
 		config: zConfig;
 	}): Promise<zAgentMessage[]> => {
-		const targetTokens = Math.max(0, config.tokens);
+		if (!config.args?.["tokens-in"]) {
+			console.warn(
+				"[AgentTokensService] no `tokens-in` arg, skipping compaction",
+			);
+			return messages;
+		}
+
+		const targetTokens = Math.max(0, config.args["tokens-in"]);
 		const compacted = cloneMessages(messages);
 		const initialTokens = AgentTokensService.getTokens({ messages: compacted });
+
 		const overBudget = () =>
 			AgentTokensService.getTokens({ messages: compacted }) > targetTokens;
 

@@ -40,7 +40,7 @@ export const ProviderService = {
 		update?: boolean;
 	}) => {
 		return [
-			...(await client.api.user.getCache.query({})).providers,
+			...(await client.api.user.getCache.query({ update })).providers,
 			...((await client.providers?.getProviderStates({
 				client,
 				user,

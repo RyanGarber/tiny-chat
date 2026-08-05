@@ -44,12 +44,11 @@ export const ModelTransformService = {
 			function transform(part: zDataPart): zDataPart[];
 			function transform(part: zDataBasicPart): zDataBasicPart[];
 			function transform(part: zDataPart): zDataPart[] | zDataBasicPart[] {
-				const result =
+				let result =
 					provider.getPartTransformed?.({ user, config, part }) ??
 					ModelProviderUtils.getPartTransformed({ part });
-				// a provider could accidentally transform a 'basic' part into a non-basic one,
-				// but in practice this shouldn't really happen, so we just cast it and move on
-				return result as zDataPart[] | zDataBasicPart[];
+				if (!Array.isArray(result)) result = [result];
+				return result;
 			}
 
 			const parts = zData.parse(message.data).flat();
@@ -90,7 +89,7 @@ export const ModelTransformService = {
 						return [
 							{
 								type: "text",
-								text: `\`\`\`json\n${JSON.stringify(part.value, null, 4)}\n\`\`\``,
+								text: `\`\`\`json\n${JSON.stringify(part.value)}\n\`\`\``,
 								providerOptions,
 							},
 						];

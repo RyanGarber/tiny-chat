@@ -1,5 +1,4 @@
 import { createClient } from "@tiny-chat/client/src/client.ts";
-import { SnippetService } from "@tiny-chat/core/src/features/data/services/SnippetService.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
 import type {
@@ -119,35 +118,6 @@ export const client = createClient({
 				writeFile: async ({ path, content }) => {
 					await TauriUtils.invoke("write_file", { path, content });
 					return { path, success: true };
-				},
-				editFile: async ({ path, old_string, new_string, replace_all }) => {
-					const { replacements } = await TauriUtils.invoke<{
-						replacements: number;
-					}>("edit_file", {
-						path,
-						oldString: old_string,
-						newString: new_string,
-						replaceAll: replace_all ?? false,
-					});
-					return { path, success: true, replacements };
-				},
-				searchFiles: async ({ path, query, mode }) => {
-					const files = await TauriUtils.invoke<
-						{ path: string; data: string }[]
-					>("search_files", {
-						path,
-						pattern: query,
-						mode,
-						maxResults: 10,
-					});
-					return files.map((file) => ({
-						path: file.path,
-						snippet: SnippetService.getSnippet({
-							text: FileUtils.getTextFromBytes(file) ?? "",
-							query,
-							baseWindow: 500,
-						}),
-					}));
 				},
 				exec: ({ command }) => {
 					return TauriUtils.invoke<{

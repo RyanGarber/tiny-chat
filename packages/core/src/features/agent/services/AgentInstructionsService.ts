@@ -95,7 +95,7 @@ As an assistant, you may have access to additional skills. When one seems releva
 ${
 	actions
 		? `<actions>
-${actions?.map((action) => `<action id="${action.id}" schedule="${action.schedule}">\n${DataUtils.getText({ data: zData.parse(action) })}\n</action>`).join("\n")}
+${actions?.map((action) => `<action id="${action.id}" schedule="${action.schedule}">\n${DataUtils.getText({ data: zData.parse(action.data) })}\n</action>`).join("\n")}
 </actions>`
 		: ""
 }

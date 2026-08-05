@@ -6,7 +6,7 @@ import type { zDataPart } from "../../../data/types/message.ts";
 import { ModelTransformService } from "../../services/ModelTransformService.ts";
 import { GoogleProvider } from "./GoogleProvider.ts";
 
-describe("providers - google", () => {
+describe("GoogleProvider", () => {
 	it("stores signatures", () => {
 		const event: TextStreamPart<any> = {
 			type: "reasoning-delta",
@@ -117,7 +117,7 @@ describe("providers - google", () => {
 		expect.assert(content[0].type === "text");
 		expect(content[0].text).toContain("Unsupported");
 
-		expect.assert(content[1].type === "image-data");
+		expect.assert(content[1].type === "file");
 		expect(content[1].mediaType).toBe("image/png");
 	});
 });

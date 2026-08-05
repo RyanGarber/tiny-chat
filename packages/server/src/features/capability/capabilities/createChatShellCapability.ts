@@ -2,10 +2,8 @@ import type {
 	CapabilityFactory,
 	ShellCapability,
 } from "@tiny-chat/core/src/features/capability/types/capability.ts";
-import { SnippetService } from "@tiny-chat/core/src/features/data/services/SnippetService.ts";
 import type { ChatLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
-import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
 import { FileService } from "../../file/services/FileService.ts";
 
 export const createChatShellCapability: CapabilityFactory<
@@ -36,40 +34,9 @@ export const createChatShellCapability: CapabilityFactory<
 			}));
 		},
 
-		searchFiles: async ({ path, query, mode }) => {
-			const files = await FileService.searchFiles({
-				user,
-				chat,
-				path,
-				mode,
-				searchText: query,
-				limit: 10,
-			});
-			return files.map((file) => ({
-				path: file.uri,
-				snippet: SnippetService.getSnippet({
-					text: FileUtils.getTextFromBytes(file) ?? "",
-					query,
-					baseWindow: 500,
-				}),
-			}));
-		},
-
 		writeFile: async ({ path, content }) => {
 			await FileService.writeFile({ user, chat, path, content });
 			return { path, success: true };
-		},
-
-		editFile: async ({ path, old_string, new_string, replace_all }) => {
-			const { replacements } = await FileService.editFile({
-				user,
-				chat,
-				path,
-				old_string,
-				new_string,
-				replace_all,
-			});
-			return { path, success: true, replacements };
 		},
 
 		exec: async ({ command }) => {

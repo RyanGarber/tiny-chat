@@ -84,23 +84,10 @@ export interface ShellCapability {
 		path: string;
 	}) => Promise<{ path: string; is_dir: boolean }[]>;
 
-	searchFiles: (_: {
-		path: string;
-		query: string;
-		mode: "standard" | "grep";
-	}) => Promise<{ path: string; snippet: string }[]>;
-
 	writeFile: (_: {
 		path: string;
 		content: string;
 	}) => Promise<{ path: string; success: true }>;
-
-	editFile: (_: {
-		path: string;
-		old_string: string;
-		new_string: string;
-		replace_all?: boolean;
-	}) => Promise<{ path: string; success: true; replacements: number }>;
 
 	exec: (_: {
 		command: string;

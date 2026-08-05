@@ -289,6 +289,6 @@ export const AgentMessagesService = {
 		depth?: number;
 	}) => {
 		const type = directory ? "folder" : "file";
-		return `${"  ".repeat(depth + 1)}<${type} name="${name}"${uri ? ` path="${uri}"` : ""}${content ? `>\n${content}\n${"  ".repeat(depth + 1)}</${type}>` : ` />`}`;
+		return `${"  ".repeat(depth)}<${type} name="${name}"${uri ? ` path="${uri}"` : ""}${content ? `>\n${content}\n${"  ".repeat(depth)}</${type}>` : ` />`}`;
 	},
 };

@@ -63,8 +63,6 @@ export function createTestProvider(): ProviderV4 {
 					throw new Error("Only streams are supported.");
 				},
 				async doStream(options) {
-					console.log("[TestProvider] received options:", options);
-
 					const stream = new ReadableStream<LanguageModelV4StreamPart>({
 						async start(controller) {
 							const sleep = (ms: number) =>
@@ -87,9 +85,9 @@ export function createTestProvider(): ProviderV4 {
 								controller.enqueue({
 									type: "tool-call",
 									toolCallId: "1",
-									toolName: "read_file",
+									toolName: "chat_read_dir",
 									input: JSON.stringify({
-										path: "~/.zshrc",
+										path: "/mnt/chat",
 									}),
 								});
 							} else {

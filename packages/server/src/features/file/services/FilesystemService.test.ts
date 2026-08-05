@@ -8,7 +8,7 @@ import { testClient } from "../../../tests.ts";
 
 const { api } = testClient();
 
-describe("services - dbfs", () => {
+describe("FilesystemService", () => {
 	let upload1: Awaited<
 		ReturnType<(typeof api)["upload"]["createUpload"]["mutate"]>
 	>;

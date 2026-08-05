@@ -5,7 +5,6 @@ import type {
 	FileNode,
 	FileState,
 } from "@tiny-chat/core/src/features/file/types/file.ts";
-import { FileEditUtils } from "@tiny-chat/core/src/features/file/utils/FileEditUtils.ts";
 import {
 	type PathLike,
 	PathUtils,
@@ -13,7 +12,6 @@ import {
 import { Bash, InMemoryFs, MountableFs } from "just-bash";
 import { ChatService } from "../../chat/services/ChatService.ts";
 import { MessageService } from "../../message/services/MessageService.ts";
-import { FileSearchService } from "./FileSearchService.ts";
 import { FilesystemService } from "./FilesystemService.ts";
 
 // TODO - instance caching
@@ -118,37 +116,6 @@ export const FileService = {
 		return await filesystem.readdirWithFileTypes(PathUtils.asMount(path) ?? "");
 	},
 
-	/**
-	 * Search across all files in a chat.
-	 */
-	searchFiles: async ({
-		user,
-		chat,
-		searchText,
-		searchEmbedding,
-		path,
-		mode,
-		limit = 10,
-	}: {
-		user: zUser;
-		chat: ChatLike;
-		searchText: string;
-		searchEmbedding?: number[];
-		path?: PathLike;
-		mode?: "standard" | "grep";
-		limit?: number;
-	}) => {
-		const { filesystem } = await FileService.get({ user, chat });
-		return await FileSearchService.searchFiles({
-			filesystem,
-			searchText,
-			searchEmbedding,
-			path,
-			mode,
-			limit,
-		});
-	},
-
 	writeFile: async ({
 		user,
 		chat,
@@ -162,36 +129,6 @@ export const FileService = {
 	}) => {
 		const { filesystem } = await FileService.get({ user, chat });
 		return await filesystem.writeFile(PathUtils.asMount(path) ?? "", content);
-	},
-
-	/**
-	 * Replace a snippet of a file in a chat.
-	 */
-	editFile: async ({
-		user,
-		chat,
-		path,
-		old_string,
-		new_string,
-		replace_all,
-	}: {
-		user: zUser;
-		chat: ChatLike;
-		path: PathLike;
-		old_string: string;
-		new_string: string;
-		replace_all?: boolean;
-	}) => {
-		const { filesystem } = await FileService.get({ user, chat });
-		const mount = PathUtils.asMount(path) ?? "";
-		const edit = FileEditUtils.apply({
-			content: await filesystem.readFile(mount, "utf8"),
-			old_string,
-			new_string,
-			replace_all,
-		});
-		await filesystem.writeFile(mount, edit.content);
-		return { replacements: edit.replacements };
 	},
 
 	exec: async ({

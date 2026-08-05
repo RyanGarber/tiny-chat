@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { ShellCapability } from "../../../capability/types/capability.ts";
+import { FileOperationService } from "../../../file/services/FileOperationService.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
 export const grep_files = {
@@ -26,10 +27,10 @@ export const createGrepFilesTool: ToolFactory<
 		return [
 			{
 				type: "json",
-				value: await options.capabilities.shell.searchFiles({
+				value: await FileOperationService.grepFiles({
+					shell: options.capabilities.shell,
 					path: input.path,
 					query: input.query,
-					mode: "grep",
 				}),
 			},
 		];

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { ShellCapability } from "../../../capability/types/capability.ts";
+import { FileOperationService } from "../../../file/services/FileOperationService.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
 export const search_files = {
@@ -26,10 +27,10 @@ export const createSearchFilesTool: ToolFactory<
 		return [
 			{
 				type: "json",
-				value: await options.capabilities.shell.searchFiles({
+				value: await FileOperationService.searchFiles({
+					shell: options.capabilities.shell,
 					path: input.path,
 					query: input.query,
-					mode: "standard",
 				}),
 			},
 		];

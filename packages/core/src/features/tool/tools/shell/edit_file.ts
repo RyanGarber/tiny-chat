@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { ShellCapability } from "../../../capability/types/capability.ts";
+import { FileOperationService } from "../../../file/services/FileOperationService.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
 export const edit_file = {
@@ -41,7 +42,8 @@ export const createEditFileTool: ToolFactory<
 		return [
 			{
 				type: "json",
-				value: await options.capabilities.shell.editFile({
+				value: await FileOperationService.editFile({
+					shell: options.capabilities.shell,
 					path: input.path,
 					old_string: input.old_string,
 					new_string: input.new_string,

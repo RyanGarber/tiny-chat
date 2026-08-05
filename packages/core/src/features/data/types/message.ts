@@ -51,7 +51,7 @@ export const zConfig = z.object({
 	tokens: z
 		.number()
 		.nullish()
-		.transform((compaction) => compaction ?? 100000),
+		.transform((tokens) => tokens ?? 100000),
 });
 export type zConfig = z.infer<typeof zConfig>;
 

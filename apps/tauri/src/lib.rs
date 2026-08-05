@@ -4,7 +4,6 @@ mod afm;
 mod mcp_http;
 mod mcp_stdio;
 mod tools;
-mod utils;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -22,9 +21,7 @@ pub fn run() {
         tools::read_file,
         tools::read_dir,
         tools::write_file,
-        tools::edit_file,
         tools::shell_exec,
-        tools::search_files,
         mcp_http::mcp_start_http,
         mcp_http::mcp_send_http,
         mcp_http::mcp_stop_http,

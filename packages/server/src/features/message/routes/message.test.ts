@@ -1,7 +1,7 @@
 import { describe, expect, inject, it } from "vitest";
 import { testClient } from "../../../tests.ts";
 
-describe("routes - message", () => {
+describe("message", () => {
 	const { api } = testClient();
 
 	it("creates a new chat with two messages", async () => {
@@ -76,8 +76,12 @@ describe("routes - message", () => {
 			id: first.id,
 		});
 
-		const chat = await api.chat.getChat.query(first);
-		expect(chat).toBeNull();
+		const chat = await api.chat.getChatList.query({});
+		expect(
+			chat.folders
+				.flatMap((folder) => folder.chats)
+				.filter((chat) => chat.id === first.chatId),
+		).toHaveLength(0);
 	});
 
 	it("returns empty array for unknown chatId", async () => {

@@ -22,19 +22,39 @@ import { ChatService } from "../../chat/services/ChatService.ts";
 import { MessageService } from "../../message/services/MessageService.ts";
 import { MessageUtils } from "../../message/utils/MessageUtils.ts";
 
+let running = false;
+
 export const WorkerService = {
 	next: async ({ testUserId }: { testUserId?: string }) => {
-		const actions = await globalThis.prisma.action.findMany();
+		if (running) {
+			console.warn("ignoring worker run because one is already running");
+			return;
+		}
+
+		running = true;
+
+		const actions = await globalThis.prisma.action.findMany({
+			include: { user: true },
+		});
 		const now = new Date();
 
 		for (const action of actions) {
 			try {
+				if (
+					(action.user.isEphemeral && !testUserId) ||
+					action.user.id !== testUserId
+				) {
+					continue;
+				}
+
 				const nextRunAt = CommonUtils.getScheduled({
 					rrule: action,
 					after: action.lastRanAt,
 				});
-				if ((!nextRunAt || nextRunAt > now) && testUserId !== action.userId)
+
+				if ((!nextRunAt || nextRunAt > now) && testUserId !== action.userId) {
 					continue;
+				}
 				console.log("starting action", action.id, "scheduled for", nextRunAt);
 
 				await globalThis.prisma.action.update({
@@ -50,6 +70,11 @@ export const WorkerService = {
 
 				const chat = await ChatService.getChat({ user, chat: action.chatId });
 				const { messages } = await MessageService.getMessages({ user, chat });
+
+				console.log(
+					"~~~~~~~~ MESSAGES BEFORE ACTION ~~~~~~~~~",
+					messages.map((m) => ({ id: m.id, author: m.author })),
+				);
 
 				const userMessage = MessageUtils.toMessageState(
 					await globalThis.prisma.message.create({
@@ -67,12 +92,40 @@ export const WorkerService = {
 					}),
 				);
 
+				const modelMessageId = createId();
+				const modelMessage = MessageUtils.toMessageState(
+					await globalThis.prisma.message.create({
+						data: {
+							id: modelMessageId,
+							user: { connect: { id: action.userId } },
+							folder: { connect: { id: action.folderId } },
+							chat: { connect: { id: action.chatId } },
+							config: zConfig.parse(action.config),
+							author: Author.MODEL,
+							data: [],
+							metadata: [],
+							previous: { connect: { id: userMessage.id } },
+						},
+					}),
+				);
+
+				console.log("~~~~~~ CREATED MODEL MESSAGE ~~~~~~", modelMessageId);
+
+				console.log(
+					"~~~~~~~~ MESSAGES MID ACTION ~~~~~~~~~",
+					(
+						await globalThis.prisma.message.findMany({
+							where: { chatId: action.chatId },
+						})
+					).map((m) => ({ id: m.id, author: m.author })),
+				);
+
 				const controller = new AbortController();
 
 				const context: zAgentContext = {
 					user,
 					chat,
-					messages: [...messages, userMessage].map(
+					messages: [...messages, userMessage, modelMessage].map(
 						(m): zAgentMessage => ({
 							id: m.id,
 							author: m.author,
@@ -100,7 +153,10 @@ export const WorkerService = {
 							}) ?? []
 						);
 					} catch (error) {
-						console.warn("Failed to build skill during action run:", error);
+						console.warn(
+							"[WorkerService] failed to build skill for action:",
+							error,
+						);
 						return [];
 					}
 				});
@@ -113,7 +169,7 @@ export const WorkerService = {
 				);
 				if (!modelProvider) {
 					console.error(
-						`Chat provider not found for action: ${userMessage.config.provider}`,
+						`[WorkerService] provider not found for action: ${userMessage.config.provider}`,
 					);
 					continue;
 				}
@@ -146,33 +202,30 @@ export const WorkerService = {
 					// nothing to do here
 				}
 
-				const replyId = createId();
-				await globalThis.prisma.message.create({
-					data: {
-						id: replyId,
-						user: { connect: { id: action.userId } },
-						folder: { connect: { id: action.folderId } },
-						chat: { connect: { id: action.chatId } },
-						config: zConfig.parse(action.config),
-						author: Author.MODEL,
-						data: [],
-						metadata: [],
-						previous: { connect: { id: userMessage.id } },
-					},
-				});
+				console.log(`[WorkerService] action complete:`, action);
 
-				console.log(`action complete:`, action);
+				console.log(
+					"~~~~~~~~ MESSAGES AFTER ACTION ~~~~~~~~~",
+					(
+						await MessageService.getMessages({
+							chat: { id: action.chatId },
+							user,
+						})
+					).messages.map((m) => ({ id: m.id, author: m.author })),
+				);
 
 				await globalThis.prisma.message.update({
-					where: { id: replyId },
+					where: { id: modelMessageId },
 					data: {
 						data,
 						metadata,
 					},
 				});
 			} catch (e) {
-				console.error(`Error running action ${action.id}:`, e);
+				console.error(`[WorkerService] error running action ${action.id}:`, e);
 			}
 		}
+
+		running = false;
 	},
 } as const;

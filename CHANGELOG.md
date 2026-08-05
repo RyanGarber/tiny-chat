@@ -1,3 +1,26 @@
+## [0.7.6](https://github.com/RyanGarber/tiny-chat/compare/0.7.5...0.7.6) (2026-08-05)
+
+### Features
+
+* allow dismissing updates in app ([3170b4b](https://github.com/RyanGarber/tiny-chat/commit/3170b4ba2251e4d65156f97a2fc0fccd2ef19e56-3))
+* allow dismissing updates in app ([305049b](https://github.com/RyanGarber/tiny-chat/commit/305049b650a9d287b46e7312215dee62f7cc0359-2))
+* auto code language detection ([3170b4b](https://github.com/RyanGarber/tiny-chat/commit/3170b4ba2251e4d65156f97a2fc0fccd2ef19e56-2))
+* auto code language detection ([305049b](https://github.com/RyanGarber/tiny-chat/commit/305049b650a9d287b46e7312215dee62f7cc0359-1))
+* context compaction ([3170b4b](https://github.com/RyanGarber/tiny-chat/commit/3170b4ba2251e4d65156f97a2fc0fccd2ef19e56))
+* edit_file tool ([75de0f3](https://github.com/RyanGarber/tiny-chat/commit/75de0f310f29b6b8c98a1858e0d030c3c8002ad5))
+* unified diffs ([3170b4b](https://github.com/RyanGarber/tiny-chat/commit/3170b4ba2251e4d65156f97a2fc0fccd2ef19e56-1))
+* unified diffs ([305049b](https://github.com/RyanGarber/tiny-chat/commit/305049b650a9d287b46e7312215dee62f7cc0359))
+* unified file tools ([367cbd5](https://github.com/RyanGarber/tiny-chat/commit/367cbd5afa3045f1a5d8ccef0197fdd4402bc4b3))
+
+### Bug Fixes
+
+* chats cached without id ([3170b4b](https://github.com/RyanGarber/tiny-chat/commit/3170b4ba2251e4d65156f97a2fc0fccd2ef19e56-4))
+* chats cached without id ([305049b](https://github.com/RyanGarber/tiny-chat/commit/305049b650a9d287b46e7312215dee62f7cc0359-3))
+* potential generation failure during actions ([367cbd5](https://github.com/RyanGarber/tiny-chat/commit/367cbd5afa3045f1a5d8ccef0197fdd4402bc4b3-1))
+* tilde/homepath not resolved in cli ([bb5eb05](https://github.com/RyanGarber/tiny-chat/commit/bb5eb059f4c15c1799feb6a067bb8447f7920d88))
+* various scrolling, fetching issues ([bb5eb05](https://github.com/RyanGarber/tiny-chat/commit/bb5eb059f4c15c1799feb6a067bb8447f7920d88-1))
+
+
 ## [0.7.5](https://github.com/RyanGarber/tiny-chat/compare/0.7.4...0.7.5) (2026-08-03)
 
 ### Features

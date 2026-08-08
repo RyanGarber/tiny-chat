@@ -151,7 +151,12 @@ export default function Commands({
 		return (
 			<Completions<CommandGroup, CommandItem>
 				groups={groups}
-				renderEmpty={() => "No matches"}
+				renderItem={({ item }) => {
+					return `/${item.name ?? item.value}`;
+				}}
+				renderEmpty={() => {
+					return "no matches";
+				}}
 				onInput={({ key, item }) => {
 					if (key.return && item) {
 						apply(

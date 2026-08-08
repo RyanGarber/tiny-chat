@@ -39,7 +39,7 @@ export class FilesystemService implements IFileSystem {
 			[...this.uploads],
 			mount ?? this.mount,
 		);
-		clone.nodes = [...this.nodes];
+		clone.nodes = structuredClone(this.nodes);
 		clone.setMounts();
 		return clone;
 	}
@@ -130,15 +130,7 @@ export class FilesystemService implements IFileSystem {
 			createdAt: new Date(0),
 		});
 
-		console.log(rows);
-
 		for (const row of rows) {
-			console.log("creating", {
-				path: [
-					...(row.upload_id ? [row.upload_id] : []),
-					...(row.chat_file_path ?? row.upload_file_path ?? []),
-				],
-			});
 			this.nodes.push({
 				uri: "",
 				path: [

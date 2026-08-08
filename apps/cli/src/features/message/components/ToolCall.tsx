@@ -1,50 +1,92 @@
-import { useTools } from "@tiny-chat/client/src/features/agent/hooks/useTools.ts";
-import { useActions } from "@tiny-chat/client/src/features/user/hooks/useActions.ts";
-import type { zDataPart } from "@tiny-chat/core/src/features/data/types/message.ts";
-import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
-import { ToolCallUtils } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
+import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
+import {
+	DataUtils,
+	type RenderedPart,
+} from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
+import type { ToolCallDisplayType } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
+import chalk, { type ColorName } from "chalk";
 import cliSpinners from "cli-spinners";
 import { Box, Text } from "ink";
 import { Task } from "ink-task-list";
+import ToolFeedback from "./ToolFeedback.tsx";
 
 export default function ToolCall({
-	toolCall,
-	toolResult,
+	message,
+	part,
+	display,
+	isExpanded,
+	isFocused,
+	textColor,
 }: {
-	toolCall: Extract<zDataPart, { type: "toolCall" }>;
-	toolResult?: Extract<zDataPart, { type: "toolResult" }>;
+	message: MessageState;
+	part: Extract<RenderedPart, { type: "toolCall" }>;
+	display: ToolCallDisplayType;
+	isExpanded?: boolean;
+	isFocused?: boolean;
+	textColor?: ColorName;
 }) {
-	const { toolsets } = useTools();
-	const { actions } = useActions();
-
-	const { status, pending, error } = ToolCallUtils.getDisplay({
-		toolCall,
-		toolResult,
-		toolsets,
-		actions: actions.data,
-	});
+	const label = chalk.blueBright(
+		display.status
+			.map((part) =>
+				typeof part === "string" ? part : chalk.bold(part.subject),
+			)
+			.join(" "),
+	);
 
 	return (
 		<Task
-			label={status}
-			state={pending ? "loading" : error ? "error" : "success"}
+			label={label}
+			state={display.result === "pending" ? "loading" : display.result}
 			spinner={cliSpinners.dots}
-			isExpanded={!!toolResult?.append?.length}
+			isExpanded={
+				isExpanded ||
+				display.approval === "pending" ||
+				display.feedback === "pending" ||
+				!!display.append?.length
+			}
 		>
-			{toolResult?.append?.length ? (
-				<Box
-					borderLeft={true}
-					borderColor="gray"
-					borderStyle="single"
-					paddingLeft={1}
-					gap={1}
-				>
-					<Text color="blueBright">{"+ "}</Text>
-					<Text dimColor>
-						{DataUtils.getText({ data: [toolResult.append] })}
-					</Text>
-				</Box>
-			) : undefined}
+			<Box flexDirection="column" marginBottom={1}>
+				{isExpanded && (
+					<>
+						<Text color={textColor} bold>
+							Input
+						</Text>
+						<Text color={textColor}>
+							{JSON.stringify(display.input, null, 2)}
+							{`\n`}
+						</Text>
+						<Text color={textColor} bold>
+							Output
+						</Text>
+						<Text color={textColor}>
+							{JSON.stringify(display.output, null, 2)}
+							{`\n`}
+						</Text>
+					</>
+				)}
+				{(display.approval === "pending" || display.feedback === "pending") && (
+					<ToolFeedback
+						message={message}
+						part={part}
+						display={display}
+						isFocused={isFocused}
+					/>
+				)}
+				{part.result?.append?.length && (
+					<Box
+						borderLeft={true}
+						borderColor="gray"
+						borderStyle="single"
+						paddingLeft={1}
+						gap={1}
+					>
+						<Text color="blueBright">{"+ "}</Text>
+						<Text dimColor>
+							{DataUtils.getText({ data: [part.result.append] })}
+						</Text>
+					</Box>
+				)}
+			</Box>
 		</Task>
 	);
 }

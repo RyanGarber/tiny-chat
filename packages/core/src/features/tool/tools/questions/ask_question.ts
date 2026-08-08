@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Tool, ToolFactory } from "../../types/tool.ts";
+import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
 export const ask_question = {
 	name: "ask_question",
@@ -17,7 +17,7 @@ export const ask_question = {
 	output: z.object({
 		answer: z.string(),
 	}),
-};
+} as const satisfies ToolDefinition;
 
 export const createAskQuestionTool: ToolFactory<
 	Tool<typeof ask_question, void>

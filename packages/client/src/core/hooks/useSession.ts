@@ -1,15 +1,17 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useContext, useEffect } from "react";
-import { ClientProvider } from "../../client.ts";
+import { ClientContext } from "../../client.ts";
 
 const sessionQueryKey = ["useSession"] as const;
 
 export const useSession = ({
-	setToken,
+	token,
+	clone,
 }: {
-	setToken?: string | null | undefined;
+	token?: { value: string | null | undefined; onChange: () => void };
+	clone?: { value: string | null | undefined; onChange: () => void };
 } = {}) => {
-	const client = useContext(ClientProvider);
+	const client = useContext(ClientContext);
 
 	const session = useQuery({
 		queryKey: sessionQueryKey,
@@ -41,13 +43,6 @@ export const useSession = ({
 		refetchOnReconnect: false,
 	});
 
-	useEffect(() => {
-		if (setToken) {
-			client.setToken(setToken);
-			void client.queryClient.invalidateQueries({ queryKey: sessionQueryKey });
-		}
-	}, [setToken, client.queryClient, client.setToken]);
-
 	const requestClone = useMutation({
 		mutationKey: ["useSession", "requestClone"] as const,
 		mutationFn: async (onReady: (url: string) => Promise<void> | void) => {
@@ -73,6 +68,22 @@ export const useSession = ({
 			await client.api.user.continueClone.mutate({ id });
 		},
 	});
+
+	useEffect(() => {
+		if (token?.value) {
+			client.setToken(token.value);
+			void client.queryClient.invalidateQueries({ queryKey: sessionQueryKey });
+			token.onChange();
+		}
+	}, [token, client.queryClient, client.setToken]);
+
+	useEffect(() => {
+		if (clone?.value) {
+			acceptClone.mutate(clone.value);
+			void client.queryClient.invalidateQueries({ queryKey: sessionQueryKey });
+			clone.onChange();
+		}
+	}, [clone, client.queryClient, acceptClone.mutate]);
 
 	return {
 		session,

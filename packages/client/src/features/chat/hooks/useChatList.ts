@@ -2,12 +2,12 @@ import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
 import type { ChatState } from "@tiny-chat/core/src/features/data/types/chat.ts";
 import { ChatUtils } from "@tiny-chat/core/src/features/data/utils/ChatUtils.ts";
 import { useContext } from "react";
-import { ClientProvider } from "../../../client.ts";
+import { ClientContext } from "../../../client.ts";
 import { ChatService } from "../services/ChatService.ts";
 import { useChatStore } from "../stores/useChatStore.ts";
 
 export const useChatList = () => {
-	const client = useContext(ClientProvider);
+	const client = useContext(ClientContext);
 
 	const lastSeen = useChatStore((s) => s.lastSeen);
 	const chatId = useChatStore((s) => s.chatId);

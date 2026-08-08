@@ -1,0 +1,236 @@
+import { describe, expect, it } from "vitest";
+import type { zAgentContext } from "../../../agent/types/agent.ts";
+import { createShell } from "../../../file/services/FileSearchService.test.ts";
+import { FileUtils } from "../../../file/utils/FileUtils.ts";
+import { createEditFileTool } from "./edit_file.ts";
+import { createFindFilesTool } from "./find_files.ts";
+import { createGrepFilesTool } from "./grep_files.ts";
+import { createReadDirTool } from "./read_dir.ts";
+import { createReadFileTool } from "./read_file.ts";
+import { createShellExecTool } from "./shell_exec.ts";
+
+const context = {} as zAgentContext;
+
+describe("shell tools", () => {
+	it("returns a window of a long file and says how to read on", async () => {
+		const shell = createShell({
+			"/project/long.ts": Array.from(
+				{ length: 5_000 },
+				(_, index) => `line ${index + 1}`,
+			).join("\n"),
+		});
+		const tool = await createReadFileTool({ capabilities: { shell } });
+
+		const parts = await tool.execute({
+			input: { path: "/project/long.ts" },
+			feedback: undefined,
+			context,
+		});
+
+		const file = parts.find((part) => part.type === "file");
+		if (file?.type !== "file") throw new Error("Expected a file part");
+		const text = FileUtils.getTextFromBytes(file) ?? "";
+
+		expect(text.split("\n")).toHaveLength(1_000);
+		expect(parts.at(-1)).toEqual({
+			type: "text",
+			value: expect.stringContaining("offset 1001"),
+		});
+	});
+
+	it("refuses to pull an oversized binary into the conversation", async () => {
+		const shell = createShell({
+			"/project/blob.psd": new Uint8Array(6_000_000),
+		});
+		const tool = await createReadFileTool({ capabilities: { shell } });
+
+		await expect(
+			tool.execute({
+				input: { path: "/project/blob.psd" },
+				feedback: undefined,
+				context,
+			}),
+		).rejects.toThrow(/too large/);
+	});
+
+	it("caps a directory listing and says it did", async () => {
+		const files: Record<string, string> = {};
+		for (let index = 0; index < 300; index++) {
+			files[`/project/file-${index}.ts`] = "x";
+		}
+		const tool = await createReadDirTool({
+			capabilities: { shell: createShell(files) },
+		});
+
+		const parts = await tool.execute({
+			input: { path: "/project", max_results: 50 },
+			feedback: undefined,
+			context,
+		});
+
+		const listing = parts.filter((part) => part.type === "json");
+		expect(listing).toHaveLength(50);
+		expect(parts.at(-1)).toEqual({
+			type: "text",
+			value: expect.stringContaining("Showing 50 of 300"),
+		});
+	});
+
+	it("truncates the middle of very long command output", async () => {
+		const shell = {
+			...createShell({}),
+			exec: async () => ({
+				code: 0,
+				stdout: Array.from(
+					{ length: 5_000 },
+					(_, index) => `out ${index}`,
+				).join("\n"),
+				stderr: "",
+			}),
+		};
+		const tool = await createShellExecTool({ capabilities: { shell } });
+
+		const parts = await tool.execute({
+			input: { command: "noisy" },
+			feedback: undefined,
+			context,
+		});
+
+		const result = parts[0];
+		if (result?.type !== "json") throw new Error("Expected a JSON result");
+		expect(result.value.stdout).toContain("out 0");
+		expect(result.value.stdout).toContain("out 4999");
+		expect(result.value.stdout).toContain("characters of stdout omitted");
+		expect(result.value.stdout.length).toBeLessThan(25_000);
+	});
+
+	it("reports command output as it arrives, and again in the result", async () => {
+		const shell = {
+			...createShell({}),
+			exec: async ({
+				onOutput,
+			}: Parameters<ReturnType<typeof createShell>["exec"]>[0]) => {
+				onOutput?.({ stream: "stdout", value: "working" });
+				onOutput?.({ stream: "stderr", value: "careful" });
+				onOutput?.({ stream: "stdout", value: " done\n" });
+				return { code: 0, stdout: "working done\n", stderr: "careful" };
+			},
+		};
+		const tool = await createShellExecTool({ capabilities: { shell } });
+
+		const chunks: { stream: string; value: string }[] = [];
+		const parts = await tool.execute({
+			input: { command: "work" },
+			feedback: undefined,
+			context,
+			onOutput: (chunk) => chunks.push(chunk),
+		});
+
+		expect(chunks).toEqual([
+			{ stream: "stdout", value: "working" },
+			{ stream: "stderr", value: "careful" },
+			{ stream: "stdout", value: " done\n" },
+		]);
+
+		const result = parts[0];
+		if (result?.type !== "json") throw new Error("Expected a JSON result");
+		expect(result.value).toEqual({
+			code: 0,
+			stdout: "working done\n",
+			stderr: "careful",
+		});
+	});
+
+	it("reports search coverage alongside the matches", async () => {
+		const shell = createShell({
+			"/project/a.ts": "const needle = 1;\n",
+			"/project/b.ts": "nothing here\n",
+		});
+		const tool = await createGrepFilesTool({ capabilities: { shell } });
+
+		const parts = await tool.execute({
+			input: { path: "/project", query: "needle" },
+			feedback: undefined,
+			context,
+		});
+
+		expect(parts[0]).toEqual({
+			type: "json",
+			value: {
+				path: "/project/a.ts",
+				snippet: "1: const needle = 1;",
+				matches: 1,
+			},
+		});
+		expect(parts.at(-1)).toEqual({
+			type: "text",
+			value: expect.stringContaining("Searched 2 of 2 file(s)"),
+		});
+	});
+
+	it("lists paths matching a glob", async () => {
+		const shell = createShell({
+			"/project/src/a.test.ts": "a",
+			"/project/src/a.ts": "b",
+		});
+		const tool = await createFindFilesTool({ capabilities: { shell } });
+
+		const parts = await tool.execute({
+			input: { path: "/project", pattern: "**/*.test.ts" },
+			feedback: undefined,
+			context,
+		});
+
+		expect(parts).toEqual([
+			{
+				type: "json",
+				value: "/project/src/a.test.ts",
+			},
+		]);
+	});
+
+	it("fails an unappliable edit on check, before it is written", async () => {
+		const shell = createShell({ "/project/a.ts": "const a = 1;\n" });
+		const tool = await createEditFileTool({
+			capabilities: { shell },
+			approval: true,
+		});
+
+		await expect(
+			tool.check?.({
+				input: {
+					path: "/project/a.ts",
+					old_string: "const b = 2;",
+					new_string: "const b = 3;",
+				},
+				context,
+			}),
+		).rejects.toThrow(/not found in file/);
+
+		const file = await shell.readFile({ path: "/project/a.ts" });
+		expect(FileUtils.getTextFromBytes(file)).toBe("const a = 1;\n");
+	});
+
+	it("passes check for an edit that applies, without writing it", async () => {
+		const shell = createShell({ "/project/a.ts": "const a = 1;\n" });
+		const tool = await createEditFileTool({
+			capabilities: { shell },
+			approval: true,
+		});
+		const input = {
+			path: "/project/a.ts",
+			old_string: "const a = 1;",
+			new_string: "const a = 2;",
+		};
+
+		await expect(tool.check?.({ input, context })).resolves.toBeUndefined();
+
+		const before = await shell.readFile({ path: "/project/a.ts" });
+		expect(FileUtils.getTextFromBytes(before)).toBe("const a = 1;\n");
+
+		await tool.execute({ input, feedback: undefined, context });
+
+		const after = await shell.readFile({ path: "/project/a.ts" });
+		expect(FileUtils.getTextFromBytes(after)).toBe("const a = 2;\n");
+	});
+});

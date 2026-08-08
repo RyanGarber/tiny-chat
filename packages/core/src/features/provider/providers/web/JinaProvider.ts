@@ -15,7 +15,7 @@ export const JinaProvider: WebProvider = {
 		};
 	},
 
-	search: async ({ user, query }) => {
+	search: async ({ user, query, maxResults }) => {
 		const result = await fetch(
 			`https://s.jina.ai/?q=${encodeURIComponent(query)}`,
 			{
@@ -35,7 +35,7 @@ export const JinaProvider: WebProvider = {
 				content: string;
 			}[];
 		};
-		return data.map((item) => ({
+		return data.slice(0, maxResults).map((item) => ({
 			url: item.url,
 			title: item.title,
 			content: item.content,

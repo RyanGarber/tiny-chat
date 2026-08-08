@@ -22,7 +22,7 @@ export const ModelProviderUtils = {
 				name: "tokens-in",
 				min: 1_000,
 				max: 1_000_000,
-				default: 100_000,
+				default: 50_000,
 			},
 			{
 				type: "range",

@@ -4,7 +4,7 @@ import { WebService } from "../services/WebService.ts";
 
 export const web = router({
 	search: procedure
-		.input(z.object({ query: z.string(), maxResults: z.number().optional() }))
+		.input(z.object({ query: z.string(), maxResults: z.number() }))
 		.query(async ({ ctx, input }) => {
 			return await WebService.search({
 				user: ctx.session.user,

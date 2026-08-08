@@ -1,7 +1,8 @@
+import { FileOperationService } from "@tiny-chat/core/src/features/file/services/FileOperationService.ts";
 import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import { useCallback, useContext, useRef } from "react";
-import { ClientProvider } from "../../../client.ts";
+import { ClientContext } from "../../../client.ts";
 import { useChatFiles } from "../../chat/hooks/useChatFiles.ts";
 import type { AttachmentGroup } from "../types/attachment.ts";
 
@@ -10,7 +11,7 @@ import type { AttachmentGroup } from "../types/attachment.ts";
  * plus files on the local machine when the client can read the filesystem.
  */
 export const useAttachments = () => {
-	const client = useContext(ClientProvider);
+	const client = useContext(ClientContext);
 
 	const { chatFiles } = useChatFiles();
 	const chatFilesRef = useRef(chatFiles);
@@ -28,7 +29,7 @@ export const useAttachments = () => {
 
 			const groups: AttachmentGroup[] = [
 				{
-					name: "This Chat",
+					name: "Chat",
 					items: Array.from(chatFileMap.entries())
 						.filter(([file]) =>
 							PathUtils.contains({ child: file, parent: path }),
@@ -47,15 +48,30 @@ export const useAttachments = () => {
 			if (!client.shell) return groups;
 
 			try {
-				const pcFiles = await client.shell.readDir({
+				let localFiles = await client.shell.readDir({
 					path: path.join("/") || ".",
 				});
 				if (signal?.aborted) return groups;
+
+				// TODO: debounce, keep old paths visible while searching new
+				const normalizedQuery = PathUtils.name(query).toLowerCase();
+				if (
+					!localFiles.find((file) =>
+						PathUtils.name(file).toLowerCase().includes(normalizedQuery),
+					)
+				) {
+					localFiles = await FileOperationService.searchNames({
+						shell: client.shell,
+						path: path.join("/") || ".",
+						query: PathUtils.name(query),
+					});
+				}
+
 				return [
 					...groups,
 					{
-						name: "This PC",
-						items: pcFiles.map((file) => ({
+						name: "Local",
+						items: localFiles.map((file) => ({
 							name: PathUtils.name(file),
 							value: PathUtils.normalize(file),
 							directory: file.is_dir,
@@ -64,7 +80,7 @@ export const useAttachments = () => {
 					},
 				];
 			} catch (error) {
-				console.warn("Failed to read PC files", error);
+				console.warn("Failed to read local files", error);
 				return groups;
 			}
 		},

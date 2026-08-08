@@ -1,37 +1,25 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { zSettings } from "@tiny-chat/core/src/features/data/types/user.ts";
-import { useContext } from "react";
-import { ClientProvider } from "../../../client.ts";
-import { useSession } from "../../../core/hooks/useSession.ts";
+import { useMutation } from "@tanstack/react-query";
+import { useContext, useMemo } from "react";
+import { ClientContext } from "../../../client.ts";
+import { useSettings } from "./useSettings.ts";
 
 export const usePresets = () => {
-	const client = useContext(ClientProvider);
-	const { session } = useSession();
+	const client = useContext(ClientContext);
 
-	const presets = useQuery({
-		...client.query.settings.get.queryOptions(),
-		select: (data) => data.presets,
-		initialData: zSettings.safeParse(session.data?.user?.settings).data,
-	});
+	const { settings, applySettings } = useSettings();
+
+	const presets = useMemo(() => {
+		return settings.data?.presets ?? {};
+	}, [settings.data?.presets]);
 
 	const setPreset = useMutation({
 		...client.query.settings.setPreset.mutationOptions(),
-		onSuccess: (data) => {
-			client.queryClient.setQueryData(
-				client.query.settings.get.queryKey(),
-				data,
-			);
-		},
+		onSuccess: applySettings,
 	});
 
 	const unsetPreset = useMutation({
 		...client.query.settings.unsetPreset.mutationOptions(),
-		onSuccess: (data) => {
-			client.queryClient.setQueryData(
-				client.query.settings.get.queryKey(),
-				data,
-			);
-		},
+		onSuccess: applySettings,
 	});
 
 	return { presets, setPreset, unsetPreset };

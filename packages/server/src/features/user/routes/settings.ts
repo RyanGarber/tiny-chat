@@ -1,3 +1,4 @@
+import { ThemeUtils } from "@tiny-chat/core/src/core/utils/ThemeUtils.ts";
 import { zConfig } from "@tiny-chat/core/src/features/data/types/message.ts";
 import {
 	zHiddenModel,
@@ -24,7 +25,7 @@ export const settings = router({
 	}),
 
 	setTheme: procedure
-		.input(z.object({ theme: z.string() }))
+		.input(z.object({ theme: z.enum(ThemeUtils.themes) }))
 		.mutation(async ({ ctx, input }) => {
 			return SettingsService.setSettings({
 				user: ctx.session.user,
@@ -33,7 +34,7 @@ export const settings = router({
 		}),
 
 	setCodeTheme: procedure
-		.input(z.object({ codeTheme: z.string() }))
+		.input(z.object({ codeTheme: z.enum(ThemeUtils.codeThemes) }))
 		.mutation(async ({ ctx, input }) => {
 			return SettingsService.setSettings({
 				user: ctx.session.user,

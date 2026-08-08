@@ -11,7 +11,7 @@ export const AgentUtils = {
 		messages,
 	}: {
 		messages: zAgentMessage[];
-	}): { prompt: zAgentMessage; index: number } => {
+	}): { prompt?: zAgentMessage; index?: number } => {
 		for (let i = messages.length - 1; i >= 0; i--) {
 			if (
 				messages[i].author === "USER" &&
@@ -20,7 +20,7 @@ export const AgentUtils = {
 				return { prompt: messages[i], index: i };
 			}
 		}
-		throw new Error("No user message in context");
+		return { prompt: undefined, index: undefined };
 	},
 
 	/**

@@ -2,6 +2,8 @@ import type { UserCapability } from "../../capability/types/capability.ts";
 import type { Toolset, ToolsetFactory } from "../types/tool.ts";
 import { createCreateMemoryTool } from "./memories/create_memory.ts";
 import { createDeleteMemoryTool } from "./memories/delete_memory.ts";
+import { createSearchChatsTool } from "./memories/search_chats.ts";
+import { createSearchMemoriesTool } from "./memories/search_memories.ts";
 import { createUpdateMemoryTool } from "./memories/update_memory.ts";
 
 export const createMemoriesToolset: ToolsetFactory<
@@ -14,6 +16,8 @@ export const createMemoriesToolset: ToolsetFactory<
 		await createCreateMemoryTool(options),
 		await createUpdateMemoryTool(options),
 		await createDeleteMemoryTool(options),
+		await createSearchMemoriesTool(options),
+		await createSearchChatsTool(options),
 	],
 	...options,
 });

@@ -1,53 +1,38 @@
-import { useGreeting } from "@tiny-chat/client/src/core/hooks/useGreeting.ts";
-import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
-import { Box, Text, useWindowSize } from "ink";
-import Spinner from "ink-spinner";
+import { Box, useInput, useWindowSize } from "ink";
 import CapabilitySelect from "../../features/agent/components/CapabilitySelect.tsx";
 import Chat from "../../features/chat/components/Chat.tsx";
 import ChatList from "../../features/chat/components/ChatList.tsx";
-import Input from "../../features/editor/components/Input.tsx";
-import ToolCallInput from "../../features/message/components/ToolCallInput.tsx";
-import { useToolCallQueue } from "../../features/message/hooks/useToolCallQueue.ts";
+import Editor from "../../features/editor/components/Editor.tsx";
 import { useAppStore } from "../stores/useAppStore.ts";
+import StatusText from "./StatusText.tsx";
 
 export default function App() {
 	const { rows } = useWindowSize();
 
 	const page = useAppStore((state) => state.page);
 	const statuses = useAppStore((state) => state.statuses);
+	const setStatus = useAppStore((state) => state.setStatus);
+	const unsetStatus = useAppStore((state) => state.unsetStatus);
 
-	const chatId = useChatStore((state) => state.chatId);
-	const greeting = useGreeting();
-
-	const { toolCall } = useToolCallQueue();
+	useInput((input, key) => {
+		if (key.ctrl && (input === "c" || input === "d")) {
+			if (statuses.find((status) => status.id === "quit")) {
+				process.exit(0);
+			} else {
+				setStatus({ id: "quit", text: `enter ctrl+${input} again to quit` });
+				setTimeout(() => unsetStatus({ id: "quit" }), 2000);
+			}
+		}
+	});
 
 	return (
+		// TODO - disabled={ ... && !!toolCallQueue.length }
 		<Box flexDirection="column" height={rows}>
-			{chatId ? (
-				<Chat />
-			) : (
-				<Box flexGrow={1} justifyContent="center" alignItems="center">
-					<Text>{greeting}</Text>
-				</Box>
-			)}
-			{statuses.map((status) => (
-				<Box key={status.id} gap={1} marginLeft={1}>
-					<Text color="blueBright">
-						<Spinner type="circleQuarters" />
-					</Text>
-					<Text>{status.text ?? "Working..."}</Text>
-				</Box>
-			))}
-			{page === "chat" && toolCall && (
-				<ToolCallInput
-					key={toolCall.toolCall.id}
-					message={toolCall.message}
-					toolCall={toolCall.toolCall}
-				/>
-			)}
+			<Chat />
+			<StatusText />
 			{page === "chats" && <ChatList />}
 			{(page === "tools" || page === "skills") && <CapabilitySelect />}
-			<Input disabled={page !== "chat" || !!toolCall || !!statuses.length} />
+			<Editor disabled={page !== "chat" || !!statuses.length} />
 		</Box>
 	);
 }

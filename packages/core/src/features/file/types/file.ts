@@ -4,11 +4,6 @@ export type FileState = File & {
 	uri: string;
 };
 
-export type FileSearchResult = Pick<
-	FileState,
-	"id" | "chatId" | "uploadId" | "path" | "data" | "uri"
->;
-
 interface FileNodeItem {
 	id: string;
 	lines: number;

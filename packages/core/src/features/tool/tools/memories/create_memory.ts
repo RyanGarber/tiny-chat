@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { UserCapability } from "../../../capability/types/capability.ts";
 import { MemoryCategory, MemoryStability } from "../../../data/types/memory.ts";
-import type { Tool, ToolFactory } from "../../types/tool.ts";
+import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
 export const create_memory = {
 	name: "create_memory",
@@ -26,7 +26,7 @@ export const create_memory = {
 	output: z.object({
 		created_memory_id: z.cuid2(),
 	}),
-};
+} as const satisfies ToolDefinition;
 
 export const createCreateMemoryTool: ToolFactory<
 	Tool<typeof create_memory, { user: UserCapability }>

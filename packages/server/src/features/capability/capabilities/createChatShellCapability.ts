@@ -14,7 +14,7 @@ export const createChatShellCapability: CapabilityFactory<
 	ShellCapability
 > = async ({ user, chat }) => {
 	return {
-		getFiles: async () => {
+		nodes: async () => {
 			return await FileService.getFiles({ user, chat });
 		},
 

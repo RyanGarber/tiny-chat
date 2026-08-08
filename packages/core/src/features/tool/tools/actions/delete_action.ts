@@ -7,10 +7,7 @@ export const delete_action = {
 	description: "Delete a scheduled action.",
 	input: z.object({
 		id: z.cuid2().describe("The ID of the action to delete."),
-		reason: z
-			.string()
-			.optional()
-			.describe("The reason for deleting the action."),
+		reason: z.string().describe("The reason for deleting the action."),
 	}),
 	output: z.object({
 		deleted_action_id: z.cuid2(),

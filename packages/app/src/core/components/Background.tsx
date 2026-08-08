@@ -10,7 +10,7 @@ export default function Background() {
 	const { blackout } = useThemes();
 
 	const black = useMemo(
-		() => blackout.data || (chat.data?.incognito ?? createIncognito),
+		() => blackout || (chat.data?.incognito ?? createIncognito),
 		[blackout, chat.data?.incognito, createIncognito],
 	);
 

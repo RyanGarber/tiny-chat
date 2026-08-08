@@ -1,5 +1,6 @@
 import type { HighlightResult } from "@streamdown/code";
 import { useThemes } from "@tiny-chat/client/src/features/settings/hooks/useThemes.ts";
+import { CodeUtils } from "@tiny-chat/core/src/core/utils/CodeUtils.ts";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { CodeBlock as _CodeBlock } from "@tiptap/extension-code-block";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
@@ -16,7 +17,6 @@ import {
 	ReactNodeViewRenderer,
 } from "@tiptap/react";
 import { useEffect } from "react";
-import { CodeUtils } from "#app/core/utils/CodeUtils.ts";
 
 type CodeBlockEntry = {
 	from: number;
@@ -125,9 +125,9 @@ const CodeBlock = _CodeBlock
 				const { codeTheme } = useThemes();
 				useEffect(() => {
 					queueMicrotask(() => {
-						updateAttributes({ codeTheme: codeTheme.data });
+						updateAttributes({ codeTheme: codeTheme });
 					});
-				}, [updateAttributes, codeTheme.data]);
+				}, [updateAttributes, codeTheme]);
 				return (
 					<NodeViewWrapper>
 						<pre>
@@ -165,11 +165,8 @@ function onHighlight(
 		// language isn't supported) from one that will only arrive later.
 		let settled = false;
 		let fresh: HighlightResult | undefined;
-		const placeholder = CodeUtils.highlight(
-			language,
-			theme,
-			text,
-			(resolved) => {
+		const placeholder =
+			CodeUtils.highlight({ language, theme, code: text }, (resolved) => {
 				if (settled) {
 					// Fired asynchronously, well after this function returned:
 					// ask the caller to redraw so the new tokens get applied.
@@ -177,8 +174,7 @@ function onHighlight(
 				} else {
 					fresh = resolved;
 				}
-			},
-		);
+			}) ?? CodeUtils.unhighlight(text);
 		settled = true;
 
 		const result = fresh ?? previous?.result ?? placeholder;

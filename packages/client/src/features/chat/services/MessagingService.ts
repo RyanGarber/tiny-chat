@@ -73,10 +73,15 @@ export const MessagingService = {
 	},
 
 	reset: ({ client }: { client: Client }) => {
-		const { setEditing, setInsertingAfter } = useMessagingStore.getState();
+		const { setEditing, setTruncating, setInsertingAfter } =
+			useMessagingStore.getState();
 
+		setTruncating(false);
 		setEditing(null);
 		setInsertingAfter(null);
+
+		const { setOverrideConfig } = useConfigStore.getState();
+		setOverrideConfig(null);
 
 		MessagingService.setData({ client, data: [] });
 	},

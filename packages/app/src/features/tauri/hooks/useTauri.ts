@@ -12,7 +12,7 @@ export const useTauri = () => {
 	const dismissedUpdate = useTauriStore((state) => state.dismissedUpdate);
 
 	const tauriUpdate = useQuery({
-		queryKey: ["tauriUpdate"],
+		queryKey: ["useTauri", "tauriUpdate"],
 		queryFn: async (): Promise<UpdateBoxed | null> => {
 			if (!(await TauriUtils.isTauriDesktop()) || import.meta.env.DEV) {
 				return null;
@@ -71,7 +71,7 @@ export const useTauri = () => {
 	});
 
 	const isTauriDesktop = useQuery({
-		queryKey: ["isTauriDesktop"],
+		queryKey: ["useTauri", "isTauriDesktop"],
 		queryFn: async () => {
 			return await TauriUtils.isTauriDesktop();
 		},

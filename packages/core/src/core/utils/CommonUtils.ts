@@ -1,3 +1,4 @@
+import { distance } from "fastest-levenshtein";
 import {
 	adjectives,
 	colors,
@@ -123,5 +124,11 @@ export const CommonUtils = {
 		const searchFrom = after ?? new Date(startAt.getTime() - 1);
 
 		return schedule.after(searchFrom, false);
+	},
+
+	getDistance: (a: string, b: string) => {
+		const length = Math.max(a.length, b.length);
+		const score = distance(a, b);
+		return length > 0 ? score / length : 0;
 	},
 } as const;

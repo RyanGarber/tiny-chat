@@ -20,7 +20,7 @@ import {
 import { Suggestion } from "@tiptap/suggestion";
 import { useMemo } from "react";
 import { Command as CommandView } from "#app/core/components/Components.tsx";
-import { useCapabilitySelectStore } from "#app/features/agent/stores/useCapabilitySelectStore.ts";
+import { AppService } from "#app/core/services/AppService.ts";
 import { renderCompletions } from "#app/features/editor/components/Completions.tsx";
 import { NodeUtils } from "#app/features/editor/utils/NodeUtils.ts";
 
@@ -28,11 +28,12 @@ interface CommandOptions {
 	getCommands: () => CommandGroup[];
 }
 
+const nodeName = "command";
 const pluginKey = new PluginKey("command");
 const pluginKeyChoices = new PluginKey("command-choices");
 
 const Command = Node.create({
-	name: "command",
+	name: nodeName,
 	group: "inline",
 	content: "inline*",
 	inline: true,
@@ -110,7 +111,7 @@ const Command = Node.create({
 		);
 	},
 	...NodeUtils.createInlineDirective({
-		nodeName: "command",
+		nodeName: nodeName,
 	}),
 	addProseMirrorPlugins() {
 		return [
@@ -165,36 +166,7 @@ const Command = Node.create({
 					},
 				}),
 				command: ({ editor, props, range }) => {
-					const nodes = getCommandNodes(editor);
-					const end = nodes.at(-1)?.range.to ?? 0;
-					const acceptsContent = CommandUtils.acceptsContent(props);
-					const focus = end + (acceptsContent ? 3 : 6);
-
-					if (!acceptsContent && CommandUtils.run({ command: props })) {
-						editor.chain().focus().deleteRange(range).run();
-						return;
-					}
-
-					editor
-						.chain()
-						.focus()
-						.deleteRange(range)
-						.insertContentAt(end + 1, [
-							{
-								type: this.name,
-								attrs: {
-									name: props.name,
-									value: props.value,
-									"accepts-content": acceptsContent ? "true" : "false",
-									"needs-run": CommandUtils.needsRun(props) ? "true" : "false",
-								},
-								// awful hidden zero-width hack to fix prosemirror fuckery
-								content: [{ type: "text", text: "\u200B\u200B" }],
-							},
-							{ type: "text", text: " " },
-						])
-						.setTextSelection({ from: focus, to: focus })
-						.run();
+					applyCommand(editor, props, range);
 				},
 			}),
 			Suggestion<CommandChoiceGroup, CommandChoiceItem>({
@@ -242,7 +214,7 @@ const Command = Node.create({
 					}
 
 					if (CommandUtils.runChoice({ command, choice: props })) {
-						editor.chain().focus().deleteNode(this.name).run();
+						editor.chain().focus().deleteNode(nodeName).run();
 					}
 					// TODO - apply choice value?
 				},
@@ -271,7 +243,30 @@ const Command = Node.create({
 					return false;
 				}
 
-				this.editor.chain().focus().deleteNode(this.name).run();
+				this.editor.chain().focus().deleteNode(nodeName).run();
+				return true;
+			},
+			Space: () => {
+				const range = this.editor.state.selection;
+				if (range.from !== range.to) return false;
+
+				const { isCompletionsOpen } = useCompletionStore.getState();
+				if (!isCompletionsOpen) return false;
+
+				const { node } = this.editor.state.doc.childBefore(range.to);
+				const text = node?.textContent?.split(" ").at(-1);
+				if (!text) return false;
+
+				const commands = (this.options as CommandOptions)
+					.getCommands()
+					.flatMap((group) => group.items);
+				const command = commands.find((command) => `/${command.name}` === text);
+				if (!command) return false;
+
+				applyCommand(this.editor, command, {
+					from: range.to - 1 - text.length,
+					to: range.to,
+				});
 				return true;
 			},
 		};
@@ -279,10 +274,9 @@ const Command = Node.create({
 });
 
 export const useCommand = () => {
-	const openCapabilitySelect = useCapabilitySelectStore((s) => s.open);
 	const { getCommands } = useCommands({
-		onOpenTools: () => openCapabilitySelect("tools:built-in"),
-		onOpenSkills: () => openCapabilitySelect("skills:built-in"),
+		onOpenTools: () => AppService.openCapabilities("tools:native"),
+		onOpenSkills: () => AppService.openCapabilities("skills:native"),
 	});
 
 	return useMemo(
@@ -290,6 +284,39 @@ export const useCommand = () => {
 		[getCommands],
 	);
 };
+
+function applyCommand(editor: Editor, command: CommandItem, range: Range) {
+	const nodes = getCommandNodes(editor);
+	const end = nodes.at(-1)?.range.to ?? 0;
+	const acceptsContent = CommandUtils.acceptsContent(command);
+	const focus = end + (acceptsContent ? 3 : 6);
+
+	if (!acceptsContent && CommandUtils.run({ command })) {
+		editor.chain().focus().deleteRange(range).run();
+		return;
+	}
+
+	editor
+		.chain()
+		.focus()
+		.deleteRange(range)
+		.insertContentAt(end + 1, [
+			{
+				type: nodeName,
+				attrs: {
+					name: command.name,
+					value: command.value,
+					"accepts-content": acceptsContent ? "true" : "false",
+					"needs-run": CommandUtils.needsRun(command) ? "true" : "false",
+				},
+				// awful hidden zero-width hack to fix prosemirror fuckery
+				content: [{ type: "text", text: "\u200B\u200B" }],
+			},
+			{ type: "text", text: " " },
+		])
+		.setTextSelection({ from: focus, to: focus })
+		.run();
+}
 
 function getCommandNodes(editor: Editor) {
 	const nodes: {

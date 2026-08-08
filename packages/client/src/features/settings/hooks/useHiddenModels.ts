@@ -1,23 +1,20 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useContext } from "react";
-import { ClientProvider } from "../../../client.ts";
+import { useMutation } from "@tanstack/react-query";
+import { useContext, useMemo } from "react";
+import { ClientContext } from "../../../client.ts";
+import { useSettings } from "./useSettings.ts";
 
 export const useHiddenModels = () => {
-	const client = useContext(ClientProvider);
+	const client = useContext(ClientContext);
 
-	const hiddenModels = useQuery({
-		...client.query.settings.get.queryOptions(),
-		select: (data) => data.hiddenModels,
-	});
+	const { settings, applySettings } = useSettings();
+
+	const hiddenModels = useMemo(() => {
+		return settings.data?.hiddenModels ?? {};
+	}, [settings.data?.hiddenModels]);
 
 	const setHiddenModels = useMutation({
 		...client.query.settings.setHiddenModels.mutationOptions(),
-		onSuccess: (data) => {
-			client.queryClient.setQueryData(
-				client.query.settings.get.queryKey(),
-				data,
-			);
-		},
+		onSuccess: applySettings,
 	});
 
 	return {

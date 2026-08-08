@@ -3,6 +3,7 @@ import {
 	ActionIcon,
 	Alert,
 	Box,
+	type BoxProps,
 	Button,
 	Group,
 	Image,
@@ -11,76 +12,45 @@ import {
 	Text,
 	Transition,
 } from "@mantine/core";
-import { useProviders } from "@tiny-chat/client/src/features/agent/hooks/useProviders.ts";
-import { useTools } from "@tiny-chat/client/src/features/agent/hooks/useTools.ts";
-import { AgentMessageService } from "@tiny-chat/client/src/features/agent/services/AgentMessageService.ts";
-import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
-import { useChatFiles } from "@tiny-chat/client/src/features/chat/hooks/useChatFiles.ts";
-import { useMessages } from "@tiny-chat/client/src/features/chat/hooks/useMessages.ts";
-import { useMessageStream } from "@tiny-chat/client/src/features/chat/hooks/useStreaming.ts";
-import { useThemes } from "@tiny-chat/client/src/features/settings/hooks/useThemes.ts";
-import { useActions } from "@tiny-chat/client/src/features/user/hooks/useActions.ts";
-import { useMemories } from "@tiny-chat/client/src/features/user/hooks/useMemories.ts";
+import type { MarkdownContext } from "@tiny-chat/client/src/features/message/components/MarkdownContext.tsx";
+import { MessageContext } from "@tiny-chat/client/src/features/message/components/MessageContext.tsx";
+import { useMessageStream } from "@tiny-chat/client/src/features/message/hooks/useMessageStream.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
-import { search_web } from "@tiny-chat/core/src/features/tool/tools/web/search_web.ts";
-import { view_web } from "@tiny-chat/core/src/features/tool/tools/web/view_web.ts";
-import { ToolUtils } from "@tiny-chat/core/src/features/tool/utils/ToolUtils.ts";
+import { ToolCallUtils } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
 import { MediaPlayer, MediaProvider } from "@vidstack/react";
 import {
 	DefaultAudioLayout,
 	DefaultVideoLayout,
 	defaultLayoutIcons,
 } from "@vidstack/react/player/layouts/default";
-import { type CSSProperties, memo, useMemo } from "react";
-import type { z } from "zod";
-import { client } from "#app/client.ts";
+import { memo, useContext, useMemo } from "react";
 import { Code } from "#app/core/components/Components.tsx";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import { EditorUtils } from "#app/features/editor/utils/EditorUtils.ts";
 import { Markdown } from "#app/features/message/components/Markdown.tsx";
-import { ToolCallInput } from "#app/features/message/components/ToolCallInput.tsx";
+import { ToolFeedback } from "#app/features/message/components/ToolFeedback.tsx";
 import { useMessageSelection } from "#app/features/message/hooks/useMessageSelection.ts";
-import { useSession } from "#client/src/core/hooks/useSession.ts";
-import { useSkills } from "#client/src/features/agent/hooks/useSkills.ts";
-import {
-	Author,
-	type MessageState,
-	type zDataPart,
-} from "#core/features/data/types/message";
-import { Thinking } from "./Thinking";
+import { Author, type MessageState } from "#core/features/data/types/message";
+import { Thought } from "./Thought.tsx";
 import { ToolCall } from "./ToolCall";
+
+const TEXT_SM: BoxProps["className"] = "text-[10px]";
 
 export const MessageBodyContent = memo(
 	({
 		message,
 		containerWidth,
-		style,
 	}: {
 		message: MessageState;
 		containerWidth: number;
-		style?: CSSProperties;
 	}) => {
-		const { session } = useSession();
-		const { chat } = useChat();
-		const { theme } = useThemes();
-		const { toolsets, mcpTools } = useTools();
-		const { skills } = useSkills();
-		const { memories } = useMemories();
-		const { actions } = useActions();
-		const { providers } = useProviders();
-		const { messages } = useMessages();
-		const { chatFiles } = useChatFiles();
-
-		const messageList = useMemo(
-			() => messages.data?.pages.flatMap((m) => m.messages) ?? [],
-			[messages.data],
-		);
+		const { sources, toolsets, staleIds, nextFeedbackId, theme, retry } =
+			useContext(MessageContext);
 
 		const stream = useMessageStream(
 			message.author === Author.MODEL ? message.id : undefined,
 		);
 		const live = stream ?? message;
-		const isGenerating = live.state.generating;
 
 		const { rect, captureSelection, getSelectedText } = useMessageSelection(
 			message.id,
@@ -93,32 +63,9 @@ export const MessageBodyContent = memo(
 			if (text) EditorUtils.insertQuote(message.config.model, text);
 		};
 
-		const webContext = useMemo(
-			() =>
-				messageList.flatMap((m) =>
-					m.data
-						.flat()
-						.filter(
-							(part): part is Extract<zDataPart, { type: "toolResult" }> =>
-								part.type === "toolResult" && !part.error,
-						)
-						.flatMap((part) => {
-							const { tool } = ToolUtils.find({ toolsets, part });
-							if (
-								tool?.name === search_web.name &&
-								part.value[0]?.type === "json"
-							) {
-								return part.value[0].value as z.infer<typeof search_web.output>;
-							} else if (
-								tool?.name === view_web.name &&
-								part.value[0]?.type === "json"
-							) {
-								return part.value[0].value as z.infer<typeof view_web.output>;
-							}
-							return [];
-						}),
-				),
-			[messageList, toolsets],
+		const markdownContext = useMemo<MarkdownContext<string>>(
+			() => ({ sources, streaming: live.state.generating }),
+			[sources, live.state.generating],
 		);
 
 		if (message.author === Author.USER) {
@@ -129,7 +76,7 @@ export const MessageBodyContent = memo(
 							data: message.data,
 							join: "\n",
 						})}
-						boxProps={{ style: { maxWidth: containerWidth - 40 } }}
+						maw={containerWidth > 40 ? containerWidth - 40 : undefined}
 					/>
 				</Box>
 			);
@@ -137,16 +84,9 @@ export const MessageBodyContent = memo(
 
 		const parts = DataUtils.getRenderedPartsGrouped(live, "thought");
 
-		// Stale message check: if a prior model message has a newer createdAt than this message
-		const isStale =
-			!live.state.any &&
-			messageList.some(
-				(m) =>
-					m.author === Author.MODEL &&
-					messageList.indexOf(m) < messageList.indexOf(message) &&
-					new Date(m.createdAt).getTime() >
-						new Date(message.createdAt).getTime(),
-			);
+		// An earlier model message with a newer timestamp means the chat was edited
+		// above this response. Resolved for the whole list in MessageListProvider.
+		const isStale = !live.state.any && staleIds.has(message.id);
 
 		return (
 			<>
@@ -155,7 +95,6 @@ export const MessageBodyContent = memo(
 					data-message-id={message.id}
 					display="inline"
 					className="selectable"
-					style={style}
 				>
 					{isStale && (
 						<Alert variant="light" mb="lg">
@@ -164,23 +103,7 @@ export const MessageBodyContent = memo(
 									<Icon icon="lucide:alert-circle" />
 									<Text>Edits in the chat may change this response</Text>
 								</Group>
-								<ActionIcon
-									variant="subtle"
-									onClick={() =>
-										session.data &&
-										chat.data &&
-										providers.data &&
-										void AgentMessageService.handle({
-											client,
-											user: session.data.user,
-											message,
-											chat: chat.data,
-											mcpTools: mcpTools.data,
-											skills,
-											providers: providers.data,
-										})
-									}
-								>
+								<ActionIcon variant="subtle" onClick={() => retry(message)}>
 									<Icon icon="lucide:refresh-cw" />
 								</ActionIcon>
 							</Group>
@@ -190,33 +113,29 @@ export const MessageBodyContent = memo(
 					{parts.map((part, index) => {
 						if (part.type === "group") {
 							return (
-								<Thinking
+								<Thought
 									key={index}
-									thoughts={part.value.map((thought) => thought.value)}
-									isThinking={part.value.some((thought) => thought.active)}
-									context={{
-										webReferences: webContext,
-										memoryReferences: memories.data ?? [],
-										actionReferences: actions.data ?? [],
-										fileReferences: chatFiles.data ?? [],
-										isGenerating: isGenerating,
-									}}
+									context={markdownContext}
+									thoughts={part.value}
+									textSize={TEXT_SM}
 								/>
 							);
 						} else if (part.type === "toolCall") {
-							const { tool } = ToolUtils.find({ toolsets, part });
+							const display = ToolCallUtils.getDisplay({
+								part,
+								toolsets,
+							});
 							return (
-								<div key={index}>
-									<ToolCall toolCall={part} toolResult={part.result} />
-									{(tool?.feedback ||
-										tool?.approval ||
-										part.result?.append) && (
-										<ToolCallInput
+								<div key={part.id ?? index}>
+									<ToolCall display={display} textSize={TEXT_SM} />
+									{(display.approval ||
+										display.feedback ||
+										!!part.result?.append?.length) && (
+										<ToolFeedback
 											message={message}
-											toolCall={part}
-											toolResult={part.result}
-											containerWidth={containerWidth}
-											tool={tool}
+											part={part}
+											display={display}
+											isFocused={nextFeedbackId === part.id}
 										/>
 									)}
 								</div>
@@ -226,13 +145,7 @@ export const MessageBodyContent = memo(
 								<Markdown
 									key={index}
 									source={part.value}
-									context={{
-										webReferences: webContext,
-										memoryReferences: memories.data ?? [],
-										actionReferences: actions.data ?? [],
-										fileReferences: chatFiles.data ?? [],
-										isGenerating: isGenerating,
-									}}
+									context={markdownContext}
 								/>
 							);
 						} else if (part.type === "json") {
@@ -268,11 +181,11 @@ export const MessageBodyContent = memo(
 										<MediaProvider></MediaProvider>
 										<DefaultAudioLayout
 											icons={defaultLayoutIcons}
-											colorScheme={theme.data}
+											colorScheme={theme}
 										/>
 										<DefaultVideoLayout
 											icons={defaultLayoutIcons}
-											colorScheme={theme.data}
+											colorScheme={theme}
 										/>
 									</MediaPlayer>
 								);
@@ -293,20 +206,7 @@ export const MessageBodyContent = memo(
 										<Button
 											variant="subtle"
 											color="dimmed"
-											onClick={() =>
-												session.data &&
-												chat.data &&
-												providers.data &&
-												void AgentMessageService.handle({
-													client,
-													user: session.data.user,
-													message,
-													chat: chat.data,
-													mcpTools: mcpTools.data,
-													skills,
-													providers: providers.data,
-												})
-											}
+											onClick={() => retry(message)}
 											leftSection={<Icon icon="lucide:refresh-cw" />}
 										>
 											Retry

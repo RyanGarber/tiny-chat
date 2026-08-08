@@ -1,3 +1,4 @@
+import type { ShellOutputHandler } from "@tiny-chat/core/src/features/capability/types/capability.ts";
 import type { ChatState } from "@tiny-chat/core/src/features/data/types/chat.ts";
 import type {
 	MessageState,
@@ -21,6 +22,7 @@ export const AgentToolService = {
 		value,
 		message,
 		messages,
+		onOutput,
 	}: {
 		client: Client;
 		user: zUser;
@@ -29,6 +31,7 @@ export const AgentToolService = {
 		value: unknown;
 		message: MessageState;
 		messages: MessageState[];
+		onOutput?: ShellOutputHandler;
 	}) => {
 		const capabilities = await ClientCapabilityService.getCapabilities({
 			client,
@@ -49,6 +52,7 @@ export const AgentToolService = {
 		return await tool.execute({
 			input: part.args,
 			feedback: value,
+			onOutput,
 			context: {
 				user,
 				chat,

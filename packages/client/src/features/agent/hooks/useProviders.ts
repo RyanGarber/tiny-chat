@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useContext } from "react";
-import { ClientProvider } from "../../../client.ts";
+import { ClientContext } from "../../../client.ts";
 import { useSession } from "../../../core/hooks/useSession.ts";
 import { ProviderService } from "../services/ProviderService.ts";
 
@@ -8,12 +8,12 @@ const providerCacheQueryKey = ["cache", "providers"] as const;
 export const providerCacheMutationKey = ["cache", "providers"] as const;
 
 export const useProviders = () => {
-	const client = useContext(ClientProvider);
+	const client = useContext(ClientContext);
 
 	const { session } = useSession();
 
 	const providers = useQuery({
-		queryKey: [...providerCacheQueryKey, session.data?.user?.id ?? ""],
+		queryKey: [...providerCacheQueryKey, session.data?.user.id],
 		queryFn: () => {
 			if (!session.data) return [];
 			return ProviderService.getProviderStates({

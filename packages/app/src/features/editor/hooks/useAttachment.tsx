@@ -1,11 +1,10 @@
 import { Group, Image, Text } from "@mantine/core";
-import { useChatFiles } from "@tiny-chat/client/src/features/chat/hooks/useChatFiles.ts";
-import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
+import { useAttachments } from "@tiny-chat/client/src/features/editor/hooks/useAttachments.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import { PluginKey } from "@tiptap/pm/state";
 import { Node, NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import { Suggestion } from "@tiptap/suggestion";
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 import { Attachment as AttachmentView } from "#app/core/components/Components.tsx";
 import { theme } from "#app/core/utils/IconUtils.ts";
 import {
@@ -14,8 +13,6 @@ import {
 	renderCompletions,
 } from "#app/features/editor/components/Completions.tsx";
 import { NodeUtils } from "#app/features/editor/utils/NodeUtils.ts";
-import { useTauri } from "#app/features/tauri/hooks/useTauri.ts";
-import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
 
 interface AttachmentItem extends CompletionItem {
 	directory?: boolean;
@@ -161,7 +158,7 @@ const Attachment = Node.create({
 							? theme?.getIconContent(iconId, "base64")
 							: null;
 						return (
-							<Group gap={5}>
+							<Group gap={5} miw={0} wrap="nowrap">
 								{icon && (
 									<Image
 										src={`data:${icon.mimeType};base64,${icon.data}`}
@@ -170,7 +167,14 @@ const Attachment = Node.create({
 										h={20}
 									/>
 								)}
-								<Text size="sm">{`${item.name}${item.directory ? "/" : ""}`}</Text>
+								<Text
+									size="sm"
+									style={{
+										overflow: "hidden",
+										whiteSpace: "nowrap",
+										textOverflow: "ellipsis",
+									}}
+								>{`${item.name}${item.directory ? "/" : ""}`}</Text>
 							</Group>
 						);
 					},
@@ -198,71 +202,10 @@ const Attachment = Node.create({
 });
 
 export const useAttachment = () => {
-	const { chatFiles } = useChatFiles();
-	const chatFilesRef = useRef(chatFiles);
-	chatFilesRef.current = chatFiles;
-
-	const { isTauriDesktop } = useTauri();
-	const isTauriDesktopRef = useRef(isTauriDesktop);
-	isTauriDesktopRef.current = isTauriDesktop;
+	const { getAttachables } = useAttachments();
 
 	return useMemo(
-		() =>
-			Attachment.configure({
-				async getAttachables(query, signal) {
-					let path: string[] | undefined;
-					path = query?.replace(/^\//, "").split("/");
-					path = path?.slice(0, -1);
-					path = [...(query?.startsWith("/") ? ["/"] : []), ...path];
-
-					const chatFiles = chatFilesRef.current;
-					const chatFileMap = FileUtils.toMap({ nodes: chatFiles.data ?? [] });
-
-					const groups: AttachmentGroup[] = [
-						{
-							name: "This Chat",
-							items: Array.from(chatFileMap.entries())
-								.filter(([file]) =>
-									PathUtils.contains({ child: file, parent: path }),
-								)
-								.map(([path, { node }]) => {
-									return {
-										name: PathUtils.name({ path }),
-										value: node?.uri ?? PathUtils.toMount({ path }),
-										directory: !node,
-										traversable: true,
-									};
-								}),
-						},
-					];
-
-					if (!isTauriDesktopRef.current) return groups;
-
-					try {
-						const pcFiles = await TauriUtils.invoke<
-							{ path: string; is_dir: boolean }[]
-						>("read_dir", {
-							path: path.join("/") || ".",
-						});
-						if (signal?.aborted) return groups;
-						return [
-							...groups,
-							{
-								name: "This PC",
-								items: pcFiles.map((file) => ({
-									name: PathUtils.name(file),
-									value: PathUtils.normalize(file),
-									directory: file.is_dir,
-									traversable: true,
-								})),
-							},
-						];
-					} catch (error) {
-						console.warn("Failed to read PC files", error);
-						return groups;
-					}
-				},
-			} satisfies AttachmentOptions),
-		[],
+		() => Attachment.configure({ getAttachables } satisfies AttachmentOptions),
+		[getAttachables],
 	);
 };

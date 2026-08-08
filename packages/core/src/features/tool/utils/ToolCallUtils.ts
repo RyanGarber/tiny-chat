@@ -1,6 +1,7 @@
-import type { z } from "zod";
+import { z } from "zod";
+import type { CodeLanguage } from "../../../core/utils/CodeUtils.ts";
 import type { zDataBasicPart, zDataPart } from "../../data/types/message.ts";
-import { DataUtils } from "../../data/utils/DataUtils.ts";
+import type { RenderedPart } from "../../data/utils/DataUtils.ts";
 import { FileTypeUtils } from "../../file/utils/FileTypeUtils.ts";
 import { FileUtils } from "../../file/utils/FileUtils.ts";
 import { PathUtils } from "../../file/utils/PathUtils.ts";
@@ -15,6 +16,8 @@ import { search_memories } from "../tools/memories/search_memories.ts";
 import { update_memory } from "../tools/memories/update_memory.ts";
 import { ask_question } from "../tools/questions/ask_question.ts";
 import { edit_file } from "../tools/shell/edit_file.ts";
+import { find_files } from "../tools/shell/find_files.ts";
+import { grep_files } from "../tools/shell/grep_files.ts";
 import { read_dir } from "../tools/shell/read_dir.ts";
 import { read_file } from "../tools/shell/read_file.ts";
 import { search_files } from "../tools/shell/search_files.ts";
@@ -22,652 +25,325 @@ import { shell_exec } from "../tools/shell/shell_exec.ts";
 import { write_file } from "../tools/shell/write_file.ts";
 import { search_web } from "../tools/web/search_web.ts";
 import { view_web } from "../tools/web/view_web.ts";
-import type { Toolset } from "../types/tool.ts";
+import type { ToolDefinition, Toolset } from "../types/tool.ts";
 import { ToolUtils } from "./ToolUtils.ts";
 
-export type ToolCallDetails =
-	| {
-			kind: "search_web";
-			results: Array<{ title?: string; url: string; content: string }>;
-	  }
-	| {
-			kind: "view_web";
-			title?: string;
-			url: string;
-			content: string;
-	  }
-	| {
-			kind: "action_mutation";
-			message: string;
-	  }
-	| {
-			kind: "list_actions";
-			actions: Array<{
-				id: string;
-				prompt: string;
-				chat_id: string;
-				nextRunAt?: Date | string | null;
-			}>;
-	  }
-	| {
-			kind: "search_chats";
-			results: Array<{ chat_title: string | null; snippet: string }>;
-	  }
-	| {
-			kind: "memory_mutation";
-			message: string;
-	  }
-	| {
-			kind: "search_memories";
-			results: Array<{ fact: string; created_at: Date | string }>;
-	  }
-	| {
-			kind: "read_file";
-			path: string;
-			name: string;
-			mime?: string;
-			data?: string;
-			text?: string;
-			isImage?: boolean;
-	  }
-	| {
-			kind: "write_file";
-			path: string;
-			name: string;
-			content: string;
-			extension?: string;
-	  }
-	| {
-			kind: "edit_file";
-			path: string;
-			name: string;
-			old_string: string;
-			new_string: string;
-			replacements: number;
-			extension?: string;
-	  }
-	| {
-			kind: "read_dir";
-			path: string;
-			items: Array<{ path: string; name: string; is_dir: boolean }>;
-	  }
-	| {
-			kind: "search_files";
-			results: Array<{ path: string; name: string; snippet: string }>;
-	  }
-	| {
-			kind: "shell_exec";
-			command: string;
-			stdout: string;
-			stderr: string;
-			/** Combined stdin/stdout/stderr block suitable for a code view */
-			code: string;
-	  }
-	| {
-			kind: "fallback";
-			args: unknown;
-			value?: unknown;
-	  };
+const UNKNOWN = {
+	name: "unknown" as const,
+	description: "unknown",
+	input: z.unknown(),
+	output: z.unknown(),
+} satisfies ToolDefinition;
 
-/**
- * Platform-agnostic display data for a tool call.
- * Consumers render `status` / `highlight` / `details` however they like.
- */
-export type ToolCallDisplay = {
-	pending: boolean;
-	error?: boolean;
-	/** Full status line, e.g. "Searching web for foo..." / "Searched web for foo" */
-	status: string;
-	/** Substring of `status` that should be emphasized when the UI supports it */
-	highlight?: string;
-	details?: ToolCallDetails;
+export type ToolCallDisplay<
+	T extends ToolDefinition,
+	U extends boolean = false,
+> = {
+	name: T["name"];
+	status: (string | { subject: string })[];
+	approval?: "pending" | "approved" | "rejected";
+	feedback?: "pending" | "complete";
+	result: "pending" | "success" | "error";
+	input: z.infer<T["input"]>;
+	output?: U extends true ? z.infer<T["output"]>[] : z.infer<T["output"]>;
+	append?: zDataBasicPart[];
 };
 
-export type ToolCallInputDetails =
-	| {
-			kind: "shell_exec";
-			command: string;
-	  }
-	| {
-			kind: "write_file";
-			path: string;
-			name: string;
-			content: string;
-			extension?: string;
-	  }
-	| {
-			kind: "edit_file";
-			path: string;
-			name: string;
-			old_string: string;
-			new_string: string;
-			replace_all: boolean;
-			extension?: string;
-	  }
-	| {
-			kind: "ask_question";
-			question: string;
-			suggestions: string[];
-			answer?: string;
-	  };
-
-/**
- * Platform-agnostic display data for a tool call that is waiting on the user.
- */
-export type ToolCallInputDisplay = {
-	/** Whether the user has yet to respond */
-	pending: boolean;
-	/** Whether the user has to approve the call before it runs */
-	approval: boolean;
-	/** Whether the user denied the call */
-	rejected: boolean;
-	/** What the tool is about to do, e.g. the command to run */
-	details?: ToolCallInputDetails;
-};
+export type ToolCallDisplayType =
+	| ToolCallDisplay<typeof search_web, true>
+	| ToolCallDisplay<typeof view_web>
+	| ToolCallDisplay<typeof create_action>
+	| ToolCallDisplay<typeof update_action>
+	| ToolCallDisplay<typeof delete_action>
+	| ToolCallDisplay<typeof list_actions, true>
+	| ToolCallDisplay<typeof create_memory>
+	| ToolCallDisplay<typeof update_memory>
+	| ToolCallDisplay<typeof delete_memory>
+	| ToolCallDisplay<typeof search_memories, true>
+	| ToolCallDisplay<typeof search_chats, true>
+	| ToolCallDisplay<typeof search_files, true>
+	| ToolCallDisplay<typeof grep_files, true>
+	| ToolCallDisplay<typeof find_files, true>
+	| ToolCallDisplay<typeof read_dir, true>
+	| (ToolCallDisplay<typeof read_file> & {
+			language?: CodeLanguage;
+			content?: { type: "image" | "text"; value: string };
+	  })
+	| (ToolCallDisplay<typeof write_file> & { language?: CodeLanguage })
+	| (ToolCallDisplay<typeof edit_file> & { language?: CodeLanguage })
+	| (ToolCallDisplay<typeof shell_exec> & { content?: string })
+	| ToolCallDisplay<typeof ask_question>
+	| ToolCallDisplay<typeof UNKNOWN>;
 
 export const ToolCallUtils = {
 	rejection: [
 		{ type: "json", value: "Tool call rejected by user" },
 	] satisfies zDataBasicPart[],
 
-	getStatus: ({
-		pending,
-		active,
-		done,
-		highlight,
-		around,
-	}: {
-		pending: boolean;
-		active: string;
-		done: string;
-		highlight?: string;
-		around?: [prefix: string, suffix?: string];
-	}) => {
-		const verb = pending ? active : done;
-		const [prefix = "", suffix = ""] = around ?? ["", ""];
-		const middle = highlight
-			? `${prefix}${highlight}${suffix}`
-			: `${prefix}${suffix}`.trimEnd();
-		const body = middle ? `${verb} ${middle}` : verb;
-		return {
-			status: pending ? `${body}...` : body,
-			highlight,
-		};
-	},
-
 	getDisplay: ({
-		toolCall,
-		toolResult,
+		part,
 		toolsets,
-		actions,
 	}: {
-		toolCall: Extract<zDataPart, { type: "toolCall" }>;
-		toolResult?: Extract<zDataPart, { type: "toolResult" }>;
+		part: Extract<RenderedPart, { type: "toolCall" }>;
 		toolsets: Toolset<any>[];
-		actions?: Array<{ id: string; nextRunAt?: Date | string | null }>;
-	}): ToolCallDisplay => {
-		const pending = !toolResult;
-		const error = toolResult?.error;
-		const { tool } = ToolUtils.find({ toolsets, part: toolCall });
+	}): ToolCallDisplayType => {
+		const { tool } = ToolUtils.find({ toolsets, part });
 
-		const base = { pending, error };
-
-		if (tool?.name === search_web.name) {
-			const query = (toolCall.args as z.infer<typeof search_web.input>).query;
-			const results =
-				ToolCallUtils.getOutput<z.infer<typeof search_web.output>>(toolResult);
-			return {
-				...base,
-				...ToolCallUtils.getStatus({
-					pending,
-					active: "Searching",
-					done: "Searched",
-					highlight: query,
-					around: ["web for "],
-				}),
-				details: results ? { kind: "search_web", results } : undefined,
-			};
-		}
-
-		if (tool?.name === view_web.name) {
-			const url = (toolCall.args as z.infer<typeof view_web.input>).url;
-			const output =
-				ToolCallUtils.getOutput<z.infer<typeof view_web.output>>(toolResult);
-			return {
-				...base,
-				...ToolCallUtils.getStatus({
-					pending,
-					active: "Viewing",
-					done: "Viewed",
-					highlight: url,
-				}),
-				details: output
-					? {
-							kind: "view_web",
-							title: output.title,
-							url: output.url,
-							content: output.content,
-						}
+		const base = <T extends ToolDefinition, U extends boolean = false>(
+			definition: T,
+			status: (ToolCallDisplayType["status"][number] | [string, string])[],
+			multiple?: U,
+		) =>
+			({
+				name: definition.name as T["name"],
+				status: status.map((piece) =>
+					Array.isArray(piece) ? piece[part.result ? 1 : 0] : piece,
+				),
+				result:
+					part.result === undefined
+						? "pending"
+						: part.result?.error
+							? "error"
+							: "success",
+				approval: tool?.approval
+					? part.result === undefined
+						? "pending"
+						: ToolCallUtils.isRejected(part.result)
+							? "rejected"
+							: "approved"
 					: undefined,
-			};
-		}
-
-		if (
-			tool?.name === create_action.name ||
-			tool?.name === update_action.name ||
-			tool?.name === delete_action.name
-		) {
-			const isDelete = tool.name === delete_action.name;
-			const highlight = DataUtils.getTextCleaned({
-				data:
-					(
-						toolCall.args as
-							| z.infer<typeof create_action.input>
-							| z.infer<typeof update_action.input>
-					).prompt ??
-					(toolCall.args as z.infer<typeof delete_action.input>).reason,
-			});
-			const output =
-				ToolCallUtils.getOutput<Record<string, string>>(toolResult);
-			let details: ToolCallDetails | undefined;
-			if (output) {
-				const message =
-					tool.name === create_action.name
-						? `Created action with ID: ${(output as z.infer<typeof create_action.output>).created_action_id}.`
-						: tool.name === update_action.name
-							? `Updated action with ID: ${(output as z.infer<typeof update_action.output>).updated_action_id}.`
-							: `Removed action with ID: ${(output as z.infer<typeof delete_action.output>).deleted_action_id}.`;
-				details = { kind: "action_mutation", message };
-			}
-			return {
-				...base,
-				...ToolCallUtils.getStatus({
-					pending,
-					active: isDelete ? "Canceling" : "Scheduling",
-					done: isDelete ? "Canceled" : "Scheduled",
-					highlight,
-					around: ["action "],
-				}),
-				details,
-			};
-		}
-
-		if (tool?.name === list_actions.name) {
-			const listed =
-				ToolCallUtils.getOutput<z.infer<typeof list_actions.output>>(
-					toolResult,
-				);
-			return {
-				...base,
-				...ToolCallUtils.getStatus({
-					pending,
-					active: "Checking",
-					done: "Checked",
-					around: ["scheduled actions"],
-				}),
-				details: listed
-					? {
-							kind: "list_actions",
-							actions: listed.map((action) => ({
-								...action,
-								nextRunAt: actions?.find((a) => a.id === action.id)?.nextRunAt,
-							})),
-						}
+				feedback: tool?.feedback
+					? part.result === undefined
+						? "pending"
+						: "complete"
 					: undefined,
-			};
-		}
+				input: part.args as z.infer<T["input"]>,
+				output: (multiple
+					? ToolUtils.json<T>(part.result, true)
+					: ToolUtils.json<T>(part.result)[0]) as U extends true
+					? z.infer<T["output"]>[]
+					: z.infer<T["output"]>,
+				append: part.result?.append,
+			}) satisfies ToolCallDisplay<any>;
 
-		if (tool?.name === search_chats.name) {
-			const query = (toolCall.args as z.infer<typeof search_chats.input>).query;
-			const results =
-				ToolCallUtils.getOutput<z.infer<typeof search_chats.output>>(
-					toolResult,
-				);
+		if (ToolUtils.is(toolsets, part, search_web)) {
 			return {
-				...base,
-				...ToolCallUtils.getStatus({
-					pending,
-					active: "Searching",
-					done: "Searched",
-					highlight: query,
-					around: ["chats for "],
-				}),
-				details: results ? { kind: "search_chats", results } : undefined,
+				...base(
+					search_web,
+					[
+						["Searching web for", "Searched web for"],
+						{ subject: part.args.query },
+					],
+					true,
+				),
 			};
-		}
-
-		if (
-			tool?.name === create_memory.name ||
-			tool?.name === update_memory.name ||
-			tool?.name === delete_memory.name
-		) {
-			const highlight =
-				(
-					toolCall.args as
-						| z.infer<typeof create_memory.input>
-						| z.infer<typeof update_memory.input>
-				).fact ?? (toolCall.args as z.infer<typeof delete_memory.input>).reason;
-			const output =
-				ToolCallUtils.getOutput<Record<string, string>>(toolResult);
-			let details: ToolCallDetails | undefined;
-			if (output) {
-				const message =
-					tool.name === create_memory.name
-						? `Created memory with ID: ${(output as z.infer<typeof create_memory.output>).created_memory_id}.`
-						: tool.name === update_memory.name
-							? `Updated memory with ID: ${(output as z.infer<typeof update_memory.output>).updated_memory_id}.`
-							: `Removed memory with ID: ${(output as z.infer<typeof delete_memory.output>).deleted_memory_id}.`;
-				details = { kind: "memory_mutation", message };
-			}
+		} else if (ToolUtils.is(toolsets, part, view_web)) {
 			return {
-				...base,
-				...ToolCallUtils.getStatus({
-					pending,
-					active: "Remembering",
-					done: "Remembered",
-					highlight,
-				}),
-				details,
+				...base(view_web, [
+					["Viewing link", "Viewed link"],
+					{ subject: part.args.url },
+				]),
 			};
-		}
-
-		if (tool?.name === search_memories.name) {
-			const query = (toolCall.args as z.infer<typeof search_memories.input>)
-				.query;
-			const results =
-				ToolCallUtils.getOutput<z.infer<typeof search_memories.output>>(
-					toolResult,
-				);
+		} else if (ToolUtils.is(toolsets, part, create_action)) {
 			return {
-				...base,
-				...ToolCallUtils.getStatus({
-					pending,
-					active: "Searching",
-					done: "Searched",
-					highlight: query,
-					around: ["memories for "],
-				}),
-				details: results ? { kind: "search_memories", results } : undefined,
+				...base(create_action, [
+					["Scheduling action", "Scheduled action"],
+					{ subject: part.args.prompt },
+				]),
 			};
-		}
-
-		if (tool?.name === read_file.name && toolCall.args?.path) {
-			const input = toolCall.args as z.infer<typeof read_file.input>;
-			const name = PathUtils.name(input);
-			const file =
-				toolResult?.value?.[0]?.type === "file"
-					? toolResult.value[0]
-					: undefined;
+		} else if (ToolUtils.is(toolsets, part, update_action)) {
 			return {
-				...base,
-				...ToolCallUtils.getStatus({
-					pending,
-					active: "Reading",
-					done: "Read",
-					highlight: name,
-				}),
-				details: {
-					kind: "read_file",
-					path: input.path,
-					name: file?.name ?? name,
-					...(file
+				...base(update_action, [
+					["Updating action", "Updated action"],
+					{ subject: part.args.prompt },
+				]),
+			};
+		} else if (ToolUtils.is(toolsets, part, delete_action)) {
+			return {
+				...base(delete_action, [
+					["Deleting action", "Deleted action"],
+					{ subject: part.args.reason },
+				]),
+			};
+		} else if (ToolUtils.is(toolsets, part, list_actions)) {
+			return {
+				...base(list_actions, [["Listing", "Listed"], "actions"], true),
+			};
+		} else if (ToolUtils.is(toolsets, part, create_memory)) {
+			return {
+				...base(create_memory, [
+					["Remembering", "Remembered"],
+					{ subject: part.args.fact },
+				]),
+			};
+		} else if (ToolUtils.is(toolsets, part, update_memory)) {
+			return {
+				...base(update_memory, [
+					["Updating memory", "Updated memory"],
+					{ subject: part.args.fact },
+				]),
+			};
+		} else if (ToolUtils.is(toolsets, part, delete_memory)) {
+			return {
+				...base(delete_memory, [
+					["Deleting memory", "Deleted memory"],
+					{ subject: part.args.reason },
+				]),
+			};
+		} else if (ToolUtils.is(toolsets, part, search_memories)) {
+			return {
+				...base(
+					search_memories,
+					[
+						["Searching memory for", "Searched memory for"],
+						{ subject: part.args.query },
+					],
+					true,
+				),
+			};
+		} else if (ToolUtils.is(toolsets, part, search_chats)) {
+			return {
+				...base(
+					search_chats,
+					[
+						["Searching chats for", "Searched chats for"],
+						{ subject: part.args.query },
+					],
+					true,
+				),
+			};
+		} else if (ToolUtils.is(toolsets, part, read_dir)) {
+			return {
+				...base(
+					read_dir,
+					[
+						["Browsing folder", "Browsed folder"],
+						{ subject: PathUtils.name(part.args.path) },
+					],
+					true,
+				),
+			};
+		} else if (ToolUtils.is(toolsets, part, find_files)) {
+			return {
+				...base(
+					find_files,
+					[
+						["Finding files matching", "Found files matching"],
+						{ subject: part.args.pattern },
+					],
+					true,
+				),
+			};
+		} else if (ToolUtils.is(toolsets, part, search_files)) {
+			return {
+				...base(
+					search_files,
+					[
+						["Searching files for", "Searched files for"],
+						{ subject: part.args.query },
+					],
+					true,
+				),
+			};
+		} else if (ToolUtils.is(toolsets, part, grep_files)) {
+			return {
+				...base(
+					grep_files,
+					[
+						["Grepping files for", "Grepped files for"],
+						{ subject: part.args.query },
+					],
+					true,
+				),
+			};
+		} else if (ToolUtils.is(toolsets, part, read_file)) {
+			const file = ToolUtils.file(part.result)[0];
+			const image = file?.mime.startsWith("image/")
+				? `data:${file.mime};base64,${file.data}`
+				: null;
+			const text = file && !image ? FileUtils.getTextFromBytes(file) : null;
+			return {
+				...base(read_file, [
+					["Reading file", "Read file"],
+					{ subject: PathUtils.name(part.args) },
+				]),
+				content: image
+					? { type: "image", value: image }
+					: text
 						? {
-								mime: file.mime,
-								data: file.data,
-								text: file.mime.startsWith("image/")
-									? undefined
-									: (FileUtils.getTextFromBytes(file) ?? undefined),
-								isImage: file.mime.startsWith("image/"),
+								type: "text",
+								value: text,
 							}
-						: {}),
-				},
-			};
-		}
-
-		if (tool?.name === write_file.name) {
-			const input = toolCall.args as z.infer<typeof write_file.input>;
-			const name = PathUtils.name(input);
-			const succeeded = !!ToolCallUtils.getOutput(toolResult);
-			return {
-				...base,
-				...ToolCallUtils.getStatus({
-					pending,
-					active: "Writing",
-					done: "Wrote",
-					highlight: name,
-					around: ["file "],
+						: undefined,
+				language: FileTypeUtils.getLanguage({
+					mime: file?.mime,
+					name: file?.name,
 				}),
-				details: succeeded
-					? {
-							kind: "write_file",
-							path: input.path,
-							name,
-							content: input.content,
-							extension: FileTypeUtils.getExtension(input),
-						}
-					: undefined,
 			};
-		}
-
-		if (tool?.name === edit_file.name) {
-			const input = toolCall.args as z.infer<typeof edit_file.input>;
-			const name = PathUtils.name(input);
-			const output =
-				ToolCallUtils.getOutput<z.infer<typeof edit_file.output>>(toolResult);
+		} else if (ToolUtils.is(toolsets, part, write_file)) {
 			return {
-				...base,
-				...ToolCallUtils.getStatus({
-					pending,
-					active: "Editing",
-					done: "Edited",
-					highlight: name,
-					around: ["file "],
+				...base(write_file, [
+					["Writing file", "Wrote file"],
+					{ subject: PathUtils.name(part.args) },
+				]),
+				language: FileTypeUtils.getLanguage({
+					path: part.args.path,
 				}),
-				details: output
-					? {
-							kind: "edit_file",
-							path: input.path,
-							name,
-							old_string: input.old_string,
-							new_string: input.new_string,
-							replacements: output.replacements,
-							extension: FileTypeUtils.getExtension(input),
-						}
-					: undefined,
 			};
-		}
-
-		if (tool?.name === read_dir.name) {
-			const input = toolCall.args as z.infer<typeof read_dir.input>;
-			const name = PathUtils.name(input);
-			const items =
-				ToolCallUtils.getOutput<z.infer<typeof read_dir.output>>(toolResult);
+		} else if (ToolUtils.is(toolsets, part, edit_file)) {
 			return {
-				...base,
-				...ToolCallUtils.getStatus({
-					pending,
-					active: "Looking",
-					done: "Looked",
-					highlight: name,
-					around: ["in folder "],
+				...base(edit_file, [
+					["Editing file", "Edited file"],
+					{ subject: PathUtils.name(part.args) },
+				]),
+				language: FileTypeUtils.getLanguage({
+					path: part.args.path,
 				}),
-				details: items
-					? {
-							kind: "read_dir",
-							path: input.path,
-							items: items.map((item) => ({
-								path: item.path,
-								name: PathUtils.name(item),
-								is_dir: item.is_dir,
-							})),
-						}
-					: undefined,
 			};
-		}
-
-		if (tool?.name === search_files.name) {
-			const query = (toolCall.args as z.infer<typeof search_files.input>).query;
-			const results =
-				ToolCallUtils.getOutput<z.infer<typeof search_files.output>>(
-					toolResult,
-				);
+		} else if (ToolUtils.is(toolsets, part, shell_exec)) {
+			const json = ToolUtils.json<typeof shell_exec>(part.result)[0];
+			const content = json
+				? `# stdin\n${part.args.command.trim()}\n\n${[
+						json.stdout ? `# stdout\n${json.stdout.trim()}` : "",
+						json.stderr ? `# stderr\n${json.stderr.trim()}` : "",
+					]
+						.filter(Boolean)
+						.join("\n\n")}`
+				: undefined;
+			const commands = part.args.command
+				.split("&&")
+				.map((command) => {
+					const parts = command
+						.split(" ")
+						.filter(Boolean)
+						.filter((part) => part !== "--");
+					return parts
+						.slice(
+							0,
+							parts.findIndex((part) => part.match(/[^A-Za-z0-9-_]/)),
+						)
+						.join(" ")
+						.trim();
+				})
+				.join(" && ");
 			return {
-				...base,
-				...ToolCallUtils.getStatus({
-					pending,
-					active: "Searching",
-					done: "Searched",
-					highlight: query,
-					around: ["files for "],
-				}),
-				details: results
-					? {
-							kind: "search_files",
-							results: results.map((upload) => ({
-								path: upload.path,
-								name: PathUtils.name(upload),
-								snippet: upload.snippet,
-							})),
-						}
-					: undefined,
+				...base(shell_exec, [
+					["Running command", "Ran command"],
+					{
+						subject: commands,
+					},
+				]),
+				content,
 			};
-		}
-
-		if (tool?.name === ask_question.name) {
+		} else if (ToolUtils.is(toolsets, part, ask_question)) {
 			return {
-				...base,
-				status: pending ? "Asking a question..." : "Asked a question",
-			};
-		}
-
-		if (tool?.name === shell_exec.name) {
-			const command = (toolCall.args as z.infer<typeof shell_exec.input>)
-				.command;
-			const highlight = command.split(" ")[0];
-			const output =
-				ToolCallUtils.getOutput<z.infer<typeof shell_exec.output>>(toolResult);
-			let details: ToolCallDetails | undefined;
-			if (output) {
-				const parts = [
-					output.stdout ? `# stdout\n${output.stdout.trim()}` : "",
-					output.stderr ? `# stderr\n${output.stderr.trim()}` : "",
-				].filter(Boolean);
-				details = {
-					kind: "shell_exec",
-					command,
-					stdout: output.stdout,
-					stderr: output.stderr,
-					code: `# stdin\n${command.trim()}\n\n${parts.join("\n\n")}`,
-				};
-			}
-			return {
-				...base,
-				...ToolCallUtils.getStatus({
-					pending,
-					active: "Running",
-					done: "Ran",
-					highlight,
-				}),
-				details,
+				...base(ask_question, [["Asking a question", "Asked a question"]]),
 			};
 		}
 
 		return {
-			...base,
-			...ToolCallUtils.getStatus({
-				pending,
-				active: "Using",
-				done: "Used",
-				highlight: toolCall.name,
-			}),
-			details: {
-				kind: "fallback",
-				args: toolCall.args,
-				value: toolResult?.value,
-			},
+			...base(UNKNOWN, [["Using", "Used"], "tool", { subject: part.name }]),
 		};
-	},
-
-	/**
-	 * Display data for the input a tool call is waiting on, or `undefined` when
-	 * the tool runs without asking the user anything.
-	 */
-	getInput: ({
-		toolCall,
-		toolResult,
-		toolsets,
-	}: {
-		toolCall: Extract<zDataPart, { type: "toolCall" }>;
-		toolResult?: Extract<zDataPart, { type: "toolResult" }>;
-		toolsets: Toolset<any>[];
-	}): ToolCallInputDisplay | undefined => {
-		const { tool } = ToolUtils.find({ toolsets, part: toolCall });
-		if (!tool?.feedback && !tool?.approval) return undefined;
-
-		const pending = !toolResult;
-
-		const base = {
-			pending,
-			approval: !!tool.approval,
-			rejected: ToolCallUtils.isRejected(toolResult),
-		};
-
-		if (tool.name === shell_exec.name) {
-			const { command } = toolCall.args as z.infer<typeof shell_exec.input>;
-			return {
-				...base,
-				details: { kind: "shell_exec", command },
-			};
-		}
-
-		if (tool.name === write_file.name) {
-			const input = toolCall.args as z.infer<typeof write_file.input>;
-			return {
-				...base,
-				details: {
-					kind: "write_file",
-					path: input.path,
-					name: PathUtils.name(input),
-					content: input.content,
-					extension: FileTypeUtils.getExtension(input),
-				},
-			};
-		}
-
-		if (tool.name === edit_file.name) {
-			const input = toolCall.args as z.infer<typeof edit_file.input>;
-			return {
-				...base,
-				details: {
-					kind: "edit_file",
-					path: input.path,
-					name: PathUtils.name(input),
-					old_string: input.old_string,
-					new_string: input.new_string,
-					replace_all: input.replace_all ?? false,
-					extension: FileTypeUtils.getExtension(input),
-				},
-			};
-		}
-
-		if (tool.name === ask_question.name) {
-			const input = toolCall.args as z.infer<typeof ask_question.input>;
-			const output =
-				ToolCallUtils.getOutput<z.infer<typeof ask_question.output>>(
-					toolResult,
-				);
-			return {
-				...base,
-				details: {
-					kind: "ask_question",
-					question: input.question,
-					suggestions: input.suggestions ?? [],
-					answer: output?.answer,
-				},
-			};
-		}
-
-		return base;
 	},
 
 	isRejected: (toolResult?: Extract<zDataPart, { type: "toolResult" }>) => {
@@ -675,11 +351,5 @@ export const ToolCallUtils = {
 			JSON.stringify(toolResult?.value) ===
 			JSON.stringify(ToolCallUtils.rejection)
 		);
-	},
-
-	getOutput: <T>(toolResult?: Extract<zDataPart, { type: "toolResult" }>) => {
-		if (toolResult?.value?.[0]?.type === "json") {
-			return toolResult.value[0].value as T;
-		}
 	},
 };

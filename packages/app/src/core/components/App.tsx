@@ -9,125 +9,81 @@ import { ModalsProvider } from "@mantine/modals";
 import { useDrag } from "@use-gesture/react";
 import { useEffect } from "react";
 import Background from "#app/core/components/Background.tsx";
-import Sidebar from "#app/core/components/Sidebar.tsx";
+import Console from "#app/core/components/Console.tsx";
 import Tauri from "#app/core/components/Tauri.tsx";
 import { useExperiments } from "#app/core/hooks/useExperiments.tsx";
 import { useViewport } from "#app/core/hooks/useViewport.ts";
-import { useLayoutStore } from "#app/core/stores/useLayoutStore.tsx";
+import { AppService } from "#app/core/services/AppService.ts";
+import { useAppStore } from "#app/core/stores/useAppStore.ts";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import Chat from "#app/features/chat/components/Chat.tsx";
 import ChatFiles from "#app/features/chat/components/ChatFiles.tsx";
+import Sidebar from "#app/features/sidebar/components/Sidebar.tsx";
 import { cssResolver, theme as mantineTheme } from "#app/theme.tsx";
 import { useSession } from "#client/src/core/hooks/useSession.ts";
 import { useThemes } from "../../../../client/src/features/settings/hooks/useThemes.ts";
-import { setHashbang, useHashbang } from "../hooks/useHashbang";
+import { setHashbangQuery, useHashbang } from "../hooks/useHashbang";
 
 export default function App() {
-	const mobile = useLayoutStore((s) => s.mobile);
-	const isMobile = useLayoutStore((s) => s.isMobile);
-	const totalGestureBlocks = useLayoutStore((s) => s.totalGestureBlocks);
-	const drawerCloser = useLayoutStore((s) => s.drawerCloser);
-	const isSidebarOpen = useLayoutStore((s) => s.isSidebarOpen);
-	const setSidebarOpen = useLayoutStore((s) => s.setSidebarOpen);
-	const isAsideOpen = useLayoutStore((s) => s.isAsideOpen);
-	const setAsideOpen = useLayoutStore((s) => s.setAsideOpen);
-	const getSidebarWidth = useLayoutStore((s) => s.getSidebarWidth);
-	const isInitializing = useLayoutStore((s) => s.isInitializing);
-	const setInitializing = useLayoutStore((s) => s.setInitializing);
-
-	const { hash, query } = useHashbang();
-
-	const { session, acceptClone } = useSession({
-		setToken: query.token ? decodeURIComponent(query.token) : undefined,
+	const { query } = useHashbang();
+	const { session } = useSession({
+		token: {
+			value: query.token ? decodeURIComponent(query.token) : undefined,
+			onChange: () => setHashbangQuery({ token: undefined }),
+		},
+		clone: {
+			value: query.clone ? decodeURIComponent(query.clone) : undefined,
+			onChange: () => setHashbangQuery({ clone: undefined }),
+		},
 	});
-
-	useEffect(() => {
-		if (!session.data) return;
-
-		if (query.token) {
-			setHashbang(hash, { ...query, token: undefined });
-		}
-
-		if (isInitializing) {
-			setInitializing(false);
-			if (query.clone && !session.data.user.isAnonymous) {
-				acceptClone.mutate(query.clone);
-				setHashbang(hash, { ...query, clone: undefined });
-			}
-		}
-	}, [
-		isInitializing,
-		setInitializing,
-		session.data,
-		hash,
-		query,
-		acceptClone.mutate,
-	]);
-
 	useExperiments();
-
-	// TODO - find a way to increase this drag area without blocking mouse events
-	const navbarDragOpen = useDrag(
-		({ movement: [movementX], direction: [directionX], cancel }) => {
-			if (movementX > 50 && directionX > 0 && !totalGestureBlocks) {
-				setSidebarOpen(true);
-				cancel();
-			}
-		},
-		{ axis: "x", filterTaps: true },
-	);
-
-	const asideDragOpen = useDrag(
-		({ movement: [movementX], direction: [directionX], cancel }) => {
-			if (movementX < -50 && directionX < 0 && !totalGestureBlocks) {
-				setAsideOpen(true);
-				cancel();
-			}
-		},
-		{ axis: "x", filterTaps: true },
-	);
-
-	const navbarDragClose = useDrag(
-		({ movement: [movementX], direction: [directionX], cancel }) => {
-			if (movementX < -50 && directionX < 0) {
-				if (totalGestureBlocks) return; // modal open – block completely
-				if (drawerCloser) {
-					drawerCloser();
-					cancel();
-					return;
-				}
-				setSidebarOpen(false);
-				cancel();
-			}
-		},
-		{ axis: "x", filterTaps: true },
-	);
-
-	const asideDragClose = useDrag(
-		({ movement: [movementX], direction: [directionX], cancel }) => {
-			if (movementX > 50 && directionX > 0) {
-				if (totalGestureBlocks) return; // modal open – block completely
-				setAsideOpen(false);
-				cancel();
-			}
-		},
-		{ axis: "x", filterTaps: true },
-	);
-
 	const { height: viewportHeight, containerRef } = useViewport();
 	const { theme } = useThemes();
+
+	const isMobile = useAppStore((s) => s.isMobile);
+	const isSidebarOpen = useAppStore((s) => s.isSidebarOpen);
+	const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
+	const isAsideOpen = useAppStore((s) => s.isAsideOpen);
+	const getSidebarWidth = useAppStore((s) => s.getSidebarWidth);
+
+	useEffect(() => AppService.initialize(), []);
+
+	// TODO - find a way to increase this drag area without blocking mouse events
+	const dragSidebarOpen = useDrag(
+		({ movement: [movementX], direction: [directionX], cancel }) =>
+			movementX > 50 && directionX > 0 && AppService.openSidebar() && cancel(),
+		{ axis: "x", filterTaps: true },
+	);
+	const dragAsideOpen = useDrag(
+		({ movement: [movementX], direction: [directionX], cancel }) =>
+			movementX < -50 && directionX < 0 && AppService.openAside() && cancel(),
+		{ axis: "x", filterTaps: true },
+	);
+	const dragSidebarClose = useDrag(
+		({ movement: [movementX], direction: [directionX], cancel }) =>
+			movementX < -50 &&
+			directionX < 0 &&
+			AppService.closeSidebar() &&
+			cancel(),
+		{ axis: "x", filterTaps: true },
+	);
+	const dragAsideClose = useDrag(
+		({ movement: [movementX], direction: [directionX], cancel }) =>
+			movementX > 50 && directionX > 0 && AppService.closeAside() && cancel(),
+		{ axis: "x", filterTaps: true },
+	);
 
 	return (
 		<MantineProvider
 			theme={mantineTheme}
-			forceColorScheme={theme.data}
+			forceColorScheme={theme}
 			cssVariablesResolver={cssResolver}
 		>
 			<ModalsProvider>
 				<Tauri />
 				<Box pos="relative" h={viewportHeight} ref={containerRef}>
 					<LoadingOverlay
-						visible={isInitializing}
+						visible={session.isPending}
 						zIndex={1000}
 						overlayProps={{ blur: 2 }}
 					/>
@@ -135,12 +91,12 @@ export default function App() {
 						withBorder={false}
 						navbar={{
 							width: isMobile ? 300 : getSidebarWidth(),
-							breakpoint: mobile,
+							breakpoint: AppService.breakpoint,
 							collapsed: { desktop: false, mobile: !isSidebarOpen },
 						}}
 						aside={{
 							width: 300,
-							breakpoint: mobile,
+							breakpoint: AppService.breakpoint,
 							collapsed: { desktop: !isAsideOpen, mobile: !isAsideOpen },
 						}}
 						style={{
@@ -172,7 +128,7 @@ export default function App() {
 						}}
 					>
 						<div
-							{...navbarDragOpen()}
+							{...dragSidebarOpen()}
 							style={{
 								position: "absolute",
 								top: 0,
@@ -184,7 +140,7 @@ export default function App() {
 							}}
 						></div>
 						<div
-							{...asideDragOpen()}
+							{...dragAsideOpen()}
 							style={{
 								position: "absolute",
 								top: 0,
@@ -202,12 +158,12 @@ export default function App() {
 								color="#000"
 								zIndex="calc(var(--mantine-z-index-app) + 1)"
 								onClick={() => setSidebarOpen(false)}
-								{...navbarDragClose()}
+								{...dragSidebarClose()}
 								style={{ touchAction: "none" }}
 							/>
 						)}
 						<AppShell.Navbar
-							{...navbarDragClose()}
+							{...dragSidebarClose()}
 							p={10}
 							style={{
 								...StyleUtils.glass,
@@ -229,7 +185,7 @@ export default function App() {
 							<Chat />
 						</AppShell.Main>
 						<AppShell.Aside
-							{...asideDragClose()}
+							{...dragAsideClose()}
 							p={10}
 							style={{
 								boxShadow: isSidebarOpen || !isMobile ? StyleUtils.shadow : "",
@@ -241,6 +197,7 @@ export default function App() {
 						</AppShell.Aside>
 					</AppShell>
 				</Box>
+				<Console />
 				<Background />
 			</ModalsProvider>
 		</MantineProvider>

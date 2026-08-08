@@ -24,7 +24,7 @@ import {
 } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import { type ReactNode, useMemo, useState } from "react";
-import { useLayoutStore } from "#app/core/stores/useLayoutStore.tsx";
+import { useAppStore } from "#app/core/stores/useAppStore.ts";
 import { theme } from "#app/core/utils/IconUtils.ts";
 import {
 	FilePreview,
@@ -301,8 +301,8 @@ function FileTreeNode({
 export default function ChatFiles() {
 	const { chatFiles } = useChatFiles();
 
-	const isAsideOpen = useLayoutStore((s) => s.isAsideOpen);
-	const setAsideOpen = useLayoutStore((s) => s.setAsideOpen);
+	const isAsideOpen = useAppStore((s) => s.isAsideOpen);
+	const setAsideOpen = useAppStore((s) => s.setAsideOpen);
 
 	return (
 		<Stack flex={1} h="100%" p={5}>

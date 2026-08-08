@@ -8,8 +8,9 @@ export const search_web = {
 	description: "View the contents of any URL.",
 	input: z.object({
 		query: z.string(),
+		maxResults: z.number().optional().default(5),
 	}),
-	output: z.array(zWebContext),
+	output: zWebContext,
 } as const satisfies ToolDefinition;
 
 export const createSearchWebTool: ToolFactory<
@@ -18,13 +19,14 @@ export const createSearchWebTool: ToolFactory<
 	...search_web,
 	...options,
 	execute: async ({ input }) => {
-		return [
-			{
-				type: "json",
-				value: await options.capabilities.provider.search({
-					query: input.query,
-				}),
-			},
-		];
+		return (
+			await options.capabilities.provider.search({
+				query: input.query,
+				maxResults: input.maxResults,
+			})
+		).map((result) => ({
+			type: "json",
+			value: result,
+		}));
 	},
 });

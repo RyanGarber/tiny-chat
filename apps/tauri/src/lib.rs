@@ -22,6 +22,8 @@ pub fn run() {
         tools::read_dir,
         tools::write_file,
         tools::shell_exec,
+        tools::cwd,
+        tools::chdir,
         mcp_http::mcp_start_http,
         mcp_http::mcp_send_http,
         mcp_http::mcp_stop_http,

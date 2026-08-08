@@ -6,7 +6,7 @@ import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 export const edit_file = {
 	name: "edit_file",
 	description:
-		"Replace a snippet of an existing file. Prefer this over write_file whenever the file already exists.",
+		"Replace a snippet of an existing file. Prefer this over write_file whenever the file already exists. The result includes the edited lines in context, so there is no need to re-read the file to check the edit landed.",
 	input: z.object({
 		path: z.string().describe("Path of the file to edit."),
 		old_string: z
@@ -30,6 +30,7 @@ export const edit_file = {
 		path: z.string(),
 		success: z.boolean(),
 		replacements: z.number(),
+		preview: z.string().optional(),
 	}),
 } as const satisfies ToolDefinition;
 
@@ -38,6 +39,18 @@ export const createEditFileTool: ToolFactory<
 > = (options) => ({
 	...edit_file,
 	...options,
+	// Resolve the edit up front so a stale or ambiguous `old_string` comes back
+	// as a tool error the model can fix, instead of a diff the user is asked to
+	// approve and which then fails on the way to disk.
+	check: async ({ input }) => {
+		await FileOperationService.resolveEdit({
+			shell: options.capabilities.shell,
+			path: input.path,
+			old_string: input.old_string,
+			new_string: input.new_string,
+			replace_all: input.replace_all,
+		});
+	},
 	execute: async ({ input }) => {
 		return [
 			{

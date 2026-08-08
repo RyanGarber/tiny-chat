@@ -1,36 +1,39 @@
 import { Icon } from "@iconify/react";
 import { Box, Button, Group, Image, Text } from "@mantine/core";
-import type { HighlightResult } from "@streamdown/code";
-import { useThemes } from "@tiny-chat/client/src/features/settings/hooks/useThemes.ts";
+import { useCode } from "@tiny-chat/client/src/core/hooks/useCode.ts";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { DiffUtils } from "@tiny-chat/core/src/features/file/utils/DiffUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import {
 	type ComponentProps,
+	type Dispatch,
 	memo,
 	type ReactNode,
-	useEffect,
+	type SetStateAction,
 	useMemo,
 	useState,
 } from "react";
 import {
-	type BundledLanguage,
 	CodeBlockContainer,
 	CodeBlockCopyButton,
 	CodeBlockDownloadButton,
 	CodeBlockHeader,
 } from "streamdown";
-import { CodeUtils } from "#app/core/utils/CodeUtils.ts";
 import { theme } from "#app/core/utils/IconUtils.ts";
+import type { CodeLanguage, CodeResult } from "#core/core/utils/CodeUtils.ts";
 
 const CodeBlockContent = ({
-	result,
+	code,
+	language,
 	lineNumbers,
 }: {
-	result: HighlightResult;
+	code: string | CodeResult;
+	language?: string | null;
 	lineNumbers: boolean;
 }) => {
-	return result.tokens.map((row, i) => (
+	const { highlighted } = useCode({ code, language });
+
+	return highlighted.tokens.map((row, i) => (
 		<span
 			className={
 				lineNumbers
@@ -68,7 +71,7 @@ const CodeBlockContent = ({
 
 						return (
 							<span
-								className={`text-(--sdm-c,inherit) dark:text-(--shiki-dark,var(--sdm-c,inherit)) ${hasBg ? "bg-(--sdm-tbg) dark:bg-(--shiki-dark-bg,var(--sdm-tbg))" : ""}`}
+								className={`text-(--sdm-c,inherit) ${hasBg ? "bg-(--sdm-tbg)" : ""}`}
 								// biome-ignore lint/suspicious/noArrayIndexKey: repeats
 								key={j}
 								style={tokenStyle}
@@ -84,13 +87,13 @@ const CodeBlockContent = ({
 
 const CodeBlockBody = memo(
 	({
-		result,
+		code,
 		children,
 		language,
 		startLine = 1,
 		lineNumbers = true,
 	}: {
-		result: ReturnType<typeof CodeUtils.highlight>;
+		code: CodeResult;
 		children?: ReactNode;
 		language: string;
 		startLine?: number;
@@ -99,19 +102,19 @@ const CodeBlockBody = memo(
 		const preStyle = useMemo(() => {
 			const style: Record<string, string> = {};
 
-			if (result.bg) {
-				style["--sdm-bg"] = result.bg;
+			if (code.bg) {
+				style["--sdm-bg"] = code.bg;
 			}
-			if (result.fg) {
-				style["--sdm-fg"] = result.fg;
+			if (code.fg) {
+				style["--sdm-fg"] = code.fg;
 			}
 
-			if (result.rootStyle) {
-				Object.assign(style, CommonUtils.toStyleObject(result.rootStyle));
+			if (code.rootStyle) {
+				Object.assign(style, CommonUtils.toStyleObject(code.rootStyle));
 			}
 
 			return style;
-		}, [result.bg, result.fg, result.rootStyle]);
+		}, [code.bg, code.fg, code.rootStyle]);
 
 		return (
 			<div
@@ -119,10 +122,7 @@ const CodeBlockBody = memo(
 				data-language={language}
 				data-streamdown="code-block-body"
 			>
-				<pre
-					className="bg-[var(--sdm-bg),inherit] dark:bg-(--shiki-dark-bg,var(--sdm-bg,inherit))"
-					style={preStyle}
-				>
+				<pre className="bg-[var(--sdm-bg),inherit]" style={preStyle}>
 					<code
 						className={
 							lineNumbers
@@ -136,7 +136,7 @@ const CodeBlockBody = memo(
 						}
 					>
 						{children ?? (
-							<CodeBlockContent result={result} lineNumbers={lineNumbers} />
+							<CodeBlockContent code={code} lineNumbers={lineNumbers} />
 						)}
 					</code>
 				</pre>
@@ -144,7 +144,7 @@ const CodeBlockBody = memo(
 		);
 	},
 	(prev, next) =>
-		prev.result === next.result &&
+		prev.code === next.code &&
 		prev.language === next.language &&
 		prev.startLine === next.startLine &&
 		prev.lineNumbers === next.lineNumbers,
@@ -158,27 +158,16 @@ export const Code = ({
 	lineNumbers = true,
 }: {
 	filename?: string;
-	language: BundledLanguage;
+	language?: CodeLanguage;
 	code: string;
 	startLine?: number;
 	lineNumbers?: boolean;
 }) => {
-	const { codeTheme } = useThemes();
-
-	const unhighlighted = useMemo(() => CodeUtils.unhighlight(code), [code]);
-
-	const [highlighted, setHighlighted] =
-		useState<HighlightResult>(unhighlighted);
-
-	useEffect(() => {
-		CodeUtils.highlight(language, codeTheme.data, code, (result) => {
-			setHighlighted(result);
-		});
-	}, [code, codeTheme, language]);
+	const { highlighted } = useCode({ code, language });
 
 	return (
-		<CodeBlockContainer language={language} style={{ marginTop: 0 }}>
-			<CodeBlockHeader language={filename ?? language} />
+		<CodeBlockContainer language={language ?? ""} style={{ marginTop: 0 }}>
+			<CodeBlockHeader language={filename ?? language ?? ""} />
 			<div
 				className={
 					"pointer-events-none sticky top-2 z-10 -mt-10 flex h-8 items-center justify-end"
@@ -195,53 +184,156 @@ export const Code = ({
 				</div>
 			</div>
 			<CodeBlockBody
-				language={language}
+				language={language ?? ""}
 				lineNumbers={lineNumbers}
 				startLine={startLine}
-				result={highlighted}
-			>
-				<InlineCode code={highlighted} language={language} />
-			</CodeBlockBody>
+				code={highlighted}
+			/>
 		</CodeBlockContainer>
 	);
 };
 
-export const InlineCode = ({
-	code,
-	language,
+const bg = (type: ReturnType<typeof DiffUtils.context>[number]["type"]) => {
+	switch (type) {
+		case "added":
+			return "rgba(0, 255, 0, 0.1)";
+		case "removed":
+			return "rgba(255, 0, 0, 0.1)";
+		default:
+			return undefined;
+	}
+};
+
+const Line = ({
+	children,
+	type,
+	expanded,
 }: {
-	code: HighlightResult | string;
-	language: BundledLanguage;
+	children: ReactNode;
+	type: ReturnType<typeof DiffUtils.context>[number]["type"];
+	expanded?: boolean;
 }) => {
-	const { codeTheme } = useThemes();
-
-	const raw = typeof code === "string" ? code : null;
-
-	const unhighlighted = useMemo(() => {
-		if (raw === null) return null;
-		return CodeUtils.unhighlight(raw);
-	}, [raw]);
-
-	const [highlighted, setHighlighted] = useState<HighlightResult | null>(
-		unhighlighted,
-	);
-
-	useEffect(() => {
-		if (raw === null) return;
-		CodeUtils.highlight(language, codeTheme.data, raw, (result) => {
-			setHighlighted(result);
-		});
-	}, [raw, codeTheme.data, language]);
-
 	return (
-		<CodeBlockContent
-			result={
-				typeof code === "string" ? (highlighted as HighlightResult) : code
-			}
-			lineNumbers={false}
-		/>
+		<Group
+			gap={0}
+			align="flex-start"
+			wrap="nowrap"
+			miw="100%"
+			bg={bg(type)}
+			p={2}
+		>
+			{(type !== "unchanged" || expanded) && (
+				<Box
+					w={20}
+					miw={20}
+					h={20}
+					fz="sm"
+					c="dimmed"
+					style={{ textAlign: "center" }}
+				>
+					{type === "removed" && "-"}
+					{type === "added" && "+"}
+					{type === "changed" && "~"}
+				</Box>
+			)}
+			{children}
+		</Group>
 	);
 };
+
+// biome-ignore-start lint/suspicious/noArrayIndexKey: lines stay in order
+const Lines = ({
+	diff,
+	expanded,
+	setExpanded,
+	language,
+}: {
+	diff: ReturnType<typeof DiffUtils.context>;
+	expanded: number[];
+	setExpanded: Dispatch<SetStateAction<number[]>>;
+	language: string;
+}) => {
+	return diff.flatMap((change, index) => (
+		<Box key={index}>
+			{change.type === "unchanged" &&
+				expanded.includes(index) &&
+				change.lines.map((line, lineIndex) => (
+					<Line key={lineIndex} type={change.type} expanded>
+						<Box flex={1}>
+							<CodeBlockContent
+								code={line}
+								language={language}
+								lineNumbers={false}
+							/>
+						</Box>
+					</Line>
+				))}
+			{(change.type !== "unchanged" || !expanded.includes(index)) && (
+				<Line key={index} type={change.type}>
+					{change.type === "unchanged" && (
+						<Button
+							variant="transparent"
+							bg="rgba(0, 0, 0, 0.1)"
+							flex={1}
+							size="xs"
+							onClick={() => setExpanded((previous) => [...previous, index])}
+						>
+							{change.lines.length} unchanged line
+							{change.lines.length === 1 ? "" : "s"}
+						</Button>
+					)}
+					{change.type !== "unchanged" && (
+						<Box flex={1}>
+							{change.type === "changed" &&
+								change.parts.map((part, partIndex) => (
+									<span key={partIndex}>
+										{part.type === "changed" && (
+											<span style={{ backgroundColor: bg(part.type) }}>
+												<span
+													style={{
+														backgroundColor: bg("removed"),
+														padding: "2px 4px",
+													}}
+												>
+													{part.partBefore}
+												</span>
+												<span
+													style={{
+														backgroundColor: bg("added"),
+														padding: "2px 4px",
+													}}
+												>
+													{part.partAfter}
+												</span>
+											</span>
+										)}
+										{part.type !== "changed" && (
+											<span
+												style={{
+													backgroundColor: bg(part.type),
+													padding: "2px 0",
+												}}
+											>
+												{part.part}
+											</span>
+										)}
+									</span>
+								))}
+							{change.type !== "changed" && (
+								<CodeBlockContent
+									code={change.line}
+									language={language}
+									lineNumbers={false}
+								/>
+							)}
+						</Box>
+					)}
+				</Line>
+			)}
+		</Box>
+	));
+};
+// biome-ignore-end lint/suspicious/noArrayIndexKey: lines stay in order
 
 export const Diff = ({
 	filename,
@@ -250,144 +342,22 @@ export const Diff = ({
 	after,
 }: {
 	filename?: string;
-	language: BundledLanguage;
+	language?: CodeLanguage;
 	before: string;
 	after: string;
 }) => {
-	const { codeTheme } = useThemes();
-
 	const [expanded, setExpanded] = useState<number[]>([]);
 
-	const result = CodeUtils.highlight(language, codeTheme.data, "");
-	const diff = DiffUtils.context(DiffUtils.diff({ before, after }));
+	const { highlighted: baseHighlight } = useCode({ code: "", language });
 
-	const bg = (type: ReturnType<typeof DiffUtils.context>[number]["type"]) => {
-		switch (type) {
-			case "added":
-				return "rgba(0, 255, 0, 0.1)";
-			case "removed":
-				return "rgba(255, 0, 0, 0.1)";
-			default:
-				return undefined;
-		}
-	};
-
-	const Line = ({
-		children,
-		type,
-		expanded,
-	}: {
-		children: ReactNode;
-		type: ReturnType<typeof DiffUtils.context>[number]["type"];
-		expanded?: boolean;
-	}) => {
-		return (
-			<Group
-				gap={0}
-				align="flex-start"
-				wrap="nowrap"
-				miw="100%"
-				bg={bg(type)}
-				p={2}
-			>
-				{(type !== "unchanged" || expanded) && (
-					<Box
-						w={20}
-						miw={20}
-						h={20}
-						fz="sm"
-						c="dimmed"
-						style={{ textAlign: "center" }}
-					>
-						{type === "removed" && "-"}
-						{type === "added" && "+"}
-						{type === "changed" && "~"}
-					</Box>
-				)}
-				{children}
-			</Group>
-		);
-	};
-
-	// biome-ignore-start lint/suspicious/noArrayIndexKey: lines stay in order
-	const Lines = ({ diff }: { diff: ReturnType<typeof DiffUtils.context> }) => {
-		return diff.flatMap((change, index) => (
-			<Box key={index}>
-				{change.type === "unchanged" &&
-					expanded.includes(index) &&
-					change.lines.map((line, lineIndex) => (
-						<Line key={lineIndex} type={change.type} expanded>
-							<Box flex={1}>
-								<InlineCode language={language} code={line} />
-							</Box>
-						</Line>
-					))}
-				{(change.type !== "unchanged" || !expanded.includes(index)) && (
-					<Line key={index} type={change.type}>
-						{change.type === "unchanged" && (
-							<Button
-								variant="transparent"
-								bg="rgba(0, 0, 0, 0.1)"
-								flex={1}
-								size="xs"
-								onClick={() => setExpanded((previous) => [...previous, index])}
-							>
-								{change.lines.length} unchanged line
-								{change.lines.length === 1 ? "" : "s"}
-							</Button>
-						)}
-						{change.type !== "unchanged" && (
-							<Box flex={1}>
-								{change.type === "changed" &&
-									change.parts.map((part, partIndex) => (
-										<span key={partIndex}>
-											{part.type === "changed" && (
-												<span style={{ backgroundColor: bg(part.type) }}>
-													<span
-														style={{
-															backgroundColor: bg("removed"),
-															padding: "2px 4px",
-														}}
-													>
-														{part.partBefore}
-													</span>
-													<span
-														style={{
-															backgroundColor: bg("added"),
-															padding: "2px 4px",
-														}}
-													>
-														{part.partAfter}
-													</span>
-												</span>
-											)}
-											{part.type !== "changed" && (
-												<span
-													style={{
-														backgroundColor: bg(part.type),
-														padding: "2px 0",
-													}}
-												>
-													{part.part}
-												</span>
-											)}
-										</span>
-									))}
-								{change.type !== "changed" && (
-									<InlineCode language={language} code={change.line} />
-								)}
-							</Box>
-						)}
-					</Line>
-				)}
-			</Box>
-		));
-	};
-	// biome-ignore-end lint/suspicious/noArrayIndexKey: lines stay in order
+	const diff = useMemo(
+		() => DiffUtils.context(DiffUtils.diff({ before, after })),
+		[before, after],
+	);
 
 	return (
 		<CodeBlockContainer language="diff" style={{ marginTop: 0 }}>
-			<CodeBlockHeader language={filename ?? language} />
+			<CodeBlockHeader language={filename ?? language ?? ""} />
 			<div
 				className={
 					"pointer-events-none sticky top-2 z-10 -mt-10 flex h-8 items-center justify-end"
@@ -404,8 +374,13 @@ export const Diff = ({
 				</div>
 			</div>
 
-			<CodeBlockBody result={result} language={language}>
-				<Lines diff={diff} />
+			<CodeBlockBody code={baseHighlight} language={language ?? ""}>
+				<Lines
+					diff={diff}
+					expanded={expanded}
+					setExpanded={setExpanded}
+					language={language ?? ""}
+				/>
 			</CodeBlockBody>
 		</CodeBlockContainer>
 	);

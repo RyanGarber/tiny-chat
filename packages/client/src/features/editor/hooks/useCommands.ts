@@ -1,7 +1,8 @@
 import { zConfig } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { ModelProviderStatus } from "@tiny-chat/core/src/features/provider/types/model.ts";
 import type { ProviderState } from "@tiny-chat/core/src/features/provider/types/provider.ts";
-import { useCallback, useRef } from "react";
+import { useCallback, useContext, useRef } from "react";
+import { ClientContext } from "../../../client.ts";
 import { useConfig } from "../../agent/hooks/useConfig.ts";
 import { useProviders } from "../../agent/hooks/useProviders.ts";
 import { useSkills } from "../../agent/hooks/useSkills.ts";
@@ -26,11 +27,16 @@ export const useCommands = ({
 	onOpenTools?: () => void;
 	onOpenSkills?: () => void;
 } = {}) => {
+	const client = useContext(ClientContext);
+
 	const { providers, updateProviders } = useProviders();
 	const { skills, localSkills } = useSkills();
 	const { mcpTools } = useTools();
 	const { config, setConfig, modelArgs, setModelArg } = useConfig();
 	const { presets, setPreset, unsetPreset } = usePresets();
+
+	const clientRef = useRef(client);
+	clientRef.current = client;
 
 	const commandsRef = useRef(commands);
 	commandsRef.current = commands;
@@ -151,7 +157,7 @@ export const useCommands = ({
 
 		const presets: CommandChoiceGroup[] = [
 			{
-				items: Object.entries(presetsRef.current.data ?? {}).map(
+				items: Object.entries(presetsRef.current ?? {}).map(
 					([name, preset]) => ({
 						name,
 						value: name,
@@ -173,6 +179,20 @@ export const useCommands = ({
 			name: skill.name,
 			value: `skill:${skill.path}`,
 		}));
+
+		const shell: CommandItem[] = clientRef.current.shell?.chdir
+			? [
+					{
+						name: "cd",
+						value: "cd",
+						dynamic: true,
+						run: async (value) => {
+							if (!value) return;
+							await clientRef.current.shell?.chdir?.({ path: value });
+						},
+					},
+				]
+			: [];
 
 		return [
 			{
@@ -223,6 +243,7 @@ export const useCommands = ({
 						value: "skills",
 						run: () => onOpenSkillsRef.current?.(),
 					},
+					...shell,
 				],
 			},
 			{

@@ -11,16 +11,14 @@ export const search_chats = {
 	input: z.object({
 		query: z.string(),
 	}),
-	output: z.array(
-		z.object({
-			id: z.cuid2(),
-			chat_id: z.cuid2(),
-			chat_title: z.string().nullable(),
-			author: z.enum(Author),
-			snippet: z.string(),
-			created_at: z.date(),
-		}),
-	),
+	output: z.object({
+		id: z.cuid2(),
+		chat_id: z.cuid2(),
+		chat_title: z.string().nullable(),
+		author: z.enum(Author),
+		snippet: z.string(),
+		created_at: z.date(),
+	}),
 } as const satisfies ToolDefinition;
 
 export const createSearchChatsTool: ToolFactory<
@@ -32,22 +30,20 @@ export const createSearchChatsTool: ToolFactory<
 		const messages = await options.capabilities.user.searchChats({
 			searchText: input.query,
 		});
-		return [
-			{
-				type: "json",
-				value: messages.map((message) => ({
-					id: message.id,
-					chat_id: message.chatId,
-					chat_title: message.chatTitle,
-					author: message.author,
-					snippet: SnippetService.getSnippet({
-						text: DataUtils.getTextCleaned(message),
-						query: input.query,
-						baseWindow: 250,
-					}),
-					created_at: message.createdAt,
-				})),
+		return messages.map((message) => ({
+			type: "json",
+			value: {
+				id: message.id,
+				chat_id: message.chatId,
+				chat_title: message.chatTitle,
+				author: message.author,
+				snippet: SnippetService.getSnippet({
+					text: DataUtils.getTextCleaned(message),
+					query: input.query,
+					maxChars: 250,
+				}),
+				created_at: message.createdAt,
 			},
-		];
+		}));
 	},
 });

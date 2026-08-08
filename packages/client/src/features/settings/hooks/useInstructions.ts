@@ -1,47 +1,30 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { zSettings } from "@tiny-chat/core/src/features/data/types/user.ts";
-import { useContext } from "react";
-import { ClientProvider } from "../../../client.ts";
-import { useSession } from "../../../core/hooks/useSession.ts";
+import { useMutation } from "@tanstack/react-query";
+import { useContext, useMemo } from "react";
+import { ClientContext } from "../../../client.ts";
+import { useSettings } from "./useSettings.ts";
 
 export const useInstructions = () => {
-	const client = useContext(ClientProvider);
-	const { session } = useSession();
+	const client = useContext(ClientContext);
 
-	const instructions = useQuery({
-		...client.query.settings.get.queryOptions(),
-		select: (data) => data.instructions,
-		initialData: zSettings.safeParse(session.data?.user?.settings).data,
-	});
+	const { settings, applySettings } = useSettings();
+
+	const instructions = useMemo(() => {
+		return settings.data?.instructions ?? [];
+	}, [settings.data?.instructions]);
 
 	const addInstruction = useMutation({
 		...client.query.settings.addInstruction.mutationOptions(),
-		onSuccess: (data) => {
-			client.queryClient.setQueryData(
-				client.query.settings.get.queryKey(),
-				data,
-			);
-		},
+		onSuccess: applySettings,
 	});
 
 	const editInstruction = useMutation({
 		...client.query.settings.editInstruction.mutationOptions(),
-		onSuccess: (data) => {
-			client.queryClient.setQueryData(
-				client.query.settings.get.queryKey(),
-				data,
-			);
-		},
+		onSuccess: applySettings,
 	});
 
 	const removeInstruction = useMutation({
 		...client.query.settings.removeInstruction.mutationOptions(),
-		onSuccess: (data) => {
-			client.queryClient.setQueryData(
-				client.query.settings.get.queryKey(),
-				data,
-			);
-		},
+		onSuccess: applySettings,
 	});
 
 	return {

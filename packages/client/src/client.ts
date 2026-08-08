@@ -151,4 +151,4 @@ export const createClient = ({
 
 export type Client = Awaited<ReturnType<typeof createClient>>;
 
-export const ClientProvider = createContext<Client>(null as any);
+export const ClientContext = createContext<Client>(null as any);

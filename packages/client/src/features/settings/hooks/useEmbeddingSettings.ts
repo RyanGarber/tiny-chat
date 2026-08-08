@@ -1,46 +1,34 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { zSettings } from "@tiny-chat/core/src/features/data/types/user.ts";
-import { useContext } from "react";
-import { ClientProvider } from "../../../client.ts";
-import { useSession } from "../../../core/hooks/useSession.ts";
+import { useMutation } from "@tanstack/react-query";
+import { useContext, useMemo } from "react";
+import { ClientContext } from "../../../client.ts";
 import { UserService } from "../../user/services/UserService.ts";
+import { useSettings } from "./useSettings.ts";
 
 export const useEmbeddingSettings = () => {
-	const client = useContext(ClientProvider);
-	const { session } = useSession();
+	const client = useContext(ClientContext);
 
-	const embeddingConfig = useQuery({
-		...client.query.settings.get.queryOptions(),
-		select: (data) => data.embeddingConfig,
-		initialData: zSettings.safeParse(session.data?.user?.settings).data,
-	});
+	const { settings, applySettings } = useSettings();
+
+	const embeddingConfig = useMemo(() => {
+		return settings.data?.embeddingConfig;
+	}, [settings.data?.embeddingConfig]);
 
 	const setEmbeddingConfig = useMutation({
 		...client.query.settings.setEmbeddingConfig.mutationOptions(),
 		onSuccess: async (data) => {
-			client.queryClient.setQueryData(
-				client.query.settings.get.queryKey(),
-				data,
-			);
+			applySettings(data);
 			await client.api.embedding.resetAllEmbeddings.mutate();
 			await UserService.fetchNextEmbeddingBatch({ client });
 		},
 	});
 
-	const useEmbeddingSearch = useQuery({
-		...client.query.settings.get.queryOptions(),
-		select: (data) => data.useEmbeddingSearch,
-		initialData: zSettings.safeParse(session.data?.user?.settings).data,
-	});
+	const useEmbeddingSearch = useMemo(() => {
+		return settings.data?.useEmbeddingSearch ?? false;
+	}, [settings.data?.useEmbeddingSearch]);
 
 	const setUseEmbeddingSearch = useMutation({
 		...client.query.settings.setUseEmbeddingSearch.mutationOptions(),
-		onSuccess: (data) => {
-			client.queryClient.setQueryData(
-				client.query.settings.get.queryKey(),
-				data,
-			);
-		},
+		onSuccess: applySettings,
 	});
 
 	return {

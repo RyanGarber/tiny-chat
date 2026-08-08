@@ -3,14 +3,14 @@ import { ActionIcon, Burger, Group, Tooltip } from "@mantine/core";
 import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
 import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
 import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
-import { useLayoutStore } from "#app/core/stores/useLayoutStore.tsx";
+import { useAppStore } from "#app/core/stores/useAppStore.ts";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 
 export default function ChatHeader({ fixed }: { fixed: boolean }) {
 	const { chat } = useChat();
-	const isMobile = useLayoutStore((s) => s.isMobile);
-	const isSidebarOpen = useLayoutStore((s) => s.isSidebarOpen);
-	const setSidebarOpen = useLayoutStore((s) => s.setSidebarOpen);
+	const isMobile = useAppStore((s) => s.isMobile);
+	const isSidebarOpen = useAppStore((s) => s.isSidebarOpen);
+	const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
 	const temporary = useChatStore((s) => s.createTemporary);
 	const setTemporary = useChatStore((s) => s.setCreateTemporary);
 	const incognito = useChatStore((s) => s.createIncognito);

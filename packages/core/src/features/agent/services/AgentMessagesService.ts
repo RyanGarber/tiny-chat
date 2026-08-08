@@ -1,13 +1,16 @@
 import { format } from "timeago.js";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
-import type { Capabilities } from "../../capability/types/capability.ts";
+import type {
+	Capabilities,
+	ShellCapability,
+} from "../../capability/types/capability.ts";
 import { Author, type zDataPart } from "../../data/types/message.ts";
 import { DirectiveUtils } from "../../data/utils/DirectiveUtils.ts";
+import { FileOperationService } from "../../file/services/FileOperationService.ts";
 import { FileTypeUtils } from "../../file/utils/FileTypeUtils.ts";
 import { type Descendent, FileUtils } from "../../file/utils/FileUtils.ts";
 import { PathUtils } from "../../file/utils/PathUtils.ts";
 import type { zAgentContext, zAgentMessage } from "../types/agent.ts";
-import { AgentUtils } from "../utils/AgentUtils.ts";
 
 export const AgentMessagesService = {
 	buildMessages: async ({
@@ -17,7 +20,7 @@ export const AgentMessagesService = {
 		context: zAgentContext;
 		capabilities: Capabilities;
 	}): Promise<{ messages: zAgentMessage[]; customInstructions?: string }> => {
-		const files = await capabilities.chatShell?.getFiles?.();
+		const files = await capabilities.chatShell?.nodes?.();
 		console.log(`[AgentMessagesService] files in chat:`, files);
 
 		const messages: zAgentMessage[] = [];
@@ -61,11 +64,10 @@ export const AgentMessagesService = {
 							});
 						} else if (directive?.tag === "command") {
 							if (directive.attributes.name === "system-prompt") {
-								const { index } = AgentUtils.getLastPrompt(context);
-								if (i === index) customInstructions = directive.textContent;
+								customInstructions = directive.textContent;
 								console.log(
 									"[AgentMessagesService] using custom instructions:",
-									text,
+									directive.textContent,
 								);
 							} else {
 								console.warn(
@@ -96,20 +98,14 @@ export const AgentMessagesService = {
 										};
 									}
 								} else if (directive.attributes["is-directory"] === "true") {
-									const directory = await shell?.readDir({
+									const xml = await AgentMessagesService.buildDirectoryBlock({
+										shell,
 										path: directive.attributes.source,
 									});
-									if (directory) {
+									if (xml) {
 										attachment = {
 											type: "text",
-											value: directory
-												.map((node) =>
-													AgentMessagesService.buildNode({
-														name: PathUtils.name(node),
-														directory: node.is_dir,
-													}),
-												)
-												.join("\n"),
+											value: xml,
 										};
 									}
 								} else {
@@ -242,6 +238,38 @@ export const AgentMessagesService = {
 		};
 	},
 
+	buildDirectoryBlock: async ({
+		shell,
+		path,
+	}: {
+		shell?: Pick<ShellCapability, "readDir">;
+		path: string;
+	}) => {
+		if (!shell) return null;
+		const base = PathUtils.normalize({ path, unix: true }).replace(/\/+$/, "");
+		const entries = await FileOperationService.walk({
+			shell,
+			path,
+			includeDirectories: true,
+		});
+
+		const nodes = entries.map((entry) => {
+			const normalized = PathUtils.normalize({ path: entry.path, unix: true });
+			const relative = normalized.replace(
+				new RegExp(`^${CommonUtils.getRegexEscaped(base)}\\/?`),
+				"",
+			);
+			return {
+				uri: entry.path,
+				is_dir: entry.is_dir,
+				path: PathUtils.split(relative),
+			};
+		});
+
+		const tree = FileUtils.toTree({ nodes });
+		return AgentMessagesService.buildTree({ tree, depth: 0 });
+	},
+
 	buildUploadBlock: ({
 		upload,
 		files,
@@ -253,26 +281,34 @@ export const AgentMessagesService = {
 			nodes: files.map((file) => ({ ...file, path: file.path.slice(1) })),
 		});
 
-		const buildNodes = (
-			descendent: Descendent<(typeof files)[number]>,
-			depth = 0,
-		): string => {
-			const nodes: string[] = [];
-			for (const [segment, child] of descendent.children) {
-				nodes.push(
-					AgentMessagesService.buildNode({
-						name: segment,
-						uri: child.node ? child.node.uri : undefined,
-						directory: !child.node,
-						content: !child.node ? buildNodes(child, depth + 1) : undefined,
-						depth: depth + 1,
-					}),
-				);
-			}
-			return nodes.join("\n");
-		};
+		return `<upload name="${upload.name}" path="${PathUtils.toMount({ uploadId: upload.id })}">\n${AgentMessagesService.buildTree({ tree, depth: 1 })}\n</upload>`;
+	},
 
-		return `<upload name="${upload.name}" path="${PathUtils.toMount({ uploadId: upload.id })}">\n${buildNodes(tree)}\n</upload>`;
+	buildTree: <T extends { uri?: string; is_dir?: boolean }>({
+		tree,
+		depth = 0,
+	}: {
+		tree: Descendent<T>;
+		depth?: number;
+	}): string => {
+		const nodes: string[] = [];
+		for (const [segment, child] of tree.children) {
+			const isDirectory = child.node
+				? ((child.node as T).is_dir ?? false)
+				: true;
+			nodes.push(
+				AgentMessagesService.buildNode({
+					name: segment,
+					uri: child.node && !isDirectory ? (child.node as T).uri : undefined,
+					directory: isDirectory,
+					content: isDirectory
+						? AgentMessagesService.buildTree({ tree: child, depth: depth + 1 })
+						: undefined,
+					depth,
+				}),
+			);
+		}
+		return nodes.join("\n");
 	},
 
 	buildNode: ({

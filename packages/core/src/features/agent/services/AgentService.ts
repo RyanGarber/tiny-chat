@@ -1,5 +1,8 @@
 import type { zEnv } from "../../../core/types/env.ts";
-import type { Capabilities } from "../../capability/types/capability.ts";
+import type {
+	Capabilities,
+	ShellOutputChunk,
+} from "../../capability/types/capability.ts";
 import type { zData, zDataPart, zMetadata } from "../../data/types/message.ts";
 import {
 	ModelProviderService,
@@ -16,6 +19,84 @@ import { AgentMessagesService } from "./AgentMessagesService.ts";
 import { AgentTokensService } from "./AgentTokensService.ts";
 
 export const AgentService = {
+	build: async ({
+		context,
+		capabilities,
+		toolsets,
+		skills,
+		skipInstructions,
+	}: {
+		context: zAgentContext;
+		capabilities: Capabilities;
+		toolsets: Toolset<any>[];
+		skills: zSkill[];
+		skipInstructions?: boolean;
+	}) => {
+		const { prompt } = AgentUtils.getLastPrompt(context);
+
+		const enabledToolsets = toolsets.filter((toolset) =>
+			prompt?.config?.toolsets?.includes(ToolUtils.name({ toolset })),
+		);
+		console.log("[AgentService] enabled tools:", enabledToolsets);
+		const enabledSkills = skills.filter((skill) =>
+			prompt?.config?.skills?.includes(skill.path),
+		);
+		console.log("[AgentService] enabled skills:", enabledSkills);
+
+		const { messages, customInstructions } =
+			await AgentMessagesService.buildMessages({
+				context,
+				capabilities,
+			});
+
+		const instructions = skipInstructions
+			? undefined
+			: (customInstructions ??
+				(await AgentInstructionsService.buildInstructions({
+					context,
+					config: prompt?.config,
+					capabilities,
+					enabledToolsets,
+					enabledSkills,
+				})));
+
+		console.log("[AgentService] built agent:", messages, instructions);
+
+		return {
+			config: prompt?.config,
+			enabledToolsets,
+			messages,
+			instructions,
+		};
+	},
+
+	estimate: async ({
+		context,
+		capabilities,
+		toolsets,
+		skills,
+		skipInstructions,
+	}: {
+		context: zAgentContext;
+		capabilities: Capabilities;
+		toolsets: Toolset<any>[];
+		skills: zSkill[];
+		skipInstructions?: boolean;
+	}) => {
+		const { messages, instructions } = await AgentService.build({
+			context,
+			capabilities,
+			toolsets,
+			skills,
+			skipInstructions,
+		});
+
+		return AgentTokensService.getTokenBreakdown({
+			messages,
+			instructions,
+		});
+	},
+
 	generate: async function* ({
 		provider,
 		context,
@@ -26,6 +107,7 @@ export const AgentService = {
 		metadata,
 		env,
 		options,
+		onToolOutput,
 	}: {
 		provider: ModelProvider<any>;
 		context: zAgentContext;
@@ -36,34 +118,13 @@ export const AgentService = {
 		metadata: zMetadata;
 		env: Partial<zEnv>;
 		options: Partial<Omit<RunLanguageModelOptions, "system">>;
+		/** Output a tool reports while it is still running, keyed by call id. */
+		onToolOutput?: (_: { id: string; chunk: ShellOutputChunk }) => void;
 	}) {
-		const config = AgentUtils.getLastPrompt(context).prompt.config;
-		if (!config) throw new Error("no prompt or config found");
+		const { config, enabledToolsets, messages, instructions } =
+			await AgentService.build({ context, capabilities, toolsets, skills });
 
-		const enabledToolsets = toolsets.filter((toolset) =>
-			config.toolsets?.includes(ToolUtils.name({ toolset })),
-		);
-		console.log("[AgentService] enabled tools:", enabledToolsets);
-		const enabledSkills = skills.filter((skill) =>
-			config.skills?.includes(skill.path),
-		);
-		console.log("[AgentService] enabled skills:", enabledSkills);
-
-		const { messages, customInstructions } =
-			await AgentMessagesService.buildMessages({
-				context,
-				capabilities,
-			});
-
-		const instructions =
-			customInstructions ??
-			(await AgentInstructionsService.buildInstructions({
-				context,
-				config,
-				capabilities,
-				enabledToolsets,
-				enabledSkills,
-			}));
+		if (!config) throw new Error("missing config");
 
 		// Agentic loop: keep generating until the model stops calling tools
 		while (true) {
@@ -88,6 +149,7 @@ export const AgentService = {
 					user: context.user,
 					provider,
 					messages: await AgentTokensService.trimMessages({
+						instructions,
 						messages,
 						config,
 					}),
@@ -200,6 +262,33 @@ export const AgentService = {
 					continue;
 				}
 
+				// Checks run ahead of the approval and feedback gates so a call that
+				// cannot succeed fails here, and the loop keeps going instead of
+				// stopping to ask the user about it.
+				if (tool.check) {
+					try {
+						await tool.check({ input: toolCall.args, context });
+					} catch (e: any) {
+						console.warn(
+							`[AgentService] tool ${toolCall.name} failed its check:`,
+							e,
+						);
+						yield push({
+							type: "toolResult",
+							id: toolCall.id,
+							name: toolCall.name,
+							error: true,
+							value: [
+								{
+									type: "text",
+									value: e instanceof Error ? e.message : JSON.stringify(e),
+								},
+							],
+						});
+						continue;
+					}
+				}
+
 				if (tool.feedback || tool.approval) {
 					stop = true;
 					continue;
@@ -214,6 +303,9 @@ export const AgentService = {
 						input: toolCall.args,
 						feedback: undefined,
 						context,
+						onOutput: onToolOutput
+							? (chunk) => onToolOutput({ id: toolCall.id, chunk })
+							: undefined,
 					});
 					console.log(
 						`[AgentService] tool ${toolCall.name} finished with result:`,

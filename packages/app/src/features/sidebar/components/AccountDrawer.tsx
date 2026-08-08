@@ -1,0 +1,211 @@
+import { Icon } from "@iconify/react";
+import {
+	Button,
+	Divider,
+	Drawer,
+	Group,
+	Modal,
+	Stack,
+	Text,
+	Tooltip,
+} from "@mantine/core";
+import type { JSX } from "react";
+import { client } from "#app/client.ts";
+import { useAccounts } from "#app/core/hooks/useAccounts.ts";
+import { useAppStore } from "#app/core/stores/useAppStore.ts";
+import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
+import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
+import { useSession } from "#client/src/core/hooks/useSession.ts";
+
+function Account({
+	id,
+	name,
+	icon,
+}: {
+	id: string;
+	name: string;
+	icon: JSX.Element;
+}) {
+	const { accounts, linkAccount, unlinkAccount } = useAccounts();
+
+	return (
+		<Group justify="space-between">
+			<Group gap={5}>
+				{icon}
+				<Text>{name}</Text>
+			</Group>
+			{accounts.data?.find((account) => account.providerId === id) ? (
+				accounts.data?.length === 1 ? (
+					<Tooltip label="Must have one account" color="gray">
+						<Button
+							variant="light"
+							onClick={() => unlinkAccount.mutate(id)}
+							disabled
+						>
+							Unlink
+						</Button>
+					</Tooltip>
+				) : (
+					<Button variant="light" onClick={() => unlinkAccount.mutate(id)}>
+						Unlink
+					</Button>
+				)
+			) : (
+				<Button variant="default" onClick={() => linkAccount.mutate(id)}>
+					Link
+				</Button>
+			)}
+		</Group>
+	);
+}
+
+export default function AccountDrawer({
+	opened,
+	onClose,
+}: {
+	opened: boolean;
+	onClose: () => void;
+}) {
+	const { session, requestClone } = useSession();
+	const { deleteUser } = useAccounts();
+
+	const currentModal = useAppStore((state) => state.currentModal);
+	const setCurrentModal = useAppStore((state) => state.setCurrentModal);
+
+	return (
+		<Drawer
+			opened={opened}
+			onClose={onClose}
+			title={
+				session.data?.user && !session.data.user.isAnonymous
+					? "Account"
+					: "Sign In"
+			}
+		>
+			<Stack>
+				{TauriUtils.isTauri() ? (
+					<>
+						{requestClone.isPending ? (
+							<Text size="sm">Waiting for you to sign in...</Text>
+						) : (
+							<Text c="dimmed" size="sm">
+								Use the web to sign in and manage your account.
+							</Text>
+						)}
+						<Button
+							variant="default"
+							fullWidth
+							onClick={() => {
+								if (session.data?.user?.isAnonymous) {
+									if (requestClone.isPending) {
+										requestClone.reset();
+									} else {
+										requestClone.mutate(async (id) => {
+											return await TauriUtils.open(
+												`${client.webUrl}/#?clone=${id}`,
+											);
+										});
+									}
+								} else {
+									void TauriUtils.open(`${client.webUrl}`);
+								}
+							}}
+						>
+							{requestClone.isPending ? "Cancel" : "Open Browser"}
+						</Button>
+						<Text size="xs" c="dimmed" m="0 auto">
+							<Button
+								size="compact-xs"
+								variant="transparent"
+								component="a"
+								onClick={(e) => {
+									e.preventDefault();
+									if (session.data?.user?.isAnonymous) {
+										if (!requestClone.isPending) {
+											requestClone.mutate(async (id) => {
+												await navigator.clipboard.writeText(
+													`${client.webUrl}/#?clone=${id}`,
+												);
+											});
+										}
+									} else {
+										void TauriUtils.open(client.webUrl);
+									}
+								}}
+							>
+								or copy the link
+							</Button>
+						</Text>
+					</>
+				) : (
+					<>
+						<Text c="dimmed" size="sm">
+							Link an account to save chats and settings.
+						</Text>
+						<Account
+							id="google"
+							name="Google"
+							icon={<Icon icon="lucide:chromium" />}
+						/>
+						<Account
+							id="github"
+							name="GitHub"
+							icon={<Icon icon="lucide:github" />}
+						/>
+						<Account
+							id="huggingface"
+							name="Hugging Face"
+							icon={<Icon icon="lucide:smile" />}
+						/>
+					</>
+				)}
+				{session.data?.user && !session.data.user.isAnonymous && (
+					<>
+						<Divider />
+						<Button
+							variant="default"
+							fullWidth
+							mt={10}
+							onClick={() => {
+								void (async () => {
+									await client.auth.signOut();
+									window.location.reload();
+								})();
+							}}
+						>
+							Sign Out
+						</Button>
+						<Button
+							variant="outline"
+							color="red"
+							fullWidth
+							mt={10}
+							onClick={() => setCurrentModal("delete-account")}
+						>
+							Delete Account
+						</Button>
+						<Modal
+							opened={currentModal === "delete-account"}
+							onClose={() => setCurrentModal(null)}
+							title="Delete Account"
+							styles={{ content: StyleUtils.glass }}
+							centered
+						>
+							<Button
+								color="red"
+								fullWidth
+								onClick={() => {
+									deleteUser.mutate();
+								}}
+								loading={deleteUser.isPending}
+								disabled={deleteUser.isPending}
+							>
+								Confirm
+							</Button>
+						</Modal>
+					</>
+				)}
+			</Stack>
+		</Drawer>
+	);
+}

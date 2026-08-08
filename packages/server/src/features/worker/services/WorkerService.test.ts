@@ -46,7 +46,7 @@ describe("WorkerService", () => {
 
 		const [prompt, response] = messages.slice(-2);
 		expect(prompt.author).toBe(Author.USER);
-		expect(DataUtils.getText(prompt)).toBe(TEST_PROMPT);
+		expect(DataUtils.getText(prompt)).toEqual(TEST_PROMPT);
 		expect(response.author).toBe(Author.MODEL);
 		expect(response.config.model).toBe(prompt.config.model);
 		console.log("Worker response:", DataUtils.getText(response), response);

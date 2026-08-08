@@ -7,18 +7,15 @@ export const search_memories = {
 	name: "search_memories",
 	description: "Search all known facts about the user.",
 	input: z.object({
-		id: z.cuid2(),
 		query: z.string(),
 	}),
-	output: z.array(
-		z.object({
-			id: z.cuid2(),
-			fact: z.string(),
-			category: z.enum(MemoryCategory),
-			stability: z.enum(MemoryStability),
-			created_at: z.date(),
-		}),
-	),
+	output: z.object({
+		id: z.cuid2(),
+		fact: z.string(),
+		category: z.enum(MemoryCategory),
+		stability: z.enum(MemoryStability),
+		created_at: z.date(),
+	}),
 } as const satisfies ToolDefinition;
 
 export const createSearchMemoriesTool: ToolFactory<
@@ -30,17 +27,15 @@ export const createSearchMemoriesTool: ToolFactory<
 		const memories = await options.capabilities.user.searchMemories({
 			searchText: input.query,
 		});
-		return [
-			{
-				type: "json",
-				value: memories.map((memory) => ({
-					id: memory.id,
-					fact: memory.fact,
-					category: memory.category,
-					stability: memory.stability,
-					created_at: memory.createdAt,
-				})),
+		return memories.map((memory) => ({
+			type: "json",
+			value: {
+				id: memory.id,
+				fact: memory.fact,
+				category: memory.category,
+				stability: memory.stability,
+				created_at: memory.createdAt,
 			},
-		];
+		}));
 	},
 });

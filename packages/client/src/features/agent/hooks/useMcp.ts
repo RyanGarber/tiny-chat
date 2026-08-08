@@ -8,7 +8,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import type { zMCPServers } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { useContext } from "react";
-import { ClientProvider } from "../../../client.ts";
+import { ClientContext } from "../../../client.ts";
 import { useMcpServerSettings } from "../../settings/hooks/useMcpServerSettings.ts";
 import { useMcpStore } from "../stores/useMcpStore.ts";
 
@@ -19,21 +19,21 @@ export const disconnectMcpServersQueryKey = [
 ] as const;
 
 export const useMcp = () => {
-	const client = useContext(ClientProvider);
+	const client = useContext(ClientContext);
 
 	const { mcpServerSettings } = useMcpServerSettings();
 	const connectedServers = useMcpStore((state) => state.connectedServers);
 	const setConnectedServers = useMcpStore((state) => state.setConnectedServers);
 
 	const mcpServers = useQuery({
-		queryKey: [mcpServersQueryKey, JSON.stringify(mcpServerSettings.data)],
+		queryKey: [mcpServersQueryKey, JSON.stringify(mcpServerSettings)],
 		queryFn: async () => {
-			if (!mcpServerSettings.data) {
+			if (!mcpServerSettings) {
 				disconnectMcpServers.mutate();
 				return [];
 			}
 
-			console.log("[useMcp] connecting to servers:", mcpServerSettings.data);
+			console.log("[useMcp] connecting to servers:", mcpServerSettings);
 
 			const mcpServers: {
 				name: string;
@@ -45,7 +45,7 @@ export const useMcp = () => {
 
 			const connections: Client[] = [];
 
-			for (const [name, server] of Object.entries(mcpServerSettings.data)) {
+			for (const [name, server] of Object.entries(mcpServerSettings)) {
 				const mcpClient = new Client({ version: "0", name: "tiny-chat" });
 				let tools: Tool[] = [];
 				let error: unknown;

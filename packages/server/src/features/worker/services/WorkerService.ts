@@ -71,11 +71,6 @@ export const WorkerService = {
 				const chat = await ChatService.getChat({ user, chat: action.chatId });
 				const { messages } = await MessageService.getMessages({ user, chat });
 
-				console.log(
-					"~~~~~~~~ MESSAGES BEFORE ACTION ~~~~~~~~~",
-					messages.map((m) => ({ id: m.id, author: m.author })),
-				);
-
 				const userMessage = MessageUtils.toMessageState(
 					await globalThis.prisma.message.create({
 						data: {
@@ -107,17 +102,6 @@ export const WorkerService = {
 							previous: { connect: { id: userMessage.id } },
 						},
 					}),
-				);
-
-				console.log("~~~~~~ CREATED MODEL MESSAGE ~~~~~~", modelMessageId);
-
-				console.log(
-					"~~~~~~~~ MESSAGES MID ACTION ~~~~~~~~~",
-					(
-						await globalThis.prisma.message.findMany({
-							where: { chatId: action.chatId },
-						})
-					).map((m) => ({ id: m.id, author: m.author })),
 				);
 
 				const controller = new AbortController();
@@ -203,16 +187,6 @@ export const WorkerService = {
 				}
 
 				console.log(`[WorkerService] action complete:`, action);
-
-				console.log(
-					"~~~~~~~~ MESSAGES AFTER ACTION ~~~~~~~~~",
-					(
-						await MessageService.getMessages({
-							chat: { id: action.chatId },
-							user,
-						})
-					).messages.map((m) => ({ id: m.id, author: m.author })),
-				);
 
 				await globalThis.prisma.message.update({
 					where: { id: modelMessageId },

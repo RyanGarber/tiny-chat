@@ -24,12 +24,12 @@ interface ScrollAnchor {
  */
 export function useAutoScroll({
 	scrollRequested,
-	isInitializing,
+	scrollPaused,
 }: {
 	/** Incrementing counter that triggers a smooth scroll-to-bottom */
 	scrollRequested: number;
 	/** While true, skip scroll-requested handling */
-	isInitializing: boolean;
+	scrollPaused: boolean;
 }) {
 	const viewportNodeRef = useRef<HTMLDivElement | null>(null);
 	const isAtBottomRef = useRef(true);
@@ -396,7 +396,7 @@ export function useAutoScroll({
 
 	// Respond to explicit scroll-to-bottom (e.g. after sending a message)
 	useEffect(() => {
-		if (!viewportEl || isInitializing) return;
+		if (!viewportEl || scrollPaused) return;
 		if (scrollRequested > lastHandledScrollRequestRef.current) {
 			lastHandledScrollRequestRef.current = scrollRequested;
 			const session = scrollSessionRef.current;
@@ -409,7 +409,7 @@ export function useAutoScroll({
 				}
 			});
 		}
-	}, [viewportEl, scrollRequested, scrollToBottom, isInitializing]);
+	}, [viewportEl, scrollRequested, scrollToBottom, scrollPaused]);
 
 	return {
 		viewportRef,

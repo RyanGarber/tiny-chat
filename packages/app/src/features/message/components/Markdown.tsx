@@ -1,18 +1,15 @@
-import { Box, type BoxProps } from "@mantine/core";
-import { createMathPlugin } from "@streamdown/math";
+import { Box } from "@mantine/core";
 import { mermaid } from "@streamdown/mermaid";
+import { MarkdownContext } from "@tiny-chat/client/src/features/message/components/MarkdownContext.tsx";
+import { useMarkdown } from "@tiny-chat/client/src/features/message/hooks/useMarkdown.ts";
 import { useThemes } from "@tiny-chat/client/src/features/settings/hooks/useThemes.ts";
 import { memo, useMemo } from "react";
-import RemarkBreaks from "remark-breaks";
-import RemarkDirective from "remark-directive";
 import {
 	type AnimateOptions,
 	type Components,
-	defaultRemarkPlugins,
 	type PluginConfig,
 	Streamdown,
 } from "streamdown";
-import { visit } from "unist-util-visit";
 import {
 	AComponent,
 	BlockquoteComponent,
@@ -20,11 +17,9 @@ import {
 	LinkComponent,
 	SlotComponent,
 } from "#app/features/message/components/MarkdownComponents.tsx";
-import { MarkdownContext } from "#app/features/message/components/MarkdownContext.tsx";
+
 import "katex/dist/katex.min.css";
-import type { Nodes, Root } from "mdast";
-import type { JSX } from "react";
-import { CodeUtils } from "#app/core/utils/CodeUtils.ts";
+import { CodeUtils } from "@tiny-chat/core/src/core/utils/CodeUtils.ts";
 
 const COMPONENTS: Components = {
 	blockquote: BlockquoteComponent,
@@ -33,49 +28,6 @@ const COMPONENTS: Components = {
 	mark: CiteComponent,
 	slot: SlotComponent,
 };
-
-// reference tag passes id + animate index through sanitizer; all others blocked by default
-const ALLOWED_TAGS: Partial<Record<keyof JSX.IntrinsicElements, string[]>> = {
-	blockquote: ["model"],
-	mark: ["sources"],
-	link: ["source", "is-directory"],
-	slot: ["name", "value", "accepts-content", "needs-run"],
-};
-
-const directive = (
-	node: Nodes,
-	name: string,
-	toName: keyof JSX.IntrinsicElements,
-) => {
-	if (
-		node.type !== "containerDirective" &&
-		node.type !== "leafDirective" &&
-		node.type !== "textDirective"
-	)
-		return;
-
-	if (node.name !== name) return;
-
-	node.data ??= {};
-	node.data.hName = toName;
-	node.data.hProperties = { ...node.attributes };
-};
-
-const REMARK_PLUGINS = [
-	...Object.values(defaultRemarkPlugins),
-	RemarkBreaks,
-	RemarkDirective,
-	function directives() {
-		return (tree: Root) => {
-			visit(tree, (node) => {
-				directive(node, "quote", "blockquote");
-				directive(node, "writing", "blockquote");
-				directive(node, "command", "slot");
-				directive(node, "attachment", "link");
-			});
-		};
-	},
-];
 
 const ANIMATE_OPTIONS: AnimateOptions = {
 	animation: "blurIn",
@@ -88,65 +40,74 @@ const ANIMATE_OPTIONS: AnimateOptions = {
 export const Markdown = memo(
 	({
 		source,
-		boxProps,
-		context = {
-			webReferences: [],
-			memoryReferences: [],
-			actionReferences: [],
-			fileReferences: [],
-			isGenerating: false,
-		},
+		context = {},
+		maw,
 	}: {
 		source: string;
-		boxProps?: BoxProps;
-		context?: MarkdownContext;
+		context?: MarkdownContext<string>;
+		maw?: number;
 	}) => {
 		const { codeTheme, theme } = useThemes();
-
-		const props = useMemo(
-			() => ({
-				...boxProps,
-				style: { overflowWrap: "break-word" as const, ...boxProps?.style },
-			}),
-			[boxProps],
-		);
+		const { remarkPlugins, rehypePlugins, content } = useMarkdown({
+			source,
+			withKatex: true,
+		});
 
 		const plugins = useMemo<PluginConfig>(
 			() => ({
-				math: createMathPlugin({ singleDollarTextMath: false }),
 				mermaid,
-				code: CodeUtils.plugin(codeTheme.data),
+				code: {
+					name: "shiki",
+					type: "code-highlighter",
+					getSupportedLanguages: () => CodeUtils.languages,
+					supportsLanguage: () => true,
+					getThemes: () => [codeTheme, codeTheme],
+					highlight: ({ code, language }, callback) => {
+						return CodeUtils.highlight(
+							{ code, theme: codeTheme, language },
+							callback,
+						);
+					},
+				},
 			}),
-			[codeTheme.data],
+			[codeTheme],
 		);
 
-		// TODO WIP - replace this
-		const content = useMemo(() => {
-			return source.replace(/<cite([/ ])/g, "<mark$1");
-		}, [source]);
-
 		return (
-			<MarkdownContext.Provider value={context}>
-				<Box {...props}>
+			<MarkdownContext value={context}>
+				<Box
+					maw={maw}
+					style={{ overflowWrap: "break-word" }}
+					className={
+						context.style?.textSize
+							? `**:${context.style?.textSize}`
+							: undefined
+					}
+				>
 					<Streamdown
 						animated={ANIMATE_OPTIONS}
-						isAnimating={context.isGenerating}
-						mode={context.isGenerating ? "streaming" : "static"}
+						isAnimating={context.streaming}
+						mode={context.streaming ? "streaming" : "static"}
 						components={COMPONENTS}
-						allowedTags={ALLOWED_TAGS}
+						remarkPlugins={remarkPlugins}
+						rehypePlugins={rehypePlugins}
 						plugins={plugins}
-						remarkPlugins={REMARK_PLUGINS}
-						shikiTheme={[codeTheme.data, codeTheme.data]}
+						shikiTheme={[codeTheme, codeTheme]}
 						mermaid={{
-							config: { theme: theme.data === "dark" ? "dark" : "neutral" },
+							config: { theme: theme === "dark" ? "dark" : "neutral" },
 						}}
 						className="selectable"
 					>
 						{content}
 					</Streamdown>
 				</Box>
-			</MarkdownContext.Provider>
+			</MarkdownContext>
 		);
 	},
-	(previous, next) => previous.source === next.source,
+	(previous, next) =>
+		previous.source === next.source &&
+		previous.context?.style === next.context?.style &&
+		previous.context?.sources === next.context?.sources &&
+		previous.context?.streaming === next.context?.streaming &&
+		previous.maw === next.maw,
 );

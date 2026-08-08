@@ -2,6 +2,7 @@ import { fileTypeFromStream } from "file-type";
 import { Mime } from "mime";
 import otherTypes from "mime/types/other.js";
 import standardTypes from "mime/types/standard.js";
+import { type CodeLanguage, CodeUtils } from "../../../core/utils/CodeUtils.ts";
 import { FileUtils } from "./FileUtils.ts";
 import { PathUtils } from "./PathUtils.ts";
 
@@ -187,6 +188,29 @@ export const FileTypeUtils = {
 		}
 
 		return extension ?? fallback;
+	},
+
+	getLanguage: ({
+		mime,
+		name,
+		path,
+	}: {
+		mime?: string;
+		name?: string;
+		path?: string[] | string;
+	}): CodeLanguage | undefined => {
+		if (!path && name) path = [name];
+
+		if (path) {
+			const name = PathUtils.name({ path });
+			const exact = CodeUtils.getLanguage(name.split(".").at(-1) ?? null);
+			if (exact) return exact;
+		}
+
+		const alias = FileTypeUtils.getExtension({ mime, name, path });
+		if (!alias) return undefined;
+
+		return CodeUtils.getLanguage(alias) ?? undefined;
 	},
 
 	getBom: ({ data }: { data: Uint8Array }) => {

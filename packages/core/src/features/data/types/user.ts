@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { zStringify } from "../../../core/types/common.ts";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
+import { ThemeUtils } from "../../../core/utils/ThemeUtils.ts";
 import { zModelFeature } from "../../provider/types/model.ts";
 import type {
 	ProviderState,
@@ -53,8 +54,8 @@ export const zSettings = z
 		hiddenModels: zHiddenModels,
 		useProviderCache: z.boolean(),
 		useBrowserModels: z.boolean(),
-		theme: z.string(),
-		codeTheme: z.string(),
+		theme: z.enum(ThemeUtils.themes),
+		codeTheme: z.enum(ThemeUtils.codeThemes),
 		blackout: z.boolean(),
 		providers: zProviderSettings,
 		mcpServers: zMCPServers.catch(() => ({})),

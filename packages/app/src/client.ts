@@ -29,14 +29,12 @@ export const client = createClient({
 			const providers: ModelProvider<any>[] = [];
 			if (user.settings.useBrowserModels) {
 				const { WebLLMProvider } = await import(
-					"./features/agent/services/WebLLMProvider.ts"
+					"./core/services/WebLLMProvider.ts"
 				);
 				providers.push(WebLLMProvider);
 			}
 			if (await TauriUtils.isTauriWithAfm()) {
-				const { AFMProvider } = await import(
-					"./features/agent/services/AFMProvider.ts"
-				);
+				const { AFMProvider } = await import("./core/services/AFMProvider.ts");
 				providers.push(AFMProvider);
 			}
 			return providers;
@@ -45,7 +43,7 @@ export const client = createClient({
 			const providers: ProviderState<any>[] = [];
 			if (user.settings.useBrowserModels) {
 				const { WebLLMProvider } = await import(
-					"./features/agent/services/WebLLMProvider.ts"
+					"./core/services/WebLLMProvider.ts"
 				);
 				providers.push({
 					...WebLLMProvider,
@@ -53,9 +51,7 @@ export const client = createClient({
 				} satisfies ProviderState<ModelProviderStatus>);
 			}
 			if (await TauriUtils.isTauriWithAfm()) {
-				const { AFMProvider } = await import(
-					"./features/agent/services/AFMProvider.ts"
-				);
+				const { AFMProvider } = await import("./core/services/AFMProvider.ts");
 				providers.push({
 					...AFMProvider,
 					status: await AFMProvider.getStatus({ user }),
@@ -92,6 +88,12 @@ export const client = createClient({
 	},
 	shell: (await TauriUtils.isTauriDesktop())
 		? {
+				cwd: async () => {
+					return await TauriUtils.invoke<string>("cwd");
+				},
+				chdir: async ({ path }) => {
+					await TauriUtils.invoke("chdir", { path });
+				},
 				readFile: async ({ path }) => {
 					const file = await TauriUtils.invoke<{ path: string; data: string }>(
 						"read_file",
@@ -119,12 +121,21 @@ export const client = createClient({
 					await TauriUtils.invoke("write_file", { path, content });
 					return { path, success: true };
 				},
-				exec: ({ command }) => {
-					return TauriUtils.invoke<{
+				// The command reports its output over a channel while it runs; the
+				// resolved value still carries all of it.
+				exec: async ({ command, onOutput }) => {
+					const { Channel } = await import("@tauri-apps/api/core");
+					const channel = new Channel<{
+						stream: "stdout" | "stderr";
+						value: string;
+					}>();
+					channel.onmessage = (chunk) => onOutput?.(chunk);
+
+					return await TauriUtils.invoke<{
 						code?: number;
 						stdout: string;
 						stderr: string;
-					}>("shell_exec", { command });
+					}>("shell_exec", { command, onOutputChannel: channel });
 				},
 			}
 		: undefined,

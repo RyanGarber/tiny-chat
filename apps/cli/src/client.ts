@@ -1,15 +1,14 @@
-import { exec } from "node:child_process";
+import { spawn } from "node:child_process";
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { createClient } from "@tiny-chat/client/src/client.ts";
 import type { zEnv } from "@tiny-chat/core/src/core/types/env.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
-import { quote } from "shell-quote";
 import { KeyringService } from "./core/services/KeyringService.ts";
 import { StorageService } from "./core/services/StorageService.ts";
-import { OsUtils } from "./core/utils/OsUtils.ts";
-import { useInputStore } from "./features/editor/stores/useInputStore.ts";
+import { CliUtils } from "./core/utils/CliUtils.ts";
+import { useEditorStore } from "./features/editor/stores/useEditorStore.ts";
 
 export const client = createClient({
 	env: {
@@ -25,7 +24,11 @@ export const client = createClient({
 	setStorage: (key, value) => StorageService.set(key, value),
 	transports: {
 		createStdio: ({ command, env }) => {
-			return new StdioClientTransport({ command: quote(command), env });
+			return new StdioClientTransport({
+				command: command[0],
+				args: command.slice(1),
+				env,
+			});
 		},
 		createStreamableHttp: ({ url, headers }) => {
 			return new StreamableHTTPClientTransport(new URL(url), {
@@ -35,24 +38,30 @@ export const client = createClient({
 	},
 	input: {
 		getData: () => {
-			const { content } = useInputStore.getState();
+			const { content } = useEditorStore.getState();
 			return [[{ type: "text", value: content }]];
 		},
 		setData: ({ data }) => {
-			const { setContent } = useInputStore.getState();
+			const { setContent } = useEditorStore.getState();
 			setContent(DataUtils.getText({ data, join: "\n" }));
 		},
 	},
 	shell: {
+		cwd: async () => {
+			return process.cwd();
+		},
+		chdir: async ({ path }) => {
+			process.chdir(CliUtils.resolve(path));
+		},
 		readFile: async ({ path }) => {
-			path = OsUtils.resolve(path);
+			path = CliUtils.resolve(path);
 			return {
 				path,
 				data: await readFile(path),
 			};
 		},
 		writeFile: async ({ path, content }) => {
-			path = OsUtils.resolve(path);
+			path = CliUtils.resolve(path);
 			await writeFile(path, content);
 			return {
 				path,
@@ -60,21 +69,43 @@ export const client = createClient({
 			};
 		},
 		readDir: async ({ path }) => {
-			path = OsUtils.resolve(path);
+			path = CliUtils.resolve(path);
 			const entries = await readdir(path, { withFileTypes: true });
 			return entries.map((entry) => ({
-				path: OsUtils.resolve(path, entry.name),
+				path: CliUtils.resolve(path, entry.name),
 				is_dir: entry.isDirectory(),
 			}));
 		},
-		exec: async ({ command }) => {
+		// Spawned rather than buffered so output can be reported as it arrives;
+		// the accumulated text is still what the tool result is built from.
+		exec: async ({ command, onOutput }) => {
 			return new Promise((resolve) => {
-				exec(command, (error, stdout, stderr) => {
-					resolve({
-						code: (error?.code as number) ?? 0,
-						stdout,
-						stderr,
-					});
+				const child = spawn(command, { shell: true });
+
+				let stdout = "";
+				let stderr = "";
+
+				child.stdout?.setEncoding("utf8");
+				child.stdout?.on("data", (chunk: string) => {
+					stdout += chunk;
+					onOutput?.({ stream: "stdout", value: chunk });
+				});
+
+				child.stderr?.setEncoding("utf8");
+				child.stderr?.on("data", (chunk: string) => {
+					stderr += chunk;
+					onOutput?.({ stream: "stderr", value: chunk });
+				});
+
+				child.on("error", (error) => {
+					const value = `${error.message}\n`;
+					stderr += value;
+					onOutput?.({ stream: "stderr", value });
+					resolve({ code: 1, stdout, stderr });
+				});
+
+				child.on("close", (code) => {
+					resolve({ code: code ?? 0, stdout, stderr });
 				});
 			});
 		},

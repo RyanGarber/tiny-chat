@@ -9,12 +9,11 @@ import {
 	Stack,
 	Text,
 } from "@mantine/core";
-import { useTools } from "@tiny-chat/client/src/features/agent/hooks/useTools.ts";
 import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
-import { useActions } from "@tiny-chat/client/src/features/user/hooks/useActions.ts";
-import type { zDataPart } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { MarkdownContext } from "@tiny-chat/client/src/features/message/components/MarkdownContext.tsx";
 import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeUtils.ts";
-import { ToolCallUtils } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
+import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
+import type { ToolCallUtils } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
 import { memo, type ReactNode, useState } from "react";
 import type { BundledLanguage } from "streamdown";
 import { format } from "timeago.js";
@@ -22,60 +21,21 @@ import { Code, Diff } from "#app/core/components/Components.tsx";
 import { theme } from "#app/core/utils/IconUtils.ts";
 import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
 
-const FZ = "14px";
-
-const StatusText = ({
-	status,
-	highlight,
-}: {
-	status: string;
-	highlight?: string;
-}) => {
-	if (!highlight) return status;
-	const index = status.indexOf(highlight);
-	if (index === -1) return status;
-	return (
-		<>
-			{status.slice(0, index)}
-			<span style={{ fontWeight: 500 }}>{highlight}</span>
-			{status.slice(index + highlight.length)}
-		</>
-	);
-};
-
-export const ToolCall = memo(
-	({
-		toolCall,
-		toolResult,
-	}: {
-		toolCall: Extract<zDataPart, { type: "toolCall" }>;
-		toolResult?: Extract<zDataPart, { type: "toolResult" }>;
-	}) => {
-		const { toolsets } = useTools();
-		const { actions } = useActions();
-
-		const { status, highlight, pending, error, details } =
-			ToolCallUtils.getDisplay({
-				toolCall,
-				toolResult,
-				toolsets: toolsets,
-				actions: actions.data,
-			});
-
-		const [expanded, setExpanded] = useState(false);
-
+/**
+ * Renders the expanded details content for a tool call.
+ * Extracted as a separate component so it only mounts when expanded,
+ * avoiding heavy JSX computation (Code, Diff, etc.) for collapsed tool calls.
+ */
+const ToolCallDetails = memo(
+	({ details }: { details: ReturnType<typeof ToolCallUtils.getDisplay> }) => {
 		let detailsNode: ReactNode;
 
-		if (details?.kind === "search_web") {
+		if (details.name === "search_web" && details.output) {
 			detailsNode = (
 				<Stack>
-					{details.results.map((result) => (
+					{details.output.map((result) => (
 						<Box key={result.url}>
-							{result.title && (
-								<Text fw={500} fz={FZ}>
-									{result.title}
-								</Text>
-							)}
+							{result.title && <Text fw={500}>{result.title}</Text>}
 							<Anchor
 								truncate="end"
 								href={result.url}
@@ -90,57 +50,56 @@ export const ToolCall = memo(
 							>
 								{result.url}
 							</Anchor>
-							<Text truncate="end" fz={FZ}>
-								{result.content}
-							</Text>
+							<Text truncate="end">{result.content}</Text>
 						</Box>
 					))}
 				</Stack>
 			);
-		} else if (details?.kind === "view_web") {
+		} else if (details.name === "view_web" && details.output) {
 			detailsNode = (
 				<Stack>
-					{details.title && (
-						<Text fw={500} fz={FZ}>
-							{details.title}
-						</Text>
-					)}
+					{details.output.title && <Text fw={500}>{details.output.title}</Text>}
 					<Anchor
 						fw={500}
-						fz={FZ}
 						target="_blank"
-						href={details.url}
+						href={details.output.url}
 						onClick={(e) => {
 							e.preventDefault();
-							void TauriUtils.open(details.url);
+							void TauriUtils.open(details.output?.url ?? "");
 						}}
 					>
-						{details.url}
+						{details.output.url}
 					</Anchor>
 					<Code
 						language="markdown"
-						code={details.content}
+						code={details.output.content}
 						lineNumbers={false}
 					/>
 				</Stack>
 			);
-		} else if (details?.kind === "action_mutation") {
-			detailsNode = <Text fz={FZ}>{details.message}</Text>;
-		} else if (details?.kind === "list_actions") {
+		} else if (details.name === "create_action" && details.output) {
+			detailsNode = (
+				<Text>Created action {details.output.created_action_id}.</Text>
+			);
+		} else if (details.name === "update_action" && details.output) {
+			detailsNode = (
+				<Text>Updated action {details.output.updated_action_id}.</Text>
+			);
+		} else if (details.name === "delete_action" && details.output) {
+			detailsNode = (
+				<Text>Deleted action {details.output.deleted_action_id}.</Text>
+			);
+		} else if (details.name === "list_actions" && details.output) {
 			detailsNode = (
 				<Stack>
-					{details.actions.map((action) => (
+					{details.output.map((action) => (
 						<Box key={action.id}>
-							<Text fw={500} fz={FZ}>
-								{action.prompt}
-							</Text>
+							<Text fw={500}>{action.prompt}</Text>
 							<Anchor
 								truncate="end"
 								href={`/#/${action.chat_id}`}
 								target="_blank"
-								style={{
-									display: "block",
-								}}
+								display="block"
 								onClick={(e) => {
 									e.preventDefault();
 									ChatService.setChat({ id: action.chat_id });
@@ -148,38 +107,54 @@ export const ToolCall = memo(
 							>
 								Go to chat
 							</Anchor>
-							{action.nextRunAt && (
-								<Text truncate="end" fz={FZ}>
-									{format(action.nextRunAt)}
-								</Text>
+							{action.next_run_at && (
+								<Text truncate="end">{format(action.next_run_at)}</Text>
 							)}
 						</Box>
 					))}
 				</Stack>
 			);
-		} else if (details?.kind === "search_chats") {
+		} else if (details.name === "search_chats" && details.output) {
 			detailsNode = (
 				<Stack>
-					{details.results.map((result) => (
-						<Box key={result.snippet}>
-							<Text fw={500} fz={FZ}>
-								{result.chat_title}
-							</Text>
-							<Text truncate="end" fz={FZ}>
-								{result.snippet}
-							</Text>
+					{details.output.map((message) => (
+						<Box key={message.snippet}>
+							<Text fw={500}>{message.snippet}</Text>
+							<Anchor
+								truncate="end"
+								href={`/#/${message.chat_id}`}
+								target="_blank"
+								display="block"
+								onClick={(e) => {
+									e.preventDefault();
+									ChatService.setChat({ id: message.chat_id });
+								}}
+							>
+								Go to chat
+							</Anchor>
+							<Text truncate="end">{message.snippet}</Text>
 						</Box>
 					))}
 				</Stack>
 			);
-		} else if (details?.kind === "memory_mutation") {
-			detailsNode = <Text fz={FZ}>{details.message}</Text>;
-		} else if (details?.kind === "search_memories") {
+		} else if (details.name === "create_memory" && details.output) {
+			detailsNode = (
+				<Text>Created memory {details.output.created_memory_id}.</Text>
+			);
+		} else if (details.name === "update_memory" && details.output) {
+			detailsNode = (
+				<Text>Updated memory {details.output.updated_memory_id}.</Text>
+			);
+		} else if (details.name === "delete_memory" && details.output) {
+			detailsNode = (
+				<Text>Deleted memory {details.output.deleted_memory_id}.</Text>
+			);
+		} else if (details.name === "search_memories" && details.output) {
 			detailsNode = (
 				<Stack>
-					{details.results.map((result) => (
+					{details.output.map((result) => (
 						<Stack key={result.fact} gap={0}>
-							<Text fz={FZ}>{result.fact}</Text>
+							<Text>{result.fact}</Text>
 							<Text size="xs" c="dimmed">
 								(learned {format(result.created_at)})
 							</Text>
@@ -187,74 +162,61 @@ export const ToolCall = memo(
 					))}
 				</Stack>
 			);
-		} else if (details?.kind === "read_file" && details.data && details.mime) {
-			let content: ReactNode;
-			if (details.isImage) {
-				const uri = `data:${details.mime};base64,${details.data}`;
-				content = <Image src={uri} />;
-			} else {
-				content = (
-					<Code
-						filename={details.name}
-						language={
-							FileTypeUtils.getExtension({
-								mime: details.mime,
-								name: details.name,
-								path: details.path,
-							}) as BundledLanguage
-						}
-						code={details.text ?? "// failed to decode file"}
-					/>
-				);
-			}
+		} else if (details.name === "read_file" && details.content) {
 			detailsNode = (
 				<Stack>
-					<Text fw={500} fz={FZ}>
-						{details.path}
-					</Text>
-					{content}
+					<Text fw={500}>{details.input.path}</Text>
+					{details.content.type === "image" && (
+						<Image src={details.content.value} />
+					)}
+					{details.content.type === "text" && (
+						<Code
+							filename={details.name}
+							language={
+								FileTypeUtils.getExtension({
+									name: details.name,
+									path: details.input.path,
+								}) as BundledLanguage
+							}
+							code={details.content.value}
+						/>
+					)}
 				</Stack>
 			);
-		} else if (details?.kind === "write_file") {
+		} else if (details.name === "write_file" && details.output) {
 			detailsNode = (
 				<Stack>
-					<Text fw={500} fz={FZ}>
-						{details.path}
-					</Text>
+					<Text fw={500}>{details.output.path}</Text>
 					<Code
 						filename={details.name}
-						language={details.extension as BundledLanguage}
-						code={details.content}
+						language={details.language}
+						code={details.input.content}
 					/>
 				</Stack>
 			);
-		} else if (details?.kind === "edit_file") {
+		} else if (details.name === "edit_file" && details.output) {
 			detailsNode = (
 				<Stack>
-					<Text fw={500} fz={FZ}>
-						{details.path}
-					</Text>
+					<Text fw={500}>{details.output.path}</Text>
 					<Diff
 						filename={details.name}
-						language={details.extension as BundledLanguage}
-						before={details.old_string}
-						after={details.new_string}
+						language={details.language}
+						before={details.input.old_string}
+						after={details.input.new_string}
 					/>
 				</Stack>
 			);
-		} else if (details?.kind === "read_dir") {
+		} else if (details.name === "read_dir" && details.output) {
 			detailsNode = (
 				<Stack>
 					<Group gap="xs">
-						<Text fw={500} fz={FZ}>
-							{details.path}
-						</Text>
-						<Text c="dimmed" fz={FZ}>
-							{details.items.length} item
-							{details.items.length === 1 ? "" : "s"}
+						<Text fw={500}>{details.input.path}</Text>
+						<Text c="dimmed">
+							{details.output.length} item
+							{details.output.length === 1 ? "" : "s"}
 						</Text>
 					</Group>
-					{details.items.map((item) => {
+					{details.output.map((item) => {
 						const iconId = !item.is_dir
 							? theme?.getFileIconId(item.path, undefined, false)
 							: theme?.getFolderIconId(item.path, false, false);
@@ -263,7 +225,7 @@ export const ToolCall = memo(
 							: null;
 
 						return (
-							<Group key={item.name} gap={5} miw={0}>
+							<Group key={item.path} gap={5} miw={0}>
 								{icon && (
 									<Image
 										w="auto"
@@ -271,8 +233,8 @@ export const ToolCall = memo(
 										src={`data:${icon.mimeType};base64,${icon.data}`}
 									/>
 								)}
-								<Text truncate="end" fz={FZ}>
-									{item.name}
+								<Text truncate="end">
+									{PathUtils.name(item)}
 									{item.is_dir ? "/" : ""}
 								</Text>
 							</Group>
@@ -280,29 +242,83 @@ export const ToolCall = memo(
 					})}
 				</Stack>
 			);
-		} else if (details?.kind === "search_files") {
+		} else if (
+			(details.name === "search_files" || details.name === "grep_files") &&
+			details.output
+		) {
 			detailsNode = (
 				<Stack>
-					{details.results.map((upload) => (
-						<Box key={upload.name}>
-							<Text fw={500} fz={FZ}>
-								{upload.path}
-							</Text>
-							<Text truncate="end" fz={FZ}>
-								{upload.snippet}
-							</Text>
+					{details.output.map((file) => (
+						<Box key={file.path}>
+							<Text fw={500}>{file.path}</Text>
+							<Text truncate="end">{file.snippet}</Text>
 						</Box>
 					))}
 				</Stack>
 			);
-		} else if (details?.kind === "shell_exec") {
-			detailsNode = <Code language="bash" code={details.code} />;
+		} else if (details.name === "find_files" && details.output) {
+			detailsNode = (
+				<Stack>
+					{details.output.map((path) => {
+						const iconId = theme?.getFileIconId(path, undefined, false);
+						const icon = iconId
+							? theme?.getIconContent(iconId, "base64")
+							: null;
+						return (
+							<Group key={path} gap={5} miw={0}>
+								{icon && (
+									<Image
+										w="auto"
+										h={20}
+										src={`data:${icon.mimeType};base64,${icon.data}`}
+									/>
+								)}
+								<Text truncate="end">{PathUtils.name(path)}</Text>
+							</Group>
+						);
+					})}
+				</Stack>
+			);
+		} else if (details.name === "shell_exec" && details.content) {
+			detailsNode = <Code language="bash" code={details.content ?? ""} />;
 		}
+
+		return (
+			<Box
+				style={{
+					borderLeft: "2px solid var(--mantine-color-default-border)",
+				}}
+				px="lg"
+				py="xs"
+				ml={8}
+			>
+				{detailsNode ?? (
+					<Stack>
+						<Text>Input</Text>
+						<JsonTree data={details.input} withExpandAll withCopyToClipboard />
+						<Text>Output</Text>
+						<JsonTree data={details.output} withExpandAll withCopyToClipboard />
+					</Stack>
+				)}
+			</Box>
+		);
+	},
+);
+
+export const ToolCall = memo(
+	({
+		display,
+		textSize,
+	}: {
+		display: ReturnType<typeof ToolCallUtils.getDisplay>;
+		textSize?: NonNullable<MarkdownContext<string>["style"]>["textSize"];
+	}) => {
+		const [expanded, setExpanded] = useState(false);
 
 		return (
 			<Box my={10}>
 				<Group
-					className={`shimmer-text ${pending ? "active" : ""}`}
+					className={`shimmer-text ${display.result === "pending" ? "active" : ""}`}
 					onClick={() => setExpanded(!expanded)}
 					style={{ cursor: "pointer" }}
 					gap="xs"
@@ -314,48 +330,38 @@ export const ToolCall = memo(
 						style={{ minWidth: 18 }}
 						color="var(--mantine-color-dimmed)"
 					/>
-					<Text truncate="end" fz={FZ} c={error ? "red" : undefined}>
-						<StatusText status={status} highlight={highlight} />
+					<Text
+						truncate="end"
+						c={display.result === "error" ? "red" : undefined}
+					>
+						{display.status.map((part) =>
+							typeof part === "string" ? (
+								<span key={part}>{part} </span>
+							) : (
+								<span key={part.subject} style={{ fontWeight: 500 }}>
+									{part.subject}{" "}
+								</span>
+							),
+						)}
 					</Text>
 				</Group>
-				<Collapse expanded={expanded}>
-					{expanded && (
-						<Box
-							style={{
-								borderLeft: "2px solid var(--mantine-color-default-border)",
-							}}
-							px="lg"
-							py="xs"
-							ml={8}
-						>
-							{detailsNode ?? (
-								<Stack>
-									<Text fz={FZ}>Input</Text>
-									<JsonTree
-										data={
-											details?.kind === "fallback"
-												? details.args
-												: (toolCall.args as unknown)
-										}
-										withExpandAll
-										withCopyToClipboard
-									/>
-									<Text fz={FZ}>Output</Text>
-									<JsonTree
-										data={
-											details?.kind === "fallback"
-												? details.value
-												: toolResult?.value
-										}
-										withExpandAll
-										withCopyToClipboard
-									/>
-								</Stack>
-							)}
-						</Box>
-					)}
+				<Collapse
+					expanded={expanded}
+					className={textSize ? `**:${textSize}` : undefined}
+				>
+					{expanded && <ToolCallDetails details={display} />}
 				</Collapse>
 			</Box>
 		);
 	},
+	(previous, next) =>
+		previous.display.name === next.display.name &&
+		previous.display.status === next.display.status &&
+		previous.display.feedback === next.display.feedback &&
+		previous.display.approval === next.display.approval &&
+		previous.display.result === next.display.result &&
+		previous.display.input === next.display.input &&
+		previous.display.output === next.display.output &&
+		previous.display.append === next.display.append &&
+		previous.textSize === next.textSize,
 );

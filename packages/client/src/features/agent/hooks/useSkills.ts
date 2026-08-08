@@ -5,13 +5,13 @@ import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts"
 import type { zSkill } from "@tiny-chat/core/src/features/skill/types/skill.ts";
 import { SkillUtils } from "@tiny-chat/core/src/features/skill/utils/SkillUtils.ts";
 import { useContext, useMemo } from "react";
-import { ClientProvider } from "../../../client.ts";
+import { ClientContext } from "../../../client.ts";
 
 export const localSkillsQueryKey = ["skills", "local"] as const;
 export const nativeSkillsQueryKey = ["skills", "native"] as const;
 
 export const useSkills = () => {
-	const client = useContext(ClientProvider);
+	const client = useContext(ClientContext);
 
 	const localSkills = useQuery({
 		queryKey: localSkillsQueryKey,

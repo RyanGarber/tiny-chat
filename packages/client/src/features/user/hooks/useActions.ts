@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useContext } from "react";
-import { ClientProvider } from "../../../client.ts";
+import { ClientContext } from "../../../client.ts";
 
 export const useActions = () => {
-	const client = useContext(ClientProvider);
+	const client = useContext(ClientContext);
 
 	const actions = useQuery({
 		...client.query.action.getActions.queryOptions(),

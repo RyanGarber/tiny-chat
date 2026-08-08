@@ -1,5 +1,5 @@
 import { diffLines, diffWords } from "diff";
-import { distance } from "fastest-levenshtein";
+import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 
 type Diff =
 	| { type: "unchanged"; line: string }
@@ -49,7 +49,7 @@ export const DiffUtils = {
 						const removedLine = removedLines[j];
 						const addedLine = addedLines[j];
 
-						if (DiffUtils.change(removedLine, addedLine)) {
+						if (CommonUtils.getDistance(removedLine, addedLine) < 0.75) {
 							const partDiff = diffWords(removedLine, addedLine);
 
 							// nasty leftward shift so that changes are grouped together
@@ -228,12 +228,6 @@ export const DiffUtils = {
 		}
 
 		return result;
-	},
-
-	change: (before: string, after: string) => {
-		const length = Math.max(before.length, after.length);
-		const difference = distance(before, after);
-		return difference / length < 0.75;
 	},
 
 	split: (value: string): string[] => {

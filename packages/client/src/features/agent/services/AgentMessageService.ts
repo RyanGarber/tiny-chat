@@ -29,6 +29,7 @@ import {
 	type Stream,
 	StreamService,
 } from "../../chat/services/StreamService.ts";
+import { ToolStreamService } from "../../tool/services/ToolStreamService.ts";
 import { UserService } from "../../user/services/UserService.ts";
 import { ProviderService } from "./ProviderService.ts";
 
@@ -252,6 +253,9 @@ export const AgentMessageService = {
 			})),
 		];
 
+		const streamKey = (id: string) =>
+			ToolStreamService.key({ messageId: stream.message.id, partId: id });
+
 		const agent = AgentService.generate({
 			provider,
 			context,
@@ -265,6 +269,11 @@ export const AgentMessageService = {
 				abortSignal: stream.abort.signal,
 				experimental_transform: [smoothStream({ delayInMs: 20 })],
 			},
+			onToolOutput: ({ id, chunk }) => {
+				const key = streamKey(id);
+				if (!ToolStreamService.get(key)) ToolStreamService.start(key);
+				ToolStreamService.push(key, chunk);
+			},
 		});
 
 		let lastNotifyAt = 0;
@@ -276,6 +285,9 @@ export const AgentMessageService = {
 					stream.message.state.generating = true;
 				} else if (event.value.type === "thought") {
 					stream.message.state.thinking = true;
+				} else if (event.value.type === "toolResult") {
+					// The saved result now covers everything the live output showed.
+					ToolStreamService.clear(streamKey(event.value.id));
 				}
 			}
 

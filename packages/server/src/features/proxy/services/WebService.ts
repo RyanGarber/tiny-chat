@@ -10,13 +10,13 @@ export const WebService = {
 	search: async ({
 		user,
 		query,
+		maxResults,
 		providers,
-		maxResults = 10,
 	}: {
 		user: zUser;
 		query: string;
+		maxResults: number;
 		providers?: ProviderState<ProviderStatus>[];
-		maxResults?: number;
 	}) => {
 		providers ??= (await CacheService.getCache({ user })).providers;
 		const provider = WebProviderService.getBestProvider({

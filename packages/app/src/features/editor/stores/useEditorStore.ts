@@ -1,4 +1,5 @@
 import { MessagingService } from "@tiny-chat/client/src/features/chat/services/MessagingService.ts";
+import type { zData } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { Editor } from "@tiptap/react";
 import { create } from "zustand";
 import { client } from "#app/client.ts";
@@ -8,6 +9,7 @@ interface EditorStore {
 	editor: Editor | null;
 	setEditor: (editor: Editor | null) => void;
 
+	data: zData;
 	isEmpty: boolean;
 	isIncomplete: boolean;
 	update: () => void;
@@ -20,15 +22,14 @@ export const useEditorStore = create<EditorStore>((set) => ({
 	editor: null,
 	setEditor: (editor) => set({ editor }),
 
+	data: [],
 	isEmpty: true,
 	isIncomplete: false,
 	update: () => {
+		const data = MessagingService.getData({ client });
 		set({
-			isEmpty:
-				MessagingService.getData({ client }).reduce(
-					(acc, step) => acc + step.length,
-					0,
-				) === 0,
+			data,
+			isEmpty: data.reduce((acc, step) => acc + step.length, 0) === 0,
 			isIncomplete: EditorUtils.getIncomplete(),
 		});
 	},

@@ -4,26 +4,26 @@ import {
 	ActionIcon,
 	Group,
 	Modal,
-	type ModalProps,
 	ScrollArea,
 	Stack,
 	Text,
 } from "@mantine/core";
-import { useLogStore } from "#app/core/stores/useLogStore.tsx";
+import { useAppStore } from "#app/core/stores/useAppStore.ts";
+import { useConsoleStore } from "#app/core/stores/useConsoleStore.ts";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import { LogLevel } from "#core/logger.ts";
 
-export default function Console({
-	opened,
-	onClose,
-}: Pick<ModalProps, "opened" | "onClose">) {
-	const logs = useLogStore((s) => s.logs);
-	const clearLogs = useLogStore((s) => s.clearLogs);
+export default function Console() {
+	const currentModal = useAppStore((state) => state.currentModal);
+	const setCurrentModal = useAppStore((state) => state.setCurrentModal);
+
+	const logs = useConsoleStore((state) => state.logs);
+	const clearLogs = useConsoleStore((state) => state.clearLogs);
 
 	return (
 		<Modal
-			opened={opened}
-			onClose={onClose}
+			opened={currentModal === "console"}
+			onClose={() => setCurrentModal(null)}
 			title={
 				<Group gap={5}>
 					Console{" "}

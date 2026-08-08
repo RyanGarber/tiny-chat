@@ -99,17 +99,77 @@ pub struct ShellOutput {
     stdout: String,
 }
 
+#[derive(serde::Serialize, Debug, Clone)]
+pub struct ShellOutputChunk {
+    stream: &'static str,
+    value: String,
+}
+
+/// Forwards a pipe to the channel as it fills, and hands back everything it saw.
+/// Reads bytes rather than lines so a command that redraws a single line (a
+/// progress bar) still reports itself while it runs.
+async fn pump<R>(
+    mut reader: R,
+    stream: &'static str,
+    channel: tauri::ipc::Channel<ShellOutputChunk>,
+) -> String
+where
+    R: tokio::io::AsyncRead + Unpin,
+{
+    use tokio::io::AsyncReadExt;
+
+    let mut collected = String::new();
+    let mut buffer = [0u8; 8192];
+    loop {
+        let read = match reader.read(&mut buffer).await {
+            Ok(0) | Err(_) => break,
+            Ok(read) => read,
+        };
+        let value = String::from_utf8_lossy(&buffer[..read]).to_string();
+        collected.push_str(&value);
+        channel.send(ShellOutputChunk { stream, value }).ok();
+    }
+    collected
+}
+
 #[tauri::command]
-pub fn shell_exec(command: &str) -> Result<ShellOutput, Error> {
-    let output = std::process::Command::new("sh")
+pub async fn shell_exec(
+    command: String,
+    on_output_channel: tauri::ipc::Channel<ShellOutputChunk>,
+) -> Result<ShellOutput, Error> {
+    let mut child = tokio::process::Command::new("sh")
         .arg("-c")
-        .arg(command)
-        .output()?;
+        .arg(&command)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()?;
+
+    let stdout = child.stdout.take().ok_or("Cannot capture stdout")?;
+    let stderr = child.stderr.take().ok_or("Cannot capture stderr")?;
+
+    let stdout = tokio::spawn(pump(stdout, "stdout", on_output_channel.clone()));
+    let stderr = tokio::spawn(pump(stderr, "stderr", on_output_channel));
+
+    let status = child.wait().await?;
+
     Ok(ShellOutput {
-        code: output.status.code(),
-        stderr: String::from_utf8_lossy(&output.stderr).to_string(),
-        stdout: String::from_utf8_lossy(&output.stdout).to_string(),
+        code: status.code(),
+        stdout: stdout.await.unwrap_or_default(),
+        stderr: stderr.await.unwrap_or_default(),
     })
+}
+
+#[tauri::command]
+pub fn cwd() -> Result<String, Error> {
+    let current_dir = std::env::current_dir()?;
+    Ok(current_dir.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+pub fn chdir(path: &str) -> Result<(), Error> {
+    let path = expand_path(path, false)?;
+    std::env::set_current_dir(&path)?;
+    Ok(())
 }
 
 #[cfg(test)]

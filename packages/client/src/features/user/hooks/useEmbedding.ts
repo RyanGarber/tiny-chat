@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ModelProviderService } from "@tiny-chat/core/src/features/provider/services/ModelProviderService.ts";
 import { useContext, useEffect, useRef } from "react";
-import { ClientProvider } from "../../../client.ts";
+import { ClientContext } from "../../../client.ts";
 import { useSession } from "../../../core/hooks/useSession.ts";
 import { ProviderService } from "../../agent/services/ProviderService.ts";
 import { useEmbeddingSettings } from "../../settings/hooks/useEmbeddingSettings.ts";
@@ -10,14 +10,18 @@ export const nextEmbeddingBatchQueryKey = ["embedding", "next"] as const;
 export const runEmbeddingBatchMutationKey = ["embedding", "run"] as const;
 
 export const useEmbedding = () => {
-	const client = useContext(ClientProvider);
+	const client = useContext(ClientContext);
 	const { session } = useSession();
 	const { embeddingConfig } = useEmbeddingSettings();
 
 	const nextEmbeddingBatch = useQuery({
-		queryKey: [...nextEmbeddingBatchQueryKey, session.data?.user?.id],
+		queryKey: [
+			...nextEmbeddingBatchQueryKey,
+			session.data?.user.id,
+			embeddingConfig,
+		],
 		queryFn: async () => {
-			if (!session.data || !embeddingConfig.data) return null;
+			if (!session.data || !embeddingConfig) return null;
 
 			const missing = await client.api.embedding.getMissingEmbeddings.query({
 				limit: 4,
@@ -40,7 +44,7 @@ export const useEmbedding = () => {
 				>
 			>,
 		) => {
-			if (!session.data || !embeddingConfig.data) return;
+			if (!session.data || !embeddingConfig) return;
 
 			const { messages, actions, memories, files } = batch;
 			console.log("[useEmbedding] starting batch:", batch);
@@ -74,19 +78,17 @@ export const useEmbedding = () => {
 			});
 
 			const modelProvider = modelProviders.find(
-				(p) => embeddingConfig.data && p.name === embeddingConfig.data.provider,
+				(p) => embeddingConfig && p.name === embeddingConfig.provider,
 			);
 
 			if (!modelProvider)
-				throw new Error(
-					`provider "${embeddingConfig.data.provider}" not found`,
-				);
+				throw new Error(`provider "${embeddingConfig.provider}" not found`);
 
 			const result = await ModelProviderService.runEmbeddingModel({
 				user: session.data.user,
 				provider: modelProvider,
 				values: input.map((item) => item.text),
-				config: embeddingConfig.data,
+				config: embeddingConfig,
 				env: client.providerEnv,
 			});
 			console.log("[useEmbedding] saving embeddings:", result);

@@ -10,7 +10,7 @@ export const createChatShellCapability: CapabilityFactory<
 	ShellCapability
 > = async ({ client, chat }) => {
 	return {
-		getFiles: async () => {
+		nodes: async () => {
 			return await client.api.file.getFiles.query({ chat });
 		},
 

@@ -1,403 +1,415 @@
 /**
- * text.ts — Multi-snippet extraction for varied content (code, prose) and
- * varied query types (exact, fuzzy, regex, semantic / natural-language).
+ * SnippetService — bounded excerpting and relevance scoring for arbitrary text.
  *
- * Returns ALL good matches across the document, not just the single best one.
- * Each match window dynamically expands as long as surrounding text keeps
- * scoring well against the query.
+ * Two shapes of output and one scoring model:
  *
- * Pipeline:
- *  1. Collect every match position + local score from all applicable strategies.
- *  2. Build a score surface (Float32Array) over the document by spreading each
- *     hit's score across a Gaussian-like radius.
- *  3. Find all peaks above a quality threshold → snippet anchors.
- *  4. Grow each anchor outward while the score stays above an expansion floor.
- *  5. Merge overlapping / touching windows.
- *  6. Snap boundaries to word/newline breaks and render each window.
- *  7. Join with ' … '.
+ *   `getSnippet`  a single short excerpt for prose (chat search, spotlight).
+ *   `getExcerpt`  numbered line groups for code (file search, grep).
+ *   `getScore` / `getCounts`  how well a document answers a query, for ranking.
+ *
+ * Every entry point takes a hard character budget and never exceeds it. That
+ * guarantee is the point: a match inside a 4 MB bundle costs the same context
+ * as a match inside a 40-line module, so one unlucky file can never flood an
+ * agent's window.
+ *
+ * Scoring counts *distinct query terms* first and raw hits only logarithmically,
+ * so a generated file repeating a term ten thousand times cannot outrank the
+ * source file that actually defines it.
  */
 
-import fuzzysort from "fuzzysort";
+/** Text past this length is scanned for hits but never scored line by line. */
+const MAX_SCAN_CHARS = 2_000_000;
 
-interface Hit {
-	pos: number; // character offset in text
-	score: number; // normalised [0, 1]
+/** Hits collected per term before scanning stops; only ranking needs the tail. */
+const MAX_HITS_PER_TERM = 500;
+
+export interface SnippetLine {
+	/** 1-based line number, as an editor would show it. */
+	number: number;
+	text: string;
 }
 
+export interface SnippetCount {
+	/** Occurrences of the term. */
+	count: number;
+	/** Occurrences that sat on a word boundary rather than inside another word. */
+	words: number;
+}
+
+export interface SnippetScore {
+	/** How many distinct query terms appear at all. */
+	terms: number;
+	/** Total occurrences, across every term. */
+	hits: number;
+	/** Combined ranking score; comparable across documents of any size. */
+	score: number;
+}
+
+export interface SnippetTerm {
+	value: string;
+	/** Longer, more specific terms carry more signal than short ones. */
+	weight: number;
+}
+
+/** Whether the character at `index` starts or ends a word. */
+const isBoundary = (text: string, index: number) =>
+	index < 0 || index >= text.length || !/[\p{L}\p{N}_]/u.test(text[index]);
+
 export const SnippetService = {
+	/**
+	 * A single bounded excerpt centred on the densest run of query terms.
+	 * Falls back to the head of the text when nothing matches.
+	 */
 	getSnippet: ({
 		text,
 		query,
-		baseWindow = 140,
+		maxChars = 240,
 	}: {
 		text: string;
 		query: string;
-		baseWindow?: number;
+		maxChars?: number;
 	}): string => {
 		if (!text) return "";
+		if (text.length <= maxChars) return text;
 
-		// ----- Collect raw hit positions with scores ----------------------------
-		const hits = SnippetService.getHits({ text, query, baseWindow });
+		const terms = SnippetService.getTerms({ query });
+		const hits = SnippetService.getHits({ text, terms });
 
-		if (!hits.length)
-			return SnippetService.getSnippetFallback({ text, window: baseWindow });
+		if (!hits.length) return SnippetService.getHead({ text, maxChars });
 
-		// ----- Build score surface over the document ----------------------------
-		const scores = SnippetService.getScores({
-			length: text.length,
+		const [start, end] = SnippetService.getWindow({
+			text,
 			hits,
-			baseWindow,
+			maxChars,
 		});
 
-		// ----- Find peak anchors ------------------------------------------------
-		const anchors = SnippetService.getAnchors({ scores, baseWindow });
+		const excerpt = text.slice(start, end).replace(/\s+/g, " ").trim();
+		if (!excerpt) return SnippetService.getHead({ text, maxChars });
 
-		if (!anchors.length)
-			return SnippetService.getSnippetFallback({ text, window: baseWindow });
-
-		// ----- Grow each anchor into a dynamic window ---------------------------
-		const windows = anchors.map((anchor) =>
-			SnippetService.getWindow({ scores, anchor, baseWindow }),
-		);
-
-		// ----- Merge overlapping / adjacent windows -----------------------------
-		const merged = SnippetService.mergeWindows({ windows, baseWindow });
-
-		// ----- Render and join --------------------------------------------------
-		const snippets = merged
-			.map(([start, end]) => SnippetService.renderWindows({ text, start, end }))
-			.filter(Boolean);
-
-		if (!snippets.length)
-			return SnippetService.getSnippetFallback({ text, window: baseWindow });
-
-		// Strip leading/trailing ellipses from each fragment before joining so the
-		// join separator (' … ') is the only ellipsis between adjacent windows.
-		const stripped = snippets.map((s, idx) => {
-			let result = s;
-			if (idx > 0) result = result.replace(/^…\s*/, "");
-			if (idx < snippets.length - 1) result = result.replace(/\s*…$/, "");
-			return result;
-		});
-
-		return stripped.join(" … ");
+		return `${start > 0 ? "…" : ""}${excerpt}${end < text.length ? "…" : ""}`;
 	},
 
-	getSnippetFallback: ({
-		text,
-		window,
-	}: {
-		text: string;
-		window: number;
-	}): string => {
-		if (text.length <= window) return text;
-		const cut = text.lastIndexOf(" ", window);
-		return `${text.slice(0, cut > 0 ? cut : window)}…`;
-	},
-
-	getHits: ({
+	/**
+	 * Numbered line groups around the best matches, the way a code search result
+	 * reads. Groups are separated by a `…` line so the model can see that lines
+	 * were skipped between them.
+	 */
+	getExcerpt: ({
 		text,
 		query,
-		baseWindow,
+		lines: providedLines,
+		maxGroups = 3,
+		maxChars = 800,
+		context = 1,
+		maxLineChars = 300,
 	}: {
 		text: string;
-		query: string | RegExp;
-		baseWindow: number;
-	}): Hit[] => {
-		const hits: Hit[] = [];
+		query: string;
+		/** Pre-computed match lines; when omitted they are found from `query`. */
+		lines?: SnippetLine[];
+		maxGroups?: number;
+		maxChars?: number;
+		context?: number;
+		maxLineChars?: number;
+	}): string => {
+		const all = text.split("\n");
+		const matches =
+			providedLines ??
+			SnippetService.getLines({ text, query, maxLines: maxGroups });
 
-		if (query instanceof RegExp) {
-			// Regex: collect every match site
-			const flags = query.flags.includes("g") ? query.flags : `${query.flags}g`;
-			const re = new RegExp(query.source, flags);
-			let m: RegExpExecArray | null;
-			while (true) {
-				m = re.exec(text);
-				if (!m) break;
-				hits.push({ pos: m.index, score: 1.0 });
-			}
-			// Also try lowercase version if no hits
-			if (!hits.length) {
-				const reLower = new RegExp(query.source, flags);
-				const lower = text.toLowerCase();
-				while (true) {
-					m = reLower.exec(lower);
-					if (!m) break;
-					hits.push({ pos: m.index, score: 0.9 });
-				}
-			}
-			return hits;
+		if (!matches.length) {
+			return SnippetService.getSnippet({ text, query, maxChars });
 		}
 
-		const queryStr = query.trim();
-		if (!queryStr) return hits;
+		// Merge nearby matches into groups so context lines are not repeated.
+		const groups: [number, number][] = [];
+		for (const { number } of matches) {
+			const start = Math.max(1, number - context);
+			const end = Math.min(all.length, number + context);
+			const last = groups.at(-1);
+			if (last && start <= last[1] + 1) last[1] = Math.max(last[1], end);
+			else groups.push([start, end]);
+			if (groups.length >= maxGroups) break;
+		}
 
-		const lower = text.toLowerCase();
-		const terms = SnippetService.toTerms(queryStr);
-		const semanticTerms = terms.filter(
-			(t) => t.length > 2 && !SnippetService.stopWords.has(t),
+		const rendered: string[] = [];
+		let used = 0;
+
+		for (const [start, end] of groups) {
+			for (let number = start; number <= end; number++) {
+				const line = SnippetService.getLine({
+					text: all[number - 1] ?? "",
+					maxChars: maxLineChars,
+				});
+				const entry = line ? `${number}: ${line}` : `${number}:`;
+				if (used + entry.length > maxChars) {
+					return `${rendered.join("\n")}\n…`.trim();
+				}
+				rendered.push(entry);
+				used += entry.length + 1;
+			}
+			if (end < all.length) {
+				rendered.push("…");
+				used += 2;
+			}
+		}
+
+		// A trailing separator adds nothing when the excerpt ends the file.
+		if (rendered.at(-1) === "…") rendered.pop();
+
+		return rendered.join("\n");
+	},
+
+	/**
+	 * The best matching lines, highest scoring first, returned in file order.
+	 * Used directly by grep-style searches that want line numbers.
+	 */
+	getLines: ({
+		text,
+		query,
+		maxLines = 5,
+		minScore = 1,
+	}: {
+		text: string;
+		query: string;
+		maxLines?: number;
+		minScore?: number;
+	}): SnippetLine[] => {
+		const terms = SnippetService.getTerms({ query });
+		if (!terms.length) return [];
+
+		const lines = text.split("\n");
+		const scored: { number: number; text: string; score: number }[] = [];
+
+		for (let index = 0; index < lines.length; index++) {
+			const line = lines[index];
+			if (!line.trim()) continue;
+			const lower = line.toLowerCase();
+
+			let score = 0;
+			for (const term of terms) {
+				const at = lower.indexOf(term.value);
+				if (at === -1) continue;
+				score += term.weight;
+				// An identifier match beats an incidental substring.
+				if (
+					isBoundary(lower, at - 1) &&
+					isBoundary(lower, at + term.value.length)
+				)
+					score += term.weight;
+			}
+			if (score < minScore) continue;
+
+			scored.push({ number: index + 1, text: line, score });
+		}
+
+		return scored
+			.sort((a, b) => b.score - a.score || a.number - b.number)
+			.slice(0, maxLines)
+			.sort((a, b) => a.number - b.number)
+			.map(({ number, text: value }) => ({ number, text: value }));
+	},
+
+	/**
+	 * Occurrences of each term in a document, and how many of them fell on a
+	 * word boundary. The raw material for ranking across a corpus.
+	 */
+	getCounts: ({
+		text,
+		terms,
+	}: {
+		text: string;
+		terms: SnippetTerm[];
+	}): Map<string, SnippetCount> => {
+		const lower = text.slice(0, MAX_SCAN_CHARS).toLowerCase();
+		const counts = new Map<string, SnippetCount>();
+
+		for (const term of terms) {
+			let count = 0;
+			let words = 0;
+			let from = 0;
+			while (count < MAX_HITS_PER_TERM) {
+				const at = lower.indexOf(term.value, from);
+				if (at === -1) break;
+				count++;
+				if (
+					isBoundary(lower, at - 1) &&
+					isBoundary(lower, at + term.value.length)
+				)
+					words++;
+				from = at + term.value.length;
+			}
+			if (count) counts.set(term.value, { count, words });
+		}
+
+		return counts;
+	},
+
+	/**
+	 * What a term occurring `count` times is worth. Saturating rather than
+	 * linear: the difference between one occurrence and five means something,
+	 * the difference between a hundred and a thousand does not.
+	 */
+	getFrequency: ({ count }: { count: number }): number => count / (count + 1.2),
+
+	/**
+	 * Ranking score for a document with no corpus to compare it against.
+	 * Distinct terms dominate and repetition saturates, so a file that repeats
+	 * one term cannot outrank the file that defines the thing being looked for.
+	 */
+	getScore: ({
+		text,
+		query,
+	}: {
+		text: string;
+		query: string;
+	}): SnippetScore => {
+		const terms = SnippetService.getTerms({ query });
+		if (!terms.length) return { terms: 0, hits: 0, score: 0 };
+
+		const counts = SnippetService.getCounts({ text, terms });
+
+		let hits = 0;
+		let score = 0;
+
+		for (const term of terms) {
+			const found = counts.get(term.value);
+			if (!found) continue;
+			hits += found.count;
+			score +=
+				term.weight * (10 + Math.log2(1 + found.count) + (found.words ? 5 : 0));
+		}
+
+		// Matching every term is the strongest signal a keyword search can give.
+		if (counts.size === terms.length && terms.length > 1) score *= 1.5;
+
+		return { terms: counts.size, hits, score };
+	},
+
+	/**
+	 * Query terms with their weights. Stop words are dropped unless the query is
+	 * nothing but stop words, and identifiers are split so `getUserById` also
+	 * matches `get_user_by_id`.
+	 */
+	getTerms: ({ query }: { query: string }): SnippetTerm[] => {
+		const seen = new Map<string, SnippetTerm>();
+
+		const add = (value: string, weight: number) => {
+			if (value.length < 2) return;
+			const existing = seen.get(value);
+			if (!existing || existing.weight < weight)
+				seen.set(value, { value, weight });
+		};
+
+		const raw = query
+			.split(/[\s\-_/\\.,;:!?'"()[\]{}<>|@#$%^&*+=~`]+/)
+			.filter(Boolean);
+
+		const words = raw.filter(
+			(word) => !SnippetService.stopWords.has(word.toLowerCase()),
 		);
 
-		// --- Exact substring hits (high confidence) ----------------------------
-		for (const term of terms) {
-			const t = term.toLowerCase();
-			let from = 0;
-			while (true) {
-				const i = lower.indexOf(t, from);
-				if (i === -1) break;
-				// Score by term length relative to query — longer term = more signal
-				const score = 0.5 + 0.5 * (t.length / Math.max(1, queryStr.length));
-				hits.push({ pos: i, score: Math.min(1, score) });
-				from = i + 1;
-			}
+		for (const term of words.length ? words : raw) {
+			add(term.toLowerCase(), Math.min(3, 1 + term.length / 8));
+			// camelCase and PascalCase pieces, so a query can match either style.
+			const pieces = term.split(/(?<=[a-z0-9])(?=[A-Z])/);
+			if (pieces.length > 1)
+				for (const piece of pieces) add(piece.toLowerCase(), 0.5);
 		}
 
-		// --- Semantic / stemmed hits (medium confidence) -----------------------
-		const stemHitMap = new Map<string, number[]>();
-		for (const term of semanticTerms) {
-			const stem = SnippetService.toStem(term);
-			if (stem === term) continue; // already covered by exact
-			let from = 0;
-			while (true) {
-				const i = lower.indexOf(stem, from);
-				if (i === -1) break;
-				const positions = stemHitMap.get(stem) ?? [];
-				positions.push(i);
-				stemHitMap.set(stem, positions);
-				from = i + 1;
-			}
-		}
-		for (const positions of stemHitMap.values()) {
-			for (const pos of positions) {
-				hits.push({ pos, score: 0.45 });
-			}
-		}
+		// The whole query as a phrase outweighs any single term when present.
+		const phrase = query.trim().toLowerCase();
+		if (phrase.length > 2 && seen.size > 1) add(phrase, 4);
 
-		// --- Fuzzy hits (lower confidence, catches misspellings / partials) ----
-		if (queryStr.length >= 3) {
-			const chunkSize = baseWindow * 2;
-			const step = Math.max(1, Math.floor(chunkSize * 0.5));
-			// Fuzzy threshold: don't bother if exact hits already cover entire text
-			const hasDenseExact = hits.length > text.length / baseWindow;
-			if (!hasDenseExact) {
-				for (let offset = 0; offset < text.length; offset += step) {
-					const chunk = text.slice(offset, offset + chunkSize);
-					const result = fuzzysort.single(queryStr, chunk);
-					if (!result || result.score < -600) continue;
-					const normScore = Math.max(0, (result.score + 1000) / 1000) * 0.6;
-					const firstIdx = result.indexes[0] ?? 0;
-					hits.push({ pos: offset + firstIdx, score: normScore });
-				}
-			}
-		}
-
-		return hits;
+		return [...seen.values()];
 	},
 
-	getScores: ({
-		hits,
-		length,
-		baseWindow,
+	/** Character offsets of every term occurrence, bounded per term. */
+	getHits: ({
+		text,
+		terms,
 	}: {
-		hits: Hit[];
-		length: number;
-		baseWindow: number;
-	}): Float32Array => {
-		const surface = new Float32Array(length);
-		const radius = Math.floor(baseWindow / 2);
-
-		for (const { pos, score } of hits) {
-			if (pos < 0 || pos >= length) continue;
-			// Spread score with a linear falloff over `radius` characters
-			const lo = Math.max(0, pos - radius);
-			const hi = Math.min(length - 1, pos + radius);
-			for (let i = lo; i <= hi; i++) {
-				const dist = Math.abs(i - pos);
-				const weight = 1 - dist / (radius + 1);
-				surface[i] = Math.min(1, surface[i] + score * weight);
-			}
-		}
-
-		return surface;
-	},
-
-	getAnchors: ({
-		scores,
-		baseWindow,
-	}: {
-		scores: Float32Array;
-		baseWindow: number;
+		text: string;
+		terms: SnippetTerm[];
 	}): number[] => {
-		const PEAK_THRESHOLD = 0.25;
-		const MIN_PEAK_DISTANCE = Math.floor(baseWindow * 0.75);
+		const lower = text.slice(0, MAX_SCAN_CHARS).toLowerCase();
+		const hits: number[] = [];
 
-		const candidates: { pos: number; score: number }[] = [];
-
-		let i = 1;
-		while (i < scores.length - 1) {
-			if (
-				scores[i] >= PEAK_THRESHOLD &&
-				scores[i] >= scores[i - 1] &&
-				scores[i] >= scores[i + 1]
-			) {
-				candidates.push({ pos: i, score: scores[i] });
-				// Skip ahead to avoid reporting the entire plateau as many peaks
-				i += Math.max(1, MIN_PEAK_DISTANCE);
-			} else {
-				i++;
+		for (const term of terms) {
+			let count = 0;
+			let from = 0;
+			while (count < MAX_HITS_PER_TERM) {
+				const at = lower.indexOf(term.value, from);
+				if (at === -1) break;
+				hits.push(at);
+				count++;
+				from = at + term.value.length;
 			}
 		}
 
-		// Deduplicate: if two candidates are within MIN_PEAK_DISTANCE, keep higher
-		const peaks: number[] = [];
-		for (let c = 0; c < candidates.length; c++) {
-			const { pos, score } = candidates[c];
-			const next = candidates[c + 1];
-			if (next && next.pos - pos < MIN_PEAK_DISTANCE) {
-				// Keep whichever has the higher score
-				if (next.score >= score) continue;
-				c++; // skip next
-			}
-			peaks.push(pos);
-		}
-
-		return peaks;
+		return hits.sort((a, b) => a - b);
 	},
 
+	/**
+	 * The `maxChars`-wide window containing the most hits, snapped outward to
+	 * word boundaries. Linear in the number of hits.
+	 */
 	getWindow: ({
-		anchor,
-		scores,
-		baseWindow,
+		text,
+		hits,
+		maxChars,
 	}: {
-		anchor: number;
-		scores: Float32Array;
-		baseWindow: number;
+		text: string;
+		hits: number[];
+		maxChars: number;
 	}): [number, number] => {
-		const EXPANSION_FLOOR = 0.08; // minimum score to keep expanding
-		const GAP_TOLERANCE = 20; // chars of sub-threshold allowed before stopping
+		let best = { index: 0, count: 0 };
 
-		let start = Math.max(0, anchor - Math.floor(baseWindow / 2));
-		let end = Math.min(scores.length, anchor + Math.ceil(baseWindow / 2));
-
-		// Expand left
-		let gap = 0;
-		for (let i = start - 1; i >= 0; i--) {
-			if (scores[i] >= EXPANSION_FLOOR) {
-				start = i;
-				gap = 0;
-			} else {
-				gap++;
-				if (gap > GAP_TOLERANCE) break;
-			}
+		for (let index = 0; index < hits.length; index++) {
+			let count = 0;
+			while (
+				index + count < hits.length &&
+				hits[index + count] - hits[index] < maxChars
+			)
+				count++;
+			if (count > best.count) best = { index, count };
 		}
 
-		// Expand right
-		gap = 0;
-		for (let i = end; i < scores.length; i++) {
-			if (scores[i] >= EXPANSION_FLOOR) {
-				end = i + 1;
-				gap = 0;
-			} else {
-				gap++;
-				if (gap > GAP_TOLERANCE) break;
-			}
+		const first = hits[best.index] ?? 0;
+		const last = hits[best.index + best.count - 1] ?? first;
+		const centre = Math.floor((first + last) / 2);
+
+		let start = Math.max(0, centre - Math.floor(maxChars / 2));
+		let end = Math.min(text.length, start + maxChars);
+		start = Math.max(0, end - maxChars);
+
+		// Snap inward to a word boundary so the excerpt does not start mid-token.
+		if (start > 0) {
+			const space = text.indexOf(" ", start);
+			if (space !== -1 && space < start + 20 && space < first)
+				start = space + 1;
+		}
+		if (end < text.length) {
+			const space = text.lastIndexOf(" ", end);
+			if (space > last && space > start) end = space;
 		}
 
 		return [start, end];
 	},
 
-	mergeWindows: ({
-		windows,
-		baseWindow,
-	}: {
-		windows: [number, number][];
-		baseWindow: number;
-	}): [number, number][] => {
-		if (!windows.length) return [];
-
-		// Sort by start position
-		windows.sort((a, b) => a[0] - b[0]);
-
-		const MIN_GAP = Math.floor(baseWindow * 0.5); // gaps smaller than this get bridged
-		const merged: [number, number][] = [windows[0]];
-
-		for (let i = 1; i < windows.length; i++) {
-			const last = merged[merged.length - 1];
-			const [s, e] = windows[i];
-			if (s - last[1] <= MIN_GAP) {
-				// Merge
-				last[1] = Math.max(last[1], e);
-			} else {
-				merged.push([s, e]);
-			}
-		}
-
-		return merged;
+	/** Head of the text, cut at a word boundary. */
+	getHead: ({ text, maxChars }: { text: string; maxChars: number }): string => {
+		const collapsed = text.replace(/\s+/g, " ").trim();
+		if (collapsed.length <= maxChars) return collapsed;
+		const cut = collapsed.lastIndexOf(" ", maxChars);
+		return `${collapsed.slice(0, cut > maxChars / 2 ? cut : maxChars)}…`;
 	},
 
-	renderWindows: ({
-		text,
-		start,
-		end,
-	}: {
-		text: string;
-		start: number;
-		end: number;
-	}): string => {
-		const n = text.length;
-
-		// Snap start backward to a newline or forward to a word boundary
-		if (start > 0) {
-			const nlBefore = text.lastIndexOf("\n", start + 40);
-			if (nlBefore >= start - 40 && nlBefore < start + 40) {
-				start = nlBefore + 1;
-			} else {
-				// Snap to next space so we don't cut a word
-				const spAfter = text.indexOf(" ", start);
-				if (spAfter !== -1 && spAfter < start + 30) start = spAfter + 1;
-			}
-		}
-
-		// Snap end to a newline or space
-		if (end < n) {
-			const nlAfter = text.indexOf("\n", end - 30);
-			if (nlAfter !== -1 && nlAfter <= end + 30) {
-				end = nlAfter;
-			} else {
-				const spBefore = text.lastIndexOf(" ", end);
-				if (spBefore !== -1 && spBefore > start) end = spBefore;
-			}
-		}
-
-		start = Math.max(0, start);
-		end = Math.min(n, end);
-
-		const snippet = text.slice(start, end).trim();
-		if (!snippet) return "";
-
-		return (start > 0 ? "…" : "") + snippet + (end < n ? "…" : "");
-	},
-
-	toStem: (word: string): string => {
-		if (word.length < 5) return word;
-		if (word.endsWith("ing")) return word.slice(0, -3);
-		if (word.endsWith("tion")) return word.slice(0, -3);
-		if (word.endsWith("ness")) return word.slice(0, -4);
-		if (word.endsWith("ment")) return word.slice(0, -4);
-		if (word.endsWith("able") || word.endsWith("ible"))
-			return word.slice(0, -4);
-		if (word.endsWith("ed")) return word.slice(0, -2);
-		if (word.endsWith("er")) return word.slice(0, -2);
-		if (word.endsWith("ly")) return word.slice(0, -2);
-		if (word.endsWith("s") && !word.endsWith("ss")) return word.slice(0, -1);
-		return word;
-	},
-
-	toTerms: (input: string): string[] => {
-		return input
-			.toLowerCase()
-			.split(/[\s\-_/\\.,;:!?'"()[\]{}<>|@#$%^&*+=~`]+/)
-			.filter((t) => t.length > 0);
+	/** One line, trimmed of trailing space and cut to a budget. */
+	getLine: ({ text, maxChars }: { text: string; maxChars: number }): string => {
+		const value = text.replace(/\s+$/, "");
+		if (value.length <= maxChars) return value;
+		return `${value.slice(0, maxChars)}… [${value.length - maxChars} more chars]`;
 	},
 
 	stopWords: new Set([

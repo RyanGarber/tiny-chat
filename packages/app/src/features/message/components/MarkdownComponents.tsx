@@ -1,7 +1,8 @@
 import { Anchor, Pill, Stack, Text, Tooltip } from "@mantine/core";
+import { MarkdownContext } from "@tiny-chat/client/src/features/message/components/MarkdownContext.tsx";
+import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
-import * as fuzzysort from "fuzzysort";
 import { type CSSProperties, useContext } from "react";
 import type { Components } from "streamdown";
 import { format } from "timeago.js";
@@ -11,17 +12,7 @@ import {
 	Quote,
 } from "#app/core/components/Components.tsx";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
-import { MarkdownContext } from "#app/features/message/components/MarkdownContext.tsx";
 import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
-import { zData } from "#core/features/data/types/message";
-
-const TOOLTIP_PROPS = {
-	multiline: true,
-	position: "bottom",
-	style: { ...StyleUtils.glass, boxShadow: StyleUtils.shadow },
-	p: "md",
-	c: "var(--mantine-color-text)",
-} as const;
 
 const PILL_BASE: CSSProperties = {
 	height: "auto",
@@ -34,168 +25,67 @@ const PILL_BASE: CSSProperties = {
 };
 
 export const CiteComponent: Components["cite"] = ({ children, node }) => {
-	const { webReferences, memoryReferences, actionReferences, fileReferences } =
-		useContext(MarkdownContext);
-	const sources = ((node?.properties.sources ?? "") as string)
+	const { sources } = useContext(MarkdownContext);
+	const keys = ((node?.properties.sources ?? "") as string)
 		.replace("user-content-", "")
 		.split(/[\s;,]+/);
 
 	return (
 		<span>
 			{children}
-			{sources.map((id) => {
-				const memory = memoryReferences.find((memory) => {
-					const score = fuzzysort.single(id, memory.id)?.score;
-					return score && score > 0.95;
-				});
-				if (memory) {
-					return (
-						<Tooltip
-							key={id}
-							{...TOOLTIP_PROPS}
-							label={
-								<Stack gap="xs" maw={300}>
-									<Text size="sm" fw={500} lineClamp={2}>
-										{memory.fact}
-									</Text>
-									<Text size="xs" c="dimmed">
-										Learned {format(memory.createdAt)}
-									</Text>
-								</Stack>
-							}
-						>
-							<Pill size="xs" style={{ ...PILL_BASE }}>
-								🧠
-							</Pill>
-						</Tooltip>
-					);
-				}
-
-				const action = actionReferences.find((action) => {
-					const score = fuzzysort.single(id, action.id)?.score;
-					return score && score > 0.95;
-				});
-				if (action) {
-					return (
-						<Tooltip
-							key={id}
-							{...TOOLTIP_PROPS}
-							label={
-								<Stack gap="xs" maw={300}>
-									<Text size="sm" fw={500} lineClamp={2}>
-										{DataUtils.getTextCleaned({
-											data: zData.parse(action.data),
-										})}
-									</Text>
-									<Text size="xs" c="dimmed">
-										{action.nextRunAt
-											? `Next run ${format(action.nextRunAt)}`
-											: "All runs completed"}
-									</Text>
-								</Stack>
-							}
-						>
-							<Pill size="xs" style={{ ...PILL_BASE }}>
-								⚡
-							</Pill>
-						</Tooltip>
-					);
-				}
-
-				const web = webReferences.find((webSearchResult) => {
-					const score = fuzzysort.single(webSearchResult.url, id)?.score;
-					return score && score > 0.9;
-				});
-				if (web) {
-					const title = web.title ?? PathUtils.name({ path: web.url });
-					return (
-						<Tooltip
-							key={id}
-							{...TOOLTIP_PROPS}
-							label={
-								<Stack gap="xs" maw={300}>
-									<Text size="sm" fw={500} lineClamp={2}>
-										{title}
-									</Text>
-									<Anchor
-										size="xs"
-										lineClamp={1}
-										href={web.url}
-										target="_blank"
-										onClick={(e) => {
-											e.preventDefault();
-											void TauriUtils.open(web.url);
-										}}
-									>
-										{web.url}
-									</Anchor>
-								</Stack>
-							}
-						>
-							<Pill
-								size="xs"
-								style={{ ...PILL_BASE, cursor: "pointer" }}
-								onClick={(e) => {
-									e.preventDefault();
-									void TauriUtils.open(web.url);
-								}}
-							>
-								🔗
-							</Pill>
-						</Tooltip>
-					);
-				}
-
-				const file = fileReferences.find((file) => {
-					const score = fuzzysort.single(file.uri, id)?.score;
-					return score && score > 0.9;
-				});
-				if (file) {
-					return (
-						<Tooltip
-							key={id}
-							{...TOOLTIP_PROPS}
-							label={
-								<Stack gap="xs" maw={300}>
-									<Text size="sm" fw={500} lineClamp={2}>
-										{PathUtils.name(file.uri)}
-									</Text>
-									<Text size="xs" c="dimmed">
-										{file.uri}
-									</Text>
-								</Stack>
-							}
-						>
-							<Pill
-								size="xs"
-								style={{ ...PILL_BASE, cursor: "pointer" }}
-								onClick={(e) => {
-									e.preventDefault();
-									// TODO WIP - open file preview
-								}}
-							>
-								📎
-							</Pill>
-						</Tooltip>
-					);
-				}
-
+			{keys.map((key) => {
+				const source = sources?.find(
+					(source) => CommonUtils.getDistance(source.key, key) < 0.1,
+				);
 				return (
 					<Tooltip
-						key={id}
-						{...TOOLTIP_PROPS}
+						key={key}
+						multiline
+						position="bottom"
+						style={{ ...StyleUtils.glass, boxShadow: StyleUtils.shadow }}
+						p="md"
+						c="var(--mantine-color-text)"
 						label={
 							<Stack gap="xs" maw={300}>
+								<Text size="sm" fw={500} lineClamp={2}>
+									{source?.type === "memory" && source.value.fact}
+									{source?.type === "action" &&
+										DataUtils.getTextCleaned(source.value)}
+									{source?.type === "web" &&
+										(source.value.title ??
+											PathUtils.name({ path: source.value.url }))}
+									{source?.type === "file" && PathUtils.name(source.value.uri)}
+								</Text>
 								<Text size="xs" c="dimmed">
-									{id}
+									{source?.type === "memory" &&
+										`Learned ${format(source.value.createdAt)}`}
+									{source?.type === "action" &&
+										(source.value.nextRunAt
+											? `Next run ${format(source.value.nextRunAt)}`
+											: "All runs completed")}
+									{source?.type === "web" && (
+										<Anchor
+											lineClamp={1}
+											href={source.value.url}
+											target="_blank"
+											onClick={(e) => {
+												e.preventDefault();
+												void TauriUtils.open(source?.value.url);
+											}}
+										>
+											{source.value.url}
+										</Anchor>
+									)}
 								</Text>
 							</Stack>
 						}
 					>
 						<Pill size="xs" style={{ ...PILL_BASE }}>
-							<Text span c="dimmed">
-								﹖
-							</Text>
+							{source?.type === "memory" && "🧠"}
+							{source?.type === "action" && "⚡"}
+							{source?.type === "web" && "🔗"}
+							{source?.type === "file" && "📎"}
+							{!source && "⛓️‍💥"}
 						</Pill>
 					</Tooltip>
 				);

@@ -3,32 +3,47 @@ import {
 	Author,
 	type MessageState,
 	type zData,
+	type zDataBasicPart,
+	type zDataPart,
 } from "@tiny-chat/core/src/features/data/types/message.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { ModelProviderService } from "@tiny-chat/core/src/features/provider/services/ModelProviderService.ts";
+import { ToolCallUtils } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
+import { ToolUtils } from "@tiny-chat/core/src/features/tool/utils/ToolUtils.ts";
 import { useContext, useRef } from "react";
-import { ClientProvider } from "../../../client.ts";
+import { ClientContext } from "../../../client.ts";
 import { useSession } from "../../../core/hooks/useSession.ts";
 import { useConfig } from "../../agent/hooks/useConfig.ts";
 import { useProviders } from "../../agent/hooks/useProviders.ts";
 import { useSkills } from "../../agent/hooks/useSkills.ts";
 import { useTools } from "../../agent/hooks/useTools.ts";
 import { AgentMessageService } from "../../agent/services/AgentMessageService.ts";
+import { AgentToolService } from "../../agent/services/AgentToolService.ts";
 import { ProviderService } from "../../agent/services/ProviderService.ts";
 import { useEmbeddingSettings } from "../../settings/hooks/useEmbeddingSettings.ts";
+import { ToolStreamService } from "../../tool/services/ToolStreamService.ts";
 import { ChatService } from "../services/ChatService.ts";
 import { MessagingService } from "../services/MessagingService.ts";
 import { useChatStore } from "../stores/useChatStore.ts";
 import { useMessagingStore } from "../stores/useMessagingStore.ts";
+import { useChat } from "./useChat.ts";
 
-export const sendMessageMutationKey = ["send-message"] as const;
-export const deleteMessageMutationKey = ["delete-message"] as const;
+export const deleteMessageMutationKey = [
+	"useMessaging",
+	"deleteMessage",
+] as const;
+export const sendMessageMutationKey = ["useMessaging", "sendMessage"] as const;
+export const sendToolInputMutationKey = [
+	"useMessaging",
+	"sendToolFeedback",
+] as const;
 
 export const useMessaging = () => {
-	const client = useContext(ClientProvider);
+	const client = useContext(ClientContext);
 
+	const { chat } = useChat();
 	const { session } = useSession();
-	const { mcpTools } = useTools();
+	const { mcpTools, toolsets } = useTools();
 	const { skills } = useSkills();
 	const { providers } = useProviders();
 	const { embeddingConfig } = useEmbeddingSettings();
@@ -105,14 +120,14 @@ export const useMessaging = () => {
 				text.length &&
 				(!editing || text.trim() !== DataUtils.getText(editing).trim())
 			) {
-				if (!session.data || !embeddingConfig.data) return;
+				if (!session.data || !embeddingConfig) return;
 
 				const provider = (
 					await ProviderService.getModelProviders({
 						client,
 						user: session.data.user,
 					})
-				).find((p) => p.name === embeddingConfig.data?.provider);
+				).find((p) => p.name === embeddingConfig?.provider);
 
 				if (provider) {
 					console.log(`[messaging] message changed, embedding new message`);
@@ -120,14 +135,14 @@ export const useMessaging = () => {
 						user: session.data.user,
 						provider,
 						values: [text],
-						config: embeddingConfig.data,
+						config: embeddingConfig,
 						env: client.providerEnv,
 					});
 					if (embeddings[0]?.length) {
 						await client.api.embedding.setEmbeddings.mutate([
 							{ type: "message", id: message.id, embedding: embeddings[0] },
 						]);
-						console.log(`[messaging] embedded succeeded`);
+						console.log(`[messaging] embeddings succeeded`);
 					}
 				}
 			}
@@ -174,5 +189,111 @@ export const useMessaging = () => {
 		},
 	});
 
-	return { sendMessage, deleteMessage };
+	const sendToolFeedback = useMutation({
+		mutationKey: sendToolInputMutationKey,
+		mutationFn: async ({
+			seed,
+			part,
+			value,
+			approved,
+			append = [],
+		}: {
+			seed: MessageState;
+			part: Extract<zDataPart, { type: "toolCall" }>;
+			value?: unknown;
+			approved?: boolean;
+			append?: zDataBasicPart[] | zDataBasicPart | null;
+		}) => {
+			console.log("[useToolInput] applying input:", part, value, approved);
+			if (!session.data || !chat.data || !providers.data) return;
+			const { messages } = await client.api.message.getMessages.query({
+				chat: chat.data,
+			});
+			const message = messages.at(-1);
+			if (!message) throw new Error("missing message");
+
+			const { tool } = ToolUtils.find({ toolsets, part });
+			if (!tool) throw new Error(`tool ${part.name} not found`);
+
+			if (append && !Array.isArray(append)) {
+				append = [append];
+			}
+			if (!append?.length) append = null;
+
+			// Output the tool reports while it runs is held here, so the feedback
+			// UI can show it before there is a result to save.
+			const streamKey = ToolStreamService.key({
+				messageId: seed.id,
+				partId: part.id,
+			});
+
+			let result: zDataPart;
+			if (tool.approval && !approved) {
+				result = {
+					type: "toolResult",
+					id: part.id,
+					name: part.name,
+					error: true,
+					value: ToolCallUtils.rejection,
+					append: append ?? undefined,
+				};
+			} else {
+				try {
+					ToolStreamService.start(streamKey);
+					result = {
+						type: "toolResult",
+						id: part.id,
+						name: part.name,
+						error: false,
+						value: await AgentToolService.handle({
+							client,
+							user: session.data.user,
+							chat: chat.data,
+							part,
+							value,
+							message: seed,
+							messages,
+							onOutput: (chunk) => ToolStreamService.push(streamKey, chunk),
+						}),
+						append: append ?? undefined,
+					};
+				} catch (e) {
+					result = {
+						type: "toolResult",
+						id: part.id,
+						name: part.name,
+						error: true,
+						value: [
+							{
+								type: "json",
+								value: e instanceof Error ? e.message : JSON.stringify(e),
+							},
+						],
+						append: append ?? undefined,
+					};
+				} finally {
+					// The command is over, but its output has to stay on screen until
+					// the result it produced has been saved.
+					ToolStreamService.finish(streamKey);
+				}
+			}
+
+			try {
+				await AgentMessageService.handle({
+					client,
+					user: session.data.user,
+					message: seed,
+					chat: chat.data,
+					append: [result],
+					mcpTools: mcpTools.data,
+					providers: providers.data,
+					skills,
+				});
+			} finally {
+				ToolStreamService.clear(streamKey);
+			}
+		},
+	});
+
+	return { deleteMessage, sendMessage, sendToolFeedback };
 };

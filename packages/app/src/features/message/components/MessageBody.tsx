@@ -1,6 +1,6 @@
 import { Box, Group, Stack } from "@mantine/core";
 import { useElementSize } from "@mantine/hooks";
-import { useMessageStream } from "@tiny-chat/client/src/features/chat/hooks/useStreaming.ts";
+import { useMessageStream } from "@tiny-chat/client/src/features/message/hooks/useMessageStream.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { type CSSProperties, memo } from "react";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";

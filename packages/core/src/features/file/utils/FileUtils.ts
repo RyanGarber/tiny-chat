@@ -39,11 +39,14 @@ export const FileUtils = {
 	}) => {
 		data = FileUtils.getBufferFromBytes({ data });
 
+		// Decode the view rather than its buffer: a Node `Buffer` is usually a
+		// window onto a shared pool, and decoding the pool yields whatever else
+		// happens to be in it.
 		if (mime) {
 			const charset = /;\s*charset\s*=\s*"?([^";]+)"?/i.exec(mime)?.[1]?.trim();
 			if (charset) {
 				try {
-					return new TextDecoder(charset, { fatal: true }).decode(data.buffer);
+					return new TextDecoder(charset, { fatal: true }).decode(data);
 				} catch {
 					// ignore
 				}
@@ -52,10 +55,10 @@ export const FileUtils = {
 
 		const bom = FileTypeUtils.getBom({ data });
 		if (bom) {
-			return new TextDecoder(bom.encoding).decode(data.buffer.slice(bom.skip));
+			return new TextDecoder(bom.encoding).decode(data.subarray(bom.skip));
 		}
 		try {
-			return new TextDecoder("utf-8", { fatal: true }).decode(data.buffer);
+			return new TextDecoder("utf-8", { fatal: true }).decode(data);
 		} catch {
 			// ignore
 		}

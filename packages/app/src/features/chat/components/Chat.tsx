@@ -12,10 +12,11 @@ import { useMergedRef } from "@mantine/hooks";
 import { useIsMutating } from "@tanstack/react-query";
 import { useGreeting } from "@tiny-chat/client/src/core/hooks/useGreeting.ts";
 import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
-import { useMessages } from "@tiny-chat/client/src/features/chat/hooks/useMessages.ts";
 import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
 import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
-import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
+import { useDisabled } from "@tiny-chat/client/src/features/editor/hooks/useDisabled.ts";
+import { MessageContextProvider } from "@tiny-chat/client/src/features/message/components/MessageContext.tsx";
+import { useMessages } from "@tiny-chat/client/src/features/message/hooks/useMessages.ts";
 import {
 	type RefObject,
 	useLayoutEffect,
@@ -27,19 +28,15 @@ import { client } from "#app/client.ts";
 import Sentinel from "#app/core/components/Sentinel.tsx";
 import { useAutoScroll } from "#app/core/hooks/useAutoScroll.ts";
 import { useSentinel } from "#app/core/hooks/useSentinel.ts";
-import { useLayoutStore } from "#app/core/stores/useLayoutStore.tsx";
+import { useAppStore } from "#app/core/stores/useAppStore.ts";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import Actions from "#app/features/chat/components/Actions.tsx";
+import ChatEffects from "#app/features/chat/components/ChatEffects.tsx";
 import ChatHeader from "#app/features/chat/components/ChatHeader.tsx";
-import { ChatInput } from "#app/features/chat/components/ChatInput.tsx";
-import ChatInputEffects from "#app/features/chat/components/ChatInputEffects.tsx";
+import { Editor } from "#app/features/editor/components/Editor.tsx";
 import { useEditorStore } from "#app/features/editor/stores/useEditorStore.ts";
 import Message from "#app/features/message/components/Message.tsx";
 import { uploadMutationKey } from "#app/features/upload/hooks/useUploads.ts";
-import {
-	deleteMessageMutationKey,
-	sendMessageMutationKey,
-} from "#client/src/features/chat/hooks/useMessaging.ts";
 import { useMessagingStore } from "#client/src/features/chat/stores/useMessagingStore.ts";
 
 function useElementHeight(initialHeight = 0): {
@@ -78,8 +75,7 @@ export default function Chat() {
 		chat.isFetching ? 0 : s.scrollInstant,
 	);
 
-	const isMobile = useLayoutStore((s) => s.isMobile);
-	const isInitializing = useLayoutStore((s) => s.isInitializing);
+	const isMobile = useAppStore((s) => s.isMobile);
 
 	const {
 		viewportRef: viewportRef1,
@@ -87,7 +83,7 @@ export default function Chat() {
 		scrollToBottom,
 	} = useAutoScroll({
 		scrollRequested,
-		isInitializing,
+		scrollPaused: chat.isFetching || messages.isFetching,
 	});
 
 	// useAutoScroll holds the position across the prepended page.
@@ -108,12 +104,16 @@ export default function Chat() {
 	const insertingAfter = useMessagingStore((s) => s.insertingAfter);
 	const truncating = useMessagingStore((s) => s.truncating);
 
+	const messageList = useMemo(
+		() => messages.data?.pages.flatMap((page) => page.messages) ?? [],
+		[messages.data],
+	);
+	const lastMessageId = messageList.at(-1)?.id;
+
 	const messageOpacities = useMemo(() => {
 		const map = new Map<string, number>();
 		let hasHitEdit = false;
-		for (const message of messages.data?.pages.flatMap(
-			(page) => page.messages,
-		) ?? []) {
+		for (const message of messageList) {
 			if (!editing && !insertingAfter) {
 				map.set(message.id, 1);
 			} else if (message.id === editing?.id) {
@@ -129,7 +129,7 @@ export default function Chat() {
 			}
 		}
 		return map;
-	}, [messages, editing, insertingAfter, truncating]);
+	}, [messageList, editing, insertingAfter, truncating]);
 
 	const inputMaxWidth = 860;
 	const inputRef = useRef<HTMLDivElement>(null);
@@ -142,31 +142,8 @@ export default function Chat() {
 	const greeting = useGreeting();
 	const isNewChat = !chat.data;
 
-	const isSendingMessage =
-		useIsMutating({ mutationKey: sendMessageMutationKey }) > 0;
-	const isDeletingMessage =
-		useIsMutating({ mutationKey: deleteMessageMutationKey }) > 0;
 	const isUploading = useIsMutating({ mutationKey: uploadMutationKey }) > 0;
-	const isAny = useMemo(
-		() =>
-			isSendingMessage ||
-			isDeletingMessage ||
-			isUploading ||
-			messages.isFetching ||
-			((messages.data?.pages
-				.flatMap((page) => page.messages)
-				.some((message) => DataUtils.isMissingToolResult(message)) ??
-				false) &&
-				!editing),
-		[
-			isSendingMessage,
-			isDeletingMessage,
-			isUploading,
-			messages.isFetching,
-			editing,
-			messages.data,
-		],
-	);
+	const { disabled } = useDisabled({ disabled: isUploading });
 
 	const _key = useEditorStore((s) => s._key);
 
@@ -276,7 +253,7 @@ export default function Chat() {
 							pointerEvents: createTemporary ? "auto" : "none",
 						}}
 					>
-						{createTemporary && "Chat will not be saved"}
+						{createTemporary && "Temporary chat"}
 						&nbsp;
 					</Text>
 				</Stack>
@@ -300,20 +277,16 @@ export default function Chat() {
 				>
 					<Stack pt={isMobile ? 40 : 10} px={20} m="0 auto" maw={860} gap={10}>
 						<Sentinel isFetching={messages.isFetching} ref={sentinelRef} />
-						{messages.data?.pages
-							.flatMap((page) => page.messages)
-							.map((message) => (
+						<MessageContextProvider>
+							{messageList.map((message) => (
 								<Message
 									key={message.id}
 									message={message}
 									opacity={messageOpacities.get(message.id) ?? 1}
-									isLast={
-										message.id ===
-										messages.data?.pages.flatMap((page) => page.messages).at(-1)
-											?.id
-									}
+									isLast={message.id === lastMessageId}
 								/>
 							))}
+						</MessageContextProvider>
 						<Box mb={20}>
 							<Actions />
 						</Box>
@@ -394,11 +367,11 @@ export default function Chat() {
 					</Transition>
 				</Group>
 
-				<ChatInputEffects
+				<ChatEffects
 					inputEffectsRef={inputEffectsRef}
 					chatContainerHeight={chatContainerHeight}
 					inputMaxWidth={inputMaxWidth}
-					isAny={isAny}
+					disabled={disabled}
 				/>
 			</Box>
 
@@ -415,7 +388,7 @@ export default function Chat() {
 					p={isMobile ? "0 10px 10px 10px" : "0 20px 20px 20px"}
 					ref={inputRef}
 				>
-					<ChatInput key={_key} style={{ borderRadius: 25 }} isAny={isAny} />
+					<Editor key={_key} style={{ borderRadius: 25 }} disabled={disabled} />
 				</Box>
 			</Box>
 		</Stack>

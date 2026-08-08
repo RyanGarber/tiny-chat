@@ -10,8 +10,8 @@ export const createWebCapability: CapabilityFactory<
 	WebCapability
 > = async ({ user }) => {
 	return {
-		search: async ({ query }) => {
-			return await WebService.search({ user, query });
+		search: async ({ query, maxResults }) => {
+			return await WebService.search({ user, query, maxResults });
 		},
 
 		view: async ({ url }) => {

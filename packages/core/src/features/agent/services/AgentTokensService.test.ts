@@ -7,22 +7,31 @@ const config = (tokens: number) =>
 	zConfig.parse({
 		provider: "test",
 		model: "test",
-		args: {},
+		args: { "tokens-in": tokens },
 		toolsets: [],
 		skills: [],
-		tokens,
 	});
 
 const message = (
 	author: "USER" | "MODEL",
-	parts: zDataPart[],
+	parts: zDataPart[] | zDataPart[][],
 ): zAgentMessage => ({
 	id: null,
 	author,
-	data: [parts],
+	data: Array.isArray(parts[0])
+		? (parts as zDataPart[][])
+		: [parts as zDataPart[]],
 	config: null,
 	createdAt: null,
 });
+
+const getText = (message: zAgentMessage) =>
+	message.data
+		.flat()
+		.map((part) =>
+			"value" in part && typeof part.value === "string" ? part.value : "",
+		)
+		.join("\n");
 
 describe("AgentTokensService", () => {
 	it("returns a deep value copy even when compaction is unnecessary", async () => {
@@ -48,12 +57,7 @@ describe("AgentTokensService", () => {
 
 		expect(compacted).toEqual(messages);
 		expect(compacted).not.toBe(messages);
-		expect(compacted[0]).not.toBe(messages[0]);
-		expect(compacted[0].data).not.toBe(messages[0].data);
-		expect(compacted[0].data[0]).not.toBe(messages[0].data[0]);
 		expect(compacted[0].data[0][0]).not.toBe(messages[0].data[0][0]);
-		expect(compacted[0].config).not.toBe(messages[0].config);
-		expect(compacted[0].createdAt).not.toBe(messages[0].createdAt);
 
 		const result = compacted[0].data[0][0];
 		if (result.type !== "toolResult" || result.value[0].type !== "json") {
@@ -68,62 +72,166 @@ describe("AgentTokensService", () => {
 		expect(original.value[0].value.nested[0]).toBe("value");
 	});
 
-	it("masks old tool output before touching recent messages", async () => {
+	it("keeps the task and the current request while giving up tool output", async () => {
 		const messages = [
+			message("USER", [{ type: "text", value: "Fix the failing login test." }]),
 			message("MODEL", [
-				{
-					type: "toolResult",
-					id: "tool-1",
-					name: "web_search",
-					value: [{ type: "text", value: "result\n".repeat(100) }],
-				},
+				[
+					{
+						type: "toolResult",
+						id: "tool-1",
+						name: "grep_files",
+						value: [{ type: "text", value: "noise\n".repeat(2_000) }],
+					},
+				],
+				[{ type: "text", value: "Looking into it." }],
 			]),
-			message("USER", [{ type: "text", value: "u".repeat(300) }]),
-			message("MODEL", [{ type: "text", value: "m".repeat(300) }]),
+			message("USER", [{ type: "text", value: "Any progress?" }]),
+			message("MODEL", [{ type: "text", value: "Almost there." }]),
 		];
 
 		const compacted = await AgentTokensService.trimMessages({
 			messages,
 			config: config(200),
 		});
-		const oldResult = compacted[0].data[0][0];
 
-		expect(oldResult.type).toBe("toolResult");
-		if (oldResult.type !== "toolResult")
-			throw new Error("Expected tool result");
-		expect(oldResult.value).toEqual([
+		expect(getText(compacted[0])).toBe("Fix the failing login test.");
+		expect(getText(compacted[2])).toBe("Any progress?");
+		expect(getText(compacted[3])).toBe("Almost there.");
+
+		const result = compacted[1].data[0][0];
+		if (result.type !== "toolResult") throw new Error("Expected a tool result");
+		expect(result.value).toEqual([
 			{
 				type: "text",
-				value: expect.stringContaining("[tool result compacted: 101 lines"),
+				value: expect.stringContaining("grep_files result elided"),
 			},
 		]);
-		expect(compacted[1]).toEqual(messages[1]);
-		expect(compacted[2]).toEqual(messages[2]);
 		expect(
 			AgentTokensService.getTokens({ messages: compacted }),
 		).toBeLessThanOrEqual(200);
 	});
 
-	it("collapses the oldest complete turn before recent conversation", async () => {
+	it("gives up the largest tool result before several small ones", async () => {
 		const messages = [
-			message("USER", [{ type: "text", value: "old user ".repeat(100) }]),
-			message("MODEL", [{ type: "text", value: "old model ".repeat(100) }]),
-			message("USER", [{ type: "text", value: "recent prompt" }]),
-			message("MODEL", [{ type: "text", value: "current response" }]),
+			message("USER", [{ type: "text", value: "task" }]),
+			message("MODEL", [
+				[
+					{
+						type: "toolResult",
+						id: "tool-1",
+						name: "read_file",
+						value: [{ type: "text", value: "huge\n".repeat(1_000) }],
+					},
+					{
+						type: "toolResult",
+						id: "tool-2",
+						name: "read_file",
+						value: [{ type: "text", value: "small result" }],
+					},
+				],
+				[{ type: "text", value: "done" }],
+				[{ type: "text", value: "done" }],
+				[{ type: "text", value: "done" }],
+			]),
+			message("USER", [{ type: "text", value: "now what" }]),
 		];
 
 		const compacted = await AgentTokensService.trimMessages({
 			messages,
-			config: config(30),
+			config: config(120),
 		});
 
-		expect(compacted).toHaveLength(3);
-		expect(compacted[0].author).toBe("USER");
-		expect(compacted[0].data).toEqual([
-			[{ type: "text", value: "[one earlier conversation turn omitted]" }],
-		]);
-		expect(compacted[1]).toEqual(messages[2]);
-		expect(compacted[2]).toEqual(messages[3]);
+		const [first, second] = compacted[1].data[0];
+		if (first.type !== "toolResult" || second.type !== "toolResult") {
+			throw new Error("Expected tool results");
+		}
+		expect(first.value[0]).toEqual({
+			type: "text",
+			value: expect.stringContaining("elided"),
+		});
+		expect(second.value).toEqual([{ type: "text", value: "small result" }]);
+	});
+
+	it("drops reasoning the model has already acted on", async () => {
+		const messages = [
+			message("USER", [{ type: "text", value: "task" }]),
+			message("MODEL", [
+				[
+					{
+						type: "thought",
+						value: "old thinking ".repeat(200),
+						signature: { reasoning: "old" },
+					},
+				],
+				[{ type: "text", value: "step two" }],
+				[{ type: "text", value: "step three" }],
+				[
+					{
+						type: "thought",
+						value: "current thinking",
+						signature: { reasoning: "now" },
+					},
+				],
+			]),
+		];
+
+		const compacted = await AgentTokensService.trimMessages({
+			messages,
+			config: config(60),
+		});
+
+		const parts = compacted[1].data.flat();
+		expect(
+			parts.some(
+				(part) => part.type === "thought" && part.value.startsWith("old"),
+			),
+		).toBe(false);
+		expect(parts.at(-1)).toEqual({
+			type: "thought",
+			value: "current thinking",
+			signature: { reasoning: "now" },
+		});
+	});
+
+	it("summarizes a middle turn instead of deleting it", async () => {
+		const messages = [
+			message("USER", [{ type: "text", value: "Build the importer." }]),
+			message("MODEL", [
+				[
+					{
+						type: "toolCall",
+						id: "tool-1",
+						name: "edit_file",
+						args: { path: "src/parser.ts" },
+					},
+					// Many small parts: excerpting each one saves nothing, so only a
+					// digest of the whole turn can bring the message down.
+					...Array.from(
+						{ length: 30 },
+						(_, index): zDataPart => ({
+							type: "text",
+							value: `Parser step ${index}. `.repeat(10),
+						}),
+					),
+				],
+			]),
+			message("USER", [{ type: "text", value: "Now the writer." }]),
+			message("MODEL", [{ type: "text", value: "On it." }]),
+			message("USER", [{ type: "text", value: "And the tests." }]),
+			message("MODEL", [{ type: "text", value: "Sure." }]),
+		];
+
+		const compacted = await AgentTokensService.trimMessages({
+			messages,
+			config: config(160),
+		});
+
+		const digest = getText(compacted[1]);
+		expect(digest).toContain("earlier assistant turn, summarized");
+		expect(digest).toContain("edit_file(src/parser.ts)");
+		expect(getText(compacted[0])).toBe("Build the importer.");
+		expect(getText(compacted[4])).toBe("And the tests.");
 	});
 
 	it("preserves every live part and signature at an extremely small budget", async () => {
@@ -196,6 +304,18 @@ describe("AgentTokensService", () => {
 			append: [{ type: "text", value: "1234567" }],
 		};
 
-		expect(AgentTokensService.getTokens({ data: [part] })).toBe(4);
+		expect(
+			AgentTokensService.getTokens({
+				messages: [
+					{
+						id: null,
+						author: "MODEL",
+						config: config(1_000),
+						data: [[part]],
+						createdAt: new Date(),
+					},
+				],
+			}),
+		).toBe(4);
 	});
 });

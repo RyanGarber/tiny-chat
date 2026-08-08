@@ -128,12 +128,14 @@ export default function Completions<
 			paddingX={1}
 			marginBottom={chatId ? 1 : 0}
 			flexDirection="column"
+			// The popup is a fixed-size overlay: it must never be shrunk by a
+			// sibling (the chat viewport) that wants more room than the terminal has.
+			flexShrink={0}
 		>
 			{before}
 			<ScrollList
 				selectedIndex={selected}
-				minHeight={7}
-				maxHeight={rows - 7}
+				maxHeight={rows - 5}
 				scrollAlignment="top"
 				{...props}
 			>
@@ -147,7 +149,9 @@ export default function Completions<
 						<Box key={item.group + item.value} flexDirection="column">
 							{item.groupLabel && (
 								<Box marginLeft={2}>
-									<Text color="gray">--- {item.groupLabel} ---</Text>
+									<Text color="blueBright" dimColor bold>
+										♦︎ {item.groupLabel.toLowerCase()}
+									</Text>
 								</Box>
 							)}
 							<Box>
@@ -164,7 +168,9 @@ export default function Completions<
 					);
 				})}
 				{items.length === 0 && renderEmpty && (
-					<Text dimColor>{renderEmpty()}</Text>
+					<Text color="blue" dimColor>
+						{renderEmpty()}
+					</Text>
 				)}
 			</ScrollList>
 			{after}

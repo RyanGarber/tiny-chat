@@ -1,4 +1,3 @@
-import type { FileNode } from "../../../features/file/types/file.ts";
 import type { ActionState } from "../../data/types/action.ts";
 import type {
 	MemoryCategory,
@@ -11,10 +10,11 @@ import type {
 	MessageSearchResult,
 	zData,
 } from "../../data/types/message.ts";
+import type { FileNode } from "../../file/types/file.ts";
 import type { zWebContext } from "../../provider/types/web.ts";
 
 export interface WebCapability {
-	search: (_: { query: string; maxResults?: number }) => Promise<zWebContext[]>;
+	search: (_: { query: string; maxResults: number }) => Promise<zWebContext[]>;
 
 	view: (_: { url: string }) => Promise<zWebContext>;
 }
@@ -73,8 +73,18 @@ export interface UserCapability {
 	}) => Promise<MessageSearchResult[]>;
 }
 
+/** A slice of output produced by a command while it is still running. */
+export interface ShellOutputChunk {
+	stream: "stdout" | "stderr";
+	value: string;
+}
+
+export type ShellOutputHandler = (_: ShellOutputChunk) => void;
+
 export interface ShellCapability {
-	getFiles?: () => Promise<FileNode[]>;
+	cwd?: () => Promise<string>;
+
+	chdir?: (_: { path: string }) => Promise<void>;
 
 	readFile: (_: {
 		path: string;
@@ -89,9 +99,17 @@ export interface ShellCapability {
 		content: string;
 	}) => Promise<{ path: string; success: true }>;
 
+	/**
+	 * `onOutput` is called with output as it arrives, for shells that can
+	 * report it. The resolved value always carries the complete output, so a
+	 * shell that cannot stream simply never calls it.
+	 */
 	exec: (_: {
 		command: string;
+		onOutput?: ShellOutputHandler;
 	}) => Promise<{ code?: number; stdout: string; stderr: string }>;
+
+	nodes?: () => Promise<FileNode[]>;
 }
 
 export interface Capabilities {

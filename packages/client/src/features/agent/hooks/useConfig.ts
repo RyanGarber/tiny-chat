@@ -2,13 +2,13 @@ import { zConfig } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { ModelProviderStatus } from "@tiny-chat/core/src/features/provider/types/model.ts";
 import type { ProviderState } from "@tiny-chat/core/src/features/provider/types/provider.ts";
 import { useCallback, useContext, useMemo } from "react";
-import { ClientProvider } from "../../../client.ts";
-import { useMessages } from "../../chat/hooks/useMessages.ts";
+import { ClientContext } from "../../../client.ts";
+import { useMessages } from "../../message/hooks/useMessages.ts";
 import { useConfigStore } from "../stores/useConfigStore.ts";
 import { useProviders } from "./useProviders.ts";
 
 export const useConfig = () => {
-	const client = useContext(ClientProvider);
+	const client = useContext(ClientContext);
 
 	const overrideConfig = useConfigStore((s) => s.overrideConfig);
 	const setOverrideConfig = useConfigStore((s) => s.setOverrideConfig);

@@ -1,78 +1,49 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { zSettings } from "@tiny-chat/core/src/features/data/types/user.ts";
-import { useContext } from "react";
-import { ClientProvider } from "../../../client.ts";
-import { useSession } from "../../../core/hooks/useSession.ts";
+import { useMutation } from "@tanstack/react-query";
+import { useContext, useMemo } from "react";
+import { ClientContext } from "../../../client.ts";
 import { useProviders } from "../../agent/hooks/useProviders.ts";
+import { useSettings } from "./useSettings.ts";
 
 export const useProviderSettings = () => {
-	const client = useContext(ClientProvider);
-	const { session } = useSession();
+	const client = useContext(ClientContext);
+
+	const { settings, applySettings } = useSettings();
 	const { updateProviders } = useProviders();
 
-	const providerSettings = useQuery({
-		...client.query.settings.get.queryOptions(),
-		select: (data) => data.providers,
-		initialData: zSettings.safeParse(session.data?.user?.settings).data,
-	});
+	const providerSettings = useMemo(() => {
+		return settings.data?.providers ?? {};
+	}, [settings.data?.providers]);
 
 	const setProviderSetting = useMutation({
 		...client.query.settings.setProviderSetting.mutationOptions(),
-		onSuccess: (data) => {
-			client.queryClient.setQueryData(
-				client.query.settings.get.queryKey(),
-				data,
-			);
-			updateProviders.mutate();
-		},
+		onSuccess: (data) => applySettings(data) && updateProviders.mutate(),
 	});
 
-	const preferredWebProvider = useQuery({
-		...client.query.settings.get.queryOptions(),
-		select: (data) => data.preferredWebProvider,
-		initialData: zSettings.safeParse(session.data?.user?.settings).data,
-	});
+	const preferredWebProvider = useMemo(() => {
+		return settings.data?.preferredWebProvider;
+	}, [settings.data?.preferredWebProvider]);
 
 	const setPreferredWebProvider = useMutation({
 		...client.query.settings.setPreferredWebProvider.mutationOptions(),
-		onSuccess: (data) => {
-			client.queryClient.setQueryData(
-				client.query.settings.get.queryKey(),
-				data,
-			);
-		},
+		onSuccess: applySettings,
 	});
 
-	const useProviderCache = useQuery({
-		...client.query.settings.get.queryOptions(),
-		select: (data) => data.useProviderCache,
-		initialData: zSettings.safeParse(session.data?.user?.settings).data,
-	});
+	const useProviderCache = useMemo(() => {
+		return settings.data?.useProviderCache ?? false;
+	}, [settings.data?.useProviderCache]);
 
 	const setUseProviderCache = useMutation({
 		...client.query.settings.setUseProviderCache.mutationOptions(),
-		onSuccess: (data) => {
-			client.queryClient.setQueryData(
-				client.query.settings.get.queryKey(),
-				data,
-			);
-		},
+		onSuccess: applySettings,
 	});
 
-	const useBrowserModels = useQuery({
-		...client.query.settings.get.queryOptions(),
-		select: (data) => data.useBrowserModels,
-		initialData: zSettings.safeParse(session.data?.user?.settings).data,
-	});
+	const useBrowserModels = useMemo(() => {
+		return settings.data?.useBrowserModels ?? false;
+	}, [settings.data?.useBrowserModels]);
 
 	const setUseBrowserModels = useMutation({
 		...client.query.settings.setUseBrowserModels.mutationOptions(),
-		onSuccess: (data) => {
-			client.queryClient.setQueryData(
-				client.query.settings.get.queryKey(),
-				data,
-			);
-		},
+		onSuccess: applySettings,
 	});
 
 	return {

@@ -92,16 +92,18 @@ export const ClientCapabilityService = {
 	}: {
 		client: Client;
 		user: zUser;
-		chat: boolean;
-		message: boolean;
+		chat: ChatLike | boolean | null;
+		message: MessageLike | boolean | null;
 		incognito: boolean | undefined;
 		providers?: ProviderState<ProviderStatus>[];
 	}) => {
+		if (typeof chat === "boolean") chat = chat ? { id: "any" } : null;
+		if (typeof message === "boolean") message = message ? { id: "any" } : null;
 		return await ClientCapabilityService.getCapabilities({
 			client,
 			user,
-			chat: { id: chat as any },
-			message: { id: message as any },
+			chat,
+			message,
 			incognito,
 			providers,
 		});

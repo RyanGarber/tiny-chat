@@ -1,3 +1,35 @@
+## [0.7.8](https://github.com/RyanGarber/tiny-chat/compare/0.7.7...0.7.8) (2026-08-13)
+
+### Features
+
+* attached directories included as full tree ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-15))
+* ctrl+c/ctrl+d exit handling in cli ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-12))
+* custom cli markdown renderer ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54))
+* detailed token breakdown in cli and app ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-10))
+* fail-fast tool calls (skips approval on error) ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-22))
+* file search in @ attachment menu ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-8))
+* improved agent filesystem context ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-13))
+* improved cli rendering ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-2))
+* rewritten filesystem tools ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-19))
+* shell_exec output streaming ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-21))
+* thought, tool calls expandable in cli ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-11))
+* token estimation, usage display ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-1))
+* web search max results support ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-14))
+
+### Bug Fixes
+
+* message streaming doesn't grow scroll height in cli ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-23))
+* some queries remain stale ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-3))
+* stdio transport not working in cli ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-16))
+* unused `id` arg in search_memories tool ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-20))
+* various cleanup and fixes ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-4))
+
+### Performance Improvements
+
+* optimize tool call ui ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-5))
+* reduce unnecessary settings queries ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-7))
+
+
 ## [0.7.7](https://github.com/RyanGarber/tiny-chat/compare/0.7.6...0.7.7) (2026-08-05)
 
 ### Features

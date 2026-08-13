@@ -1,7 +1,9 @@
 /** biome-ignore-all lint/suspicious/noArrayIndexKey: parts stay in order */
+
+import { ThemeContext } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
 import type { MarkdownContext } from "@tiny-chat/client/src/features/message/components/MarkdownContext.tsx";
-import { MessageContext } from "@tiny-chat/client/src/features/message/components/MessageContext.tsx";
 import { useMessageStream } from "@tiny-chat/client/src/features/message/hooks/useMessageStream.ts";
+import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
 import {
 	Author,
 	type MessageState,
@@ -11,51 +13,58 @@ import { ToolCallUtils } from "@tiny-chat/core/src/features/tool/utils/ToolCallU
 import type { ColorName } from "chalk";
 import { Box, Text, useWindowSize } from "ink";
 import Spinner from "ink-spinner";
-import { TaskList } from "ink-task-list";
 import { useContext, useMemo } from "react";
+import Task from "../../part/components/Task.tsx";
+import Thought from "../../part/components/Thought.tsx";
+import ToolCall from "../../part/components/ToolCall.tsx";
 import Markdown from "./Markdown.tsx";
-import Thought from "./Thought.tsx";
-import ToolCall from "./ToolCall.tsx";
 
-const COLOR_DIM: ColorName = "gray";
+export default function Message({ message }: { message: MessageState }) {
+	const { colorScheme } = useContext(ThemeContext);
 
-export default function Message({
-	message,
-	expanded,
-}: {
-	message: MessageState;
-	expanded: boolean;
-}) {
+	const toolsets = useMessageStore((s) => s.toolsets);
+	const nextFeedbackId = useMessageStore((s) => s.nextFeedbackId);
+
 	const { columns } = useWindowSize();
 
-	const { sources, toolsets, nextFeedbackId } = useContext(MessageContext);
-
-	const stream = useMessageStream(
+	const { message: streamed, version } = useMessageStream(
 		message.author === Author.MODEL ? message.id : undefined,
 	);
-	const live = stream ?? message;
+	const live = streamed ?? message;
 	const markdownContext = useMemo<MarkdownContext<never, ColorName>>(
-		() => ({ sources, streaming: live.state.generating }),
-		[sources, live.state.generating],
+		() => ({ streaming: live.state.generating }),
+		[live.state.generating],
 	);
 
-	const parts = DataUtils.getRenderedPartsGrouped(live, "thought", "toolCall");
+	// biome-ignore lint/correctness/useExhaustiveDependencies: `live` is mutated in place by the stream, so `version` is the only thing that marks it dirty
+	const parts = useMemo(
+		() => DataUtils.getRenderedPartsGrouped(live, "thought", "toolCall"),
+		[live, version],
+	);
 	let lastIndex = -1;
 
 	return (
 		<Box flexDirection="column" paddingX={1} paddingY={1}>
 			<Box
 				flexDirection="column"
-				borderColor={message.author === Author.USER ? "gray" : undefined}
-				borderStyle={message.author === Author.USER ? "round" : undefined}
-				paddingX={1}
+				backgroundColor={
+					message.author === Author.USER ? colorScheme.surface : undefined
+				}
+				paddingY={message.author === Author.USER ? 1 : 0}
+				paddingX={2}
 				gap={1}
 				maxWidth={columns - 3}
 			>
 				{parts.flatMap((part, index) => {
 					if (part.type === "group") {
 						return (
-							<TaskList key={index}>
+							<Task.Group
+								key={index}
+								detailsProps={{
+									paddingY: 1,
+									backgroundColor: colorScheme.surface,
+								}}
+							>
 								{part.value.flatMap((part, index, parts) => {
 									if (part.type === "thought") {
 										if (index <= lastIndex) return [];
@@ -71,8 +80,6 @@ export default function Message({
 												key={lastIndex}
 												thoughts={thoughts}
 												context={markdownContext}
-												isExpanded={expanded}
-												textColor={COLOR_DIM}
 											/>
 										);
 									} else if (part.type === "toolCall") {
@@ -86,15 +93,13 @@ export default function Message({
 												message={message}
 												part={part}
 												display={display}
-												isExpanded={expanded}
 												isFocused={part.id === nextFeedbackId}
-												textColor={COLOR_DIM}
 											/>
 										);
 									}
 									return [];
 								})}
-							</TaskList>
+							</Task.Group>
 						);
 					} else if (part.type === "text") {
 						return (
@@ -130,7 +135,9 @@ export default function Message({
 					</Text>
 				)}
 			</Box>
-			<Text dimColor>➤ {message.config.model}</Text>
+			<Box paddingLeft={2} paddingTop={1}>
+				<Text dimColor>➤ {message.config.model}</Text>
+			</Box>
 		</Box>
 	);
 }

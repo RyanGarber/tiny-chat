@@ -1,8 +1,7 @@
 import { useChatList } from "@tiny-chat/client/src/features/chat/hooks/useChatList.ts";
 import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
 import type { ChatState } from "@tiny-chat/core/src/features/data/types/chat.ts";
-import type { ScrollListRef } from "ink-scroll-list";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useSentinel } from "../../../core/hooks/useSentinel.ts";
 import { useWorkingStatus } from "../../../core/hooks/useWorkingStatus.ts";
 import { useAppStore } from "../../../core/stores/useAppStore.ts";
@@ -14,15 +13,9 @@ export default function ChatList() {
 
 	const folderList = folders.data?.pages.flatMap((page) => page.folders) ?? [];
 
-	const scrollRef = useRef<ScrollListRef>(null);
-
-	const { onScroll, onContentHeightChange, onViewportSizeChange } = useSentinel(
-		{
-			scrollRef,
-			query: folders,
-			edge: "bottom",
-		},
-	);
+	// Older chats are appended below the list, so reaching the bottom is what
+	// asks for the next page.
+	const fetchOlder = useSentinel(folders);
 
 	const setPage = useAppStore((state) => state.setPage);
 
@@ -84,10 +77,7 @@ export default function ChatList() {
 			}}
 			actions={[{ key: "space", name: "options" }]}
 			selectFirstOnChange={false}
-			ref={scrollRef}
-			onScroll={onScroll}
-			onContentHeightChange={onContentHeightChange}
-			onViewportSizeChange={onViewportSizeChange}
+			onReachBottom={fetchOlder}
 		/>
 	);
 }

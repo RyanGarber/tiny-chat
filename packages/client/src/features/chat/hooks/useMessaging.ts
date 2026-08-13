@@ -85,6 +85,8 @@ export const useMessaging = () => {
 			const data = MessagingService.getData({ client });
 			if (!data.length || !data.some((step) => step.length)) return;
 
+			if (!session.data) throw new Error("missing session");
+
 			sendingData.current = {
 				data: data,
 				temporary: createTemporary,
@@ -118,10 +120,9 @@ export const useMessaging = () => {
 			const text = DataUtils.getText(message);
 			if (
 				text.length &&
-				(!editing || text.trim() !== DataUtils.getText(editing).trim())
+				(!editing || text.trim() !== DataUtils.getText(editing).trim()) &&
+				embeddingConfig
 			) {
-				if (!session.data || !embeddingConfig) return;
-
 				const provider = (
 					await ProviderService.getModelProviders({
 						client,
@@ -187,6 +188,8 @@ export const useMessaging = () => {
 				});
 			}
 		},
+
+		throwOnError: true,
 	});
 
 	const sendToolFeedback = useMutation({
@@ -228,7 +231,7 @@ export const useMessaging = () => {
 			});
 
 			let result: zDataPart;
-			if (tool.approval && !approved) {
+			if (part.validation?.approval && !approved) {
 				result = {
 					type: "toolResult",
 					id: part.id,

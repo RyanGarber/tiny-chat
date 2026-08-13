@@ -9,8 +9,8 @@ import {
 	useMantineTheme,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
+import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { format } from "timeago.js";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import {
 	type TauriTask,
@@ -257,7 +257,10 @@ export default function Tauri() {
 	]);
 
 	const updateTimeAgo: string | null = tauriUpdate.data?.date
-		? format(new Date(tauriUpdate.data.date))
+		? CommonUtils.formatDate({
+				date: new Date(tauriUpdate.data.date),
+				relative: true,
+			})
 		: null;
 
 	return (

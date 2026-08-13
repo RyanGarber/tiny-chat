@@ -82,7 +82,7 @@ export const OpenAiProvider: ModelProvider<_OpenAIProvider> = {
 		} catch (error) {
 			return {
 				valid: false,
-				error: CommonUtils.getErrorFormatted({ error }),
+				error: CommonUtils.formatError({ error }),
 				models: [],
 			};
 		}

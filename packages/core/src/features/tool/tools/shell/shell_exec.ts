@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { ShellCapability } from "../../../capability/types/capability.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
+import { ShellUtils } from "../../utils/ShellUtils.ts";
 import { ToolOutputUtils } from "../../utils/ToolOutputUtils.ts";
 
 export const shell_exec = {
@@ -21,6 +22,9 @@ export const createShellExecTool: ToolFactory<
 	Tool<typeof shell_exec, { shell: ShellCapability }>
 > = (options) => ({
 	...shell_exec,
+	validate: async ({ input }) => {
+		return { approval: !ShellUtils.isSafe(input.command) };
+	},
 	execute: async ({ input, onOutput }) => {
 		const result = await options.capabilities.shell.exec({
 			command: input.command,

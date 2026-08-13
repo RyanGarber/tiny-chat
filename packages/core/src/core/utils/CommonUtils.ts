@@ -1,4 +1,5 @@
 import { distance } from "fastest-levenshtein";
+import { format } from "timeago.js";
 import {
 	adjectives,
 	colors,
@@ -39,27 +40,36 @@ export const CommonUtils = {
 		return hash >>> 0;
 	},
 
-	getDateFormatted: ({
+	formatDate: ({
 		date = new Date(),
 		timezone,
+		relative = false,
 	}: {
 		date?: Date;
 		timezone?: string;
+		relative?: boolean;
 	}) => {
-		return date.toLocaleString("en-US", {
-			timeZone: timezone ?? "UTC",
-			dateStyle: "long",
-			timeStyle: "short",
-		});
+		return relative
+			? format(date, timezone)
+			: date.toLocaleString("en-US", {
+					timeZone: timezone ?? "UTC",
+					dateStyle: "long",
+					timeStyle: "short",
+				});
 	},
 
-	getErrorFormatted: ({ error }: { error?: unknown }) => {
+	formatError: ({ error, details }: { error?: unknown; details?: boolean }) => {
+		if (details) {
+			return error instanceof Error
+				? `${error.name}: ${error.message}\n\nDetails: ${JSON.stringify(error)}`
+				: JSON.stringify(error);
+		}
 		return error instanceof Error
 			? `${error.name}: ${error.message}`
 			: String(error);
 	},
 
-	getRegexEscaped: (value: string) => {
+	escapeRegex: (value: string) => {
 		return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 	},
 
@@ -116,7 +126,7 @@ export const CommonUtils = {
 	}: {
 		rrule: { schedule: string } | string;
 		after?: Date | null;
-	}) => {
+	}): Date | null => {
 		if (typeof rrule === "string") rrule = { schedule: rrule };
 
 		const schedule = RRule.fromString(rrule.schedule);

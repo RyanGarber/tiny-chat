@@ -88,7 +88,7 @@ export const AzureProvider: ModelProvider<
 		} catch (error) {
 			return {
 				valid: false,
-				error: CommonUtils.getErrorFormatted({ error }),
+				error: CommonUtils.formatError({ error }),
 				models: [],
 			};
 		}

@@ -41,3 +41,29 @@ Build the app by running `pnpm run build:tauri`.
 
 Test the app by running `pnpm run dev:tauri:[ios/android]`.\
 Build the app by running `pnpm run build:tauri:[ios/android]`.
+
+### Terminal
+
+Test the CLI by running `pnpm run dev:cli`.\
+Build the CLI by running `pnpm run build:cli`.
+
+#### Editor shortcuts
+
+The editor selects text with the mouse, by the character with Shift and an arrow, and by the word with Option, Shift and an arrow.
+
+Terminals disagree on how much of a keypress they report. A modifier can only be seen if the terminal encodes it, and the legacy encoding has no room for every combination — so where a terminal cannot say that Shift was held, the app cannot know it was. Tiny Chat asks for the [kitty keyboard protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) at startup, which reports every modifier apart; terminals that do not answer are left on the legacy encoding.
+
+Everything works unaided in Ghostty, kitty, WezTerm, iTerm2, Alacritty, foot, Rio, Warp, and the VS Code terminal.
+
+#### macOS Terminal
+
+macOS Terminal implements neither the kitty protocol nor xterm's `modifyOtherKeys`, and its built-in key mappings cover Option and an arrow but not Option and Delete, or Option, Shift and an arrow — which it sends stripped of both modifiers. Turning on "Use Option as Meta Key", under Settings → Profiles → Keyboard, gives those two presses a shape of their own again: Option and Delete then deletes by the word, and Option, Shift and an arrow selects, a character at a time and up and down as well as along.
+
+Selecting by the word needs the two presses to be mapped by hand, under Settings → Profiles → Keyboard → +:
+
+| Key | Modifier | Action | Text |
+| --- | --- | --- | --- |
+| ← | ⌥⇧ | Send Text | `\033[1;4D` |
+| → | ⌥⇧ | Send Text | `\033[1;4C` |
+
+The rest works there as it comes: selecting by the character with Shift and an arrow, selecting with the mouse, and moving by the word with Option and an arrow. Selecting up and down with Shift alone is not possible, as Terminal maps no sequence for Shift and a vertical arrow.

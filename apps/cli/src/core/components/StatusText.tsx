@@ -1,16 +1,32 @@
+import { ThemeContext } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
 import { Box, Text } from "ink";
 import Spinner from "ink-spinner";
-import { useAppStore } from "../stores/useAppStore.ts";
+import { useContext } from "react";
+import { useShallow } from "zustand/react/shallow";
+import { type Status, useAppStore } from "../stores/useAppStore.ts";
+
+const WORKING: Status = { id: "working", text: "working" };
 
 export default function StatusText() {
-	const statuses = useAppStore((state) => state.statuses);
+	const { colorScheme } = useContext(ThemeContext);
 
-	return statuses.map((status) => (
-		<Box key={status.id} gap={1} marginLeft={1}>
-			<Text color="blueBright">
-				<Spinner type="circleQuarters" />
-			</Text>
-			<Text>{status.text ?? "working..."}</Text>
+	const statuses = useAppStore(
+		useShallow((state): Status[] => [
+			...state.statuses,
+			...(state.workingStatus.size > 0 ? [WORKING] : []),
+		]),
+	);
+
+	return (
+		<Box marginLeft={2} marginY={1} flexDirection="column">
+			{statuses.map((status) => (
+				<Box key={status.id} gap={1}>
+					<Text color={colorScheme.primary}>
+						<Spinner type="circleQuarters" />
+						{status.text && ` ${status.text}`}
+					</Text>
+				</Box>
+			))}
 		</Box>
-	));
+	);
 }

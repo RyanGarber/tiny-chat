@@ -1,4 +1,8 @@
+import { ThemeContext } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
+import { ComponentUtils } from "@tiny-chat/client/src/core/utils/ComponentUtils.ts";
 import { MarkdownContext } from "@tiny-chat/client/src/features/message/components/MarkdownContext.tsx";
+import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
+import { SourceUtils } from "@tiny-chat/client/src/features/message/utils/SourceUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import type { ExtraProps } from "hast-util-to-jsx-runtime";
 import { Box, Text, useWindowSize } from "ink";
@@ -12,7 +16,10 @@ import {
 	type ReactNode,
 	useContext,
 } from "react";
-import { Code } from "../../../core/components/Components.tsx";
+import Anchor from "../../../core/components/Anchor.tsx";
+import Divider from "../../../core/components/Divider.tsx";
+import { CliUtils } from "../../../core/utils/CliUtils.ts";
+import { Code } from "../../code/components/Code.tsx";
 import {
 	TableComponent,
 	TbodyComponent,
@@ -32,15 +39,26 @@ type Components = {
  * Wraps mixed inline/block children for Ink. If all children are inline,
  * renders a single <Text>. If any are block-level, splits into groups:
  * consecutive inline nodes get wrapped in <Text>, block nodes pass through.
+ *
+ * `gap` spaces those groups apart. It stays 0 for content that flows as one
+ * paragraph and is only raised where the children really are separate blocks.
  */
-function BaseComponent({ children }: { children?: ReactNode }) {
+function BaseComponent({
+	children,
+	gap = 0,
+}: {
+	children?: ReactNode;
+	gap?: number;
+}) {
 	const context = useContext(MarkdownContext);
 
-	const childArray = Children.toArray(children);
+	const childArray = Children.toArray(children).map((child) =>
+		typeof child === "string" ? CliUtils.display(child) : child,
+	);
 	if (childArray.length === 0) return null;
 
 	if (childArray.every((c) => !isBlockNode(c))) {
-		return <Text color={context.style?.textColor}>{children}</Text>;
+		return <Text color={context.style?.textColor}>{childArray}</Text>;
 	}
 
 	const groups: ReactNode[] = [];
@@ -68,14 +86,15 @@ function BaseComponent({ children }: { children?: ReactNode }) {
 	}
 	flush();
 
-	return <Box flexDirection="column">{groups}</Box>;
+	return (
+		<Box flexDirection="column" gap={gap}>
+			{groups}
+		</Box>
+	);
 }
 
 const PComponent: Components["p"] = ({ children }) => (
-	<BaseComponent>
-		{children}
-		{`\n`}
-	</BaseComponent>
+	<BaseComponent>{children}</BaseComponent>
 );
 
 const EmComponent: Components["em"] = ({ children }) => (
@@ -94,20 +113,12 @@ const H1Component: Components["h1"] = ({ children }) => (
 );
 
 const H2Component: Components["h2"] = ({ children }) => (
-	<Text bold>
-		{children}
-		{"\n"}
-	</Text>
+	<Text bold>{children}</Text>
 );
 
 const H3Component: Components["h3"] = H2Component;
 
-const H4Component: Components["h4"] = ({ children }) => (
-	<Text>
-		{children}
-		{"\n"}
-	</Text>
-);
+const H4Component: Components["h4"] = ({ children }) => <Text>{children}</Text>;
 
 const H5Component: Components["h5"] = H4Component;
 
@@ -126,38 +137,23 @@ const ImgComponent: Components["img"] = ({ src, alt }) => {
 };
 
 const AComponent: Components["a"] = ({ href, children }) => (
-	<Text color="blueBright">
-		{children} ({href})
-	</Text>
+	<Anchor href={href}>{children}</Anchor>
 );
 
 const CodeBlockContext = createContext(false);
 
 const PreComponent: Components["pre"] = ({ children }) => (
-	<CodeBlockContext value={true}>
-		<Box marginLeft={2}>{children}</Box>
-	</CodeBlockContext>
+	<CodeBlockContext value={true}>{children}</CodeBlockContext>
 );
 
 const CodeComponent: Components["code"] = ({ children, className }) => {
 	const { rows } = useWindowSize();
 
+	const code = ComponentUtils.text({ children });
+	const language = className?.replace("language-", "");
 	const isBlock = useContext(CodeBlockContext);
 
-	let code = "";
-	if (
-		isValidElement(children) &&
-		children.props &&
-		typeof children.props === "object" &&
-		"children" in children.props &&
-		typeof children.props.children === "string"
-	) {
-		code = children.props.children;
-	} else if (typeof children === "string") {
-		code = children;
-	}
-
-	if (className === "language-math") {
+	if (language === "math") {
 		return (
 			<Box>
 				<Image
@@ -172,41 +168,58 @@ const CodeComponent: Components["code"] = ({ children, className }) => {
 	}
 
 	if (isBlock) {
-		return (
-			<Code
-				language={className?.replace("language-", "") ?? null}
-				code={code}
-				marginBottom={1}
-			/>
-		);
+		return <Code code={code} language={language} filename={language} />;
 	}
 
-	return <Text color="blue">{children}</Text>;
+	return <Text color="blue">{CliUtils.display(code)}</Text>;
 };
 
-const ListContext = createContext<{ depth: number; number?: number }>({
-	depth: 0,
-});
+const ListContext = createContext<{
+	depth: number;
+	number?: number;
+	loose?: boolean;
+}>({ depth: 0 });
 
-const UlComponent: Components["ul"] = ({ children }) => {
+type HastElement = NonNullable<ExtraProps["node"]>;
+
+/**
+ * A list is loose when markdown wrapped its items' content in paragraphs —
+ * the same signal CommonMark uses to decide whether items get spaced apart.
+ */
+function isLooseList(node?: HastElement) {
+	return (
+		node?.children.some(
+			(item) =>
+				item.type === "element" &&
+				item.tagName === "li" &&
+				item.children.some(
+					(child) => child.type === "element" && child.tagName === "p",
+				),
+		) ?? false
+	);
+}
+
+const UlComponent: Components["ul"] = ({ children, node }) => {
 	const { depth } = useContext(ListContext);
+	const loose = isLooseList(node);
 
 	return (
-		<Box paddingLeft={2} flexDirection="column">
+		<Box paddingLeft={2} flexDirection="column" gap={1}>
 			{Children.map(children, (child) => (
-				<ListContext value={{ depth: depth + 1 }}>{child}</ListContext>
+				<ListContext value={{ depth: depth + 1, loose }}>{child}</ListContext>
 			))}
 		</Box>
 	);
 };
 
-const OlComponent: Components["ol"] = ({ children }) => {
+const OlComponent: Components["ol"] = ({ children, node }) => {
 	const { depth } = useContext(ListContext);
+	const loose = isLooseList(node);
 
 	return (
-		<Box paddingLeft={2} flexDirection="column">
+		<Box paddingLeft={2} flexDirection="column" gap={1}>
 			{Children.map(children, (child, index) => (
-				<ListContext value={{ depth: depth + 1, number: index + 1 }}>
+				<ListContext value={{ depth: depth + 1, number: index + 1, loose }}>
 					{child}
 				</ListContext>
 			))}
@@ -217,27 +230,17 @@ const OlComponent: Components["ol"] = ({ children }) => {
 const UL_GLYPHS = ["●", "○", "▪", "▫"];
 
 const LiComponent: Components["li"] = ({ children }) => {
-	const childArray = Children.toArray(children);
-	const hasBlock = childArray.some(isLiBlockNode);
-
-	const { depth, number } = useContext(ListContext);
+	const { depth, number, loose } = useContext(ListContext);
 	const glyph = number
 		? `${number}.`
 		: UL_GLYPHS[(depth - 1) % UL_GLYPHS.length];
 
-	if (!hasBlock) {
-		return (
-			<BaseComponent>
-				{glyph} {children}
-				{"\n"}
-			</BaseComponent>
-		);
-	}
-
 	return (
-		<Box marginBottom={1}>
+		<Box>
 			<Text>{glyph} </Text>
-			<BaseComponent>{children}</BaseComponent>
+			<Box flexGrow={1} flexDirection="column">
+				<BaseComponent gap={loose ? 1 : 0}>{children}</BaseComponent>
+			</Box>
 		</Box>
 	);
 };
@@ -247,18 +250,9 @@ const InputComponent: Components["input"] = ({ type, checked }) =>
 		<Text color={checked ? "green" : "gray"}>{checked ? "✔" : "□"}</Text>
 	);
 
-const HrComponent: Components["hr"] = () => (
-	<Box
-		borderStyle="single"
-		borderColor="gray"
-		borderBottom
-		borderTop={false}
-		borderLeft={false}
-		borderRight={false}
-		marginTop={1}
-		marginBottom={1}
-	></Box>
-);
+const HrComponent: Components["hr"] = () => {
+	return <Divider />;
+};
 
 const BrComponent: Components["br"] = () => <Text>{"\n"}</Text>;
 
@@ -267,7 +261,9 @@ const BlockquoteComponent: Components["blockquote"] = ({ children, node }) => (
 		{!!node?.properties?.model && (
 			<Text bold>💬 {node.properties.model as string}</Text>
 		)}
-		{children}
+		<Box flexDirection="column" gap={1}>
+			{children}
+		</Box>
 	</Box>
 );
 
@@ -312,16 +308,44 @@ const LinkComponent: Components["link"] = ({ children, ...props }) => (
 	</Text>
 );
 
-const MarkComponent: Components["mark"] = ({ children, node }) => (
-	<Text>
-		{children}
-		<Text>{` (${node?.properties?.sources})`}</Text>
-	</Text>
-);
+const MarkComponent: Components["mark"] = ({ children, node }) => {
+	const { colorScheme } = useContext(ThemeContext);
+	// Read per-citation rather than through the markdown context: sources change
+	// whenever a chat-scoped query settles, and only this component cares.
+	const sources = useMessageStore((s) => s.sources);
+
+	const keys = ((node?.properties.sources ?? "") as string)
+		.replace("user-content-", "")
+		.split(/[\s;,]+/);
+
+	return (
+		<Text>
+			{children}
+			{keys.map((key) => {
+				const text = ComponentUtils.text({ children });
+				const source = SourceUtils.getDisplay({ sources, key, text });
+				return (
+					<>
+						{` ${source.emoji} `}
+						<Anchor
+							key={key}
+							href={source.type === "web" ? source.value.url : undefined}
+							color={colorScheme.textSubtle}
+						>
+							{source.title.slice(0, 50)}
+							{source.title.length > 50 ? "…" : ""}
+						</Anchor>
+					</>
+				);
+			})}
+		</Text>
+	);
+};
 
 // --- Inline/block detection ---
 
 const BLOCK_NODES: Set<unknown> = new Set([
+	PComponent,
 	ImgComponent,
 	PreComponent,
 	UlComponent,
@@ -344,13 +368,6 @@ function isBlockNode(node: ReactNode): boolean {
 		node.type === CodeComponent &&
 		(node.props as { className?: string }).className === "language-math"
 	);
-}
-
-const LI_BLOCK_NODES: Set<unknown> = new Set([...BLOCK_NODES, PComponent]);
-function isLiBlockNode(node: ReactNode): boolean {
-	if (!isValidElement(node)) return false;
-	if (node.type === Box) return true;
-	return LI_BLOCK_NODES.has(node.type);
 }
 
 // --- Export ---

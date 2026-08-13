@@ -34,7 +34,7 @@ export const BraveProvider: WebProvider = {
 			return {
 				valid: false,
 				features: [],
-				error: CommonUtils.getErrorFormatted({ error }),
+				error: CommonUtils.formatError({ error }),
 			};
 		}
 	},

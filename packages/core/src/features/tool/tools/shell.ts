@@ -21,9 +21,9 @@ export const createShellToolset: ToolsetFactory<
 		await createFindFilesTool(options),
 		await createSearchFilesTool(options),
 		await createGrepFilesTool(options),
-		await createWriteFileTool({ ...options, approval: true }),
-		await createEditFileTool({ ...options, approval: true }),
-		await createShellExecTool({ ...options, approval: true }),
+		await createWriteFileTool(options),
+		await createEditFileTool(options),
+		await createShellExecTool(options),
 	],
 	...options,
 });

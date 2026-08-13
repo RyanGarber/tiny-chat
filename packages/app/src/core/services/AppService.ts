@@ -16,6 +16,7 @@ export const AppService = {
 			const { setMobile } = useAppStore.getState();
 			setMobile(AppService.isMobile);
 		};
+		listener();
 		window.addEventListener("resize", listener);
 		return () => window.removeEventListener("resize", listener);
 	},

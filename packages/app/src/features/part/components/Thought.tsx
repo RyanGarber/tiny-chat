@@ -3,7 +3,7 @@ import { Box, Collapse, Group, Text } from "@mantine/core";
 import type { MarkdownContext } from "@tiny-chat/client/src/features/message/components/MarkdownContext.tsx";
 import type { RenderedPart } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { memo, useMemo, useState } from "react";
-import { Markdown } from "./Markdown.tsx";
+import { Markdown } from "../../message/components/Markdown.tsx";
 
 export const Thought = memo(
 	({

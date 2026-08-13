@@ -58,6 +58,11 @@ export const zSignature = z.object({
 });
 export type zSignature = z.infer<typeof zSignature>;
 
+export const zToolValidation = z.object({
+	approval: z.boolean().optional(),
+});
+export type zToolValidation = z.infer<typeof zToolValidation>;
+
 export type zDataPart =
 	| { type: "thought"; id?: string; value: string; signature?: zSignature }
 	| { type: "text"; id?: string; value: string; signature?: zSignature }
@@ -77,6 +82,7 @@ export type zDataPart =
 			name: string;
 			args: any;
 			signature?: zSignature;
+			validation?: zToolValidation;
 	  }
 	| {
 			type: "toolResult";
@@ -137,6 +143,7 @@ export const zDataPart: z.ZodType<zDataPart> = z.discriminatedUnion("type", [
 		name: z.string(),
 		args: z.any(),
 		signature: zSignature.optional(),
+		validation: zToolValidation.optional(),
 	}),
 	z.object({
 		type: z.literal("toolResult"),

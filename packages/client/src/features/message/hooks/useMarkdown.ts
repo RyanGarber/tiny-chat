@@ -1,5 +1,5 @@
-import type { Code, Nodes, Root } from "mdast";
-import type {} from "mdast-util-to-hast";
+import type { Root as HastRoot } from "hast";
+import type { Code, Root as MdastRoot, Nodes } from "mdast";
 import { type JSX, useMemo } from "react";
 import RehypeKatex from "rehype-katex";
 import RehypeRaw from "rehype-raw";
@@ -37,7 +37,7 @@ const createDirectives = () => {
 		node.data.hProperties = { ...node.attributes };
 	};
 
-	return (tree: Root) => {
+	return (tree: MdastRoot) => {
 		visit(tree, (node) => {
 			if (
 				node.type !== "containerDirective" &&
@@ -54,7 +54,7 @@ const createDirectives = () => {
 	};
 };
 
-const createCodeMeta = () => (tree: Root) => {
+const createCodeMeta = () => (tree: MdastRoot) => {
 	visit(tree, "code", (node: Code) => {
 		if (node.meta) {
 			node.data = node.data ?? {};
@@ -75,9 +75,28 @@ const remarkPlugins: PluggableList = [
 	createCodeMeta,
 ];
 
-const createNewlines = () => (tree: Root) => {
+/**
+ * Drops the whitespace mdast-util-to-hast inserts between block elements,
+ * which renderers that lay blocks out themselves have no way to render.
+ *
+ * The marker is the newline: structural whitespace always has one, and text
+ * that flows never does, since remark-breaks turns soft breaks into `<br>`.
+ * That distinction matters twice over — rehype-raw's reparse merges adjacent
+ * text nodes, so a structural newline can end up inside `"item text\n"`
+ * rather than in a whitespace-only node of its own, while the joining space
+ * between two inline spans *is* its own whitespace-only node and has to
+ * survive, or `**a** *b*` renders as `**a***b*`.
+ */
+const createNewlines = () => (tree: HastRoot) => {
 	visit(tree, "text", (node, index, parent) => {
-		if (node.value.trim() === "" && parent && index != null) {
+		if (!parent || index == null) return;
+		// Text inside these is content, so its newlines are load-bearing.
+		if (parent.type === "element" && ["pre", "code"].includes(parent.tagName))
+			return;
+
+		node.value = node.value.replace(/\n[ \t]*/g, "");
+
+		if (node.value === "") {
 			parent.children.splice(index, 1);
 			return index; // revisit same index since we spliced
 		}
@@ -107,6 +126,21 @@ const processor = unified()
 	.use(RemarkRehype, { allowDangerousHtml: true })
 	.use(rehypePlugins);
 
+/**
+ * The agent's own `<message role=… model=…>` wrapper, which is transport rather
+ * than content.
+ *
+ * It has to come off before parsing. It is not in `allowedTags`, so rehype
+ * sanitizes it away in the end regardless — but while it is still there remark
+ * reads it as an HTML block, which swallows everything up to the first blank
+ * line (a leading heading renders as literal `## text`). Worse during a stream:
+ * until the closing tag arrives the tag is unbalanced, and a block splitter has
+ * to treat the whole document as one block, which is exactly the incremental
+ * rendering the split is meant to enable.
+ */
+const MESSAGE_OPEN = /^\s*<message[^>]*>\n?/;
+const MESSAGE_CLOSE = /\n?<\/message>\s*$/;
+
 export const useMarkdown = ({
 	source,
 	withRemend,
@@ -117,7 +151,10 @@ export const useMarkdown = ({
 	withKatex?: boolean;
 }) => {
 	const content = useMemo(() => {
-		const content = source.replace(/<cite([/ ])/g, "<mark$1");
+		const content = source
+			.replace(MESSAGE_OPEN, "")
+			.replace(MESSAGE_CLOSE, "")
+			.replace(/<cite([/ ])/g, "<mark$1");
 		return withRemend ? remend(content) : content;
 	}, [source, withRemend]);
 

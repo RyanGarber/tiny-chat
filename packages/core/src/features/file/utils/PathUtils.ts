@@ -38,7 +38,7 @@ export const PathUtils = {
 	},
 
 	hostname: (uri: string) => {
-		uri = uri.replace(new RegExp(`^${CommonUtils.getRegexEscaped(WEB)}`), "");
+		uri = uri.replace(new RegExp(`^${CommonUtils.escapeRegex(WEB)}`), "");
 		const hostname = HOSTNAME_REGEX.exec(uri);
 		return hostname?.[1] ?? undefined;
 	},
@@ -131,7 +131,7 @@ export const PathUtils = {
 
 		const [reference, ...rest] = paths.map((path, i) => {
 			if (typeof path === "string") {
-				path = path.replace(`^${CommonUtils.getRegexEscaped(mount)}`, () => {
+				path = path.replace(`^${CommonUtils.escapeRegex(mount)}`, () => {
 					if (i !== 0)
 						throw new Error("Mount must be at the beginning of a join");
 					isMount = true;
@@ -169,10 +169,7 @@ export const PathUtils = {
 
 		if (!path.startsWith(mount)) return null;
 
-		path = path.replace(
-			new RegExp(`^${CommonUtils.getRegexEscaped(mount)}`),
-			"",
-		);
+		path = path.replace(new RegExp(`^${CommonUtils.escapeRegex(mount)}`), "");
 
 		const parts = path.split(/[\\/]/).filter(Boolean);
 

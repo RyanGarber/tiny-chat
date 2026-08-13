@@ -45,7 +45,7 @@ export const DataUtils = {
 			.replace(/\n/g, " ") // Replace multiple newlines with a single newline
 			.trim();
 		if (maxLength > 0 && data.length > maxLength) {
-			return `${data.substring(0, maxLength)}...`;
+			return `${data.substring(0, maxLength)}…`;
 		}
 		return data;
 	},

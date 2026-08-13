@@ -30,7 +30,7 @@ export const TavilyProvider: WebProvider = {
 			return {
 				valid: false,
 				features: [],
-				error: CommonUtils.getErrorFormatted({ error }),
+				error: CommonUtils.formatError({ error }),
 			};
 		}
 	},

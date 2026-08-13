@@ -87,7 +87,7 @@ export const GoogleProvider: ModelProvider<GoogleGenerativeAIProvider> = {
 		} catch (error) {
 			return {
 				valid: false,
-				error: CommonUtils.getErrorFormatted({ error }),
+				error: CommonUtils.formatError({ error }),
 				models: [],
 			};
 		}

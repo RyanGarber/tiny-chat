@@ -69,7 +69,7 @@ export const ToolUtils = {
 		if (prefix === name) return name;
 		if (prefix) {
 			name = name.replace(
-				new RegExp(`^${CommonUtils.getRegexEscaped(prefix)}[_-]?`),
+				new RegExp(`^${CommonUtils.escapeRegex(prefix)}[_-]?`),
 				"",
 			);
 		}

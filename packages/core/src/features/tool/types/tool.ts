@@ -16,14 +16,16 @@ export interface ToolDefinition {
 	output: z.ZodTypeAny;
 }
 
+export interface ToolValidation {
+	approval?: boolean;
+}
+
 export interface Tool<
 	TDefinition extends ToolDefinition,
 	TCapabilities extends Record<string, Capabilities[keyof Capabilities]> | void,
 > extends ToolDefinition {
 	prefix?: string;
-
 	capabilities: TCapabilities;
-	approval?: boolean;
 
 	input: TDefinition["input"];
 	feedback?: TDefinition["feedback"];
@@ -35,10 +37,10 @@ export interface Tool<
 	 * model gets to correct itself, rather than the user being asked to approve
 	 * a call that was never going to work.
 	 */
-	check?: (_: {
+	validate?: (_: {
 		input: z.infer<TDefinition["input"]>;
 		context: zAgentContext;
-	}) => Promise<void>;
+	}) => Promise<ToolValidation | undefined>;
 
 	/**
 	 * `onOutput` lets a long-running tool report output before it finishes, so
@@ -60,7 +62,6 @@ export interface Tool<
 
 export type ToolFactory<T extends Tool<any, any>> = (options: {
 	prefix?: string;
-	approval?: boolean;
 	capabilities: T["capabilities"];
 }) => T | Promise<T>;
 
@@ -83,7 +84,6 @@ export interface Toolset<
 export type ToolsetFactory<T extends Toolset<any>> = (options: {
 	prefix?: string;
 	instructions?: string;
-	approval?: boolean;
 	capabilities: T["capabilities"];
 	status: ToolsetStatus;
 }) => T | Promise<T>;

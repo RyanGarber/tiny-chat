@@ -2,10 +2,10 @@ import { Icon } from "@iconify/react";
 import { Box, Card, Divider, Group, Stack, Text } from "@mantine/core";
 import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
 import { useActions } from "@tiny-chat/client/src/features/user/hooks/useActions.ts";
+import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { zData } from "@tiny-chat/core/src/features/data/types/message.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { useEffect, useMemo, useState } from "react";
-import { format } from "timeago.js";
 
 export default function Actions() {
 	const { chat } = useChat();
@@ -58,7 +58,11 @@ export default function Actions() {
 									})}
 								</Text>
 								<Text size="sm" style={{ whiteSpace: "nowrap" }}>
-									{action.nextRunAt && format(action.nextRunAt)}
+									{action.nextRunAt &&
+										CommonUtils.formatDate({
+											date: action.nextRunAt,
+											relative: true,
+										})}
 								</Text>
 							</div>
 							{i !== array.length - 1 && <Divider my="xs" />}

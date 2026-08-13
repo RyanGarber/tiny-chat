@@ -15,7 +15,7 @@ import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
 import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
 import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
 import { useDisabled } from "@tiny-chat/client/src/features/editor/hooks/useDisabled.ts";
-import { MessageContextProvider } from "@tiny-chat/client/src/features/message/components/MessageContext.tsx";
+import { MessageProvider } from "@tiny-chat/client/src/features/message/components/MessageProvider.tsx";
 import { useMessages } from "@tiny-chat/client/src/features/message/hooks/useMessages.ts";
 import {
 	type RefObject,
@@ -277,7 +277,7 @@ export default function Chat() {
 				>
 					<Stack pt={isMobile ? 40 : 10} px={20} m="0 auto" maw={860} gap={10}>
 						<Sentinel isFetching={messages.isFetching} ref={sentinelRef} />
-						<MessageContextProvider>
+						<MessageProvider>
 							{messageList.map((message) => (
 								<Message
 									key={message.id}
@@ -286,7 +286,7 @@ export default function Chat() {
 									isLast={message.id === lastMessageId}
 								/>
 							))}
-						</MessageContextProvider>
+						</MessageProvider>
 						<Box mb={20}>
 							<Actions />
 						</Box>

@@ -30,6 +30,11 @@ export const FileUtils = {
 		return data;
 	},
 
+	getBase64FromText: ({ text }: { text: string }) => {
+		const data = new TextEncoder().encode(encodeURIComponent(text));
+		return FileUtils.getBase64FromBytes({ data });
+	},
+
 	getTextFromBytes: ({
 		data,
 		mime,

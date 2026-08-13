@@ -176,6 +176,43 @@ export const CodeUtils = {
 	},
 
 	/**
+	 * Extracts a sub-range of tokens from a single-line CodeResult.
+	 *
+	 * `start` and `end` are character offsets (like `String.slice`). Tokens
+	 * that straddle a boundary are split so only the characters inside the
+	 * range are included.
+	 */
+	extractTokenRange: (
+		result: CodeResult,
+		start: number,
+		end: number,
+	): CodeResult => {
+		const lineTokens = result.tokens[0] ?? [];
+		const extracted: (typeof lineTokens)[number][] = [];
+
+		for (const token of lineTokens) {
+			const tokenStart = token.offset;
+			const tokenEnd = tokenStart + token.content.length;
+
+			if (tokenEnd <= start || tokenStart >= end) continue;
+
+			if (tokenStart >= start && tokenEnd <= end) {
+				extracted.push(token);
+			} else {
+				const sliceStart = Math.max(0, start - tokenStart);
+				const sliceEnd = Math.min(token.content.length, end - tokenStart);
+				extracted.push({
+					...token,
+					content: token.content.slice(sliceStart, sliceEnd),
+					offset: tokenStart + sliceStart,
+				});
+			}
+		}
+
+		return { ...result, tokens: [extracted] };
+	},
+
+	/**
 	 * Returns code with no highlighting applied.
 	 */
 	unhighlight: (code: string): CodeResult => {

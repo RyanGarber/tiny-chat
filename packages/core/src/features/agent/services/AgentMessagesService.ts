@@ -205,7 +205,7 @@ export const AgentMessagesService = {
 		}
 
 		if (message.createdAt) {
-			attributes.sent = CommonUtils.getDateFormatted({
+			attributes.sent = CommonUtils.formatDate({
 				date: message.createdAt,
 				timezone,
 			});
@@ -256,7 +256,7 @@ export const AgentMessagesService = {
 		const nodes = entries.map((entry) => {
 			const normalized = PathUtils.normalize({ path: entry.path, unix: true });
 			const relative = normalized.replace(
-				new RegExp(`^${CommonUtils.getRegexEscaped(base)}\\/?`),
+				new RegExp(`^${CommonUtils.escapeRegex(base)}\\/?`),
 				"",
 			);
 			return {

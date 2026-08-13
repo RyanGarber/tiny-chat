@@ -228,7 +228,7 @@ export default function Capabilities() {
 								<Group gap="xs" c="red">
 									<Icon icon="lucide:alert-circle" width={12} />
 									<Text size="xs">
-										{CommonUtils.getErrorFormatted(toolset.status)}
+										{CommonUtils.formatError(toolset.status)}
 									</Text>
 								</Group>
 							)}

@@ -1,22 +1,6 @@
-import {
-	type CSSVariablesResolver,
-	createTheme,
-	type MantineColorsTuple,
-} from "@mantine/core";
+import { type CSSVariablesResolver, createTheme } from "@mantine/core";
+import { palettes } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
-
-const darkPalette: MantineColorsTuple = [
-	"#C4C6CF", // [0]  near-white text — very slightly cool
-	"#A2A4AD", // [1]
-	"#858790", // [2]
-	"#636570", // [3]
-	"#35373e", // [4]
-	"#292b32", // [5]  subtle borders
-	"#1a1b22", // [6]  surface / card background
-	"#131317", // [7]  body / AppShell background
-	"#1e2027", // [8]
-	"#141418", // [9]  deepest
-];
 
 export const theme = createTheme({
 	fontFamily: "'Rubik', sans-serif",
@@ -25,9 +9,7 @@ export const theme = createTheme({
 		md: "1.8",
 	},
 	defaultRadius: "lg",
-	colors: {
-		dark: darkPalette,
-	},
+	colors: palettes,
 	components: {
 		Paper: {
 			defaultProps: {

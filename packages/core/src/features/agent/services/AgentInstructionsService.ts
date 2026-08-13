@@ -89,7 +89,7 @@ ${userInstructions?.length ? `\n${userInstructions.join("\n")}` : ""}
 
 ## Instructions
 
-It is currently ${CommonUtils.getDateFormatted(context)}. Always consider ${CommonUtils.getDateFormatted(context)} the date and time. Never convert to UTC when calling tools.
+It is currently ${CommonUtils.formatDate(context)}. Always consider ${CommonUtils.formatDate(context)} the date and time. Never convert to UTC when calling tools.
 ${context.messages.some((m) => m.createdAt) ? "Always take conversation timing into account. Do not assume the chat is continuous. Consider whether the user's intent has changed between messages." : ""}
 
 Markdown, Mermaid, and LaTeX are supported. Use headers, tables, lists, math, code blocks, diagrams, and images when they would genuinely help illustrate your point.

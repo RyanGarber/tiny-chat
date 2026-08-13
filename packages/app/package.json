@@ -59,7 +59,6 @@
 		"streamdown": "^2.5.0",
 		"tailwind-preset-mantine": "^4.1.0",
 		"tailwindcss": "^4.3.2",
-		"timeago.js": "^4.0.2",
 		"zustand": "^5.0.14"
 	},
 	"devDependencies": {

@@ -13,7 +13,7 @@ import { useClipboard, useDisclosure } from "@mantine/hooks";
 import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
 import { MessagingService } from "@tiny-chat/client/src/features/chat/services/MessagingService.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
-import { memo, type ReactNode } from "react";
+import { type CSSProperties, memo, type ReactNode, useMemo } from "react";
 import { client } from "#app/client.ts";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import MessageBody from "#app/features/message/components/MessageBody.tsx";
@@ -94,10 +94,16 @@ const Message = memo(
 			);
 		}
 
-		const fade = {
-			opacity: opacity,
-			transition: "opacity 0.2s",
-		};
+		// MessageBody's memo ends on `prev.style === next.style`. Rebuilding this
+		// object every render made that check permanently false, so any re-render
+		// of Message re-rendered the whole body, markdown included.
+		const fade = useMemo(
+			(): CSSProperties => ({
+				opacity: opacity,
+				transition: "opacity 0.2s",
+			}),
+			[opacity],
+		);
 
 		return (
 			<div data-message-id={message.id}>
@@ -121,9 +127,9 @@ const Message = memo(
 									message.author === Author.USER ? "end" : "space-between"
 								}
 							>
-								<Group gap={0} style={{ ...fade }}>
+								<Group gap={0} style={fade}>
 									{uploads.length !== 0 && (
-										<Group gap={5} mr={10} style={{ ...fade }}>
+										<Group gap={5} mr={10} style={fade}>
 											<Icon
 												icon="lucide:paperclip"
 												height={14}

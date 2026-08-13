@@ -1,4 +1,4 @@
-import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
+import { ThemeContext } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
 import { useCompletionStore } from "@tiny-chat/client/src/features/editor/stores/useCompletionStore.ts";
 import type {
 	CompletionGroup,
@@ -6,44 +6,40 @@ import type {
 } from "@tiny-chat/client/src/features/editor/types/completion.ts";
 import { Box, type Key, Text, useInput, useWindowSize } from "ink";
 import {
-	ScrollList,
-	type ScrollListProps,
-	type ScrollListRef,
-} from "ink-scroll-list";
-import {
 	type ReactNode,
-	type RefAttributes,
 	useCallback,
+	useContext,
 	useEffect,
 	useState,
 } from "react";
 import HelpText, { type Action } from "../../../core/components/HelpText.tsx";
+import ScrollView, {
+	type ScrollViewProps,
+} from "../../../core/components/ScrollView.tsx";
+import { useMouseInput } from "../../../core/hooks/useMouseInput.ts";
 
 export type CompletionsProps<
 	T1 extends CompletionGroup<T2>,
 	T2 extends CompletionItem,
-> = ScrollListProps &
-	RefAttributes<ScrollListRef> & {
-		groups: T1[];
-		selected?: number;
-		setSelected?: (_: (previous: number) => number) => void;
-		onInput?: (_: {
-			item?: T2;
-			input: string;
-			key: Key;
-		}) => boolean | undefined;
-		renderItem?: (_: {
-			item: T2;
-			selected: boolean;
-			color: string;
-		}) => ReactNode;
-		renderEmpty?: () => ReactNode;
-		withStyles?: boolean;
-		before?: ReactNode;
-		after?: ReactNode;
-		actions?: Action[];
-		selectFirstOnChange?: boolean;
-	};
+> = ScrollViewProps & {
+	groups: T1[];
+	selected?: number;
+	setSelected?: (_: (previous: number) => number) => void;
+	onInput?: (_: {
+		item?: T2;
+		input: string;
+		key: Key;
+		/** The key was stood in for by a press on the item, not typed. */
+		pointer?: boolean;
+	}) => boolean | undefined;
+	renderItem?: (_: { item: T2; selected: boolean; color: string }) => ReactNode;
+	renderEmpty?: () => ReactNode;
+	withStyles?: boolean;
+	before?: ReactNode;
+	after?: ReactNode;
+	actions?: Action[];
+	selectFirstOnChange?: boolean;
+};
 
 export default function Completions<
 	T1 extends CompletionGroup<T2>,
@@ -61,6 +57,8 @@ export default function Completions<
 	selectFirstOnChange = true,
 	...props
 }: CompletionsProps<T1, T2>) {
+	const { colorScheme } = useContext(ThemeContext);
+
 	const { rows } = useWindowSize();
 
 	const items = groups.flatMap((group) =>
@@ -85,12 +83,12 @@ export default function Completions<
 
 	useEffect(() => {
 		setIsCompletionsOpen(true);
-		setIsCompletionsEmpty(groups.length === 0);
+		setIsCompletionsEmpty(!items.length);
 		return () => {
 			setIsCompletionsOpen(false);
 			setIsCompletionsEmpty(true);
 		};
-	}, [setIsCompletionsOpen, setIsCompletionsEmpty, groups.length]);
+	}, [setIsCompletionsOpen, setIsCompletionsEmpty, items.length]);
 
 	const pick = useCallback(
 		(offset: number) => {
@@ -113,48 +111,73 @@ export default function Completions<
 		}
 	});
 
+	const [hovered, setHovered] = useState<number | null>(null);
+	const { mouseRef } = useMouseInput({
+		onClick: ({ index }) => {
+			if (index === undefined) return;
+			if (selected === index) {
+				onInput?.({
+					item: items[selected],
+					input: "",
+					key: { return: true } as Key,
+					pointer: true,
+				});
+			} else {
+				setSelected(() => index);
+			}
+		},
+		onHoverStart: ({ index }) => {
+			setHovered(index);
+		},
+		onHoverEnd: ({ index }) => {
+			if (hovered === index) setHovered(null);
+		},
+		isActive: !!items.length,
+	});
+
 	useEffect(() => {
 		if (selectFirstOnChange && items.length) {
 			setSelected(() => 0);
 		}
 	}, [setSelected, selectFirstOnChange, items.length]);
 
-	const chatId = useChatStore((state) => state.chatId);
-
 	return (
 		<Box
-			borderStyle="round"
-			borderColor="blueBright"
-			paddingX={1}
-			marginBottom={chatId ? 1 : 0}
+			padding={1}
 			flexDirection="column"
-			// The popup is a fixed-size overlay: it must never be shrunk by a
-			// sibling (the chat viewport) that wants more room than the terminal has.
 			flexShrink={0}
+			backgroundColor={colorScheme.interior}
 		>
 			{before}
-			<ScrollList
+			<ScrollView
 				selectedIndex={selected}
-				maxHeight={rows - 5}
-				scrollAlignment="top"
+				maxHeight={Math.floor(rows / 2)}
+				paddingBottom={1}
 				{...props}
 			>
 				{items.map((item, index) => {
 					const color =
-						index === selected ? "blueBright" : item.active ? "gray" : "white";
+						index === selected
+							? colorScheme.primary
+							: item.active || hovered === index
+								? colorScheme.textSubtle
+								: colorScheme.text;
 					const rendered =
 						renderItem?.({ item, selected: index === selected, color }) ??
 						item.name;
+					const groupIndex = groups.findIndex(
+						(group) => group.name === item.group,
+					);
 					return (
 						<Box key={item.group + item.value} flexDirection="column">
 							{item.groupLabel && (
-								<Box marginLeft={2}>
-									<Text color="blueBright" dimColor bold>
-										♦︎ {item.groupLabel.toLowerCase()}
+								<Box marginLeft={2} marginTop={groupIndex > 0 ? 1 : 0}>
+									<Text color={colorScheme.textSubtle} dimColor bold>
+										{item.groupLabel.toLowerCase()}
 									</Text>
 								</Box>
 							)}
-							<Box>
+							<Box ref={(element) => mouseRef(element, index)}>
 								<Text color={color}>{index === selected ? "▶ " : "  "}</Text>
 								<Box>
 									{typeof rendered === "string" ? (
@@ -172,7 +195,7 @@ export default function Completions<
 						{renderEmpty()}
 					</Text>
 				)}
-			</ScrollList>
+			</ScrollView>
 			{after}
 			<HelpText actions={["choose", ...(actions ?? []), "select"]} />
 		</Box>

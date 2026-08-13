@@ -13,8 +13,8 @@ import {
 	Transition,
 } from "@mantine/core";
 import type { MarkdownContext } from "@tiny-chat/client/src/features/message/components/MarkdownContext.tsx";
-import { MessageContext } from "@tiny-chat/client/src/features/message/components/MessageContext.tsx";
-import { useMessageStream } from "@tiny-chat/client/src/features/message/hooks/useMessageStream.ts";
+import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
+import { useThemes } from "@tiny-chat/client/src/features/settings/hooks/useThemes.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { ToolCallUtils } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
 import { MediaPlayer, MediaProvider } from "@vidstack/react";
@@ -23,34 +23,42 @@ import {
 	DefaultVideoLayout,
 	defaultLayoutIcons,
 } from "@vidstack/react/player/layouts/default";
-import { memo, useContext, useMemo } from "react";
-import { Code } from "#app/core/components/Components.tsx";
+import { memo, useMemo } from "react";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
+import Code from "#app/features/code/components/Code.tsx";
 import { EditorUtils } from "#app/features/editor/utils/EditorUtils.ts";
 import { Markdown } from "#app/features/message/components/Markdown.tsx";
-import { ToolFeedback } from "#app/features/message/components/ToolFeedback.tsx";
 import { useMessageSelection } from "#app/features/message/hooks/useMessageSelection.ts";
+import { ToolFeedback } from "#app/features/part/components/ToolFeedback.tsx";
 import { Author, type MessageState } from "#core/features/data/types/message";
-import { Thought } from "./Thought.tsx";
-import { ToolCall } from "./ToolCall";
+import { Thought } from "../../part/components/Thought.tsx";
+import { ToolCall } from "../../part/components/ToolCall.tsx";
 
 const TEXT_SM: BoxProps["className"] = "text-[10px]";
 
 export const MessageBodyContent = memo(
 	({
 		message,
+		live,
+		version,
 		containerWidth,
 	}: {
 		message: MessageState;
+		/** Live stream snapshot, subscribed to once in `MessageBody`. */
+		live: MessageState;
+		/** Stream version `live` was read at. `live` is mutated in place, so this
+		 * is the only thing that marks it as changed. */
+		version: number;
 		containerWidth: number;
 	}) => {
-		const { sources, toolsets, staleIds, nextFeedbackId, theme, retry } =
-			useContext(MessageContext);
+		const { theme } = useThemes();
 
-		const stream = useMessageStream(
-			message.author === Author.MODEL ? message.id : undefined,
-		);
-		const live = stream ?? message;
+		const toolsets = useMessageStore((s) => s.toolsets);
+		const nextFeedbackId = useMessageStore((s) => s.nextFeedbackId);
+		const retry = useMessageStore((s) => s.retry);
+		// An earlier model message with a newer timestamp means the chat was edited
+		// above this response. Resolved for the whole list in MessageProvider.
+		const isStaleId = useMessageStore((s) => s.staleIds.has(message.id));
 
 		const { rect, captureSelection, getSelectedText } = useMessageSelection(
 			message.id,
@@ -64,8 +72,14 @@ export const MessageBodyContent = memo(
 		};
 
 		const markdownContext = useMemo<MarkdownContext<string>>(
-			() => ({ sources, streaming: live.state.generating }),
-			[sources, live.state.generating],
+			() => ({ streaming: live.state.generating }),
+			[live.state.generating],
+		);
+
+		// biome-ignore lint/correctness/useExhaustiveDependencies: `live` is mutated in place by the stream, so `version` is the only thing that marks it dirty
+		const parts = useMemo(
+			() => DataUtils.getRenderedPartsGrouped(live, "thought"),
+			[live, version],
 		);
 
 		if (message.author === Author.USER) {
@@ -82,11 +96,7 @@ export const MessageBodyContent = memo(
 			);
 		}
 
-		const parts = DataUtils.getRenderedPartsGrouped(live, "thought");
-
-		// An earlier model message with a newer timestamp means the chat was edited
-		// above this response. Resolved for the whole list in MessageListProvider.
-		const isStale = !live.state.any && staleIds.has(message.id);
+		const isStale = !live.state.any && isStaleId;
 
 		return (
 			<>
@@ -126,7 +136,7 @@ export const MessageBodyContent = memo(
 								toolsets,
 							});
 							return (
-								<div key={part.id ?? index}>
+								<div key={index}>
 									<ToolCall display={display} textSize={TEXT_SM} />
 									{(display.approval ||
 										display.feedback ||
@@ -154,6 +164,7 @@ export const MessageBodyContent = memo(
 									key={index}
 									language="json"
 									code={JSON.stringify(part.value, null, 4)}
+									streaming={markdownContext.streaming}
 								/>
 							);
 						} else if (part.type === "file") {

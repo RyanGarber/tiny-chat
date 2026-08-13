@@ -1,4 +1,3 @@
-import type { ThemeUtils } from "@tiny-chat/core/src/core/utils/ThemeUtils.ts";
 import {
 	Author,
 	type MessageState,
@@ -7,17 +6,17 @@ import {
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { search_web } from "@tiny-chat/core/src/features/tool/tools/web/search_web.ts";
 import { view_web } from "@tiny-chat/core/src/features/tool/tools/web/view_web.ts";
-import type { Toolset } from "@tiny-chat/core/src/features/tool/types/tool.ts";
-import { ToolCallUtils } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
 import { ToolUtils } from "@tiny-chat/core/src/features/tool/utils/ToolUtils.ts";
 import {
-	createContext,
 	createElement,
 	type ReactNode,
 	useCallback,
 	useContext,
+	useEffect,
 	useMemo,
+	useState,
 } from "react";
+import type { StoreApi } from "zustand/vanilla";
 import { ClientContext } from "../../../client.ts";
 import { useSession } from "../../../core/hooks/useSession.ts";
 import { useProviders } from "../../agent/hooks/useProviders.ts";
@@ -26,61 +25,56 @@ import { useTools } from "../../agent/hooks/useTools.ts";
 import { AgentMessageService } from "../../agent/services/AgentMessageService.ts";
 import { useChat } from "../../chat/hooks/useChat.ts";
 import { useChatFiles } from "../../chat/hooks/useChatFiles.ts";
-import { useThemes } from "../../settings/hooks/useThemes.ts";
 import { useActions } from "../../user/hooks/useActions.ts";
 import { useMemories } from "../../user/hooks/useMemories.ts";
 import { useMessages } from "../hooks/useMessages.ts";
+import {
+	createMessageStore,
+	type MessageStore,
+	MessageStoreContext,
+} from "../stores/useMessageStore.ts";
 import type { MarkdownSource } from "./MarkdownContext.tsx";
 
-export interface MessageContext {
-	/** Citation targets, gathered once for the whole chat. */
-	sources: MarkdownSource[];
-	toolsets: Toolset<any>[];
-	/** Ids of messages a later edit may have invalidated. */
-	staleIds: Set<string>;
-	/** Ids of tool calls that need feedback. */
-	pendingFeedbackIds: string[];
-	/** The ID of the next tool call that needs feedback. */
-	nextFeedbackId: string | undefined;
-	theme: (typeof ThemeUtils.themes)[number];
-	/** Re-runs the agent for a message (retry / refresh after an edit). */
-	retry: (message: MessageState) => void;
-}
-
-export const MessageContext = createContext<MessageContext>({
-	sources: [],
-	toolsets: [],
-	staleIds: new Set(),
-	pendingFeedbackIds: [],
-	nextFeedbackId: undefined,
-	theme: "light",
-	retry: () => {},
-});
-
 /**
- * Holds everything the message list needs that is scoped to the *chat* rather
- * than to an individual message.
+ * Runs the chat-scoped queries and pushes the result into the store.
  *
- * These hooks used to be called inside `MessageBodyContent`, which mounts once
- * per message. That gave every message its own set of query observers, so any
- * query settling re-rendered the entire list, and each of those re-renders
- * rebuilt `sources` by walking every message again. Subscribing once here keeps
- * the per-message components memoizable and makes the walk O(n) for the list
- * instead of O(n) per message.
+ * It is deliberately a sibling of `children` rather than their parent: query
+ * settling re-renders this component, which renders nothing, instead of the
+ * whole message list.
  */
-export function MessageContextProvider({ children }: { children: ReactNode }) {
+function MessageSync({ store }: { store: StoreApi<MessageStore> }) {
 	const client = useContext(ClientContext);
 
 	const { session } = useSession();
 	const { chat } = useChat();
-	const { theme } = useThemes();
-	const { toolsets, mcpTools } = useTools();
-	const { skills } = useSkills();
+	const { toolsets, mcpTools, nativeTools } = useTools();
+	const { skills, localSkills, nativeSkills } = useSkills();
 	const { memories } = useMemories();
 	const { actions } = useActions();
 	const { providers } = useProviders();
 	const { messages } = useMessages();
 	const { chatFiles } = useChatFiles();
+
+	/**
+	 * Hold everything back until the queries have settled, so a cold load
+	 * publishes once instead of once per query.
+	 *
+	 * `isLoading` rather than `isPending`: a disabled query stays pending
+	 * forever, which would never let the list through.
+	 */
+	const ready = ![
+		session,
+		chat,
+		messages,
+		memories,
+		actions,
+		providers,
+		chatFiles,
+		nativeTools,
+		mcpTools,
+		localSkills,
+		nativeSkills,
+	].some((query) => query.isLoading);
 
 	const messageList = useMemo(
 		() => messages.data?.pages.flatMap((page) => page.messages) ?? [],
@@ -167,21 +161,15 @@ export function MessageContextProvider({ children }: { children: ReactNode }) {
 			const parts = DataUtils.getRenderedParts(message);
 			for (const part of parts) {
 				if (part.type === "toolCall" && !part.result) {
-					const input = ToolCallUtils.getDisplay({
-						part,
-						toolsets,
-					});
-					if (input) {
-						pendingFeedbackIds.push(part.id);
-						if (!nextFeedbackId) {
-							nextFeedbackId = part.id;
-						}
+					pendingFeedbackIds.push(part.id);
+					if (!nextFeedbackId) {
+						nextFeedbackId = part.id;
 					}
 				}
 			}
 		}
 		return { pendingFeedbackIds, nextFeedbackId };
-	}, [messageList, toolsets]);
+	}, [messageList]);
 
 	const retry = useCallback(
 		(message: MessageState) => {
@@ -199,26 +187,38 @@ export function MessageContextProvider({ children }: { children: ReactNode }) {
 		[session.data, chat.data, providers.data, mcpTools.data, skills, client],
 	);
 
-	const value = useMemo(
-		(): MessageContext => ({
-			theme,
+	useEffect(() => {
+		if (!ready) return;
+		store.getState().publish({
+			ready,
 			sources,
 			toolsets,
 			staleIds,
 			pendingFeedbackIds,
 			nextFeedbackId,
 			retry,
-		}),
-		[
-			sources,
-			toolsets,
-			staleIds,
-			theme,
-			retry,
-			pendingFeedbackIds,
-			nextFeedbackId,
-		],
-	);
+		});
+	}, [
+		store,
+		ready,
+		sources,
+		toolsets,
+		staleIds,
+		pendingFeedbackIds,
+		nextFeedbackId,
+		retry,
+	]);
 
-	return createElement(MessageContext, { value: value }, children);
+	return null;
+}
+
+export function MessageProvider({ children }: { children: ReactNode }) {
+	const [store] = useState(createMessageStore);
+
+	return createElement(
+		MessageStoreContext,
+		{ value: store },
+		createElement(MessageSync, { store, key: "sync" }),
+		children,
+	);
 }

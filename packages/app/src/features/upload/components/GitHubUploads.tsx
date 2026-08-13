@@ -12,8 +12,8 @@ import {
 } from "@mantine/core";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { UserService } from "@tiny-chat/client/src/features/user/services/UserService.ts";
+import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { useState } from "react";
-import { format } from "timeago.js";
 import { client } from "#app/client.ts";
 import Sentinel from "#app/core/components/Sentinel.tsx";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
@@ -132,7 +132,11 @@ export function GitHubUploads({ close }: { close: () => void }) {
 											)}
 											<Group gap={6} wrap="nowrap">
 												<Text size="xs" c="dimmed" flex="0 0 auto">
-													Last commit {format(repo.updated_at)}
+													Last commit{" "}
+													{CommonUtils.formatDate({
+														date: new Date(repo.updated_at),
+														relative: true,
+													})}
 												</Text>
 											</Group>
 										</Stack>
@@ -181,7 +185,10 @@ export function GitHubUploads({ close }: { close: () => void }) {
 											</Group>
 											{historyItem && (
 												<Text size="xs" c="dimmed" truncate>
-													{format(historyItem.createdAt)}
+													{CommonUtils.formatDate({
+														date: historyItem.createdAt,
+														relative: true,
+													})}
 												</Text>
 											)}
 										</Stack>

@@ -1,6 +1,6 @@
 import { Icon } from "@iconify/react";
 import { ActionIcon, Group, ScrollArea, Stack, Text } from "@mantine/core";
-import { format } from "timeago.js";
+import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { client } from "#app/client.ts";
 import Sentinel from "#app/core/components/Sentinel.tsx";
 import { useSentinel } from "#app/core/hooks/useSentinel.ts";
@@ -73,7 +73,12 @@ export function AttachmentUploads({ close }: { close: () => void }) {
 											{upload.name}
 										</Text>
 										<Text size="xs" c="dimmed">
-											{upload.createdAt ? format(upload.createdAt) : ""}
+											{upload.createdAt
+												? CommonUtils.formatDate({
+														date: upload.createdAt,
+														relative: true,
+													})
+												: ""}
 										</Text>
 									</Stack>
 								</Group>

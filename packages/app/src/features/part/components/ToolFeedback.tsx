@@ -31,8 +31,9 @@ import {
 	useState,
 } from "react";
 import type { z } from "zod";
-import { Code, Diff } from "#app/core/components/Components.tsx";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
+import Code from "#app/features/code/components/Code.tsx";
+import Diff from "#app/features/code/components/Diff.tsx";
 import { Markdown } from "#app/features/message/components/Markdown.tsx";
 import type {
 	MessageState,
@@ -192,7 +193,7 @@ export const ToolFeedback = memo(
 							autosize
 							minRows={1}
 							maxRows={10}
-							placeholder="..."
+							placeholder="…"
 							value={
 								(
 									inputValue as

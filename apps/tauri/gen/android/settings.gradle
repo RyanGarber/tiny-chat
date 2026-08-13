@@ -1,3 +1,1 @@
-include ':app'
-
-apply from: 'tauri.settings.gradle'
+include ':appapply from: 'tauri.settings.gradle'

@@ -1,4 +1,6 @@
+import { ThemeContext } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
 import { Box, useInput, useWindowSize } from "ink";
+import { useContext } from "react";
 import CapabilitySelect from "../../features/agent/components/CapabilitySelect.tsx";
 import Chat from "../../features/chat/components/Chat.tsx";
 import ChatList from "../../features/chat/components/ChatList.tsx";
@@ -7,6 +9,8 @@ import { useAppStore } from "../stores/useAppStore.ts";
 import StatusText from "./StatusText.tsx";
 
 export default function App() {
+	const { colorScheme } = useContext(ThemeContext);
+
 	const { rows } = useWindowSize();
 
 	const page = useAppStore((state) => state.page);
@@ -26,8 +30,11 @@ export default function App() {
 	});
 
 	return (
-		// TODO - disabled={ ... && !!toolCallQueue.length }
-		<Box flexDirection="column" height={rows}>
+		<Box
+			flexDirection="column"
+			height={rows}
+			backgroundColor={colorScheme.exterior}
+		>
 			<Chat />
 			<StatusText />
 			{page === "chats" && <ChatList />}

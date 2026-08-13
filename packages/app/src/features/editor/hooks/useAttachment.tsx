@@ -5,7 +5,6 @@ import { PluginKey } from "@tiptap/pm/state";
 import { Node, NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import { Suggestion } from "@tiptap/suggestion";
 import { useMemo } from "react";
-import { Attachment as AttachmentView } from "#app/core/components/Components.tsx";
 import { theme } from "#app/core/utils/IconUtils.ts";
 import {
 	type CompletionGroup,
@@ -13,6 +12,7 @@ import {
 	renderCompletions,
 } from "#app/features/editor/components/Completions.tsx";
 import { NodeUtils } from "#app/features/editor/utils/NodeUtils.ts";
+import AttachmentView from "#app/features/part/components/Attachment.tsx";
 
 interface AttachmentItem extends CompletionItem {
 	directory?: boolean;

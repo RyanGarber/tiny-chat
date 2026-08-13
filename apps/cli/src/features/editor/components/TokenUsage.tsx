@@ -1,11 +1,14 @@
+import { ThemeContext } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
 import { useEstimatedTokens } from "@tiny-chat/client/src/features/editor/hooks/useEstimatedTokens.ts";
 import type { ColorName } from "chalk";
 import { Box, Text, useInput } from "ink";
 import Spinner from "ink-spinner";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { useEditorStore } from "../stores/useEditorStore.ts";
 
 export default function TokenUsage() {
+	const { colorScheme } = useContext(ThemeContext);
+
 	const content = useEditorStore((state) => state.content);
 
 	const { categories, totalUsage } = useEstimatedTokens<ColorName>({
@@ -22,30 +25,39 @@ export default function TokenUsage() {
 	});
 
 	return (
-		<Box flexDirection="column" alignItems="flex-end" gap={1} flexShrink={0}>
+		<Box
+			flexDirection="column"
+			alignItems="flex-end"
+			flexShrink={0}
+			backgroundColor={colorScheme.interior}
+			paddingX={expanded ? 2 : 0}
+			paddingY={expanded ? 1 : 0}
+		>
 			{expanded && (
-				<Box flexDirection="column" borderStyle="round" borderColor="gray">
+				<Box flexDirection="column">
 					{categories.map((category) => (
 						<Box key={category.name} justifyContent="space-between" gap={1}>
 							<Text bold>{category.name.toLowerCase()}: </Text>
 							<Text>
-								{category.loading ? (
-									<Spinner type="dots" />
-								) : (
-									Math.round(category.tokens).toLocaleString()
-								)}
+								{category.loading && <Spinner type="dots" />}
+								{!category.loading &&
+									Math.round(category.tokens).toLocaleString()}
 							</Text>
 						</Box>
 					))}
 				</Box>
 			)}
-			<Text color={totalUsage.color}>
-				{totalUsage.loading ? (
-					<Spinner type="dots" />
-				) : (
-					`${Math.round(totalUsage.percent)}%`
+			<Box width="100%" justifyContent="space-between" gap={1}>
+				{expanded && (
+					<Text color={totalUsage.color} bold>
+						total:{" "}
+					</Text>
 				)}
-			</Text>
+				<Text color={totalUsage.color}>
+					{totalUsage.loading && <Spinner type="dots" />}
+					{!totalUsage.loading && `${Math.round(totalUsage.percent)}%`}
+				</Text>
+			</Box>
 		</Box>
 	);
 }

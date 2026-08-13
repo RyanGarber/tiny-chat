@@ -1,3 +1,4 @@
+import { ThemeContext } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
 import { Box, Text, useWindowSize } from "ink";
 import {
 	Children,
@@ -8,6 +9,7 @@ import {
 	useContext,
 	useMemo,
 } from "react";
+import Divider from "../../../core/components/Divider.tsx";
 
 type Align = "left" | "center" | "right";
 
@@ -154,7 +156,10 @@ function computeColumns(
  */
 
 export function TableComponent({ children }: { children?: ReactNode }) {
+	const { colorScheme } = useContext(ThemeContext);
+
 	const { columns: terminalWidth } = useWindowSize();
+
 	const width = Math.max(20, terminalWidth - 4);
 
 	// Recompute only when the row content or the terminal width changes.
@@ -167,8 +172,9 @@ export function TableComponent({ children }: { children?: ReactNode }) {
 		<Box
 			flexDirection="column"
 			width={width}
-			borderStyle="round"
-			borderColor="gray"
+			paddingX={2}
+			paddingY={1}
+			backgroundColor={colorScheme.surface}
 		>
 			<ColumnsContext.Provider value={columns}>
 				{children}
@@ -181,15 +187,9 @@ export function TheadComponent({ children }: { children?: ReactNode }) {
 	return (
 		// borderStyle + disabling every side but bottom draws a single rule
 		// under the header row, mimicking a markdown table's separator line.
-		<Box
-			flexDirection="column"
-			borderStyle="single"
-			borderColor="gray"
-			borderTop={false}
-			borderLeft={false}
-			borderRight={false}
-		>
+		<Box flexDirection="column">
 			{children}
+			<Divider />
 		</Box>
 	);
 }

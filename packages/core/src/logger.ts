@@ -76,7 +76,10 @@ export function createLogger({
 		if (level === "error") {
 			const globals = globalThis as any;
 
-			if (typeof globals.window !== "undefined") {
+			if (
+				typeof globals.window !== "undefined" &&
+				typeof globals.window?.addEventListener === "function"
+			) {
 				console.log("logging to browser");
 				globals.window?.addEventListener("error", (error: unknown) =>
 					console.error("[UNCAUGHT]", error),

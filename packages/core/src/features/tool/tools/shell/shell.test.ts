@@ -193,11 +193,10 @@ describe("shell tools", () => {
 		const shell = createShell({ "/project/a.ts": "const a = 1;\n" });
 		const tool = await createEditFileTool({
 			capabilities: { shell },
-			approval: true,
 		});
 
 		await expect(
-			tool.check?.({
+			tool.validate?.({
 				input: {
 					path: "/project/a.ts",
 					old_string: "const b = 2;",
@@ -215,7 +214,6 @@ describe("shell tools", () => {
 		const shell = createShell({ "/project/a.ts": "const a = 1;\n" });
 		const tool = await createEditFileTool({
 			capabilities: { shell },
-			approval: true,
 		});
 		const input = {
 			path: "/project/a.ts",
@@ -223,7 +221,9 @@ describe("shell tools", () => {
 			new_string: "const a = 2;",
 		};
 
-		await expect(tool.check?.({ input, context })).resolves.toBeUndefined();
+		await expect(
+			tool.validate?.({ input, context }),
+		).resolves.not.toBeUndefined();
 
 		const before = await shell.readFile({ path: "/project/a.ts" });
 		expect(FileUtils.getTextFromBytes(before)).toBe("const a = 1;\n");
@@ -232,5 +232,64 @@ describe("shell tools", () => {
 
 		const after = await shell.readFile({ path: "/project/a.ts" });
 		expect(FileUtils.getTextFromBytes(after)).toBe("const a = 2;\n");
+	});
+
+	it("skips approval for a whitelisted command", async () => {
+		const tool = await createShellExecTool({
+			capabilities: { shell: createShell({}) },
+		});
+
+		await expect(
+			tool.validate?.({ input: { command: "ls -la" }, context }),
+		).resolves.toEqual({ approval: false });
+	});
+
+	it("skips approval for a chain of whitelisted commands", async () => {
+		const tool = await createShellExecTool({
+			capabilities: { shell: createShell({}) },
+		});
+
+		await expect(
+			tool.validate?.({
+				input: { command: "git status && git diff && cat README.md" },
+				context,
+			}),
+		).resolves.toEqual({ approval: false });
+	});
+
+	it("requires approval for a command outside the whitelist", async () => {
+		const tool = await createShellExecTool({
+			capabilities: { shell: createShell({}) },
+		});
+
+		await expect(
+			tool.validate?.({ input: { command: "rm -rf /" }, context }),
+		).resolves.toEqual({ approval: true });
+	});
+
+	it("requires approval when any command in a chain is unsafe", async () => {
+		const tool = await createShellExecTool({
+			capabilities: { shell: createShell({}) },
+		});
+
+		await expect(
+			tool.validate?.({
+				input: { command: "ls && rm -rf /" },
+				context,
+			}),
+		).resolves.toEqual({ approval: true });
+	});
+
+	it("requires approval for commands using unparsed shell features", async () => {
+		const tool = await createShellExecTool({
+			capabilities: { shell: createShell({}) },
+		});
+
+		await expect(
+			tool.validate?.({
+				input: { command: "ls | rm -rf /" },
+				context,
+			}),
+		).resolves.toEqual({ approval: true });
 	});
 });

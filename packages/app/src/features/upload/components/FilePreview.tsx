@@ -11,7 +11,7 @@ import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeU
 import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
 import { useState } from "react";
 import type { BundledLanguage } from "streamdown";
-import { Code } from "#app/core/components/Components.tsx";
+import Code from "#app/features/code/components/Code.tsx";
 
 export interface FilePreviewItem {
 	name: string;

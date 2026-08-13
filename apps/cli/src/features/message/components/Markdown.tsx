@@ -33,7 +33,9 @@ export default function Markdown({
 
 	return (
 		<MarkdownContext value={context}>
-			<Box flexDirection="column">{tree}</Box>
+			<Box flexDirection="column" gap={1}>
+				{tree}
+			</Box>
 		</MarkdownContext>
 	);
 }

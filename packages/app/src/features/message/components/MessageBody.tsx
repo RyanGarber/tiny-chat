@@ -17,10 +17,12 @@ const MessageBody = memo(
 	}) {
 		// For model messages, prefer the live stream snapshot when streaming so
 		// the loader dots and pending-tool detection are accurate token-by-token.
-		const stream = useMessageStream(
+		// Subscribed once here and handed down: MessageBodyContent used to open a
+		// second subscription for the same id, so every token woke two components.
+		const { message: streamed, version } = useMessageStream(
 			message.author === Author.MODEL ? message.id : undefined,
 		);
-		const live = stream ?? message;
+		const live = streamed ?? message;
 
 		const { ref: containerRef, width: containerWidth } = useElementSize();
 
@@ -42,6 +44,8 @@ const MessageBody = memo(
 							>
 								<MessageBodyContent
 									message={message}
+									live={live}
+									version={version}
 									containerWidth={containerWidth}
 								/>
 							</Box>
@@ -56,6 +60,8 @@ const MessageBody = memo(
 				<Box display="inline">
 					<MessageBodyContent
 						message={message}
+						live={live}
+						version={version}
 						containerWidth={containerWidth}
 					/>
 					{live.state.any && (

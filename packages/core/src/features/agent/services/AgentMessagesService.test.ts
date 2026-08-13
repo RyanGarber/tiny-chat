@@ -54,7 +54,7 @@ describe("AgentMessagesService", () => {
 				[
 					{
 						type: "text",
-						value: `<message role="user" sent="${CommonUtils.getDateFormatted({ date: context[0].createdAt ?? undefined, timezone: "America/New_York" })}">`,
+						value: `<message role="user" sent="${CommonUtils.formatDate({ date: context[0].createdAt ?? undefined, timezone: "America/New_York" })}">`,
 					},
 					...context[0].data.flat(),
 					{ type: "text", value: "</message>" },
@@ -68,7 +68,7 @@ describe("AgentMessagesService", () => {
 				[
 					{
 						type: "text",
-						value: `<message role="assistant" model="gpt-5" sent="${CommonUtils.getDateFormatted({ date: context[1].createdAt ?? undefined, timezone: "America/New_York" })}">`,
+						value: `<message role="assistant" model="gpt-5" sent="${CommonUtils.formatDate({ date: context[1].createdAt ?? undefined, timezone: "America/New_York" })}">`,
 					},
 					...context[1].data.flat(),
 					{ type: "text", value: "</message>" },
@@ -82,7 +82,7 @@ describe("AgentMessagesService", () => {
 				[
 					{
 						type: "text",
-						value: `<message role="user" sent="${CommonUtils.getDateFormatted({ date: context[2].createdAt ?? undefined, timezone: "America/New_York" })}" gap="15 minutes">`,
+						value: `<message role="user" sent="${CommonUtils.formatDate({ date: context[2].createdAt ?? undefined, timezone: "America/New_York" })}" gap="15 minutes">`,
 					},
 					...context[2].data.flat(),
 					{ type: "text", value: "</message>" },

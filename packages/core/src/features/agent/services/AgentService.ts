@@ -1,4 +1,5 @@
 import type { zEnv } from "../../../core/types/env.ts";
+import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 import type {
 	Capabilities,
 	ShellOutputChunk,
@@ -126,6 +127,8 @@ export const AgentService = {
 
 		if (!config) throw new Error("missing config");
 
+		const toolValidationErrors = new Map<string, unknown>();
+
 		// Agentic loop: keep generating until the model stops calling tools
 		while (true) {
 			messages[messages.length - 1].data = data;
@@ -203,6 +206,26 @@ export const AgentService = {
 							} else {
 								parts.push(event.value);
 							}
+						} else if (event.value.type === "toolCall") {
+							const { tool } = ToolUtils.find({
+								toolsets: enabledToolsets,
+								part: event.value,
+							});
+							if (tool?.validate) {
+								try {
+									event.value.validation = await tool.validate({
+										input: event.value.args,
+										context,
+									});
+								} catch (error) {
+									console.warn(
+										`[AgentService] tool ${event.value.name} failed validation:`,
+										error,
+									);
+									toolValidationErrors.set(event.value.id, error);
+								}
+							}
+							parts.push(event.value);
 						} else {
 							parts.push(event.value);
 						}
@@ -262,34 +285,26 @@ export const AgentService = {
 					continue;
 				}
 
-				// Checks run ahead of the approval and feedback gates so a call that
-				// cannot succeed fails here, and the loop keeps going instead of
-				// stopping to ask the user about it.
-				if (tool.check) {
-					try {
-						await tool.check({ input: toolCall.args, context });
-					} catch (e: any) {
-						console.warn(
-							`[AgentService] tool ${toolCall.name} failed its check:`,
-							e,
-						);
-						yield push({
-							type: "toolResult",
-							id: toolCall.id,
-							name: toolCall.name,
-							error: true,
-							value: [
-								{
-									type: "text",
-									value: e instanceof Error ? e.message : JSON.stringify(e),
-								},
-							],
-						});
-						continue;
-					}
+				if (toolValidationErrors.has(toolCall.id)) {
+					yield push({
+						type: "toolResult",
+						id: toolCall.id,
+						name: toolCall.name,
+						error: true,
+						value: [
+							{
+								type: "text",
+								value: CommonUtils.formatError({
+									error: toolValidationErrors.get(toolCall.id),
+									details: true,
+								}),
+							},
+						],
+					});
+					continue;
 				}
 
-				if (tool.feedback || tool.approval) {
+				if (tool.feedback || toolCall.validation?.approval) {
 					stop = true;
 					continue;
 				}

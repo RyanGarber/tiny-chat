@@ -1,4 +1,6 @@
 import { diffLines, diffWords } from "diff";
+import type { CodeResult } from "../../../core/utils/CodeUtils.ts";
+import { ColorUtils } from "../../../core/utils/ColorUtils.ts";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 
 type Diff =
@@ -17,7 +19,7 @@ type Diff =
 			)[];
 	  };
 
-type DiffContext =
+export type DiffContext =
 	| Exclude<Diff, { type: "unchanged" }>
 	| { type: "unchanged"; lines: string[] }
 	| { type: "context"; line: string };
@@ -49,7 +51,7 @@ export const DiffUtils = {
 						const removedLine = removedLines[j];
 						const addedLine = addedLines[j];
 
-						if (CommonUtils.getDistance(removedLine, addedLine) < 0.75) {
+						if (CommonUtils.getDistance(removedLine, addedLine) < 0.5) {
 							const partDiff = diffWords(removedLine, addedLine);
 
 							// nasty leftward shift so that changes are grouped together
@@ -236,5 +238,32 @@ export const DiffUtils = {
 			lines.pop();
 		}
 		return lines;
+	},
+
+	colorBright: (type: DiffContext["type"]): string | undefined => {
+		switch (type) {
+			case "added":
+				return "#6ae66a";
+			case "removed":
+				return "#ff6b6b";
+			default:
+				return undefined;
+		}
+	},
+
+	color: (type: DiffContext["type"], code?: CodeResult): string | undefined => {
+		if (code) {
+			const layer = DiffUtils.color(type);
+			if (!layer) return undefined;
+			return ColorUtils.blend(code.bg ?? "transparent", layer);
+		}
+		switch (type) {
+			case "added":
+				return "rgba(0, 255, 0, 0.1)";
+			case "removed":
+				return "rgba(255, 0, 0, 0.1)";
+			default:
+				return undefined;
+		}
 	},
 } as const;

@@ -75,12 +75,74 @@ export type ToolCallDisplayType =
 	| ToolCallDisplay<typeof ask_question>
 	| ToolCallDisplay<typeof UNKNOWN>;
 
+/**
+ * `getDisplay` builds fresh arrays (`status`, `output`) on every call, so its
+ * result can never be compared by reference downstream. `DataUtils` also hands
+ * out a new wrapper object for each tool call on every render, which rules out
+ * keying a cache on the part itself.
+ *
+ * The fields the display is derived from — `args`, `result`, `validation` — are
+ * carried through that wrapper by reference and are only ever replaced whole,
+ * never mutated in place, so they make a sound identity key. Caching on them
+ * means a settled tool call keeps one display object for the life of the
+ * message, which is what lets `ToolCall` memoize on `display` by equality.
+ */
+interface DisplayCacheEntry {
+	name: string;
+	args: unknown;
+	result: unknown;
+	validation: unknown;
+	display: ToolCallDisplayType;
+}
+
+/** Keyed by toolsets first so a toolset change drops the whole cache. */
+const displayCache = new WeakMap<
+	Toolset<any>[],
+	Map<string, DisplayCacheEntry>
+>();
+
 export const ToolCallUtils = {
 	rejection: [
 		{ type: "json", value: "Tool call rejected by user" },
 	] satisfies zDataBasicPart[],
 
 	getDisplay: ({
+		part,
+		toolsets,
+	}: {
+		part: Extract<RenderedPart, { type: "toolCall" }>;
+		toolsets: Toolset<any>[];
+	}): ToolCallDisplayType => {
+		let cache = displayCache.get(toolsets);
+		if (!cache) {
+			cache = new Map();
+			displayCache.set(toolsets, cache);
+		}
+
+		const cached = cache.get(part.id);
+		if (
+			cached &&
+			cached.name === part.name &&
+			cached.args === part.args &&
+			cached.result === part.result &&
+			cached.validation === part.validation
+		) {
+			return cached.display;
+		}
+
+		const display = ToolCallUtils._createDisplay({ part, toolsets });
+		cache.set(part.id, {
+			name: part.name,
+			args: part.args,
+			result: part.result,
+			validation: part.validation,
+			display,
+		});
+		return display;
+	},
+
+	/** Uncached builder. Call `getDisplay` instead. */
+	_createDisplay: ({
 		part,
 		toolsets,
 	}: {
@@ -105,7 +167,7 @@ export const ToolCallUtils = {
 						: part.result?.error
 							? "error"
 							: "success",
-				approval: tool?.approval
+				approval: part.validation?.approval
 					? part.result === undefined
 						? "pending"
 						: ToolCallUtils.isRejected(part.result)

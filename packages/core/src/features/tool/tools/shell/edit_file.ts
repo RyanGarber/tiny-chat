@@ -39,10 +39,7 @@ export const createEditFileTool: ToolFactory<
 > = (options) => ({
 	...edit_file,
 	...options,
-	// Resolve the edit up front so a stale or ambiguous `old_string` comes back
-	// as a tool error the model can fix, instead of a diff the user is asked to
-	// approve and which then fails on the way to disk.
-	check: async ({ input }) => {
+	validate: async ({ input }) => {
 		await FileOperationService.resolveEdit({
 			shell: options.capabilities.shell,
 			path: input.path,
@@ -50,6 +47,7 @@ export const createEditFileTool: ToolFactory<
 			new_string: input.new_string,
 			replace_all: input.replace_all,
 		});
+		return { approval: true };
 	},
 	execute: async ({ input }) => {
 		return [

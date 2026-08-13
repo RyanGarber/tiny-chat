@@ -14,6 +14,10 @@ interface AppStore {
 	statuses: Status[];
 	setStatus: (status: Status) => void;
 	unsetStatus: (status: { id: string }) => void;
+
+	workingStatus: Set<string>;
+	setWorkingStatus: (id: string) => void;
+	unsetWorkingStatus: (id: string) => void;
 }
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -21,13 +25,33 @@ export const useAppStore = create<AppStore>((set) => ({
 	setPage: (page) => set({ page }),
 
 	statuses: [],
-	setStatus: (status: Status) =>
-		set((state) => ({
-			statuses: [
-				...state.statuses.filter((other) => other.id !== status.id),
-				status,
-			],
-		})),
-	unsetStatus: ({ id }) =>
-		set((state) => ({ statuses: state.statuses.filter((s) => s.id !== id) })),
+	setStatus: (status: Status) => {
+		set(({ statuses }) => {
+			return {
+				statuses: [
+					...statuses.filter((other) => other.id !== status.id),
+					status,
+				],
+			};
+		});
+	},
+	unsetStatus: ({ id }) => {
+		set((state) => {
+			return { statuses: state.statuses.filter((s) => s.id !== id) };
+		});
+	},
+
+	workingStatus: new Set(),
+	setWorkingStatus: (id: string) => {
+		set(({ workingStatus }) => {
+			workingStatus.add(id);
+			return { workingStatus };
+		});
+	},
+	unsetWorkingStatus: (id: string) => {
+		set(({ workingStatus }) => {
+			workingStatus.delete(id);
+			return { workingStatus };
+		});
+	},
 }));

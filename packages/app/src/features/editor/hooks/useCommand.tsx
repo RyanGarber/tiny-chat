@@ -19,10 +19,10 @@ import {
 } from "@tiptap/react";
 import { Suggestion } from "@tiptap/suggestion";
 import { useMemo } from "react";
-import { Command as CommandView } from "#app/core/components/Components.tsx";
 import { AppService } from "#app/core/services/AppService.ts";
 import { renderCompletions } from "#app/features/editor/components/Completions.tsx";
 import { NodeUtils } from "#app/features/editor/utils/NodeUtils.ts";
+import CommandView from "#app/features/part/components/Command.tsx";
 
 interface CommandOptions {
 	getCommands: () => CommandGroup[];

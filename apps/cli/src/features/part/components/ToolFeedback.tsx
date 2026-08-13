@@ -7,12 +7,13 @@ import type { RenderedPart } from "@tiny-chat/core/src/features/data/utils/DataU
 import type { ToolCallDisplayType } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
 import { Box, Text } from "ink";
 import { useCallback, useMemo, useState } from "react";
-import { TextArea } from "react-ink-textarea";
-import { Code, Diff } from "../../../core/components/Components.tsx";
 import { useWorkingStatus } from "../../../core/hooks/useWorkingStatus.ts";
 import { CliUtils } from "../../../core/utils/CliUtils.ts";
+import { Code } from "../../code/components/Code.tsx";
+import Diff from "../../code/components/Diff.tsx";
 import Completions from "../../editor/components/Completions.tsx";
-import Markdown from "./Markdown.tsx";
+import Textarea from "../../editor/components/Textarea.tsx";
+import Markdown from "../../message/components/Markdown.tsx";
 
 interface Option {
 	label: string;
@@ -46,7 +47,7 @@ function ToolStream({ stream }: { stream: ToolStreamState }) {
 					dimColor={line.stream !== "stderr"}
 					wrap="truncate-end"
 				>
-					{line.value || " "}
+					{CliUtils.display(line.value) || " "}
 				</Text>
 			))}
 		</Box>
@@ -110,6 +111,7 @@ export default function ToolFeedback({
 							<Diff
 								before={contents.data?.fileBefore ?? ""}
 								after={contents.data?.fileAfter ?? ""}
+								language={display.language}
 							/>
 						</>
 					)}
@@ -144,11 +146,10 @@ export default function ToolFeedback({
 			renderItem={({ item, selected }) => {
 				if (item.value === "custom") {
 					return (
-						<TextArea
+						<Textarea
 							focus={isFocused && selected && !locked}
 							value={custom}
-							onChange={(value) => setCustom(CliUtils.clean(value))}
-							onSubmit={() => {}}
+							onChange={setCustom}
 							initialLineCount={1}
 							autoNewLineLimit={0}
 							placeholder={
@@ -187,8 +188,15 @@ export default function ToolFeedback({
 					)}
 				</Box>
 			}
-			onInput={({ item, key }) => {
+			onInput={({ item, key, pointer }) => {
 				if (locked || !isFocused) return false;
+
+				// Shift belongs to the text area, which selects its text by it.
+				if (key.shift) return false;
+
+				// A press on the follow-up field is how the cursor is put into it,
+				// and how a selection is started, so it is not taken as a send.
+				if (pointer && item?.value === "custom") return false;
 
 				if (key.leftArrow) {
 					pick(-1);

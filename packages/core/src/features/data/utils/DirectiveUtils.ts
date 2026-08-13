@@ -27,9 +27,7 @@ export const DirectiveUtils = {
 
 		if (!directives.length) return [{ text }];
 
-		const tagAlternation = directives
-			.map(CommonUtils.getRegexEscaped)
-			.join("|");
+		const tagAlternation = directives.map(CommonUtils.escapeRegex).join("|");
 		const directiveRegex = new RegExp(
 			`^(:{${3 + depth}})(${tagAlternation})(?:\\{([^}]*)\\})?([\\s\\S]*?)\\1` +
 				`|^::(${tagAlternation})(?:\\[([^\\]]*)\\])?(?:\\{([^}]*)\\})?` +
@@ -106,9 +104,7 @@ export const DirectiveUtils = {
 
 		if (!directives.length) return [{ text }];
 
-		const tagAlternation = directives
-			.map(CommonUtils.getRegexEscaped)
-			.join("|");
+		const tagAlternation = directives.map(CommonUtils.escapeRegex).join("|");
 		const openTagRegex = new RegExp(
 			`<(${tagAlternation})((?:\\s+[\\w-]+="[^"]*")*)\\s*(/?)>`,
 			"g",
@@ -198,7 +194,7 @@ export const DirectiveUtils = {
 		tag: string;
 		start: number;
 	}) => {
-		const escapedName = CommonUtils.getRegexEscaped(tag);
+		const escapedName = CommonUtils.escapeRegex(tag);
 		const tagRegex = new RegExp(
 			`<${escapedName}(?:\\s[^>]*)?>|<\\/${escapedName}>`,
 			"g",

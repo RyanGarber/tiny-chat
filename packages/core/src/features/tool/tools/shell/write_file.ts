@@ -21,6 +21,9 @@ export const createWriteFileTool: ToolFactory<
 > = (options) => ({
 	...write_file,
 	...options,
+	validate: async () => {
+		return { approval: true };
+	},
 	execute: async ({ input }) => {
 		return [
 			{

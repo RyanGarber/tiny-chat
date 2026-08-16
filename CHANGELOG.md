@@ -1,3 +1,23 @@
+## [0.7.9](https://github.com/RyanGarber/tiny-chat/compare/0.7.8...0.7.9) (2026-08-16)
+
+### Features
+
+* dynamic approval, safe command whitelist ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2-1))
+* mobile support for hover menus in app ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2-4))
+* redesigned cli with full mouse support ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2-3))
+* redesigned, optimized code blocks, diffs, mermaid in app ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2))
+* rewritten input in cli ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2-7))
+* rewritten scroll views in cli ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2-6))
+
+### Bug Fixes
+
+* tabs causing layout issues in cli code blocks ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2-2))
+
+### Performance Improvements
+
+* rewritten message renderer ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2-5))
+
+
 ## [0.7.8](https://github.com/RyanGarber/tiny-chat/compare/0.7.7...0.7.8) (2026-08-13)
 
 ### Features

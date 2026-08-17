@@ -1,5 +1,6 @@
 import type { zDataPart } from "../../data/types/message.ts";
 import { DataUtils } from "../../data/utils/DataUtils.ts";
+import { DirectiveUtils } from "../../data/utils/DirectiveUtils.ts";
 import { PathUtils } from "../../file/utils/PathUtils.ts";
 import type { zAgentMessage } from "../types/agent.ts";
 
@@ -24,20 +25,47 @@ export const AgentUtils = {
 	},
 
 	/**
-	 * Get all upload IDs referenced in a chat.
+	 * Get the uploads and skills a set of messages points into.
+	 *
+	 * Neither has any standing in a chat of its own: it is there because
+	 * something in the chat points into it. A skill is named by the message's
+	 * config, and an upload by an attachment directive written in its text — so
+	 * referencing any path below one, not just its root, is what pulls it in.
+	 *
+	 * This is the whole of what a filesystem is built from, which is why it asks
+	 * for messages and nothing else: a message being typed has these references
+	 * in it just as well as one already saved to a chat.
 	 */
-	getAllUploadIds: ({ messages }: { messages: zAgentMessage[] }): string[] => {
+	getMounts: ({
+		messages,
+	}: {
+		messages: zAgentMessage[];
+	}): { uploads: string[]; skills: string[] } => {
 		const uploads = new Set<string>();
+		const skills = new Set<string>();
+
+		const add = (into: Set<string>, path?: string) => {
+			if (!path) return;
+			const uri = PathUtils.fromMount({ path });
+			if (uri?.id) into.add(uri.id);
+		};
+
 		for (const message of messages) {
 			for (const skill of message.config?.skills ?? []) {
-				const uri = PathUtils.fromMount({ path: skill });
-				if (uri?.uploadId) uploads.add(uri.uploadId);
+				add(skills, skill);
 			}
 			for (const part of message.data.flat()) {
-				if (part.type === "upload") uploads.add(part.id);
+				if (part.type !== "text") continue;
+				for (const { directive } of DirectiveUtils.extractFromMarkdown(
+					part.value,
+					"attachment",
+				)) {
+					add(uploads, directive?.attributes.source);
+				}
 			}
 		}
-		return Array.from(uploads);
+
+		return { uploads: Array.from(uploads), skills: Array.from(skills) };
 	},
 
 	/**

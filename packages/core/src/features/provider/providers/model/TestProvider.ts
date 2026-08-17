@@ -245,7 +245,7 @@ async function runBench({
 
 	const emitToolCall = async (n: number) => {
 		const id = `call-${n}-${Math.random().toString(36).slice(2, 8)}`;
-		const input = JSON.stringify({ path: `/mnt/chat/dir-${n}` });
+		const input = JSON.stringify({ path: `/mnt/uploads/dir-${n}` });
 
 		controller.enqueue({
 			type: "tool-input-start",
@@ -341,7 +341,7 @@ export function createTestProvider(): ProviderV4 {
 									toolCallId: "1",
 									toolName: "chat_read_dir",
 									input: JSON.stringify({
-										path: "/mnt/chat",
+										path: "/mnt",
 									}),
 								});
 							} else {

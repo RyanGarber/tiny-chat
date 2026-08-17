@@ -1,4 +1,6 @@
+import type { FilesystemSpec } from "../types/file.ts";
 import { FileTypeUtils } from "./FileTypeUtils.ts";
+import type { FileMount } from "./PathUtils.ts";
 
 export interface Descendent<T> {
 	children: Map<string, Descendent<T>>;
@@ -6,6 +8,32 @@ export interface Descendent<T> {
 }
 
 export const FileUtils = {
+	/**
+	 * The same mount with one more upload or skill in it.
+	 *
+	 * A mount is a list of ids, so anything the user can reach can be added to
+	 * one on the spot — which is how an upload nothing points into yet can still
+	 * be listed and walked into.
+	 */
+	mount: ({
+		filesystem,
+		mount,
+		id,
+	}: {
+		filesystem: FilesystemSpec;
+		mount?: FileMount;
+		id?: string;
+	}): FilesystemSpec => {
+		const add = (ids: string[] | undefined, into: FileMount) =>
+			mount === into && id ? [...new Set([...(ids ?? []), id])] : ids;
+
+		return {
+			...filesystem,
+			uploads: add(filesystem.uploads, "uploads"),
+			skills: add(filesystem.skills, "skills"),
+		};
+	},
+
 	getBase64FromBytes: ({ data }: { data: Uint8Array | string }) => {
 		if (typeof data !== "string") {
 			const chunkSize = 65536;

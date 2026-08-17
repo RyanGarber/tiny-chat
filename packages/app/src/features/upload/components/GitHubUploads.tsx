@@ -10,20 +10,18 @@ import {
 	Text,
 	TextInput,
 } from "@mantine/core";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { UserService } from "@tiny-chat/client/src/features/user/services/UserService.ts";
+import { useQuery } from "@tanstack/react-query";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { useState } from "react";
 import { client } from "#app/client.ts";
 import Sentinel from "#app/core/components/Sentinel.tsx";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
-import { useMessagingStore } from "#client/src/features/chat/stores/useMessagingStore.ts";
-import { useUploads } from "../hooks/useUploads";
+import { MessagingService } from "#client/src/features/chat/services/MessagingService.ts";
+import { useUploads } from "#client/src/features/upload/hooks/useUploads.ts";
 
 export function GitHubUploads({ close }: { close: () => void }) {
 	// Logic from GitHub.tsx
 	const [search, setSearch] = useState("");
-	const addAttachment = useMessagingStore((s) => s.addAttachment);
 
 	const repos = useQuery({
 		...client.query.upload.getGitHubRepositories.queryOptions(),
@@ -38,16 +36,7 @@ export function GitHubUploads({ close }: { close: () => void }) {
 			),
 	});
 
-	const cloneGitHub = useMutation({
-		...client.query.upload.cloneGitHubRepository.mutationOptions(),
-		onSuccess: (data) => {
-			addAttachment(data);
-			void githubUploads.refetch();
-			void UserService.fetchNextEmbeddingBatch({ client });
-		},
-	});
-
-	const { githubUploads, deleteUpload } = useUploads();
+	const { githubUploads, deleteUpload, cloneGitHubRepository } = useUploads();
 
 	return (
 		<Stack h="100%" gap="md">
@@ -74,18 +63,22 @@ export function GitHubUploads({ close }: { close: () => void }) {
 						)}
 						{repos.data?.map((repo) => {
 							const [owner, repoName] = repo.full_name.split("/");
-							const historyItem = githubUploads.data?.find(
+							const existing = githubUploads.data?.find(
 								(u) =>
 									u.repoName === repo.full_name &&
 									u.branch === repo.default_branch,
 							);
 
 							const isMutating =
-								cloneGitHub.variables?.owner === owner &&
-								cloneGitHub.variables?.repository === repoName &&
-								cloneGitHub.variables?.branch === repo.default_branch;
-							const isCloning = isMutating ? cloneGitHub.isPending : false;
-							const cloneError = isMutating ? cloneGitHub.error : undefined;
+								cloneGitHubRepository.variables?.owner === owner &&
+								cloneGitHubRepository.variables?.repository === repoName &&
+								cloneGitHubRepository.variables?.branch === repo.default_branch;
+							const isCloning = isMutating
+								? cloneGitHubRepository.isPending
+								: false;
+							const cloneError = isMutating
+								? cloneGitHubRepository.error
+								: undefined;
 
 							return (
 								<Box
@@ -94,14 +87,13 @@ export function GitHubUploads({ close }: { close: () => void }) {
 									bdrs="lg"
 									style={{
 										...StyleUtils.glass,
-										cursor: historyItem ? "pointer" : "default",
+										cursor: existing ? "pointer" : "default",
 									}}
 									onClick={() => {
-										if (!historyItem) return;
-										addAttachment({
-											type: "upload",
-											id: historyItem.id,
-											name: historyItem.name,
+										if (!existing) return;
+										MessagingService.attachUpload({
+											client,
+											upload: existing,
 										});
 										close();
 									}}
@@ -142,21 +134,21 @@ export function GitHubUploads({ close }: { close: () => void }) {
 										</Stack>
 										<Stack gap={4} align="end">
 											<Group gap={0} wrap="nowrap">
-												{historyItem && (
+												{existing && (
 													<ActionIcon
 														variant="subtle"
 														color="red"
 														onClick={(e) => {
 															e.stopPropagation();
-															deleteUpload.mutate({ id: historyItem.id });
+															deleteUpload.mutate({ id: existing.id });
 														}}
 														loading={
 															deleteUpload.isPending &&
-															deleteUpload.variables.id === historyItem.id
+															deleteUpload.variables.id === existing.id
 														}
 														disabled={
 															deleteUpload.isPending &&
-															deleteUpload.variables.id === historyItem.id
+															deleteUpload.variables.id === existing.id
 														}
 													>
 														<Icon icon="lucide:trash" height={16} />
@@ -167,7 +159,7 @@ export function GitHubUploads({ close }: { close: () => void }) {
 													color="dimmed"
 													onClick={(e) => {
 														e.stopPropagation();
-														cloneGitHub.mutate({
+														cloneGitHubRepository.mutate({
 															owner,
 															repository: repoName,
 															branch: repo.default_branch,
@@ -176,17 +168,17 @@ export function GitHubUploads({ close }: { close: () => void }) {
 													loading={isCloning}
 													disabled={isCloning}
 												>
-													{historyItem ? (
+													{existing ? (
 														<Icon icon="lucide:refresh-cw" height={16} />
 													) : (
 														<Icon icon="lucide:download-cloud" height={16} />
 													)}
 												</ActionIcon>
 											</Group>
-											{historyItem && (
+											{existing && (
 												<Text size="xs" c="dimmed" truncate>
 													{CommonUtils.formatDate({
-														date: historyItem.createdAt,
+														date: existing.createdAt,
 														relative: true,
 													})}
 												</Text>

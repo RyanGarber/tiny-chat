@@ -25,7 +25,7 @@ export async function useServer(
 	if (start !== false) {
 		console.log(`checking server availability...`);
 		const isLive = await isBackendLive();
-		console.log(`backend is ${isLive ? "live" : "not live"}`);
+		console.log(`server is ${isLive ? "live" : "not live"}`);
 		if (start === true || !isLive) {
 			console.log(`starting server...`);
 			doStart = true;

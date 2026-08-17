@@ -1,10 +1,23 @@
 import { create } from "zustand";
+import { _debug } from "../../features/settings/components/Settings.tsx";
 
-type Page = "chat" | "chats" | "tools" | "skills";
+export type Page =
+	| "chat"
+	| "chats"
+	| "tools"
+	| "skills"
+	| "settings"
+	| "uploads"
+	| "github";
 
 export interface Status {
 	id: string;
 	text?: string | null;
+	/**
+	 * A status that reports rather than holds things up: it is shown without a
+	 * spinner, and leaves the editor usable while it stands.
+	 */
+	passive?: boolean;
 }
 
 interface AppStore {
@@ -21,7 +34,7 @@ interface AppStore {
 }
 
 export const useAppStore = create<AppStore>((set) => ({
-	page: "chat",
+	page: _debug ? "settings" : "chat",
 	setPage: (page) => set({ page }),
 
 	statuses: [],

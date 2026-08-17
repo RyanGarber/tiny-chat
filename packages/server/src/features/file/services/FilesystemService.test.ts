@@ -1,6 +1,6 @@
+import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import { read_file } from "@tiny-chat/core/src/features/tool/tools/shell/read_file.ts";
 import { shell_exec } from "@tiny-chat/core/src/features/tool/tools/shell/shell_exec.ts";
-import { write_file } from "@tiny-chat/core/src/features/tool/tools/shell/write_file.ts";
 import { beforeAll, describe, expect, inject, it } from "vitest";
 import type { z } from "zod";
 import { testGenerationContext } from "../../../tests.helpers.ts";
@@ -8,36 +8,40 @@ import { testClient } from "../../../tests.ts";
 
 const { api } = testClient();
 
+/** The attachment directive that points a message into an upload. */
+const attach = (upload: { id: string; name: string }) =>
+	`:attachment[]{source="${PathUtils.toMount({ mount: "uploads", id: upload.id })}" is-directory="true" name="${upload.name}"}`;
+
+const upload = async (name: string, content: string) => {
+	const data = new FormData();
+	data.set("type", "ATTACHMENT");
+	data.set("file", new File([content], name));
+	return await api.upload.createUpload.mutate(data);
+};
+
 describe("FilesystemService", () => {
-	let upload1: Awaited<
-		ReturnType<(typeof api)["upload"]["createUpload"]["mutate"]>
-	>;
-	let upload2: Awaited<
-		ReturnType<(typeof api)["upload"]["createUpload"]["mutate"]>
-	>;
+	let upload1: Awaited<ReturnType<typeof upload>>;
+	let upload2: Awaited<ReturnType<typeof upload>>;
+	let chatId: string;
 	let context: ReturnType<typeof testGenerationContext>;
 
 	beforeAll(async () => {
-		const data = new FormData();
-		data.set("type", "ATTACHMENT");
-		data.set(
-			"file",
-			new File(["Files suck. I hate files."], "question space.md"),
-		);
-		upload1 = await api.upload.createUpload.mutate(data);
-		data.set(
-			"file",
-			new File(["Files suck. I hate files."], "question nbsp.md"),
-		);
-		upload2 = await api.upload.createUpload.mutate(data);
+		upload1 = await upload("question space.md", "Files suck. I hate files.");
+		upload2 = await upload("question nbsp.md", "Files suck. I hate files.");
+
+		// An upload is on the mount because a message points into it, so what
+		// mounts these two is the attachment directives referencing them.
 		const message = await api.message.createMessage.mutate({
 			author: "USER",
 			config: inject("backend_config"),
-			data: [[upload1, upload2]],
+			data: [
+				[{ type: "text", value: [upload1, upload2].map(attach).join(" ") }],
+			],
 			metadata: [],
 		});
 		const chat = await api.chat.getChat.query(message);
 		if (!chat) throw new Error("Test chat not found");
+		chatId = chat.id;
 		context = testGenerationContext({ chat, messages: [message] });
 	});
 
@@ -47,27 +51,32 @@ describe("FilesystemService", () => {
 		const output = await api.test.tool.mutate({
 			name: `chat_${shell_exec.name}`,
 			context,
-			input: {
-				command,
-			} satisfies z.infer<typeof shell_exec.input>,
+			input: { command } satisfies z.infer<typeof shell_exec.input>,
 		});
 		expect.assert(output[0].type === "json");
 		console.log(`---\n$ ${command}\n`, output[0].value, "\n---");
 		return output[0].value as z.infer<typeof shell_exec.output>;
 	};
 
+	it("lays the mount out as uploads, skills and chat", async () => {
+		const output = await exec("ls /mnt");
+		expect(output.stdout).toContain("uploads");
+		expect(output.stdout).toContain("skills");
+		expect(output.stdout).toContain("chat");
+	});
+
 	it("finds the upload in `ls -l`", async () => {
-		const output = await exec("ls -l /mnt/chat");
+		const output = await exec("ls -l /mnt/uploads");
 		expect(output.stdout).toContain(upload1.id);
 	});
 
 	it("finds the uploaded file in `ls -l`", async () => {
-		const output = await exec(`ls -l ${upload1.id}`);
+		const output = await exec(`ls -l /mnt/uploads/${upload1.id}`);
 		expect(output.stdout).toContain("question space.md");
 	});
 
 	it("finds the file in `ls -l`", async () => {
-		const output = await exec(`ls -l /mnt/chat/${upload2.id}`);
+		const output = await exec(`ls -l /mnt/uploads/${upload2.id}`);
 		expect(output.stdout).toContain(".md");
 	});
 
@@ -76,17 +85,22 @@ describe("FilesystemService", () => {
 			name: `chat_${read_file.name}`,
 			context,
 			input: {
-				path: `/mnt/chat/${upload2.id}/${upload2.name}`,
+				path: `/mnt/uploads/${upload2.id}/${upload2.name}`,
 			} satisfies z.infer<typeof read_file.input>,
 		});
 		expect.assert(output[0].type === "file");
 		expect(output[0].name).toEqual("question nbsp.md");
 	});
 
+	it("starts in the chat's own directory", async () => {
+		const output = await exec("pwd");
+		expect(output.stdout.trim()).toBe(`/mnt/chat/${chatId}`);
+	});
+
 	it("writes a file to the chat", async () => {
-		let output = await exec('echo "Hello, world!" > /mnt/chat/hello.txt');
+		let output = await exec('echo "Hello, world!" > hello.txt');
 		expect(output.stderr.trim().length).toBe(0);
-		output = await exec("cat /mnt/chat/hello.txt");
+		output = await exec(`cat /mnt/chat/${chatId}/hello.txt`);
 		expect(output.stdout).toContain("Hello, world!");
 	});
 
@@ -94,60 +108,107 @@ describe("FilesystemService", () => {
 		let output = await exec(
 			"python3 -c \"import os; print(os.getcwd()); f = open('hello.txt', 'w'); f.write('Hello, world!'); f.close()\"",
 		);
-		expect(output.stdout).toContain("/mnt/chat");
-		output = await exec("cat /mnt/chat/hello.txt");
+		expect(output.stdout).toContain(`/mnt/chat/${chatId}`);
+		output = await exec(`cat /mnt/chat/${chatId}/hello.txt`);
 		expect(output.stdout).toContain("Hello, world!");
 	});
 
-	it("applies a chat file over a base file", async () => {
-		const data = new FormData();
-		data.set("type", "ATTACHMENT");
-		data.set("file", new File(["uploadFile1"], "uploadFile1.txt"));
-		const upload1 = await api.upload.createUpload.mutate(data);
+	it("refuses to write over an upload", async () => {
+		const output = await exec(
+			`echo "nope" > "/mnt/uploads/${upload1.id}/question space.md"`,
+		);
+		expect(output.stderr).toMatch(/read-only/i);
 
-		const message = await api.message.createMessage.mutate({
-			author: "USER",
-			config: inject("backend_config"),
-			data: [[upload1]],
-			metadata: [],
-		});
-		const chat = await api.chat.getChat.query(message);
-		if (!chat) throw new Error("Test chat not found");
+		const read = await exec(
+			`cat "/mnt/uploads/${upload1.id}/question space.md"`,
+		);
+		expect(read.stdout).toContain("Files suck. I hate files.");
+	});
 
-		await api.test.tool.mutate({
-			name: `chat_${write_file.name}`,
-			context: testGenerationContext({ chat, messages: [message] }),
-			input: {
-				path: `/mnt/chat/${upload1.id}/uploadFile1.txt`,
-				content: "uploadFile1\nnewline",
-			} satisfies z.infer<typeof write_file.input>,
-		});
+	it("refuses to delete an upload", async () => {
+		const output = await exec(`rm -r /mnt/uploads/${upload1.id}`);
+		expect(output.stderr).toMatch(/read-only/i);
+		expect((await exec("ls /mnt/uploads")).stdout).toContain(upload1.id);
+	});
 
-		await api.test.tool.mutate({
-			name: `chat_${write_file.name}`,
-			context: testGenerationContext({ chat, messages: [message] }),
-			input: {
-				path: `/mnt/chat/file1.txt`,
-				content: "file1\nnewline",
-			} satisfies z.infer<typeof write_file.input>,
-		});
+	it("copies an upload into the chat, where it can be changed", async () => {
+		const source = `/mnt/uploads/${upload2.id}/${upload2.name}`;
+		const destination = `/mnt/chat/${chatId}/copied.md`;
 
+		let output = await exec(`cp "${source}" "${destination}"`);
+		expect(output.stderr.trim().length).toBe(0);
+
+		output = await exec(`echo "changed" >> "${destination}"`);
+		expect(output.stderr.trim().length).toBe(0);
+
+		output = await exec(`cat "${destination}"`);
+		expect(output.stdout).toContain("Files suck. I hate files.");
+		expect(output.stdout).toContain("changed");
+
+		// The original is untouched: there is one file per path, and the copy is
+		// its own file rather than a layer over this one.
+		output = await exec(`cat "${source}"`);
+		expect(output.stdout).not.toContain("changed");
+	});
+
+	it("reports every file on the mount, in the tree it belongs to", async () => {
 		const files = await api.file.getFiles.query({
-			chat: chat.id,
+			chat: chatId,
+			uploads: [upload1.id, upload2.id],
 		});
 
-		expect(files.length).toBeTruthy();
-		expect(files.find((file) => file.uploadId === upload1.id)).toBeTruthy();
+		const uploaded = files.find(
+			(file) => file.mount === "uploads" && file.id === upload1.id,
+		);
+		expect.assert(uploaded);
+		expect(uploaded.path.slice(0, 2)).toEqual(["uploads", upload1.id]);
+		expect(uploaded.name).toBe(upload1.name);
 
-		const uploadFile1 = files.find((f) => f.path.includes("uploadFile1.txt"));
+		const written = files.find((file) => file.path.includes("hello.txt"));
+		expect.assert(written);
+		expect(written.mount).toBe("chat");
+		expect(written.id).toBe(chatId);
+		expect(written.lines).toBeGreaterThan(0);
+	});
 
-		console.log(JSON.stringify(uploadFile1));
-		expect.assert(uploadFile1?.chatFile && uploadFile1?.uploadFile);
-		expect(uploadFile1.chatFile.lines).toBe(2);
-		expect(uploadFile1.uploadFile.lines).toBe(1);
+	it("names an upload's directory after the upload, and only there", async () => {
+		const trees = await api.file.getDirectory.query({
+			uploads: [upload1.id],
+			path: [],
+		});
+		// The tree's own segment is its name already; nothing borrows from below.
+		expect(trees.find((entry) => entry.name === "uploads")?.label).toBeNull();
 
-		const file1 = files.find((f) => f.path.includes("file1.txt"));
-		expect.assert(file1?.chatFile && !file1?.uploadFile);
-		expect(file1.chatFile.lines).toBe(2);
+		const uploads = await api.file.getDirectory.query({
+			uploads: [upload1.id],
+			path: ["uploads"],
+		});
+		expect(uploads.find((entry) => entry.name === upload1.id)?.label).toBe(
+			upload1.name,
+		);
+
+		const files = await api.file.getDirectory.query({
+			uploads: [upload1.id],
+			path: ["uploads", upload1.id],
+		});
+		expect(
+			files.find((entry) => entry.name === "question space.md")?.label,
+		).toBeNull();
+	});
+
+	it("builds a mount for a message that has no chat at all", async () => {
+		// The whole point of building from ids: an upload can be read before the
+		// message referencing it has been sent anywhere.
+		const files = await api.file.getFiles.query({ uploads: [upload1.id] });
+
+		expect(
+			files.some(
+				(file) =>
+					file.mount === "uploads" && file.path.includes("question space.md"),
+			),
+		).toBe(true);
+		expect(
+			files.some((file) => file.mount === "chat" && !file.isDirectory),
+		).toBe(false);
 	});
 });

@@ -75,7 +75,6 @@ export type zDataPart =
 			data: string;
 			signature?: zSignature;
 	  }
-	| { type: "upload"; id: string; name: string; thumbnail?: string }
 	| {
 			type: "toolCall";
 			id: string;
@@ -130,12 +129,6 @@ export const zDataPart: z.ZodType<zDataPart> = z.discriminatedUnion("type", [
 		mime: z.string(),
 		data: z.base64(),
 		signature: zSignature.optional(),
-	}),
-	z.object({
-		type: z.literal("upload"),
-		id: z.cuid2(),
-		name: z.string(),
-		thumbnail: z.string().optional(),
 	}),
 	z.object({
 		type: z.literal("toolCall"),

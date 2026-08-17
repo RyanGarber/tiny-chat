@@ -17,6 +17,18 @@ Reading: \`read_file\` returns a window of lines. Page through a long file with 
 Editing: read the part of a file you are about to change, then use \`edit_file\` with enough surrounding context that \`old_string\` occurs exactly once. Its result shows the edited lines, so there is no need to re-read the file afterwards.
 Prefer these tools over shell equivalents (\`ls\`, \`cat\`, \`find\`, \`grep\`, \`sed\`): they are bounded, and their output is shaped for you.`;
 
+/**
+ * The shape of the mount, and the one rule that follows from it. Uploads and
+ * skills are shared by every chat that points at them, so they are read only —
+ * which is worth saying up front, since a model that discovers it by having a
+ * write fail has already lost the work.
+ */
+const MOUNT_INSTRUCTIONS = `The mount holds three trees:
+- \`${PathUtils.mount}/uploads/<id>\` — files the user uploaded or cloned. Read only.
+- \`${PathUtils.mount}/skills/<id>\` — the skills this message is configured with. Read only.
+- \`${PathUtils.mount}/chat/<id>\` — this chat's own working directory, and the only place you can write. You start here.
+To change a file from an upload or a skill, \`cp\` it into the chat's directory first and work on the copy; the original stays as it is for every other chat that uses it.`;
+
 export const ToolService = {
 	getTools: async ({
 		capabilities,
@@ -57,7 +69,8 @@ export const ToolService = {
 
 			await createShellToolset({
 				prefix: "chat",
-				instructions: `You have access to a virtual chat filesystem and shell. Use this as a scratchpad and Python environment. You must always use these \`chat_\`-prefixed tools for anything inside \`${PathUtils.mount}\` -  never when outside of it.
+				instructions: `You have access to a virtual filesystem and shell, mounted at \`${PathUtils.mount}\`. Use this as a scratchpad and Python environment. You must always use these \`chat_\`-prefixed tools for anything inside \`${PathUtils.mount}\` -  never when outside of it.
+${MOUNT_INSTRUCTIONS}
 ${SHELL_INSTRUCTIONS}`,
 				capabilities: {
 					shell: capabilities.chatShell ?? (void 0 as never),

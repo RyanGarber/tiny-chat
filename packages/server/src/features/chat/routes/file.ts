@@ -1,4 +1,3 @@
-import { ChatLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
 import type {
 	FileNode,
 	FileState,
@@ -8,61 +7,51 @@ import { z } from "zod";
 import { procedure, router } from "../../../index.ts";
 import { FileService } from "../../file/services/FileService.ts";
 
+/**
+ * Which filesystem to build, as the client asks for it: the uploads and skills
+ * a message points into, and the chat to write in. The ids arrive straight out
+ * of message text, so every one of them is checked against the caller's own
+ * files before it mounts anything.
+ */
+const Filesystem = z.object({
+	chat: z.string().nullish(),
+	uploads: z.array(z.string()).optional(),
+	skills: z.array(z.string()).optional(),
+});
+
 export const file = router({
 	getFile: procedure
-		.input(
-			z.object({
-				chat: ChatLike,
-				path: PathLike,
-			}),
-		)
+		.input(Filesystem.extend({ path: PathLike }))
 		.output(z.custom<FileState>())
 		.query(async ({ ctx, input }) => {
-			return await FileService.getFile({
-				user: ctx.session.user,
-				chat: input.chat,
-				path: input.path,
-			});
+			return await FileService.getFile({ user: ctx.session.user, ...input });
 		}),
 
 	getFiles: procedure
-		.input(z.object({ chat: ChatLike }))
+		.input(Filesystem)
 		.output(z.custom<FileNode[]>())
 		.query(async ({ ctx, input }) => {
-			return await FileService.getFiles({
-				user: ctx.session.user,
-				chat: input.chat,
-			});
+			return await FileService.getFiles({ user: ctx.session.user, ...input });
 		}),
 
 	getDirectory: procedure
-		.input(z.object({ chat: ChatLike, path: PathLike }))
+		.input(Filesystem.extend({ path: PathLike }))
 		.query(async ({ ctx, input }) => {
 			return await FileService.getDirectory({
 				user: ctx.session.user,
-				chat: input.chat,
-				path: input.path,
+				...input,
 			});
 		}),
 
 	writeFile: procedure
-		.input(z.object({ chat: ChatLike, path: PathLike, content: z.string() }))
+		.input(Filesystem.extend({ path: PathLike, content: z.string() }))
 		.mutation(async ({ ctx, input }) => {
-			await FileService.writeFile({
-				user: ctx.session.user,
-				chat: input.chat,
-				path: input.path,
-				content: input.content,
-			});
+			await FileService.writeFile({ user: ctx.session.user, ...input });
 		}),
 
 	exec: procedure
-		.input(z.object({ chat: ChatLike, command: z.string() }))
+		.input(Filesystem.extend({ command: z.string() }))
 		.mutation(async ({ ctx, input }) => {
-			return FileService.exec({
-				user: ctx.session.user,
-				chat: input.chat,
-				command: input.command,
-			});
+			return await FileService.exec({ user: ctx.session.user, ...input });
 		}),
 });

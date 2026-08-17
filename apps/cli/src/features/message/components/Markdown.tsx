@@ -2,9 +2,9 @@ import { MarkdownContext } from "@tiny-chat/client/src/features/message/componen
 import { useMarkdown } from "@tiny-chat/client/src/features/message/hooks/useMarkdown.ts";
 import type { ColorName } from "chalk";
 import { toJsxRuntime } from "hast-util-to-jsx-runtime";
-import { Box } from "ink";
 import { Fragment, useMemo } from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
+import Box from "../../../core/components/Box.tsx";
 import { MarkdownComponents } from "./MarkdownComponents.tsx";
 
 export default function Markdown({

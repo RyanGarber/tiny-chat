@@ -6,13 +6,11 @@ import Sentinel from "#app/core/components/Sentinel.tsx";
 import { useSentinel } from "#app/core/hooks/useSentinel.ts";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import Dropzone from "#app/features/upload/components/Dropzone.tsx";
-import { useMessagingStore } from "#client/src/features/chat/stores/useMessagingStore.ts";
-import { useUploads } from "../hooks/useUploads";
+import { MessagingService } from "#client/src/features/chat/services/MessagingService.ts";
+import { useUploads } from "#client/src/features/upload/hooks/useUploads.ts";
 import FileThumbnails from "./FileThumbnails.tsx";
 
 export function AttachmentUploads({ close }: { close: () => void }) {
-	const addAttachment = useMessagingStore((s) => s.addAttachment);
-
 	const { attachmentUploads, deleteUpload } = useUploads();
 
 	const { viewportRef, sentinelRef } = useSentinel({
@@ -41,12 +39,7 @@ export function AttachmentUploads({ close }: { close: () => void }) {
 								bdrs="lg"
 								style={{ ...StyleUtils.glass, cursor: "pointer" }}
 								onClick={() => {
-									addAttachment({
-										type: "upload",
-										id: upload.id,
-										name: upload.name,
-										thumbnail: upload.thumbnail ?? undefined,
-									});
+									MessagingService.attachUpload({ client, upload });
 									close();
 								}}
 							>

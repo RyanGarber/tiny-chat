@@ -1,10 +1,4 @@
-import {
-	Box,
-	type BoxProps,
-	type DOMElement,
-	useBoxMetrics,
-	useWindowSize,
-} from "ink";
+import { type DOMElement, useBoxMetrics, useWindowSize } from "ink";
 import {
 	Children,
 	isValidElement,
@@ -19,6 +13,7 @@ import {
 } from "react";
 import { useMouse } from "../hooks/useMouse.ts";
 import { MouseUtils } from "../utils/MouseUtils.ts";
+import Box, { type BoxProps } from "./Box.tsx";
 
 /** Where a child comes to rest when the view scrolls to it. */
 export type ScrollAlign =
@@ -354,12 +349,16 @@ export default function ScrollView({
 					ref={contentRef}
 					flexDirection="column"
 					// Never shrinks, so it keeps the full height of its children and
-					// overflows the viewport rather than being squeezed into it. Never
-					// shorter than the viewport either, so content that does not fill it
-					// still starts at the top of it instead of hanging off the bottom —
-					// a floor rather than growth, which a negative margin would feed.
+					// overflows the viewport rather than being squeezed into it.
 					flexShrink={0}
-					minHeight="100%"
+					// While pinned, content shorter than the viewport would hang off the
+					// bottom it is laid out against, so it is floored at the height of the
+					// viewport to bring it back to the top. Only while pinned: the floor
+					// is a percentage, and a percentage resolves against the height a view
+					// has been offered rather than the one it settles at, so a view free
+					// to size itself to its content — one bounded only by a maxHeight —
+					// would be held open at that bound by content that never filled it.
+					minHeight={pinned ? "100%" : undefined}
 					marginTop={pinned ? 0 : -offset}
 				>
 					{items.map((child, index) => (

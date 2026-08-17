@@ -175,7 +175,9 @@ const AComponent: Components["a"] = ({ href, children }) => {
 
 const LinkComponent: Components["link"] = ({ node }) => {
 	const source = ((node?.properties.source ?? "unknown") as string).trim();
-	return <Attachment source={source as string} />;
+	const label = (node?.properties.name as string | undefined)?.trim();
+	const directory = node?.properties["is-directory"] === "true";
+	return <Attachment source={source} label={label} directory={directory} />;
 };
 
 const SlotComponent: Components["slot"] = ({ node, children }) => {

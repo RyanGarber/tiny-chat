@@ -6,10 +6,13 @@ import { theme } from "#app/core/utils/IconUtils.ts";
 export default function Attachment({
 	source,
 	directory,
+	label,
 	grabbable,
 }: {
 	source: string;
 	directory?: boolean;
+	/** Stands in for the path when it says nothing, as an upload's id does. */
+	label?: string;
 	grabbable?: boolean;
 }) {
 	const iconId = !directory
@@ -38,7 +41,7 @@ export default function Attachment({
 				)
 			)}{" "}
 			<span className={`py-1`}>
-				{PathUtils.name(source)}
+				{label ?? PathUtils.name(source)}
 				{directory ? "/" : ""}
 			</span>
 		</span>

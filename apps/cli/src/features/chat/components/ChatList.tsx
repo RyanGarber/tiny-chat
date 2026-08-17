@@ -1,10 +1,8 @@
 import { useChatList } from "@tiny-chat/client/src/features/chat/hooks/useChatList.ts";
 import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
-import type { ChatState } from "@tiny-chat/core/src/features/data/types/chat.ts";
-import { useState } from "react";
+import { usePage } from "../../../core/hooks/usePage.ts";
 import { useSentinel } from "../../../core/hooks/useSentinel.ts";
 import { useWorkingStatus } from "../../../core/hooks/useWorkingStatus.ts";
-import { useAppStore } from "../../../core/stores/useAppStore.ts";
 import Completions from "../../editor/components/Completions.tsx";
 
 export default function ChatList() {
@@ -17,34 +15,7 @@ export default function ChatList() {
 	// asks for the next page.
 	const fetchOlder = useSentinel(folders);
 
-	const setPage = useAppStore((state) => state.setPage);
-
-	const [selected, setSelected] = useState<ChatState | null>(null);
-
-	if (selected) {
-		return (
-			<Completions
-				groups={[
-					{
-						name: selected.title ?? "",
-						items: [{ name: "Delete", value: "delete" }],
-					},
-				]}
-				onInput={({ item, input, key }) => {
-					if (key.escape || key.backspace || input === " ") {
-						setSelected(null);
-					}
-					if (key.return && item) {
-						if (item.value === "delete") {
-							deleteChat.mutate({ chat: selected });
-							setSelected(null);
-						}
-					}
-				}}
-				actions={["back"]}
-			/>
-		);
-	}
+	const { setPage } = usePage();
 
 	return (
 		<Completions
@@ -60,22 +31,16 @@ export default function ChatList() {
 					ChatService.setChat({ id: item.value });
 					setPage("chat");
 				}
-				if (input === " " && item) {
-					setSelected(
-						folderList
-							.flatMap((folder) => folder.chats)
-							.find((chat) => chat.id === item.value) ?? null,
-					);
-				}
-				if (key.escape || key.backspace) {
-					if (selected) {
-						setSelected(null);
-					} else {
-						setPage("chat");
-					}
+				if (input === "d" && item) {
+					const chat = folderList
+						.flatMap((folder) => folder.chats)
+						.find((chat) => chat.id === item.value);
+					if (!chat) return;
+					deleteChat.mutate({ chat });
 				}
 			}}
-			actions={[{ key: "space", name: "options" }]}
+			renderEmpty={() => "nothing here yet"}
+			actions={[{ key: "d", name: "delete" }, "back"]}
 			selectFirstOnChange={false}
 			onReachBottom={fetchOlder}
 		/>

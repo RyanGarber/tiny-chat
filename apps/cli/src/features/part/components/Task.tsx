@@ -1,5 +1,5 @@
 import { ThemeContext } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
-import { Box, type BoxProps, Text, useAnimation } from "ink";
+import { useAnimation } from "ink";
 import {
 	createContext,
 	type ReactNode,
@@ -7,6 +7,8 @@ import {
 	useMemo,
 	useState,
 } from "react";
+import Box, { type BoxProps } from "../../../core/components/Box.tsx";
+import Text from "../../../core/components/Text.tsx";
 import { useMouseInput } from "../../../core/hooks/useMouseInput.ts";
 import { type StatusPart, TaskUtils } from "../utils/TaskUtils.ts";
 
@@ -132,7 +134,7 @@ namespace Task {
 
 		return (
 			<Box ref={mouseRef}>
-				<Text color={colorScheme.textSubtle}>{emoji ?? " "} </Text>
+				<Text color="textSubtle">{emoji ?? " "} </Text>
 				<Text>{text}</Text>
 			</Box>
 		);

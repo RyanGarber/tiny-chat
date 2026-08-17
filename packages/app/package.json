@@ -29,6 +29,7 @@
 		"@streamdown/mermaid": "^1.0.2",
 		"@tailwindcss/vite": "^4.3.2",
 		"@tanstack/react-query": "^5.101.2",
+		"@tanstack/react-query-devtools": "^5.101.4",
 		"@tauri-apps/api": "^2.11.1",
 		"@tauri-apps/plugin-opener": "^2.5.4",
 		"@tauri-apps/plugin-os": "^2.3.2",

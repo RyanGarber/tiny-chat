@@ -34,6 +34,7 @@ export const test = router({
 				user: ctx.session.user,
 				chat: input.context.chat,
 				message: input.context.messages.at(-1)?.id,
+				messages: input.context.messages,
 				incognito: input.context.chat?.incognito,
 			});
 

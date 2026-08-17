@@ -241,6 +241,7 @@ export const AgentMessageService = {
 			user,
 			chat,
 			message: seed,
+			messages: context.messages,
 			providers,
 			incognito: chat.incognito,
 		});

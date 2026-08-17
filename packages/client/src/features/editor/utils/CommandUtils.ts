@@ -7,6 +7,7 @@ import type {
 	CommandItem,
 	CommandQuery,
 } from "../types/command.ts";
+import { AtomUtils } from "./AtomUtils.ts";
 
 /** `/name` optionally followed by an argument, at the end of a line */
 const QUERY_REGEX = /(?:^|\s)\/(\S*)(?:[ \t]+([^\n]*))?$/;
@@ -140,7 +141,13 @@ export const CommandUtils = {
 		if (!cursor) return null;
 
 		const [row, column] = cursor;
-		const lines = content.split("\n");
+		// Read against the buffer with its atoms blanked out: a command already
+		// written into one stands as the command itself, and typing on past it
+		// would otherwise reopen it as though it were still being written.
+		const lines = AtomUtils.mask({
+			content,
+			atoms: AtomUtils.atoms(),
+		}).split("\n");
 		const line = lines[row];
 		if (line === undefined) return null;
 
@@ -157,7 +164,7 @@ export const CommandUtils = {
 		if (argument === undefined) {
 			return {
 				command: null,
-				text: name,
+				text: content.slice(to - name.length, to),
 				from,
 				textFrom: to - name.length,
 				to,
@@ -169,7 +176,9 @@ export const CommandUtils = {
 
 		return {
 			command,
-			text: argument,
+			// Taken from the buffer rather than the mask, so an atom the argument
+			// reaches over is read as what it stands for.
+			text: content.slice(to - argument.length, to),
 			from,
 			textFrom: to - argument.length,
 			to,
@@ -217,6 +226,26 @@ export const CommandUtils = {
 	},
 
 	/**
+	 * The atom a command is written into a plain text buffer as: the command as
+	 * it was typed, standing for the directive it travels as.
+	 */
+	toAtom: ({
+		content,
+		command,
+		value,
+	}: {
+		content: string;
+		command: CommandItem;
+		value?: string;
+	}) =>
+		AtomUtils.command({
+			content,
+			name: command.name,
+			value,
+			markdown: CommandUtils.toDirective({ command, value }),
+		}),
+
+	/**
 	 * Write a chosen command into a plain text buffer: run it, wait for its
 	 * argument, or leave it for the message. Pass `complete` to only write out
 	 * the command's name.
@@ -255,7 +284,7 @@ export const CommandUtils = {
 			content,
 			from,
 			to,
-			text: CommandUtils.toDirective({ command }),
+			text: CommandUtils.toAtom({ content, command }),
 		});
 	},
 
@@ -294,7 +323,7 @@ export const CommandUtils = {
 			content,
 			from,
 			to,
-			text: CommandUtils.toDirective({ command, value: choice.name }),
+			text: CommandUtils.toAtom({ content, command, value: choice.name }),
 		});
 	},
 
@@ -324,7 +353,7 @@ export const CommandUtils = {
 			content,
 			from,
 			to,
-			text: CommandUtils.toDirective({ command, value }),
+			text: CommandUtils.toAtom({ content, command, value }),
 		});
 	},
 } as const;

@@ -1,6 +1,5 @@
 /** biome-ignore-all lint/suspicious/noArrayIndexKey: parts stay in order */
 
-import { ThemeContext } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
 import type { MarkdownContext } from "@tiny-chat/client/src/features/message/components/MarkdownContext.tsx";
 import { useMessageStream } from "@tiny-chat/client/src/features/message/hooks/useMessageStream.ts";
 import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
@@ -11,17 +10,17 @@ import {
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { ToolCallUtils } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
 import type { ColorName } from "chalk";
-import { Box, Text, useWindowSize } from "ink";
+import { useWindowSize } from "ink";
 import Spinner from "ink-spinner";
-import { useContext, useMemo } from "react";
+import { useMemo } from "react";
+import Box from "../../../core/components/Box.tsx";
+import Text from "../../../core/components/Text.tsx";
 import Task from "../../part/components/Task.tsx";
 import Thought from "../../part/components/Thought.tsx";
 import ToolCall from "../../part/components/ToolCall.tsx";
 import Markdown from "./Markdown.tsx";
 
 export default function Message({ message }: { message: MessageState }) {
-	const { colorScheme } = useContext(ThemeContext);
-
 	const toolsets = useMessageStore((s) => s.toolsets);
 	const nextFeedbackId = useMessageStore((s) => s.nextFeedbackId);
 
@@ -47,9 +46,7 @@ export default function Message({ message }: { message: MessageState }) {
 		<Box flexDirection="column" paddingX={1} paddingY={1}>
 			<Box
 				flexDirection="column"
-				backgroundColor={
-					message.author === Author.USER ? colorScheme.surface : undefined
-				}
+				backgroundColor={message.author === Author.USER ? "surface" : undefined}
 				paddingY={message.author === Author.USER ? 1 : 0}
 				paddingX={2}
 				gap={1}
@@ -62,7 +59,7 @@ export default function Message({ message }: { message: MessageState }) {
 								key={index}
 								detailsProps={{
 									paddingY: 1,
-									backgroundColor: colorScheme.surface,
+									backgroundColor: "surface",
 								}}
 							>
 								{part.value.flatMap((part, index, parts) => {
@@ -136,7 +133,7 @@ export default function Message({ message }: { message: MessageState }) {
 				)}
 			</Box>
 			<Box paddingLeft={2} paddingTop={1}>
-				<Text dimColor>➤ {message.config.model}</Text>
+				<Text color="textSubtle">➤ {message.config.model}</Text>
 			</Box>
 		</Box>
 	);

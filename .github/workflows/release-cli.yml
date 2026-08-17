@@ -55,9 +55,6 @@ jobs:
                     node-version: lts/*
                     cache: pnpm
 
-            -   name: Install Bun
-                uses: oven-sh/setup-bun@v2
-
             -   name: Create .env
                 shell: bash
                 run: |
@@ -83,12 +80,12 @@ jobs:
                 run: pnpm ci
 
             -   name: Build CLI
-                run: pnpm run build:cli:bun
+                run: pnpm run build:cli
 
             -   name: Package binary
                 shell: bash
                 run: |
-                    BIN=$(find apps/cli/dist -maxdepth 1 -name "tiny-chat-bun*" -type f | head -1)
+                    BIN=$(find apps/cli/dist -maxdepth 1 -name "tiny-chat*" -type f | head -1)
                     echo "Found: $BIN"
                     cp "$BIN" "$RUNNER_TEMP/${{ matrix.asset }}"
 

@@ -3,48 +3,53 @@ import { PathUtils } from "./PathUtils.ts";
 
 describe("PathUtils", () => {
 	it("builds mount paths", () => {
-		expect(PathUtils.toMount({ path: ["file.txt"] })).toEqual(
-			"/mnt/chat/file.txt",
+		expect(PathUtils.toMount({ path: ["chat", "id", "file.txt"] })).toEqual(
+			"/mnt/chat/id/file.txt",
 		);
-		expect(PathUtils.toMount({ uploadId: "id" })).toEqual("/mnt/chat/id");
-		expect(PathUtils.toMount({ uploadId: "id", path: [""] })).toEqual(
-			"/mnt/chat/id",
+		expect(PathUtils.toMount({ mount: "uploads", id: "id" })).toEqual(
+			"/mnt/uploads/id",
 		);
 		expect(
+			PathUtils.toMount({ mount: "skills", id: "id", path: [""] }),
+		).toEqual("/mnt/skills/id");
+		expect(
 			PathUtils.toMount({
-				uploadId: "id",
+				mount: "uploads",
+				id: "id",
 				path: "src\\\\index.ts",
 			}),
-		).toEqual("/mnt/chat/id/src/index.ts");
+		).toEqual("/mnt/uploads/id/src/index.ts");
 	});
 
 	it("parses mount paths", () => {
 		expect(PathUtils.fromMount({ path: "/file.txt" })).toBeNull();
-		expect(PathUtils.fromMount({ path: "/mnt/chat" })).toEqual({
+		expect(PathUtils.fromMount({ path: "/mnt" })).toEqual({
 			path: [],
-			uploadId: undefined,
-			uploadPath: [],
+			mount: undefined,
+			id: undefined,
+			rest: [],
 		});
-		expect(PathUtils.fromMount({ path: "/mnt/chat/file" })).toEqual({
+		// A path that names no tree is on the mount but in none of it, which is
+		// what the root itself looks like too.
+		expect(PathUtils.fromMount({ path: "/mnt/file" })).toEqual({
 			path: ["file"],
-			uploadId: undefined,
-			uploadPath: [],
+			mount: undefined,
+			id: undefined,
+			rest: [],
+		});
+		expect(PathUtils.fromMount({ path: "/mnt/uploads/abc" })).toEqual({
+			path: ["uploads", "abc"],
+			mount: "uploads",
+			id: "abc",
+			rest: [],
 		});
 		expect(
-			PathUtils.fromMount({ path: "/mnt/chat/zzzzzzzzzzzzzzzzzzzzzzzz" }),
+			PathUtils.fromMount({ path: "/mnt/skills/abc/src/index.ts" }),
 		).toEqual({
-			path: ["zzzzzzzzzzzzzzzzzzzzzzzz"],
-			uploadId: "zzzzzzzzzzzzzzzzzzzzzzzz",
-			uploadPath: [],
-		});
-		expect(
-			PathUtils.fromMount({
-				path: "/mnt/chat/zzzzzzzzzzzzzzzzzzzzzzzz/src/index.ts",
-			}),
-		).toEqual({
-			path: ["zzzzzzzzzzzzzzzzzzzzzzzz", "src", "index.ts"],
-			uploadId: "zzzzzzzzzzzzzzzzzzzzzzzz",
-			uploadPath: ["src", "index.ts"],
+			path: ["skills", "abc", "src", "index.ts"],
+			mount: "skills",
+			id: "abc",
+			rest: ["src", "index.ts"],
 		});
 	});
 

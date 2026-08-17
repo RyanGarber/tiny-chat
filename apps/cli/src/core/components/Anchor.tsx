@@ -1,7 +1,8 @@
 import { ThemeContext } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
-import { Text, type TextProps, Transform } from "ink";
+import { Transform } from "ink";
 import { type ReactNode, useContext } from "react";
 import link from "terminal-link";
+import Text, { type TextProps } from "../../core/components/Text.tsx";
 
 export default function Anchor({
 	href,

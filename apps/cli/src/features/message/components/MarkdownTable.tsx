@@ -1,5 +1,4 @@
-import { ThemeContext } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
-import { Box, Text, useWindowSize } from "ink";
+import { useWindowSize } from "ink";
 import {
 	Children,
 	cloneElement,
@@ -9,7 +8,9 @@ import {
 	useContext,
 	useMemo,
 } from "react";
+import Box from "../../../core/components/Box.tsx";
 import Divider from "../../../core/components/Divider.tsx";
+import Text from "../../../core/components/Text.tsx";
 
 type Align = "left" | "center" | "right";
 
@@ -156,8 +157,6 @@ function computeColumns(
  */
 
 export function TableComponent({ children }: { children?: ReactNode }) {
-	const { colorScheme } = useContext(ThemeContext);
-
 	const { columns: terminalWidth } = useWindowSize();
 
 	const width = Math.max(20, terminalWidth - 4);
@@ -174,7 +173,7 @@ export function TableComponent({ children }: { children?: ReactNode }) {
 			width={width}
 			paddingX={2}
 			paddingY={1}
-			backgroundColor={colorScheme.surface}
+			backgroundColor="surface"
 		>
 			<ColumnsContext.Provider value={columns}>
 				{children}

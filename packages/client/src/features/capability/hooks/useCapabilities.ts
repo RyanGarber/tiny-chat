@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { useContext } from "react";
+import type { zAgentMessage } from "@tiny-chat/core/src/features/agent/types/agent.ts";
+import { useContext, useMemo } from "react";
 import { ClientContext } from "../../../client.ts";
 import { useSession } from "../../../core/hooks/useSession.ts";
 import { useProviders } from "../../agent/hooks/useProviders.ts";
@@ -7,7 +8,21 @@ import { useChat } from "../../chat/hooks/useChat.ts";
 import { useChatStore } from "../../chat/stores/useChatStore.ts";
 import { ClientCapabilityService } from "../services/ClientCapabilityService.ts";
 
-export const useCapabilities = ({ future }: { future: boolean }) => {
+/**
+ * The capabilities of the message about to be sent.
+ *
+ * `draft` is whatever is being written but not saved yet. It counts the same as
+ * a saved message: the mount is built from what messages point into, so an
+ * upload attached in the editor is readable — and so costs tokens — before it
+ * has a chat to belong to.
+ */
+export const useCapabilities = ({
+	future,
+	draft,
+}: {
+	future: boolean;
+	draft?: zAgentMessage[];
+}) => {
 	const client = useContext(ClientContext);
 
 	const { session } = useSession();
@@ -25,6 +40,14 @@ export const useCapabilities = ({ future }: { future: boolean }) => {
 
 	const createIncognito = useChatStore((s) => s.createIncognito);
 
+	const sources = useMemo(
+		(): zAgentMessage[] => [
+			...(messages.data?.messages ?? []),
+			...(draft ?? []),
+		],
+		[messages.data?.messages, draft],
+	);
+
 	const presumedCapabilities = useQuery({
 		queryKey: [
 			"capabilities",
@@ -35,6 +58,7 @@ export const useCapabilities = ({ future }: { future: boolean }) => {
 			createIncognito,
 			chat.data?.id,
 			messages.data?.messages.at(-1)?.id,
+			draft,
 			future,
 		],
 		queryFn: async () => {
@@ -44,6 +68,7 @@ export const useCapabilities = ({ future }: { future: boolean }) => {
 				user: session.data.user,
 				chat: future ? true : (chat.data ?? null), // TODO
 				message: future ? true : (messages.data?.messages.at(-1) ?? true),
+				messages: sources,
 				incognito: chat.data?.incognito ?? createIncognito,
 				providers: providers.data,
 			});

@@ -14,11 +14,11 @@ import {
 } from "@mantine/dropzone";
 import { useState } from "react";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
+import { useUploads } from "#client/src/features/upload/hooks/useUploads.ts";
 import type {
 	UploadType,
 	zUploadResult,
 } from "#core/features/file/types/upload.ts";
-import { useUploads } from "../hooks/useUploads";
 
 export default function Dropzone({
 	type,

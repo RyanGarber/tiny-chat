@@ -4,6 +4,7 @@ import {
 	AgentTokensService,
 	type TokenBreakdown,
 } from "@tiny-chat/core/src/features/agent/services/AgentTokensService.ts";
+import type { zAgentMessage } from "@tiny-chat/core/src/features/agent/types/agent.ts";
 import type { zData } from "@tiny-chat/core/src/features/data/types/message.ts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "../../../core/hooks/useSession.ts";
@@ -35,9 +36,6 @@ export const useEstimatedTokens = <T>({
 	const { config } = useConfig();
 	const { toolsets } = useTools();
 	const { skills } = useSkills();
-	const { presumedCapabilities, sourceMessages } = useCapabilities({
-		future: false,
-	});
 
 	const createIncognito = useChatStore((state) => state.createIncognito);
 	const [debouncedData, setDebouncedData] = useState(data);
@@ -56,6 +54,29 @@ export const useEstimatedTokens = <T>({
 			}
 		};
 	}, [data]);
+
+	/**
+	 * The message being written, counted as a message. Its attachments are read
+	 * off the mount like any other, which is what lets an upload attached here
+	 * cost what it will cost before it is sent.
+	 */
+	const draft = useMemo(
+		(): zAgentMessage[] => [
+			{
+				id: null,
+				author: "USER",
+				config,
+				data: debouncedData,
+				createdAt: new Date(),
+			},
+		],
+		[config, debouncedData],
+	);
+
+	const { presumedCapabilities, sourceMessages } = useCapabilities({
+		future: false,
+		draft,
+	});
 
 	const chatTokens = useQuery({
 		queryKey: [
@@ -89,7 +110,13 @@ export const useEstimatedTokens = <T>({
 	});
 
 	const dataTokens = useQuery({
-		queryKey: [...editorTokensQueryKey, debouncedData],
+		queryKey: [
+			...editorTokensQueryKey,
+			debouncedData,
+			Object.entries(presumedCapabilities.data ?? {})
+				.map(([key, value]) => `${key}:${!!value}`)
+				.join(),
+		],
 		queryFn: async () => {
 			if (!session.data) return AgentTokensService.zero;
 
@@ -97,15 +124,7 @@ export const useEstimatedTokens = <T>({
 				context: {
 					user: session.data.user,
 					chat: chat.data,
-					messages: [
-						{
-							id: null,
-							author: "USER",
-							config,
-							data: debouncedData,
-							createdAt: new Date(),
-						},
-					],
+					messages: draft,
 					timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 				},
 				capabilities: presumedCapabilities.data ?? {},

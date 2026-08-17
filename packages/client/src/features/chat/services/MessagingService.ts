@@ -4,35 +4,65 @@ import type {
 } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { Client } from "../../../client.ts";
 import { useConfigStore } from "../../agent/stores/useConfigStore.ts";
+import type { AttachmentItem } from "../../editor/types/attachment.ts";
+import { AttachmentUtils } from "../../editor/utils/AttachmentUtils.ts";
 import { useMessagingStore } from "../stores/useMessagingStore.ts";
 
 export interface ClientInput {
 	getData: ({ client }: { client: Client }) => zData;
 	setData: ({ client, data }: { client: Client; data: zData }) => void;
+	/**
+	 * Write an attachment into the editor wherever the cursor is, as whatever
+	 * stands for one there — a node, or an atom in a plain text buffer.
+	 *
+	 * An attachment travels inside the message's text, so anything offering one
+	 * from outside the editor — an upload finishing, a repository being picked —
+	 * has to put it there rather than alongside.
+	 */
+	insertAttachment: ({
+		client,
+		item,
+	}: {
+		client: Client;
+		item: AttachmentItem;
+	}) => void;
 }
 
 export const MessagingService = {
 	getData: ({ client }: { client: Client }): zData => {
 		if (!client.input) throw new Error("missing client input");
 
-		const { attachments } = useMessagingStore.getState();
-
-		const data = client.input
+		return client.input
 			.getData({ client })
 			.map((step) =>
 				step.filter((part) => part.type !== "text" || part.value.length),
 			);
-
-		return [attachments, ...data];
 	},
 
 	setData: ({ client, data }: { client: Client; data: zData }) => {
 		if (!client.input) throw new Error("missing client input");
 
-		const { setAttachments } = useMessagingStore.getState();
-		setAttachments(data.flat().filter((p) => p.type === "upload"));
-
 		client.input.setData({ client, data });
+	},
+
+	/**
+	 * Attach an upload to the message being written, by referencing its
+	 * directory on the chat mount. That reference is the whole of it: an upload
+	 * is in a chat because a message points into it.
+	 */
+	attachUpload: ({
+		client,
+		upload,
+	}: {
+		client: Client;
+		upload: { id: string; name: string };
+	}) => {
+		if (!client.input) throw new Error("missing client input");
+
+		client.input.insertAttachment({
+			client,
+			item: AttachmentUtils.forUpload({ upload }),
+		});
 	},
 
 	setEditing: ({
@@ -64,12 +94,12 @@ export const MessagingService = {
 	},
 
 	setInsertingAfter: ({ message }: { message: MessageState | null }) => {
-		const { editing, setEditing, setAttachments } =
+		const { editing, setEditing, setInsertingAfter } =
 			useMessagingStore.getState();
 
 		if (message && editing) setEditing(null);
 
-		setAttachments([]);
+		setInsertingAfter(message);
 	},
 
 	reset: ({ client }: { client: Client }) => {

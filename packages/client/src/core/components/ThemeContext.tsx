@@ -2,7 +2,7 @@ import type { ThemeUtils } from "@tiny-chat/core/src/core/utils/ThemeUtils.ts";
 import { createContext, createElement, type ReactNode } from "react";
 import { useThemes } from "../../features/settings/hooks/useThemes.ts";
 
-type Palette = [
+export type ColorPalette = [
 	string,
 	string,
 	string,
@@ -15,7 +15,21 @@ type Palette = [
 	string,
 ];
 
-export const palettes: Record<(typeof ThemeUtils.themes)[number], Palette> = {
+export type ColorScheme = {
+	surface: string;
+	interior: string;
+	exterior: string;
+	border: string;
+	borderSubtle: string;
+	text: string;
+	textSubtle: string;
+	primary: string;
+};
+
+export const palettes: Record<
+	(typeof ThemeUtils.themes)[number],
+	ColorPalette
+> = {
 	dark: [
 		"#C4C6CF", // [0]  near-white text — very slightly cool
 		"#A2A4AD", // [1]
@@ -43,17 +57,8 @@ export const palettes: Record<(typeof ThemeUtils.themes)[number], Palette> = {
 } as const;
 
 export interface ThemeContext {
-	colorPalette: Palette;
-	colorScheme: {
-		surface: string;
-		interior: string;
-		exterior: string;
-		border: string;
-		borderSubtle: string;
-		text: string;
-		textSubtle: string;
-		primary: string;
-	};
+	colorPalette: ColorPalette;
+	colorScheme: ColorScheme;
 }
 
 const build = (theme: (typeof ThemeUtils.themes)[number]): ThemeContext => {

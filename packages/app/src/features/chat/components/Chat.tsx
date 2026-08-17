@@ -36,8 +36,8 @@ import ChatHeader from "#app/features/chat/components/ChatHeader.tsx";
 import { Editor } from "#app/features/editor/components/Editor.tsx";
 import { useEditorStore } from "#app/features/editor/stores/useEditorStore.ts";
 import Message from "#app/features/message/components/Message.tsx";
-import { uploadMutationKey } from "#app/features/upload/hooks/useUploads.ts";
 import { useMessagingStore } from "#client/src/features/chat/stores/useMessagingStore.ts";
+import { uploadMutationKey } from "#client/src/features/upload/hooks/useUploads.ts";
 
 function useElementHeight(initialHeight = 0): {
 	ref: RefObject<HTMLDivElement | null>;
@@ -136,8 +136,7 @@ export default function Chat() {
 
 	const { ref: inputEffectsRef, height: inputEffectsHeight } =
 		useElementHeight();
-	const { ref: chatContainerRef, height: chatContainerHeight } =
-		useElementHeight(600);
+	const { ref: chatContainerRef } = useElementHeight(600);
 
 	const greeting = useGreeting();
 	const isNewChat = !chat.data;
@@ -369,7 +368,6 @@ export default function Chat() {
 
 				<ChatEffects
 					inputEffectsRef={inputEffectsRef}
-					chatContainerHeight={chatContainerHeight}
 					inputMaxWidth={inputMaxWidth}
 					disabled={disabled}
 				/>

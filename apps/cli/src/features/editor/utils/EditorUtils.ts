@@ -1,3 +1,8 @@
+import type {
+	Atom,
+	AtomToken,
+} from "@tiny-chat/client/src/features/editor/types/atom.ts";
+import { AtomUtils } from "@tiny-chat/client/src/features/editor/utils/AtomUtils.ts";
 import type { TLabels } from "react-ink-textarea";
 import stringWidth from "string-width";
 
@@ -19,16 +24,8 @@ export type EditorSelection = [anchor: number, focus: number];
 /** The label the selected text is painted under. */
 export const SELECTION_LABEL = "selection";
 
-/** The labels the two kinds of token are painted under. */
-export const COMMAND_LABEL = "command";
-export const ATTACHMENT_LABEL = "attachment";
-
-/** A command or an attachment, which is only ever handled whole. */
-export type EditorToken = {
-	start: number;
-	end: number;
-	label: typeof COMMAND_LABEL | typeof ATTACHMENT_LABEL;
-};
+/** A command, an attachment or a paste, which is only ever handled whole. */
+export type EditorToken = AtomToken;
 
 export type EditorRow = {
 	/** Index of the logical line the row is part of. */
@@ -47,10 +44,6 @@ const SEGMENTER = new Intl.Segmenter("en", { granularity: "grapheme" });
 
 /** Characters that carry a meaning of their own inside a pattern. */
 const ESCAPED = /[\\^$.*+?()[\]{}|]/g;
-
-// Commands and attachments are written into the value as inline directives,
-// by `CommandUtils.toDirective` and `AttachmentUtils.apply`.
-const TOKEN_REGEX = /:(command|attachment)\[[^\]\n]*\]\{[^}\n]*\}/g;
 
 /** The kinds of run a selection taken a word at a time takes whole. */
 type EditorWord = "word" | "symbol" | "space";
@@ -357,36 +350,52 @@ export const EditorUtils = {
 	},
 
 	/**
-	 * Rules that paint the commands and the attachments, for the text area's
-	 * `labels`. They are read in order and the first rule to claim a character
-	 * keeps it, so these come after the selection's.
+	 * Rules that paint the atoms — the commands, the attachments and the pastes
+	 * — for the text area's `labels`. They are read in order and the first rule
+	 * to claim a character keeps it, so these come after the selection's.
 	 */
-	tokenLabels: (): TLabels => [
-		{
-			pattern: new RegExp(TOKEN_REGEX.source, "g"),
-			label: (match) =>
-				match[1] === "command" ? COMMAND_LABEL : ATTACHMENT_LABEL,
-		},
-	],
+	tokenLabels: ({ atoms }: { atoms: Atom[] }): TLabels => {
+		const pattern = AtomUtils.pattern({ atoms });
+		if (!pattern) return [];
 
-	/** Every command and attachment written into the value, in order. */
-	tokens: (value: string): EditorToken[] =>
-		[...value.matchAll(TOKEN_REGEX)].map((match) => ({
-			start: match.index,
-			end: match.index + match[0].length,
-			label: match[1] === "command" ? COMMAND_LABEL : ATTACHMENT_LABEL,
-		})),
+		return [
+			{
+				pattern,
+				label: (match) => AtomUtils.find({ atoms, text: match[0] })?.kind,
+			},
+		];
+	},
+
+	/** Every atom standing in the value, in order. */
+	tokens: ({ value, atoms }: { value: string; atoms: Atom[] }): EditorToken[] =>
+		AtomUtils.tokens({ content: value, atoms }),
 
 	/** The token the offset sits inside of, ends excluded. */
-	token: (value: string, offset: number) =>
-		EditorUtils.tokens(value).find(
+	token: ({
+		value,
+		atoms,
+		offset,
+	}: {
+		value: string;
+		atoms: Atom[];
+		offset: number;
+	}) =>
+		EditorUtils.tokens({ value, atoms }).find(
 			({ start, end }) => offset > start && offset < end,
 		) ?? null,
 
 	/** Stretches a selection out to the ends of any token it reaches into. */
-	expand: (value: string, selection: EditorSelection): EditorSelection => {
+	expand: ({
+		value,
+		atoms,
+		selection,
+	}: {
+		value: string;
+		atoms: Atom[];
+		selection: EditorSelection;
+	}): EditorSelection => {
 		const [start, end] = EditorUtils.range(selection);
-		const reached = EditorUtils.tokens(value).filter(
+		const reached = EditorUtils.tokens({ value, atoms }).filter(
 			(token) => token.start < end && token.end > start,
 		);
 		if (reached.length === 0) return selection;
@@ -403,8 +412,18 @@ export const EditorUtils = {
 	 * never comes to rest inside a token. Moves along with the direction it was
 	 * travelling, or out the near end when it did not travel at all.
 	 */
-	snap: (value: string, offset: number, from = offset) => {
-		const token = EditorUtils.token(value, offset);
+	snap: ({
+		value,
+		atoms,
+		offset,
+		from = offset,
+	}: {
+		value: string;
+		atoms: Atom[];
+		offset: number;
+		from?: number;
+	}) => {
+		const token = EditorUtils.token({ value, atoms, offset });
 		if (!token) return offset;
 
 		if (from <= token.start) return token.end;
@@ -418,8 +437,18 @@ export const EditorUtils = {
 	 * which is crossed whole. Null when there is none and the text area's own
 	 * step is right.
 	 */
-	step: (value: string, offset: number, direction: 1 | -1) => {
-		for (const { start, end } of EditorUtils.tokens(value)) {
+	step: ({
+		value,
+		atoms,
+		offset,
+		direction,
+	}: {
+		value: string;
+		atoms: Atom[];
+		offset: number;
+		direction: 1 | -1;
+	}) => {
+		for (const { start, end } of EditorUtils.tokens({ value, atoms })) {
 			if (direction === -1 && offset > start && offset <= end) return start;
 			if (direction === 1 && offset >= start && offset < end) return end;
 		}
@@ -432,12 +461,18 @@ export const EditorUtils = {
 	 * against it or around it. Null when there is none and the text area's own
 	 * delete is right.
 	 */
-	deletion: (
-		value: string,
-		offset: number,
-		direction: 1 | -1,
-	): [start: number, end: number] | null => {
-		for (const { start, end } of EditorUtils.tokens(value)) {
+	deletion: ({
+		value,
+		atoms,
+		offset,
+		direction,
+	}: {
+		value: string;
+		atoms: Atom[];
+		offset: number;
+		direction: 1 | -1;
+	}): [start: number, end: number] | null => {
+		for (const { start, end } of EditorUtils.tokens({ value, atoms })) {
 			if (offset > start && offset < end) return [start, end];
 			if (direction === -1 && offset === end) return [start, end];
 			if (direction === 1 && offset === start) return [start, end];
@@ -449,16 +484,22 @@ export const EditorUtils = {
 	/**
 	 * The range an Alt delete at the offset should take out.
 	 *
-	 * A command or an attachment against the cursor goes whole, the way a plain
-	 * delete takes it, and a word reaching into one is cut back to its near
-	 * edge — so one press never takes a token and the text around it together.
+	 * An atom against the cursor goes whole, the way a plain delete takes it,
+	 * and a word reaching into one is cut back to its near edge — so one press
+	 * never takes an atom and the text around it together.
 	 */
-	wordDeletion: (
-		value: string,
-		offset: number,
-		direction: 1 | -1,
-	): [start: number, end: number] => {
-		const whole = EditorUtils.deletion(value, offset, direction);
+	wordDeletion: ({
+		value,
+		atoms,
+		offset,
+		direction,
+	}: {
+		value: string;
+		atoms: Atom[];
+		offset: number;
+		direction: 1 | -1;
+	}): [start: number, end: number] => {
+		const whole = EditorUtils.deletion({ value, atoms, offset, direction });
 		if (whole) return whole;
 
 		const target =
@@ -468,7 +509,7 @@ export const EditorUtils = {
 
 		const [start, end] = direction === -1 ? [target, offset] : [offset, target];
 
-		const reached = EditorUtils.tokens(value).filter(
+		const reached = EditorUtils.tokens({ value, atoms }).filter(
 			(token) => token.start < end && token.end > start,
 		);
 		if (reached.length === 0) return [start, end];

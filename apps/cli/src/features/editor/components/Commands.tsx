@@ -10,10 +10,11 @@ import type {
 } from "@tiny-chat/client/src/features/editor/types/command.ts";
 import type { CompletionGroup } from "@tiny-chat/client/src/features/editor/types/completion.ts";
 import { CommandUtils } from "@tiny-chat/client/src/features/editor/utils/CommandUtils.ts";
-import clipboard from "clipboardy";
 import { useCallback, useMemo } from "react";
 import { client } from "../../../client.ts";
+import { ClipboardService } from "../../../core/services/ClipboardService.ts";
 import { useAppStore } from "../../../core/stores/useAppStore.ts";
+import { useUpdate } from "../../update/hooks/useUpdate.ts";
 import Completions from "./Completions.tsx";
 
 export default function Commands({
@@ -28,6 +29,7 @@ export default function Commands({
 	setCursor: (cursor: [row: number, column: number]) => void;
 }) {
 	const { session, requestClone } = useSession();
+	const { update, doUpdate } = useUpdate();
 
 	const setPage = useAppStore((state) => state.setPage);
 	const setStatus = useAppStore((state) => state.setStatus);
@@ -35,6 +37,10 @@ export default function Commands({
 
 	const isAnonymous =
 		!session.data?.user || session.data.user.isAnonymous === true;
+
+	// Offered only once there is a release to take, which is also the only time
+	// the status announcing it points here.
+	const version = update.data;
 
 	const cliCommands = useMemo<CommandItem[]>(
 		() => [
@@ -49,10 +55,24 @@ export default function Commands({
 				run: () => ChatService.setChat({ id: null }),
 			},
 			{
+				name: "settings",
+				value: "settings",
+				run: () => setPage("settings"),
+			},
+			{
 				name: "quit",
 				value: "quit",
 				run: () => process.exit(0),
 			},
+			...(version
+				? [
+						{
+							name: "update",
+							value: "update",
+							run: () => doUpdate.mutate(version),
+						},
+					]
+				: []),
 			isAnonymous
 				? {
 						name: "login",
@@ -60,7 +80,7 @@ export default function Commands({
 						run: async () =>
 							requestClone.mutate(
 								(id) => {
-									clipboard.write(`${client.webUrl}#/?clone=${id}`);
+									ClipboardService.copy(`${client.webUrl}#/?clone=${id}`);
 									setStatus({
 										id: "clone",
 										text: "Waiting for you to sign in...",
@@ -75,13 +95,23 @@ export default function Commands({
 						run: () => client.auth.signOut(),
 					},
 		],
-		[isAnonymous, requestClone.mutate, setPage, setStatus, unsetStatus],
+		[
+			isAnonymous,
+			requestClone.mutate,
+			doUpdate.mutate,
+			version,
+			setPage,
+			setStatus,
+			unsetStatus,
+		],
 	);
 
 	const { getCommands } = useCommands({
 		commands: cliCommands,
 		onOpenTools: () => setPage("tools"),
 		onOpenSkills: () => setPage("skills"),
+		onOpenUploads: () => setPage("uploads"),
+		onOpenGitHub: () => setPage("github"),
 	});
 
 	const commands = getCommands();

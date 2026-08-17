@@ -7,13 +7,25 @@ export type PathLike =
 	| string;
 export const PathLike = z.custom<PathLike>();
 
-const MOUNT = "/mnt/chat";
+const MOUNT = "/mnt";
 const WEB = "web:";
+
+/**
+ * The three trees the mount is made of. Each holds directories named by the id
+ * of what they came from, so a path says what it is and where it came from:
+ * `/mnt/uploads/<uploadId>`, `/mnt/skills/<uploadId>`, `/mnt/chat/<chatId>`.
+ *
+ * Only `chat` is writable. An upload or a skill is the same file for every chat
+ * that points at it, so a chat that wants to change one copies it across first.
+ */
+export const FileMounts = ["uploads", "skills", "chat"] as const;
+export type FileMount = (typeof FileMounts)[number];
 
 export const HOSTNAME_REGEX = /^https?:\/\/?(?:www\.)?([^/]+)/i;
 
 export const PathUtils = {
 	mount: MOUNT,
+	mounts: FileMounts,
 
 	/**
 	 * Get the name of a path.
@@ -156,31 +168,36 @@ export const PathUtils = {
 	},
 
 	/**
-	 * Parse a mount file.
+	 * Parse a path on the mount into the tree it belongs to, the id of the
+	 * upload, skill or chat it came from, and the path within that.
+	 *
+	 * `path` is the whole path below the mount, which is what everything that
+	 * only has to place a file addresses it by; `mount` and `id` are for the
+	 * things that care which tree it landed in.
 	 */
 	fromMount: ({
 		path,
-		mount = MOUNT,
+		root = MOUNT,
 	}: {
 		path: string[] | string;
-		mount?: string;
+		root?: string;
 	}) => {
 		if (typeof path !== "string") path = path.join("/");
 
-		if (!path.startsWith(mount)) return null;
+		if (!path.startsWith(root)) return null;
 
-		path = path.replace(new RegExp(`^${CommonUtils.escapeRegex(mount)}`), "");
+		path = path.replace(new RegExp(`^${CommonUtils.escapeRegex(root)}`), "");
 
 		const parts = path.split(/[\\/]/).filter(Boolean);
 
-		let uploadId: string | undefined;
-		let uploadPath: string[] = [];
+		const found = FileMounts.find((name) => name === parts[0]);
 
-		if (parts[0]?.length === 24) {
-			[uploadId, ...uploadPath] = parts;
-		}
-
-		return { path: parts, uploadId, uploadPath };
+		return {
+			path: parts,
+			mount: found,
+			id: found ? parts[1] : undefined,
+			rest: found ? parts.slice(2) : [],
+		};
 	},
 
 	/**
@@ -188,65 +205,64 @@ export const PathUtils = {
 	 */
 	fromMountOrThrow: ({
 		path,
-		mount = MOUNT,
+		root = MOUNT,
 	}: {
 		path: string[] | string;
-		mount?: string;
+		root?: string;
 	}) => {
-		const result = PathUtils.fromMount({ path, mount });
-		if (!result) throw new Error(`Path ${path} is not in mount ${mount}`);
+		const result = PathUtils.fromMount({ path, root });
+		if (!result) throw new Error(`Path ${path} is not in mount ${root}`);
 
 		return result;
 	},
 
 	/**
-	 * Stringify a mount file.
+	 * Stringify a path on the mount.
+	 *
+	 * Given a tree and an id, `path` is read as being within them; given
+	 * neither, it is read as the whole path below the mount.
 	 */
 	toMount: ({
 		path = [],
-		uploadId,
-		mount = MOUNT,
+		mount,
+		id,
+		root = MOUNT,
 	}: {
 		path?: string[] | string;
-		uploadId?: string | null;
-		mount?: string;
+		mount?: FileMount;
+		id?: string | null;
+		root?: string;
 	}) => {
 		if (typeof path === "string") path = path.split(/[\\/]/);
 
-		path = [...path];
+		if (root.endsWith("/")) root = root.slice(0, -1);
 
-		if (mount.endsWith("/")) mount = mount.slice(0, -1);
-
-		if (uploadId && path[0] === uploadId) {
-			path.shift();
-		}
-
-		return `${mount}/${[uploadId, ...path].filter(Boolean).join("/")}`;
+		return `${root}/${[mount, id, ...path].filter(Boolean).join("/")}`;
 	},
 
 	/**
-	 * Convert any {@link PathLike} to a mount file.
+	 * Convert any {@link PathLike} to a mount path.
 	 */
-	asMount: (from: PathLike, mount = MOUNT): string | undefined => {
+	asMount: (from: PathLike, root = MOUNT): string | undefined => {
 		if (typeof from === "string") from = { uri: from };
 
-		if (mount.endsWith("/")) mount = mount.slice(0, -1);
+		if (root.endsWith("/")) root = root.slice(0, -1);
 
 		if (Array.isArray(from)) from = { path: from };
 		return from.path
-			? `${mount}/${from.path.join("/")}`
+			? `${root}/${from.path.join("/")}`
 			: (from.uri ?? undefined);
 	},
 
 	/**
-	 * Convert any {@link PathLike} to a plain path.
+	 * Convert any {@link PathLike} to a plain path below the mount.
 	 */
-	asPath: (from: PathLike, mount = MOUNT): string[] | undefined => {
+	asPath: (from: PathLike, root = MOUNT): string[] | undefined => {
 		if (typeof from === "string") from = { uri: from };
 		if (Array.isArray(from)) from = { path: from };
 
 		from.uri = from.uri?.replace(
-			new RegExp(`^${mount.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`),
+			new RegExp(`^${CommonUtils.escapeRegex(root)}`),
 			"",
 		);
 

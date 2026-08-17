@@ -8,6 +8,7 @@ import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts"
 import type { ToolCallDisplayType } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
 import { useContext } from "react";
 import { ClientContext } from "../../../client.ts";
+import { useChatFiles } from "../../chat/hooks/useChatFiles.ts";
 
 /**
  * Resolves what to show for a tool call that asks the user for something,
@@ -23,6 +24,7 @@ export const useToolDisplayContents = ({
 	display: ToolCallDisplayType;
 }) => {
 	const client = useContext(ClientContext);
+	const { filesystem } = useChatFiles();
 
 	const path =
 		display?.name === "write_file" || display?.name === "edit_file"
@@ -30,7 +32,7 @@ export const useToolDisplayContents = ({
 			: undefined;
 
 	const contents = useQuery({
-		queryKey: ["useToolCallInput", "contents", message.id, part.id],
+		queryKey: ["useToolCallInput", "contents", message.id, part.id, filesystem],
 		enabled: path !== undefined,
 		queryFn: async (): Promise<{ fileBefore?: string; fileAfter?: string }> => {
 			const edit = (
@@ -59,7 +61,7 @@ export const useToolDisplayContents = ({
 				const uri = PathUtils.fromMount({ path });
 				if (uri) {
 					const file = await client.api.file.getFile.query({
-						chat: message.chatId,
+						...filesystem,
 						path: uri.path,
 					});
 					const before = FileUtils.getTextFromBytes(file);

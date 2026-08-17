@@ -85,6 +85,26 @@ export const client = createClient({
 				contentType: "markdown",
 			});
 		},
+		insertAttachment: ({ item }) => {
+			const { editor } = useEditorStore.getState();
+			if (!editor) return;
+
+			editor
+				.chain()
+				.focus()
+				.insertContent([
+					{
+						type: "attachment",
+						attrs: {
+							source: item.value,
+							"is-directory": item.directory ? "true" : "false",
+							...(item.label ? { name: item.label } : {}),
+						},
+					},
+					{ type: "text", text: " " },
+				])
+				.run();
+		},
 	},
 	shell: (await TauriUtils.isTauriDesktop())
 		? {

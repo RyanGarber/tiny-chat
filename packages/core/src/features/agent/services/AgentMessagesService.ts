@@ -20,9 +20,6 @@ export const AgentMessagesService = {
 		context: zAgentContext;
 		capabilities: Capabilities;
 	}): Promise<{ messages: zAgentMessage[]; customInstructions?: string }> => {
-		const files = await capabilities.chatShell?.nodes?.();
-		console.log(`[AgentMessagesService] files in chat:`, files);
-
 		const messages: zAgentMessage[] = [];
 		let customInstructions: string | undefined;
 
@@ -129,10 +126,17 @@ export const AgentMessagesService = {
 									e,
 								);
 							}
+							// An upload is mounted under its id, which says nothing about
+							// what it holds, so the name it was attached under is carried
+							// through to stand in for the path.
+							const name = directive.attributes.name
+								? ` name="${directive.attributes.name}"`
+								: "";
+
 							transformedParts.push(
 								{
 									...part,
-									value: `<attachment source="${PathUtils.normalize({ path: directive.attributes.source })}">`,
+									value: `<attachment source="${PathUtils.normalize({ path: directive.attributes.source })}"${name}>`,
 								},
 								attachment ?? {
 									type: "text",
@@ -143,26 +147,6 @@ export const AgentMessagesService = {
 						} else {
 							transformedParts.push({ ...part, value: text });
 						}
-					}
-				} else if (part.type === "upload") {
-					if (!files)
-						throw new Error(
-							"failed to get files for upload part (was the chatShell capability provided?)",
-						);
-					const uploadFiles = files.filter((file) => file.uploadId === part.id);
-					console.log(
-						`[AgentMessagesService] transforming upload '${part.name}' with ${uploadFiles.length ?? 0} file(s)`,
-					);
-					if (uploadFiles.length) {
-						const xml = AgentMessagesService.buildUploadBlock({
-							upload: part,
-							files: uploadFiles,
-						});
-						console.log("[AgentMessagesService] upload tree:", xml);
-						transformedParts.push({
-							type: "text",
-							value: xml,
-						});
 					}
 				} else {
 					transformedParts.push(part);
@@ -268,20 +252,6 @@ export const AgentMessagesService = {
 
 		const tree = FileUtils.toTree({ nodes });
 		return AgentMessagesService.buildTree({ tree, depth: 0 });
-	},
-
-	buildUploadBlock: ({
-		upload,
-		files,
-	}: {
-		upload: { id: string; name: string };
-		files: { uri: string; path: string[] }[];
-	}) => {
-		const tree = FileUtils.toTree({
-			nodes: files.map((file) => ({ ...file, path: file.path.slice(1) })),
-		});
-
-		return `<upload name="${upload.name}" path="${PathUtils.toMount({ uploadId: upload.id })}">\n${AgentMessagesService.buildTree({ tree, depth: 1 })}\n</upload>`;
 	},
 
 	buildTree: <T extends { uri?: string; is_dir?: boolean }>({

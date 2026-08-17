@@ -341,8 +341,5 @@ export const ToolFeedback = memo(
 	(previous, next) =>
 		previous.message.id === next.message.id &&
 		previous.part.id === next.part.id &&
-		!!previous.part.result === !!next.part.result &&
-		previous.part.result?.error === next.part.result?.error &&
-		previous.part.result?.value === next.part.result?.value &&
-		previous.part.result?.append === next.part.result?.append,
+		previous.display === next.display,
 );

@@ -52,12 +52,12 @@ if (import.meta.main) {
 	if (host) console.log("starting in host mode...");
 	const ipv4 = host ? await internalIpV4() : "localhost";
 	server.listen(process.env.VITE_SERVER_PORT, () => {
-		console.log(`backend live: ${ipv4}:${process.env.VITE_SERVER_PORT}`);
+		console.log(`live at ${ipv4}:${process.env.VITE_SERVER_PORT}`);
 		const work = async () => {
 			await WorkerService.next({});
 			setTimeout(() => void work(), 5 * 1000);
 		};
 		void work();
-		console.log("backend worker spawned");
+		console.log("worker spawned");
 	});
 }

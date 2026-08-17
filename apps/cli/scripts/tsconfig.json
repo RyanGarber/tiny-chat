@@ -1,0 +1,9 @@
+{
+	"compilerOptions": {
+		"module": "nodenext",
+		"moduleResolution": "nodenext",
+		"types": ["bun"]
+	},
+	"include": ["**/*.ts"],
+	"extends": "../../../tsconfig.base.json"
+}

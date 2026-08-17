@@ -1,10 +1,14 @@
 import { ThemeContext } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
 import { Box, useInput, useWindowSize } from "ink";
-import { useContext } from "react";
-import CapabilitySelect from "../../features/agent/components/CapabilitySelect.tsx";
+import { useContext, useEffect } from "react";
+import Capabilities from "../../features/agent/components/Capabilities.tsx";
 import Chat from "../../features/chat/components/Chat.tsx";
 import ChatList from "../../features/chat/components/ChatList.tsx";
 import Editor from "../../features/editor/components/Editor.tsx";
+import Settings from "../../features/settings/components/Settings.tsx";
+import { useUpdate } from "../../features/update/hooks/useUpdate.ts";
+import GitHub from "../../features/upload/components/GitHub.tsx";
+import Uploads from "../../features/upload/components/Uploads.tsx";
 import { useAppStore } from "../stores/useAppStore.ts";
 import StatusText from "./StatusText.tsx";
 
@@ -17,6 +21,19 @@ export default function App() {
 	const statuses = useAppStore((state) => state.statuses);
 	const setStatus = useAppStore((state) => state.setStatus);
 	const unsetStatus = useAppStore((state) => state.unsetStatus);
+
+	// A release is only announced, never taken on its own: it is the /update
+	// command that replaces the binary this is running from.
+	const { update } = useUpdate();
+
+	useEffect(() => {
+		if (!update.data) return;
+		setStatus({
+			id: "update",
+			text: `v${update.data} available - /update`,
+			passive: true,
+		});
+	}, [update.data, setStatus]);
 
 	useInput((input, key) => {
 		if (key.ctrl && (input === "c" || input === "d")) {
@@ -38,8 +55,13 @@ export default function App() {
 			<Chat />
 			<StatusText />
 			{page === "chats" && <ChatList />}
-			{(page === "tools" || page === "skills") && <CapabilitySelect />}
-			<Editor disabled={page !== "chat" || !!statuses.length} />
+			{page === "uploads" && <Uploads />}
+			{page === "github" && <GitHub />}
+			{page === "settings" && <Settings />}
+			{(page === "tools" || page === "skills") && <Capabilities />}
+			<Editor
+				disabled={page !== "chat" || statuses.some((status) => !status.passive)}
+			/>
 		</Box>
 	);
 }

@@ -1,6 +1,9 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useContext } from "react";
+import type { zAgentMessage } from "@tiny-chat/core/src/features/agent/types/agent.ts";
+import { AgentUtils } from "@tiny-chat/core/src/features/agent/utils/AgentUtils.ts";
+import { useContext, useMemo } from "react";
 import { ClientContext } from "../../../client.ts";
+import { useConfig } from "../../agent/hooks/useConfig.ts";
 import { useMessages } from "../../message/hooks/useMessages.ts";
 import { useChat } from "./useChat.ts";
 
@@ -12,40 +15,53 @@ export const useChatFiles = () => {
 
 	const { chat } = useChat();
 	const { messages } = useMessages();
+	const { config } = useConfig();
+
+	/**
+	 * The mount this chat has: the uploads and skills its messages point into,
+	 * plus the chat itself to hold what the model wrote.
+	 *
+	 * The message being written counts too. Nothing has saved it yet, but its
+	 * skills are already chosen, and they are on the mount for what is about to
+	 * be sent — so they are browsable now rather than only after sending.
+	 */
+	const filesystem = useMemo(() => {
+		const saved = messages.data?.pages.flatMap((page) => page.messages) ?? [];
+		const draft: zAgentMessage = {
+			id: null,
+			author: "USER",
+			config,
+			data: [],
+			createdAt: null,
+		};
+		return {
+			chat: chat.data?.id,
+			...AgentUtils.getMounts({ messages: [...saved, draft] }),
+		};
+	}, [chat.data?.id, messages.data?.pages, config]);
 
 	const chatFiles = useQuery({
-		queryKey: [
-			...chatFilesQueryKey,
-			chat.data?.id,
-			messages.data?.pages
-				.flatMap((page) => page.messages)
-				.flatMap((message) => message.data)
-				.flat()
-				.map((part) => part.type)
-				.join(),
-		],
+		queryKey: [...chatFilesQueryKey, filesystem],
 		queryFn: async () => {
-			if (!chat.data?.id) return [];
-			return await client.api.file.getFiles.query({
-				chat: chat.data.id,
-			});
+			return await client.api.file.getFiles.query(filesystem);
 		},
-		refetchInterval: Infinity,
-		refetchOnReconnect: false,
 		refetchOnWindowFocus: false,
-		refetchOnMount: false,
+		refetchOnReconnect: false,
+		staleTime: Infinity,
 	});
 
 	const readChatFile = useMutation({
 		mutationKey: readChatFileQueryKey,
-		mutationFn: async (
-			options: Parameters<typeof client.api.file.getFile.query>[0] & {
-				meta: string;
-			},
-		) => {
-			return client.api.file.getFile.query(options);
+		mutationFn: async ({
+			meta: _meta,
+			...options
+		}: Omit<
+			Parameters<typeof client.api.file.getFile.query>[0],
+			"chat" | "uploads" | "skills"
+		> & { meta: string }) => {
+			return client.api.file.getFile.query({ ...filesystem, ...options });
 		},
 	});
 
-	return { chatFiles, readChatFile };
+	return { chatFiles, readChatFile, filesystem };
 };

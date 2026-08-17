@@ -48,7 +48,8 @@ export function createLogger({
 						const date = new Date().toISOString().split("T")[0];
 						const file = resolve(tmpdir(), `tiny-chat/${date}.log`);
 						mkdirSync(resolve(tmpdir(), "tiny-chat"), { recursive: true });
-						if (!existsSync(file)) original("writing logs to:", file);
+						if (!silent && !existsSync(file))
+							original("writing logs to:", file);
 
 						data = data.map((d) => {
 							return typeof d === "object" && d !== null ? inspect(d) : d;

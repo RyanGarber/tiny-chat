@@ -38,6 +38,7 @@ export const AgentToolService = {
 			user,
 			chat,
 			message,
+			messages,
 			incognito: chat.incognito,
 		});
 

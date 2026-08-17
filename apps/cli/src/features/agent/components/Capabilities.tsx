@@ -5,14 +5,16 @@ import type {
 	CompletionGroup,
 	CompletionItem,
 } from "@tiny-chat/client/src/features/editor/types/completion.ts";
+import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import type { zSkill } from "@tiny-chat/core/src/features/skill/types/skill.ts";
 import type { Toolset } from "@tiny-chat/core/src/features/tool/types/tool.ts";
 import { ToolUtils } from "@tiny-chat/core/src/features/tool/utils/ToolUtils.ts";
-import { Text } from "ink";
+import chalk from "chalk";
 import { useMemo } from "react";
+import Text from "../../../core/components/Text.tsx";
+import { usePage } from "../../../core/hooks/usePage.ts";
 import { useWorkingStatus } from "../../../core/hooks/useWorkingStatus.ts";
-import { useAppStore } from "../../../core/stores/useAppStore.ts";
 import Completions from "../../editor/components/Completions.tsx";
 
 interface CapabilityGroup extends CompletionGroup<CapabilityItem> {}
@@ -21,6 +23,7 @@ interface CapabilityItem extends CompletionItem {
 	detail?: string;
 	enabled: boolean;
 	disabled?: boolean;
+	error?: unknown;
 	toggle: () => void;
 }
 
@@ -29,8 +32,7 @@ export default function CapabilitySelect() {
 	const { nativeTools, mcpTools } = useTools();
 	const { nativeSkills, localSkills } = useSkills();
 
-	const page = useAppStore((state) => state.page);
-	const setPage = useAppStore((state) => state.setPage);
+	const { page } = usePage();
 
 	useWorkingStatus(nativeTools, mcpTools, nativeSkills, localSkills);
 
@@ -55,6 +57,7 @@ export default function CapabilitySelect() {
 							detail: toolNames.join(", "),
 							enabled,
 							disabled: !toolset.status.valid,
+							error: toolset.status.error,
 							toggle: () => {
 								if (!toolset.status.valid) return;
 								const toolsets = config.toolsets ?? [];
@@ -123,34 +126,31 @@ export default function CapabilitySelect() {
 	return (
 		<Completions<CapabilityGroup, CapabilityItem>
 			groups={groups}
-			renderItem={({ item, selected, color }) => {
+			renderItem={({ item }) => {
 				return (
 					<Text
-						color={
-							item.disabled
-								? "gray"
-								: selected
-									? color
-									: item.enabled
-										? "blue"
-										: "white"
-						}
-						dimColor={item.disabled}
+						color={item.error ? "redBright" : undefined}
+						dimColor={item.disabled ? true : undefined}
 					>
-						{item.enabled ? "[x]" : "[ ]"} {item.name}
-						<Text dimColor>{item.detail ? ` · ${item.detail}` : ""}</Text>
+						{chalk.dim("[")}
+						<Text color="primary">{item.enabled ? "x" : " "}</Text>
+						{chalk.dim("]")}
+						{` `}
+						{item.name}
+						<Text color={item.error ? "redBright" : "textSubtle"}>
+							{item.error ? ` · ${CommonUtils.formatError(item)}` : ""}
+							{item.detail ? ` · ${item.detail}` : ""}
+						</Text>
 					</Text>
 				);
 			}}
 			renderEmpty={() => "nothing here yet"}
 			onInput={({ item, key, input }) => {
-				if ((key.return || input === " ") && item && !item.disabled) {
+				if ((key.return || input === " ") && item) {
 					item.toggle();
 				}
-				if (key.escape || key.backspace) {
-					setPage("chat");
-				}
 			}}
+			actions={["back"]}
 		/>
 	);
 }

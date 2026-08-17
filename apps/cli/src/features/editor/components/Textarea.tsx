@@ -1,9 +1,11 @@
+import { ThemeContext } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
 import { useMergedRef } from "@tiny-chat/client/src/core/hooks/useMergedRef.ts";
-import clipboard from "clipboardy";
-import { Box, type DOMElement, useBoxMetrics, useInput } from "ink";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type DOMElement, useBoxMetrics, useInput } from "ink";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { TextArea, type TextAreaProps, type TStyles } from "react-ink-textarea";
+import Box from "../../../core/components/Box.tsx";
 import { useMouseInput } from "../../../core/hooks/useMouseInput.ts";
+import { ClipboardService } from "../../../core/services/ClipboardService.ts";
 import { StdinUtils } from "../../../core/utils/StdinUtils.ts";
 import {
 	type EditorCursor,
@@ -72,6 +74,17 @@ export default function Textarea({
 	disableArrowNavigation,
 	...props
 }: TextareaProps) {
+	const { colorScheme } = useContext(ThemeContext);
+
+	const mergedStyles = useMemo<TStyles>(() => {
+		return {
+			text: {
+				color: colorScheme.text,
+			},
+			...styles,
+		};
+	}, [colorScheme, styles]);
+
 	const [uncontrolledCursor, setUncontrolledCursor] = useState<EditorCursor>([
 		0, 0,
 	]);
@@ -147,11 +160,9 @@ export default function Textarea({
 	};
 
 	// Turning the mouse on takes the terminal's own select-to-copy away, so what
-	// was selected is handed to the clipboard in its place. Nothing to fall back
-	// on where the system has no clipboard to write to.
+	// was selected is handed to the clipboard in its place.
 	const copy = (selected: EditorSelection) => {
-		const text = EditorUtils.selected(value, selected);
-		if (text) clipboard.write(text).catch(() => {});
+		ClipboardService.copy(EditorUtils.selected(value, selected));
 	};
 
 	// A selection taken a key at a time would otherwise be written out on every
@@ -369,7 +380,7 @@ export default function Textarea({
 					...EditorUtils.selectionLabels(value, selection),
 					...(labels ?? []),
 				]}
-				styles={{ ...STYLES, ...styles }}
+				styles={{ ...STYLES, ...mergedStyles }}
 				{...props}
 			/>
 		</Box>

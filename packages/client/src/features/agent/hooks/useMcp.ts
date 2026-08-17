@@ -47,6 +47,7 @@ export const useMcp = () => {
 
 			for (const [name, server] of Object.entries(mcpServerSettings)) {
 				const mcpClient = new Client({ version: "0", name: "tiny-chat" });
+
 				let tools: Tool[] = [];
 				let error: unknown;
 

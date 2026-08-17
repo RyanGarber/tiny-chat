@@ -10,14 +10,15 @@ import type {
 	ToolCallUtils,
 } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
 import chalk from "chalk";
-import { Box, Text } from "ink";
 import Image from "ink-picture";
 import { memo, type ReactNode } from "react";
 import Anchor from "../../../core/components/Anchor.tsx";
+import Box from "../../../core/components/Box.tsx";
+import Text from "../../../core/components/Text.tsx";
 import { Code } from "../../code/components/Code.tsx";
 import Diff from "../../code/components/Diff.tsx";
 import Task from "./Task.tsx";
-import ToolFeedback from "./ToolFeedback.tsx";
+import { ToolFeedback } from "./ToolFeedback.tsx";
 
 const ToolCallDetails = memo(
 	({ details }: { details: ReturnType<typeof ToolCallUtils.getDisplay> }) => {
@@ -69,7 +70,7 @@ const ToolCallDetails = memo(
 						})}
 					</Text>
 					{action.next_run_at && (
-						<Text dimColor>
+						<Text color="textSubtle">
 							next runs{" "}
 							{CommonUtils.formatDate({
 								date: new Date(action.next_run_at),
@@ -88,7 +89,7 @@ const ToolCallDetails = memo(
 					<Text wrap="truncate-end">
 						{message.snippet.replaceAll("\n", " ")}
 					</Text>
-					<Text dimColor>
+					<Text color="textSubtle">
 						sent{" "}
 						{CommonUtils.formatDate({
 							date: new Date(message.created_at),
@@ -113,7 +114,7 @@ const ToolCallDetails = memo(
 			detailsNode = details.output.map((memory) => (
 				<Box key={memory.id} flexDirection="column">
 					<Text>{memory.fact}</Text>
-					<Text dimColor>
+					<Text color="textSubtle">
 						learned{" "}
 						{CommonUtils.formatDate({
 							date: new Date(memory.created_at),
@@ -200,15 +201,7 @@ const ToolCallDetails = memo(
 			</Box>
 		);
 	},
-	(previous, next) =>
-		previous.details.name === next.details.name &&
-		previous.details.status === next.details.status &&
-		previous.details.feedback === next.details.feedback &&
-		previous.details.approval === next.details.approval &&
-		previous.details.result === next.details.result &&
-		previous.details.input === next.details.input &&
-		previous.details.output === next.details.output &&
-		previous.details.append === next.details.append,
+	(previous, next) => previous.details === next.details,
 );
 
 const ToolCall = memo(
@@ -242,15 +235,9 @@ const ToolCall = memo(
 				</Task.Details>
 				{part.result?.append?.length && (
 					<Task.Details collapse={false}>
-						<Box
-							borderLeft={true}
-							borderColor="gray"
-							borderStyle="single"
-							paddingLeft={1}
-							gap={1}
-						>
-							<Text color="blueBright">{"+ "}</Text>
-							<Text dimColor>
+						<Box borderLeft="single" paddingLeft={1} gap={1}>
+							<Text color="primary">{"+ "}</Text>
+							<Text color="textSubtle">
 								{DataUtils.getText({ data: [part.result.append] })}
 							</Text>
 						</Box>
@@ -271,14 +258,8 @@ const ToolCall = memo(
 	},
 	(previous, next) =>
 		previous.message === next.message &&
-		previous.part === next.part &&
-		previous.display.name === next.display.name &&
-		previous.display.status === next.display.status &&
-		previous.display.feedback === next.display.feedback &&
-		previous.display.approval === next.display.approval &&
-		previous.display.result === next.display.result &&
-		previous.display.input === next.display.input &&
-		previous.display.output === next.display.output &&
-		previous.display.append === next.display.append,
+		previous.part.id === next.part.id &&
+		previous.display === next.display &&
+		previous.isFocused === next.isFocused,
 );
 export default ToolCall;

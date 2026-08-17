@@ -1,7 +1,4 @@
-import type {
-	MessageState,
-	zDataPart,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 
@@ -14,13 +11,6 @@ interface MessagingStore {
 
 	insertingAfter: MessageState | null;
 	setInsertingAfter: (insertingAfter: MessageState | null) => void;
-
-	attachments: Extract<zDataPart, { type: "upload" }>[];
-	setAttachments: (
-		attachments: Extract<zDataPart, { type: "upload" }>[],
-	) => void;
-	addAttachment: (attachment: Extract<zDataPart, { type: "upload" }>) => void;
-	removeAttachment: (index: number) => void;
 
 	reset: () => void;
 }
@@ -35,21 +25,6 @@ export const useMessagingStore = create(
 
 		insertingAfter: null,
 		setInsertingAfter: (value) => set({ insertingAfter: value }),
-
-		attachments: [],
-		setAttachments: (attachments) => {
-			set({ attachments });
-		},
-		addAttachment: (attachment) => {
-			set((state) => ({
-				attachments: [...state.attachments, attachment],
-			}));
-		},
-		removeAttachment: (index) => {
-			set((state) => ({
-				attachments: state.attachments.filter((_, i) => i !== index),
-			}));
-		},
 
 		reset: () => {},
 	})),

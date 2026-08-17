@@ -1,173 +1,209 @@
 import { createId } from "@paralleldrive/cuid2";
-import type { zChat } from "@tiny-chat/core/src/features/data/types/chat.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
-import type { FileNode } from "@tiny-chat/core/src/features/file/types/file.ts";
+import type {
+	FileNode,
+	FilesystemSpec,
+} from "@tiny-chat/core/src/features/file/types/file.ts";
 import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeUtils.ts";
-import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
+import {
+	type FileMount,
+	PathUtils,
+} from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import type { ByteString, FileContent, FsStat, IFileSystem } from "just-bash";
 import { type File, Prisma } from "../../../../generated/prisma/client.ts";
 import { UploadUtils } from "../../upload/utils/UploadUtils.ts";
 
 /**
- * Virtual filesystem for skills, uploads, repos, and chat files.
- * Used by file tools and the virtual Bash environment.
+ * The virtual filesystem behind the file tools and the virtual Bash
+ * environment, laid out as three trees below one root:
+ *
+ *   /mnt/uploads/<uploadId>   what the user uploaded or cloned — read only
+ *   /mnt/skills/<uploadId>    the skills the message is configured with — read only
+ *   /mnt/chat/<chatId>        what the model wrote in this chat — the only writable tree
+ *
+ * A file exists at exactly one path. Uploads and skills are the same bytes for
+ * every chat that points at them, so nothing may write over them; a chat that
+ * wants to change one copies it into its own tree first.
+ *
+ * Everything here is built from a list of upload and skill ids, which come out
+ * of messages (see `AgentUtils.getMounts`). A chat id only adds the writable
+ * tree, and is optional: a message still being typed has no chat and still has
+ * a filesystem, which is how an attachment can be read before it is sent.
  */
+export interface FilesystemOptions extends FilesystemSpec {
+	user: zUser;
+	/** Where the root sits, for when this is mounted inside another filesystem. */
+	root?: string;
+}
+
+interface FileRow {
+	id: string;
+	mount: FileMount;
+	owner_id: string;
+	name: string | null;
+	path: string[];
+	lines: bigint | null;
+	created_at: Date;
+}
+
 export class FilesystemService implements IFileSystem {
 	readonly user: zUser;
-	readonly chat: zChat | null;
+	readonly chat: string | null;
 	readonly uploads: string[];
-	readonly mount: string;
+	readonly skills: string[];
+	readonly root: string;
 
 	protected nodes: FileNode[] = [];
 
-	constructor(
-		user: zUser,
-		chat: zChat | undefined | null,
-		uploads: string[],
-		mount: string = PathUtils.mount,
-	) {
+	constructor({ user, chat, uploads, skills, root }: FilesystemOptions) {
 		this.user = user;
 		this.chat = chat ?? null;
-		this.uploads = uploads;
-		this.mount = mount;
+		this.uploads = uploads ?? [];
+		this.skills = skills ?? [];
+		this.root = root ?? PathUtils.mount;
 	}
 
-	clone(mount?: string): FilesystemService {
-		const clone = new FilesystemService(
-			this.user,
-			this.chat,
-			[...this.uploads],
-			mount ?? this.mount,
-		);
+	clone(root?: string): FilesystemService {
+		const clone = new FilesystemService({
+			user: this.user,
+			chat: this.chat,
+			uploads: [...this.uploads],
+			skills: [...this.skills],
+			root: root ?? this.root,
+		});
 		clone.nodes = structuredClone(this.nodes);
-		clone.setMounts();
+		clone.setRoot();
 		return clone;
 	}
 
 	async fetch(): Promise<void> {
-		this.nodes.splice(0, this.nodes.length);
-
-		const rows = await globalThis.prisma.$queryRaw<
-			{
-				chat_file_id: string | null;
-				chat_file_path: string[] | null;
-				chat_file_lines: bigint | null;
-				chat_file_created_at: Date | null;
-				upload_file_id: string | null;
-				upload_file_path: string[] | null;
-				upload_file_lines: bigint | null;
-				upload_file_created_at: Date | null;
-				upload_id: string | null;
-				upload_name: string | null;
-			}[]
-		>`
-    WITH
-      chat_files AS (
-        SELECT
-          f.id,
-          f.path,
-          f."uploadId",
-          f."createdAt",
-          COALESCE(
-            array_length(
-              string_to_array(try_decode_utf8(f.data), E'\n'),
-              1
-            ),
-            0
-          ) AS lines,
-          u.name AS upload_name
-        FROM file f
-        LEFT JOIN upload u ON u.id = f."uploadId"
-          WHERE f."chatId" = ${this.chat?.id ?? null}
-          AND ${this.chat?.id !== undefined ? Prisma.sql`f."chatId" IS NOT NULL` : Prisma.sql`FALSE`}
-      ),
-      upload_files AS (
-        SELECT
-          f.id,
-          f.path,
-          f."uploadId",
-          f."createdAt",
-          COALESCE(
-            array_length(
-              string_to_array(try_decode_utf8(f.data), E'\n'),
-              1
-            ),
-            0
-          ) AS lines,
-          u.name AS upload_name
-        FROM file f
-        LEFT JOIN upload u ON u.id = f."uploadId"
-          WHERE f."chatId" IS NULL
-          AND (
-            ${this.uploads.length > 0 ? Prisma.sql`f."uploadId" = ANY(${this.uploads}::text[])` : Prisma.sql`FALSE`}
-          )
-      )
+		// An id reaches here straight out of message text, so ownership is what
+		// keeps a guessed one from mounting someone else's upload.
+		const rows = await globalThis.prisma.$queryRaw<FileRow[]>`
     SELECT
-      cf.id            AS chat_file_id,
-      cf.path          AS chat_file_path,
-      cf.lines         AS chat_file_lines,
-      cf."createdAt"   AS chat_file_created_at,
-      uf.id            AS upload_file_id,
-      uf.path          AS upload_file_path,
-      uf.lines         AS upload_file_lines,
-      uf."createdAt"   AS upload_file_created_at,
-      COALESCE(cf."uploadId", uf."uploadId") AS upload_id,
-      COALESCE(cf.upload_name, uf.upload_name) AS upload_name
-    FROM chat_files cf
-    FULL OUTER JOIN upload_files uf
-      ON cf."uploadId" = uf."uploadId"
-     AND cf.path = uf.path
+      f.id,
+      CASE
+        WHEN f."chatId" IS NOT NULL THEN 'chat'
+        WHEN u.type = 'SKILL' THEN 'skills'
+        ELSE 'uploads'
+      END                                   AS mount,
+      COALESCE(f."chatId", f."uploadId")    AS owner_id,
+      u.name                                AS name,
+      f.path                                AS path,
+      COALESCE(
+        array_length(string_to_array(try_decode_utf8(f.data), E'\n'), 1),
+        0
+      )                                     AS lines,
+      f."createdAt"                         AS created_at
+    FROM file f
+    LEFT JOIN upload u ON u.id = f."uploadId"
+    WHERE f."userId" = ${this.user.id}
+      AND (
+        ${
+					this.chat
+						? // A chat file belongs to no upload: nothing shadows anything on
+							// this mount, so a row claiming both is pre-migration leftover
+							// rather than a file at this path.
+							Prisma.sql`(f."chatId" = ${this.chat} AND f."uploadId" IS NULL)`
+						: Prisma.sql`FALSE`
+				}
+        OR ${
+					this.uploads.length || this.skills.length
+						? Prisma.sql`(
+              f."chatId" IS NULL
+              AND f."uploadId" = ANY(${[...this.uploads, ...this.skills]}::text[])
+            )`
+						: Prisma.sql`FALSE`
+				}
+      )
   `;
 
-		this.nodes.push({
+		this.nodes = [
+			...this.getRoots(),
+			...rows.map(
+				(row): FileNode => ({
+					uri: "",
+					path: [row.mount, row.owner_id, ...row.path],
+					mount: row.mount,
+					id: row.owner_id,
+					file: row.id,
+					name: row.name,
+					isDirectory: false,
+					lines: Number(row.lines ?? 0),
+					createdAt: row.created_at,
+				}),
+			),
+		];
+
+		this.setRoot();
+	}
+
+	/**
+	 * The directories that are there whether or not anything is in them: the
+	 * root, the three trees, and this chat's own directory — which has to exist
+	 * before anything can be written into it.
+	 */
+	protected getRoots(): FileNode[] {
+		const directory = (path: string[]): FileNode => ({
 			uri: "",
-			path: [],
+			path,
+			mount: (PathUtils.mounts.find((mount) => mount === path[0]) ??
+				null) as FileMount | null,
+			id: path[1] ?? null,
+			file: null,
+			name: null,
 			isDirectory: true,
-			chatFile: null,
-			uploadFile: null,
-			uploadId: null,
-			uploadName: null,
+			lines: 0,
 			createdAt: new Date(0),
 		});
 
-		for (const row of rows) {
-			this.nodes.push({
-				uri: "",
-				path: [
-					...(row.upload_id ? [row.upload_id] : []),
-					...(row.chat_file_path ?? row.upload_file_path ?? []),
-				],
-				isDirectory: false,
-				chatFile: row.chat_file_id
-					? {
-							id: row.chat_file_id,
-							lines: Number(row.chat_file_lines ?? 0),
-						}
-					: null,
-				uploadFile: row.upload_file_id
-					? {
-							id: row.upload_file_id,
-							lines: Number(row.upload_file_lines ?? 0),
-						}
-					: null,
-				uploadId: row.upload_id,
-				uploadName: row.upload_name,
-				createdAt:
-					row.chat_file_created_at ?? row.upload_file_created_at ?? new Date(0),
-			});
-		}
-
-		this.setMounts();
+		return [
+			directory([]),
+			...PathUtils.mounts.map((mount) => directory([mount])),
+			...(this.chat ? [directory(["chat", this.chat])] : []),
+		];
 	}
 
-	setMounts() {
+	setRoot() {
 		for (const node of this.nodes) {
-			node.uri = PathUtils.toMount({
-				uploadId: node.uploadId,
-				path: node.path,
-				mount: this.mount,
-			});
+			node.uri = PathUtils.toMount({ path: node.path, root: this.root });
 		}
+	}
+
+	/** Parse `path`, or fail the way the caller's operation should fail. */
+	protected parse(path: string) {
+		const uri = PathUtils.fromMount({ path, root: this.root });
+		if (!uri) throw new Error(`ENOENT: no such file or directory: ${path}`);
+		return uri;
+	}
+
+	/**
+	 * Where a path may be written, which is this chat's own tree and nowhere
+	 * else. Uploads and skills are shared, so the error says to copy rather than
+	 * leaving the model to guess why its write bounced.
+	 */
+	protected checkWritable(path: string, operation: string) {
+		const uri = this.parse(path);
+
+		if (!this.chat) {
+			throw new Error(
+				`EROFS: read-only file system, ${operation} '${path}' — this message is not in a chat yet`,
+			);
+		}
+
+		if (uri.mount !== "chat" || uri.id !== this.chat) {
+			throw new Error(
+				`EROFS: read-only file system, ${operation} '${path}' — only ${PathUtils.toMount({ mount: "chat", id: this.chat, root: this.root })} is writable, so copy the file there first`,
+			);
+		}
+
+		if (!uri.rest.length) {
+			throw new Error(
+				`EISDIR: illegal operation on a directory, ${operation} '${path}'`,
+			);
+		}
+
+		return uri;
 	}
 
 	/** Whether `path` exists as a known leaf, and/or has deeper known paths beneath it. */
@@ -179,67 +215,37 @@ export class FilesystemService implements IFileSystem {
 		return { exact, hasDeeper };
 	}
 
-	async getFile(path: string, options?: { original?: boolean }): Promise<File> {
-		console.log(`getFile(${path})`);
+	async getFile(path: string): Promise<File> {
+		const { path: parts } = this.parse(path);
 
-		const uri = PathUtils.fromMount({ path, mount: this.mount });
-		if (!uri) throw new Error("ENOENT: invalid path");
-
-		const { exact } = this.locate(uri.path);
-		if (!exact || exact.isDirectory)
+		const { exact } = this.locate(parts);
+		if (!exact?.file || exact.isDirectory)
 			throw new Error(`ENOENT: no such file or directory: ${path}`);
 
 		const file = await globalThis.prisma.file.findUnique({
-			where: {
-				id:
-					exact.chatFile && !options?.original
-						? exact.chatFile.id
-						: exact.uploadFile?.id,
-			},
+			where: { id: exact.file },
 		});
 		if (!file) throw new Error(`ENOENT: no such file or directory: ${path}`);
-		console.log(file);
 		return file;
 	}
 
 	async readFile(
 		path: string,
-		options?:
-			| { encoding?: BufferEncoding | null; original?: boolean }
-			| BufferEncoding,
+		options?: { encoding?: BufferEncoding | null } | BufferEncoding,
 	): Promise<string> {
-		console.log(`readFile(${path})`);
 		const encoding = typeof options === "string" ? options : options?.encoding;
-		const result = fromBuffer(
-			await this.readFileBuffer(path, omit(options, "encoding")),
-			encoding,
-		);
-		console.log(result);
-		return result;
+		return fromBuffer(await this.readFileBuffer(path), encoding);
 	}
 
-	async readFileBytes(
-		path: string,
-		options?: { original?: boolean },
-	): Promise<ByteString> {
-		console.log(`readFileBytes(${path})`);
-		const result = fromBuffer(
-			await this.readFileBuffer(path, options),
+	async readFileBytes(path: string): Promise<ByteString> {
+		return fromBuffer(
+			await this.readFileBuffer(path),
 			"binary",
 		) as unknown as ByteString;
-		console.log(result);
-		return result;
 	}
 
-	async readFileBuffer(
-		path: string,
-		options?: { original?: boolean },
-	): Promise<Uint8Array> {
-		console.log(`readFileBuffer(${path})`);
-		const file = await this.getFile(path, options);
-		const result = file.data;
-		console.log(result);
-		return result;
+	async readFileBuffer(path: string): Promise<Uint8Array> {
+		return (await this.getFile(path)).data;
 	}
 
 	async writeFile(
@@ -247,55 +253,12 @@ export class FilesystemService implements IFileSystem {
 		content: FileContent,
 		options?: { encoding?: BufferEncoding } | BufferEncoding,
 	) {
-		console.log(`writeFile(${path})`);
-
-		const uri = PathUtils.fromMount({ path, mount: this.mount });
-		if (!uri) throw new Error("ENOENT: invalid path");
-
-		if (!this.chat) {
-			throw new Error(`EACCES: permission denied, writeFile '${path}'`);
-		}
+		const uri = this.checkWritable(path, "writeFile");
 
 		const encoding = typeof options === "string" ? options : options?.encoding;
 		const data = toBuffer(content, encoding);
 
-		const { exact } = this.locate(uri.path);
-		const id = exact?.chatFile?.id ?? createId();
-
-		console.log(
-			"INSERTED:",
-			await globalThis.prisma.file.upsert({
-				where: {
-					id,
-				},
-				create: {
-					id,
-					user: { connect: { id: this.user.id } },
-					chat: { connect: { id: this.chat.id } },
-					...(uri.uploadId
-						? { upload: { connect: { id: uri.uploadId } } }
-						: {}),
-					path: uri.uploadId ? uri.uploadPath : uri.path,
-					data: Buffer.from(data),
-					mime: await FileTypeUtils.getMime({
-						data,
-						path: uri.path,
-						fallback: "text/plain",
-					}),
-				},
-				update: {
-					path: uri.uploadId ? uri.uploadPath : uri.path,
-					data: Buffer.from(data),
-					mime: await FileTypeUtils.getMime({
-						data,
-						path: uri.path,
-						fallback: "text/plain",
-					}),
-					createdAt: new Date(),
-				},
-			}),
-		);
-
+		await this.save({ path: uri.rest, data });
 		await this.fetch();
 	}
 
@@ -304,90 +267,81 @@ export class FilesystemService implements IFileSystem {
 		content: FileContent,
 		options?: { encoding?: BufferEncoding } | BufferEncoding,
 	) {
-		console.log(`appendFile(${path})`);
-
-		const uri = PathUtils.fromMount({ path, mount: this.mount });
-		if (!uri) throw new Error("ENOENT: invalid path");
-
-		if (!this.chat) {
-			throw new Error(`EACCES: permission denied, appendFile '${path}'`);
-		}
+		const uri = this.checkWritable(path, "appendFile");
 
 		const encoding = typeof options === "string" ? options : options?.encoding;
 		const data = toBuffer(content, encoding);
 
-		let source: File | null;
+		let existing: File | null;
 		try {
-			source = await this.getFile(path);
+			existing = await this.getFile(path);
 		} catch {
-			source = null;
+			existing = null;
 		}
 
-		const { exact } = this.locate(uri.path);
-		const id = exact?.chatFile?.id ?? createId();
-		const appendedData = Buffer.concat([source?.data ?? Buffer.alloc(0), data]);
-
-		await globalThis.prisma.file.upsert({
-			where: {
-				id,
-			},
-			create: {
-				id,
-				user: { connect: { id: this.user.id } },
-				chat: { connect: { id: this.chat.id } },
-				...(uri.uploadId ? { upload: { connect: { id: uri.uploadId } } } : {}),
-				path: uri.uploadId ? uri.uploadPath : uri.path,
-				data: appendedData,
-				mime: await FileTypeUtils.getMime({
-					data: appendedData,
-					path: uri.path,
-					fallback: "text/plain",
-				}),
-			},
-			update: {
-				path: uri.uploadId ? uri.uploadPath : uri.path,
-				data: appendedData,
-				mime: await FileTypeUtils.getMime({
-					data: appendedData,
-					path: uri.path,
-					fallback: "text/plain",
-				}),
-				createdAt: new Date(),
-			},
+		await this.save({
+			path: uri.rest,
+			data: Buffer.concat([existing?.data ?? Buffer.alloc(0), data]),
 		});
-
 		await this.fetch();
 	}
 
-	async exists(path: string): Promise<boolean> {
-		console.log(`exists(${path})`);
+	/**
+	 * Write `data` to `path` within this chat's tree, replacing whatever was
+	 * there. Does not refetch, so a caller writing more than one file pays for
+	 * one refresh rather than one per file.
+	 */
+	protected async save({ path, data }: { path: string[]; data: Uint8Array }) {
+		if (!this.chat) throw new Error("EROFS: read-only file system");
 
-		const uri = PathUtils.fromMount({ path, mount: this.mount });
+		const { exact } = this.locate(["chat", this.chat, ...path]);
+		const id = exact?.file ?? createId();
+
+		const file = {
+			path,
+			data: Buffer.from(data),
+			mime: await FileTypeUtils.getMime({
+				data,
+				path,
+				fallback: "text/plain",
+			}),
+		};
+
+		await globalThis.prisma.file.upsert({
+			where: { id },
+			create: {
+				id,
+				user: { connect: { id: this.user.id } },
+				chat: { connect: { id: this.chat } },
+				...file,
+			},
+			update: { ...file, createdAt: new Date() },
+		});
+	}
+
+	async exists(path: string): Promise<boolean> {
+		const uri = PathUtils.fromMount({ path, root: this.root });
 		if (!uri) return false;
 
 		const { exact, hasDeeper } = this.locate(uri.path);
-		const result = !!exact || hasDeeper;
-
-		return Promise.resolve(result);
+		return !!exact || hasDeeper;
 	}
 
 	async stat(path: string): Promise<FsStat> {
-		console.log(`stat(${path})`);
-
-		const uri = PathUtils.fromMount({ path, mount: this.mount });
-		if (!uri) throw new Error("ENOENT: invalid path");
+		const uri = this.parse(path);
 
 		const { exact, hasDeeper } = this.locate(uri.path);
 
-		// A path is a file if it exists at all (and isn't the synthetic root); it's a
-		// directory if other, deeper paths exist within it (or it's flagged as one).
+		// A path is a directory if other, deeper paths exist within it, or if it
+		// is one of the ones that is always there; anything else that is known at
+		// all is a file.
 		if (exact && !exact.isDirectory) {
 			const file = await this.getFile(path);
 			return {
 				isFile: true,
 				isDirectory: false,
 				isSymbolicLink: false,
-				mode: 0o755,
+				mode: this.isWritable(uri) ? 0o755 : 0o555,
 				size: file.data.byteLength,
 				mtime: file.createdAt,
 			};
@@ -404,116 +358,121 @@ export class FilesystemService implements IFileSystem {
 				isFile: false,
 				isDirectory: true,
 				isSymbolicLink: false,
-				mode: 0o755,
+				mode: this.isWritable(uri) ? 0o755 : 0o555,
 				size: 0,
 				mtime: mtime[0] ?? new Date(0),
 			};
 		}
 
-		throw new Error("ENOENT: no such file or directory");
+		throw new Error(`ENOENT: no such file or directory: ${path}`);
+	}
+
+	protected isWritable(uri: { mount?: FileMount; id?: string }) {
+		return !!this.chat && uri.mount === "chat" && uri.id === this.chat;
 	}
 
 	async lstat(path: string): Promise<FsStat> {
-		console.log(`lstat(${path})`);
-
 		return await this.stat(path);
 	}
 
-	async mkdir(
-		_path: string,
-		_options?: { recursive?: boolean },
-	): Promise<void> {
-		console.log(`mkdir(${_path})`);
-		return Promise.resolve();
+	/**
+	 * Directories are implied by the paths of the files in them, so there is
+	 * nothing to create — but a write into a directory that does not exist yet
+	 * has to be allowed to say so.
+	 */
+	async mkdir(path: string, _options?: { recursive?: boolean }): Promise<void> {
+		const uri = PathUtils.fromMount({ path, root: this.root });
+		if (uri) {
+			const { exact, hasDeeper } = this.locate(uri.path);
+			if (exact?.isDirectory || hasDeeper) return;
+		}
+		this.checkWritable(path, "mkdir");
 	}
 
 	async readdir(path: string): Promise<string[]> {
-		console.log(`readdir(${path})`);
 		const entries = await this.readdirWithFileTypes(path);
-
 		return entries.map((e) => e.name);
 	}
 
 	async readdirWithFileTypes(path: string) {
-		console.log(`readdirWithFileTypes(${path})`);
+		const uri = this.parse(path);
 
-		const uri = PathUtils.fromMount({ path, mount: this.mount });
-		if (!uri) throw new Error("ENOENT: invalid path");
+		const { exact, hasDeeper } = this.locate(uri.path);
+		if (!hasDeeper && !exact?.isDirectory) {
+			throw new Error(`ENOENT: no such file or directory: ${path}`);
+		}
 
-		const basePath = uri.path;
-
-		// Collect the immediate child name of every known path nested under `basePath`,
-		// tracking the most recent mtime seen among its descendants.
+		// Collect the immediate child name of every known path nested under the
+		// directory, tracking the most recent mtime seen among its descendants.
 		const names = new Map<string, Date>();
 		for (const f of this.nodes) {
-			if (!PathUtils.contains({ descendent: f.path, parent: basePath }))
+			if (!PathUtils.contains({ descendent: f.path, parent: uri.path }))
 				continue;
-			const name = f.path[basePath.length];
+			const name = f.path[uri.path.length];
 			const mtime = names.get(name);
 			if (!mtime || f.createdAt > mtime) names.set(name, f.createdAt);
 		}
 
-		const result = [...names]
+		return [...names]
 			.filter(([name]) =>
-				UploadUtils.shouldIncludeFile({ path: [...basePath, name] }),
+				UploadUtils.shouldIncludeFile({ path: [...uri.path, name] }),
 			)
 			.map(([name, mtime]) => {
-				const childPath = [...basePath, name];
-				const childUri = PathUtils.toMount({
-					path: childPath,
-					mount: this.mount,
-				});
-				const isDirectory = this.nodes.some((f) =>
-					PathUtils.contains({ descendent: f.path, parent: childPath }),
+				const childPath = [...uri.path, name];
+				const isDirectory = this.nodes.some(
+					(f) =>
+						PathUtils.contains({ descendent: f.path, parent: childPath }) ||
+						(f.isDirectory && PathUtils.equals(f.path, childPath)),
 				);
 				return {
 					name,
+					// An upload or skill directory is named by its id, which says
+					// nothing about what is in it, so what it is called comes along.
+					// Only at that level: above it the segment is the tree's own
+					// name, and below it the file's.
+					label:
+						(childPath.length === 2 &&
+							this.nodes.find(
+								(f) =>
+									f.name &&
+									PathUtils.contains({
+										descendent: f.path,
+										parent: childPath,
+									}),
+							)?.name) ||
+						null,
 					path: childPath,
 					isFile: !isDirectory,
 					isDirectory,
 					isSymbolicLink: false,
 					mtime,
-					uri: childUri,
+					uri: PathUtils.toMount({ path: childPath, root: this.root }),
 				};
 			});
-
-		return Promise.resolve(result);
 	}
 
 	async rm(
 		path: string,
 		options?: { recursive?: boolean; force?: boolean },
 	): Promise<void> {
-		console.log(`rm(${path})`);
-
-		const uri = PathUtils.fromMount({ path, mount: this.mount });
+		const uri = PathUtils.fromMount({ path, root: this.root });
 		if (!uri) {
-			if (options?.force) return;
-			throw new Error("ENOENT: invalid path");
-		}
-
-		const { exact, hasDeeper } = this.locate(uri.path);
-
-		if (!exact && !hasDeeper) {
 			if (options?.force) return;
 			throw new Error(`ENOENT: no such file or directory: ${path}`);
 		}
 
-		if (!this.chat) {
-			throw new Error(`EACCES: permission denied, unlink '${path}'`);
+		const { exact, hasDeeper } = this.locate(uri.path);
+
+		if ((!exact || exact.isDirectory) && !hasDeeper) {
+			if (options?.force) return;
+			throw new Error(`ENOENT: no such file or directory: ${path}`);
 		}
 
-		// A direct file target is always subject to the chat-ownership check: files copied
-		// from (read-only) uploads shadow the original but can't delete it out from under it.
-		if (exact && !exact.isDirectory) {
-			if (!exact.chatFile) {
-				throw new Error(`EACCES: permission denied, unlink '${path}'`);
-			}
-			await globalThis.prisma.file.deleteMany({
-				where: {
-					id: exact.chatFile.id,
-				},
-			});
+		this.checkWritable(path, "unlink");
+
+		if (exact?.file && !exact.isDirectory) {
+			await globalThis.prisma.file.delete({ where: { id: exact.file } });
+			await this.fetch();
 			return;
 		}
 
@@ -521,26 +480,17 @@ export class FilesystemService implements IFileSystem {
 			throw new Error(`EISDIR: illegal operation on a directory, rm '${path}'`);
 		}
 
-		// Recursively remove only the chat-owned files under this path; any (read-only)
-		// original upload files nested within are silently left in place.
 		const targets = this.nodes.filter(
 			(f) =>
 				!f.isDirectory &&
-				PathUtils.contains({ descendent: f.path, parent: uri.path }) &&
-				f.chatFile,
+				PathUtils.contains({ descendent: f.path, parent: uri.path }),
 		);
 
-		if (targets.length) {
-			await globalThis.prisma.file.deleteMany({
-				where: {
-					id: {
-						in: targets
-							.map((t) => t.chatFile?.id)
-							.filter((id) => id !== undefined),
-					},
-				},
-			});
-		}
+		await globalThis.prisma.file.deleteMany({
+			where: {
+				id: { in: targets.flatMap((t) => (t.file ? [t.file] : [])) },
+			},
+		});
 
 		await this.fetch();
 	}
@@ -550,16 +500,15 @@ export class FilesystemService implements IFileSystem {
 		dest: string,
 		options?: { recursive?: boolean },
 	): Promise<void> {
-		console.log(`cp(${src}, ${dest})`);
-
-		const srcUri = PathUtils.fromMount({ path: src, mount: this.mount });
-		if (!srcUri) throw new Error("ENOENT: invalid path");
+		const srcUri = this.parse(src);
+		const destUri = this.checkWritable(dest, "cp");
 
 		const { exact, hasDeeper } = this.locate(srcUri.path);
 
 		if (exact && !exact.isDirectory) {
-			const srcFile = await this.getFile(src);
-			await this.writeFile(dest, srcFile.data);
+			const file = await this.getFile(src);
+			await this.save({ path: destUri.rest, data: file.data });
+			await this.fetch();
 			return;
 		}
 
@@ -569,9 +518,6 @@ export class FilesystemService implements IFileSystem {
 			throw new Error(`EISDIR: illegal operation on a directory, cp '${src}'`);
 		}
 
-		const destUri = PathUtils.fromMount({ path: dest, mount: this.mount });
-		if (!destUri) throw new Error("ENOENT: invalid path");
-
 		const files = this.nodes.filter(
 			(file) =>
 				!file.isDirectory &&
@@ -580,66 +526,49 @@ export class FilesystemService implements IFileSystem {
 
 		for (const file of files) {
 			const relative = file.path.slice(srcUri.path.length);
-			const childSrc = PathUtils.toMount({
-				path: file.path,
-				mount: this.mount,
+			const source = await this.getFile(file.uri);
+			await this.save({
+				path: [...destUri.rest, ...relative],
+				data: source.data,
 			});
-			const childDest = PathUtils.toMount({
-				path: [...destUri.path, ...relative],
-				mount: this.mount,
-			});
-			const srcFile = await this.getFile(childSrc);
-			await this.writeFile(childDest, srcFile.data);
 		}
 
 		await this.fetch();
 	}
 
 	async mv(src: string, dest: string): Promise<void> {
-		console.log(`mv(${src}, ${dest})`);
-
 		await this.cp(src, dest, { recursive: true });
 		await this.rm(src, { recursive: true });
-
-		await this.fetch();
 	}
 
 	async symlink(_target: string, _linkPath: string): Promise<void> {
-		console.log(`symlink(${_target}, ${_linkPath})`);
-		return Promise.reject(new Error("ENOENT: operation not supported"));
+		return Promise.reject(new Error("ENOSYS: operation not supported"));
 	}
 
 	async link(_target: string, _linkPath: string): Promise<void> {
-		console.log(`link(${_target}, ${_linkPath})`);
-		return Promise.reject(new Error("ENOENT: operation not supported"));
+		return Promise.reject(new Error("ENOSYS: operation not supported"));
 	}
 
 	async readlink(path: string): Promise<string> {
-		console.log(`readlink(${path})`);
 		return Promise.resolve(path);
 	}
 
 	async realpath(path: string): Promise<string> {
-		console.log(`realpath(${path})`);
 		return Promise.resolve(path);
 	}
 
 	async chmod(_path: string, _mode: number): Promise<void> {
-		console.log(`chmod(${_path}, ${_mode})`);
 		return Promise.resolve();
 	}
 
 	async utimes(_path: string, _atime: Date, _mtime: Date): Promise<void> {
-		console.log(`utimes(${_path})`);
 		return Promise.resolve();
 	}
 
 	getAllPaths(): string[] {
-		console.log("getAllPaths()");
-
 		return this.nodes
 			.filter((file) => file.path.length > 0)
-			.map((file) => PathUtils.toMount(file));
+			.map((file) => file.uri);
 	}
 
 	getAllNodes() {
@@ -647,19 +576,12 @@ export class FilesystemService implements IFileSystem {
 	}
 
 	resolvePath(base: string, path: string): string {
-		console.log(`resolvePath(${base}, ${path})`);
+		const root = this.root.replace(/\/$/, "");
+		base = base.startsWith(root) ? base.slice(root.length) : base;
 
-		// hardcoded `/mnt/chat` prefix replaced 7/18/26
-		const prefix = this.mount.replace(/\/$/, "");
-		base = base.replace(prefix, "");
+		if (path.startsWith("/")) return `${root}${normalizePath(path)}`;
 
-		if (path.startsWith("/")) {
-			const result = `${prefix}${normalizePath(path)}`;
-			console.log(result);
-			return result;
-		}
-
-		return `${prefix}${normalizePath(`${base}/${path}`)}`;
+		return `${root}${normalizePath(`${base}/${path}`)}`;
 	}
 }
 
@@ -762,18 +684,4 @@ function normalizePath(path: string): string {
 	}
 
 	return `/${resolved.join("/")}`;
-}
-
-function omit<
-	T extends Record<string, unknown> | string | undefined,
-	K extends T extends Record<string, unknown> ? keyof T : never,
->(options: T, ...keys: K[]): Pick<T, Exclude<keyof T, K>> {
-	if (typeof options !== "object") {
-		return options;
-	}
-	const result = { ...options };
-	for (const key of keys) {
-		delete result[key];
-	}
-	return result;
 }

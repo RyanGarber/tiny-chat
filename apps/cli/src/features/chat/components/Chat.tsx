@@ -2,9 +2,10 @@ import { useGreeting } from "@tiny-chat/client/src/core/hooks/useGreeting.ts";
 import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
 import { MessageProvider } from "@tiny-chat/client/src/features/message/components/MessageProvider.tsx";
 import { useMessages } from "@tiny-chat/client/src/features/message/hooks/useMessages.ts";
-import { Box, Text } from "ink";
 import { useMemo } from "react";
+import Box from "../../../core/components/Box.tsx";
 import ScrollView from "../../../core/components/ScrollView.tsx";
+import Text from "../../../core/components/Text.tsx";
 import { useSentinel } from "../../../core/hooks/useSentinel.ts";
 import { useWorkingStatus } from "../../../core/hooks/useWorkingStatus.ts";
 import Message from "../../message/components/Message.tsx";
@@ -28,7 +29,7 @@ export default function Chat() {
 	if (!chat.data) {
 		return (
 			<Box flexGrow={1} justifyContent="center" alignItems="center">
-				<Text>{greeting.toLowerCase()}</Text>
+				<Text color="textSubtle">{greeting.toLowerCase()}</Text>
 			</Box>
 		);
 	}

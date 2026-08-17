@@ -126,12 +126,16 @@ export const WorkerService = {
 						where: { userId: action.userId, type: "SKILL" },
 						include: { files: true },
 					})
-				).flatMap(({ files }) => {
+				).flatMap(({ id, files }) => {
 					try {
 						return (
 							SkillUtils.buildSkill({
 								files: files.map((file) => ({
-									path: PathUtils.toMount(file),
+									path: PathUtils.toMount({
+										mount: "skills",
+										id,
+										path: file.path,
+									}),
 									data: file.data,
 								})),
 							}) ?? []
@@ -162,6 +166,7 @@ export const WorkerService = {
 					user,
 					chat,
 					message: userMessage,
+					messages: context.messages,
 					incognito: chat.incognito,
 				});
 

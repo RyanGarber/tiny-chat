@@ -82,7 +82,7 @@ export const GitHubService = {
 	}) => {
 		const token = await GitHubService.getToken({ user });
 
-		const uploadName = `${owner}/${repository} @ ${branch}`;
+		const uploadName = `${owner}/${repository}@${branch}`;
 
 		const result = await fetch(
 			`https://api.github.com/repos/${owner}/${repository}/zipball/${branch}`,
@@ -109,6 +109,7 @@ export const GitHubService = {
 			zip: await result.arrayBuffer(),
 			create: {
 				type: UploadType.GITHUB,
+				name: uploadName,
 			},
 			connect: {
 				name: uploadName,

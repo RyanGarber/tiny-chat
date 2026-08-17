@@ -11,7 +11,7 @@ import RemarkMath from "remark-math";
 import RemarkParse from "remark-parse";
 import RemarkRehype from "remark-rehype";
 import remend from "remend";
-import { type PluggableList, unified } from "unified";
+import { type PluggableList, type Processor, unified } from "unified";
 import { visit } from "unist-util-visit";
 
 export type * from "mdast";
@@ -23,6 +23,87 @@ const allowedTags: Partial<Record<keyof JSX.IntrinsicElements, string[]>> = {
 	link: ["source", "is-directory"],
 	slot: ["name", "value", "accepts-content", "needs-run"],
 };
+
+type DirectiveKind = "text" | "leaf" | "container";
+
+type MicromarkToken = { type: string };
+
+type MicromarkConstruct = {
+	tokenize: (
+		this: {
+			events: Array<["enter" | "exit", MicromarkToken, ...unknown[]]>;
+			sliceSerialize: (token: MicromarkToken) => string;
+		},
+		effects: unknown,
+		ok: (code: number | null) => unknown,
+		nok: (code: number | null) => unknown,
+	) => unknown;
+	previous?: unknown;
+	concrete?: boolean;
+};
+
+type MicromarkDirectiveExtension = {
+	text?: { 58?: MicromarkConstruct };
+	flow?: { 58?: MicromarkConstruct | MicromarkConstruct[] };
+};
+
+/**
+ * remark-directive's default tokenizer is greedy: `:1` is a text directive and
+ * `::1` is a leaf, which turns ratios, emphasis like `*1:1*`, and IPv6 `::1`
+ * into nodes. That disagrees with DirectiveUtils — text directives need `[]`,
+ * and names start with a letter — so reject anything that doesn't match here,
+ * at parse time, before it can split a paragraph.
+ */
+const wrapDirectiveConstruct = (
+	construct: MicromarkConstruct,
+	kind: DirectiveKind,
+): MicromarkConstruct => ({
+	...construct,
+	tokenize(effects, ok, nok) {
+		return construct.tokenize.call(
+			this,
+			effects,
+			(code) => {
+				const cap = `${kind[0].toUpperCase()}${kind.slice(1)}`;
+				const nameType = `directive${cap}Name`;
+				const labelType = `directive${cap}Label`;
+				let name = "";
+				let hasLabel = false;
+				for (const [enter, token] of this.events) {
+					if (enter === "exit" && token.type === nameType) {
+						name = this.sliceSerialize(token);
+					}
+					if (enter === "enter" && token.type === labelType) {
+						hasLabel = true;
+					}
+				}
+				if (!/^[A-Za-z]/.test(name)) return nok(code);
+				if (kind === "text" && !hasLabel) return nok(code);
+				return ok(code);
+			},
+			nok,
+		);
+	},
+});
+
+function restrictDirectiveSyntax(this: Processor) {
+	const extensions = (
+		this.data() as { micromarkExtensions?: MicromarkDirectiveExtension[] }
+	).micromarkExtensions;
+	const extension = extensions?.find(
+		(candidate) => candidate.text?.[58] && candidate.flow?.[58],
+	);
+	if (!extension?.text?.[58] || !extension.flow?.[58]) return;
+
+	extension.text[58] = wrapDirectiveConstruct(extension.text[58], "text");
+	const flow = Array.isArray(extension.flow[58])
+		? extension.flow[58]
+		: [extension.flow[58]];
+	extension.flow[58] = [
+		wrapDirectiveConstruct(flow[0], "container"),
+		wrapDirectiveConstruct(flow[1], "leaf"),
+	];
+}
 
 const createDirectives = () => {
 	const toNode = (
@@ -70,6 +151,7 @@ const remarkPlugins: PluggableList = [
 	RemarkBreaks,
 	RemarkGfm,
 	RemarkDirective,
+	restrictDirectiveSyntax,
 	[RemarkMath, { singleDollarTextMath: false }],
 	createDirectives,
 	createCodeMeta,
@@ -120,7 +202,7 @@ const rehypePlugins: PluggableList = [
 
 const rehypePluginsWithKatex: PluggableList = [...rehypePlugins, RehypeKatex];
 
-const processor = unified()
+export const processor = unified()
 	.use(RemarkParse)
 	.use(remarkPlugins)
 	.use(RemarkRehype, { allowDangerousHtml: true })

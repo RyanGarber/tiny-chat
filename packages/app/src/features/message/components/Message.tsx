@@ -17,7 +17,6 @@ import { type CSSProperties, memo, type ReactNode, useMemo } from "react";
 import { client } from "#app/client.ts";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import MessageBody from "#app/features/message/components/MessageBody.tsx";
-import FileThumbnails from "#app/features/upload/components/FileThumbnails.tsx";
 import { useMessaging } from "#client/src/features/chat/hooks/useMessaging.ts";
 import { useMessagingStore } from "#client/src/features/chat/stores/useMessagingStore.ts";
 import { Author, type MessageState } from "#core/features/data/types/message";
@@ -45,8 +44,6 @@ const Message = memo(
 			{ open: onConfirmDelete, close: onCancelDelete },
 		] = useDisclosure(false);
 		const clipboard = useClipboard();
-
-		const uploads = message.data.flat().filter((p) => p.type === "upload");
 
 		const actions: ReactNode[] = [];
 		if (!isLast) {
@@ -128,23 +125,6 @@ const Message = memo(
 								}
 							>
 								<Group gap={0} style={fade}>
-									{uploads.length !== 0 && (
-										<Group gap={5} mr={10} style={fade}>
-											<Icon
-												icon="lucide:paperclip"
-												height={14}
-												color="var(--mantine-color-dimmed)"
-											/>
-											<FileThumbnails
-												uploads={uploads.map((u) => ({
-													id: u.id,
-													name: u.name,
-													thumbnail: u.thumbnail,
-												}))}
-												size={22}
-											/>
-										</Group>
-									)}
 									{message.author === Author.USER && (
 										<Group c="dimmed" gap={5}>
 											<Icon icon="lucide:send" height={14} />

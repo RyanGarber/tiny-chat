@@ -1,8 +1,6 @@
 import { Icon } from "@iconify/react";
 import {
 	ActionIcon,
-	Badge,
-	Box,
 	Burger,
 	Group,
 	Image,
@@ -15,7 +13,6 @@ import {
 	type TreeNodeData,
 } from "@mantine/core";
 import { useChatFiles } from "@tiny-chat/client/src/features/chat/hooks/useChatFiles.ts";
-import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
 import type { FileNode } from "@tiny-chat/core/src/features/file/types/file.ts";
 import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeUtils.ts";
 import {
@@ -38,73 +35,77 @@ interface FileTreeNodeProps {
 interface DirTreeNodeProps {
 	type: "directory";
 	segment: string;
-	hasChanges: boolean;
 }
 
-/** Build the diff badge for a file entry. Returns null for upload-only files (no chat version). */
-function LineDiffBadge({ node }: { node: FileNode }) {
-	const { chatFile, uploadFile } = node;
+/** What each of the mount's trees is called in the sidebar. */
+const TREES: Record<string, string> = {
+	uploads: "Uploads",
+	skills: "Skills",
+	chat: "Chat",
+};
 
-	if (!chatFile) return null;
+/**
+ * Where a file sits in the sidebar, which is not quite where it sits on the
+ * mount: a tree reads as its name, an upload as what it was uploaded as, and
+ * the chat's own id is dropped — there is only ever the one chat here, so a
+ * folder named after it would say nothing.
+ */
+function toDisplayPath(node: FileNode): string[] {
+	const [tree, id, ...rest] = node.path;
+	if (!tree) return [];
 
-	const diff = chatFile.lines - (uploadFile?.lines ?? 0);
-	if (diff === 0) return null;
+	const label = TREES[tree] ?? tree;
+	if (!id) return [label];
+	if (tree === "chat") return [label, ...rest];
 
-	const positive = diff > 0;
-	return (
-		<Badge
-			size="xs"
-			variant="light"
-			color={positive ? "green" : "red"}
-			style={{ fontVariantNumeric: "tabular-nums", flexShrink: 0 }}
-		>
-			{positive ? "+" : ""}
-			{diff}
-		</Badge>
-	);
+	return [label, node.name || id, ...rest];
 }
 
-function nodeHasChanges(node: FileNode): boolean {
-	if (!node.chatFile) return false;
-	return node.chatFile.lines !== (node.uploadFile?.lines ?? 0);
+interface DisplayNode {
+	path: string[];
+	node: FileNode;
 }
 
-/** Build pure-data tree nodes from file entries, nesting by path segments */
+/** Build pure-data tree nodes, nesting by path segment and dropping empty branches. */
 function buildTreeNodes(nodes: FileNode[]): TreeNodeData[] {
-	const root = FileUtils.toTree({ nodes });
+	const root = FileUtils.toTree<DisplayNode>({
+		nodes: nodes.flatMap((node) => {
+			const path = toDisplayPath(node);
+			return path.length ? [{ path, node }] : [];
+		}),
+	});
 
-	function directoryHasChanges(directory: Descendent<FileNode>): boolean {
-		if (directory.node) return nodeHasChanges(directory.node);
-		for (const child of directory.children.values()) {
-			if (directoryHasChanges(child)) return true;
+	function hasFiles(descendent: Descendent<DisplayNode>): boolean {
+		if (descendent.node && !descendent.node.node.isDirectory) return true;
+		for (const child of descendent.children.values()) {
+			if (hasFiles(child)) return true;
 		}
 		return false;
 	}
 
 	function toTreeNodes(
-		descendent: Descendent<FileNode>,
+		descendent: Descendent<DisplayNode>,
 		prefix = "",
 	): TreeNodeData[] {
 		const treeNodes: TreeNodeData[] = [];
 		for (const [segment, child] of descendent.children) {
 			const value = prefix.length ? `${prefix}/${segment}` : segment;
-			if (child.node && !child.node.isDirectory) {
+			if (child.node && !child.node.node.isDirectory) {
 				treeNodes.push({
 					label: segment,
 					value,
 					nodeProps: {
 						type: "file",
-						node: child.node,
+						node: child.node.node,
 					} satisfies FileTreeNodeProps,
 				});
-			} else {
+			} else if (hasFiles(child)) {
 				treeNodes.push({
 					label: segment,
 					value,
 					nodeProps: {
 						type: "directory",
 						segment,
-						hasChanges: directoryHasChanges(child),
 					} satisfies DirTreeNodeProps,
 					children: toTreeNodes(child, value),
 				});
@@ -133,8 +134,6 @@ function FileTreeNode({
 }) {
 	const props = node.nodeProps as FileTreeNodeProps | DirTreeNodeProps;
 
-	const chatId = useChatStore((s) => s.chatId);
-
 	const { readChatFile } = useChatFiles();
 	const [isHovering, setIsHovering] = useState(false);
 	const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -152,8 +151,6 @@ function FileTreeNode({
 
 	let options: ReactNode;
 
-	if (!chatId) return;
-
 	if (props.type === "file") {
 		const isLoadingFile =
 			readChatFile.isPending && readChatFile.variables.path === path;
@@ -170,7 +167,7 @@ function FileTreeNode({
 						onClick={(e) => {
 							e.stopPropagation();
 							readChatFile
-								.mutateAsync({ chat: chatId, path, meta: "copy" })
+								.mutateAsync({ path, meta: "copy" })
 								.then((data) => {
 									if (data) {
 										navigator.clipboard
@@ -202,7 +199,7 @@ function FileTreeNode({
 						onClick={(e) => {
 							e.stopPropagation();
 							readChatFile
-								.mutateAsync({ chat: chatId, path, meta: "download" })
+								.mutateAsync({ path, meta: "download" })
 								.then((data) => {
 									if (data) {
 										const blob = new Blob([data.data], { type: data.mime });
@@ -220,9 +217,7 @@ function FileTreeNode({
 						<Icon icon="lucide:download" width={14} />
 					</ActionIcon>
 				</>
-			) : (
-				<LineDiffBadge node={props.node} />
-			);
+			) : null;
 	}
 
 	return (
@@ -250,11 +245,7 @@ function FileTreeNode({
 				onClick={() => {
 					if (props.type !== "file") return;
 					readChatFile
-						.mutateAsync({
-							chat: chatId,
-							path,
-							meta: "preview",
-						})
+						.mutateAsync({ path, meta: "preview" })
 						.then(({ data, path, mime }) => {
 							FileTypeUtils.getMime({ data, path, fallback: mime })
 								.then((mime) => {
@@ -279,19 +270,8 @@ function FileTreeNode({
 					/>
 				)}
 				<Text flex={1} miw={0} size="sm" truncate>
-					{segment}
+					{node.label as string}
 				</Text>
-				{props.type === "directory" && props.hasChanges && (
-					<Box
-						w={6}
-						h={6}
-						style={{
-							borderRadius: "50%",
-							flexShrink: 0,
-							backgroundColor: "var(--mantine-color-orange-5)",
-						}}
-					/>
-				)}
 				{options}
 			</Group>
 		</Group>
@@ -303,6 +283,9 @@ export default function ChatFiles() {
 
 	const isAsideOpen = useAppStore((s) => s.isAsideOpen);
 	const setAsideOpen = useAppStore((s) => s.setAsideOpen);
+
+	const nodes = chatFiles.data ?? [];
+	const hasFiles = nodes.some((node) => !node.isDirectory);
 
 	return (
 		<Stack flex={1} h="100%" p={5}>
@@ -319,16 +302,16 @@ export default function ChatFiles() {
 					{chatFiles.isFetching && <Loader size="xs" />}
 				</Group>
 
-				{chatFiles.data && chatFiles.data.length > 0 && (
+				{hasFiles && (
 					<Stack gap={4} mb="xs">
 						<Text size="xs" fw={600} c="dimmed" tt="uppercase">
 							Files
 						</Text>
-						<FileTree nodes={chatFiles.data} />
+						<FileTree nodes={nodes} />
 					</Stack>
 				)}
 
-				{chatFiles.data && chatFiles.data.length === 0 && (
+				{chatFiles.data && !hasFiles && (
 					<Text size="sm" c="dimmed">
 						No files
 					</Text>

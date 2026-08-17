@@ -1,14 +1,12 @@
 import { Icon } from "@iconify/react";
-import { Group, Menu, Modal, Overlay, Stack, Tabs, Text } from "@mantine/core";
+import { Group, Modal, Overlay, Stack, Tabs, Text } from "@mantine/core";
 import { Dropzone } from "@mantine/dropzone";
-import { useCallback, useState } from "react";
 import { type UploadsType, useAppStore } from "#app/core/stores/useAppStore.ts";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
-import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
 import { AttachmentUploads } from "#app/features/upload/components/AttachmentUploads.tsx";
 import { GitHubUploads } from "#app/features/upload/components/GitHubUploads.tsx";
+import { useUploads } from "#client/src/features/upload/hooks/useUploads.ts";
 import { UploadType } from "#core/features/file/types/upload";
-import { useUploads } from "../hooks/useUploads";
 
 export default function Uploads() {
 	const { upload } = useUploads();
@@ -84,7 +82,7 @@ export default function Uploads() {
 							value="github"
 							leftSection={<Icon icon="lucide:github" height={16} />}
 						>
-							Repositories
+							GitHub
 						</Tabs.Tab>
 					</Tabs.List>
 
@@ -98,110 +96,5 @@ export default function Uploads() {
 				</Tabs>
 			</Modal>
 		</>
-	);
-}
-
-// --- Menu Items ---
-
-export function FileMenuItem({
-	onClick,
-	disabled,
-}: {
-	onClick: () => void;
-	disabled?: boolean;
-}) {
-	return (
-		<Menu.Item
-			leftSection={<Icon icon="lucide:file" height={18} />}
-			onClick={onClick}
-			disabled={disabled}
-		>
-			File
-		</Menu.Item>
-	);
-}
-
-export function RepositoryMenuItem({
-	onClick,
-	disabled,
-}: {
-	onClick: () => void;
-	disabled?: boolean;
-}) {
-	return (
-		<Menu.Item
-			leftSection={<Icon icon="lucide:github" height={18} />}
-			onClick={onClick}
-			disabled={disabled}
-		>
-			Repository
-		</Menu.Item>
-	);
-}
-
-export function ScreenshotMenuItem({ disabled }: { disabled?: boolean }) {
-	// Check for support
-	const [supported] = useState(() => {
-		if (typeof window === "undefined") return false;
-		const hasMediaDevices =
-			typeof navigator !== "undefined" &&
-			!!navigator.mediaDevices &&
-			"getDisplayMedia" in navigator.mediaDevices;
-		return hasMediaDevices && !TauriUtils.isTauri();
-	});
-
-	const { upload } = useUploads();
-
-	const captureScreenshot = useCallback(async () => {
-		try {
-			const stream = await navigator.mediaDevices.getDisplayMedia({
-				video: true,
-			});
-			const video = document.createElement("video");
-			video.srcObject = stream;
-			await new Promise<void>((resolve) => {
-				video.onloadedmetadata = () => resolve();
-			});
-			await video.play();
-
-			const canvas = document.createElement("canvas");
-			canvas.width = video.videoWidth;
-			canvas.height = video.videoHeight;
-
-			const context = canvas.getContext("2d");
-			if (!context) {
-				console.error("Failed to get canvas context for screenshot:", canvas);
-				return;
-			}
-
-			context.drawImage(video, 0, 0);
-			stream.getTracks().forEach((track) => {
-				track.stop();
-			});
-
-			canvas.toBlob((blob) => {
-				if (blob) {
-					const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-					const file = new File([blob], `Screenshot-${timestamp}.png`, {
-						type: "image/png",
-					});
-					upload.mutate({ type: UploadType.ATTACHMENT, file });
-				}
-			}, "image/png");
-		} catch (e) {
-			console.error("Failed to capture screenshot:", e);
-		}
-	}, [upload]);
-
-	if (!supported) return null;
-
-	return (
-		<Menu.Item
-			disabled={disabled}
-			leftSection={<Icon icon="lucide:screen-share" height={18} />}
-			onClick={() => void captureScreenshot()}
-		>
-			Screenshot
-		</Menu.Item>
 	);
 }

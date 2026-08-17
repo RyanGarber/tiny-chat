@@ -22,10 +22,14 @@ export const useCommands = ({
 	commands = [],
 	onOpenTools,
 	onOpenSkills,
+	onOpenUploads,
+	onOpenGitHub,
 }: {
 	commands?: CommandItem[];
 	onOpenTools?: () => void;
 	onOpenSkills?: () => void;
+	onOpenUploads?: () => void;
+	onOpenGitHub?: () => void;
 } = {}) => {
 	const client = useContext(ClientContext);
 
@@ -45,6 +49,10 @@ export const useCommands = ({
 	onOpenToolsRef.current = onOpenTools;
 	const onOpenSkillsRef = useRef(onOpenSkills);
 	onOpenSkillsRef.current = onOpenSkills;
+	const onOpenUploadsRef = useRef(onOpenUploads);
+	onOpenUploadsRef.current = onOpenUploads;
+	const onOpenGitHubRef = useRef(onOpenGitHub);
+	onOpenGitHubRef.current = onOpenGitHub;
 
 	const providersRef = useRef(providers.data);
 	providersRef.current = providers.data;
@@ -180,6 +188,28 @@ export const useCommands = ({
 			value: `skill:${skill.path}`,
 		}));
 
+		// Only offered where the host has somewhere to open them.
+		const uploads: CommandItem[] = [
+			...(onOpenUploadsRef.current
+				? [
+						{
+							name: "uploads",
+							value: "uploads",
+							run: () => onOpenUploadsRef.current?.(),
+						},
+					]
+				: []),
+			...(onOpenGitHubRef.current
+				? [
+						{
+							name: "github",
+							value: "github",
+							run: () => onOpenGitHubRef.current?.(),
+						},
+					]
+				: []),
+		];
+
 		const shell: CommandItem[] = clientRef.current.shell?.chdir
 			? [
 					{
@@ -243,6 +273,7 @@ export const useCommands = ({
 						value: "skills",
 						run: () => onOpenSkillsRef.current?.(),
 					},
+					...uploads,
 					...shell,
 				],
 			},

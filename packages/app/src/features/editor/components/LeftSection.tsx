@@ -3,14 +3,12 @@ import { ActionIcon, Menu } from "@mantine/core";
 import { useIsMutating } from "@tanstack/react-query";
 import { AppService } from "#app/core/services/AppService.ts";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
-import {
-	FileMenuItem,
-	RepositoryMenuItem,
-	ScreenshotMenuItem,
-} from "#app/features/upload/components/Uploads.tsx";
-import { uploadMutationKey } from "#app/features/upload/hooks/useUploads.ts";
+import { useScreenshot } from "#app/features/upload/hooks/useScreenshot.ts";
+import { uploadMutationKey } from "#client/src/features/upload/hooks/useUploads.ts";
 
 export default function LeftSection({ isAny }: { isAny: boolean }) {
+	const { isScreenshotSupported, uploadScreenshot } = useScreenshot();
+
 	const isUploading = useIsMutating({ mutationKey: uploadMutationKey }) > 0;
 
 	return (
@@ -28,15 +26,29 @@ export default function LeftSection({ isAny }: { isAny: boolean }) {
 				</ActionIcon>
 			</Menu.Target>
 			<Menu.Dropdown style={{ boxShadow: StyleUtils.shadow }}>
-				<FileMenuItem
+				<Menu.Item
+					leftSection={<Icon icon="lucide:file" height={18} />}
 					onClick={() => AppService.openUploads("attachment")}
 					disabled={isAny}
-				/>
-				<RepositoryMenuItem
+				>
+					File
+				</Menu.Item>
+				<Menu.Item
+					leftSection={<Icon icon="lucide:github" height={18} />}
 					onClick={() => AppService.openUploads("github")}
 					disabled={isAny}
-				/>
-				<ScreenshotMenuItem disabled={isAny} />
+				>
+					Repository
+				</Menu.Item>
+				{isScreenshotSupported && (
+					<Menu.Item
+						leftSection={<Icon icon="lucide:screen-share" height={18} />}
+						onClick={() => uploadScreenshot.mutate()}
+						disabled={isAny || uploadScreenshot.isPending}
+					>
+						Screenshot
+					</Menu.Item>
+				)}
 			</Menu.Dropdown>
 		</Menu>
 	);

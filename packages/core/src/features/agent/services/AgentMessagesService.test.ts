@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 import { zConfig } from "../../data/types/message.ts";
+import { FileUtils } from "../../file/utils/FileUtils.ts";
 import { PathUtils } from "../../file/utils/PathUtils.ts";
 import type { zAgentMessage } from "../types/agent.ts";
 import { AgentMessagesService } from "./AgentMessagesService.ts";
@@ -91,32 +92,32 @@ describe("AgentMessagesService", () => {
 		} satisfies zAgentMessage);
 	});
 
-	it("builds a file tree from an upload", () => {
+	it("builds a file tree from a directory", () => {
 		expect(
-			AgentMessagesService.buildUploadBlock({
-				upload: { id: "UPLOAD_ID", name: "UPLOAD_NAME" },
-				files: [
-					{
-						path: ["UPLOAD_ID", "README.md"],
-						uri: "/mnt/chat/UPLOAD_ID/README.md",
-					},
-					{
-						path: ["UPLOAD_ID", "src", "gen", "lib", "main.so"],
-						uri: "/mnt/chat/UPLOAD_ID/src/gen/lib/main.so",
-					},
-				],
+			AgentMessagesService.buildTree({
+				tree: FileUtils.toTree({
+					nodes: [
+						{
+							path: ["README.md"],
+							uri: "/mnt/uploads/UPLOAD_ID/README.md",
+						},
+						{
+							path: ["src", "gen", "lib", "main.so"],
+							uri: "/mnt/uploads/UPLOAD_ID/src/gen/lib/main.so",
+						},
+					],
+				}),
+				depth: 1,
 			}),
 		).toEqual(
-			`<upload name="UPLOAD_NAME" path="${PathUtils.toMount({ uploadId: "UPLOAD_ID" })}">
-  <file name="README.md" path="${PathUtils.toMount({ uploadId: "UPLOAD_ID", path: ["README.md"] })}" />
+			`  <file name="README.md" path="${PathUtils.toMount({ mount: "uploads", id: "UPLOAD_ID", path: ["README.md"] })}" />
   <folder name="src">
     <folder name="gen">
       <folder name="lib">
-        <file name="main.so" path="${PathUtils.toMount({ uploadId: "UPLOAD_ID", path: ["src", "gen", "lib", "main.so"] })}" />
+        <file name="main.so" path="${PathUtils.toMount({ mount: "uploads", id: "UPLOAD_ID", path: ["src", "gen", "lib", "main.so"] })}" />
       </folder>
     </folder>
-  </folder>
-</upload>`,
+  </folder>`,
 		);
 	});
 });

@@ -1,4 +1,4 @@
-import type { zDataPart } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { zUploadResult } from "@tiny-chat/core/src/features/file/types/upload.ts";
 import { z } from "zod";
 import { UploadType } from "../../../../generated/prisma/enums.ts";
 import type {
@@ -41,25 +41,19 @@ export const upload = router({
 					}),
 				),
 		)
-		.mutation(
-			async ({
-				ctx,
-				input,
-			}): Promise<Extract<zDataPart, { type: "upload" }>> => {
-				const upload = await UploadService.createUpload({
-					user: ctx.session.user,
-					type: input.type,
-					file: input.file,
-				});
+		.mutation(async ({ ctx, input }): Promise<zUploadResult> => {
+			const upload = await UploadService.createUpload({
+				user: ctx.session.user,
+				type: input.type,
+				file: input.file,
+			});
 
-				return {
-					type: "upload",
-					id: upload.id,
-					name: upload.name,
-					thumbnail: upload.thumbnail ?? undefined,
-				};
-			},
-		),
+			return {
+				id: upload.id,
+				name: upload.name,
+				thumbnail: upload.thumbnail ?? undefined,
+			};
+		}),
 
 	deleteUpload: procedure
 		.input(z.object({ id: z.cuid2() }))
@@ -82,23 +76,17 @@ export const upload = router({
 				branch: z.string().regex(/^[a-zA-Z0-9_-]+$/),
 			}),
 		)
-		.mutation(
-			async ({
-				ctx,
-				input,
-			}): Promise<Extract<zDataPart, { type: "upload" }>> => {
-				const upload = await GitHubService.cloneRepository({
-					user: ctx.session.user,
-					owner: input.owner,
-					repository: input.repository,
-					branch: input.branch,
-				});
-				return {
-					type: "upload",
-					id: upload.id,
-					name: upload.name,
-					thumbnail: upload.thumbnail ?? undefined,
-				};
-			},
-		),
+		.mutation(async ({ ctx, input }): Promise<zUploadResult> => {
+			const upload = await GitHubService.cloneRepository({
+				user: ctx.session.user,
+				owner: input.owner,
+				repository: input.repository,
+				branch: input.branch,
+			});
+			return {
+				id: upload.id,
+				name: upload.name,
+				thumbnail: upload.thumbnail ?? undefined,
+			};
+		}),
 });

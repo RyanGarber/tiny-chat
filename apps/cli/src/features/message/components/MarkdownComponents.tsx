@@ -1,11 +1,10 @@
-import { ThemeContext } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
 import { ComponentUtils } from "@tiny-chat/client/src/core/utils/ComponentUtils.ts";
 import { MarkdownContext } from "@tiny-chat/client/src/features/message/components/MarkdownContext.tsx";
 import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
 import { SourceUtils } from "@tiny-chat/client/src/features/message/utils/SourceUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import type { ExtraProps } from "hast-util-to-jsx-runtime";
-import { Box, Text, useWindowSize } from "ink";
+import { useWindowSize } from "ink";
 import Image from "ink-picture";
 import {
 	Children,
@@ -17,7 +16,9 @@ import {
 	useContext,
 } from "react";
 import Anchor from "../../../core/components/Anchor.tsx";
+import Box from "../../../core/components/Box.tsx";
 import Divider from "../../../core/components/Divider.tsx";
+import Text, { type TextProps } from "../../../core/components/Text.tsx";
 import { CliUtils } from "../../../core/utils/CliUtils.ts";
 import { Code } from "../../code/components/Code.tsx";
 import {
@@ -46,9 +47,11 @@ type Components = {
 function BaseComponent({
 	children,
 	gap = 0,
+	text,
 }: {
 	children?: ReactNode;
 	gap?: number;
+	text?: TextProps;
 }) {
 	const context = useContext(MarkdownContext);
 
@@ -58,7 +61,11 @@ function BaseComponent({
 	if (childArray.length === 0) return null;
 
 	if (childArray.every((c) => !isBlockNode(c))) {
-		return <Text color={context.style?.textColor}>{childArray}</Text>;
+		return (
+			<Text color={context.style?.textColor} {...text}>
+				{childArray}
+			</Text>
+		);
 	}
 
 	const groups: ReactNode[] = [];
@@ -68,7 +75,7 @@ function BaseComponent({
 	const flush = () => {
 		if (inlineBuffer.length > 0) {
 			groups.push(
-				<Text key={key++} color={context.style?.textColor}>
+				<Text key={key++} color={context.style?.textColor} {...text}>
 					{inlineBuffer}
 				</Text>,
 			);
@@ -105,20 +112,26 @@ const StrongComponent: Components["strong"] = ({ children }) => (
 	<Text bold>{children}</Text>
 );
 
+const DelComponent: Components["del"] = ({ children }) => (
+	<Text strikethrough>{children}</Text>
+);
+
 const H1Component: Components["h1"] = ({ children }) => (
 	<Box flexDirection="column">
-		<Text bold>{children}</Text>
+		<BaseComponent text={{ bold: true }}>{children}</BaseComponent>
 		<HrComponent />
 	</Box>
 );
 
 const H2Component: Components["h2"] = ({ children }) => (
-	<Text bold>{children}</Text>
+	<BaseComponent text={{ bold: true }}>{children}</BaseComponent>
 );
 
 const H3Component: Components["h3"] = H2Component;
 
-const H4Component: Components["h4"] = ({ children }) => <Text>{children}</Text>;
+const H4Component: Components["h4"] = ({ children }) => (
+	<BaseComponent>{children}</BaseComponent>
+);
 
 const H5Component: Components["h5"] = H4Component;
 
@@ -171,7 +184,11 @@ const CodeComponent: Components["code"] = ({ children, className }) => {
 		return <Code code={code} language={language} filename={language} />;
 	}
 
-	return <Text color="blue">{CliUtils.display(code)}</Text>;
+	return (
+		<Text color="textSubtle" backgroundColor="interior">
+			{CliUtils.display(code)}
+		</Text>
+	);
 };
 
 const ListContext = createContext<{
@@ -288,28 +305,31 @@ const SectionComponent: Components["section"] = ({ children }) => (
 	</Text>
 );
 
-const SlotComponent: Components["slot"] = ({ children, ...props }) => (
-	<Text backgroundColor="black">
-		<Text color="blueBright" bold>
-			/{(props as { name?: string }).name?.replace("user-content-", "")}
-		</Text>
-		{Children.count(children) > 0 && (
+const SlotComponent: Components["slot"] = ({ children, ...props }) => {
+	return (
+		<Text color="primary" backgroundColor="interior">
 			<Text>
-				{` `}
-				{children}
+				/{(props as { name?: string }).name?.replace("user-content-", "")}
 			</Text>
-		)}
-	</Text>
-);
+			{Children.count(children) > 0 && (
+				<Text>
+					{` `}
+					{children}
+				</Text>
+			)}
+		</Text>
+	);
+};
 
-const LinkComponent: Components["link"] = ({ children, ...props }) => (
-	<Text backgroundColor="black" color="blueBright" bold>
-		@{PathUtils.name((props as { source?: string }).source ?? "?")}
-	</Text>
-);
+const LinkComponent: Components["link"] = ({ children, ...props }) => {
+	return (
+		<Text color="primary" backgroundColor="interior">
+			@{PathUtils.name((props as { source?: string }).source ?? "?")}
+		</Text>
+	);
+};
 
 const MarkComponent: Components["mark"] = ({ children, node }) => {
-	const { colorScheme } = useContext(ThemeContext);
 	// Read per-citation rather than through the markdown context: sources change
 	// whenever a chat-scoped query settles, and only this component cares.
 	const sources = useMessageStore((s) => s.sources);
@@ -330,7 +350,7 @@ const MarkComponent: Components["mark"] = ({ children, node }) => {
 						<Anchor
 							key={key}
 							href={source.type === "web" ? source.value.url : undefined}
-							color={colorScheme.textSubtle}
+							color="textSubtle"
 						>
 							{source.title.slice(0, 50)}
 							{source.title.length > 50 ? "…" : ""}
@@ -385,6 +405,7 @@ export const MarkdownComponents: Partial<Components> = {
 	p: PComponent,
 	em: EmComponent,
 	strong: StrongComponent,
+	del: DelComponent,
 	h1: H1Component,
 	h2: H2Component,
 	h3: H3Component,

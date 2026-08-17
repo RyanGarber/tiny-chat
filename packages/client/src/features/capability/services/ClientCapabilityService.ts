@@ -1,3 +1,5 @@
+import type { zAgentMessage } from "@tiny-chat/core/src/features/agent/types/agent.ts";
+import { AgentUtils } from "@tiny-chat/core/src/features/agent/utils/AgentUtils.ts";
 import type { Capabilities } from "@tiny-chat/core/src/features/capability/types/capability.ts";
 import type { ChatLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
 import type { MessageLike } from "@tiny-chat/core/src/features/data/types/message.ts";
@@ -22,6 +24,7 @@ export const ClientCapabilityService = {
 		user,
 		chat,
 		message,
+		messages,
 		incognito,
 		providers,
 	}: {
@@ -29,6 +32,8 @@ export const ClientCapabilityService = {
 		user: zUser;
 		chat: ChatLike | null | undefined;
 		message: MessageLike | null | undefined;
+		/** What the mount is built from; a chat only adds somewhere to write. */
+		messages?: zAgentMessage[];
 		incognito: boolean | undefined;
 		providers?: ProviderState<ProviderStatus>[];
 	}): Promise<Capabilities> => {
@@ -41,12 +46,11 @@ export const ClientCapabilityService = {
 			capabilities.user = await createUserCapability({ client, message });
 		}
 
-		if (chat?.id) {
-			capabilities.chatShell = await createChatShellCapability({
-				client,
-				chat,
-			});
-		}
+		capabilities.chatShell = await createChatShellCapability({
+			client,
+			chat: chat?.id,
+			...AgentUtils.getMounts({ messages: messages ?? [] }),
+		});
 
 		if (client.desktop) {
 			capabilities.shell = await createShellCapability({ client });
@@ -82,11 +86,17 @@ export const ClientCapabilityService = {
 		return capabilities;
 	},
 
+	/**
+	 * The capabilities a message *would* have, for working out what a chat costs
+	 * before anything is sent. `true` stands for "there will be one of these by
+	 * then" where the real thing does not exist yet.
+	 */
 	getPresumedCapabilities: async ({
 		client,
 		user,
 		chat,
 		message,
+		messages,
 		incognito,
 		providers,
 	}: {
@@ -94,6 +104,7 @@ export const ClientCapabilityService = {
 		user: zUser;
 		chat: ChatLike | boolean | null;
 		message: MessageLike | boolean | null;
+		messages?: zAgentMessage[];
 		incognito: boolean | undefined;
 		providers?: ProviderState<ProviderStatus>[];
 	}) => {
@@ -104,6 +115,7 @@ export const ClientCapabilityService = {
 			user,
 			chat,
 			message,
+			messages,
 			incognito,
 			providers,
 		});

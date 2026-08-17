@@ -1,10 +1,9 @@
-import { ThemeContext } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
-import { Box, type BoxProps, type DOMElement, measureElement, Text } from "ink";
-import { useContext, useEffect, useRef, useState } from "react";
+import { type DOMElement, measureElement } from "ink";
+import { useEffect, useRef, useState } from "react";
+import Box from "./Box.tsx";
+import Text from "./Text.tsx";
 
-export default function Divider(props: BoxProps) {
-	const { colorScheme } = useContext(ThemeContext);
-
+export default function Divider() {
 	const ref = useRef<DOMElement>(null);
 	const [width, setWidth] = useState<number | "100%">("100%");
 
@@ -13,8 +12,8 @@ export default function Divider(props: BoxProps) {
 	});
 
 	return (
-		<Box ref={ref} {...props}>
-			<Text color={colorScheme.border} dimColor wrap="truncate">
+		<Box ref={ref}>
+			<Text color="border" dimColor wrap="truncate">
 				{"─".repeat(width === "100%" ? 1000 : width)}
 			</Text>
 		</Box>

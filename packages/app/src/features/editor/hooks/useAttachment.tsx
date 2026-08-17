@@ -1,5 +1,7 @@
 import { Group, Image, Text } from "@mantine/core";
 import { useAttachments } from "@tiny-chat/client/src/features/editor/hooks/useAttachments.ts";
+import type { AttachmentItem } from "@tiny-chat/client/src/features/editor/types/attachment.ts";
+import { AttachmentUtils } from "@tiny-chat/client/src/features/editor/utils/AttachmentUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import { PluginKey } from "@tiptap/pm/state";
 import { Node, NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
@@ -8,16 +10,10 @@ import { useMemo } from "react";
 import { theme } from "#app/core/utils/IconUtils.ts";
 import {
 	type CompletionGroup,
-	type CompletionItem,
 	renderCompletions,
 } from "#app/features/editor/components/Completions.tsx";
 import { NodeUtils } from "#app/features/editor/utils/NodeUtils.ts";
 import AttachmentView from "#app/features/part/components/Attachment.tsx";
-
-interface AttachmentItem extends CompletionItem {
-	directory?: boolean;
-	traversable?: boolean;
-}
 
 interface AttachmentGroup extends CompletionGroup<AttachmentItem> {
 	items: AttachmentItem[];
@@ -65,6 +61,18 @@ const Attachment = Node.create({
 					return { "is-directory": attributes["is-directory"] };
 				},
 			},
+			// What the attachment reads as when its path does not say — an upload
+			// is mounted under its id, so it travels under the name it was
+			// attached as.
+			name: {
+				default: null,
+				parseHTML(element) {
+					return element.getAttribute("name");
+				},
+				renderHTML(attributes) {
+					return attributes.name ? { name: attributes.name } : {};
+				},
+			},
 		};
 	},
 	parseHTML() {
@@ -80,6 +88,7 @@ const Attachment = Node.create({
 					<AttachmentView
 						source={node.attrs.source}
 						directory={node.attrs["is-directory"] === "true"}
+						label={node.attrs.name ?? undefined}
 						grabbable
 					/>
 				</NodeViewWrapper>
@@ -142,6 +151,7 @@ const Attachment = Node.create({
 								attrs: {
 									source: props.value,
 									"is-directory": props.directory ? "true" : "false",
+									...(props.label ? { name: props.label } : {}),
 								},
 							},
 							{ type: "text", text: " " },
@@ -179,19 +189,15 @@ const Attachment = Node.create({
 						);
 					},
 					onTab: ({ item, editor, range }) => {
-						const name = `${item.name}${item.directory ? "/" : ""}`;
-						const existing = editor.$doc.content.textBetween(
-							range.from,
-							range.to,
-							"\n",
-							"\n",
-						);
+						const existing = editor.$doc.content
+							.textBetween(range.from, range.to, "\n", "\n")
+							.replace(/^@/, "");
 						editor
 							.chain()
 							.focus()
 							.insertContentAt(
 								range,
-								`@${existing.replace(/^@/, "").replace(/([^/]+)?$/, name)}`,
+								`@${AttachmentUtils.continued({ query: existing, item })}`,
 							)
 							.run();
 					},

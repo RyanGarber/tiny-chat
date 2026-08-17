@@ -9,8 +9,8 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { useUploads } from "#app/features/upload/hooks/useUploads.ts";
 import { useMessaging } from "#client/src/features/chat/hooks/useMessaging.ts";
+import { useUploads } from "#client/src/features/upload/hooks/useUploads.ts";
 import { UploadType } from "#core/features/file/types/upload";
 import { useAttachment } from "../hooks/useAttachment.tsx";
 import { useBlockquote } from "../hooks/useBlockquote.tsx";

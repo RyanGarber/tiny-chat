@@ -1,28 +1,18 @@
-interface Rgba {
+export interface Rgba {
 	r: number;
 	g: number;
 	b: number;
 	a?: number; // 0–1
 }
 
-type Color = string | Rgba;
+export type Color = string | Rgba;
 
 export const ColorUtils = {
-	/**
-	 * Parses an {r,g,b,a} object, or any r, g, or b value into hex.
-	 */
-	toHex: (value: Rgba | number): string => {
-		if (typeof value === "object") {
-			return `${ColorUtils.toHex(value.r)}${ColorUtils.toHex(value.g)}${ColorUtils.toHex(value.b)}${value.a ? `${ColorUtils.toHex(value.a * 255)}` : ""}`;
-		}
-		return ColorUtils.clamp255(value).toString(16).padStart(2, "0");
-	},
-
 	/**
 	 * Parses a hex string (#RGB, #RGBA, #RRGGBB, #RRGGBBAA),
 	 * an rgb()/rgba() CSS string, or an {r,g,b,a} object into RGBA.
 	 */
-	toRgba: (value: Color): Rgba & { a: number } => {
+	parse: (value: Color): Rgba & { a: number } => {
 		if (typeof value === "object") {
 			return {
 				r: ColorUtils.clamp255(value.r),
@@ -82,13 +72,23 @@ export const ColorUtils = {
 	},
 
 	/**
+	 * Parses an {r,g,b,a} object, or any r, g, or b value into hex.
+	 */
+	toHex: (value: Rgba | number): string => {
+		if (typeof value === "object") {
+			return `${ColorUtils.toHex(value.r)}${ColorUtils.toHex(value.g)}${ColorUtils.toHex(value.b)}${value.a ? `${ColorUtils.toHex(value.a * 255)}` : ""}`;
+		}
+		return ColorUtils.clamp255(value).toString(16).padStart(2, "0");
+	},
+
+	/**
 	 * Blends two colors using alpha compositing ("source over" — b is placed on top of a).
 	 * Accepts hex, rgb()/rgba() strings, or {r,g,b,a} objects.
 	 * Returns a hex string (#RRGGBB, or #RRGGBBAA if the resulting alpha < 1).
 	 */
 	blend: (colorA: Color, colorB: Color): string => {
-		const a = ColorUtils.toRgba(colorA);
-		const b = ColorUtils.toRgba(colorB);
+		const a = ColorUtils.parse(colorA);
+		const b = ColorUtils.parse(colorB);
 
 		const outA = b.a + a.a * (1 - b.a);
 
@@ -111,8 +111,8 @@ export const ColorUtils = {
 	 * Returns a hex string (#RRGGBB, or #RRGGBBAA if the resulting alpha < 1).
 	 */
 	lerp: (colorA: Color, colorB: Color, t: number): string => {
-		const a = ColorUtils.toRgba(colorA);
-		const b = ColorUtils.toRgba(colorB);
+		const a = ColorUtils.parse(colorA);
+		const b = ColorUtils.parse(colorB);
 		const tt = ColorUtils.clamp01(t);
 
 		const r = a.r + (b.r - a.r) * tt;

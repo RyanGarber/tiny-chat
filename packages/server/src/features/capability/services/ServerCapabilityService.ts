@@ -1,3 +1,5 @@
+import type { zAgentMessage } from "@tiny-chat/core/src/features/agent/types/agent.ts";
+import { AgentUtils } from "@tiny-chat/core/src/features/agent/utils/AgentUtils.ts";
 import type { Capabilities } from "@tiny-chat/core/src/features/capability/types/capability.ts";
 import type { ChatLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
 import type { MessageLike } from "@tiny-chat/core/src/features/data/types/message.ts";
@@ -19,12 +21,15 @@ export const ServerCapabilityService = {
 		user,
 		chat,
 		message,
+		messages,
 		incognito,
 		providers,
 	}: {
 		user: zUser;
 		chat: ChatLike | null | undefined;
 		message: MessageLike | null | undefined;
+		/** What the mount is built from; a chat only adds somewhere to write. */
+		messages?: zAgentMessage[];
 		incognito: boolean | undefined;
 		providers?: ProviderState<ProviderStatus>[];
 	}): Promise<Capabilities> => {
@@ -40,12 +45,11 @@ export const ServerCapabilityService = {
 			});
 		}
 
-		if (chat?.id) {
-			capabilities.chatShell = await createChatShellCapability({
-				user,
-				chat,
-			});
-		}
+		capabilities.chatShell = await createChatShellCapability({
+			user,
+			chat: chat?.id,
+			...AgentUtils.getMounts({ messages: messages ?? [] }),
+		});
 
 		providers ??= (await CacheService.getCache({ user })).providers;
 		const embeddingConfig = user.settings.embeddingConfig;

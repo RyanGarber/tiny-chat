@@ -36,6 +36,7 @@ cli.action(() => {
 		</QueryClientProvider>,
 		{
 			exitOnCtrlC: false,
+			patchConsole: CommonUtils.isTruthy(process.env.DEV),
 			stdin: StdinUtils.filter(process.stdin),
 			// Legacy terminal input cannot say which modifiers a key was pressed
 			// with: an arrow under Shift, under Alt, or under both can all arrive

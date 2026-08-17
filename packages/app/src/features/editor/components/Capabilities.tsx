@@ -162,16 +162,16 @@ export default function Capabilities() {
 						loading={
 							deleteNativeSkill.isPending &&
 							deleteNativeSkill.variables.id ===
-								(PathUtils.fromMountOrThrow(skill).uploadId as string)
+								(PathUtils.fromMountOrThrow(skill).id as string)
 						}
 						disabled={
 							deleteNativeSkill.isPending &&
 							deleteNativeSkill.variables.id ===
-								(PathUtils.fromMountOrThrow(skill).uploadId as string)
+								(PathUtils.fromMountOrThrow(skill).id as string)
 						}
 						onClick={() =>
 							deleteNativeSkill.mutate({
-								id: PathUtils.fromMountOrThrow(skill).uploadId as string,
+								id: PathUtils.fromMountOrThrow(skill).id as string,
 							})
 						}
 					>

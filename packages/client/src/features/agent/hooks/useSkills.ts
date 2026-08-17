@@ -62,7 +62,7 @@ export const useSkills = () => {
 						});
 						skills.push(
 							skill ?? {
-								path: PathUtils.toMount({ path }),
+								path,
 								name: "",
 								description: "Error: unrecognized format",
 								attributes: {},
@@ -96,7 +96,7 @@ export const useSkills = () => {
 				try {
 					skill = SkillUtils.buildSkill({
 						files: files.map((file) => ({
-							path: PathUtils.toMount(file),
+							path: PathUtils.toMount({ mount: "skills", id, path: file.path }),
 							data: file.data,
 						})),
 					});
@@ -105,7 +105,7 @@ export const useSkills = () => {
 				}
 				skills.push(
 					skill ?? {
-						path: PathUtils.toMount({ uploadId: id }),
+						path: PathUtils.toMount({ mount: "skills", id }),
 						name: "",
 						description: "Error: unrecognized format",
 						attributes: {},

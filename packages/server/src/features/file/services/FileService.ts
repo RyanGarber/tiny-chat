@@ -1,146 +1,116 @@
-import { AgentUtils } from "@tiny-chat/core/src/features/agent/utils/AgentUtils.ts";
-import type { ChatLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import type {
 	FileNode,
 	FileState,
+	FilesystemSpec,
 } from "@tiny-chat/core/src/features/file/types/file.ts";
 import {
 	type PathLike,
 	PathUtils,
 } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import { Bash, InMemoryFs, MountableFs } from "just-bash";
-import { ChatService } from "../../chat/services/ChatService.ts";
-import { MessageService } from "../../message/services/MessageService.ts";
 import { FilesystemService } from "./FilesystemService.ts";
 
-// TODO - instance caching
-//  for now, uncached due to complications
-//  with keeping uploads up-to-date in ongoing chats
-
 type Instance = { bash: Bash; filesystem: FilesystemService };
-const instances = new Map<string, Instance>();
 
 export const FileService = {
+	// TODO - instance caching
+	//  for now, uncached: a filesystem is built from the messages that point
+	//  into it, so it changes underneath any key we would cache it by
 	get: async ({
 		user,
-		chat: _chat,
-	}: {
-		user: zUser;
-		chat: ChatLike;
-	}): Promise<Instance> => {
-		if (typeof _chat === "string") _chat = { id: _chat };
+		...spec
+	}: { user: zUser } & FilesystemSpec): Promise<Instance> => {
+		const filesystem = new FilesystemService({ user, ...spec });
+		await filesystem.fetch();
 
-		let instance: Instance | undefined;
+		const bash = new Bash({
+			fs: new MountableFs({
+				base: new InMemoryFs(),
+				mounts: [
+					{
+						mountPoint: `${PathUtils.mount}/`,
+						filesystem: filesystem.clone("/"),
+					},
+				],
+			}),
+			defenseInDepth: { enabled: true, auditMode: true },
+			python: true,
+			// Start in the one place that can be written to, so relative work
+			// lands there rather than bouncing off a read-only tree.
+			cwd: spec.chat
+				? PathUtils.toMount({ mount: "chat", id: spec.chat })
+				: PathUtils.mount,
+		});
 
-		if (!instances.has(_chat.id)) {
-			console.log(`creating vm for chat: ${_chat.id}`);
-
-			const chat = await ChatService.getChat({ user, chat: _chat });
-
-			const { messages } = await MessageService.getMessages({ user, chat });
-			const uploads = AgentUtils.getAllUploadIds({ messages });
-
-			const filesystem = new FilesystemService(user, chat, uploads);
-			await filesystem.fetch();
-
-			const bash = new Bash({
-				fs: new MountableFs({
-					base: new InMemoryFs(),
-					mounts: [
-						{
-							mountPoint: `${PathUtils.mount}/`,
-							filesystem: filesystem.clone("/"),
-						},
-					],
-				}),
-				defenseInDepth: { enabled: true, auditMode: true },
-				python: true,
-				cwd: `${PathUtils.mount}/`,
-			});
-
-			instance = { bash, filesystem };
-			// instances.set(_chat.id, instance);
-		}
-
-		// const instance = instances.get(_chat.id);
-		if (!instance) throw new Error("missing vm instance");
-
-		return instance;
+		return { bash, filesystem };
 	},
 
 	/**
-	 * Get a file, with data, in a chat.
+	 * Get a file, with data, on the mount.
 	 */
 	getFile: async ({
 		user,
-		chat,
 		path,
-	}: {
-		user: zUser;
-		chat: ChatLike;
-		path: PathLike;
-	}): Promise<FileState> => {
-		const { filesystem } = await FileService.get({ user, chat });
-		const file = await filesystem.getFile(PathUtils.asMount(path) ?? "");
-		return {
-			...file,
-			uri: PathUtils.toMount(file),
-		};
+		...spec
+	}: { user: zUser; path: PathLike } & FilesystemSpec): Promise<FileState> => {
+		const { filesystem } = await FileService.get({ user, ...spec });
+		const uri = PathUtils.asMount(path) ?? "";
+		return { ...(await filesystem.getFile(uri)), uri };
 	},
 
 	/**
-	 * Get the files in a chat.
+	 * Get every file on the mount.
 	 */
 	getFiles: async ({
 		user,
-		chat,
-	}: {
-		user: zUser;
-		chat: ChatLike;
-	}): Promise<FileNode[]> => {
-		const { filesystem } = await FileService.get({ user, chat });
+		...spec
+	}: { user: zUser } & FilesystemSpec): Promise<FileNode[]> => {
+		const { filesystem } = await FileService.get({ user, ...spec });
 		return filesystem.getAllNodes();
 	},
 
 	getDirectory: async ({
 		user,
-		chat,
 		path,
-	}: {
-		user: zUser;
-		chat: ChatLike;
-		path: PathLike;
-	}) => {
-		const { filesystem } = await FileService.get({ user, chat });
-		return await filesystem.readdirWithFileTypes(PathUtils.asMount(path) ?? "");
+		...spec
+	}: { user: zUser; path: PathLike } & FilesystemSpec) => {
+		const { filesystem } = await FileService.get({ user, ...spec });
+		return await filesystem.readdirWithFileTypes(
+			PathUtils.asMount(path) ?? PathUtils.mount,
+		);
 	},
 
 	writeFile: async ({
 		user,
-		chat,
 		path,
 		content,
-	}: {
-		user: zUser;
-		chat: ChatLike;
-		path: PathLike;
-		content: string;
-	}) => {
-		const { filesystem } = await FileService.get({ user, chat });
+		...spec
+	}: { user: zUser; path: PathLike; content: string } & FilesystemSpec) => {
+		const { filesystem } = await FileService.get({ user, ...spec });
 		return await filesystem.writeFile(PathUtils.asMount(path) ?? "", content);
 	},
 
 	exec: async ({
 		user,
-		chat,
 		command,
-	}: {
-		user: zUser;
-		chat: ChatLike;
-		command: string;
-	}) => {
-		const { bash } = await FileService.get({ user, chat });
-		return await bash.exec(command);
+		...spec
+	}: { user: zUser; command: string } & FilesystemSpec) => {
+		const { bash } = await FileService.get({ user, ...spec });
+		try {
+			return await bash.exec(command);
+		} catch (error) {
+			// A filesystem error the shell could not turn into output of its own —
+			// a redirect into a read-only tree, most often, since it writes the
+			// target before it has anywhere to put the error — is still the
+			// command failing rather than the call failing. Report it the way the
+			// shell would have.
+			console.warn("[FileService] command failed outside the shell:", error);
+			return {
+				code: 1,
+				stdout: "",
+				stderr: `${error instanceof Error ? error.message : String(error)}\n`,
+			};
+		}
 	},
 } as const;

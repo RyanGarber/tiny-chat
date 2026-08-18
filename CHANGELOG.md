@@ -1,3 +1,34 @@
+## [0.8.0](https://github.com/RyanGarber/tiny-chat/compare/0.7.9...0.8.0) (2026-08-18)
+
+### ⚠ BREAKING CHANGES
+
+* rewrite uploads, chat files system
+
+### Features
+
+* cleaner command/attachment nodes in cli editor ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b-8))
+* cli auto update ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b-3))
+* themes in cli ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b))
+* uploads, repos in cli ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b-7))
+
+### Bug Fixes
+
+* github clones save without a name ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b-9))
+* logs printed to console in cli builds ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b-2))
+* scroll views not triggering fetch of next page in cli ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b-6))
+* scroll views wrongly growing to fill space in cli ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b-5))
+* sixel causing runtime failure of cli in bun build ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b-1))
+* tool feedback memoization preventing controls from focusing in cli ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b-4))
+
+### Performance Improvements
+
+* queries in app console ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b-10))
+
+### Code Refactoring
+
+* rewrite uploads, chat files system ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b-11))
+
+
 ## [0.7.9](https://github.com/RyanGarber/tiny-chat/compare/0.7.8...0.7.9) (2026-08-16)
 
 ### Features

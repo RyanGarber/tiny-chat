@@ -1,3 +1,15 @@
+## [0.8.1](https://github.com/RyanGarber/tiny-chat/compare/0.8.0...0.8.1) (2026-08-19)
+
+### Features
+
+* dynamic pdf, docx, xlsx extraction ([5443ba9](https://github.com/RyanGarber/tiny-chat/commit/5443ba981d47fb845c75c20a67df339973548635))
+* improved file filtering ([3ca8c8a](https://github.com/RyanGarber/tiny-chat/commit/3ca8c8af1c73f463740ad6ace3225a12fa3bfc93))
+
+### Bug Fixes
+
+* user-content- shown in cli attachment node ([3ca8c8a](https://github.com/RyanGarber/tiny-chat/commit/3ca8c8af1c73f463740ad6ace3225a12fa3bfc93-2))
+
+
 ## [0.8.0](https://github.com/RyanGarber/tiny-chat/compare/0.7.9...0.8.0) (2026-08-18)
 
 ### ⚠ BREAKING CHANGES

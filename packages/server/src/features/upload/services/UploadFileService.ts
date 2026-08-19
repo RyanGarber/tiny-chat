@@ -3,7 +3,6 @@ import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import { unzipSync } from "fflate";
-import { MarkItDown } from "markitdown-ts";
 import sharp from "sharp";
 import { Prisma } from "../../../../generated/prisma/client.ts";
 import type {
@@ -90,7 +89,7 @@ export const UploadFileService = {
 		const toUpdate: { id: string; data: Uint8Array; mime: string }[] = [];
 
 		let name: string | undefined;
-		let thumbnail: string | undefined;
+		let thumbnail: Uint8Array<ArrayBuffer> | undefined;
 
 		for (let [path, content] of files) {
 			path = path
@@ -213,7 +212,12 @@ export const UploadFileService = {
 	},
 
 	/**
-	 * Compress images, extract text from documents, and prepare a thumbnail.
+	 * Compress images and prepare a thumbnail.
+	 *
+	 * Everything else is stored exactly as it arrived. Documents used to be
+	 * converted to markdown here, which meant the stored file was no longer the
+	 * file the user sent; they are now unpacked when something reads one, by
+	 * `FileExtractionService`.
 	 */
 	_preprocess: async ({
 		data,
@@ -224,8 +228,7 @@ export const UploadFileService = {
 		filename: string;
 		fallbackMime?: string;
 	}) => {
-		let text: string | undefined;
-		let thumbnail: string | undefined;
+		let thumbnail: Uint8Array<ArrayBuffer> | undefined;
 		let mime =
 			(await FileTypeUtils.getMime({
 				data,
@@ -243,44 +246,22 @@ export const UploadFileService = {
 			try {
 				mime = "image/webp";
 				data = await sharp(data, { failOn: "none", animated: true })
-					.resize(2048, 2048, { fit: "inside", withoutEnlargement: true })
+					.resize(1024, 1024, { fit: "inside", withoutEnlargement: true })
 					.webp({ quality: 80 })
 					.toBuffer();
-				thumbnail = `data:${mime};base64,${await sharp(data, { failOn: "none" })
-					.resize(512, 512, { fit: "inside", withoutEnlargement: true })
-					.webp({ quality: 80 })
-					.toBuffer()
-					.then((buf) => buf.toString("base64"))}`;
+				thumbnail = await sharp(data, { failOn: "none" })
+					.resize(256, 256, { fit: "inside", withoutEnlargement: true })
+					.webp({ quality: 20 })
+					.toBuffer();
 				console.log(
-					`optimized image: ${data.length}B (thumbnail: ${thumbnail.length})`,
+					`optimized image: ${data.byteLength}B (thumbnail: ${thumbnail.length})`,
 				);
-			} catch (e) {
-				console.error(e);
-				throw e;
-			}
-		} else if (
-			(mime.includes("officedocument") ||
-				mime.includes("msword") ||
-				mime.includes("ms-excel") ||
-				mime.includes("ms-powerpoint")) &&
-			filename
-		) {
-			// TODO - replace this entirely
-			try {
-				const parsed = await new MarkItDown().convertBuffer(data, {
-					file_extension: filename.slice(filename.lastIndexOf(".")),
-				});
-				if (!parsed) return;
-				data = Buffer.from(parsed.markdown);
-				text = parsed.markdown;
-				mime = "text/plain";
-				console.log(`extracted text:`, text);
 			} catch (e) {
 				console.error(e);
 				throw e;
 			}
 		}
 
-		return { data, mime: mime, text, thumbnail };
+		return { data, mime, thumbnail };
 	},
 } as const;

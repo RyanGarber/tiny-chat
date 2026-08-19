@@ -55,12 +55,12 @@ describe("GoogleProvider", () => {
 		);
 	});
 
-	it("transforms youtube links to video parts", () => {
+	it("transforms youtube links to video parts", async () => {
 		const part: zDataPart = {
 			type: "text",
 			value: "content: https://www.youtube.com/watch?v=___________",
 		};
-		const transformed = GoogleProvider.getPartTransformed?.({
+		const transformed = await GoogleProvider.getPartTransformed?.({
 			user: inject("shared_user"),
 			config: testConfig(GoogleProvider, "gemini-3-flash"),
 			part,
@@ -72,7 +72,7 @@ describe("GoogleProvider", () => {
 		);
 	});
 
-	it("preserves multimodal tool results", () => {
+	it("preserves multimodal tool results", async () => {
 		const message: zAgentMessage = {
 			author: "USER",
 			id: null,
@@ -102,7 +102,7 @@ describe("GoogleProvider", () => {
 			config: { ...inject("shared_config"), model: "gemini-3-flash" },
 			createdAt: null,
 		};
-		const transformed = ModelTransformService.toSdkMessages({
+		const transformed = await ModelTransformService.toSdkMessages({
 			user: inject("shared_user"),
 			config: testConfig(GoogleProvider, "gemini-3-flash"),
 			provider: GoogleProvider,

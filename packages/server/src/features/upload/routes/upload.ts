@@ -42,17 +42,11 @@ export const upload = router({
 				),
 		)
 		.mutation(async ({ ctx, input }): Promise<zUploadResult> => {
-			const upload = await UploadService.createUpload({
+			return await UploadService.createUpload({
 				user: ctx.session.user,
 				type: input.type,
 				file: input.file,
 			});
-
-			return {
-				id: upload.id,
-				name: upload.name,
-				thumbnail: upload.thumbnail ?? undefined,
-			};
 		}),
 
 	deleteUpload: procedure
@@ -77,16 +71,11 @@ export const upload = router({
 			}),
 		)
 		.mutation(async ({ ctx, input }): Promise<zUploadResult> => {
-			const upload = await GitHubService.cloneRepository({
+			return await GitHubService.cloneRepository({
 				user: ctx.session.user,
 				owner: input.owner,
 				repository: input.repository,
 				branch: input.branch,
 			});
-			return {
-				id: upload.id,
-				name: upload.name,
-				thumbnail: upload.thumbnail ?? undefined,
-			};
 		}),
 });

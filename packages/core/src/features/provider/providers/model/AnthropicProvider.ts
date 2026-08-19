@@ -118,9 +118,9 @@ export const AnthropicProvider: ModelProvider<_AnthropicProvider> = {
 		return null;
 	},
 
-	getPartTransformed({ part }) {
+	async getPartTransformed({ part }) {
 		return [
-			ModelProviderUtils.getPartTransformed({
+			await ModelProviderUtils.getPartTransformed({
 				part,
 				supportedFileTypes: ["image/", "application/pdf"],
 			}),

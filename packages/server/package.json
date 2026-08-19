@@ -10,7 +10,7 @@
 		"@prisma/adapter-pg": "^7.9.1",
 		"@prisma/client": "^7.9.1",
 		"@ryangarber/ai-sdk-antigravity-proxy": "^0.1.4",
-		"@ryangarber/legiscan-ts": "^2.1.0",
+		"@ryangarber/legiscan-ts": "^2.1.2",
 		"@tiny-chat/core": "workspace:*",
 		"fflate": "^0.8.3",
 		"internal-ip": "^9.0.0",

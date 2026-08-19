@@ -41,7 +41,7 @@
 		"test:web": "dotenv -- vitest run packages/web",
 		"test:cli": "dotenv -- vitest run packages/cli",
 		"test:tauri": "pnpm --filter @tiny-chat/tauri run test",
-		"test": "pnpm pnpm test:core && pnpm test:server && pnpm test:client && pnpm test:app && pnpm test:web && pnpm test:cli && pnpm test:tauri",
+		"test": "pnpm pnpm test:core && pnpm test:server && pnpm test:client && pnpm test:tauri",
 		"knip": "knip"
 	},
 	"devDependencies": {

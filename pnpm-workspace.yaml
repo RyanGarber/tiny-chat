@@ -1,40 +1,39 @@
 packages:
-  - 'apps/*'
-  - 'packages/*'
+    - 'apps/*'
+    - 'packages/*'
 allowBuilds:
-  '@google/genai': true
-  '@mongodb-js/zstd': true
-  '@prisma/engines': true
-  bson: set this to true or false
-  bun: true
-  esbuild: true
-  node-liblzma: true
-  node-pty: true
-  onnxruntime-node: true
-  prisma: true
-  protobufjs: true
-  sharp: true
-  tesseract.js: true
-  tree-sitter-bash: true
-  unrs-resolver: true
+    '@google/genai': true
+    '@mongodb-js/zstd': true
+    '@prisma/engines': true
+    bson: set this to true or false
+    bun: true
+    esbuild: true
+    node-liblzma: true
+    node-pty: true
+    onnxruntime-node: true
+    prisma: true
+    protobufjs: true
+    sharp: true
+    tesseract.js: true
+    tree-sitter-bash: true
+    unrs-resolver: true
 allowedDeprecatedVersions:
-  glob: '*'
-  'node-domexception': '*'
-  'whatwg-encoding': '*'
+    glob: '*'
+    'node-domexception': '*'
+    'whatwg-encoding': '*'
 minimumReleaseAgeExclude:
-  - xlsx@0.19.3
-  - xlsx@0.20.2
-  - diff@8.0.3
-  - '@tootallnate/once@3.0.1'
-  - '@hono/node-server@1.19.13'
-  - '@opentelemetry/sdk-node@0.217.0'
-  - '@opentelemetry/exporter-prometheus@0.217.0'
-  - '@ryangarber/ai-sdk-antigravity-proxy@0.1.2'
+    - diff@8.0.3
+    - '@tootallnate/once@3.0.1'
+    - '@hono/node-server@1.19.13'
+    - '@opentelemetry/sdk-node@0.217.0'
+    - '@opentelemetry/exporter-prometheus@0.217.0'
+    - '@ryangarber/legiscan-ts@2.1.2'
+    - '@ryangarber/markitdown-ts@0.1.4'
 peerDependencyRules:
-  allowedVersions:
-    '@browser-ai/web-llm>ai': '7'
+    allowedVersions:
+        '@browser-ai/web-llm>ai': '7'
 overrides:
-  'conventional-changelog-writer': '^9.1.1'
+    'conventional-changelog-writer': '^9.1.1'
 patchedDependencies:
-  '@ai-sdk/google': patches/@ai-sdk__google.patch
-  sixel: patches/sixel.patch
+    '@ai-sdk/google': patches/@ai-sdk__google.patch
+    sixel: patches/sixel.patch

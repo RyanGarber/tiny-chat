@@ -1,8 +1,9 @@
 import { Avatar, Image, Tooltip } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useMutation } from "@tanstack/react-query";
+import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { client } from "#app/client.ts";
 import { theme } from "#app/core/utils/IconUtils.ts";
 import {
@@ -18,14 +19,16 @@ export default function FileThumbnails({
 	uploads,
 	size = 30,
 }: {
-	uploads: { id: string; name: string; thumbnail?: string }[];
+	uploads: { id: string; name: string; thumbnail?: Uint8Array | null }[];
 	size?: number;
 	width?: number | string;
 	maxHeight?: number;
 }) {
 	const [opened, { open, close }] = useDisclosure(false);
 	const [initialIndex, setInitialIndex] = useState(0);
+
 	const [fileData, setFileData] = useState<FilePreviewItem[] | null>(null);
+
 	const loadFileData = useMutation({
 		mutationKey: ["load-file-data"] as const,
 		mutationFn: async () => {
@@ -40,6 +43,17 @@ export default function FileThumbnails({
 			});
 		},
 	});
+
+	const thumbnails = useMemo(() => {
+		const result: Record<string, string> = {};
+		uploads.forEach((upload) => {
+			if (upload.thumbnail) {
+				result[upload.id] =
+					`data:image/webp;base64,${FileUtils.getBase64FromBytes({ data: upload.thumbnail })}`;
+			}
+		});
+		return result;
+	}, [uploads]);
 
 	return (
 		<>
@@ -68,7 +82,7 @@ export default function FileThumbnails({
 							<Avatar
 								radius="xl"
 								size={size}
-								src={upload.thumbnail ?? null}
+								src={thumbnails[upload.id]}
 								bd="2px solid var(--mantine-color-default-border)"
 								style={{ cursor: "pointer" }}
 								onClick={() => {
@@ -104,7 +118,7 @@ export default function FileThumbnails({
 							>
 								<Image
 									src={
-										upload.thumbnail ??
+										thumbnails[upload.id] ??
 										`data:${icon?.mimeType};base64,${icon?.data}`
 									}
 									w="auto"

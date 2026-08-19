@@ -1,3 +1,4 @@
+import { FileFixtureUtils } from "@tiny-chat/core/src/features/file/utils/FileFixtureUtils.ts";
 import { beforeAll, describe, expect, it } from "vitest";
 import { testClient } from "../../../tests.ts";
 import { UploadUtils } from "./UploadUtils.ts";
@@ -105,6 +106,27 @@ describe("UploadUtils", () => {
 			expect(keepBySql({ path: "assets/logo.png", extras: false })).toBe(true);
 		});
 	});
+
+	describe("isDocumentSql", () => {
+		const isDocument = (path: string) => {
+			const { values } = UploadUtils.isDocumentSql();
+			return new RegExp(values[0] as string, "i").test(path);
+		};
+
+		it.each(["docs/handbook.pdf", "budget.XLSX", "letters/offer.docx"])(
+			"recognises %s",
+			(path) => {
+				expect(isDocument(path)).toBe(true);
+			},
+		);
+
+		it.each(["src/app.ts", "notes.md", "archive.pdf.zip", "deck.pptx"])(
+			"leaves %s to the ordinary decode",
+			(path) => {
+				expect(isDocument(path)).toBe(false);
+			},
+		);
+	});
 });
 
 describe("utils - files", () => {
@@ -120,6 +142,14 @@ describe("utils - files", () => {
 		await api.upload.createUpload.mutate(data);
 		data.set("file", new File(["But this should."], "question.md"));
 		await api.upload.createUpload.mutate(data);
+		data.set(
+			"file",
+			new File(
+				[FileFixtureUtils.buildPdf({ sentence: "So should this document." })],
+				"handbook.pdf",
+			),
+		);
+		await api.upload.createUpload.mutate(data);
 	});
 
 	it("includes the correct files", async () => {
@@ -133,6 +163,13 @@ describe("utils - files", () => {
 		).toBeUndefined();
 		expect(
 			missingEmbeddings?.files.find((file) => file.text === "But this should."),
+		).toBeDefined();
+		// A PDF never decodes as UTF-8, so it reaches the queue only because it
+		// was unpacked on the way out.
+		expect(
+			missingEmbeddings?.files.find((file) =>
+				file.text.includes("So should this document."),
+			),
 		).toBeDefined();
 	});
 });

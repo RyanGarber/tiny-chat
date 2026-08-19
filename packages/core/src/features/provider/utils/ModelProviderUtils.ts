@@ -1,4 +1,5 @@
 import type { zConfig, zDataPart } from "../../data/types/message.ts";
+import { FileExtractionService } from "../../file/services/FileExtractionService.ts";
 import { FileUtils } from "../../file/utils/FileUtils.ts";
 import type { ModelProvider, zModelArg } from "../types/model.ts";
 
@@ -44,18 +45,40 @@ export const ModelProviderUtils = {
 		return args;
 	},
 
-	getPartTransformed: ({
+	/**
+	 * A part in a form this model can actually take.
+	 *
+	 * A file the model accepts is passed through untouched — a provider that
+	 * reads PDFs natively sees the page as it was laid out, which no conversion
+	 * can give back. Anything else has to become text, and a document is a
+	 * container: decoding its bytes would send the model the zip header of a
+	 * `.docx` rather than the letter inside it, so it goes to the converter
+	 * first.
+	 */
+	getPartTransformed: async ({
 		part,
 		supportedFileTypes = [],
 	}: {
 		part: zDataPart;
 		supportedFileTypes?: string[];
-	}): zDataPart => {
+	}): Promise<zDataPart> => {
 		if (part.type === "file") {
 			if (!supportedFileTypes.some((m) => part.mime.startsWith(m))) {
+				if (FileExtractionService.canExtract(part)) {
+					const extracted = await FileExtractionService.extract({
+						data: FileUtils.getBufferFromBytes(part),
+						name: part.name,
+						mime: part.mime,
+					});
+					if (extracted) return { type: "text", value: extracted };
+				}
+
 				const text = FileUtils.getTextFromBytes(part);
 				if (text) return { type: "text", value: text };
-				return { type: "text", value: `[Unsupported file: ${part.data}]` };
+				return {
+					type: "text",
+					value: `[Unsupported file: ${part.name ?? part.mime}]`,
+				};
 			}
 		}
 		return part;

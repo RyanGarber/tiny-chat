@@ -23,11 +23,13 @@ import { PathUtils } from "./PathUtils.ts";
  * `.gitignore` belongs to `search` alone, for the same reason: it records what
  * is not tracked, not what is not there.
  *
- * PDFs and Office documents are deliberately uncategorised. An upload converts
- * them to text and keeps the original extension, so `report.pdf` in the chat
- * filesystem usually *is* the report, in prose. Judging those by name would
- * make an attached document permanently unsearchable; the binary-bytes check
- * below tells a converted one from a raw one without having to guess.
+ * PDFs, Word documents and spreadsheets are deliberately uncategorised. They
+ * are stored as they arrived and unpacked when something reads one
+ * ({@link FileExtractionService}), so a `.pdf` is prose that a search can match
+ * on and excluding it by name would hide the very document that was attached.
+ * Formats with no converter — `.doc`, `.pptx`, `.pages` — need no rule either:
+ * the binary-bytes check below turns them away on content, which is also the
+ * right answer for the ones nobody has thought of.
  */
 
 /** What a path is, when it is something other than authored source. */

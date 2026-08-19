@@ -1,4 +1,5 @@
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
+import { FileExtractionService } from "@tiny-chat/core/src/features/file/services/FileExtractionService.ts";
 import {
 	type FileCategory,
 	FileExcludeUtils,
@@ -89,4 +90,16 @@ export const UploadUtils = {
 
 		return clauses.length ? Prisma.join(clauses, " AND ") : Prisma.sql`TRUE`;
 	},
+
+	/**
+	 * Whether a stored file is one of the container formats that has to be
+	 * unpacked before there is any text to read. Such a file never decodes as
+	 * UTF-8, so anything selecting rows on that alone has to ask this too.
+	 */
+	isDocumentSql: () =>
+		Prisma.sql`array_to_string(path, '/') ~* ${`\\.(${[
+			...FileExtractionService.formats,
+		]
+			.map(CommonUtils.escapeRegex)
+			.join("|")})$`}`,
 } as const;

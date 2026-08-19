@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ShellCapability } from "../../../core/types/capability.ts";
+import { FileFixtureUtils } from "../utils/FileFixtureUtils.ts";
+import { FileExtractionService } from "./FileExtractionService.ts";
 import { FileSearchService } from "./FileSearchService.ts";
 
 export const createShell = (
@@ -393,6 +395,70 @@ describe("FileSearchService", () => {
 					"/mnt/uploads/abc/design/logo.png",
 				],
 			});
+		});
+	});
+
+	describe("readSearchable", () => {
+		it("decodes an ordinary text file", async () => {
+			const shell = createShell({ "/project/src/app.ts": "export {};" });
+
+			await expect(
+				FileSearchService.readSearchable({
+					shell,
+					path: "/project/src/app.ts",
+				}),
+			).resolves.toEqual({ reason: null, text: "export {};" });
+		});
+
+		// A document goes to the converter rather than to the binary check, so a
+		// broken one comes back unreadable rather than being written off by type.
+		it("sends a document to the converter instead of calling it binary", async () => {
+			const shell = createShell({
+				"/mnt/uploads/abc/handbook.pdf": new Uint8Array([37, 80, 68, 70, 0, 1]),
+			});
+
+			await expect(
+				FileSearchService.readSearchable({
+					shell,
+					path: "/mnt/uploads/abc/handbook.pdf",
+				}),
+			).resolves.toEqual({ reason: "unreadable" });
+		});
+
+		// The whole point of unpacking documents: a contract someone attached is
+		// searchable by what it says, not just by what it is called.
+		it("matches text that only exists inside a document", async () => {
+			const shell = createShell({
+				"/mnt/uploads/abc/contract.pdf": FileFixtureUtils.buildPdf({
+					sentence: "Termination clause: 30 days.",
+				}),
+				"/mnt/uploads/abc/notes.md": "nothing relevant",
+			});
+
+			const report = await FileSearchService.grep({
+				shell,
+				path: "/mnt/uploads/abc",
+				query: "termination",
+			});
+
+			expect(report.results).toMatchObject([
+				{ path: "/mnt/uploads/abc/contract.pdf", matches: 1 },
+			]);
+		});
+
+		it("does not open a document past the size it is worth opening", async () => {
+			const shell = createShell({
+				"/mnt/uploads/abc/huge.pdf": new Uint8Array(
+					FileExtractionService.maxBytes + 1,
+				),
+			});
+
+			await expect(
+				FileSearchService.readSearchable({
+					shell,
+					path: "/mnt/uploads/abc/huge.pdf",
+				}),
+			).resolves.toEqual({ reason: "large" });
 		});
 	});
 });

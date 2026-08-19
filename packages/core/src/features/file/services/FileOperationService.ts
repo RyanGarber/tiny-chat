@@ -184,6 +184,10 @@ export const FileOperationService = {
 		const matches = fuzzysort.go(normalizedQuery, targets, {
 			keys: ["name", "path"],
 			limit: maxResults,
+			// Well below the default, which only admits near-exact matches. A
+			// picker is reached for precisely when the name is half-remembered,
+			// so `usrservice` has to still find `UserService.ts`.
+			threshold: 0.2,
 			// The name is what the user typed at; the path only breaks ties.
 			scoreFn: (result) =>
 				Math.max(result[0]?.score ?? 0, (result[1]?.score ?? 0) * 0.5),

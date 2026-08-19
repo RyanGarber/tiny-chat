@@ -80,7 +80,7 @@ export const ModelProviderService = {
 
 		const events: TextStreamPart<any>[] = [];
 
-		const sdkMessages = ModelTransformService.toSdkMessages({
+		const sdkMessages = await ModelTransformService.toSdkMessages({
 			user,
 			config,
 			provider,

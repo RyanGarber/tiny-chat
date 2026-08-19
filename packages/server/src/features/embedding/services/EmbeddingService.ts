@@ -1,6 +1,7 @@
 import type { MessageLike } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
+import { FileExtractionService } from "@tiny-chat/core/src/features/file/services/FileExtractionService.ts";
 import { FileExcludeUtils } from "@tiny-chat/core/src/features/file/utils/FileExcludeUtils.ts";
 import { Prisma } from "../../../../generated/prisma/client.ts";
 import { UploadUtils } from "../../upload/utils/UploadUtils.ts";
@@ -79,25 +80,51 @@ export const EmbeddingService = {
           ${limit ? Prisma.sql`LIMIT ${limit - messages.length - actions.length}` : Prisma.empty}`;
 		}
 
-		let files: { id: string; data: Uint8Array; total: number }[] = [];
+		let files: {
+			id: string;
+			path: string[];
+			data: Uint8Array;
+			total: number;
+		}[] = [];
 		if (!limit || messages.length + actions.length + memories.length < limit) {
 			files = await globalThis.prisma.$queryRaw<
 				typeof files
-			>`SELECT id, data, COUNT(*) OVER() as total
+			>`SELECT id, path, data, COUNT(*) OVER() as total
           FROM file
           WHERE "userId" = ${user.id}
             AND ${UploadUtils.shouldIncludeFileSql()}
-            AND OCTET_LENGTH(data) <= ${FileExcludeUtils.maxFileBytes}
-            AND try_decode_utf8(data) IS NOT NULL
+            AND (
+              (
+                try_decode_utf8(data) IS NOT NULL
+                AND OCTET_LENGTH(data) <= ${FileExcludeUtils.maxFileBytes}
+              ) OR (
+                ${UploadUtils.isDocumentSql()}
+                AND OCTET_LENGTH(data) <= ${FileExtractionService.maxBytes}
+              )
+            )
             AND embedding IS NULL
           ${limit ? Prisma.sql`LIMIT ${limit - messages.length - actions.length - memories.length}` : Prisma.empty}`;
 		}
+
+		// A document holds its text in a container, so it is unpacked here rather
+		// than decoded. The bytes are dropped either way: the caller embeds the
+		// text and has no use for a PDF over the wire.
+		const embeddable = (
+			await Promise.all(
+				files.map(async ({ data, ...file }) => ({
+					...file,
+					text: FileExtractionService.canExtract({ path: file.path })
+						? await FileExtractionService.extract({ data, path: file.path })
+						: new TextDecoder().decode(data),
+				})),
+			)
+		).filter((file): file is typeof file & { text: string } => !!file.text);
 
 		if (
 			!messages.length &&
 			!actions.length &&
 			!memories.length &&
-			!files.length
+			!embeddable.length
 		)
 			return null;
 
@@ -111,10 +138,7 @@ export const EmbeddingService = {
 				text: DataUtils.getText(action),
 			})),
 			memories: memories.map((memory) => ({ ...memory, text: memory.fact })),
-			files: files.map((f) => ({
-				...f,
-				text: new TextDecoder().decode(f.data),
-			})),
+			files: embeddable,
 		};
 	},
 

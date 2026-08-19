@@ -90,7 +90,7 @@ export interface ModelProvider<T extends ProviderV3 | ProviderV4>
 		user: zUser;
 		config: zConfig;
 		part: zDataPart;
-	}) => zDataPart[] | undefined;
+	}) => Promise<zDataPart[] | undefined> | zDataPart[] | undefined;
 
 	getPartSignature?: (args: {
 		user: zUser;

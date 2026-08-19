@@ -125,7 +125,7 @@ export const GoogleProvider: ModelProvider<GoogleGenerativeAIProvider> = {
 		return this.getSdk({ user, model, env })?.embeddingModel(model) ?? null;
 	},
 
-	getPartTransformed({ config, part }) {
+	async getPartTransformed({ config, part }) {
 		const parts: zDataPart[] = [];
 
 		if (
@@ -160,11 +160,13 @@ export const GoogleProvider: ModelProvider<GoogleGenerativeAIProvider> = {
 			parts.push(part);
 		}
 
-		return parts.map((part) =>
-			ModelProviderUtils.getPartTransformed({
-				part,
-				supportedFileTypes: ["video/", "image/", "application/pdf"],
-			}),
+		return await Promise.all(
+			parts.map((part) =>
+				ModelProviderUtils.getPartTransformed({
+					part,
+					supportedFileTypes: ["video/", "image/", "application/pdf"],
+				}),
+			),
 		);
 	},
 

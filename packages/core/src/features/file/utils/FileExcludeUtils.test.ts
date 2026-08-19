@@ -172,15 +172,15 @@ describe("FileExcludeUtils", () => {
 			).toEqual({ reason: "binary" });
 		});
 
-		// An upload converts a document to text and keeps its extension, so the
-		// name cannot decide this one and the bytes have to.
-		it("searches a document that turned out to be text", () => {
+		// Documents are unpacked by FileSearchService before it gets this far, so
+		// all this has to do is leave the name alone and judge the raw bytes.
+		it("leaves documents to be judged by their contents", () => {
 			expect(
-				FileExcludeUtils.getSkipReason({
-					path: "docs/handbook.pdf",
-					data: encode("# Handbook\n\nThe converted text."),
-				}),
-			).toMatchObject({ reason: null });
+				FileExcludeUtils.getExcluded({ path: "docs/handbook.pdf" }),
+			).toBeNull();
+			expect(
+				FileExcludeUtils.getExcluded({ path: "docs/budget.xlsx" }),
+			).toBeNull();
 
 			expect(
 				FileExcludeUtils.getSkipReason({

@@ -1,6 +1,7 @@
 import {
 	Group,
 	Image,
+	Loader,
 	LoadingOverlay,
 	Modal,
 	ScrollArea,
@@ -8,15 +9,54 @@ import {
 	Stack,
 } from "@mantine/core";
 import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeUtils.ts";
-import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
 import { useState } from "react";
 import type { BundledLanguage } from "streamdown";
 import Code from "#app/features/code/components/Code.tsx";
+import { Markdown } from "#app/features/message/components/Markdown.tsx";
+import { useFileText } from "#app/features/upload/hooks/useFileText.ts";
 
 export interface FilePreviewItem {
 	name: string;
 	data: string;
 	mime: string;
+}
+
+/**
+ * One file's contents. An image is shown as itself; a document is shown as the
+ * markdown it extracts to, which is the only readable form of it here; anything
+ * else is shown as source.
+ */
+function FilePreviewContent({ item }: { item: FilePreviewItem }) {
+	const { text, loading, extracted } = useFileText(item);
+
+	if (item.mime.startsWith("image/")) {
+		return (
+			<Image
+				src={`data:${item.mime};base64,${item.data}`}
+				alt={item.name}
+				mah="80vh"
+				w="auto"
+			/>
+		);
+	}
+
+	if (loading) return <Loader my="xl" />;
+
+	if (extracted) {
+		return text ? (
+			<Markdown source={text} />
+		) : (
+			<Code filename={item.name} code="// could not read this document" />
+		);
+	}
+
+	return (
+		<Code
+			filename={item.name}
+			language={FileTypeUtils.getExtension(item) as BundledLanguage}
+			code={text ?? "// failed to decode file"}
+		/>
+	);
 }
 
 export function FilePreview({
@@ -45,27 +85,10 @@ export function FilePreview({
 				<Stack h="100%">
 					<ScrollArea flex={1} style={{ overflow: "auto" }}>
 						<Group justify="center" align="center">
-							{items[selected].mime.startsWith("image/") ? (
-								<Image
-									src={`data:${items[selected].mime};base64,${items[selected].data}`}
-									alt={items[selected].name}
-									mah="80vh"
-									w="auto"
-								/>
-							) : (
-								<Code
-									filename={items[selected].name}
-									language={
-										FileTypeUtils.getExtension(
-											items[selected],
-										) as BundledLanguage
-									}
-									code={
-										FileUtils.getTextFromBytes(items[selected]) ??
-										"// failed to decode file"
-									}
-								/>
-							)}
+							<FilePreviewContent
+								key={items[selected].name}
+								item={items[selected]}
+							/>
 						</Group>
 					</ScrollArea>
 					{items && items.length > 0 && (

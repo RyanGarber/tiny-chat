@@ -13,6 +13,6 @@ export type UploadState = Upload;
 export const zUploadResult = z.object({
 	id: z.cuid2(),
 	name: z.string(),
-	thumbnail: z.string().optional(),
+	thumbnail: z.custom<Uint8Array>().nullish(),
 });
 export type zUploadResult = z.infer<typeof zUploadResult>;

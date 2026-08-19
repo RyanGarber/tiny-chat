@@ -121,26 +121,4 @@ export const FileUtils = {
 
 		return root;
 	},
-
-	/**
-	 * Build a flat map from a list of file-like objects.
-	 */
-	toMap: <T extends { path: string[] }>({ nodes }: { nodes: T[] }) => {
-		const tree = FileUtils.toTree({ nodes });
-		const flat = new Map<string, Descendent<T>>();
-		const traverse = (
-			[descendentName, descendent]: [string, Descendent<T>],
-			prefix = "",
-		) => {
-			const path = `${prefix}${prefix.length && descendentName.length ? "/" : ""}${descendentName}`;
-			if (descendentName.length) {
-				flat.set(path, descendent);
-			}
-			for (const [childName, child] of descendent.children.entries()) {
-				traverse([childName, child], path);
-			}
-		};
-		traverse(["", tree]);
-		return flat;
-	},
 } as const;

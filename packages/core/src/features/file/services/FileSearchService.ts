@@ -8,6 +8,7 @@ import {
 } from "../utils/FileExcludeUtils.ts";
 import { FileMatchUtils, type IgnoreRule } from "../utils/FileMatchUtils.ts";
 import { PathUtils } from "../utils/PathUtils.ts";
+import { FileExtractionService } from "./FileExtractionService.ts";
 
 /**
  * FileSearchService — search that is safe to point at any directory.
@@ -331,6 +332,11 @@ export const FileSearchService = {
 	/**
 	 * Reads a file and decides whether its contents may be searched. Returns the
 	 * text, or the reason the file was passed over.
+	 *
+	 * A PDF, a Word document or a spreadsheet is unpacked here rather than
+	 * turned away as binary. Someone who attaches a contract and asks which
+	 * clause covers termination is asking about words that are in the file, and
+	 * the only thing standing between the search and them is a container.
 	 */
 	readSearchable: async ({
 		shell,
@@ -347,6 +353,19 @@ export const FileSearchService = {
 		} catch {
 			return { reason: "unreadable" };
 		}
+
+		if (FileExtractionService.canExtract({ path })) {
+			const excluded = FileExcludeUtils.getExcluded({ path, root });
+			if (excluded) return { reason: excluded };
+			// Documents are compressed, so the byte budget that bounds a text
+			// file says nothing useful about how much prose is inside one.
+			if (data.length > FileExtractionService.maxBytes)
+				return { reason: "large" };
+
+			const text = await FileExtractionService.extract({ data, path });
+			return text === null ? { reason: "unreadable" } : { reason: null, text };
+		}
+
 		return FileExcludeUtils.getSkipReason({ path, root, data });
 	},
 

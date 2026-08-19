@@ -89,9 +89,9 @@ export const UserScalarFieldEnum = {
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   isAnonymous: 'isAnonymous',
-  isEphemeral: 'isEphemeral',
   settings: 'settings',
-  cache: 'cache'
+  cache: 'cache',
+  isEphemeral: 'isEphemeral'
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
@@ -221,8 +221,8 @@ export const UploadScalarFieldEnum = {
   userId: 'userId',
   name: 'name',
   createdAt: 'createdAt',
-  thumbnail: 'thumbnail',
-  type: 'type'
+  type: 'type',
+  thumbnail: 'thumbnail'
 } as const
 
 export type UploadScalarFieldEnum = (typeof UploadScalarFieldEnum)[keyof typeof UploadScalarFieldEnum]

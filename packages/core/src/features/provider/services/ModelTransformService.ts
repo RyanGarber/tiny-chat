@@ -22,7 +22,7 @@ type SdkMessage = ModelMessage & {
 };
 
 export const ModelTransformService = {
-	toSdkMessages: ({
+	toSdkMessages: async ({
 		user,
 		provider,
 		messages,
@@ -32,7 +32,7 @@ export const ModelTransformService = {
 		provider: ModelProvider<any>;
 		messages: zModelMessage[];
 		config: zConfig;
-	}): SdkMessage[] => {
+	}): Promise<SdkMessage[]> => {
 		const sdkMessages: SdkMessage[] = [];
 		for (const message of messages) {
 			const sdkMessage: SdkMessage = {
@@ -40,15 +40,27 @@ export const ModelTransformService = {
 				content: [],
 			};
 
-			// transform based on model: full parts at the root, 'basic' parts for everything inside
-			function transform(part: zDataPart): zDataPart[];
-			function transform(part: zDataBasicPart): zDataBasicPart[];
-			function transform(part: zDataPart): zDataPart[] | zDataBasicPart[] {
+			// transform based on model: full parts at the root, 'basic' parts for
+			// everything inside. Awaited because a document attached to a model
+			// that cannot read one is unpacked here.
+			async function transform(part: zDataPart): Promise<zDataPart[]>;
+			async function transform(part: zDataBasicPart): Promise<zDataBasicPart[]>;
+			async function transform(
+				part: zDataPart,
+			): Promise<zDataPart[] | zDataBasicPart[]> {
 				let result =
-					provider.getPartTransformed?.({ user, config, part }) ??
-					ModelProviderUtils.getPartTransformed({ part });
+					(await provider.getPartTransformed?.({ user, config, part })) ??
+					(await ModelProviderUtils.getPartTransformed({ part }));
 				if (!Array.isArray(result)) result = [result];
 				return result;
+			}
+
+			/** `flatMap` over an async mapper, in order. */
+			async function flatMap<T, R>(
+				items: T[],
+				map: (item: T) => Promise<R[]>,
+			): Promise<R[]> {
+				return (await Promise.all(items.map(map))).flat();
 			}
 
 			const parts = zData.parse(message.data).flat();
@@ -80,9 +92,11 @@ export const ModelTransformService = {
 					ModelProviderUtils.getSignatureReturnPruned(providerOptions);
 
 				// convert to sdk parts with an equivalent basic/non-basic distinction
-				function toSdkPart(part: zDataPart): SdkPart[];
-				function toSdkPart(part: zDataBasicPart): SdkBasicPart[];
-				function toSdkPart(part: zDataPart): SdkPart[] | SdkBasicPart[] {
+				async function toSdkPart(part: zDataPart): Promise<SdkPart[]>;
+				async function toSdkPart(part: zDataBasicPart): Promise<SdkBasicPart[]>;
+				async function toSdkPart(
+					part: zDataPart,
+				): Promise<SdkPart[] | SdkBasicPart[]> {
 					if (part.type === "text") {
 						return [{ type: "text", text: part.value, providerOptions }];
 					} else if (part.type === "json") {
@@ -126,7 +140,10 @@ export const ModelTransformService = {
 							// Store for appending in a new user part
 							if (part.append) {
 								appendParts.push(
-									...part.append.flatMap(transform).flatMap(toSdkPart),
+									...(await flatMap(
+										await flatMap(part.append, transform),
+										toSdkPart,
+									)),
 								);
 							}
 							const parsed = zDataBasicPart.array().safeParse(part.value);
@@ -140,9 +157,10 @@ export const ModelTransformService = {
 										: parsed.success
 											? {
 													type: "content",
-													value: parsed.data
-														.flatMap(transform)
-														.flatMap(toSdkPart),
+													value: await flatMap(
+														await flatMap(parsed.data, transform),
+														toSdkPart,
+													),
 												}
 											: { type: "json", value: part.value },
 									providerOptions,
@@ -154,7 +172,7 @@ export const ModelTransformService = {
 				}
 
 				sdkMessage.content.push(
-					...transform(part).flatMap((part) => toSdkPart(part)),
+					...(await flatMap(await transform(part), (part) => toSdkPart(part))),
 				);
 			}
 

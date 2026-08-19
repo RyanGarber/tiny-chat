@@ -73,9 +73,9 @@ export const CustomProvider: ModelProvider<OpenAICompatibleProvider> = {
 		return this.getSdk({ user, model, env })?.embeddingModel(model) ?? null;
 	},
 
-	getPartTransformed({ part }) {
+	async getPartTransformed({ part }) {
 		return [
-			ModelProviderUtils.getPartTransformed({
+			await ModelProviderUtils.getPartTransformed({
 				part,
 				supportedFileTypes: ["image/", "application/pdf"],
 			}),

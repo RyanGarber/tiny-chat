@@ -1,6 +1,6 @@
 import { z } from "zod";
+import type { UserCapability } from "../../../../core/types/capability.ts";
 import { RRule } from "../../../../index.ts";
-import type { UserCapability } from "../../../capability/types/capability.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
 export const update_action = {

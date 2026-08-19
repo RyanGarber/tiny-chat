@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ShellCapability } from "../../capability/types/capability.ts";
+import type { ShellCapability } from "../../../core/types/capability.ts";
 import { FileSearchService } from "./FileSearchService.ts";
 
 export const createShell = (
@@ -60,14 +60,14 @@ describe("FileSearchService", () => {
 		});
 
 		// Git itself cannot re-include a file whose parent directory is ignored,
-		// and neither does the walk: `generated/` is never descended into.
-		it("honours .gitignore", async () => {
+		// and neither does the walk: `ignored/` is never descended into.
+		it("honours .gitignore when searching", async () => {
 			const shell = createShell({
-				"/project/.gitignore": "*.log\ngenerated/\n!generated/keep.ts\n",
+				"/project/.gitignore": "*.log\nignored/\n!ignored/keep.ts\n",
 				"/project/app.ts": "app",
 				"/project/debug.log": "noise",
-				"/project/generated/schema.ts": "generated",
-				"/project/generated/keep.ts": "kept",
+				"/project/ignored/schema.ts": "generated",
+				"/project/ignored/keep.ts": "kept",
 			});
 
 			const { entries } = await FileSearchService.walk({
@@ -75,7 +75,93 @@ describe("FileSearchService", () => {
 				path: "/project",
 			});
 
-			expect(entries.map((entry) => entry.path)).toEqual(["/project/app.ts"]);
+			expect(entries.map((entry) => entry.path)).toEqual([
+				"/project/.gitignore",
+				"/project/app.ts",
+			]);
+		});
+
+		// What a project does not track and what a user did not send are
+		// different claims, and only the first is `.gitignore`'s to make.
+		it("ignores .gitignore when listing", async () => {
+			const shell = createShell({
+				"/project/.gitignore": "*.log\n",
+				"/project/app.ts": "app",
+				"/project/debug.log": "noise",
+			});
+
+			const { entries } = await FileSearchService.walk({
+				shell,
+				path: "/project",
+				scope: "listing",
+			});
+
+			expect(entries.map((entry) => entry.path)).toContain(
+				"/project/debug.log",
+			);
+		});
+
+		it("lists the files a text search would refuse to open", async () => {
+			const shell = createShell({
+				"/project/screenshot.png": "binary",
+				"/project/run.log": "noise",
+				"/project/dist/app.js": "built",
+				"/project/node_modules/dep/index.js": "dep",
+			});
+
+			const { entries } = await FileSearchService.walk({
+				shell,
+				path: "/project",
+				scope: "listing",
+			});
+
+			expect(entries.map((entry) => entry.path).sort()).toEqual([
+				"/project/dist/app.js",
+				"/project/run.log",
+				"/project/screenshot.png",
+			]);
+		});
+
+		it("names a directory it declined to descend into", async () => {
+			const shell = createShell({
+				"/project/app.ts": "app",
+				"/project/node_modules/dep/index.js": "dep",
+			});
+
+			const { entries, skipped } = await FileSearchService.walk({
+				shell,
+				path: "/project",
+				scope: "listing",
+				includeDirectories: true,
+			});
+
+			expect(entries).toEqual([
+				{ path: "/project/app.ts", is_dir: false },
+				{
+					path: "/project/node_modules",
+					is_dir: true,
+					skipped: "dependency",
+				},
+			]);
+			expect(skipped).toEqual({ dependency: 1 });
+		});
+
+		// A checkout that happens to sit in a directory named after build
+		// output must not rule out every file inside it.
+		it("judges paths from the search root down", async () => {
+			const shell = createShell({
+				"/Users/me/Library/work/src/app.ts": "app",
+				"/Users/me/Library/work/dist/app.js": "built",
+			});
+
+			const { entries } = await FileSearchService.walk({
+				shell,
+				path: "/Users/me/Library/work",
+			});
+
+			expect(entries.map((entry) => entry.path)).toEqual([
+				"/Users/me/Library/work/src/app.ts",
+			]);
 		});
 
 		it("reports truncation instead of walking forever", async () => {
@@ -278,7 +364,35 @@ describe("FileSearchService", () => {
 
 			await expect(
 				FileSearchService.glob({ shell, path: "/project", pattern: "**/*.ts" }),
-			).resolves.toEqual({ paths: ["/project/src/a.ts"], truncated: false });
+			).resolves.toEqual({
+				paths: ["/project/src/a.ts"],
+				truncated: false,
+				scanned: 3,
+			});
+		});
+
+		// The reason this tool exists: an attached upload is reached by globbing
+		// the directory it was mounted at, and what was attached is usually
+		// exactly what a text search would have thrown away.
+		it("finds the uploaded files a text search would skip", async () => {
+			const shell = createShell({
+				"/mnt/uploads/abc/design/logo.png": "binary",
+				"/mnt/uploads/abc/design/hero.jpg": "binary",
+				"/mnt/uploads/abc/notes.md": "notes",
+			});
+
+			await expect(
+				FileSearchService.glob({
+					shell,
+					path: "/mnt/uploads/abc",
+					pattern: "**/*.{png,jpg}",
+				}),
+			).resolves.toMatchObject({
+				paths: [
+					"/mnt/uploads/abc/design/hero.jpg",
+					"/mnt/uploads/abc/design/logo.png",
+				],
+			});
 		});
 	});
 });

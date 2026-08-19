@@ -22,7 +22,7 @@ import { useSession } from "../../../core/hooks/useSession.ts";
 import { useProviders } from "../../agent/hooks/useProviders.ts";
 import { useSkills } from "../../agent/hooks/useSkills.ts";
 import { useTools } from "../../agent/hooks/useTools.ts";
-import { AgentMessageService } from "../../agent/services/AgentMessageService.ts";
+import { ClientAgentService } from "../../agent/services/ClientAgentService.ts";
 import { useChat } from "../../chat/hooks/useChat.ts";
 import { useChatFiles } from "../../chat/hooks/useChatFiles.ts";
 import { useActions } from "../../user/hooks/useActions.ts";
@@ -174,7 +174,7 @@ function MessageSync({ store }: { store: StoreApi<MessageStore> }) {
 	const retry = useCallback(
 		(message: MessageState) => {
 			if (!session.data || !chat.data || !providers.data) return;
-			void AgentMessageService.handle({
+			void ClientAgentService.onMessage({
 				client,
 				user: session.data.user,
 				message,

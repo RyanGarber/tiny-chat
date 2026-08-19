@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { WebCapability } from "../../../capability/types/capability.ts";
+import type { WebCapability } from "../../../../core/types/capability.ts";
 import { zWebContext } from "../../../provider/types/web.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 

@@ -1,6 +1,7 @@
 import fuzzysort from "fuzzysort";
-import type { ShellCapability } from "../../capability/types/capability.ts";
+import type { ShellCapability } from "../../../core/types/capability.ts";
 import { type FileEditResult, FileEditUtils } from "../utils/FileEditUtils.ts";
+import type { FileScope } from "../utils/FileExcludeUtils.ts";
 import { FileUtils } from "../utils/FileUtils.ts";
 import { PathUtils } from "../utils/PathUtils.ts";
 import { FileSearchService } from "./FileSearchService.ts";
@@ -35,16 +36,19 @@ export const FileOperationService = {
 	walk: async ({
 		shell,
 		path,
+		scope = "listing",
 		includeDirectories = false,
 	}: {
 		shell: Pick<ShellCapability, "readDir"> &
 			Partial<Pick<ShellCapability, "readFile">>;
 		path: string;
+		scope?: FileScope;
 		includeDirectories?: boolean;
-	}): Promise<{ path: string; is_dir: boolean }[]> => {
+	}) => {
 		const { entries } = await FileSearchService.walk({
 			shell,
 			path,
+			scope,
 			includeDirectories,
 		});
 		return entries;
@@ -143,17 +147,22 @@ export const FileOperationService = {
 	/**
 	 * Fuzzy file-name lookup, for pickers and for locating a file whose exact
 	 * spelling is unknown. Never reads file contents.
+	 *
+	 * Matches on names alone, so it withholds only what nobody would attach:
+	 * someone reaching for `logo.png` has to be able to find `logo.png`.
 	 */
 	searchNames: async ({
 		shell,
 		path,
 		query,
+		scope = "listing",
 		maxResults = 10,
 	}: {
 		shell: Pick<ShellCapability, "readDir"> &
 			Partial<Pick<ShellCapability, "readFile">>;
 		path: string;
 		query: string;
+		scope?: FileScope;
 		maxResults?: number;
 	}): Promise<{ path: string; is_dir: boolean }[]> => {
 		const normalizedQuery = query.trim();
@@ -162,6 +171,7 @@ export const FileOperationService = {
 		const { entries } = await FileSearchService.walk({
 			shell,
 			path,
+			scope,
 			includeDirectories: true,
 		});
 

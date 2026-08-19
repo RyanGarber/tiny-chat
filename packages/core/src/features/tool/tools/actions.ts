@@ -1,4 +1,4 @@
-import type { UserCapability } from "../../capability/types/capability.ts";
+import type { UserCapability } from "../../../core/types/capability.ts";
 import type { Toolset, ToolsetFactory } from "../types/tool.ts";
 import { createCreateActionTool } from "./actions/create_action.ts";
 import { createDeleteActionTool } from "./actions/delete_action.ts";

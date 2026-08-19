@@ -1,12 +1,12 @@
 import { z } from "zod";
-import type { ShellCapability } from "../../../capability/types/capability.ts";
+import type { ShellCapability } from "../../../../core/types/capability.ts";
 import { FileOperationService } from "../../../file/services/FileOperationService.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
 export const grep_files = {
 	name: "grep_files",
 	description:
-		"Search file contents for a regular expression and return the matching lines with their line numbers. Use this when you know what the code says; use search_files when you only know what it does. Binary, generated, minified and git-ignored files are skipped.",
+		"Search file contents for a regular expression and return the matching lines with their line numbers. Use this when you know what the code says; use search_files when you only know what it does. This reads text, so images, archives, databases, build output, generated and git-ignored files are all skipped — reach for find_files when you need to know those exist.",
 	input: z.object({
 		path: z.string().describe("Directory to search."),
 		query: z

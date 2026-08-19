@@ -1,6 +1,6 @@
-import { ComponentUtils } from "@tiny-chat/client/src/core/utils/ComponentUtils.ts";
 import { MarkdownContext } from "@tiny-chat/client/src/features/message/components/MarkdownContext.tsx";
 import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
+import { ComponentUtils } from "@tiny-chat/client/src/features/message/utils/ComponentUtils.ts";
 import { SourceUtils } from "@tiny-chat/client/src/features/message/utils/SourceUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import type { ExtraProps } from "hast-util-to-jsx-runtime";
@@ -273,16 +273,17 @@ const HrComponent: Components["hr"] = () => {
 
 const BrComponent: Components["br"] = () => <Text>{"\n"}</Text>;
 
-const BlockquoteComponent: Components["blockquote"] = ({ children, node }) => (
-	<Box paddingLeft={2} flexDirection="column">
-		{!!node?.properties?.model && (
-			<Text bold>💬 {node.properties.model as string}</Text>
-		)}
-		<Box flexDirection="column" gap={1}>
-			{children}
+const BlockquoteComponent: Components["blockquote"] = ({ children, node }) => {
+	const { model } = ComponentUtils.props(node, { model: undefined });
+	return (
+		<Box paddingLeft={2} flexDirection="column">
+			{!!model && <Text bold>💬 {model}</Text>}
+			<Box flexDirection="column" gap={1}>
+				{children}
+			</Box>
 		</Box>
-	</Box>
-);
+	);
+};
 
 const SubComponent: Components["sub"] = ({ children }) => (
 	<Text>
@@ -305,12 +306,11 @@ const SectionComponent: Components["section"] = ({ children }) => (
 	</Text>
 );
 
-const SlotComponent: Components["slot"] = ({ children, ...props }) => {
+const SlotComponent: Components["slot"] = ({ children, node }) => {
+	const { name } = ComponentUtils.props(node, { name: "?" });
 	return (
 		<Text color="primary" backgroundColor="interior">
-			<Text>
-				/{(props as { name?: string }).name?.replace("user-content-", "")}
-			</Text>
+			<Text>/{name}</Text>
 			{Children.count(children) > 0 && (
 				<Text>
 					{` `}
@@ -321,10 +321,20 @@ const SlotComponent: Components["slot"] = ({ children, ...props }) => {
 	);
 };
 
-const LinkComponent: Components["link"] = ({ children, ...props }) => {
+const LinkComponent: Components["link"] = ({ node }) => {
+	const {
+		source,
+		name,
+		"is-directory": isDirectory,
+	} = ComponentUtils.props(node, {
+		source: "?",
+		name: undefined,
+		"is-directory": false,
+	});
 	return (
 		<Text color="primary" backgroundColor="interior">
-			@{PathUtils.name((props as { source?: string }).source ?? "?")}
+			@{name ?? PathUtils.name(source)}
+			{isDirectory ? "/" : ""}
 		</Text>
 	);
 };
@@ -333,16 +343,14 @@ const MarkComponent: Components["mark"] = ({ children, node }) => {
 	// Read per-citation rather than through the markdown context: sources change
 	// whenever a chat-scoped query settles, and only this component cares.
 	const sources = useMessageStore((s) => s.sources);
-
-	const keys = ((node?.properties.sources ?? "") as string)
-		.replace("user-content-", "")
-		.split(/[\s;,]+/);
-
+	const keys = ComponentUtils.props(node, { sources: "" }).sources.split(
+		/[\s;,]+/,
+	);
+	const text = ComponentUtils.text({ children });
 	return (
 		<Text>
 			{children}
 			{keys.map((key) => {
-				const text = ComponentUtils.text({ children });
 				const source = SourceUtils.getDisplay({ sources, key, text });
 				return (
 					<>

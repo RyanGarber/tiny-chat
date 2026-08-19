@@ -2,7 +2,7 @@ import { Icon } from "@iconify/react";
 import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeUtils.ts";
 import { useEffect, useRef, useState } from "react";
 import { useMermaid } from "#app/features/code/hooks/useMermaid.ts";
-import { RendererUtils } from "#app/features/code/utils/RendererUtils.ts";
+import { HighlightUtils } from "#app/features/code/utils/HighlightUtils.ts";
 
 namespace DownloadButton {
 	export function Code({
@@ -19,7 +19,11 @@ namespace DownloadButton {
 
 		const downloadCode = () => {
 			try {
-				RendererUtils.download({ filename, content: code, mime: "text/plain" });
+				HighlightUtils.download({
+					filename,
+					content: code,
+					mime: "text/plain",
+				});
 			} catch (error) {
 				console.error("[CodeDownloadButton] failed to download:", error);
 			}
@@ -55,7 +59,7 @@ namespace DownloadButton {
 					// Download as Mermaid source code
 					const filename = "diagram.mmd";
 					const mimeType = "text/plain";
-					RendererUtils.download({ filename, content: chart, mime: mimeType });
+					HighlightUtils.download({ filename, content: chart, mime: mimeType });
 					setIsOpen(false);
 					return;
 				}
@@ -76,14 +80,14 @@ namespace DownloadButton {
 				if (format === "svg") {
 					const filename = "diagram.svg";
 					const mimeType = "image/svg+xml";
-					RendererUtils.download({ filename, content: svg, mime: mimeType });
+					HighlightUtils.download({ filename, content: svg, mime: mimeType });
 					setIsOpen(false);
 					return;
 				}
 
 				if (format === "png") {
-					const blob = await RendererUtils.rasterize(svg);
-					RendererUtils.download({
+					const blob = await HighlightUtils.rasterize(svg);
+					HighlightUtils.download({
 						filename: "diagram.png",
 						content: blob,
 						mime: "image/png",

@@ -1,6 +1,7 @@
 import type { MessageLike } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
+import { FileExcludeUtils } from "@tiny-chat/core/src/features/file/utils/FileExcludeUtils.ts";
 import { Prisma } from "../../../../generated/prisma/client.ts";
 import { UploadUtils } from "../../upload/utils/UploadUtils.ts";
 
@@ -85,7 +86,8 @@ export const EmbeddingService = {
 			>`SELECT id, data, COUNT(*) OVER() as total
           FROM file
           WHERE "userId" = ${user.id}
-            AND ${UploadUtils.shouldIncludeFileSql({})}
+            AND ${UploadUtils.shouldIncludeFileSql()}
+            AND OCTET_LENGTH(data) <= ${FileExcludeUtils.maxFileBytes}
             AND try_decode_utf8(data) IS NOT NULL
             AND embedding IS NULL
           ${limit ? Prisma.sql`LIMIT ${limit - messages.length - actions.length - memories.length}` : Prisma.empty}`;

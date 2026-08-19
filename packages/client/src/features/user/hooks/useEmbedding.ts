@@ -3,7 +3,7 @@ import { ModelProviderService } from "@tiny-chat/core/src/features/provider/serv
 import { useContext, useEffect, useRef } from "react";
 import { ClientContext } from "../../../client.ts";
 import { useSession } from "../../../core/hooks/useSession.ts";
-import { ProviderService } from "../../agent/services/ProviderService.ts";
+import { ClientProviderService } from "../../agent/services/ClientProviderService.ts";
 import { useEmbeddingSettings } from "../../settings/hooks/useEmbeddingSettings.ts";
 
 export const nextEmbeddingBatchQueryKey = ["embedding", "next"] as const;
@@ -72,7 +72,7 @@ export const useEmbedding = () => {
 				})),
 			];
 
-			const modelProviders = await ProviderService.getModelProviders({
+			const modelProviders = await ClientProviderService.getModelProviders({
 				client,
 				user: session.data.user,
 			});

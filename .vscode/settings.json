@@ -9,8 +9,10 @@
 	"rust-analyzer.cargo.buildScripts.enable": true,
 	"rust-analyzer.procMacro.enable": true,
 	"rust-analyzer.linkedProjects": ["apps/tauri/Cargo.toml"],
-	"typescript.validate.enable": true,
-	"typescript.preferences.preferTypeOnlyAutoImports": true,
+	"js/ts.validate.enabled": true,
+	"js/ts.preferences.preferTypeOnlyAutoImports": true,
+	"js/ts.tsdk.path": "./node_modules/typescript",
+	"js/ts.experimental.useTsgo": true,
 	"files.exclude": {
 		"**/.git": true,
 		"**/.DS_Store": true,

@@ -1,4 +1,4 @@
-import type { Capabilities } from "../../capability/types/capability.ts";
+import type { Capabilities } from "../../../core/types/capability.ts";
 import { PathUtils } from "../../file/utils/PathUtils.ts";
 import { createActionsToolset } from "../tools/actions.ts";
 import { createMemoriesToolset } from "../tools/memories.ts";

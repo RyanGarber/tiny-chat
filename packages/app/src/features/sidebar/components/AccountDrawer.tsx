@@ -18,15 +18,19 @@ import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
 import { useSession } from "#client/src/core/hooks/useSession.ts";
 
 function Account({
-	id,
+	providerId,
 	name,
 	icon,
 }: {
-	id: string;
+	providerId: string;
 	name: string;
 	icon: JSX.Element;
 }) {
 	const { accounts, linkAccount, unlinkAccount } = useAccounts();
+
+	const account = accounts.data?.find(
+		(account) => account.providerId === providerId,
+	);
 
 	return (
 		<Group justify="space-between">
@@ -34,24 +38,26 @@ function Account({
 				{icon}
 				<Text>{name}</Text>
 			</Group>
-			{accounts.data?.find((account) => account.providerId === id) ? (
+			{account ? (
 				accounts.data?.length === 1 ? (
 					<Tooltip label="Must have one account" color="gray">
-						<Button
-							variant="light"
-							onClick={() => unlinkAccount.mutate(id)}
-							disabled
-						>
+						<Button variant="light" disabled>
 							Unlink
 						</Button>
 					</Tooltip>
 				) : (
-					<Button variant="light" onClick={() => unlinkAccount.mutate(id)}>
+					<Button
+						variant="light"
+						onClick={() => unlinkAccount.mutate(account.accountId)}
+					>
 						Unlink
 					</Button>
 				)
 			) : (
-				<Button variant="default" onClick={() => linkAccount.mutate(id)}>
+				<Button
+					variant="default"
+					onClick={() => linkAccount.mutate(providerId)}
+				>
 					Link
 				</Button>
 			)}
@@ -143,17 +149,17 @@ export default function AccountDrawer({
 							Link an account to save chats and settings.
 						</Text>
 						<Account
-							id="google"
+							providerId="google"
 							name="Google"
 							icon={<Icon icon="lucide:chromium" />}
 						/>
 						<Account
-							id="github"
+							providerId="github"
 							name="GitHub"
 							icon={<Icon icon="lucide:github" />}
 						/>
 						<Account
-							id="huggingface"
+							providerId="huggingface"
 							name="Hugging Face"
 							icon={<Icon icon="lucide:smile" />}
 						/>

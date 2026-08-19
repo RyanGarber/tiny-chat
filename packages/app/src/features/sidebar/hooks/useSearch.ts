@@ -2,7 +2,7 @@ import { useDebouncedValue } from "@mantine/hooks";
 import type { SpotlightActionData } from "@mantine/spotlight";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useSession } from "@tiny-chat/client/src/core/hooks/useSession.ts";
-import { ProviderService } from "@tiny-chat/client/src/features/agent/services/ProviderService.ts";
+import { ClientProviderService } from "@tiny-chat/client/src/features/agent/services/ClientProviderService.ts";
 import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
 import { useEmbeddingSettings } from "@tiny-chat/client/src/features/settings/hooks/useEmbeddingSettings.ts";
 import { SnippetService } from "@tiny-chat/core/src/features/data/services/SnippetService.ts";
@@ -37,7 +37,7 @@ export const useSearch = ({
 
 			if (!session.data) return { text: debouncedQuery, embedding: undefined };
 			const provider = (
-				await ProviderService.getModelProviders({
+				await ClientProviderService.getModelProviders({
 					client,
 					user: session.data.user,
 				})

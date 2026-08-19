@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ShellCapability } from "../../../capability/types/capability.ts";
+import type { ShellCapability } from "../../../../core/types/capability.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 import { ShellUtils } from "../../utils/ShellUtils.ts";
 import { ToolOutputUtils } from "../../utils/ToolOutputUtils.ts";

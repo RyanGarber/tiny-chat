@@ -1,4 +1,4 @@
-import type { UserCapability } from "../../capability/types/capability.ts";
+import type { UserCapability } from "../../../core/types/capability.ts";
 import type { Toolset, ToolsetFactory } from "../types/tool.ts";
 import { createCreateMemoryTool } from "./memories/create_memory.ts";
 import { createDeleteMemoryTool } from "./memories/delete_memory.ts";

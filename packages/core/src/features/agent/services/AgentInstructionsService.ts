@@ -1,9 +1,10 @@
 import { format } from "timeago.js";
+import type { Capabilities } from "../../../core/types/capability.ts";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
-import type { Capabilities } from "../../capability/types/capability.ts";
 import { type zConfig, zData } from "../../data/types/message.ts";
 import { DataUtils } from "../../data/utils/DataUtils.ts";
 import type { zSkill } from "../../skill/types/skill.ts";
+import { find_files } from "../../tool/tools/shell/find_files.ts";
 import { grep_files } from "../../tool/tools/shell/grep_files.ts";
 import { read_dir } from "../../tool/tools/shell/read_dir.ts";
 import { read_file } from "../../tool/tools/shell/read_file.ts";
@@ -95,7 +96,9 @@ ${context.messages.some((m) => m.createdAt) ? "Always take conversation timing i
 Markdown, Mermaid, and LaTeX are supported. Use headers, tables, lists, math, code blocks, diagrams, and images when they would genuinely help illustrate your point.
 Important: Always use two dollar signs ($$...$$) for both inline and display math - never one ($...$). Use one dollar sign in non-math cases such as currency ($5.00).
 
-Always prefer specific, dedicated tools over generic bash commands. For example, when working with files, always use ${read_dir.name}, ${read_file.name}, ${search_files.name} and ${grep_files.name} over \`ls\`, \`cat\`, \`find\`, and \`grep\`.
+Always prefer specific, dedicated tools over generic bash commands. For example, when working with files, always use ${read_dir.name}, ${read_file.name}, ${find_files.name}, ${search_files.name} and ${grep_files.name} over \`ls\`, \`cat\`, \`find\`, and \`grep\`.
+
+${search_files.name} and ${grep_files.name} read text, so they pass over images, archives, databases and build output. When you need to know what files exist rather than what they say — and whenever an attachment is a directory the user sent you — use ${find_files.name} or ${read_dir.name}, which hide nothing of the sort.
 
 When working in a codebase, look before you act: find the relevant files, read the parts you are about to change, then make the smallest edit that does the job. Say what you changed and how you verified it. When a search or a file comes back truncated, ask a narrower question rather than pulling in more of it — context you spend on noise is context you no longer have for the task.
 

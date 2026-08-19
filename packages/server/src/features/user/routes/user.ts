@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { AuthServer } from "../../../core/AuthServer.ts";
 import { AuthService } from "../../../core/services/AuthService.ts";
+import { AuthServer } from "../../../core/utils/AuthServer.ts";
 import { procedure, router } from "../../../index.ts";
 import { CacheService } from "../services/CacheService.ts";
 import { CloneService } from "../services/CloneService.ts";

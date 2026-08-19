@@ -2,7 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useContext } from "react";
 import { ClientContext } from "../../../client.ts";
 import { useSession } from "../../../core/hooks/useSession.ts";
-import { ProviderService } from "../services/ProviderService.ts";
+import { ClientProviderService } from "../services/ClientProviderService.ts";
 
 const providerCacheQueryKey = ["cache", "providers"] as const;
 export const providerCacheMutationKey = ["cache", "providers"] as const;
@@ -16,7 +16,7 @@ export const useProviders = () => {
 		queryKey: [...providerCacheQueryKey, session.data?.user.id],
 		queryFn: () => {
 			if (!session.data) return [];
-			return ProviderService.getProviderStates({
+			return ClientProviderService.getProviderStates({
 				client,
 				user: session.data.user,
 			});
@@ -31,7 +31,7 @@ export const useProviders = () => {
 		mutationFn: async () => {
 			if (!session.data) throw new Error("missing session");
 			console.log("[useProviders] updating providers...");
-			await ProviderService.getProviderStates({
+			await ClientProviderService.getProviderStates({
 				client,
 				user: session.data.user,
 				update: true,

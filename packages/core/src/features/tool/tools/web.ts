@@ -1,4 +1,4 @@
-import type { WebCapability } from "../../capability/types/capability.ts";
+import type { WebCapability } from "../../../core/types/capability.ts";
 import type { Toolset, ToolsetFactory } from "../types/tool.ts";
 import { createSearchWebTool } from "./web/search_web.ts";
 import { createViewWebTool } from "./web/view_web.ts";

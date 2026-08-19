@@ -11,7 +11,6 @@ import {
 } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import type { ByteString, FileContent, FsStat, IFileSystem } from "just-bash";
 import { type File, Prisma } from "../../../../generated/prisma/client.ts";
-import { UploadUtils } from "../../upload/utils/UploadUtils.ts";
 
 /**
  * The virtual filesystem behind the file tools and the virtual Bash
@@ -413,42 +412,38 @@ export class FilesystemService implements IFileSystem {
 			if (!mtime || f.createdAt > mtime) names.set(name, f.createdAt);
 		}
 
-		return [...names]
-			.filter(([name]) =>
-				UploadUtils.shouldIncludeFile({ path: [...uri.path, name] }),
-			)
-			.map(([name, mtime]) => {
-				const childPath = [...uri.path, name];
-				const isDirectory = this.nodes.some(
-					(f) =>
-						PathUtils.contains({ descendent: f.path, parent: childPath }) ||
-						(f.isDirectory && PathUtils.equals(f.path, childPath)),
-				);
-				return {
-					name,
-					// An upload or skill directory is named by its id, which says
-					// nothing about what is in it, so what it is called comes along.
-					// Only at that level: above it the segment is the tree's own
-					// name, and below it the file's.
-					label:
-						(childPath.length === 2 &&
-							this.nodes.find(
-								(f) =>
-									f.name &&
-									PathUtils.contains({
-										descendent: f.path,
-										parent: childPath,
-									}),
-							)?.name) ||
-						null,
-					path: childPath,
-					isFile: !isDirectory,
-					isDirectory,
-					isSymbolicLink: false,
-					mtime,
-					uri: PathUtils.toMount({ path: childPath, root: this.root }),
-				};
-			});
+		return [...names].map(([name, mtime]) => {
+			const childPath = [...uri.path, name];
+			const isDirectory = this.nodes.some(
+				(f) =>
+					PathUtils.contains({ descendent: f.path, parent: childPath }) ||
+					(f.isDirectory && PathUtils.equals(f.path, childPath)),
+			);
+			return {
+				name,
+				// An upload or skill directory is named by its id, which says
+				// nothing about what is in it, so what it is called comes along.
+				// Only at that level: above it the segment is the tree's own
+				// name, and below it the file's.
+				label:
+					(childPath.length === 2 &&
+						this.nodes.find(
+							(f) =>
+								f.name &&
+								PathUtils.contains({
+									descendent: f.path,
+									parent: childPath,
+								}),
+						)?.name) ||
+					null,
+				path: childPath,
+				isFile: !isDirectory,
+				isDirectory,
+				isSymbolicLink: false,
+				mtime,
+				uri: PathUtils.toMount({ path: childPath, root: this.root }),
+			};
+		});
 	}
 
 	async rm(

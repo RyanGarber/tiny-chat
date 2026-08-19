@@ -69,12 +69,16 @@ export const useAttachments = () => {
 				id,
 			});
 
+			console.log("[useAttachments] mounted:", mounted);
+
 			try {
 				const entries = await client.api.file.getDirectory.query({
 					...mounted,
 					path: directory,
 				});
 				if (signal?.aborted) return groups;
+
+				console.log("[useAttachments] mounted entries:", entries);
 
 				groups.push({
 					name: "Files",
@@ -88,7 +92,7 @@ export const useAttachments = () => {
 					})),
 				});
 			} catch (error) {
-				console.warn("Failed to read mount files", error);
+				console.warn("[useAttachments] ailed to read mount files", error);
 			}
 
 			// Uploads stand outside the mount until something points into them, so

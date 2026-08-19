@@ -81,6 +81,25 @@ export const PathUtils = {
 	},
 
 	/**
+	 * A path as seen from `base`, with forward slashes and no leading one.
+	 *
+	 * Anything that judges a path by its parts has to work from here rather
+	 * than from the whole path, or a project that happens to live in a folder
+	 * called `build` or `Library` would rule out every file inside it.
+	 */
+	relative: ({ base, path }: { base: string; path: string }) => {
+		const from = PathUtils.normalize({ path: base, unix: true }).replace(
+			/\/+$/,
+			"",
+		);
+		const to = PathUtils.normalize({ path, unix: true });
+		if (!from) return to.replace(/^\/+/, "");
+		return to.startsWith(`${from}/`)
+			? to.slice(from.length + 1)
+			: to.replace(/^\/+/, "");
+	},
+
+	/**
 	 * Check if two or more paths are equal.
 	 */
 	equals: (...paths: (string[] | string)[]) => {

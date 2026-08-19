@@ -1,12 +1,12 @@
 import { z } from "zod";
-import type { ShellCapability } from "../../../capability/types/capability.ts";
+import type { ShellCapability } from "../../../../core/types/capability.ts";
 import { FileOperationService } from "../../../file/services/FileOperationService.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
 export const search_files = {
 	name: "search_files",
 	description:
-		"Find the files most relevant to a description or set of keywords, ranked by how well their path and contents match. Use this to locate where something lives; use grep_files once you know the exact text to match. Binary, generated, minified and git-ignored files are skipped.",
+		"Find the files most relevant to a description or set of keywords, ranked by how well their path and contents match. Use this to locate where something lives; use grep_files once you know the exact text to match. This reads text, so images, archives, databases, build output, generated and git-ignored files are all skipped — reach for find_files when you need to know those exist.",
 	input: z.object({
 		path: z.string().describe("Directory to search."),
 		query: z

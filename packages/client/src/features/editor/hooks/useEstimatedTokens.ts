@@ -7,11 +7,11 @@ import {
 import type { zAgentMessage } from "@tiny-chat/core/src/features/agent/types/agent.ts";
 import type { zData } from "@tiny-chat/core/src/features/data/types/message.ts";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useCapabilities } from "../../../core/hooks/useCapabilities.ts";
 import { useSession } from "../../../core/hooks/useSession.ts";
 import { useConfig } from "../../agent/hooks/useConfig.ts";
 import { useSkills } from "../../agent/hooks/useSkills.ts";
 import { useTools } from "../../agent/hooks/useTools.ts";
-import { useCapabilities } from "../../capability/hooks/useCapabilities.ts";
 import { useChat } from "../../chat/hooks/useChat.ts";
 import { useChatStore } from "../../chat/stores/useChatStore.ts";
 

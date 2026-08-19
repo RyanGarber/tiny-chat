@@ -1,6 +1,6 @@
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { UploadType } from "../../../../generated/prisma/enums.ts";
-import { AuthServer } from "../../../core/AuthServer.ts";
+import { AuthServer } from "../../../core/utils/AuthServer.ts";
 import { UploadUtils } from "../utils/UploadUtils.ts";
 import { UploadFileService } from "./UploadFileService.ts";
 
@@ -23,9 +23,13 @@ export const GitHubService = {
 	 * Get an up-to-date access token for a user's GitHub.
 	 */
 	getToken: async ({ user }: { user: zUser }) => {
+		const account = await prisma.account.findFirstOrThrow({
+			where: { userId: user.id, providerId: "github" },
+		});
+
 		const result = await AuthServer.api.getAccessToken({
 			body: {
-				providerId: "github",
+				accountId: account.accountId,
 				userId: user.id,
 			},
 		});

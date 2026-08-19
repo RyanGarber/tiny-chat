@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import CopyButton from "#app/features/code/components/CopyButton.tsx";
 import DownloadButton from "#app/features/code/components/DownloadButton.tsx";
 import MermaidContent from "#app/features/code/components/MermaidContent.tsx";
-import { RendererUtils } from "#app/features/code/utils/RendererUtils.ts";
+import { HighlightUtils } from "#app/features/code/utils/HighlightUtils.ts";
 
 namespace FullscreenButton {
 	export function Mermaid({
@@ -23,7 +23,7 @@ namespace FullscreenButton {
 		// Manage scroll lock and keyboard events
 		useEffect(() => {
 			if (isFullscreen) {
-				RendererUtils.lockScroll();
+				HighlightUtils.lockScroll();
 
 				const handleEsc = (e: KeyboardEvent) => {
 					if (e.key === "Escape") {
@@ -34,7 +34,7 @@ namespace FullscreenButton {
 				document.addEventListener("keydown", handleEsc);
 				return () => {
 					document.removeEventListener("keydown", handleEsc);
-					RendererUtils.unlockScroll();
+					HighlightUtils.unlockScroll();
 				};
 			}
 		}, [isFullscreen]);

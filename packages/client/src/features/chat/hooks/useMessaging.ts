@@ -17,11 +17,10 @@ import { useConfig } from "../../agent/hooks/useConfig.ts";
 import { useProviders } from "../../agent/hooks/useProviders.ts";
 import { useSkills } from "../../agent/hooks/useSkills.ts";
 import { useTools } from "../../agent/hooks/useTools.ts";
-import { AgentMessageService } from "../../agent/services/AgentMessageService.ts";
-import { AgentToolService } from "../../agent/services/AgentToolService.ts";
-import { ProviderService } from "../../agent/services/ProviderService.ts";
+import { ClientAgentService } from "../../agent/services/ClientAgentService.ts";
+import { ClientProviderService } from "../../agent/services/ClientProviderService.ts";
+import { ToolStreamService } from "../../part/services/ToolStreamService.ts";
 import { useEmbeddingSettings } from "../../settings/hooks/useEmbeddingSettings.ts";
-import { ToolStreamService } from "../../tool/services/ToolStreamService.ts";
 import { ChatService } from "../services/ChatService.ts";
 import { MessagingService } from "../services/MessagingService.ts";
 import { useChatStore } from "../stores/useChatStore.ts";
@@ -124,7 +123,7 @@ export const useMessaging = () => {
 				embeddingConfig
 			) {
 				const provider = (
-					await ProviderService.getModelProviders({
+					await ClientProviderService.getModelProviders({
 						client,
 						user: session.data.user,
 					})
@@ -165,7 +164,7 @@ export const useMessaging = () => {
 			const chat = await client.api.chat.getChat.query(message);
 			if (!providers.data || !session.data)
 				throw new Error("missing provider or session data");
-			await AgentMessageService.handle({
+			await ClientAgentService.onMessage({
 				client,
 				user: session.data.user,
 				message,
@@ -248,7 +247,7 @@ export const useMessaging = () => {
 						id: part.id,
 						name: part.name,
 						error: false,
-						value: await AgentToolService.handle({
+						value: await ClientAgentService.onToolFeedback({
 							client,
 							user: session.data.user,
 							chat: chat.data,
@@ -282,7 +281,7 @@ export const useMessaging = () => {
 			}
 
 			try {
-				await AgentMessageService.handle({
+				await ClientAgentService.onMessage({
 					client,
 					user: session.data.user,
 					message: seed,

@@ -26,7 +26,7 @@ describe("WorkerService", () => {
 		});
 		const chat = await api.chat.getChat.query({ id: _model.chatId });
 
-		const output = await api.test.tool.mutate({
+		const output = await api.testing.tool.mutate({
 			name: create_action.name,
 			context: testGenerationContext({ chat, messages: [_user, _model] }),
 			input: {
@@ -40,7 +40,7 @@ describe("WorkerService", () => {
 		).created_action_id;
 		expect(createdActionId).toHaveLength(24);
 
-		await api.test.worker.mutate();
+		await api.testing.worker.mutate();
 
 		const { messages } = await api.message.getMessages.query({ chat });
 

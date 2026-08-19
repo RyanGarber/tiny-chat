@@ -1,9 +1,9 @@
-import tailwindcss from "@tailwindcss/vite";
-import react from "@vitejs/plugin-react";
-import visualizer from "rollup-plugin-visualizer";
-import tailwindcssMantine from "tailwind-preset-mantine/vite";
+import ViteTailwind from "@tailwindcss/vite";
+import ViteReact from "@vitejs/plugin-react";
+import RollupVisualizer from "rollup-plugin-visualizer";
+import ViteTailwindMantine from "tailwind-preset-mantine/vite";
 import { defineConfig } from "vite";
-import inspect from "vite-plugin-inspect";
+import ViteInspect from "vite-plugin-inspect";
 
 const host = process.env.TAURI_DEV_HOST;
 
@@ -16,14 +16,14 @@ export default defineConfig(() => ({
 	},
 	envDir: "../../",
 	plugins: [
-		react(),
-		tailwindcss(),
-		tailwindcssMantine({ input: "src/theme.tsx" }),
-		visualizer({
+		ViteReact(),
+		ViteTailwind(),
+		ViteTailwindMantine({ input: "src/theme.tsx" }),
+		ViteInspect(),
+		RollupVisualizer({
 			filename: "dist/stats.html",
 			template: "flamegraph",
 		}),
-		inspect(),
 	],
 	resolve: {
 		tsconfigPaths: true,

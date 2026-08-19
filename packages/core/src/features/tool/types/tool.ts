@@ -1,11 +1,11 @@
 /** biome-ignore-all lint/suspicious/noConfusingVoidType: no input expected */
 
 import type { z } from "zod";
-import type { zAgentContext } from "../../agent/types/agent.ts";
 import type {
 	Capabilities,
 	ShellOutputHandler,
-} from "../../capability/types/capability.ts";
+} from "../../../core/types/capability.ts";
+import type { zAgentContext } from "../../agent/types/agent.ts";
 import type { zDataBasicPart } from "../../data/types/message.ts";
 
 export interface ToolDefinition {

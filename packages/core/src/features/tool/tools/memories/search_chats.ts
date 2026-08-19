@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { UserCapability } from "../../../capability/types/capability.ts";
+import type { UserCapability } from "../../../../core/types/capability.ts";
 import { SnippetService } from "../../../data/services/SnippetService.ts";
 import { Author } from "../../../data/types/message.ts";
 import { DataUtils } from "../../../data/utils/DataUtils.ts";

@@ -14,8 +14,8 @@ import superjson from "superjson";
 import { inject } from "vitest";
 import type { TestProject } from "vitest/node";
 import waitOn from "wait-on";
-import type { ApiRouter } from "./core/ApiRouter.ts";
-import type { AuthServer } from "./core/AuthServer.ts";
+import type { ApiRouter } from "./core/utils/ApiRouter.ts";
+import type { AuthServer } from "./core/utils/AuthServer.ts";
 
 declare module "vitest" {
 	export interface ProvidedContext {

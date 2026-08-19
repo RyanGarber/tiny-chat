@@ -22,8 +22,8 @@ export const useAccounts = () => {
 	});
 
 	const unlinkAccount = useMutation({
-		mutationFn: async (providerId: string) => {
-			await client.auth.unlinkAccount({ providerId });
+		mutationFn: async (accountId: string) => {
+			await client.auth.unlinkAccount({ accountId });
 		},
 		onSuccess: async () => {
 			await client.queryClient.invalidateQueries({

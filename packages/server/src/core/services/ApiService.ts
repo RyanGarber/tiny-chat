@@ -1,7 +1,7 @@
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { createHTTPHandler } from "@trpc/server/adapters/standalone";
-import { ApiContext } from "../ApiContext.ts";
-import { ApiRouter } from "../ApiRouter.ts";
+import { ApiContext } from "../utils/ApiContext.ts";
+import { ApiRouter } from "../utils/ApiRouter.ts";
 
 export const ApiService = {
 	handle: createHTTPHandler({

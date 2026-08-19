@@ -1,6 +1,6 @@
 import type { IncomingMessage } from "node:http";
 import { toNodeHandler } from "better-auth/node";
-import { AuthServer } from "../AuthServer.ts";
+import { AuthServer } from "../utils/AuthServer.ts";
 
 export const AuthService = {
 	handle: toNodeHandler(AuthServer),

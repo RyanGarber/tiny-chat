@@ -88,7 +88,7 @@ const Attachment = Node.create({
 					<AttachmentView
 						source={node.attrs.source}
 						directory={node.attrs["is-directory"] === "true"}
-						label={node.attrs.name ?? undefined}
+						name={node.attrs.name ?? undefined}
 						grabbable
 					/>
 				</NodeViewWrapper>

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ShellCapability } from "../../../capability/types/capability.ts";
+import type { ShellCapability } from "../../../../core/types/capability.ts";
 import { FileOperationService } from "../../../file/services/FileOperationService.ts";
 import { FileExcludeUtils } from "../../../file/utils/FileExcludeUtils.ts";
 import { FileTypeUtils } from "../../../file/utils/FileTypeUtils.ts";

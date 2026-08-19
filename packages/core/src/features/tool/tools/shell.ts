@@ -1,4 +1,4 @@
-import type { ShellCapability } from "../../capability/types/capability.ts";
+import type { ShellCapability } from "../../../core/types/capability.ts";
 import type { Toolset, ToolsetFactory } from "../types/tool.ts";
 import { createEditFileTool } from "./shell/edit_file.ts";
 import { createFindFilesTool } from "./shell/find_files.ts";

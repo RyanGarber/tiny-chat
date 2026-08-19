@@ -14,8 +14,8 @@ import {
 } from "@mantine/core";
 import { useMessaging } from "@tiny-chat/client/src/features/chat/hooks/useMessaging.ts";
 import { useToolDisplayContents } from "@tiny-chat/client/src/features/message/hooks/useToolDisplayContents.ts";
-import { useToolStream } from "@tiny-chat/client/src/features/tool/hooks/useToolStream.ts";
-import type { ToolStreamState } from "@tiny-chat/client/src/features/tool/services/ToolStreamService.ts";
+import { useToolStream } from "@tiny-chat/client/src/features/part/hooks/useToolStream";
+import type { ToolStreamState } from "@tiny-chat/client/src/features/part/services/ToolStreamService";
 import {
 	DataUtils,
 	type RenderedPart,

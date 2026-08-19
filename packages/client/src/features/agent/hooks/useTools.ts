@@ -8,7 +8,7 @@ import type {
 	Toolset,
 } from "@tiny-chat/core/src/features/tool/types/tool.ts";
 import { useMemo } from "react";
-import { useCapabilities } from "../../capability/hooks/useCapabilities.ts";
+import { useCapabilities } from "../../../core/hooks/useCapabilities.ts";
 import { useChat } from "../../chat/hooks/useChat.ts";
 import { useChatStore } from "../../chat/stores/useChatStore.ts";
 import { useMcp } from "./useMcp.ts";

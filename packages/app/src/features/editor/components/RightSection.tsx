@@ -14,7 +14,7 @@ import {
 import { useConfig } from "@tiny-chat/client/src/features/agent/hooks/useConfig.ts";
 import { useSkills } from "@tiny-chat/client/src/features/agent/hooks/useSkills.ts";
 import { useTools } from "@tiny-chat/client/src/features/agent/hooks/useTools.ts";
-import { AgentMessageService } from "@tiny-chat/client/src/features/agent/services/AgentMessageService.ts";
+import { ClientAgentService } from "@tiny-chat/client/src/features/agent/services/ClientAgentService.ts";
 import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
 import { useMessaging } from "@tiny-chat/client/src/features/chat/hooks/useMessaging.ts";
 import { StreamService } from "@tiny-chat/client/src/features/chat/services/StreamService.ts";
@@ -156,7 +156,7 @@ export default function RightSection({ isAny }: { isAny: boolean }) {
 				size={40}
 				radius={20}
 				onClick={() => {
-					if (stream) void AgentMessageService.abort({ client, id: stream.id });
+					if (stream) void ClientAgentService.abort({ client, id: stream.id });
 					else sendMessage.mutate();
 				}}
 				loading={sendMessage.isPending}

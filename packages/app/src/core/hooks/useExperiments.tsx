@@ -3,7 +3,7 @@ import { useHotkeys } from "@mantine/hooks";
 import { modals } from "@mantine/modals";
 import { useProviders } from "@tiny-chat/client/src/features/agent/hooks/useProviders.ts";
 import { useTools } from "@tiny-chat/client/src/features/agent/hooks/useTools.ts";
-import { AgentMessageService } from "@tiny-chat/client/src/features/agent/services/AgentMessageService.ts";
+import { ClientAgentService } from "@tiny-chat/client/src/features/agent/services/ClientAgentService.ts";
 import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
 import { client } from "#app/client.ts";
 import { useEditorStore } from "#app/features/editor/stores/useEditorStore.ts";
@@ -35,7 +35,7 @@ export const useExperiments = () => {
 						session.data &&
 						chat.data &&
 						providers.data &&
-						void AgentMessageService.handle({
+						void ClientAgentService.onMessage({
 							client,
 							user: session.data.user,
 							message,

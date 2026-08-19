@@ -48,7 +48,7 @@ describe("FilesystemService", () => {
 	const exec = async (
 		command: string,
 	): Promise<z.infer<typeof shell_exec.output>> => {
-		const output = await api.test.tool.mutate({
+		const output = await api.testing.tool.mutate({
 			name: `chat_${shell_exec.name}`,
 			context,
 			input: { command } satisfies z.infer<typeof shell_exec.input>,
@@ -81,7 +81,7 @@ describe("FilesystemService", () => {
 	});
 
 	it("reads a file with nbsp", async () => {
-		const output = await api.test.tool.mutate({
+		const output = await api.testing.tool.mutate({
 			name: `chat_${read_file.name}`,
 			context,
 			input: {

@@ -1,7 +1,6 @@
 import { z } from "zod";
-import type { ShellCapability } from "../../../capability/types/capability.ts";
-import { FileOperationService } from "../../../file/services/FileOperationService.ts";
-import { FileExcludeUtils } from "../../../file/utils/FileExcludeUtils.ts";
+import type { ShellCapability } from "../../../../core/types/capability.ts";
+import { FileSearchService } from "../../../file/services/FileSearchService.ts";
 import { PathUtils } from "../../../file/utils/PathUtils.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
@@ -11,7 +10,7 @@ const MAX_ENTRIES = 200;
 export const read_dir = {
 	name: "read_dir",
 	description:
-		"List the contents of a directory. Dependency, build and git-ignored directories are omitted. Set recursive to see the tree below it.",
+		"List the contents of a directory. Everything in it is shown, whatever its type. Set recursive to see the tree below it, where dependency and version-control directories are listed but not expanded.",
 	input: z.object({
 		path: z.string().describe("Directory to list."),
 		recursive: z
@@ -26,6 +25,8 @@ export const read_dir = {
 	output: z.object({
 		path: z.string(),
 		is_dir: z.boolean(),
+		/** Why a directory is shown but its contents are not. */
+		not_expanded: z.string().optional(),
 	}),
 } as const satisfies ToolDefinition;
 
@@ -40,15 +41,23 @@ export const createReadDirTool: ToolFactory<
 			Math.max(1, input.max_results ?? MAX_ENTRIES),
 		);
 
-		const entries = input.recursive
-			? await FileOperationService.walk({
-					shell: options.capabilities.shell,
-					path: input.path,
-					includeDirectories: true,
-				})
-			: (await options.capabilities.shell.readDir({ path: input.path })).filter(
-					(entry) => FileExcludeUtils.include(entry.path),
-				);
+		// Listing one directory shows all of it: the caller named the directory,
+		// so there is nothing here they did not ask for. Only a recursive walk
+		// holds back, and only from descending — every entry is still reported.
+		const entries: {
+			path: string;
+			is_dir: boolean;
+			skipped?: string;
+		}[] = input.recursive
+			? (
+					await FileSearchService.walk({
+						shell: options.capabilities.shell,
+						path: input.path,
+						scope: "listing",
+						includeDirectories: true,
+					})
+				).entries
+			: await options.capabilities.shell.readDir({ path: input.path });
 
 		// Directories first, then names, so a listing reads like a file tree.
 		const sorted = entries.sort(
@@ -60,9 +69,13 @@ export const createReadDirTool: ToolFactory<
 		);
 
 		return [
-			...sorted.slice(0, limit).map(({ path, is_dir }) => ({
+			...sorted.slice(0, limit).map(({ path, is_dir, skipped }) => ({
 				type: "json" as const,
-				value: { path, is_dir },
+				value: {
+					path,
+					is_dir,
+					...(skipped ? { not_expanded: skipped } : {}),
+				},
 			})),
 			...(sorted.length > limit
 				? [

@@ -17,7 +17,7 @@ import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts"
 import { ModelProviderService } from "@tiny-chat/core/src/features/provider/services/ModelProviderService.ts";
 import { SkillUtils } from "@tiny-chat/core/src/features/skill/utils/SkillUtils.ts";
 import { ToolService } from "@tiny-chat/core/src/features/tool/services/ToolService.ts";
-import { ServerCapabilityService } from "../../capability/services/ServerCapabilityService.ts";
+import { ServerCapabilityService } from "../../../core/services/ServerCapabilityService.ts";
 import { ChatService } from "../../chat/services/ChatService.ts";
 import { MessageService } from "../../message/services/MessageService.ts";
 import { MessageUtils } from "../../message/utils/MessageUtils.ts";

@@ -1,9 +1,9 @@
 import { format } from "timeago.js";
-import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 import type {
 	Capabilities,
 	ShellCapability,
-} from "../../capability/types/capability.ts";
+} from "../../../core/types/capability.ts";
+import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 import { Author, type zDataPart } from "../../data/types/message.ts";
 import { DirectiveUtils } from "../../data/utils/DirectiveUtils.ts";
 import { FileOperationService } from "../../file/services/FileOperationService.ts";
@@ -231,9 +231,13 @@ export const AgentMessagesService = {
 	}) => {
 		if (!shell) return null;
 		const base = PathUtils.normalize({ path, unix: true }).replace(/\/+$/, "");
+		// The tree of an attached directory is the user showing what they sent.
+		// Screening it the way a text search does would drop the screenshots and
+		// logs that were often the entire reason for attaching it.
 		const entries = await FileOperationService.walk({
 			shell,
 			path,
+			scope: "listing",
 			includeDirectories: true,
 		});
 

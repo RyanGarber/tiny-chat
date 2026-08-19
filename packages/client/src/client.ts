@@ -1,16 +1,16 @@
 import type { Transport } from "@modelcontextprotocol/client";
 import { QueryClient } from "@tanstack/react-query";
+import type { ShellCapability } from "@tiny-chat/core/src/core/types/capability.ts";
 import { zEnv, type zProviderEnv } from "@tiny-chat/core/src/core/types/env.ts";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import type { ShellCapability } from "@tiny-chat/core/src/features/capability/types/capability.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import type { ModelProvider } from "@tiny-chat/core/src/features/provider/types/model.ts";
 import type {
 	ProviderState,
 	ProviderStatus,
 } from "@tiny-chat/core/src/features/provider/types/provider.ts";
-import type { ApiRouter } from "@tiny-chat/server/src/core/ApiRouter.ts";
-import type { AuthServer } from "@tiny-chat/server/src/core/AuthServer.ts";
+import type { ApiRouter } from "@tiny-chat/server/src/core/utils/ApiRouter.ts";
+import type { AuthServer } from "@tiny-chat/server/src/core/utils/AuthServer.ts";
 import { createTRPCClient, httpLink } from "@trpc/client";
 import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query";
 import {

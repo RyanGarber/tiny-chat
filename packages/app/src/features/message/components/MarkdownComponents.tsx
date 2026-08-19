@@ -1,7 +1,7 @@
 import { Anchor, Pill, Stack, Text } from "@mantine/core";
-import { ComponentUtils } from "@tiny-chat/client/src/core/utils/ComponentUtils.ts";
 import { MarkdownContext } from "@tiny-chat/client/src/features/message/components/MarkdownContext.tsx";
 import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
+import { ComponentUtils } from "@tiny-chat/client/src/features/message/utils/ComponentUtils";
 import { SourceUtils } from "@tiny-chat/client/src/features/message/utils/SourceUtils.ts";
 import type { CodeLanguage } from "@tiny-chat/core/src/core/utils/CodeUtils.ts";
 import { createContext, useContext } from "react";
@@ -85,13 +85,10 @@ const MarkComponent: Components["mark"] = ({ children, node }) => {
 	// Read per-citation rather than through the markdown context: sources change
 	// whenever a chat-scoped query settles, and only this component cares.
 	const sources = useMessageStore((s) => s.sources);
-
-	const keys = ((node?.properties.sources ?? "") as string)
-		.replace("user-content-", "")
-		.split(/[\s;,]+/);
-
+	const keys = ComponentUtils.props(node, { sources: "" }).sources.split(
+		/[\s;,]+/,
+	);
 	const text = ComponentUtils.text({ children });
-
 	return (
 		<span>
 			{children}
@@ -151,11 +148,8 @@ const MarkComponent: Components["mark"] = ({ children, node }) => {
 };
 
 const BlockquoteComponent: Components["blockquote"] = ({ node, children }) => {
-	return (
-		<Quote model={node?.properties.model as string | undefined}>
-			{children}
-		</Quote>
-	);
+	const { model } = ComponentUtils.props(node, { model: "?" });
+	return <Quote model={model}>{children}</Quote>;
 };
 
 const AComponent: Components["a"] = ({ href, children }) => {
@@ -174,22 +168,24 @@ const AComponent: Components["a"] = ({ href, children }) => {
 };
 
 const LinkComponent: Components["link"] = ({ node }) => {
-	const source = ((node?.properties.source ?? "unknown") as string).trim();
-	const label = (node?.properties.name as string | undefined)?.trim();
-	const directory = node?.properties["is-directory"] === "true";
-	return <Attachment source={source} label={label} directory={directory} />;
+	const {
+		source,
+		name,
+		"is-directory": isDirectory,
+	} = ComponentUtils.props(node, {
+		source: "?",
+		name: undefined,
+		"is-directory": false,
+	});
+	return <Attachment source={source} name={name} directory={isDirectory} />;
 };
 
 const SlotComponent: Components["slot"] = ({ node, children }) => {
-	return (
-		<Command
-			name={((node?.properties.name ?? "unknown") as string).replace(
-				"user-content-",
-				"",
-			)}
-			content={children}
-		/>
+	const name = ((node?.properties.name ?? "unknown") as string).replace(
+		"user-content-",
+		"",
 	);
+	return <Command name={name} content={children} />;
 };
 
 export const MarkdownComponents: Components = {

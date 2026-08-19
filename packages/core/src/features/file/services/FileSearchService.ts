@@ -1,7 +1,9 @@
-import type { ShellCapability } from "../../capability/types/capability.ts";
+import type { ShellCapability } from "../../../core/types/capability.ts";
 import { SnippetService } from "../../data/services/SnippetService.ts";
 import {
+	type FileCategory,
 	FileExcludeUtils,
+	type FileScope,
 	type FileSkipReason,
 } from "../utils/FileExcludeUtils.ts";
 import { FileMatchUtils, type IgnoreRule } from "../utils/FileMatchUtils.ts";
@@ -21,6 +23,10 @@ import { PathUtils } from "../utils/PathUtils.ts";
  *      and overall, and ranking counts distinct terms rather than raw hits.
  *   3. Traversal never ends. Walking is bounded by entries and depth, content
  *      reads are bounded by file count, and both report what they left out.
+ *
+ * How much is withheld is the caller's choice, not this file's: a walk takes a
+ * `FileScope`, and only a text search asks for the strict one. Listing a tree
+ * is answering "what is here", and an upload of screenshots is still an answer.
  *
  * Everything is expressed against the `ShellCapability` primitives, so the same
  * implementation serves the local filesystem and the virtual chat filesystem.
@@ -79,41 +85,19 @@ export interface FileSearchReport {
 interface WalkEntry {
 	path: string;
 	is_dir: boolean;
+	/**
+	 * Set on a directory that was listed but not descended into, with the kind
+	 * of directory it is. Nothing disappears from a tree without saying so.
+	 */
+	skipped?: FileCategory;
 }
 
-interface Scope {
+interface IgnoreScope {
 	base: string;
 	rules: IgnoreRule[];
 }
 
-const getRelative = ({ base, path }: { base: string; path: string }) => {
-	const normalizedBase = PathUtils.normalize({
-		path: base,
-		unix: true,
-	}).replace(/\/+$/, "");
-	const normalized = PathUtils.normalize({ path, unix: true });
-	if (!normalizedBase) return normalized.replace(/^\/+/, "");
-	return normalized.startsWith(`${normalizedBase}/`)
-		? normalized.slice(normalizedBase.length + 1)
-		: normalized.replace(/^\/+/, "");
-};
-
-const getIgnored = ({
-	scopes,
-	path,
-	is_dir,
-}: {
-	scopes: Scope[];
-	path: string;
-	is_dir: boolean;
-}) =>
-	scopes.some((scope) =>
-		FileMatchUtils.isIgnored({
-			rules: scope.rules,
-			path: getRelative({ base: scope.base, path }),
-			isDirectory: is_dir,
-		}),
-	);
+const getRelative = PathUtils.relative;
 
 /** Runs `run` over `items` with a bounded number of reads in flight. */
 const mapPool = async <T, R>(
@@ -148,6 +132,18 @@ const getEmptyStats = (): FileSearchStats => ({
 	truncated: false,
 });
 
+/**
+ * Kinds of file that a text search will never open however it is phrased.
+ * Worth naming when a search comes back empty, because the next move is a
+ * different tool rather than a different query.
+ */
+const UNSEARCHABLE = [
+	"media",
+	"binary",
+	"archive",
+	"data",
+] as const satisfies readonly FileSkipReason[];
+
 const getSummary = ({
 	stats,
 	shown,
@@ -162,6 +158,15 @@ const getSummary = ({
 		.map(([reason, count]) => `${count} ${reason}`)
 		.join(", ");
 
+	// Only when a search found nothing at all: a reader with results in hand
+	// does not need to be told what was left out.
+	const unsearchable = shown
+		? 0
+		: UNSEARCHABLE.reduce(
+				(total, reason) => total + (stats.skipped[reason] ?? 0),
+				0,
+			);
+
 	const parts = [
 		`Searched ${stats.scanned} of ${stats.found} file(s)`,
 		skipped ? `skipped ${skipped}` : null,
@@ -171,6 +176,9 @@ const getSummary = ({
 		shown < stats.matched || stats.truncated
 			? (advice ?? "Narrow the query or pass `include` to see the rest.")
 			: null,
+		unsearchable
+			? `${unsearchable} path(s) here hold no searchable text — use find_files to list them or read_file to open one`
+			: null,
 	].filter(Boolean);
 
 	return `${parts.join(". ")}.`;
@@ -178,30 +186,43 @@ const getSummary = ({
 
 export const FileSearchService = {
 	/**
-	 * Lists files under `path`, skipping anything excluded by name, by
-	 * `.gitignore`, or by the traversal caps.
+	 * Lists files under `path`, skipping anything the scope excludes, anything
+	 * `.gitignore` excludes when the scope honours it, and anything past the
+	 * traversal caps.
+	 *
+	 * An excluded directory is still reported when directories are wanted — it
+	 * is simply not descended into. A tree that quietly omits `node_modules`
+	 * teaches the reader the wrong thing about the project; one that shows it
+	 * unexpanded teaches the right one, at the cost of a single line.
 	 */
 	walk: async ({
 		shell,
 		path,
+		scope = "search",
 		includeDirectories = false,
-		gitignore = true,
+		gitignore = scope === "search",
 		maxEntries = MAX_WALK_ENTRIES,
 		maxDepth = MAX_WALK_DEPTH,
 	}: {
 		shell: Pick<ShellCapability, "readDir"> &
 			Partial<Pick<ShellCapability, "readFile">>;
 		path: string;
+		scope?: FileScope;
 		includeDirectories?: boolean;
 		gitignore?: boolean;
 		maxEntries?: number;
 		maxDepth?: number;
-	}): Promise<{ entries: WalkEntry[]; truncated: boolean }> => {
-		const pending: { path: string; depth: number; scopes: Scope[] }[] = [
+	}): Promise<{
+		entries: WalkEntry[];
+		truncated: boolean;
+		skipped: Partial<Record<FileCategory, number>>;
+	}> => {
+		const pending: { path: string; depth: number; scopes: IgnoreScope[] }[] = [
 			{ path, depth: 0, scopes: [] },
 		];
 		const entries: WalkEntry[] = [];
 		const visited = new Set<string>();
+		const skipped: Partial<Record<FileCategory, number>> = {};
 
 		let truncated = false;
 		let isRoot = true;
@@ -241,9 +262,31 @@ export const FileSearchService = {
 					truncated = true;
 					break;
 				}
-				if (!FileExcludeUtils.include(entry.path)) continue;
-				if (getIgnored({ scopes, path: entry.path, is_dir: entry.is_dir }))
+
+				const ignored = scopes.some((ignore) =>
+					FileMatchUtils.isIgnored({
+						rules: ignore.rules,
+						path: getRelative({ base: ignore.base, path: entry.path }),
+						isDirectory: entry.is_dir,
+					}),
+				);
+				if (ignored) continue;
+
+				// Judged from the search root down, so a project checked out into
+				// a directory that happens to be called `build` is still searched.
+				const excluded = FileExcludeUtils.getExcluded({
+					path: entry.path,
+					root: path,
+					scope,
+					isDirectory: entry.is_dir,
+				});
+
+				if (excluded) {
+					skipped[excluded] = (skipped[excluded] ?? 0) + 1;
+					if (!entry.is_dir || !includeDirectories) continue;
+					entries.push({ ...entry, skipped: excluded });
 					continue;
+				}
 
 				if (entry.is_dir) {
 					if (directory.depth + 1 > maxDepth) truncated = true;
@@ -263,7 +306,7 @@ export const FileSearchService = {
 			}
 		}
 
-		return { entries, truncated };
+		return { entries, truncated, skipped };
 	},
 
 	/** Reads and parses `<path>/.gitignore`, if there is one. */
@@ -292,9 +335,11 @@ export const FileSearchService = {
 	readSearchable: async ({
 		shell,
 		path,
+		root,
 	}: {
 		shell: Pick<ShellCapability, "readFile">;
 		path: string;
+		root?: string;
 	}): Promise<{ reason: FileSkipReason | null; text?: string }> => {
 		let data: Uint8Array;
 		try {
@@ -302,7 +347,7 @@ export const FileSearchService = {
 		} catch {
 			return { reason: "unreadable" };
 		}
-		return FileExcludeUtils.getSkipReason({ path, data });
+		return FileExcludeUtils.getSkipReason({ path, root, data });
 	},
 
 	/**
@@ -367,7 +412,11 @@ export const FileSearchService = {
 			const batch = candidates.slice(index, index + CONCURRENCY);
 			const read = await mapPool(batch, async (candidate) => ({
 				path: candidate,
-				...(await FileSearchService.readSearchable({ shell, path: candidate })),
+				...(await FileSearchService.readSearchable({
+					shell,
+					path: candidate,
+					root: path,
+				})),
 			}));
 
 			for (const file of read) {
@@ -466,6 +515,7 @@ export const FileSearchService = {
 			const file = await FileSearchService.readSearchable({
 				shell,
 				path: candidate,
+				root: path,
 			});
 			return {
 				path: candidate,
@@ -608,21 +658,34 @@ export const FileSearchService = {
 	/**
 	 * Paths matching a glob, without reading any contents. The cheap way to
 	 * answer "where does this kind of file live".
+	 *
+	 * This is the one search that must not filter by kind. An attached upload
+	 * is reached by globbing the directory it was mounted at, and a run of
+	 * screenshots or logs that the user deliberately sent is exactly what the
+	 * glob is looking for. Only the trees nobody meant to send are withheld.
 	 */
 	glob: async ({
 		shell,
 		path,
 		pattern,
+		scope = "listing",
 		maxResults = 100,
 	}: {
 		shell: Pick<ShellCapability, "readDir" | "readFile">;
 		path: string;
 		pattern: string;
+		scope?: FileScope;
 		maxResults?: number;
-	}): Promise<{ paths: string[]; truncated: boolean }> => {
+	}): Promise<{
+		paths: string[];
+		truncated: boolean;
+		/** Paths the glob was tested against, so an empty result can be read. */
+		scanned: number;
+	}> => {
 		const { entries, truncated } = await FileSearchService.walk({
 			shell,
 			path,
+			scope,
 		});
 		const paths = entries
 			.filter((entry) =>
@@ -636,6 +699,7 @@ export const FileSearchService = {
 		return {
 			paths: paths.slice(0, maxResults),
 			truncated: truncated || paths.length > maxResults,
+			scanned: entries.length,
 		};
 	},
 
@@ -652,11 +716,15 @@ export const FileSearchService = {
 		maxFiles?: number;
 	}): Promise<{ candidates: string[]; stats: FileSearchStats }> => {
 		const stats = getEmptyStats();
-		const { entries, truncated } = await FileSearchService.walk({
+		const { entries, truncated, skipped } = await FileSearchService.walk({
 			shell,
 			path,
+			scope: "search",
 		});
 		stats.truncated = truncated;
+		// What the walk turned away by name counts as skipped too, or a summary
+		// would claim full coverage of a directory it barely looked at.
+		stats.skipped = { ...skipped };
 
 		let candidates = entries.map((entry) => entry.path);
 

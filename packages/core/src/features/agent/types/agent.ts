@@ -23,6 +23,7 @@ export const zAgentContext = z.object({
 	chat: zChat.nullish(),
 	messages: z.array(zAgentMessage),
 	timezone: z.string(),
+	interactive: z.boolean(),
 });
 export type zAgentContext = z.infer<typeof zAgentContext>;
 

@@ -6,6 +6,7 @@ import type { Client } from "../../../client.ts";
 import { useConfigStore } from "../../agent/stores/useConfigStore.ts";
 import type { AttachmentItem } from "../../editor/types/attachment.ts";
 import { AttachmentUtils } from "../../editor/utils/AttachmentUtils.ts";
+import { useDraftStore } from "../stores/useDraftStore.ts";
 import { useMessagingStore } from "../stores/useMessagingStore.ts";
 
 export interface ClientInput {
@@ -29,20 +30,28 @@ export interface ClientInput {
 }
 
 export const MessagingService = {
+	/**
+	 * Reads the message being written back out of the editor, as `zData`, and
+	 * keeps {@link useDraftStore} in step with it — the one place every reader
+	 * of the current content, in either runtime, can trust.
+	 */
 	getData: ({ client }: { client: Client }): zData => {
 		if (!client.input) throw new Error("missing client input");
 
-		return client.input
+		const data = client.input
 			.getData({ client })
 			.map((step) =>
 				step.filter((part) => part.type !== "text" || part.value.length),
 			);
+		useDraftStore.getState().setData(data);
+		return data;
 	},
 
 	setData: ({ client, data }: { client: Client; data: zData }) => {
 		if (!client.input) throw new Error("missing client input");
 
 		client.input.setData({ client, data });
+		useDraftStore.getState().setData(data);
 	},
 
 	/**

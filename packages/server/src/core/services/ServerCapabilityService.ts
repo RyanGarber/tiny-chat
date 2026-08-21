@@ -1,8 +1,8 @@
 import type { Capabilities } from "@tiny-chat/core/src/core/types/capability.ts";
 import type { zAgentMessage } from "@tiny-chat/core/src/features/agent/types/agent.ts";
 import { AgentUtils } from "@tiny-chat/core/src/features/agent/utils/AgentUtils.ts";
-import type { ChatLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
-import type { MessageLike } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { ChatState } from "@tiny-chat/core/src/features/data/types/chat.ts";
+import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { WebProviderService } from "@tiny-chat/core/src/features/provider/services/WebProviderService.ts";
 import type {
@@ -13,6 +13,7 @@ import type { zWebFeature } from "@tiny-chat/core/src/features/provider/types/we
 import { CacheService } from "../../features/user/services/CacheService.ts";
 import { createChatShellCapability } from "../capabilities/createChatShellCapability.ts";
 import { createEmbeddingCapability } from "../capabilities/createEmbeddingCapability.ts";
+import { createSubagentsCapability } from "../capabilities/createSubagentsCapability.ts";
 import { createUserCapability } from "../capabilities/createUserCapability.ts";
 import { createWebCapability } from "../capabilities/createWebCapability.ts";
 
@@ -26,16 +27,13 @@ export const ServerCapabilityService = {
 		providers,
 	}: {
 		user: zUser;
-		chat: ChatLike | null | undefined;
-		message: MessageLike | null | undefined;
+		chat: ChatState | null | undefined;
+		message: MessageState | null | undefined;
 		/** What the mount is built from; a chat only adds somewhere to write. */
 		messages?: zAgentMessage[];
 		incognito: boolean | undefined;
 		providers?: ProviderState<ProviderStatus>[];
 	}): Promise<Capabilities> => {
-		if (typeof chat === "string") chat = { id: chat };
-		if (typeof message === "string") message = { id: message };
-
 		const capabilities: Capabilities = {};
 
 		if (message?.id && !incognito) {
@@ -60,6 +58,13 @@ export const ServerCapabilityService = {
 
 		if (embed) {
 			capabilities.embedding = await createEmbeddingCapability({ user });
+		}
+
+		if (chat?.id && message?.id) {
+			capabilities.subagent = await createSubagentsCapability({
+				chat,
+				message,
+			});
 		}
 
 		const web = (["search", "view"] satisfies zWebFeature[]).some((feature) =>

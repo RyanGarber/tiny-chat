@@ -25,6 +25,7 @@ export default function Code({
 			language={language}
 			streaming={streaming}
 			filename={filename}
+			className="selectable"
 			{...props}
 		>
 			<HighlightContent

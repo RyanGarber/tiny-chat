@@ -194,7 +194,11 @@ export function TheadComponent({ children }: { children?: ReactNode }) {
 }
 
 export function TbodyComponent({ children }: { children?: ReactNode }) {
-	return <Box flexDirection="column">{children}</Box>;
+	return (
+		<Box flexDirection="column" gap={1}>
+			{children}
+		</Box>
+	);
 }
 
 export function TrComponent({ children }: { children?: ReactNode }) {

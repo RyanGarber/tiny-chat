@@ -53,15 +53,25 @@ export default function App() {
 			backgroundColor={colorScheme.exterior}
 		>
 			<Chat />
-			<StatusText />
-			{page === "chats" && <ChatList />}
-			{page === "uploads" && <Uploads />}
-			{page === "github" && <GitHub />}
-			{page === "settings" && <Settings />}
-			{(page === "tools" || page === "skills") && <Capabilities />}
-			<Editor
-				disabled={page !== "chat" || statuses.some((status) => !status.passive)}
-			/>
+			<Box
+				flexDirection="column"
+				position="static"
+				bottom={0}
+				left={0}
+				right={0}
+			>
+				<StatusText />
+				{page === "chats" && <ChatList />}
+				{page === "uploads" && <Uploads />}
+				{page === "github" && <GitHub />}
+				{page === "settings" && <Settings />}
+				{(page === "tools" || page === "skills") && <Capabilities />}
+				<Editor
+					disabled={
+						page !== "chat" || statuses.some((status) => !status.passive)
+					}
+				/>
+			</Box>
 		</Box>
 	);
 }

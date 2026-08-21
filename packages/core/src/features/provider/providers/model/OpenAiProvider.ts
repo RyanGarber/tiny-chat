@@ -24,6 +24,7 @@ export const OpenAiProvider: ModelProvider<_OpenAIProvider> = {
 		const openai: OpenAILanguageModelResponsesOptions = {
 			reasoningEffort: config.args?.reasoning,
 			reasoningSummary: "detailed",
+			store: false,
 		};
 		if (ModelProviderUtils.isModel(config.model, "gpt 4", "gpt 5")) {
 			openai.include = ["reasoning.encrypted_content"];

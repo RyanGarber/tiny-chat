@@ -4,6 +4,7 @@ import { createActionsToolset } from "../tools/actions.ts";
 import { createMemoriesToolset } from "../tools/memories.ts";
 import { createQuestionsToolset } from "../tools/questions.ts";
 import { createShellToolset } from "../tools/shell.ts";
+import { createSubagentsToolset } from "../tools/subagents.ts";
 import { createWebToolset } from "../tools/web.ts";
 import type { Toolset } from "../types/tool.ts";
 
@@ -92,6 +93,15 @@ ${SHELL_INSTRUCTIONS}`,
 					"You can ask the user questions mid-response, best used for getting more information or clarifying their intent before continuing.",
 				capabilities: void 0,
 				status: { valid: true },
+			}),
+
+			await createSubagentsToolset({
+				instructions:
+					"You can spawn subagents to do work for you and come back with a result. Use this for tasks that require a lot of context, such as exploring a codebase, to keep your context clean so you can focus on reasoning.",
+				capabilities: {
+					subagent: capabilities.subagent ?? (void 0 as never),
+				},
+				status: { valid: !!capabilities.subagent },
 			}),
 		]);
 	},

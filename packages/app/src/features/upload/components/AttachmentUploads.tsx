@@ -6,9 +6,9 @@ import Sentinel from "#app/core/components/Sentinel.tsx";
 import { useSentinel } from "#app/core/hooks/useSentinel.ts";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import Dropzone from "#app/features/upload/components/Dropzone.tsx";
+import FileTag from "#app/features/upload/components/FileTag.tsx";
 import { MessagingService } from "#client/src/features/chat/services/MessagingService.ts";
 import { useUploads } from "#client/src/features/upload/hooks/useUploads.ts";
-import FileThumbnails from "./FileThumbnails.tsx";
 
 export function AttachmentUploads({ close }: { close: () => void }) {
 	const { attachmentUploads, deleteUpload } = useUploads();
@@ -43,16 +43,14 @@ export function AttachmentUploads({ close }: { close: () => void }) {
 									close();
 								}}
 							>
-								<Group gap="sm" style={{ minWidth: 0, flex: 1 }}>
-									<FileThumbnails
-										uploads={[
-											{
-												id: upload.id,
-												name: upload.name,
-												thumbnail: upload.thumbnail ?? undefined,
-											},
-										]}
-									/>
+								<FileTag
+									path={upload.name}
+									directory={true}
+									thumbnail={upload.thumbnail ?? undefined}
+									size={30}
+									style={{ minWidth: 0, flex: 1 }}
+									gap={10}
+								>
 									<Stack gap={0} style={{ minWidth: 0, flex: 1 }}>
 										<Text
 											size="sm"
@@ -74,7 +72,7 @@ export function AttachmentUploads({ close }: { close: () => void }) {
 												: ""}
 										</Text>
 									</Stack>
-								</Group>
+								</FileTag>
 								<ActionIcon
 									variant="subtle"
 									color="red"

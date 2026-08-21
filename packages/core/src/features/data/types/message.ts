@@ -9,6 +9,7 @@ export const DEFAULT_TOOLSETS = [
 	"memories",
 	"web",
 	"chat_shell",
+	"subagents",
 ];
 
 export const DEFAULT_SKILLS: string[] = [];
@@ -17,11 +18,6 @@ export type MessageState = Message & {
 	config: zConfig;
 	data: zData;
 	metadata: zMetadata;
-	state: {
-		any: boolean;
-		thinking: boolean;
-		generating: boolean;
-	};
 };
 
 export type MessageSearchResult = Pick<

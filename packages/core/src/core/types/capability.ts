@@ -1,3 +1,4 @@
+import type { zAgentContext } from "../../features/agent/types/agent.ts";
 import type { ActionState } from "../../features/data/types/action.ts";
 import type {
 	MemoryCategory,
@@ -8,6 +9,7 @@ import type {
 import type {
 	MessageLike,
 	MessageSearchResult,
+	zConfig,
 	zData,
 } from "../../features/data/types/message.ts";
 import type { FileNode } from "../../features/file/types/file.ts";
@@ -23,6 +25,15 @@ export interface EmbeddingCapability {
 	getEmbedding: (_: { message: MessageLike }) => Promise<number[] | null>;
 
 	runEmbedding: (_: { text: string }) => Promise<number[]>;
+}
+
+export interface SubagentsCapability {
+	runSubagent: (_: {
+		context: zAgentContext;
+		config: zConfig;
+		onData: (data: zData) => void;
+		abort?: AbortSignal;
+	}) => Promise<zData>;
 }
 
 export interface UserCapability {
@@ -73,14 +84,6 @@ export interface UserCapability {
 	}) => Promise<MessageSearchResult[]>;
 }
 
-/** A slice of output produced by a command while it is still running. */
-export interface ShellOutputChunk {
-	stream: "stdout" | "stderr";
-	value: string;
-}
-
-export type ShellOutputHandler = (_: ShellOutputChunk) => void;
-
 export interface ShellCapability {
 	cwd?: () => Promise<string>;
 
@@ -106,7 +109,7 @@ export interface ShellCapability {
 	 */
 	exec: (_: {
 		command: string;
-		onOutput?: ShellOutputHandler;
+		stream?: (_: { type: "stdout" | "stderr"; value: string }) => void;
 	}) => Promise<{ code?: number; stdout: string; stderr: string }>;
 
 	nodes?: () => Promise<FileNode[]>;
@@ -115,6 +118,7 @@ export interface ShellCapability {
 export interface Capabilities {
 	web?: WebCapability;
 	embedding?: EmbeddingCapability;
+	subagent?: SubagentsCapability;
 	user?: UserCapability;
 	chatShell?: ShellCapability;
 	shell?: ShellCapability;

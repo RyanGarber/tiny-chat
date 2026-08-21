@@ -18,7 +18,8 @@ export const useEmbedding = () => {
 		queryKey: [
 			...nextEmbeddingBatchQueryKey,
 			session.data?.user.id,
-			embeddingConfig,
+			embeddingConfig?.provider,
+			embeddingConfig?.model,
 		],
 		queryFn: async () => {
 			if (!session.data || !embeddingConfig) return null;

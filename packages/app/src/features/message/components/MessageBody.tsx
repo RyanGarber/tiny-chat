@@ -1,88 +1,74 @@
 import { Box, Group, Stack } from "@mantine/core";
 import { useElementSize } from "@mantine/hooks";
-import { useMessageStream } from "@tiny-chat/client/src/features/message/hooks/useMessageStream.ts";
+import type { AgentStreamEvent } from "@tiny-chat/client/src/core/services/StreamService.ts";
+import { useStream } from "@tiny-chat/client/src/features/agent/hooks/useStream.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
-import { type CSSProperties, memo } from "react";
+import { type CSSProperties, useMemo } from "react";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import { MessageBodyContent } from "#app/features/message/components/MessageBodyContent.tsx";
 import { Author, type MessageState } from "#core/features/data/types/message";
 
-const MessageBody = memo(
-	function MessageBody({
-		message,
-		style,
-	}: {
-		message: MessageState;
-		style?: CSSProperties;
-	}) {
-		// For model messages, prefer the live stream snapshot when streaming so
-		// the loader dots and pending-tool detection are accurate token-by-token.
-		// Subscribed once here and handed down: MessageBodyContent used to open a
-		// second subscription for the same id, so every token woke two components.
-		const { message: streamed, version } = useMessageStream(
-			message.author === Author.MODEL ? message.id : undefined,
-		);
-		const live = streamed ?? message;
+export default function MessageBody({
+	message,
+	style,
+}: {
+	message: MessageState;
+	style?: CSSProperties;
+}) {
+	const stream = useStream<AgentStreamEvent>(message.id)?.items.at(-1);
+	const streamed = useMemo(
+		() => ({ ...message, ...stream }),
+		[message, stream],
+	);
 
-		const { ref: containerRef, width: containerWidth } = useElementSize();
+	const { ref: containerRef, width: containerWidth } = useElementSize();
 
-		if (message.author === Author.USER) {
-			const hasText = DataUtils.getText(message).trim().length > 0;
-			return (
-				<Group w="100%" justify="end" ref={containerRef} style={style}>
-					<Stack gap={5} w="fit-content">
-						{hasText && (
-							<Box
-								px={20}
-								py={10}
-								bdrs={20}
-								style={{
-									boxShadow: StyleUtils.shadow,
-									alignSelf: "flex-end",
-									...StyleUtils.glass,
-								}}
-							>
-								<MessageBodyContent
-									message={message}
-									live={live}
-									version={version}
-									containerWidth={containerWidth}
-								/>
-							</Box>
-						)}
-					</Stack>
-				</Group>
-			);
-		} // no thinking or generating for user messages
-
+	if (message.author === Author.USER) {
+		const hasText = DataUtils.getText(message).trim().length > 0;
 		return (
-			<Box w="100%" ref={containerRef} style={style}>
-				<Box display="inline">
-					<MessageBodyContent
-						message={message}
-						live={live}
-						version={version}
-						containerWidth={containerWidth}
-					/>
-					{live.state.any && (
+			<Group w="100%" justify="end" ref={containerRef} style={style}>
+				<Stack gap={5} w="fit-content">
+					{hasText && (
 						<Box
-							component="span"
-							display="inline-block"
-							style={{ verticalAlign: "middle" }}
-							className="shimmer-text active"
-							fz="25px"
+							px={20}
+							py={10}
+							bdrs={20}
+							style={{
+								boxShadow: StyleUtils.shadow,
+								alignSelf: "flex-end",
+								...StyleUtils.glass,
+							}}
 						>
-							&middot;&middot;&middot;
+							<MessageBodyContent
+								message={streamed}
+								containerWidth={containerWidth}
+							/>
 						</Box>
 					)}
-				</Box>
-			</Box>
+				</Stack>
+			</Group>
 		);
-	},
-	(prev, next) =>
-		prev.message.data === next.message.data &&
-		prev.message.state === next.message.state &&
-		prev.style === next.style,
-);
+	} // no thinking or generating for user messages
 
-export default MessageBody;
+	return (
+		<Box w="100%" ref={containerRef} style={style}>
+			<Box display="inline">
+				<MessageBodyContent
+					message={streamed}
+					containerWidth={containerWidth}
+				/>
+				{!!streamed.status && (
+					<Box
+						component="span"
+						display="inline-block"
+						style={{ verticalAlign: "middle" }}
+						className="shimmer-text active"
+						fz="25px"
+					>
+						&middot;&middot;&middot;
+					</Box>
+				)}
+			</Box>
+		</Box>
+	);
+}

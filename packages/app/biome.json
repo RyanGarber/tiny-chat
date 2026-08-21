@@ -3,7 +3,7 @@
 	"root": false,
 	"extends": "//",
 	"files": {
-		"includes": ["**", "!src/theme.css", "!src/core/utils/IconUtils.ts"]
+		"includes": ["**", "!src/theme.css", "!src/generated"]
 	},
 	"css": {
 		"parser": {

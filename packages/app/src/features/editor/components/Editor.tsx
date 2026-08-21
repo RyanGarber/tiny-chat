@@ -86,7 +86,7 @@ export const Editor = memo(
 									transition: "opacity 200ms ease",
 								}}
 							>
-								<LeftSection isAny={disabled} />
+								<LeftSection disabled={disabled} />
 							</div>
 						}
 						rightSection={
@@ -101,7 +101,7 @@ export const Editor = memo(
 									transition: "opacity 200ms ease",
 								}}
 							>
-								<RightSection isAny={disabled} />
+								<RightSection disabled={disabled} />
 							</div>
 						}
 						style={{
@@ -161,12 +161,12 @@ export const Editor = memo(
 							}}
 						>
 							<div style={{ display: "flex", alignItems: "center" }}>
-								<LeftSection isAny={disabled} />
+								<LeftSection disabled={disabled} />
 							</div>
 							<div
 								style={{ display: "flex", alignItems: "center", gap: "5px" }}
 							>
-								<RightSection isAny={disabled} />
+								<RightSection disabled={disabled} />
 							</div>
 						</div>
 					</InputBase>

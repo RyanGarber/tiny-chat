@@ -44,9 +44,11 @@ export const useAttachments = () => {
 		return [
 			...toGroup(
 				"Uploads",
-				attachmentUploads.data?.pages.flatMap((page) => page.uploads),
+				attachmentUploads.data?.pages
+					.flatMap((page) => page.uploads)
+					.slice(0, 5),
 			),
-			...toGroup("GitHub", githubUploads.data),
+			...toGroup("GitHub", githubUploads.data?.slice(0, 5)),
 		];
 	}, [attachmentUploads.data, githubUploads.data]);
 

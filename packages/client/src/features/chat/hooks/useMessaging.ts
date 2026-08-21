@@ -1,4 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
+import type { ChatState } from "@tiny-chat/core/src/features/data/types/chat.ts";
 import {
 	Author,
 	type MessageState,
@@ -18,8 +19,8 @@ import { useProviders } from "../../agent/hooks/useProviders.ts";
 import { useSkills } from "../../agent/hooks/useSkills.ts";
 import { useTools } from "../../agent/hooks/useTools.ts";
 import { ClientAgentService } from "../../agent/services/ClientAgentService.ts";
+import { ClientMessageService } from "../../agent/services/ClientMessageService.ts";
 import { ClientProviderService } from "../../agent/services/ClientProviderService.ts";
-import { ToolStreamService } from "../../part/services/ToolStreamService.ts";
 import { useEmbeddingSettings } from "../../settings/hooks/useEmbeddingSettings.ts";
 import { ChatService } from "../services/ChatService.ts";
 import { MessagingService } from "../services/MessagingService.ts";
@@ -147,6 +148,7 @@ export const useMessaging = () => {
 				}
 			}
 
+			let chatData: ChatState;
 			if (!chatId) {
 				ChatService.setChat({ id: message.chatId });
 				const title = DataUtils.getTextCleaned({ data, maxLength: 100 });
@@ -157,21 +159,24 @@ export const useMessaging = () => {
 					});
 					await ChatService.fetchChatList({ client });
 				})();
+				chatData = await client.api.chat.getChat.query(message);
 			} else {
-				await ChatService.fetchMessages({ client, chatId: message.chatId });
+				void ChatService.fetchMessages({ client, chatId: message.chatId });
+				chatData = chat.data ?? (await client.api.chat.getChat.query(message));
 			}
 
-			const chat = await client.api.chat.getChat.query(message);
-			if (!providers.data || !session.data)
+			if (!providers.data || !session.data) {
 				throw new Error("missing provider or session data");
-			await ClientAgentService.onMessage({
+			}
+
+			await ClientMessageService.onMessage({
 				client,
 				user: session.data.user,
 				message,
-				chat,
-				mcpTools: mcpTools.data,
+				chat: chatData,
 				providers: providers.data,
 				skills,
+				mcpTools: mcpTools.data ?? [],
 			});
 		},
 
@@ -206,7 +211,12 @@ export const useMessaging = () => {
 			approved?: boolean;
 			append?: zDataBasicPart[] | zDataBasicPart | null;
 		}) => {
-			console.log("[useToolInput] applying input:", part, value, approved);
+			console.log(
+				"[useMessaging] applying tool feedback:",
+				part,
+				value,
+				approved,
+			);
 			if (!session.data || !chat.data || !providers.data) return;
 			const { messages } = await client.api.message.getMessages.query({
 				chat: chat.data,
@@ -217,19 +227,11 @@ export const useMessaging = () => {
 			const { tool } = ToolUtils.find({ toolsets, part });
 			if (!tool) throw new Error(`tool ${part.name} not found`);
 
-			if (append && !Array.isArray(append)) {
-				append = [append];
-			}
+			if (append && !Array.isArray(append)) append = [append];
 			if (!append?.length) append = null;
 
-			// Output the tool reports while it runs is held here, so the feedback
-			// UI can show it before there is a result to save.
-			const streamKey = ToolStreamService.key({
-				messageId: seed.id,
-				partId: part.id,
-			});
-
 			let result: zDataPart;
+
 			if (part.validation?.approval && !approved) {
 				result = {
 					type: "toolResult",
@@ -240,60 +242,33 @@ export const useMessaging = () => {
 					append: append ?? undefined,
 				};
 			} else {
-				try {
-					ToolStreamService.start(streamKey);
-					result = {
-						type: "toolResult",
-						id: part.id,
-						name: part.name,
-						error: false,
-						value: await ClientAgentService.onToolFeedback({
-							client,
-							user: session.data.user,
-							chat: chat.data,
-							part,
-							value,
-							message: seed,
-							messages,
-							onOutput: (chunk) => ToolStreamService.push(streamKey, chunk),
-						}),
-						append: append ?? undefined,
-					};
-				} catch (e) {
-					result = {
-						type: "toolResult",
-						id: part.id,
-						name: part.name,
-						error: true,
-						value: [
-							{
-								type: "json",
-								value: e instanceof Error ? e.message : JSON.stringify(e),
-							},
-						],
-						append: append ?? undefined,
-					};
-				} finally {
-					// The command is over, but its output has to stay on screen until
-					// the result it produced has been saved.
-					ToolStreamService.finish(streamKey);
-				}
+				result = {
+					...(await ClientAgentService.runTool({
+						client,
+						user: session.data.user,
+						chat: chat.data,
+						part,
+						value,
+						message: seed,
+						messages,
+						skills,
+						mcpTools: mcpTools.data ?? [],
+						interactive: true,
+					})),
+					append: append ?? undefined,
+				};
 			}
 
-			try {
-				await ClientAgentService.onMessage({
-					client,
-					user: session.data.user,
-					message: seed,
-					chat: chat.data,
-					append: [result],
-					mcpTools: mcpTools.data,
-					providers: providers.data,
-					skills,
-				});
-			} finally {
-				ToolStreamService.clear(streamKey);
-			}
+			await ClientMessageService.onMessage({
+				client,
+				user: session.data.user,
+				message: seed,
+				chat: chat.data,
+				append: [result],
+				providers: providers.data,
+				skills,
+				mcpTools: mcpTools.data ?? [],
+			});
 		},
 	});
 

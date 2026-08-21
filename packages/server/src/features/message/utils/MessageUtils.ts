@@ -19,11 +19,6 @@ export const MessageUtils = {
 			config: zConfig.parse(message.config),
 			data: zData.parse(message.data),
 			metadata: zMetadata.parse(message.metadata ?? [[{ _omit: true }]]),
-			state: {
-				any: false,
-				thinking: false,
-				generating: false,
-			},
 		};
 	},
 

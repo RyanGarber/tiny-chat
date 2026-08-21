@@ -1,8 +1,7 @@
-import type {
-	Capabilities,
-	ShellOutputChunk,
-} from "../../../core/types/capability.ts";
+import type { z } from "zod";
+import type { Capabilities } from "../../../core/types/capability.ts";
 import type { zEnv } from "../../../core/types/env.ts";
+import type { StreamMutation } from "../../../core/types/stream.ts";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 import type { zData, zDataPart, zMetadata } from "../../data/types/message.ts";
 import {
@@ -11,7 +10,7 @@ import {
 } from "../../provider/services/ModelProviderService.ts";
 import type { ModelProvider } from "../../provider/types/model.ts";
 import type { zSkill } from "../../skill/types/skill.ts";
-import type { Toolset } from "../../tool/types/tool.ts";
+import type { Tool, ToolDefinition, Toolset } from "../../tool/types/tool.ts";
 import { ToolUtils } from "../../tool/utils/ToolUtils.ts";
 import type { zAgentContext, zAgentEvent } from "../types/agent.ts";
 import { AgentUtils } from "../utils/AgentUtils.ts";
@@ -108,7 +107,7 @@ export const AgentService = {
 		metadata,
 		env,
 		options,
-		onToolOutput,
+		toolStream,
 	}: {
 		provider: ModelProvider<any>;
 		context: zAgentContext;
@@ -120,7 +119,13 @@ export const AgentService = {
 		env: Partial<zEnv>;
 		options: Partial<Omit<RunLanguageModelOptions, "system">>;
 		/** Output a tool reports while it is still running, keyed by call id. */
-		onToolOutput?: (_: { id: string; chunk: ShellOutputChunk }) => void;
+		toolStream?: (_: {
+			tool: Tool<any, any>;
+			part: Extract<zDataPart, { type: "toolCall" }>;
+			mutation: StreamMutation<
+				z.infer<Exclude<ToolDefinition["stream"], void>>
+			>;
+		}) => void;
 	}) {
 		const { config, enabledToolsets, messages, instructions } =
 			await AgentService.build({ context, capabilities, toolsets, skills });
@@ -158,10 +163,12 @@ export const AgentService = {
 					}),
 					config,
 					tools: enabledToolsets.flatMap((toolset) =>
-						toolset.tools.map((tool) => ({
-							...tool,
-							name: ToolUtils.name({ toolset, tool }),
-						})),
+						toolset.tools
+							.map((tool) => ({
+								...tool,
+								name: ToolUtils.name({ toolset, tool }),
+							}))
+							.filter((tool) => context.interactive || !tool.feedback),
 					),
 					env,
 					options: {
@@ -224,6 +231,14 @@ export const AgentService = {
 									);
 									toolValidationErrors.set(event.value.id, error);
 								}
+							}
+							if (event.value.validation?.approval && !context.interactive) {
+								toolValidationErrors.set(
+									event.value.id,
+									new Error(
+										"This tool call cannot be completed as the user is not available to approve it.",
+									),
+								);
 							}
 							parts.push(event.value);
 						} else {
@@ -318,8 +333,8 @@ export const AgentService = {
 						input: toolCall.args,
 						feedback: undefined,
 						context,
-						onOutput: onToolOutput
-							? (chunk) => onToolOutput({ id: toolCall.id, chunk })
+						stream: toolStream
+							? (mutation) => toolStream({ tool, part: toolCall, mutation })
 							: undefined,
 					});
 					console.log(

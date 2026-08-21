@@ -70,6 +70,13 @@ export interface ScrollViewProps extends Omit<BoxProps, "overflow"> {
 	onReachBottom?: () => void;
 	/** Rows from an edge that still count as having reached it. @default 0 */
 	edgeThreshold?: number;
+
+	/**
+	 * Rows beyond each edge of the viewport that are still drawn. Everything
+	 * past them is held at the height it was last measured at and skipped.
+	 * `Infinity` draws the whole list. @default 40
+	 */
+	overscan?: number;
 }
 
 const height = (node: DOMElement | null) =>
@@ -89,6 +96,11 @@ const clamp = (value: number, min: number, max: number) =>
  * Heights are read from the layout Ink has just computed rather than cached, so
  * a child that grows on its own — a streaming message, a tool call being
  * expanded — is accounted for without having to announce itself.
+ *
+ * Only the children near the viewport are drawn. The rest are hidden behind a
+ * box holding the height they were last measured at, which keeps every position
+ * this view works in exactly what it would have been had the whole list been
+ * drawn, while costing a single node to lay out and nothing at all to render.
  */
 export default function ScrollView({
 	ref,
@@ -103,9 +115,10 @@ export default function ScrollView({
 	onReachTop,
 	onReachBottom,
 	edgeThreshold = 0,
+	overscan = 40,
 	...props
 }: ScrollViewProps) {
-	const { rows } = useWindowSize();
+	const { columns, rows } = useWindowSize();
 
 	const viewportRef = useRef<DOMElement | null>(null);
 	const contentRef = useRef<DOMElement | null>(null);
@@ -263,6 +276,34 @@ export default function ScrollView({
 	);
 	const previousKeysRef = useRef<string[] | null>(null);
 
+	// The run of children that is drawn, held by key rather than by index so a
+	// page arriving above the viewport keeps drawing the same children instead of
+	// blanking the ones the indices used to name for a frame.
+	const [drawn, setDrawn] = useState<{ first: string; last: string } | null>(
+		null,
+	);
+	const heightsRef = useRef(new Map<string, number>());
+
+	const range = useMemo(() => {
+		if (!drawn || overscan === Number.POSITIVE_INFINITY) return null;
+		const first = keys.indexOf(drawn.first);
+		const last = keys.lastIndexOf(drawn.last);
+		// Children the run was pinned to have gone; everything is drawn until the
+		// pass below settles on a run that exists.
+		if (first < 0 || last < first) return null;
+		return { first, last };
+	}, [drawn, keys, overscan]);
+
+	// A child is only worth hiding once there is a height to hide it at, so one
+	// that has never been laid out is drawn wherever it sits.
+	const hidden = keys.map(
+		(key, index) =>
+			!!range &&
+			(index < range.first || index > range.last) &&
+			heightsRef.current.has(key),
+	);
+
+	const previousColumnsRef = useRef(columns);
 	const previousResetKeyRef = useRef(resetKey);
 	const previousSelectedRef = useRef<number | undefined>(undefined);
 	const previousSelectedKeyRef = useRef<string | undefined>(undefined);
@@ -273,6 +314,30 @@ export default function ScrollView({
 	useLayoutEffect(() => {
 		const previousKeys = previousKeysRef.current;
 		previousKeysRef.current = keys;
+
+		// Every height is a height at a width. Once that width moves, none of them
+		// describe anything, so the list goes back to being drawn whole and is
+		// measured again from what it lays out to now.
+		if (previousColumnsRef.current !== columns) {
+			previousColumnsRef.current = columns;
+			heightsRef.current.clear();
+			setDrawn(null);
+		} else {
+			// Rebuilt rather than updated so children that have gone drop out of it.
+			// A hidden child keeps the height it was hidden at — the one it is
+			// currently laid out at is that same height handed back.
+			const heights = new Map<string, number>();
+			for (const [index, key] of keys.entries()) {
+				const node = itemsRef.current[index];
+				const measured = hidden[index]
+					? heightsRef.current.get(key)
+					: node?.yogaNode
+						? height(node)
+						: undefined;
+				if (measured !== undefined) heights.set(key, measured);
+			}
+			heightsRef.current = heights;
+		}
 
 		if (previousResetKeyRef.current !== resetKey) {
 			previousResetKeyRef.current = resetKey;
@@ -305,6 +370,32 @@ export default function ScrollView({
 
 		if (moved && selectedIndex !== undefined && selectedIndex >= 0)
 			scrollToIndex(selectedIndex);
+
+		// Chosen against the offset the scrolling above has already settled on, so
+		// a selection reached for on this pass is drawn on the next one rather than
+		// arriving a frame after the view does.
+		const viewport = getViewportHeight();
+		if (viewport > 0 && overscan !== Number.POSITIVE_INFINITY) {
+			const top = getScrollOffset() - overscan;
+			const bottom = getScrollOffset() + viewport + overscan;
+
+			let first = -1;
+			let last = -1;
+			for (let index = 0; index < items.length; index++) {
+				const position = getItemPosition(index);
+				if (!position) continue;
+				if (position.top + position.height <= top) continue;
+				if (position.top >= bottom) break;
+				if (first < 0) first = index;
+				last = index;
+			}
+
+			if (
+				first >= 0 &&
+				(keys[first] !== drawn?.first || keys[last] !== drawn?.last)
+			)
+				setDrawn({ first: keys[first], last: keys[last] });
+		}
 
 		// Nothing has been laid out yet, so any edge would be one every view is at.
 		const content = getContentHeight();
@@ -372,8 +463,24 @@ export default function ScrollView({
 							}}
 							flexShrink={0}
 							flexDirection="column"
+							// Stands in for the child while it is hidden, so the rows it
+							// takes up are still there to be scrolled through and measured.
+							height={
+								hidden[index] ? heightsRef.current.get(keys[index]) : undefined
+							}
 						>
-							{child}
+							{/* Always here, hidden or not: a child that came and went with
+							    the wrapper would lose everything it was holding — a tool
+							    call left expanded — every time it left the viewport. Yoga
+							    lays nothing out under `none`, and Ink draws nothing from
+							    it, so what it costs is the one node. */}
+							<Box
+								flexShrink={0}
+								flexDirection="column"
+								display={hidden[index] ? "none" : "flex"}
+							>
+								{child}
+							</Box>
 						</Box>
 					))}
 				</Box>

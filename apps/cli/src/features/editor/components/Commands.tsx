@@ -1,5 +1,4 @@
 import { useSession } from "@tiny-chat/client/src/core/hooks/useSession.ts";
-import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
 import { useCommands } from "@tiny-chat/client/src/features/editor/hooks/useCommands.ts";
 import type {
 	CommandChoiceGroup,
@@ -48,11 +47,6 @@ export default function Commands({
 				name: "chats",
 				value: "chats",
 				run: () => setPage("chats"),
-			},
-			{
-				name: "clear",
-				value: "clear",
-				run: () => ChatService.setChat({ id: null }),
 			},
 			{
 				name: "settings",

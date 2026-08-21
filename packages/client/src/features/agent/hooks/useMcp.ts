@@ -9,8 +9,17 @@ import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import type { zMCPServers } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { useContext } from "react";
 import { ClientContext } from "../../../client.ts";
+import { useStableKey } from "../../../core/hooks/useStableKey.ts";
 import { useMcpServerSettings } from "../../settings/hooks/useMcpServerSettings.ts";
 import { useMcpStore } from "../stores/useMcpStore.ts";
+
+export interface McpServer {
+	name: string;
+	server: NonNullable<zMCPServers>[string];
+	client: Client;
+	error?: unknown;
+	tools: Tool[];
+}
 
 export const mcpServersQueryKey = ["useMcp", "mcpServers"] as const;
 export const disconnectMcpServersQueryKey = [
@@ -25,8 +34,12 @@ export const useMcp = () => {
 	const connectedServers = useMcpStore((state) => state.connectedServers);
 	const setConnectedServers = useMcpStore((state) => state.setConnectedServers);
 
+	const settingsKey = useStableKey({
+		mcpServerSettings,
+	});
+
 	const mcpServers = useQuery({
-		queryKey: [mcpServersQueryKey, JSON.stringify(mcpServerSettings)],
+		queryKey: [mcpServersQueryKey, settingsKey],
 		queryFn: async () => {
 			if (!mcpServerSettings) {
 				disconnectMcpServers.mutate();
@@ -35,13 +48,7 @@ export const useMcp = () => {
 
 			console.log("[useMcp] connecting to servers:", mcpServerSettings);
 
-			const mcpServers: {
-				name: string;
-				server: NonNullable<zMCPServers>[string];
-				client: Client;
-				error?: unknown;
-				tools: Tool[];
-			}[] = [];
+			const mcpServers: McpServer[] = [];
 
 			const connections: Client[] = [];
 

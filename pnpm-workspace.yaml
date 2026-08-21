@@ -27,8 +27,7 @@ minimumReleaseAgeExclude:
     - '@hono/node-server@1.19.13'
     - '@opentelemetry/sdk-node@0.217.0'
     - '@opentelemetry/exporter-prometheus@0.217.0'
-    - '@ryangarber/legiscan-ts@2.1.2'
-    - '@ryangarber/markitdown-ts@0.1.4'
+    - '@ryangarber/markitdown-ts@0.1.5'
 peerDependencyRules:
     allowedVersions:
         '@browser-ai/web-llm>ai': '7'

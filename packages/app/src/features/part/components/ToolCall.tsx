@@ -19,6 +19,7 @@ import { memo, type ReactNode, useState } from "react";
 import type { BundledLanguage } from "streamdown";
 import Code from "#app/features/code/components/Code.tsx";
 import Diff from "#app/features/code/components/Diff.tsx";
+import { Markdown } from "#app/features/message/components/Markdown.tsx";
 import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
 
 /**
@@ -231,6 +232,12 @@ const ToolCallDetails = memo(
 			));
 		} else if (details.name === "shell_exec" && details.content) {
 			detailsNode = <Code language="bash" code={details.content ?? ""} />;
+		} else if (details.name === "spawn_subagent") {
+			detailsNode = (
+				<Markdown
+					source={`> ${details.input.prompt}\n\n${details.output?.response}`}
+				/>
+			);
 		}
 
 		return (
@@ -242,14 +249,24 @@ const ToolCallDetails = memo(
 				py="xs"
 				ml={8}
 			>
-				{detailsNode ?? (
-					<Stack>
-						<Text>Input</Text>
-						<JsonTree data={details.input} withExpandAll withCopyToClipboard />
-						<Text>Output</Text>
-						<JsonTree data={details.output} withExpandAll withCopyToClipboard />
-					</Stack>
-				)}
+				<Stack>
+					{detailsNode ?? (
+						<>
+							<Text>Input</Text>
+							<JsonTree
+								data={details.input}
+								withExpandAll
+								withCopyToClipboard
+							/>
+							<Text>Output</Text>
+							<JsonTree
+								data={details.output}
+								withExpandAll
+								withCopyToClipboard
+							/>
+						</>
+					)}
+				</Stack>
 			</Box>
 		);
 	},

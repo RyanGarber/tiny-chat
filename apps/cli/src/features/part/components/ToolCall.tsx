@@ -17,6 +17,7 @@ import Box from "../../../core/components/Box.tsx";
 import Text from "../../../core/components/Text.tsx";
 import { Code } from "../../code/components/Code.tsx";
 import Diff from "../../code/components/Diff.tsx";
+import Markdown from "../../message/components/Markdown.tsx";
 import Task from "./Task.tsx";
 import { ToolFeedback } from "./ToolFeedback.tsx";
 
@@ -180,6 +181,12 @@ const ToolCallDetails = memo(
 			));
 		} else if (details.name === "shell_exec" && details.content) {
 			detailsNode = <Code code={details.content} language="bash" />;
+		} else if (details.name === "spawn_subagent") {
+			detailsNode = (
+				<Markdown
+					source={`> ${details.input.prompt}\n\n${details.output?.response}`}
+				/>
+			);
 		}
 
 		return (

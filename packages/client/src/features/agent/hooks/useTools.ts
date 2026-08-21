@@ -9,6 +9,7 @@ import type {
 } from "@tiny-chat/core/src/features/tool/types/tool.ts";
 import { useMemo } from "react";
 import { useCapabilities } from "../../../core/hooks/useCapabilities.ts";
+import { useStableKey } from "../../../core/hooks/useStableKey.ts";
 import { useChat } from "../../chat/hooks/useChat.ts";
 import { useChatStore } from "../../chat/stores/useChatStore.ts";
 import { useMcp } from "./useMcp.ts";
@@ -22,13 +23,15 @@ export const nativeToolsQueryKey = ["useTools", "nativeTools"] as const;
 export const mcpToolsQueryKey = ["useTools", "mcpTools"] as const;
 
 export const useTools = () => {
-	const { presumedCapabilities } = useCapabilities({ future: true });
+	const { presumedCapabilities, capabilitiesKey } = useCapabilities({
+		future: true,
+	});
 	const { mcpServers } = useMcp();
 	const { chat } = useChat();
 	const createIncognito = useChatStore((state) => state.createIncognito);
 
 	const nativeTools = useQuery({
-		queryKey: [...nativeToolsQueryKey, presumedCapabilities.data],
+		queryKey: [...nativeToolsQueryKey, capabilitiesKey],
 		queryFn: async () => {
 			return await ToolService.getTools({
 				capabilities: presumedCapabilities.data ?? {},
@@ -40,8 +43,10 @@ export const useTools = () => {
 		refetchOnReconnect: false,
 	});
 
+	const serversKey = useStableKey({ mcpServers: mcpServers.data });
+
 	const mcpTools = useQuery({
-		queryKey: [...mcpToolsQueryKey, mcpServers.data],
+		queryKey: [...mcpToolsQueryKey, serversKey],
 		queryFn: async () => {
 			return (
 				mcpServers.data?.map(
@@ -55,12 +60,12 @@ export const useTools = () => {
 							error,
 						},
 						tools: tools.map(
-							(t): Tool<any, void> => ({
-								name: t.name,
-								description: t.description ?? "",
+							(tool): Tool<any, void> => ({
+								name: tool.name,
+								description: tool.description ?? "",
 
-								input: t.inputSchema,
-								output: t.outputSchema,
+								input: tool.inputSchema,
+								output: tool.outputSchema,
 
 								execute: async ({
 									input,
@@ -71,7 +76,7 @@ export const useTools = () => {
 										...rest,
 									});
 									const { isError, content } = await client.callTool({
-										name: t.name,
+										name: tool.name,
 										arguments: input,
 									});
 									console.log("[useTools] mcp response:", { isError, content });

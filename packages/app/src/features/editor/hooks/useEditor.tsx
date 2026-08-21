@@ -18,7 +18,9 @@ import { useCodeBlock } from "../hooks/useCodeBlock.tsx";
 import { useCommand } from "../hooks/useCommand.tsx";
 import { useDocument } from "../hooks/useDocument.tsx";
 import { useLink } from "../hooks/useLink.tsx";
+import { usePaste } from "../hooks/usePaste.tsx";
 import { useEditorStore } from "../stores/useEditorStore.ts";
+import { EditorUtils } from "../utils/EditorUtils.ts";
 
 export const useEditor = ({
 	ref,
@@ -37,7 +39,7 @@ export const useEditor = ({
 
 	const editor = _useEditor({
 		editorProps: {
-			handlePaste: (_view, event) => {
+			handlePaste: (_view, event): boolean => {
 				let uploaded = false;
 				for (const item of event.clipboardData?.items ?? []) {
 					if (item.kind === "file") {
@@ -48,7 +50,10 @@ export const useEditor = ({
 						}
 					}
 				}
-				return uploaded;
+				if (uploaded) return true;
+
+				const text = event.clipboardData?.getData("text/plain");
+				return text ? EditorUtils.insertPasted(text) : false;
 			},
 			handleKeyDown: (_view, event) => {
 				if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
@@ -73,6 +78,7 @@ export const useEditor = ({
 			useLink(),
 			useBlockquote(),
 			useCodeBlock(),
+			usePaste(),
 			useAttachment(),
 			useCommand(),
 		],

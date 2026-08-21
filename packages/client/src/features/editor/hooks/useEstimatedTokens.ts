@@ -9,6 +9,7 @@ import type { zData } from "@tiny-chat/core/src/features/data/types/message.ts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useCapabilities } from "../../../core/hooks/useCapabilities.ts";
 import { useSession } from "../../../core/hooks/useSession.ts";
+import { useStableKey } from "../../../core/hooks/useStableKey.ts";
 import { useConfig } from "../../agent/hooks/useConfig.ts";
 import { useSkills } from "../../agent/hooks/useSkills.ts";
 import { useTools } from "../../agent/hooks/useTools.ts";
@@ -73,21 +74,21 @@ export const useEstimatedTokens = <T>({
 		[config, debouncedData],
 	);
 
-	const { presumedCapabilities, sourceMessages } = useCapabilities({
-		future: false,
-		draft,
-	});
+	const { presumedCapabilities, sourceMessages, capabilitiesKey } =
+		useCapabilities({
+			future: false,
+			draft,
+		});
 
+	const messagesKey = useStableKey({ messages: sourceMessages.data?.messages });
 	const chatTokens = useQuery({
 		queryKey: [
 			...chatTokensQueryKey,
 			session.data?.user.id,
 			chat.data?.id,
 			createIncognito,
-			Object.entries(presumedCapabilities.data ?? {})
-				.map(([key, value]) => `${key}:${!!value}`)
-				.join(),
-			sourceMessages.data,
+			capabilitiesKey,
+			messagesKey,
 		],
 		queryFn: async (): Promise<TokenBreakdown> => {
 			if (!session.data) return AgentTokensService.zero;
@@ -98,6 +99,7 @@ export const useEstimatedTokens = <T>({
 					chat: chat.data,
 					messages: sourceMessages.data?.messages ?? [],
 					timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+					interactive: true,
 				},
 				capabilities: presumedCapabilities.data ?? {},
 				toolsets,
@@ -109,14 +111,9 @@ export const useEstimatedTokens = <T>({
 		staleTime: Infinity,
 	});
 
+	const draftKey = useStableKey({ messages: draft });
 	const dataTokens = useQuery({
-		queryKey: [
-			...editorTokensQueryKey,
-			debouncedData,
-			Object.entries(presumedCapabilities.data ?? {})
-				.map(([key, value]) => `${key}:${!!value}`)
-				.join(),
-		],
+		queryKey: [...editorTokensQueryKey, capabilitiesKey, draftKey],
 		queryFn: async () => {
 			if (!session.data) return AgentTokensService.zero;
 
@@ -126,6 +123,7 @@ export const useEstimatedTokens = <T>({
 					chat: chat.data,
 					messages: draft,
 					timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+					interactive: true,
 				},
 				capabilities: presumedCapabilities.data ?? {},
 				toolsets,

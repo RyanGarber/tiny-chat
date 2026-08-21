@@ -42,6 +42,7 @@ export type CompletionsProps<
 	after?: ReactNode;
 	actions?: Action[];
 	selectFirstOnChange?: boolean;
+	stickToBottom?: number;
 };
 
 export default function Completions<
@@ -60,6 +61,7 @@ export default function Completions<
 	after,
 	actions,
 	selectFirstOnChange = true,
+	stickToBottom,
 	...props
 }: CompletionsProps<T1, T2>) {
 	const { rows } = useWindowSize();

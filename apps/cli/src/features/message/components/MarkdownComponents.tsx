@@ -1,7 +1,7 @@
 import { MarkdownContext } from "@tiny-chat/client/src/features/message/components/MarkdownContext.tsx";
 import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
 import { ComponentUtils } from "@tiny-chat/client/src/features/message/utils/ComponentUtils.ts";
-import { SourceUtils } from "@tiny-chat/client/src/features/message/utils/SourceUtils.ts";
+import { SourceUtils } from "@tiny-chat/core/src/features/data/utils/SourceUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import type { ExtraProps } from "hast-util-to-jsx-runtime";
 import { useWindowSize } from "ink";
@@ -21,6 +21,7 @@ import Divider from "../../../core/components/Divider.tsx";
 import Text, { type TextProps } from "../../../core/components/Text.tsx";
 import { CliUtils } from "../../../core/utils/CliUtils.ts";
 import { Code } from "../../code/components/Code.tsx";
+import Paste from "../../part/components/Paste.tsx";
 import {
 	TableComponent,
 	TbodyComponent,
@@ -339,6 +340,11 @@ const LinkComponent: Components["link"] = ({ node }) => {
 	);
 };
 
+const DetailsComponent: Components["details"] = ({ node, children }) => {
+	const { lines } = ComponentUtils.props(node, { lines: undefined });
+	return <Paste lines={lines}>{children}</Paste>;
+};
+
 const MarkComponent: Components["mark"] = ({ children, node }) => {
 	// Read per-citation rather than through the markdown context: sources change
 	// whenever a chat-scoped query settles, and only this component cares.
@@ -386,6 +392,7 @@ const BLOCK_NODES: Set<unknown> = new Set([
 	TrComponent,
 	TdComponent,
 	ThComponent,
+	DetailsComponent,
 ]);
 
 function isBlockNode(node: ReactNode): boolean {
@@ -434,4 +441,5 @@ export const MarkdownComponents: Partial<Components> = {
 	slot: SlotComponent,
 	link: LinkComponent,
 	mark: MarkComponent,
+	details: DetailsComponent,
 };

@@ -1,9 +1,9 @@
 import { Box, type BoxProps, Loader } from "@mantine/core";
 import type { CodeLanguage } from "@tiny-chat/core/src/core/utils/CodeUtils.ts";
 import { type ReactNode, Suspense } from "react";
-import CopyButton from "#app/features/code/components/CopyButton.tsx";
-import DownloadButton from "#app/features/code/components/DownloadButton.tsx";
-import FullscreenButton from "#app/features/code/components/FullscreenButton.tsx";
+import CopyButton from "#app/core/components/CopyButton.tsx";
+import DownloadButton from "#app/core/components/DownloadButton.tsx";
+import FullscreenButton from "#app/core/components/FullscreenButton.tsx";
 
 export default function HighlightBody({
 	code,

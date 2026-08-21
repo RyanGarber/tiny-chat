@@ -5,6 +5,7 @@
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/apps/tauri/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/packages/server/generated" isTestSource="false" generated="true" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/app/src/generated" isTestSource="false" generated="true" />
       <excludeFolder url="file://$MODULE_DIR$/apps/tauri/gen" />
       <excludeFolder url="file://$MODULE_DIR$/apps/tauri/target" />
       <excludeFolder url="file://$MODULE_DIR$/.idea/dataSources" />

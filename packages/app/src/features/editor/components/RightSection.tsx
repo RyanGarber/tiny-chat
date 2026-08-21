@@ -11,23 +11,23 @@ import {
 	Stack,
 	Text,
 } from "@mantine/core";
+import { AgentStreamService } from "@tiny-chat/client/src/core/services/StreamService.ts";
 import { useConfig } from "@tiny-chat/client/src/features/agent/hooks/useConfig.ts";
 import { useSkills } from "@tiny-chat/client/src/features/agent/hooks/useSkills.ts";
 import { useTools } from "@tiny-chat/client/src/features/agent/hooks/useTools.ts";
-import { ClientAgentService } from "@tiny-chat/client/src/features/agent/services/ClientAgentService.ts";
+import { useStreamStore } from "@tiny-chat/client/src/features/agent/stores/useStreamStore.ts";
 import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
 import { useMessaging } from "@tiny-chat/client/src/features/chat/hooks/useMessaging.ts";
-import { StreamService } from "@tiny-chat/client/src/features/chat/services/StreamService.ts";
+import { useDraftStore } from "@tiny-chat/client/src/features/chat/stores/useDraftStore.ts";
 import { ToolUtils } from "@tiny-chat/core/src/features/tool/utils/ToolUtils.ts";
 import { useMemo } from "react";
-import { client } from "#app/client.ts";
 import ModelSelect from "#app/core/components/ModelSelect.tsx";
 import { AppService } from "#app/core/services/AppService.ts";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import TokenUsage from "#app/features/editor/components/TokenUsage.tsx";
 import { useEditorStore } from "#app/features/editor/stores/useEditorStore.ts";
 
-export default function RightSection({ isAny }: { isAny: boolean }) {
+export default function RightSection({ disabled }: { disabled: boolean }) {
 	const { chat } = useChat();
 	const { sendMessage } = useMessaging();
 	const { config, setConfig, modelArgs, setModelArg } = useConfig();
@@ -45,8 +45,11 @@ export default function RightSection({ isAny }: { isAny: boolean }) {
 		[skills, config.skills],
 	);
 
-	const stream = StreamService.getChat(chat.data?.id ?? "");
-	const isEmpty = useEditorStore((state) => state.isEmpty);
+	const stream = useStreamStore((state) =>
+		state.chatAgentStreams.get(chat.data?.id ?? ""),
+	);
+
+	const isEmpty = useDraftStore((state) => state.isEmpty);
 	const isIncomplete = useEditorStore((state) => state.isIncomplete);
 
 	return (
@@ -62,7 +65,7 @@ export default function RightSection({ isAny }: { isAny: boolean }) {
 						radius={20}
 						h={40}
 						px={15}
-						disabled={isAny}
+						disabled={disabled}
 					>
 						{config.model}
 					</Button>
@@ -84,7 +87,7 @@ export default function RightSection({ isAny }: { isAny: boolean }) {
 						configValue={config}
 						onConfigChange={(value) => value && setConfig(value)}
 						feature="language"
-						disabled={isAny}
+						disabled={disabled}
 					/>
 					<Button
 						fullWidth
@@ -129,7 +132,7 @@ export default function RightSection({ isAny }: { isAny: boolean }) {
 											transitionProps: { transition: "fade-up" },
 										}}
 										onChange={(value) => setModelArg(arg.name, value)}
-										disabled={isAny}
+										disabled={disabled}
 									/>
 								)}
 								{arg.type === "range" && (
@@ -143,7 +146,7 @@ export default function RightSection({ isAny }: { isAny: boolean }) {
 											] ?? arg.default
 										}
 										onChange={(value) => setModelArg(arg.name, value)}
-										disabled={isAny}
+										disabled={disabled}
 									/>
 								)}
 							</Box>
@@ -156,14 +159,11 @@ export default function RightSection({ isAny }: { isAny: boolean }) {
 				size={40}
 				radius={20}
 				onClick={() => {
-					if (stream) void ClientAgentService.abort({ client, id: stream.id });
+					if (chat.data && stream) AgentStreamService.abort(stream);
 					else sendMessage.mutate();
 				}}
 				loading={sendMessage.isPending}
-				disabled={
-					(isEmpty || isIncomplete || isAny) &&
-					(stream === undefined || stream.abort.signal.aborted)
-				}
+				disabled={(isEmpty || isIncomplete || disabled) && stream === undefined}
 			>
 				{stream ? (
 					<Icon icon="lucide:square" height={18} />

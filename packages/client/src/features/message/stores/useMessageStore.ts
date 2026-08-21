@@ -1,15 +1,15 @@
 import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { Source } from "@tiny-chat/core/src/features/data/utils/SourceUtils.ts";
 import type { Toolset } from "@tiny-chat/core/src/features/tool/types/tool.ts";
 import { createContext, useContext } from "react";
 import { useStore } from "zustand";
 import { createStore, type StoreApi } from "zustand/vanilla";
-import type { MarkdownSource } from "../components/MarkdownContext.tsx";
 
 export interface MessageStore {
 	/** True once every query the list depends on has settled at least once. */
 	ready: boolean;
 	/** Citation targets, gathered once for the whole chat. */
-	sources: MarkdownSource[];
+	sources: Source[];
 	toolsets: Toolset<any>[];
 	/** Ids of messages a later edit may have invalidated. */
 	staleIds: Set<string>;

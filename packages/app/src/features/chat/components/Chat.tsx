@@ -83,7 +83,7 @@ export default function Chat() {
 		scrollToBottom,
 	} = useAutoScroll({
 		scrollRequested,
-		scrollPaused: chat.isFetching || messages.isFetching,
+		scrollPaused: chat.isFetching || messages.isFetchingNextPage,
 	});
 
 	// useAutoScroll holds the position across the prepended page.
@@ -275,7 +275,10 @@ export default function Chat() {
 					inset={0}
 				>
 					<Stack pt={isMobile ? 40 : 10} px={20} m="0 auto" maw={860} gap={10}>
-						<Sentinel isFetching={messages.isFetching} ref={sentinelRef} />
+						<Sentinel
+							isFetching={messages.isFetchingNextPage || messages.isLoading}
+							ref={sentinelRef}
+						/>
 						<MessageProvider>
 							{messageList.map((message) => (
 								<Message

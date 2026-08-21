@@ -143,13 +143,13 @@ export const client = createClient({
 				},
 				// The command reports its output over a channel while it runs; the
 				// resolved value still carries all of it.
-				exec: async ({ command, onOutput }) => {
+				exec: async ({ command, stream }) => {
 					const { Channel } = await import("@tauri-apps/api/core");
 					const channel = new Channel<{
-						stream: "stdout" | "stderr";
+						type: "stdout" | "stderr";
 						value: string;
 					}>();
-					channel.onmessage = (chunk) => onOutput?.(chunk);
+					channel.onmessage = (event) => stream?.(event);
 
 					return await TauriUtils.invoke<{
 						code?: number;

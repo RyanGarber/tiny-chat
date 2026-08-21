@@ -8,9 +8,9 @@ export type AtomKind = "command" | "attachment" | "paste";
  * A run of a plain text buffer that stands in for something longer.
  *
  * Commands, attachments and long pastes all travel with a message as Markdown
- * — a directive, or the pasted text itself — which is far too long to type
- * against. The buffer holds {@link Atom.text} in its place, and the Markdown is
- * written back in at serialization.
+ * directives — which are far too long to type against. The buffer holds
+ * {@link Atom.text} in its place, and the Markdown is written back in at
+ * serialization.
  */
 export interface Atom {
 	kind: AtomKind;

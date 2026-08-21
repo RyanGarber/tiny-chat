@@ -12,6 +12,7 @@ import {
 	Text,
 	Transition,
 } from "@mantine/core";
+import type { AgentStreamEvent } from "@tiny-chat/client/src/core/services/StreamService.ts";
 import type { MarkdownContext } from "@tiny-chat/client/src/features/message/components/MarkdownContext.tsx";
 import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
 import { useThemes } from "@tiny-chat/client/src/features/settings/hooks/useThemes.ts";
@@ -39,16 +40,10 @@ const TEXT_SM: BoxProps["className"] = "text-[10px]";
 export const MessageBodyContent = memo(
 	({
 		message,
-		live,
-		version,
 		containerWidth,
 	}: {
-		message: MessageState;
 		/** Live stream snapshot, subscribed to once in `MessageBody`. */
-		live: MessageState;
-		/** Stream version `live` was read at. `live` is mutated in place, so this
-		 * is the only thing that marks it as changed. */
-		version: number;
+		message: MessageState & AgentStreamEvent;
 		containerWidth: number;
 	}) => {
 		const { theme } = useThemes();
@@ -72,14 +67,18 @@ export const MessageBodyContent = memo(
 		};
 
 		const markdownContext = useMemo<MarkdownContext<string>>(
-			() => ({ streaming: live.state.generating }),
-			[live.state.generating],
+			() => ({ streaming: message.status === "generating" }),
+			[message.status],
 		);
 
-		// biome-ignore lint/correctness/useExhaustiveDependencies: `live` is mutated in place by the stream, so `version` is the only thing that marks it dirty
 		const parts = useMemo(
-			() => DataUtils.getRenderedPartsGrouped(live, "thought"),
-			[live, version],
+			() =>
+				DataUtils.getRenderedPartsGrouped(
+					message.data,
+					message.status === "thinking",
+					"thought",
+				),
+			[message],
 		);
 
 		if (message.author === Author.USER) {
@@ -96,7 +95,7 @@ export const MessageBodyContent = memo(
 			);
 		}
 
-		const isStale = !live.state.any && isStaleId;
+		const isStale = !message.status && isStaleId;
 
 		return (
 			<>
@@ -261,4 +260,7 @@ export const MessageBodyContent = memo(
 			</>
 		);
 	},
+	(previous, next) =>
+		previous.message === next.message &&
+		previous.containerWidth === next.containerWidth,
 );

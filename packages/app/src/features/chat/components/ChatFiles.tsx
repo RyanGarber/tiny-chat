@@ -3,7 +3,6 @@ import {
 	ActionIcon,
 	Burger,
 	Group,
-	Image,
 	Loader,
 	type RenderTreeNodePayload,
 	ScrollArea,
@@ -14,7 +13,6 @@ import {
 } from "@mantine/core";
 import { useChatFiles } from "@tiny-chat/client/src/features/chat/hooks/useChatFiles.ts";
 import type { FileNode } from "@tiny-chat/core/src/features/file/types/file.ts";
-import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeUtils.ts";
 import {
 	type Descendent,
 	FileUtils,
@@ -22,17 +20,13 @@ import {
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import { type ReactNode, useMemo, useState } from "react";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
-import { theme } from "#app/core/utils/IconUtils.ts";
-import {
-	FilePreview,
-	type FilePreviewItem,
-} from "#app/features/upload/components/FilePreview.tsx";
+import FileTag from "#app/features/upload/components/FileTag.tsx";
 
 interface FileTreeNodeProps {
 	type: "file";
 	node: FileNode;
 }
-interface DirTreeNodeProps {
+interface DirectoryTreeNodeProps {
 	type: "directory";
 	segment: string;
 }
@@ -106,7 +100,7 @@ function buildTreeNodes(nodes: FileNode[]): TreeNodeData[] {
 					nodeProps: {
 						type: "directory",
 						segment,
-					} satisfies DirTreeNodeProps,
+					} satisfies DirectoryTreeNodeProps,
 					children: toTreeNodes(child, value),
 				});
 			}
@@ -132,22 +126,12 @@ function FileTreeNode({
 	expanded: boolean;
 	elementProps: RenderTreeNodePayload["elementProps"];
 }) {
-	const props = node.nodeProps as FileTreeNodeProps | DirTreeNodeProps;
+	const props = node.nodeProps as FileTreeNodeProps | DirectoryTreeNodeProps;
 
 	const { readChatFile } = useChatFiles();
 	const [isHovering, setIsHovering] = useState(false);
-	const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-	const [previewData, setPreviewData] = useState<FilePreviewItem | null>(null);
 
-	const segment =
-		props.type === "file" ? PathUtils.name(props.node) : props.segment;
 	const path = props.type === "file" ? props.node.path : [];
-
-	const iconId =
-		props.type === "file"
-			? theme?.getFileIconId(segment, undefined, false)
-			: theme?.getFolderIconId(segment, expanded, false);
-	const icon = iconId ? theme?.getIconContent(iconId, "base64") : null;
 
 	let options: ReactNode;
 
@@ -227,13 +211,6 @@ function FileTreeNode({
 				width={16}
 				style={{ opacity: props.type === "file" ? 0 : 1, flexShrink: 0 }}
 			/>
-			{props.type === "file" && (
-				<FilePreview
-					opened={isPreviewOpen}
-					onClose={() => setIsPreviewOpen(false)}
-					items={previewData ? [previewData] : []}
-				/>
-			)}
 			<Group
 				flex={1}
 				miw={0}
@@ -242,36 +219,18 @@ function FileTreeNode({
 				style={{ cursor: props.type === "file" ? "pointer" : undefined }}
 				onMouseEnter={() => setIsHovering(true)}
 				onMouseLeave={() => setIsHovering(false)}
-				onClick={() => {
-					if (props.type !== "file") return;
-					readChatFile
-						.mutateAsync({ path, meta: "preview" })
-						.then(({ data, path, mime }) => {
-							FileTypeUtils.getMime({ data, path, fallback: mime })
-								.then((mime) => {
-									setPreviewData({
-										name: segment,
-										mime,
-										data: FileUtils.getBase64FromBytes({ data }),
-									});
-									setIsPreviewOpen(true);
-								})
-								.catch(console.error);
-						})
-						.catch(console.error);
-				}}
 			>
-				{icon && (
-					<Image
-						src={`data:${icon.mimeType};base64,${icon.data}`}
-						alt={segment}
-						w="auto"
-						h={20}
-					/>
-				)}
-				<Text flex={1} miw={0} size="sm" truncate>
-					{node.label as string}
-				</Text>
+				<FileTag
+					path={props.type === "file" ? props.node.uri : props.segment}
+					directory={props.type === "directory"}
+					expanded={expanded}
+					flex={1}
+				>
+					<Text size="sm" flex={1} miw={0} truncate>
+						{node.label}
+						{props.type === "directory" && "/"}
+					</Text>
+				</FileTag>
 				{options}
 			</Group>
 		</Group>

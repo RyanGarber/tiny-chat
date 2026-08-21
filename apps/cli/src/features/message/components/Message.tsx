@@ -1,7 +1,8 @@
 /** biome-ignore-all lint/suspicious/noArrayIndexKey: parts stay in order */
 
+import type { AgentStreamEvent } from "@tiny-chat/client/src/core/services/StreamService.ts";
+import { useStream } from "@tiny-chat/client/src/features/agent/hooks/useStream.ts";
 import type { MarkdownContext } from "@tiny-chat/client/src/features/message/components/MarkdownContext.tsx";
-import { useMessageStream } from "@tiny-chat/client/src/features/message/hooks/useMessageStream.ts";
 import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
 import {
 	Author,
@@ -26,19 +27,25 @@ export default function Message({ message }: { message: MessageState }) {
 
 	const { columns } = useWindowSize();
 
-	const { message: streamed, version } = useMessageStream(
-		message.author === Author.MODEL ? message.id : undefined,
+	const stream = useStream<AgentStreamEvent>(message.id)?.items.at(-1);
+	const streamed = useMemo(
+		() => ({ ...message, ...stream }),
+		[message, stream],
 	);
-	const live = streamed ?? message;
 	const markdownContext = useMemo<MarkdownContext<never, ColorName>>(
-		() => ({ streaming: live.state.generating }),
-		[live.state.generating],
+		() => ({ streaming: streamed.status === "generating" }),
+		[streamed.status],
 	);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: `live` is mutated in place by the stream, so `version` is the only thing that marks it dirty
 	const parts = useMemo(
-		() => DataUtils.getRenderedPartsGrouped(live, "thought", "toolCall"),
-		[live, version],
+		() =>
+			DataUtils.getRenderedPartsGrouped(
+				streamed.data,
+				streamed.status === "thinking",
+				"thought",
+				"toolCall",
+			),
+		[streamed],
 	);
 	let lastIndex = -1;
 
@@ -126,7 +133,7 @@ export default function Message({ message }: { message: MessageState }) {
 					}
 					return [];
 				})}
-				{live.state.any && (
+				{!!streamed.status && (
 					<Text>
 						<Spinner type="simpleDotsScrolling" />
 					</Text>

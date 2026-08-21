@@ -1,8 +1,11 @@
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { zAgentContext } from "@tiny-chat/core/src/features/agent/types/agent.ts";
+import { AgentUtils } from "@tiny-chat/core/src/features/agent/utils/AgentUtils.ts";
 import { ToolService } from "@tiny-chat/core/src/features/tool/services/ToolService.ts";
 import { ToolUtils } from "@tiny-chat/core/src/features/tool/utils/ToolUtils.ts";
 import { z } from "zod";
+import { ChatService } from "../../features/chat/services/ChatService.ts";
+import { MessageService } from "../../features/message/services/MessageService.ts";
 import { procedure, router } from "../../index.ts";
 import { ServerCapabilityService } from "../services/ServerCapabilityService.ts";
 
@@ -12,7 +15,7 @@ export const testing = router({
 			throw new Error("tests not allowed in this environment");
 
 		const { WorkerService } = await import(
-			"../../features/worker/services/WorkerService.ts"
+			"../../features/agent/services/WorkerService.ts"
 		);
 		await WorkerService.next({ testUserId: ctx.session.user.id });
 	}),
@@ -30,10 +33,22 @@ export const testing = router({
 			if (!CommonUtils.isTruthy(process.env.DEV))
 				throw new Error("tests not allowed in this environment");
 
+			const { prompt } = AgentUtils.getLastPrompt(input.context);
+
 			const capabilities = await ServerCapabilityService.getCapabilities({
 				user: ctx.session.user,
-				chat: input.context.chat,
-				message: input.context.messages.at(-1)?.id,
+				chat: input.context.chat
+					? await ChatService.getChat({
+							user: ctx.session.user,
+							chat: input.context.chat.id,
+						})
+					: null,
+				message: prompt?.id
+					? await MessageService.getMessage({
+							user: ctx.session.user,
+							message: prompt.id,
+						})
+					: null,
 				messages: input.context.messages,
 				incognito: input.context.chat?.incognito,
 			});

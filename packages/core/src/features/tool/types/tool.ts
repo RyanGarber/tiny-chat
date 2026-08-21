@@ -1,10 +1,8 @@
 /** biome-ignore-all lint/suspicious/noConfusingVoidType: no input expected */
 
 import type { z } from "zod";
-import type {
-	Capabilities,
-	ShellOutputHandler,
-} from "../../../core/types/capability.ts";
+import type { Capabilities } from "../../../core/types/capability.ts";
+import type { StreamMutation } from "../../../core/types/stream.ts";
 import type { zAgentContext } from "../../agent/types/agent.ts";
 import type { zDataBasicPart } from "../../data/types/message.ts";
 
@@ -14,6 +12,7 @@ export interface ToolDefinition {
 	input: z.ZodTypeAny;
 	feedback?: z.ZodTypeAny | void;
 	output: z.ZodTypeAny;
+	stream?: z.ZodTypeAny | void;
 }
 
 export interface ToolValidation {
@@ -30,6 +29,7 @@ export interface Tool<
 	input: TDefinition["input"];
 	feedback?: TDefinition["feedback"];
 	output: TDefinition["output"];
+	stream?: TDefinition["stream"];
 
 	/**
 	 * Runs before `execute`, and before the loop stops for approval or feedback.
@@ -43,7 +43,7 @@ export interface Tool<
 	}) => Promise<ToolValidation | undefined>;
 
 	/**
-	 * `onOutput` lets a long-running tool report output before it finishes, so
+	 * `stream` lets a long-running tool report output before it finishes, so
 	 * the UI can show it live. Whatever is reported this way still has to appear
 	 * in the resolved result: nothing streamed is persisted.
 	 */
@@ -51,7 +51,8 @@ export interface Tool<
 		input: z.infer<TDefinition["input"]>;
 		feedback: z.infer<TDefinition["feedback"]>;
 		context: zAgentContext;
-		onOutput?: ShellOutputHandler;
+		stream?: (_: StreamMutation<z.infer<TDefinition["stream"]>>) => void;
+		abort?: AbortSignal;
 	}) => Promise<
 		(
 			| Exclude<zDataBasicPart, { type: "json" }>

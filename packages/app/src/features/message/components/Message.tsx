@@ -256,8 +256,7 @@ const Message = memo(
 	(prev, next) =>
 		prev.opacity === next.opacity &&
 		prev.message.id === next.message.id &&
-		prev.message.data === next.message.data &&
-		prev.message.state === next.message.state,
+		prev.message.data === next.message.data,
 );
 
 export default Message;

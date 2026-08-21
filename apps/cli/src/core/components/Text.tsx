@@ -20,6 +20,10 @@ export default function Text({
 }: TextProps) {
 	const context = useContext(TextContext);
 
+	// Held on the inherited values rather than the inherited object, so what is
+	// handed down stays the same object for as long as the styling does. A value
+	// that changed identity per render would re-render every text below it, past
+	// any memo in between — context does not stop at one.
 	const mergedContext = useMemo<TextContext>(
 		() => ({
 			color: _color ?? context?.color,

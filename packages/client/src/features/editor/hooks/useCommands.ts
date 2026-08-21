@@ -7,6 +7,7 @@ import { useConfig } from "../../agent/hooks/useConfig.ts";
 import { useProviders } from "../../agent/hooks/useProviders.ts";
 import { useSkills } from "../../agent/hooks/useSkills.ts";
 import { useTools } from "../../agent/hooks/useTools.ts";
+import { ChatService } from "../../chat/services/ChatService.ts";
 import { usePresets } from "../../settings/hooks/usePresets.ts";
 import type {
 	CommandChoiceGroup,
@@ -229,6 +230,13 @@ export const useCommands = ({
 				name: "Commands",
 				items: [
 					...commandsRef.current,
+					{
+						name: "clear",
+						value: "clear",
+						run: () => {
+							ChatService.setChat({ id: null });
+						},
+					},
 					{ name: "model", value: "model", choices: models },
 					...modelArgs,
 					{

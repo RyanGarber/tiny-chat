@@ -3,12 +3,10 @@ import { DirectiveUtils } from "@tiny-chat/core/src/features/data/utils/Directiv
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import { useAtomStore } from "../stores/useAtomStore.ts";
 import type { Atom, AtomKind, AtomText, AtomToken } from "../types/atom.ts";
-
-/** Lines a paste is allowed to run to before it is collapsed into an atom. */
-const PASTE_LINE_LIMIT = 5;
+import { PASTE_LINE_LIMIT, PasteUtils } from "./PasteUtils.ts";
 
 /** The directives a message carries that an atom can be read back out of. */
-const DIRECTIVES = ["command", "attachment"] as const;
+const DIRECTIVES = ["command", "attachment", "paste"] as const;
 
 /**
  * Atoms: the runs of a plain text buffer that stand in for the Markdown a
@@ -19,7 +17,8 @@ const DIRECTIVES = ["command", "attachment"] as const;
  * a short stand-in for each of them and the Markdown is kept alongside, in
  * {@link useAtomStore}. {@link AtomUtils.serialize} puts the Markdown back
  * before the message is sent, and {@link AtomUtils.deserialize} takes it back
- * out when a message is loaded for editing.
+ * out when a message is loaded for editing. A long paste travels as
+ * `:::paste`.
  */
 export const AtomUtils = {
 	/** Every atom currently standing in the input. */
@@ -135,10 +134,13 @@ export const AtomUtils = {
 		const pattern = AtomUtils.pattern({ atoms });
 		if (!pattern) return content;
 
-		return content.replace(
-			pattern,
-			(match) => AtomUtils.find({ atoms, text: match })?.markdown ?? match,
-		);
+		return content.replace(pattern, (match) => {
+			const atom = AtomUtils.find({ atoms, text: match });
+			if (!atom) return match;
+			// A paste is a container directive, which only parses as a block.
+			if (atom.kind === "paste") return `\n${atom.markdown}\n`;
+			return atom.markdown;
+		});
 	},
 
 	/**
@@ -165,6 +167,16 @@ export const AtomUtils = {
 						label: directive.attributes.name,
 						markdown: text,
 					});
+				}
+				if (directive?.tag === "paste") {
+					const parsed = Number(directive.attributes.lines);
+					return (
+						AtomUtils.paste({
+							markdown: text,
+							text: "",
+							lines: Number.isFinite(parsed) && parsed > 0 ? parsed : undefined,
+						}) ?? text
+					);
 				}
 				return text;
 			})
@@ -237,19 +249,33 @@ export const AtomUtils = {
 	/**
 	 * An atom for a paste too long to read in an input, which stands as the
 	 * lines it spans. Null when the paste is short enough to go in as it is.
+	 *
+	 * Pass `markdown` when the paste is already a `:::paste` directive, so it
+	 * is not wrapped again.
 	 */
-	paste: ({ content, text }: { content?: string; text: string }) => {
-		const lines = text.split("\n");
-		if (lines.length <= PASTE_LINE_LIMIT) return null;
+	paste: ({
+		content,
+		text,
+		markdown,
+		lines,
+	}: {
+		content?: string;
+		text: string;
+		markdown?: string;
+		lines?: number;
+	}) => {
+		const pasted = PasteUtils.normalize(text);
+		const count = lines ?? pasted.split("\n").length;
+		if (!markdown && count < PASTE_LINE_LIMIT) return null;
 
-		const written = `[${lines.length} pasted lines]`;
+		const written = `[${count} pasted lines]`;
 
 		return AtomUtils.register({
 			content,
 			kind: "paste",
 			text: (index) =>
-				index ? `[${lines.length} pasted lines #${index + 1}]` : written,
-			markdown: text,
+				index ? `[${count} pasted lines #${index + 1}]` : written,
+			markdown: markdown ?? PasteUtils.markdown(pasted),
 		});
 	},
 } as const;

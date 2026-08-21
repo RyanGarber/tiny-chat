@@ -10,7 +10,6 @@ import RemarkGfm from "remark-gfm";
 import RemarkMath from "remark-math";
 import RemarkParse from "remark-parse";
 import RemarkRehype from "remark-rehype";
-import remend from "remend";
 import { type PluggableList, type Processor, unified } from "unified";
 import { visit } from "unist-util-visit";
 
@@ -22,6 +21,7 @@ const allowedTags: Partial<Record<keyof JSX.IntrinsicElements, string[]>> = {
 	mark: ["sources"],
 	link: ["source", "is-directory"],
 	slot: ["name", "value", "accepts-content", "needs-run"],
+	details: ["lines"],
 };
 
 type DirectiveKind = "text" | "leaf" | "container";
@@ -131,6 +131,7 @@ const createDirectives = () => {
 			if (node.name === "writing") toNode(node, "blockquote");
 			if (node.name === "command") toNode(node, "slot");
 			if (node.name === "attachment") toNode(node, "link");
+			if (node.name === "paste") toNode(node, "details");
 		});
 	};
 };
@@ -225,20 +226,19 @@ const MESSAGE_CLOSE = /\n?<\/message>\s*$/;
 
 export const useMarkdown = ({
 	source,
-	withRemend,
 	withKatex,
 }: {
 	source: string;
-	withRemend?: boolean;
 	withKatex?: boolean;
 }) => {
-	const content = useMemo(() => {
-		const content = source
-			.replace(MESSAGE_OPEN, "")
-			.replace(MESSAGE_CLOSE, "")
-			.replace(/<cite([/ ])/g, "<mark$1");
-		return withRemend ? remend(content) : content;
-	}, [source, withRemend]);
+	const content = useMemo(
+		() =>
+			source
+				.replace(MESSAGE_OPEN, "")
+				.replace(MESSAGE_CLOSE, "")
+				.replace(/<cite([/ ])/g, "<mark$1"),
+		[source],
+	);
 
 	return {
 		remarkPlugins,

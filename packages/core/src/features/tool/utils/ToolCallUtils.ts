@@ -23,6 +23,7 @@ import { read_file } from "../tools/shell/read_file.ts";
 import { search_files } from "../tools/shell/search_files.ts";
 import { shell_exec } from "../tools/shell/shell_exec.ts";
 import { write_file } from "../tools/shell/write_file.ts";
+import { spawn_subagent } from "../tools/subagents/spawn_subagent.ts";
 import { search_web } from "../tools/web/search_web.ts";
 import { view_web } from "../tools/web/view_web.ts";
 import type { ToolDefinition, Toolset } from "../types/tool.ts";
@@ -73,6 +74,7 @@ export type ToolCallDisplayType =
 	| (ToolCallDisplay<typeof edit_file> & { language?: CodeLanguage })
 	| (ToolCallDisplay<typeof shell_exec> & { content?: string })
 	| ToolCallDisplay<typeof ask_question>
+	| ToolCallDisplay<typeof spawn_subagent>
 	| ToolCallDisplay<typeof UNKNOWN>;
 
 /**
@@ -150,7 +152,6 @@ export const ToolCallUtils = {
 		toolsets: Toolset<any>[];
 	}): ToolCallDisplayType => {
 		const { tool } = ToolUtils.find({ toolsets, part });
-
 		const base = <T extends ToolDefinition, U extends boolean = false>(
 			definition: T,
 			status: (ToolCallDisplayType["status"][number] | [string, string])[],
@@ -401,10 +402,17 @@ export const ToolCallUtils = {
 			return {
 				...base(ask_question, [["Asking a question", "Asked a question"]]),
 			};
+		} else if (ToolUtils.is(toolsets, part, spawn_subagent)) {
+			return {
+				...base(spawn_subagent, [
+					["Using subagent to", "Used subagent to"],
+					{ subject: part.args.task },
+				]),
+			};
 		}
 
 		return {
-			...base(UNKNOWN, [["Using", "Used"], "tool", { subject: part.name }]),
+			...base(UNKNOWN, [["Using tool", "Used tool"], { subject: part.name }]),
 		};
 	},
 

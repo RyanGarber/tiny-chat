@@ -29,7 +29,7 @@ export const GitHubService = {
 
 		const result = await AuthServer.api.getAccessToken({
 			body: {
-				accountId: account.accountId,
+				accountId: account.id,
 				userId: user.id,
 			},
 		});

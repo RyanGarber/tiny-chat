@@ -120,7 +120,7 @@ export const ToolUtils = {
 
 	is: <T extends ToolDefinition>(
 		toolsets: Toolset<any>[],
-		part: Extract<RenderedPart, { type: "toolCall" }>,
+		part: Extract<zDataPart | RenderedPart, { type: "toolCall" }>,
 		isTool: T,
 	): part is ToolCall<T> & { result: ToolResult<T> } => {
 		const { tool } = ToolUtils.find({ toolsets, part });

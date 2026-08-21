@@ -12,7 +12,7 @@ export const Thought = memo(
 		textSize,
 	}: {
 		thoughts: Extract<RenderedPart, { type: "thought" }>[];
-		context: MarkdownContext<string>;
+		context?: MarkdownContext<string>;
 		textSize?: NonNullable<MarkdownContext<string>["style"]>["textSize"];
 	}) => {
 		const pending = thoughts.some((thought) => thought.active);
@@ -65,6 +65,6 @@ export const Thought = memo(
 				next.thoughts[i].value === thought.value &&
 				next.thoughts[i].active === thought.active,
 		) &&
-		previous.context.streaming === next.context.streaming &&
+		previous.context?.streaming === next.context?.streaming &&
 		previous.textSize === next.textSize,
 );

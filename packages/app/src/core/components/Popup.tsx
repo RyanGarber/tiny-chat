@@ -17,17 +17,56 @@ interface HoveredState {
 }
 
 interface PopupContext {
+	isOpen: boolean;
+	setIsOpen: (value: boolean) => void;
 	toggle: () => void;
 	setHoveredState: (context: Partial<HoveredState>) => void;
 }
 
 const PopupContext = createContext<PopupContext | null>(null);
 
+const usePopup = ({
+	children,
+	type,
+}: {
+	children: ReactNode;
+	type: keyof HoveredState;
+}) => {
+	const context = useContext(PopupContext);
+
+	const child = getSingleElementChild(children);
+	if (!child) throw new Error("invalid popup child");
+
+	const element = child as ReactElement<HTMLAttributes<HTMLElement>>;
+
+	const { openDropdown, closeDropdown } = useDelayedHover({
+		open: () => context?.setHoveredState({ [type]: true }),
+		close: () => context?.setHoveredState({ [type]: false }),
+		openDelay: 0,
+		closeDelay: 750,
+	});
+
+	return {
+		child: cloneElement(element, {
+			...element.props,
+			style: {
+				cursor: type === "target" ? "pointer" : undefined,
+				...element.props.style,
+			},
+			onClick: type === "target" ? context?.toggle : undefined,
+			onMouseEnter: () => openDropdown(),
+			onMouseLeave: () => closeDropdown(),
+		}),
+	};
+};
+
 function Popup({
 	children,
 	...props
-}: Popover.Props & { children: ReactNode }) {
-	const [opened, setOpened] = useState(false);
+}: Popover.Props & {
+	children: ReactNode;
+}) {
+	const [isOpen, setIsOpen] = useState(false);
 
 	const [hovered, setHovered] = useState<HoveredState>({
 		target: false,
@@ -39,19 +78,21 @@ function Popup({
 
 	const context: PopupContext = useMemo(
 		() => ({
-			setHoveredState,
+			isOpen,
+			setIsOpen,
 			toggle: () => {
-				setOpened(!opened);
+				setIsOpen(!isOpen);
 			},
+			setHoveredState,
 		}),
-		[setHoveredState, opened],
+		[setHoveredState, isOpen],
 	);
 
 	return (
 		<PopupContext value={context}>
 			<Popover
-				opened={opened || hovered.dropdown || hovered.target}
-				onChange={setOpened}
+				opened={isOpen || hovered.dropdown || hovered.target}
+				onChange={setIsOpen}
 				{...props}
 			>
 				{children}
@@ -61,41 +102,6 @@ function Popup({
 }
 
 namespace Popup {
-	const usePopup = ({
-		children,
-		type,
-	}: {
-		children: ReactNode;
-		type: keyof HoveredState;
-	}) => {
-		const context = useContext(PopupContext);
-
-		const child = getSingleElementChild(children);
-		if (!child) throw new Error("invalid popup child");
-
-		const element = child as ReactElement<HTMLAttributes<HTMLElement>>;
-
-		const { openDropdown, closeDropdown } = useDelayedHover({
-			open: () => context?.setHoveredState({ [type]: true }),
-			close: () => context?.setHoveredState({ [type]: false }),
-			openDelay: 0,
-			closeDelay: 750,
-		});
-
-		return {
-			child: cloneElement(element, {
-				...element.props,
-				style: {
-					cursor: type === "target" ? "pointer" : undefined,
-					...element.props.style,
-				},
-				onClick: type === "target" ? context?.toggle : undefined,
-				onMouseEnter: () => openDropdown(),
-				onMouseLeave: () => closeDropdown(),
-			}),
-		};
-	};
-
 	export function Target({ children, ...props }: Popover.Target.Props) {
 		const { child } = usePopup({ children, type: "target" });
 

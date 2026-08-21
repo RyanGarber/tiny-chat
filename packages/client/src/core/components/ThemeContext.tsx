@@ -1,5 +1,5 @@
 import type { ThemeUtils } from "@tiny-chat/core/src/core/utils/ThemeUtils.ts";
-import { createContext, createElement, type ReactNode } from "react";
+import { createContext, createElement, type ReactNode, useMemo } from "react";
 import { useThemes } from "../../features/settings/hooks/useThemes.ts";
 
 export type ColorPalette = [
@@ -86,5 +86,10 @@ export default function ThemeContextProvider({
 }) {
 	const { theme } = useThemes();
 
-	return createElement(ThemeContext, { value: build(theme) }, children);
+	// Rebuilding this per render would hand every consumer a value it has to
+	// treat as new. In the CLI that is every Box and Text on screen, none of
+	// which a memo can hold back, since context reaches through one.
+	const value = useMemo(() => build(theme), [theme]);
+
+	return createElement(ThemeContext, { value }, children);
 }

@@ -1,21 +1,26 @@
 import { ThemeContext } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
 import { useConfig } from "@tiny-chat/client/src/features/agent/hooks/useConfig.ts";
 import { useMessaging } from "@tiny-chat/client/src/features/chat/hooks/useMessaging.ts";
+import { MessagingService } from "@tiny-chat/client/src/features/chat/services/MessagingService.ts";
 import { useDisabled } from "@tiny-chat/client/src/features/editor/hooks/useDisabled.ts";
 import { useAtomStore } from "@tiny-chat/client/src/features/editor/stores/useAtomStore.ts";
 import { useCompletionStore } from "@tiny-chat/client/src/features/editor/stores/useCompletionStore.ts";
 import { AtomUtils } from "@tiny-chat/client/src/features/editor/utils/AtomUtils.ts";
+import { AttachmentUtils } from "@tiny-chat/client/src/features/editor/utils/AttachmentUtils.ts";
 import { useMessages } from "@tiny-chat/client/src/features/message/hooks/useMessages.ts";
 import { useUploads } from "@tiny-chat/client/src/features/upload/hooks/useUploads.ts";
 import { UploadType } from "@tiny-chat/core/src/features/file/types/upload.ts";
-import { useInput, usePaste } from "ink";
-import { useContext, useMemo, useState } from "react";
+import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
+import { useInput, usePaste, useWindowSize } from "ink";
+import { useContext, useEffect, useMemo, useState } from "react";
+import { client } from "../../../client.ts";
 import Box from "../../../core/components/Box.tsx";
 import { useWorkingStatus } from "../../../core/hooks/useWorkingStatus.ts";
 import { ClipboardService } from "../../../core/services/ClipboardService.ts";
 import { StdinUtils } from "../../../core/utils/StdinUtils.ts";
 import { useEditorStore } from "../stores/useEditorStore.ts";
 import { type EditorSelection, EditorUtils } from "../utils/EditorUtils.ts";
+import { FilePasteUtils } from "../utils/FilePasteUtils.ts";
 import Attachments from "./Attachments.tsx";
 import Commands from "./Commands.tsx";
 import Textarea from "./Textarea.tsx";
@@ -26,6 +31,7 @@ const LINE_COUNT = 1;
 
 export default function Editor({ disabled: _disabled }: { disabled: boolean }) {
 	const { colorScheme } = useContext(ThemeContext);
+	const { columns } = useWindowSize();
 
 	const { disabled } = useDisabled({ disabled: _disabled });
 	const { config, modelArgs } = useConfig();
@@ -61,10 +67,20 @@ export default function Editor({ disabled: _disabled }: { disabled: boolean }) {
 			...modelArgs.map(
 				(arg) => `${arg.name} ${config.args?.[arg.name] ?? arg.default}`,
 			),
-		].join(" · ");
-	}, [config, modelArgs]);
+		]
+			.join(" · ")
+			.slice(0, columns - 10);
+	}, [config, modelArgs, columns]);
 
 	const labels = useMemo(() => EditorUtils.tokenLabels({ atoms }), [atoms]);
+
+	// The content and its atoms are what the editor holds, but the message
+	// being written is what every other reader wants — so it is kept in step
+	// here, the way the app keeps its own editor's `zData` in step on update.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: re-read on every change to what the editor holds
+	useEffect(() => {
+		MessagingService.getData({ client });
+	}, [content, atoms]);
 
 	const offset = EditorUtils.offset(content, cursor);
 
@@ -116,6 +132,34 @@ export default function Editor({ disabled: _disabled }: { disabled: boolean }) {
 	const paste = (text: string) => {
 		const pasted = text.replace(/\r\n?/g, "\n");
 		if (!pasted) return;
+
+		// A file dragged onto a macOS terminal arrives as its escaped path
+		// rather than its contents, so it is attached instead of dumped in as
+		// text.
+		const files = FilePasteUtils.detect(pasted);
+		if (files) {
+			insert(
+				files
+					.map(
+						(file) =>
+							`${AtomUtils.attachment({
+								content,
+								source: file.path,
+								directory: file.directory,
+								markdown: AttachmentUtils.toDirective({
+									item: {
+										name: PathUtils.name(file.path),
+										value: file.path,
+										directory: file.directory,
+									},
+								}),
+							})} `,
+					)
+					.join(""),
+			);
+			return;
+		}
+
 		insert(AtomUtils.paste({ content, text: pasted }) ?? pasted);
 	};
 
@@ -248,53 +292,50 @@ export default function Editor({ disabled: _disabled }: { disabled: boolean }) {
 				setCursor={setCursor}
 			/>
 			<Box
-				flexDirection="column"
+				alignItems="flex-end"
 				paddingX={2}
 				paddingY={1}
 				backgroundColor="surface"
-				flexShrink={0}
 			>
-				<Box alignItems="flex-end" gap={1}>
-					<Textarea
-						focus={!disabled}
-						value={content}
-						onChange={setContent}
-						onSubmit={() => sendMessage.mutate()}
-						cursor={cursor}
-						onCursorChange={setCursor}
-						selection={selection}
-						onSelectionChange={setSelection}
-						// An atom is only ever selected whole.
-						snap={(target, from) =>
-							EditorUtils.snap({ value: content, atoms, offset: target, from })
-						}
-						expand={(selected) =>
-							EditorUtils.expand({ value: content, atoms, selection: selected })
-						}
-						// Word motion and word deletion are answered above, where an atom
-						// is stepped over and taken whole.
-						keybindings={{
-							Enter: !isCompletionsOpen,
-							Backspace: !backward,
-							Delete: !forward,
-							"Alt+Backspace": false,
-							"Alt+B": false,
-							"Alt+F": false,
-						}}
-						disableArrowNavigation={isCompletionsOpen && !isCompletionsEmpty}
-						initialLineCount={LINE_COUNT}
-						autoNewLineLimit={0}
-						highlightActiveLine={true}
-						labels={labels}
-						styles={{
-							command: { color: colorScheme.primary, bold: true },
-							attachment: { color: colorScheme.primary, bold: true },
-							paste: { color: colorScheme.textSubtle, bold: true },
-						}}
-						placeholder={placeholder}
-					/>
-					<TokenUsage />
-				</Box>
+				<Textarea
+					focus={!disabled}
+					value={content}
+					onChange={setContent}
+					onSubmit={() => sendMessage.mutate()}
+					cursor={cursor}
+					onCursorChange={setCursor}
+					selection={selection}
+					onSelectionChange={setSelection}
+					// An atom is only ever selected whole.
+					snap={(target, from) =>
+						EditorUtils.snap({ value: content, atoms, offset: target, from })
+					}
+					expand={(selected) =>
+						EditorUtils.expand({ value: content, atoms, selection: selected })
+					}
+					// Word motion and word deletion are answered above, where an atom
+					// is stepped over and taken whole.
+					keybindings={{
+						Enter: !isCompletionsOpen,
+						Backspace: !backward,
+						Delete: !forward,
+						"Alt+Backspace": false,
+						"Alt+B": false,
+						"Alt+F": false,
+					}}
+					disableArrowNavigation={isCompletionsOpen && !isCompletionsEmpty}
+					initialLineCount={LINE_COUNT}
+					autoNewLineLimit={0}
+					highlightActiveLine={true}
+					labels={labels}
+					styles={{
+						command: { color: colorScheme.primary, bold: true },
+						attachment: { color: colorScheme.primary, bold: true },
+						paste: { color: colorScheme.textSubtle, bold: true },
+					}}
+					placeholder={placeholder}
+				/>
+				<TokenUsage />
 			</Box>
 		</>
 	);

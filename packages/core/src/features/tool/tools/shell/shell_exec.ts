@@ -4,6 +4,8 @@ import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 import { ShellUtils } from "../../utils/ShellUtils.ts";
 import { ToolOutputUtils } from "../../utils/ToolOutputUtils.ts";
 
+const MAX_LINE_LENGTH = 2_000;
+
 export const shell_exec = {
 	name: "shell_exec",
 	description:
@@ -16,19 +18,56 @@ export const shell_exec = {
 		stdout: z.string(),
 		stderr: z.string(),
 	}),
+	stream: z.object({
+		type: z.enum(["stdout", "stderr"]),
+		value: z.string(),
+	}),
 } as const satisfies ToolDefinition;
+
+const keep: (event: z.infer<typeof shell_exec.stream>) => boolean = (event) => {
+	return event.value.length > 0;
+};
 
 export const createShellExecTool: ToolFactory<
 	Tool<typeof shell_exec, { shell: ShellCapability }>
 > = (options) => ({
 	...shell_exec,
+	...options,
 	validate: async ({ input }) => {
 		return { approval: !ShellUtils.isSafe(input.command) };
 	},
-	execute: async ({ input, onOutput }) => {
+	execute: async ({ input, stream }) => {
+		let buffer: z.infer<(typeof shell_exec)["stream"]> | undefined;
+
 		const result = await options.capabilities.shell.exec({
 			command: input.command,
-			onOutput,
+			stream: ({ type, value }) => {
+				// clean shell noise
+				const text = value
+					.replace(
+						// biome-ignore lint/suspicious/noControlCharactersInRegex: matching escapes is the point
+						/\u001B\[[0-?]*[ -/]*[@-~]|\u001B][^\u0007]*(?:\u0007|\u001B\\)/g,
+						"",
+					)
+					.replace(/\r\n/g, "\n");
+				if (!text) return;
+
+				const pieces = text.split("\n");
+				pieces.forEach((piece, index) => {
+					if (!buffer || buffer?.type !== type || index > 0) {
+						buffer = { type, value: "" };
+						stream?.({ mode: "append", data: buffer, options: { keep } });
+					}
+
+					// A carriage return rewrites the line it is on, which is how progress
+					// bars and spinners report themselves.
+					const rewrite = piece.lastIndexOf("\r");
+					buffer.value = (
+						rewrite >= 0 ? piece.slice(rewrite + 1) : buffer.value + piece
+					).slice(0, MAX_LINE_LENGTH);
+					stream?.({ mode: "replace", data: buffer, options: { keep } });
+				});
+			},
 		});
 		return [
 			{
@@ -49,5 +88,4 @@ export const createShellExecTool: ToolFactory<
 			},
 		];
 	},
-	...options,
 });

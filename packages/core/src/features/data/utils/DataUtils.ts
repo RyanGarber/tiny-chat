@@ -1,4 +1,4 @@
-import type { MessageState, zData, zDataPart } from "../types/message.ts";
+import type { zData, zDataPart } from "../types/message.ts";
 
 export type RenderedPart =
 	| Exclude<zDataPart, { type: "thought" | "toolCall" | "toolResult" }>
@@ -57,8 +57,8 @@ export const DataUtils = {
 		return toolResultCount < toolCallCount;
 	},
 
-	getRenderedParts: (message: MessageState) => {
-		const parts = message.data.flat();
+	getRenderedParts: (data: zData, thinking = false) => {
+		const parts = data.flat();
 		const renderedParts: RenderedPart[] = [];
 
 		for (let i = 0; i < parts.length; i++) {
@@ -69,7 +69,7 @@ export const DataUtils = {
 			} else if (part.type === "thought") {
 				renderedParts.push({
 					...part,
-					active: message.state.thinking && i === parts.length - 1,
+					active: thinking && i === parts.length - 1,
 				});
 			} else if (part.type === "toolCall") {
 				renderedParts.push({
@@ -93,10 +93,11 @@ export const DataUtils = {
 	 * Groups parts into renderable chunks with additional UI state.
 	 */
 	getRenderedPartsGrouped: <T extends RenderedPart["type"][]>(
-		message: MessageState,
+		data: zData,
+		thinking: boolean,
 		...groups: T
 	): (RenderedPart | RenderedPartGroup<T>)[] => {
-		const parts = DataUtils.getRenderedParts(message);
+		const parts = DataUtils.getRenderedParts(data, thinking);
 		const renderedParts: (RenderedPart | RenderedPartGroup<T>)[] = [];
 
 		for (let i = 0; i < parts.length; i++) {

@@ -57,6 +57,14 @@ describe("markdown directives", () => {
 			"root",
 			["quote", ["paragraph", "hi"]],
 		]);
+		expect(parse(':::paste{lines="3"}\n```\na\nb\nc\n```\n:::')).toEqual([
+			"root",
+			["paste", ["code"]],
+		]);
+		expect(run(':::paste{lines="3"}\n```\na\nb\nc\n```\n:::')).toEqual([
+			"root",
+			["details", ["pre", ["code", "a\nb\nc\n"]]],
+		]);
 	});
 
 	it("requires [] on text directives", () => {

@@ -6,13 +6,13 @@ import {
 	Stack,
 	Text,
 } from "@mantine/core";
+import { useDraftStore } from "@tiny-chat/client/src/features/chat/stores/useDraftStore.ts";
 import { useEstimatedTokens } from "@tiny-chat/client/src/features/editor/hooks/useEstimatedTokens.ts";
 import Popup from "#app/core/components/Popup.tsx";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
-import { useEditorStore } from "#app/features/editor/stores/useEditorStore.ts";
 
 export default function TokenUsage() {
-	const data = useEditorStore((state) => state.data);
+	const data = useDraftStore((state) => state.data);
 
 	const { totalUsage, categories } = useEstimatedTokens<DefaultMantineColor>({
 		data,

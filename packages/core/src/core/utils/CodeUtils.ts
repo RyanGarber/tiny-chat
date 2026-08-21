@@ -74,6 +74,21 @@ export const CodeUtils = {
 		);
 	},
 
+	/**
+	 * Guess the language of a snippet. `name` is what the detector called it;
+	 * `language` is the Shiki id to highlight as, when we have one.
+	 */
+	detect: (code: string) => {
+		const detected = flourite(code, { shiki: true });
+		if (detected.language === "unknown") {
+			return { name: null, language: null };
+		}
+		return {
+			name: detected.language,
+			language: CodeUtils.getLanguage(detected.language),
+		};
+	},
+
 	getTheme: (theme: string | null) => {
 		if (!theme) return null;
 

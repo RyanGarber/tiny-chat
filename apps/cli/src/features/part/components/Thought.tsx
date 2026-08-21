@@ -27,7 +27,7 @@ export default function Thought({
 				parts={[{ text: pending ? "Thinking" : "Thought" }]}
 			/>
 			<Task.Details>
-				<Markdown source={thoughtText} context={{ ...context }} />
+				<Markdown source={thoughtText} context={context} />
 			</Task.Details>
 		</Task>
 	);

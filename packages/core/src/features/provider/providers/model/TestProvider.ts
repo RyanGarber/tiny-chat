@@ -1,8 +1,11 @@
 import type {
 	LanguageModelV4,
 	LanguageModelV4StreamPart,
+	LanguageModelV4ToolResultPart,
 	ProviderV4,
 } from "@ai-sdk/provider";
+import type { z } from "zod";
+import type { spawn_subagent } from "../../../tool/tools/subagents/spawn_subagent.ts";
 import type { ModelProvider } from "../../types/model.ts";
 import { ModelProviderUtils } from "../../utils/ModelProviderUtils.ts";
 
@@ -50,21 +53,6 @@ export const TestProvider: ModelProvider<ProviderV4> = {
 	},
 };
 
-/**
- * Profiling harness. Send a message starting with `bench` to drive a
- * deterministic, heavy stream instead of the tiny default script:
- *
- *   bench text 800      – 800 words of markdown, one delta per word
- *   bench code 400      – markdown dominated by fenced code blocks
- *   bench table 300     – markdown dominated by GFM tables
- *   bench tools 6       – 6 tool calls with streamed input deltas
- *   bench thought 400   – reasoning deltas then text
- *   bench mixed 600     – reasoning + tools + text interleaved
- *
- * A trailing `~<ms>` overrides the inter-delta delay (default 10ms), e.g.
- * `bench text 800 ~0` to stream as fast as the event loop allows.
- * (`@` is avoided — it opens the editor's mention autocomplete.)
- */
 interface Bench {
 	kind: "text" | "code" | "table" | "tools" | "thought" | "mixed";
 	count: number;
@@ -72,9 +60,81 @@ interface Bench {
 }
 
 const BENCH_RE =
-	/\bbench(?:\s+(text|code|table|tools|thought|mixed))?(?:\s+(\d+))?(?:\s*[~](\d+))?/i;
+	/!bench(?:\s+(text|code|table|tools|thought|mixed))?(?:\s+(\d+))?(?:\s*~(\d+))?/i;
 
-function getBench(prompt: unknown): Bench | null {
+const SUB_RE = /!sub/;
+
+async function emitText(
+	controller: ReadableStreamDefaultController<LanguageModelV4StreamPart>,
+	text: string,
+	sleep?: () => Promise<unknown>,
+) {
+	const id = `t${Math.random().toString(36).slice(2, 8)}`;
+	controller.enqueue({ type: "text-start", id, providerMetadata: {} });
+
+	// The envelope the agent parser expects.
+	controller.enqueue({
+		type: "text-delta",
+		id,
+		delta: `<message role="assistant" model="test-generate">\n`,
+		providerMetadata: {},
+	});
+
+	// One delta per whitespace-delimited token, preserving separators.
+	const tokens = text.match(/\s+|\S+/g) ?? [];
+	for (const token of tokens) {
+		controller.enqueue({
+			type: "text-delta",
+			id,
+			delta: token,
+			providerMetadata: {},
+		});
+		if (sleep) await sleep();
+	}
+
+	controller.enqueue({
+		type: "text-delta",
+		id,
+		delta: `\n</message>`,
+		providerMetadata: {},
+	});
+	controller.enqueue({ type: "text-end", id, providerMetadata: {} });
+}
+
+async function emitToolCall(
+	controller: ReadableStreamDefaultController<LanguageModelV4StreamPart>,
+	name: string,
+	args: unknown,
+	sleep?: () => Promise<unknown>,
+) {
+	const input = JSON.stringify(args);
+	const id = `t${Math.random().toString(36).slice(2, 8)}`;
+
+	controller.enqueue({
+		type: "tool-input-start",
+		id,
+		toolName: name,
+		providerMetadata: {},
+	});
+	for (const ch of input) {
+		controller.enqueue({
+			type: "tool-input-delta",
+			id,
+			delta: ch,
+			providerMetadata: {},
+		});
+		if (sleep) await sleep();
+	}
+	controller.enqueue({ type: "tool-input-end", id, providerMetadata: {} });
+	controller.enqueue({
+		type: "tool-call",
+		toolCallId: id,
+		toolName: name,
+		input,
+	});
+}
+
+function get<T>(prompt: unknown, test: (text: string) => T | null): T | null {
 	// Walk backwards for the most recent user text part.
 	const messages = prompt as {
 		role: string;
@@ -93,7 +153,17 @@ function getBench(prompt: unknown): Bench | null {
 						.map((p) => p.text ?? "")
 						.join("\n");
 
-		// The editor escapes markdown punctuation (`~` -> `\~`).
+		const result = test(text);
+		if (result !== null) {
+			return result;
+		}
+	}
+
+	return null;
+}
+
+function getBench(prompt: unknown): Bench | null {
+	return get(prompt, (text) => {
 		const match = BENCH_RE.exec(text.replace(/\\/g, ""));
 		if (!match) return null;
 
@@ -102,8 +172,17 @@ function getBench(prompt: unknown): Bench | null {
 			count: match[2] ? Number(match[2]) : 400,
 			delay: match[3] !== undefined ? Number(match[3]) : 10,
 		};
-	}
-	return null;
+	});
+}
+
+function getSub(prompt: unknown): boolean {
+	return (
+		get(prompt, (text) => {
+			const match = SUB_RE.exec(text);
+			if (!match) return null;
+			return true;
+		}) === true
+	);
 }
 
 const WORDS =
@@ -190,43 +269,10 @@ async function runBench({
 	controller: ReadableStreamDefaultController<LanguageModelV4StreamPart>;
 	bench: Bench;
 	sleep: (ms: number) => Promise<unknown>;
-	toolResult: unknown;
+	toolResult?: LanguageModelV4ToolResultPart;
 }) {
 	const { kind, count, delay } = bench;
 	console.log("[TestProvider] bench", bench);
-
-	const emitText = async (body: string) => {
-		const id = `t${Math.random().toString(36).slice(2, 8)}`;
-		controller.enqueue({ type: "text-start", id, providerMetadata: {} });
-
-		// The envelope the agent parser expects.
-		controller.enqueue({
-			type: "text-delta",
-			id,
-			delta: `<message role="assistant" model="test-generate">\n`,
-			providerMetadata: {},
-		});
-
-		// One delta per whitespace-delimited token, preserving separators.
-		const tokens = body.match(/\s+|\S+/g) ?? [];
-		for (const token of tokens) {
-			controller.enqueue({
-				type: "text-delta",
-				id,
-				delta: token,
-				providerMetadata: {},
-			});
-			if (delay > 0) await sleep(delay);
-		}
-
-		controller.enqueue({
-			type: "text-delta",
-			id,
-			delta: `\n</message>`,
-			providerMetadata: {},
-		});
-		controller.enqueue({ type: "text-end", id, providerMetadata: {} });
-	};
 
 	const emitThought = async (words: number) => {
 		const id = `r${Math.random().toString(36).slice(2, 8)}`;
@@ -243,62 +289,72 @@ async function runBench({
 		controller.enqueue({ type: "reasoning-end", id, providerMetadata: {} });
 	};
 
-	const emitToolCall = async (n: number) => {
-		const id = `call-${n}-${Math.random().toString(36).slice(2, 8)}`;
-		const input = JSON.stringify({ path: `/mnt/uploads/dir-${n}` });
+	const _emitText = async (text: string) => {
+		await emitText(
+			controller,
+			text,
+			delay > 0 ? () => sleep(delay) : undefined,
+		);
+	};
 
-		controller.enqueue({
-			type: "tool-input-start",
-			id,
-			toolName: "chat_read_dir",
-			providerMetadata: {},
-		});
-		for (const ch of input) {
-			controller.enqueue({
-				type: "tool-input-delta",
-				id,
-				delta: ch,
-				providerMetadata: {},
-			});
-			if (delay > 0) await sleep(delay);
-		}
-		controller.enqueue({ type: "tool-input-end", id, providerMetadata: {} });
-		controller.enqueue({
-			type: "tool-call",
-			toolCallId: id,
-			toolName: "chat_read_dir",
-			input,
-		});
+	const _emitToolCall = async (n: number) => {
+		await emitToolCall(
+			controller,
+			"chat_read_dir",
+			{ path: `/mnt/uploads/dir-${n}` },
+			delay > 0 ? () => sleep(delay) : undefined,
+		);
 	};
 
 	if (kind === "tools") {
 		// Each turn emits one batch; stop once results have come back.
 		if (!toolResult) {
-			for (let n = 0; n < count; n++) await emitToolCall(n);
+			for (let n = 0; n < count; n++) await _emitToolCall(n);
 		} else {
-			await emitText(buildMarkdown("text", 60));
+			await emitText(controller, buildMarkdown("text", 60));
 		}
 		return;
 	}
 
 	if (kind === "thought") {
 		await emitThought(count);
-		await emitText(buildMarkdown("text", Math.max(60, count / 2)));
+		await _emitText(buildMarkdown("text", Math.max(60, count / 2)));
 		return;
 	}
 
 	if (kind === "mixed") {
 		if (!toolResult) {
 			await emitThought(Math.round(count / 4));
-			await emitText(buildMarkdown("text", Math.round(count / 4)));
-			for (let n = 0; n < 3; n++) await emitToolCall(n);
+			await _emitText(buildMarkdown("text", Math.round(count / 4)));
+			for (let n = 0; n < 3; n++) await _emitToolCall(n);
 		} else {
-			await emitText(buildMarkdown("text", Math.round(count / 2)));
+			await _emitText(buildMarkdown("text", Math.round(count / 2)));
 		}
 		return;
 	}
 
-	await emitText(buildMarkdown(kind, count));
+	await _emitText(buildMarkdown(kind, count));
+}
+
+async function runSub({
+	controller,
+	toolResult,
+}: {
+	controller: ReadableStreamDefaultController<LanguageModelV4StreamPart>;
+	toolResult?: LanguageModelV4ToolResultPart;
+}) {
+	if (!toolResult) {
+		await emitToolCall(controller, "spawn_subagent", {
+			task: "Discover the concept of recursion.",
+			prompt:
+				"Recursively call another subagent of your own to find out what recursion is.",
+		} satisfies z.infer<typeof spawn_subagent.input>);
+	} else {
+		await emitText(
+			controller,
+			`The agent returned with:\n\`\`\`json\n${JSON.stringify(toolResult.output, null, 2)}\n\`\`\``,
+		);
+	}
 }
 
 export function createTestProvider(): ProviderV4 {
@@ -330,36 +386,27 @@ export function createTestProvider(): ProviderV4 {
 							if (typeof data === "string") throw new Error("Expected object");
 
 							const toolResult = data.find((p) => p.type === "tool-result");
+
 							const bench = getBench(options.prompt);
+							const sub = getSub(options.prompt);
 
 							if (bench) {
 								await runBench({ controller, bench, sleep, toolResult });
-							} else if (!toolResult) {
-								await sleep(1000);
-								controller.enqueue({
-									type: "tool-call",
-									toolCallId: "1",
-									toolName: "chat_read_dir",
-									input: JSON.stringify({
-										path: "/mnt",
-									}),
-								});
+							} else if (sub) {
+								await runSub({ controller, toolResult });
 							} else {
-								await sleep(1000);
 								controller.enqueue({
 									type: "text-start",
 									id: "1",
 									providerMetadata: {},
 								});
-								await sleep(1000);
 
 								controller.enqueue({
 									type: "text-delta",
 									id: "1",
-									delta: `<message role="assistant" model="test-generate">\nDone! 🎉</message>`,
+									delta: `Welcome to Tiny Chat. If you're seeing this, you're ready to start chatting! Add your first API key in Settings to get started.`,
 									providerMetadata: {},
 								});
-								await sleep(1000);
 
 								controller.enqueue({
 									type: "text-end",

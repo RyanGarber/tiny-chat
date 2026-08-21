@@ -99,7 +99,7 @@ const getExactMatches = ({
 		if (start === -1) return matches;
 		const line = content.lastIndexOf("\n", start) + 1;
 		matches.push({
-			start,
+			start: start,
 			end: start + search.length,
 			indent: getIndent(content.slice(line, start)),
 		});

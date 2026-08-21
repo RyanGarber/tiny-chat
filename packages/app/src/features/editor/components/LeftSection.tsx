@@ -6,7 +6,7 @@ import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import { useScreenshot } from "#app/features/upload/hooks/useScreenshot.ts";
 import { uploadMutationKey } from "#client/src/features/upload/hooks/useUploads.ts";
 
-export default function LeftSection({ isAny }: { isAny: boolean }) {
+export default function LeftSection({ disabled }: { disabled: boolean }) {
 	const { isScreenshotSupported, uploadScreenshot } = useScreenshot();
 
 	const isUploading = useIsMutating({ mutationKey: uploadMutationKey }) > 0;
@@ -19,7 +19,7 @@ export default function LeftSection({ isAny }: { isAny: boolean }) {
 					color="var(--mantine-color-text)"
 					radius={20}
 					size={40}
-					disabled={isAny}
+					disabled={disabled}
 					loading={isUploading}
 				>
 					<Icon icon="lucide:paperclip" height={18} />
@@ -29,22 +29,22 @@ export default function LeftSection({ isAny }: { isAny: boolean }) {
 				<Menu.Item
 					leftSection={<Icon icon="lucide:file" height={18} />}
 					onClick={() => AppService.openUploads("attachment")}
-					disabled={isAny}
+					disabled={disabled}
 				>
 					File
 				</Menu.Item>
 				<Menu.Item
 					leftSection={<Icon icon="lucide:github" height={18} />}
 					onClick={() => AppService.openUploads("github")}
-					disabled={isAny}
+					disabled={disabled}
 				>
-					Repository
+					GitHub
 				</Menu.Item>
 				{isScreenshotSupported && (
 					<Menu.Item
 						leftSection={<Icon icon="lucide:screen-share" height={18} />}
 						onClick={() => uploadScreenshot.mutate()}
-						disabled={isAny || uploadScreenshot.isPending}
+						disabled={disabled || uploadScreenshot.isPending}
 					>
 						Screenshot
 					</Menu.Item>

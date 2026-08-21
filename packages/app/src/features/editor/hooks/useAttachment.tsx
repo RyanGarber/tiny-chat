@@ -1,4 +1,4 @@
-import { Group, Image, Text } from "@mantine/core";
+import { Text } from "@mantine/core";
 import { useAttachments } from "@tiny-chat/client/src/features/editor/hooks/useAttachments.ts";
 import type { AttachmentItem } from "@tiny-chat/client/src/features/editor/types/attachment.ts";
 import { AttachmentUtils } from "@tiny-chat/client/src/features/editor/utils/AttachmentUtils.ts";
@@ -7,13 +7,13 @@ import { PluginKey } from "@tiptap/pm/state";
 import { Node, NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import { Suggestion } from "@tiptap/suggestion";
 import { useMemo } from "react";
-import { theme } from "#app/core/utils/IconUtils.ts";
 import {
 	type CompletionGroup,
 	renderCompletions,
 } from "#app/features/editor/components/Completions.tsx";
 import { NodeUtils } from "#app/features/editor/utils/NodeUtils.ts";
 import AttachmentView from "#app/features/part/components/Attachment.tsx";
+import FileTag from "#app/features/upload/components/FileTag.tsx";
 
 interface AttachmentGroup extends CompletionGroup<AttachmentItem> {
 	items: AttachmentItem[];
@@ -161,22 +161,13 @@ const Attachment = Node.create({
 				render: renderCompletions({
 					renderEmpty: () => "No matches",
 					renderItem: (item) => {
-						const iconId = !item.directory
-							? theme?.getFileIconId(item.value, undefined, false)
-							: theme?.getFolderIconId(item.value, false, false);
-						const icon = iconId
-							? theme?.getIconContent(iconId, "base64")
-							: null;
 						return (
-							<Group gap={5} miw={0} wrap="nowrap">
-								{icon && (
-									<Image
-										src={`data:${icon.mimeType};base64,${icon.data}`}
-										alt={item.name}
-										w="auto"
-										h={20}
-									/>
-								)}
+							<FileTag
+								path={item.value}
+								directory={item.directory}
+								miw={0}
+								wrap="nowrap"
+							>
 								<Text
 									size="sm"
 									style={{
@@ -185,7 +176,7 @@ const Attachment = Node.create({
 										textOverflow: "ellipsis",
 									}}
 								>{`${item.name}${item.directory ? "/" : ""}`}</Text>
-							</Group>
+							</FileTag>
 						);
 					},
 					onTab: ({ item, editor, range }) => {

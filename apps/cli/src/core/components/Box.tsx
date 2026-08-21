@@ -72,6 +72,8 @@ export default function Box({
 		};
 	}, [border, borderTop, borderBottom, borderLeft, borderRight]);
 
+	// On the inherited values, not the inherited object, so the same object is
+	// handed down for as long as the styling holds — see Text.
 	const mergedContext = useMemo<TextContext>(
 		() => ({
 			color: color ?? context?.color,

@@ -130,7 +130,7 @@ const CodeBlock = _CodeBlock
 				}, [updateAttributes, codeTheme]);
 				return (
 					<NodeViewWrapper>
-						<pre>
+						<pre style={{ fontSize: "0.875rem" }}>
 							<NodeViewContent as={"code" as "div"} />
 						</pre>
 					</NodeViewWrapper>

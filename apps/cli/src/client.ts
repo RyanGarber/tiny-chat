@@ -96,7 +96,7 @@ export const client = createClient({
 		},
 		// Spawned rather than buffered so output can be reported as it arrives;
 		// the accumulated text is still what the tool result is built from.
-		exec: async ({ command, onOutput }) => {
+		exec: async ({ command, stream }) => {
 			return new Promise((resolve) => {
 				const child = spawn(command, { shell: true });
 
@@ -106,19 +106,19 @@ export const client = createClient({
 				child.stdout?.setEncoding("utf8");
 				child.stdout?.on("data", (chunk: string) => {
 					stdout += chunk;
-					onOutput?.({ stream: "stdout", value: chunk });
+					stream?.({ type: "stdout", value: chunk });
 				});
 
 				child.stderr?.setEncoding("utf8");
 				child.stderr?.on("data", (chunk: string) => {
 					stderr += chunk;
-					onOutput?.({ stream: "stderr", value: chunk });
+					stream?.({ type: "stderr", value: chunk });
 				});
 
 				child.on("error", (error) => {
 					const value = `${error.message}\n`;
 					stderr += value;
-					onOutput?.({ stream: "stderr", value });
+					stream?.({ type: "stderr", value });
 					resolve({ code: 1, stdout, stderr });
 				});
 

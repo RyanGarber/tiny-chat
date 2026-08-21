@@ -1,12 +1,12 @@
 import {
 	Author,
 	type MessageState,
-	type zDataPart,
 } from "@tiny-chat/core/src/features/data/types/message.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
-import { search_web } from "@tiny-chat/core/src/features/tool/tools/web/search_web.ts";
-import { view_web } from "@tiny-chat/core/src/features/tool/tools/web/view_web.ts";
-import { ToolUtils } from "@tiny-chat/core/src/features/tool/utils/ToolUtils.ts";
+import {
+	type Source,
+	SourceUtils,
+} from "@tiny-chat/core/src/features/data/utils/SourceUtils.ts";
 import {
 	createElement,
 	type ReactNode,
@@ -22,7 +22,7 @@ import { useSession } from "../../../core/hooks/useSession.ts";
 import { useProviders } from "../../agent/hooks/useProviders.ts";
 import { useSkills } from "../../agent/hooks/useSkills.ts";
 import { useTools } from "../../agent/hooks/useTools.ts";
-import { ClientAgentService } from "../../agent/services/ClientAgentService.ts";
+import { ClientMessageService } from "../../agent/services/ClientMessageService.ts";
 import { useChat } from "../../chat/hooks/useChat.ts";
 import { useChatFiles } from "../../chat/hooks/useChatFiles.ts";
 import { useActions } from "../../user/hooks/useActions.ts";
@@ -33,7 +33,6 @@ import {
 	type MessageStore,
 	MessageStoreContext,
 } from "../stores/useMessageStore.ts";
-import type { MarkdownSource } from "./MarkdownContext.tsx";
 
 /**
  * Runs the chat-scoped queries and pushes the result into the store.
@@ -81,54 +80,33 @@ function MessageSync({ store }: { store: StoreApi<MessageStore> }) {
 		[messages.data],
 	);
 
-	const sources = useMemo((): MarkdownSource[] => {
+	const sources = useMemo((): Source[] => {
 		return [
-			...messageList.flatMap((m) =>
-				m.data
-					.flat()
-					.filter(
-						(part): part is Extract<zDataPart, { type: "toolResult" }> =>
-							part.type === "toolResult" && !part.error,
-					)
-					.flatMap((part): MarkdownSource[] => {
-						const { tool } = ToolUtils.find({ toolsets, part });
-						if (tool?.name === search_web.name) {
-							const output = ToolUtils.json<typeof search_web>(part, true);
-							return (
-								output.map((value) => ({
-									key: value.url,
-									type: "web",
-									value,
-								})) ?? []
-							);
-						} else if (tool?.name === view_web.name) {
-							const output = ToolUtils.json<typeof view_web>(part);
-							return output[0]
-								? [{ key: output[0].url, type: "web", value: output[0] }]
-								: [];
-						}
-						return [];
-					}),
+			...messageList.flatMap((message) =>
+				SourceUtils.find({ toolsets, message }),
 			),
 			...(memories.data?.map(
-				(memory): MarkdownSource => ({
+				(memory): Source => ({
 					key: memory.id,
 					type: "memory",
 					value: memory,
 				}),
 			) ?? []),
 			...(actions.data?.map(
-				(action): MarkdownSource => ({
+				(action): Source => ({
 					key: action.id,
 					type: "action",
 					value: action,
 				}),
 			) ?? []),
 			...(chatFiles.data?.map(
-				(file): MarkdownSource => ({
+				(file): Source => ({
 					key: file.uri,
 					type: "file",
-					value: file,
+					value: {
+						path: file.uri,
+						directory: file.isDirectory,
+					},
 				}),
 			) ?? []),
 		];
@@ -158,7 +136,7 @@ function MessageSync({ store }: { store: StoreApi<MessageStore> }) {
 		const pendingFeedbackIds: string[] = [];
 		let nextFeedbackId: string | undefined;
 		for (const message of messageList) {
-			const parts = DataUtils.getRenderedParts(message);
+			const parts = DataUtils.getRenderedParts(message.data);
 			for (const part of parts) {
 				if (part.type === "toolCall" && !part.result) {
 					pendingFeedbackIds.push(part.id);
@@ -174,14 +152,14 @@ function MessageSync({ store }: { store: StoreApi<MessageStore> }) {
 	const retry = useCallback(
 		(message: MessageState) => {
 			if (!session.data || !chat.data || !providers.data) return;
-			void ClientAgentService.onMessage({
+			void ClientMessageService.onMessage({
 				client,
 				user: session.data.user,
 				message,
 				chat: chat.data,
-				mcpTools: mcpTools.data,
-				skills,
 				providers: providers.data,
+				skills,
+				mcpTools: mcpTools.data ?? [],
 			});
 		},
 		[session.data, chat.data, providers.data, mcpTools.data, skills, client],

@@ -1,12 +1,18 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { useAtomStore } from "../stores/useAtomStore.ts";
 import { AtomUtils } from "./AtomUtils.ts";
+import { PASTE_LINE_LIMIT, PasteUtils } from "./PasteUtils.ts";
 
 const attachment = (source: string) =>
 	AtomUtils.attachment({
 		source,
 		markdown: `:attachment[]{source="${source}" is-directory="false"}`,
 	});
+
+const longPaste = Array.from(
+	{ length: PASTE_LINE_LIMIT },
+	(_, index) => `line ${index}`,
+).join("\n");
 
 describe("AtomUtils", () => {
 	beforeEach(() => {
@@ -58,19 +64,19 @@ describe("AtomUtils", () => {
 
 	it("leaves a short paste alone and collapses a long one", () => {
 		expect(AtomUtils.paste({ text: "one\ntwo\nthree" })).toBeNull();
-		expect(AtomUtils.paste({ text: "line\n".repeat(41).trimEnd() })).toBe(
-			"[41 pasted lines]",
+		expect(AtomUtils.paste({ text: longPaste })).toBe(
+			`[${PASTE_LINE_LIMIT} pasted lines]`,
 		);
 	});
 
 	it("writes every atom back out as its Markdown", () => {
 		const file = attachment("src/index.ts");
-		const pasted = AtomUtils.paste({ text: "a\nb\nc\nd\ne\nf" });
+		const pasted = AtomUtils.paste({ text: longPaste });
 
 		expect(
 			AtomUtils.serialize({ content: `look at ${file} and ${pasted}` }),
 		).toBe(
-			'look at :attachment[]{source="src/index.ts" is-directory="false"} and a\nb\nc\nd\ne\nf',
+			`look at :attachment[]{source="src/index.ts" is-directory="false"} and \n${PasteUtils.markdown(longPaste)}\n`,
 		);
 	});
 
@@ -85,9 +91,17 @@ describe("AtomUtils", () => {
 		expect(AtomUtils.serialize({ content })).toBe(markdown);
 	});
 
+	it("takes a paste directive back into an atom", () => {
+		const markdown = PasteUtils.markdown(longPaste);
+		const content = AtomUtils.deserialize(`see\n${markdown}`);
+
+		expect(content).toBe(`see\n[${PASTE_LINE_LIMIT} pasted lines]`);
+		expect(AtomUtils.serialize({ content })).toBe(`see\n\n${markdown}\n`);
+	});
+
 	it("drops the atoms the buffer no longer holds", () => {
 		const file = attachment("src/index.ts");
-		AtomUtils.paste({ content: file, text: "a\nb\nc\nd\ne\nf" });
+		AtomUtils.paste({ content: file, text: longPaste });
 
 		expect(useAtomStore.getState().atoms.map((atom) => atom.kind)).toEqual([
 			"attachment",

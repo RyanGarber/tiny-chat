@@ -27,7 +27,7 @@ interface CapabilityItem extends CompletionItem {
 	toggle: () => void;
 }
 
-export default function CapabilitySelect() {
+export default function Capabilities() {
 	const { config, setConfig } = useConfig();
 	const { nativeTools, mcpTools } = useTools();
 	const { nativeSkills, localSkills } = useSkills();

@@ -2,11 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import type { zAgentMessage } from "@tiny-chat/core/src/features/agent/types/agent.ts";
 import { useContext, useMemo } from "react";
 import { ClientContext } from "../../client.ts";
-import { ClientCapabilityService } from "../../core/services/ClientCapabilityService.ts";
 import { useProviders } from "../../features/agent/hooks/useProviders.ts";
 import { useChat } from "../../features/chat/hooks/useChat.ts";
 import { useChatStore } from "../../features/chat/stores/useChatStore.ts";
-import { useSession } from "../hooks/useSession.ts";
+import { ClientCapabilityService } from "../services/ClientCapabilityService.ts";
+import { useSession } from "./useSession.ts";
+import { useStableKey } from "./useStableKey.ts";
 
 /**
  * The capabilities of the message about to be sent.
@@ -29,7 +30,6 @@ export const useCapabilities = ({
 	const { providers } = useProviders();
 	const { chat } = useChat();
 
-	// TODO - use smaller subset of message data
 	const messages = useQuery({
 		...client.query.message.getMessages.queryOptions({ chat: chat.data?.id }),
 		refetchOnWindowFocus: false,
@@ -48,25 +48,26 @@ export const useCapabilities = ({
 		[messages.data?.messages, draft],
 	);
 
+	const key = useStableKey({
+		messages: sources,
+		providers: providers.data,
+	});
+
 	const presumedCapabilities = useQuery({
 		queryKey: [
 			"capabilities",
 			session.data?.user.id,
-			providers.data
-				?.map((provider) => `${provider.name}:${provider.status}`)
-				.join(),
-			createIncognito,
 			chat.data?.id,
-			messages.data?.messages.at(-1)?.id,
-			draft,
+			createIncognito,
 			future,
+			key,
 		],
 		queryFn: async () => {
 			if (!session.data) return {};
 			return ClientCapabilityService.getPresumedCapabilities({
 				client,
 				user: session.data.user,
-				chat: future ? true : (chat.data ?? null), // TODO
+				chat: future ? true : (chat.data ?? null),
 				message: future ? true : (messages.data?.messages.at(-1) ?? true),
 				messages: sources,
 				incognito: chat.data?.incognito ?? createIncognito,
@@ -75,5 +76,9 @@ export const useCapabilities = ({
 		},
 	});
 
-	return { presumedCapabilities, sourceMessages: messages };
+	const capabilitiesKey = useStableKey({
+		capabilities: presumedCapabilities.data,
+	});
+
+	return { presumedCapabilities, sourceMessages: messages, capabilitiesKey };
 };

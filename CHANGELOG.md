@@ -1,3 +1,12 @@
+## [0.8.2](https://github.com/RyanGarber/tiny-chat/compare/0.8.1...0.8.2) (2026-08-24)
+
+### Features
+
+* **app:** long pasted text node ([f699634](https://github.com/RyanGarber/tiny-chat/commit/f699634fb5a05cd1c565e03cf6cef3237fe5bcbe-1))
+* improved file viewer ([f699634](https://github.com/RyanGarber/tiny-chat/commit/f699634fb5a05cd1c565e03cf6cef3237fe5bcbe-4))
+* subagents ([f699634](https://github.com/RyanGarber/tiny-chat/commit/f699634fb5a05cd1c565e03cf6cef3237fe5bcbe))
+
+
 ## [0.8.1](https://github.com/RyanGarber/tiny-chat/compare/0.8.0...0.8.1) (2026-08-19)
 
 ### Features

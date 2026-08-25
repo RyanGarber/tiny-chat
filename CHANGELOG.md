@@ -1,3 +1,17 @@
+## [0.8.3](https://github.com/RyanGarber/tiny-chat/compare/0.8.2...0.8.3) (2026-08-25)
+
+### Features
+
+* cleaned, improved system prompt ([9ed423e](https://github.com/RyanGarber/tiny-chat/commit/9ed423e283b416b5a61ee262d380cae1701c6bae-1))
+* streamlined shell tools ([9ed423e](https://github.com/RyanGarber/tiny-chat/commit/9ed423e283b416b5a61ee262d380cae1701c6bae))
+
+### Bug Fixes
+
+* clicking folder in chat file list opens viewer instead of expanding ([9ed423e](https://github.com/RyanGarber/tiny-chat/commit/9ed423e283b416b5a61ee262d380cae1701c6bae-3))
+* folders in repos treated as files in chat file list ([9ed423e](https://github.com/RyanGarber/tiny-chat/commit/9ed423e283b416b5a61ee262d380cae1701c6bae-2))
+* instructions missing in token counts with empty message ([9ed423e](https://github.com/RyanGarber/tiny-chat/commit/9ed423e283b416b5a61ee262d380cae1701c6bae-4))
+
+
 ## [0.8.2](https://github.com/RyanGarber/tiny-chat/compare/0.8.1...0.8.2) (2026-08-24)
 
 ### Features

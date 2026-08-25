@@ -23,7 +23,7 @@ export const nativeToolsQueryKey = ["useTools", "nativeTools"] as const;
 export const mcpToolsQueryKey = ["useTools", "mcpTools"] as const;
 
 export const useTools = () => {
-	const { presumedCapabilities, capabilitiesKey } = useCapabilities({
+	const { presumedCapabilities } = useCapabilities({
 		future: true,
 	});
 	const { mcpServers } = useMcp();
@@ -31,7 +31,7 @@ export const useTools = () => {
 	const createIncognito = useChatStore((state) => state.createIncognito);
 
 	const nativeTools = useQuery({
-		queryKey: [...nativeToolsQueryKey, capabilitiesKey],
+		queryKey: [...nativeToolsQueryKey, presumedCapabilities.data],
 		queryFn: async () => {
 			return await ToolService.getTools({
 				capabilities: presumedCapabilities.data ?? {},

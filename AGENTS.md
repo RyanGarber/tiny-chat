@@ -121,7 +121,7 @@ Three layers, do not collapse them:
    that must also appear in the resolved result (streamed chunks are not persisted).
 3. **Toolset** — named group from `ToolService.getTools`. Enabled per message via
    `config.toolsets`. Default (`DEFAULT_TOOLSETS` in `data/types/message.ts`):
-   `questions`, `actions`, `memories`, `web`, `chat_shell`. Host `shell` is **opt-in**, not default.
+   `questions`, `actions`, `memories`, `web`, `shell`.
 
 ### Two shells — do not mix them
 

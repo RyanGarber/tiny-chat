@@ -57,7 +57,7 @@ export default function FileTag({
 				path={path}
 				directory={directory}
 				expanded={expanded}
-				style={{ width: size, height: size }}
+				style={{ display: "block", width: size, height: size }}
 			/>
 		);
 	}

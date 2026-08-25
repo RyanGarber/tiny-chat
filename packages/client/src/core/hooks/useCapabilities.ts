@@ -76,9 +76,5 @@ export const useCapabilities = ({
 		},
 	});
 
-	const capabilitiesKey = useStableKey({
-		capabilities: presumedCapabilities.data,
-	});
-
-	return { presumedCapabilities, sourceMessages: messages, capabilitiesKey };
+	return { presumedCapabilities, sourceMessages: messages };
 };

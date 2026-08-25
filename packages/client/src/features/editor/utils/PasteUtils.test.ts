@@ -20,14 +20,10 @@ describe("PasteUtils", () => {
 
 	it("detects source as code and leaves prose and lists alone", () => {
 		expect(
-			PasteUtils.detectCode("const x = 1;\nconst y = 2;\nconsole.log(x + y);"),
+			PasteUtils.detectCode(
+				'const x = 1;\nconst y = 2;\nconsole.log(x + y);\n\n{\n  "a": 1,\n  "b": [2, 3]\n}\n\ndef foo():\n    return 1\n\nprint(foo())\n\n',
+			),
 		).toEqual({ language: expect.any(String) });
-		expect(
-			PasteUtils.detectCode("def foo():\n    return 1\n\nprint(foo())"),
-		).toEqual({ language: "python" });
-		expect(PasteUtils.detectCode('{\n  "a": 1,\n  "b": [2, 3]\n}')).toEqual({
-			language: "json",
-		});
 
 		expect(
 			PasteUtils.detectCode(

@@ -1,8 +1,9 @@
 import { z } from "zod";
-import type { ShellCapability } from "../../../../core/types/capability.ts";
+import type { Capabilities } from "../../../../core/types/capability.ts";
 import { FileSearchService } from "../../../file/services/FileSearchService.ts";
 import { PathUtils } from "../../../file/utils/PathUtils.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
+import { ShellUtils } from "../../utils/ShellUtils.ts";
 
 /** Entries a listing returns before it starts costing more than it explains. */
 const MAX_ENTRIES = 200;
@@ -31,11 +32,13 @@ export const read_dir = {
 } as const satisfies ToolDefinition;
 
 export const createReadDirTool: ToolFactory<
-	Tool<typeof read_dir, { shell: ShellCapability }>
+	Tool<typeof read_dir, Pick<Capabilities, "shell" | "chatShell">>
 > = (options) => ({
 	...read_dir,
 	...options,
 	execute: async ({ input }) => {
+		const shell = ShellUtils.detect(input.path, options.capabilities);
+
 		const limit = Math.min(
 			1_000,
 			Math.max(1, input.max_results ?? MAX_ENTRIES),
@@ -51,13 +54,13 @@ export const createReadDirTool: ToolFactory<
 		}[] = input.recursive
 			? (
 					await FileSearchService.walk({
-						shell: options.capabilities.shell,
+						shell,
 						path: input.path,
 						scope: "listing",
 						includeDirectories: true,
 					})
 				).entries
-			: await options.capabilities.shell.readDir({ path: input.path });
+			: await shell.readDir({ path: input.path });
 
 		// Directories first, then names, so a listing reads like a file tree.
 		const sorted = entries.sort(

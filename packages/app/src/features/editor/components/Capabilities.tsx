@@ -43,8 +43,7 @@ import type { zSkill } from "#core/features/skill/types/skill.ts";
 import type { Toolset } from "#core/features/tool/types/tool.ts";
 import { ToolUtils } from "#core/features/tool/utils/ToolUtils.ts";
 
-const CHAT_FILE_TOOLSET = "chat_shell";
-const USER_FILE_TOOLSET = "shell";
+const SHELL_TOOLSET = "shell";
 
 export default function Capabilities() {
 	const { isTauriDesktop } = useTauri();
@@ -136,11 +135,7 @@ export default function Capabilities() {
 									{DataUtils.getTextCleaned({ data: skill.description })}
 								</Text>
 								{config.skills?.includes(skill.path) &&
-									!config.toolsets?.includes(
-										PathUtils.fromMount(skill)
-											? CHAT_FILE_TOOLSET
-											: USER_FILE_TOOLSET,
-									) && (
+									!config.toolsets?.includes(SHELL_TOOLSET) && (
 										<Group gap="xs" c="yellow">
 											<Icon icon="lucide:alert-triangle" width={12} />
 											<Text size="xs">

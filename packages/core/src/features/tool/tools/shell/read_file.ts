@@ -1,11 +1,12 @@
 import { z } from "zod";
-import type { ShellCapability } from "../../../../core/types/capability.ts";
+import type { Capabilities } from "../../../../core/types/capability.ts";
 import { FileOperationService } from "../../../file/services/FileOperationService.ts";
 import { FileExcludeUtils } from "../../../file/utils/FileExcludeUtils.ts";
 import { FileTypeUtils } from "../../../file/utils/FileTypeUtils.ts";
 import { FileUtils } from "../../../file/utils/FileUtils.ts";
 import { PathUtils } from "../../../file/utils/PathUtils.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
+import { ShellUtils } from "../../utils/ShellUtils.ts";
 
 /** Bytes of a non-text file that may be pulled into the conversation. */
 const MAX_BINARY_BYTES = 5_000_000;
@@ -26,12 +27,14 @@ export const read_file = {
 } as const satisfies ToolDefinition;
 
 export const createReadFileTool: ToolFactory<
-	Tool<typeof read_file, { shell: ShellCapability }>
+	Tool<typeof read_file, Pick<Capabilities, "shell" | "chatShell">>
 > = (options) => ({
 	...read_file,
 	...options,
 	execute: async ({ input }) => {
-		const file = await options.capabilities.shell.readFile({
+		const shell = ShellUtils.detect(input.path, options.capabilities);
+
+		const file = await shell.readFile({
 			path: input.path,
 		});
 		const mime = await FileTypeUtils.getMime(file);

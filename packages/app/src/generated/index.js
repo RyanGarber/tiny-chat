@@ -106,7 +106,7 @@ function FileIcon({ theme, path, language, directory, expanded, ...props }) {
 		theme.svg(icon).then((svg) => setIconSvg(svg));
 	}, [icon, theme]);
 	if (!iconSvg) return null;
-	return /* @__PURE__ */ jsx("div", {
+	return /* @__PURE__ */ jsx("span", {
 		...props,
 		dangerouslySetInnerHTML: { __html: iconSvg }
 	});

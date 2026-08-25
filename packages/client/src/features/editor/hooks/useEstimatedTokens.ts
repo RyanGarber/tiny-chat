@@ -67,28 +67,36 @@ export const useEstimatedTokens = <T>({
 				id: null,
 				author: "USER",
 				config,
-				data: debouncedData,
+				// TODO: empty data gets dropped, preventing token count, so we add a '.' here
+				//       this won't meaningfully change the result but should be fixed another way eventually
+				data: [[{ type: "text", value: "." }], ...debouncedData],
 				createdAt: new Date(),
 			},
 		],
 		[config, debouncedData],
 	);
 
-	const { presumedCapabilities, sourceMessages, capabilitiesKey } =
-		useCapabilities({
-			future: false,
-			draft,
-		});
+	const { presumedCapabilities, sourceMessages } = useCapabilities({
+		future: false,
+		draft,
+	});
 
-	const messagesKey = useStableKey({ messages: sourceMessages.data?.messages });
+	const messagesKey = useStableKey({
+		messages: sourceMessages.data?.messages,
+		toolsets,
+	});
+	const messagesEmpty = useMemo(() => {
+		return !sourceMessages.data?.messages.length;
+	}, [sourceMessages]);
+
 	const chatTokens = useQuery({
 		queryKey: [
 			...chatTokensQueryKey,
 			session.data?.user.id,
+			presumedCapabilities.data,
 			chat.data?.id,
-			createIncognito,
-			capabilitiesKey,
 			messagesKey,
+			createIncognito,
 		],
 		queryFn: async (): Promise<TokenBreakdown> => {
 			if (!session.data) return AgentTokensService.zero;
@@ -111,9 +119,16 @@ export const useEstimatedTokens = <T>({
 		staleTime: Infinity,
 	});
 
-	const draftKey = useStableKey({ messages: draft });
-	const dataTokens = useQuery({
-		queryKey: [...editorTokensQueryKey, capabilitiesKey, draftKey],
+	const draftKey = useStableKey({ messages: draft, toolsets });
+
+	const draftTokens = useQuery({
+		queryKey: [
+			...editorTokensQueryKey,
+			session.data?.user.id,
+			presumedCapabilities.data,
+			draftKey,
+			messagesEmpty,
+		],
 		queryFn: async () => {
 			if (!session.data) return AgentTokensService.zero;
 
@@ -128,7 +143,6 @@ export const useEstimatedTokens = <T>({
 				capabilities: presumedCapabilities.data ?? {},
 				toolsets,
 				skills,
-				skipInstructions: true,
 			});
 		},
 		refetchOnWindowFocus: false,
@@ -138,7 +152,7 @@ export const useEstimatedTokens = <T>({
 
 	const { totalTokens, totalUsage } = useMemo(() => {
 		const totalTokens =
-			(chatTokens.data?.total ?? 0) + (dataTokens.data?.total ?? 0);
+			(chatTokens.data?.total ?? 0) + (draftTokens.data?.total ?? 0);
 		const maxTokens =
 			config.args?.["tokens-in"] !== undefined
 				? Number(config.args["tokens-in"])
@@ -149,13 +163,13 @@ export const useEstimatedTokens = <T>({
 		if (percent >= 75) level = "moderate";
 		if (percent >= 100) level = "high";
 		const color = colors?.[level] ?? "";
-		const loading = chatTokens.isFetching || dataTokens.isFetching;
+		const loading = chatTokens.isFetching || draftTokens.isFetching;
 		return { totalTokens, totalUsage: { percent, level, color, loading } };
 	}, [
 		chatTokens.data,
-		dataTokens.data,
+		draftTokens.data,
 		chatTokens.isFetching,
-		dataTokens.isFetching,
+		draftTokens.isFetching,
 		config.args["tokens-in"],
 		colors,
 	]);
@@ -166,13 +180,19 @@ export const useEstimatedTokens = <T>({
 		() => [
 			{
 				name: "Instructions",
-				tokens: chatTokens.data?.instructions ?? 0,
-				loading: chatTokens.isFetching,
+				tokens: Math.max(
+					chatTokens.data?.instructions ?? 0,
+					draftTokens.data?.instructions ?? 0,
+				),
+				loading: chatTokens.isFetching || draftTokens.isFetching,
 			},
 			{
 				name: "Memories",
-				tokens: chatTokens.data?.memories ?? 0,
-				loading: chatTokens.isFetching,
+				tokens: Math.max(
+					chatTokens.data?.memories ?? 0,
+					draftTokens.data?.memories ?? 0,
+				),
+				loading: chatTokens.isFetching || draftTokens.isFetching,
 			},
 			{
 				name: "Thoughts",
@@ -186,13 +206,13 @@ export const useEstimatedTokens = <T>({
 			},
 			{
 				name: "Text",
-				tokens: (chatTokens.data?.text ?? 0) + (dataTokens.data?.text ?? 0),
-				loading: chatTokens.isFetching || dataTokens.isFetching,
+				tokens: (chatTokens.data?.text ?? 0) + (draftTokens.data?.text ?? 0),
+				loading: chatTokens.isFetching || draftTokens.isFetching,
 			},
 			{
 				name: "Files",
-				tokens: (chatTokens.data?.files ?? 0) + (dataTokens.data?.files ?? 0),
-				loading: chatTokens.isFetching || dataTokens.isFetching,
+				tokens: (chatTokens.data?.files ?? 0) + (draftTokens.data?.files ?? 0),
+				loading: chatTokens.isFetching || draftTokens.isFetching,
 			},
 		],
 		[
@@ -203,9 +223,11 @@ export const useEstimatedTokens = <T>({
 			chatTokens.data?.thoughts,
 			chatTokens.data?.tools,
 			chatTokens.isFetching,
-			dataTokens.data?.files,
-			dataTokens.data?.text,
-			dataTokens.isFetching,
+			draftTokens.data?.instructions,
+			draftTokens.data?.memories,
+			draftTokens.data?.files,
+			draftTokens.data?.text,
+			draftTokens.isFetching,
 		],
 	);
 

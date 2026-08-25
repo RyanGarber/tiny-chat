@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourcePerFileMappings">
-    <file url="file://$PROJECT_DIR$/apps/cli/src/features/editor/components/TokenUsage.tsx" value="d2eabe8b-a68e-4abe-a98a-a9284eea25ca" />
-    <file url="file://$PROJECT_DIR$/packages/app/tsconfig.node.json" value="d2eabe8b-a68e-4abe-a98a-a9284eea25ca" />
+    <file url="file://$PROJECT_DIR$/packages/server/src/features/upload/services/UploadFileService.ts" value="d2eabe8b-a68e-4abe-a98a-a9284eea25ca" />
   </component>
 </project>

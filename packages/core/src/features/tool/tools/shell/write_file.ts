@@ -1,6 +1,7 @@
 import { z } from "zod";
-import type { ShellCapability } from "../../../../core/types/capability.ts";
+import type { Capabilities } from "../../../../core/types/capability.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
+import { ShellUtils } from "../../utils/ShellUtils.ts";
 
 // TODO - replace specific line numbers
 export const write_file = {
@@ -17,7 +18,7 @@ export const write_file = {
 } as const satisfies ToolDefinition;
 
 export const createWriteFileTool: ToolFactory<
-	Tool<typeof write_file, { shell: ShellCapability }>
+	Tool<typeof write_file, Pick<Capabilities, "shell" | "chatShell">>
 > = (options) => ({
 	...write_file,
 	...options,
@@ -25,10 +26,12 @@ export const createWriteFileTool: ToolFactory<
 		return { approval: true };
 	},
 	execute: async ({ input }) => {
+		const shell = ShellUtils.detect(input.path, options.capabilities);
+
 		return [
 			{
 				type: "json",
-				value: await options.capabilities.shell.writeFile({
+				value: await shell.writeFile({
 					path: input.path,
 					content: input.content,
 				}),

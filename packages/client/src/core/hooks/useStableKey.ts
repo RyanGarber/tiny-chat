@@ -10,6 +10,7 @@ import type {
 	ProviderState,
 	ProviderStatus,
 } from "@tiny-chat/core/src/features/provider/types/provider.ts";
+import type { Toolset } from "@tiny-chat/core/src/features/tool/types/tool.ts";
 import { useMemo } from "react";
 import type { McpServer } from "../../features/agent/hooks/useMcp.ts";
 
@@ -50,6 +51,7 @@ export const useStableKey = ({
 	capabilities,
 	mcpServers,
 	mcpServerSettings,
+	toolsets,
 }: {
 	data?: zData;
 	messages?: (MessageState | zAgentMessage)[];
@@ -57,6 +59,7 @@ export const useStableKey = ({
 	capabilities?: Capabilities;
 	mcpServers?: McpServer[];
 	mcpServerSettings?: zMCPServers;
+	toolsets?: Toolset<any>[];
 }) => {
 	const dataKey = useMemo(() => {
 		const parts = data?.flat();
@@ -67,7 +70,7 @@ export const useStableKey = ({
 		let key = "";
 		for (const message of messages ?? []) {
 			const parts = message.data.flat();
-			key += `${message.id}:${message.author}${message.config?.model}:${getPartsKey(parts)};`;
+			key += `${message.id}:${message.author}${JSON.stringify(message.config)}:${getPartsKey(parts)};`;
 		}
 		return key;
 	}, [messages]);
@@ -109,8 +112,26 @@ export const useStableKey = ({
 		return key;
 	}, [mcpServerSettings]);
 
+	const toolsetsKey = useMemo(() => {
+		let key = "";
+		for (const toolset of toolsets ?? []) {
+			key += `${toolset.name}:${toolset.status.valid}:${toolset.status.error}:${toolset.tools.length};`;
+		}
+		return key;
+	}, [toolsets]);
+
 	return useMemo(() => {
-		return `${dataKey}:${messagesKey}:${providersKey}:${capabilitiesKey}:${mcpServersKey}:${mcpServerSettingsKey}`;
+		return [
+			dataKey,
+			messagesKey,
+			providersKey,
+			capabilitiesKey,
+			mcpServersKey,
+			mcpServerSettingsKey,
+			toolsetsKey,
+		]
+			.filter(Boolean)
+			.join(";");
 	}, [
 		dataKey,
 		messagesKey,
@@ -118,5 +139,6 @@ export const useStableKey = ({
 		capabilitiesKey,
 		mcpServersKey,
 		mcpServerSettingsKey,
+		toolsetsKey,
 	]);
 };

@@ -1,3 +1,9 @@
+import type {
+	Capabilities,
+	ShellCapability,
+} from "../../../core/types/capability.ts";
+import { PathUtils } from "../../file/utils/PathUtils.ts";
+
 export const ShellUtils = {
 	/**
 	 * Read-only, side-effect-free commands that never warrant an approval prompt
@@ -89,5 +95,34 @@ export const ShellUtils = {
 		if (segments.some((segment) => segment.length === 0)) return false;
 
 		return segments.every(ShellUtils.isSegmentSafe);
+	},
+
+	detect: (
+		path: string | boolean,
+		capabilities: Pick<Capabilities, "shell" | "chatShell">,
+	): ShellCapability => {
+		if (!capabilities.shell && !capabilities.chatShell) {
+			// this shouldn't happen
+			throw new Error(
+				"You tried to access a path but no shell is accessible. This is most likely a bug. You can try another path if desired or note the issue and move on.",
+			);
+		}
+		const isChat =
+			typeof path === "boolean" ? path : PathUtils.fromMount({ path });
+		if (isChat) {
+			if (!capabilities.chatShell) {
+				throw new Error(
+					`You tried to access a path inside of ${PathUtils.mount}, but the chat shell is not accessible.${capabilities.shell ? ` If you are able to use the user's shell, call this tool with a path outside of ${PathUtils.mount} and try again.` : ""}`,
+				);
+			}
+			return capabilities.chatShell;
+		} else {
+			if (!capabilities.shell) {
+				throw new Error(
+					`You tried to access a path outside of ${PathUtils.mount}, but the user's shell is not accessible.${capabilities.chatShell ? ` If you are able to use the chat shell, call this tool with a path inside of ${PathUtils.mount} and try again.` : ""}`,
+				);
+			}
+			return capabilities.shell;
+		}
 	},
 } as const;

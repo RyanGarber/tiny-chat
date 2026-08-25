@@ -224,6 +224,7 @@ function FileTreeNode({
 					path={props.type === "file" ? props.node.uri : props.segment}
 					directory={props.type === "directory"}
 					expanded={expanded}
+					viewable={props.type === "file"}
 					flex={1}
 				>
 					<Text size="sm" flex={1} miw={0} truncate>

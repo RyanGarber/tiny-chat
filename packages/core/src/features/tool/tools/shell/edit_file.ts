@@ -1,7 +1,8 @@
 import { z } from "zod";
-import type { ShellCapability } from "../../../../core/types/capability.ts";
+import type { Capabilities } from "../../../../core/types/capability.ts";
 import { FileOperationService } from "../../../file/services/FileOperationService.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
+import { ShellUtils } from "../../utils/ShellUtils.ts";
 
 export const edit_file = {
 	name: "edit_file",
@@ -35,13 +36,15 @@ export const edit_file = {
 } as const satisfies ToolDefinition;
 
 export const createEditFileTool: ToolFactory<
-	Tool<typeof edit_file, { shell: ShellCapability }>
+	Tool<typeof edit_file, Pick<Capabilities, "shell" | "chatShell">>
 > = (options) => ({
 	...edit_file,
 	...options,
 	validate: async ({ input }) => {
+		const shell = ShellUtils.detect(input.path, options.capabilities);
+
 		await FileOperationService.resolveEdit({
-			shell: options.capabilities.shell,
+			shell,
 			path: input.path,
 			old_string: input.old_string,
 			new_string: input.new_string,
@@ -50,11 +53,13 @@ export const createEditFileTool: ToolFactory<
 		return { approval: true };
 	},
 	execute: async ({ input }) => {
+		const shell = ShellUtils.detect(input.path, options.capabilities);
+
 		return [
 			{
 				type: "json",
 				value: await FileOperationService.editFile({
-					shell: options.capabilities.shell,
+					shell,
 					path: input.path,
 					old_string: input.old_string,
 					new_string: input.new_string,

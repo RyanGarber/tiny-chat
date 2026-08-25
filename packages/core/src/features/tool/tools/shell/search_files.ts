@@ -1,7 +1,8 @@
 import { z } from "zod";
-import type { ShellCapability } from "../../../../core/types/capability.ts";
+import type { Capabilities } from "../../../../core/types/capability.ts";
 import { FileOperationService } from "../../../file/services/FileOperationService.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
+import { ShellUtils } from "../../utils/ShellUtils.ts";
 
 export const search_files = {
 	name: "search_files",
@@ -33,13 +34,15 @@ export const search_files = {
 } as const satisfies ToolDefinition;
 
 export const createSearchFilesTool: ToolFactory<
-	Tool<typeof search_files, { shell: ShellCapability }>
+	Tool<typeof search_files, Pick<Capabilities, "shell" | "chatShell">>
 > = (options) => ({
 	...search_files,
 	...options,
 	execute: async ({ input }) => {
+		const shell = ShellUtils.detect(input.path, options.capabilities);
+
 		const { results, summary } = await FileOperationService.searchFiles({
-			shell: options.capabilities.shell,
+			shell,
 			path: input.path,
 			query: input.query,
 			include: input.include,

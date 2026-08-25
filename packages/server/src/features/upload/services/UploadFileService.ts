@@ -103,7 +103,11 @@ export const UploadFileService = {
 				continue;
 			}
 
-			if (path.endsWith("/")) {
+			if (
+				!path.length ||
+				path.endsWith("/") ||
+				!Buffer.from(content).byteLength
+			) {
 				console.log(`skipping file ${path} because it is a directory`);
 				continue;
 			}

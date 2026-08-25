@@ -91,7 +91,7 @@ describe("shell tools", () => {
 		const tool = await createShellExecTool({ capabilities: { shell } });
 
 		const parts = await tool.execute({
-			input: { command: "noisy" },
+			input: { command: "noisy", mnt: false },
 			feedback: undefined,
 			context,
 		});
@@ -120,7 +120,7 @@ describe("shell tools", () => {
 
 		const chunks: { type: string; value: string }[] = [];
 		const parts = await tool.execute({
-			input: { command: "work" },
+			input: { command: "work", mnt: false },
 			feedback: undefined,
 			context,
 			stream: (mutation) => {
@@ -245,7 +245,7 @@ describe("shell tools", () => {
 		});
 
 		await expect(
-			tool.validate?.({ input: { command: "ls -la" }, context }),
+			tool.validate?.({ input: { command: "ls -la", mnt: false }, context }),
 		).resolves.toEqual({ approval: false });
 	});
 
@@ -256,7 +256,10 @@ describe("shell tools", () => {
 
 		await expect(
 			tool.validate?.({
-				input: { command: "git status && git diff && cat README.md" },
+				input: {
+					command: "git status && git diff && cat README.md",
+					mnt: false,
+				},
 				context,
 			}),
 		).resolves.toEqual({ approval: false });
@@ -268,7 +271,7 @@ describe("shell tools", () => {
 		});
 
 		await expect(
-			tool.validate?.({ input: { command: "rm -rf /" }, context }),
+			tool.validate?.({ input: { command: "rm -rf /", mnt: false }, context }),
 		).resolves.toEqual({ approval: true });
 	});
 
@@ -279,7 +282,7 @@ describe("shell tools", () => {
 
 		await expect(
 			tool.validate?.({
-				input: { command: "ls && rm -rf /" },
+				input: { command: "ls && rm -rf /", mnt: false },
 				context,
 			}),
 		).resolves.toEqual({ approval: true });
@@ -292,7 +295,7 @@ describe("shell tools", () => {
 
 		await expect(
 			tool.validate?.({
-				input: { command: "ls | rm -rf /" },
+				input: { command: "ls | rm -rf /", mnt: false },
 				context,
 			}),
 		).resolves.toEqual({ approval: true });

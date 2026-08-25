@@ -49,9 +49,9 @@ describe("FilesystemService", () => {
 		command: string,
 	): Promise<z.infer<typeof shell_exec.output>> => {
 		const output = await api.testing.tool.mutate({
-			name: `chat_${shell_exec.name}`,
+			name: shell_exec.name,
 			context,
-			input: { command } satisfies z.infer<typeof shell_exec.input>,
+			input: { command, mnt: true } satisfies z.infer<typeof shell_exec.input>,
 		});
 		expect.assert(output[0].type === "json");
 		console.log(`---\n$ ${command}\n`, output[0].value, "\n---");
@@ -82,7 +82,7 @@ describe("FilesystemService", () => {
 
 	it("reads a file with nbsp", async () => {
 		const output = await api.testing.tool.mutate({
-			name: `chat_${read_file.name}`,
+			name: read_file.name,
 			context,
 			input: {
 				path: `/mnt/uploads/${upload2.id}/${upload2.name}`,

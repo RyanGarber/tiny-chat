@@ -1,5 +1,6 @@
 import { z } from "zod";
-import type { ShellCapability } from "../../../../core/types/capability.ts";
+import type { Capabilities } from "../../../../core/types/capability.ts";
+import { PathUtils } from "../../../file/utils/PathUtils.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 import { ShellUtils } from "../../utils/ShellUtils.ts";
 import { ToolOutputUtils } from "../../utils/ToolOutputUtils.ts";
@@ -12,6 +13,11 @@ export const shell_exec = {
 		"Execute a shell command. Prefer the dedicated file tools for reading, searching and editing; use this for builds, tests, version control and anything else they do not cover. Long output is truncated in the middle, so pipe through a filter when you need all of it.",
 	input: z.object({
 		command: z.string(),
+		mnt: z
+			.boolean()
+			.describe(
+				`MUST set to TRUE any time the command should run in the virtual \`${PathUtils.mount}\` filesystem.`,
+			),
 	}),
 	output: z.object({
 		code: z.number().optional(),
@@ -29,7 +35,7 @@ const keep: (event: z.infer<typeof shell_exec.stream>) => boolean = (event) => {
 };
 
 export const createShellExecTool: ToolFactory<
-	Tool<typeof shell_exec, { shell: ShellCapability }>
+	Tool<typeof shell_exec, Pick<Capabilities, "shell" | "chatShell">>
 > = (options) => ({
 	...shell_exec,
 	...options,
@@ -37,9 +43,11 @@ export const createShellExecTool: ToolFactory<
 		return { approval: !ShellUtils.isSafe(input.command) };
 	},
 	execute: async ({ input, stream }) => {
+		const shell = ShellUtils.detect(input.mnt, options.capabilities);
+
 		let buffer: z.infer<(typeof shell_exec)["stream"]> | undefined;
 
-		const result = await options.capabilities.shell.exec({
+		const result = await shell.exec({
 			command: input.command,
 			stream: ({ type, value }) => {
 				// clean shell noise
@@ -69,6 +77,7 @@ export const createShellExecTool: ToolFactory<
 				});
 			},
 		});
+
 		return [
 			{
 				type: "json",

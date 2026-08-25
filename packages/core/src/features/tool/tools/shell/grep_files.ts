@@ -1,7 +1,8 @@
 import { z } from "zod";
-import type { ShellCapability } from "../../../../core/types/capability.ts";
+import type { Capabilities } from "../../../../core/types/capability.ts";
 import { FileOperationService } from "../../../file/services/FileOperationService.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
+import { ShellUtils } from "../../utils/ShellUtils.ts";
 
 export const grep_files = {
 	name: "grep_files",
@@ -47,13 +48,15 @@ export const grep_files = {
 } as const satisfies ToolDefinition;
 
 export const createGrepFilesTool: ToolFactory<
-	Tool<typeof grep_files, { shell: ShellCapability }>
+	Tool<typeof grep_files, Pick<Capabilities, "shell" | "chatShell">>
 > = (options) => ({
 	...grep_files,
 	...options,
 	execute: async ({ input }) => {
+		const shell = ShellUtils.detect(input.path, options.capabilities);
+
 		const { results, summary } = await FileOperationService.grepFiles({
-			shell: options.capabilities.shell,
+			shell,
 			path: input.path,
 			query: input.query,
 			literal: input.literal,

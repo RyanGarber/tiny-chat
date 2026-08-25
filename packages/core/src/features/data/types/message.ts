@@ -8,8 +8,8 @@ export const DEFAULT_TOOLSETS = [
 	"actions",
 	"memories",
 	"web",
-	"chat_shell",
 	"subagents",
+	"shell",
 ];
 
 export const DEFAULT_SKILLS: string[] = [];

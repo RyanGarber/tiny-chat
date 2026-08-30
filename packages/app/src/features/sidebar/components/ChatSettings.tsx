@@ -1,4 +1,3 @@
-import { Icon } from "@iconify/react";
 import {
 	ActionIcon,
 	Box,
@@ -15,22 +14,28 @@ import {
 	Textarea,
 	Tooltip,
 } from "@mantine/core";
+import { TrashIcon } from "@phosphor-icons/react";
 import { useMutationState } from "@tanstack/react-query";
 import { useProviders } from "@tiny-chat/client/src/features/agent/hooks/useProviders.ts";
 import { useEmbeddingSettings } from "@tiny-chat/client/src/features/settings/hooks/useEmbeddingSettings.ts";
 import { useInstructions } from "@tiny-chat/client/src/features/settings/hooks/useInstructions.ts";
+import { useModelSettings } from "@tiny-chat/client/src/features/settings/hooks/useModelSettings.ts";
 import { useProviderSettings } from "@tiny-chat/client/src/features/settings/hooks/useProviderSettings.ts";
 import {
+	type EmbeddingStatus,
 	runEmbeddingBatchMutationKey,
-	useEmbedding,
 } from "@tiny-chat/client/src/features/user/hooks/useEmbedding.ts";
 import type { zConfig } from "@tiny-chat/core/src/features/data/types/message.ts";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import ModelSelect from "#app/core/components/ModelSelect.tsx";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 
-export default function ChatSettings() {
+export default function ChatSettings({
+	embeddingStatus,
+}: {
+	embeddingStatus: EmbeddingStatus;
+}) {
 	const { providers } = useProviders();
 
 	const { instructions, addInstruction, editInstruction, removeInstruction } =
@@ -43,7 +48,8 @@ export default function ChatSettings() {
 		useEmbeddingSearch,
 		setUseEmbeddingSearch,
 	} = useEmbeddingSettings();
-
+	const { subagentConfig, setSubagentConfig, dreamConfig, setDreamConfig } =
+		useModelSettings();
 	const currentModal = useAppStore((state) => state.currentModal);
 	const setCurrentModal = useAppStore((state) => state.setCurrentModal);
 
@@ -51,26 +57,11 @@ export default function ChatSettings() {
 		null,
 	);
 
-	const { nextEmbeddingBatch } = useEmbedding();
-
 	const runEmbeddingBatchState =
 		useMutationState({
 			filters: { mutationKey: runEmbeddingBatchMutationKey },
 			select: (m) => m.state.status,
 		}).at(-1) ?? "idle";
-
-	const { batchCount, totalCount } = useMemo(() => {
-		return {
-			batchCount:
-				(nextEmbeddingBatch.data?.messages.length ?? 0) +
-				(nextEmbeddingBatch.data?.memories.length ?? 0) +
-				(nextEmbeddingBatch.data?.files.length ?? 0),
-			totalCount:
-				Number(nextEmbeddingBatch.data?.messages[0]?.total ?? 0) +
-				Number(nextEmbeddingBatch.data?.memories[0]?.total ?? 0) +
-				Number(nextEmbeddingBatch.data?.files[0]?.total ?? 0),
-		};
-	}, [nextEmbeddingBatch.data]);
 
 	return (
 		<Stack>
@@ -111,7 +102,7 @@ export default function ChatSettings() {
 								removeInstruction.variables.index === index
 							}
 						>
-							<Icon icon="lucide:trash" height={18} />
+							<TrashIcon size={20} />
 						</ActionIcon>
 					}
 					disabled={
@@ -152,9 +143,10 @@ export default function ChatSettings() {
 				<Text size="sm">Retrieval</Text>
 				<Text size="xs" c="dimmed">
 					Enables memory and smart search
-					{totalCount > 0 && ` (${totalCount.toLocaleString()})`}
+					{embeddingStatus.totalCount > 0 &&
+						` (${embeddingStatus.totalCount.toLocaleString()})`}
 				</Text>
-				{totalCount > 0 && (
+				{embeddingStatus.totalCount > 0 && (
 					<Progress
 						my={5}
 						value={
@@ -162,7 +154,12 @@ export default function ChatSettings() {
 								? 100
 								: runEmbeddingBatchState === "idle"
 									? 0
-									: Math.min(100, (batchCount / totalCount) * 100)
+									: Math.min(
+											100,
+											(embeddingStatus.batchCount /
+												embeddingStatus.totalCount) *
+												100,
+										)
 						}
 						color={
 							runEmbeddingBatchState === "error"
@@ -256,6 +253,47 @@ export default function ChatSettings() {
 						<Text size="sm">Smart Search</Text>
 					</Group>
 				</CheckboxCard>
+			</Tooltip>
+			<Space />
+			<Box>
+				<Text size="sm">Agents</Text>
+				<Text size="xs" c="dimmed">
+					Enables various agentic features
+				</Text>
+			</Box>
+			<Tooltip
+				label="Model used for forming memories"
+				color="gray"
+				position="right"
+			>
+				<ModelSelect
+					label="Dreaming Model"
+					styles={StyleUtils.input}
+					optional
+					configValue={dreamConfig}
+					onConfigChange={(value) => setDreamConfig.mutate({ config: value })}
+					feature="language"
+					loading={setDreamConfig.isPending}
+					disabled={setDreamConfig.isPending}
+				/>
+			</Tooltip>
+			<Tooltip
+				label="Model used for delegating tasks"
+				color="gray"
+				position="right"
+			>
+				<ModelSelect
+					label="Subagent Model"
+					styles={StyleUtils.input}
+					optional
+					configValue={subagentConfig}
+					onConfigChange={(value) =>
+						setSubagentConfig.mutate({ config: value })
+					}
+					feature="language"
+					loading={setSubagentConfig.isPending}
+					disabled={setSubagentConfig.isPending}
+				/>
 			</Tooltip>
 			<Space />
 			<Box>

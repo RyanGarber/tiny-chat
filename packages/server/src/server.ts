@@ -6,7 +6,8 @@ import { createLogger } from "@tiny-chat/core/src/logger.ts";
 import { internalIpV4 } from "internal-ip";
 import { ApiService } from "./core/services/ApiService.ts";
 import { AuthService } from "./core/services/AuthService.ts";
-import { WorkerService } from "./features/agent/services/WorkerService.ts";
+import { ActionRunnerService } from "./features/agent/services/ActionRunnerService.ts";
+import { DreamRunnerService } from "./features/agent/services/DreamRunnerService.ts";
 import { AntigravityService } from "./features/proxy/services/AntigravityService.ts";
 import { McpService } from "./features/proxy/services/McpService.ts";
 
@@ -54,10 +55,10 @@ if (import.meta.main) {
 	server.listen(process.env.VITE_SERVER_PORT, () => {
 		console.log(`live at ${ipv4}:${process.env.VITE_SERVER_PORT}`);
 		const work = async () => {
-			await WorkerService.next({});
+			await ActionRunnerService.next();
+			await DreamRunnerService.next();
 			setTimeout(() => void work(), 5 * 1000);
 		};
 		void work();
-		console.log("worker spawned");
 	});
 }

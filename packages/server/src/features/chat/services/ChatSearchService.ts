@@ -1,5 +1,6 @@
 import type { MessageSearchResult } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
+import { VERBOSE } from "@tiny-chat/core/src/logger.ts";
 
 /**
  * Search system for messages and chats.
@@ -21,9 +22,10 @@ export const ChatSearchService = {
 		results: MessageSearchResult[];
 		nextCursor: string | null;
 	}> => {
-		console.log(
-			`searching "${searchText}"${searchEmbedding ? " (with embedding)" : ""} in chats`,
-		);
+		if (VERBOSE)
+			console.log(
+				`searching "${searchText}"${searchEmbedding ? " (with embedding)" : ""} in chats`,
+			);
 
 		let results = await globalThis.prisma.$queryRaw<MessageSearchResult[]>`
     WITH search AS (

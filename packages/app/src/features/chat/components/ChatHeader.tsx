@@ -1,5 +1,5 @@
-import { Icon } from "@iconify/react";
 import { ActionIcon, Burger, Group, Tooltip } from "@mantine/core";
+import { EyeSlashIcon, GhostIcon, PlusCircleIcon } from "@phosphor-icons/react";
 import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
 import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
 import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
@@ -51,10 +51,10 @@ export default function ChatHeader({ fixed }: { fixed: boolean }) {
 							size={32}
 							variant="subtle"
 							className="nav-link-like filled"
-							onClick={() => ChatService.setChat({ id: null })}
+							onClick={() => ChatService.newChat()}
 							data-active={!chat.data}
 						>
-							<Icon icon="lucide:message-circle-plus" height={18} />
+							<PlusCircleIcon size={20} />
 						</ActionIcon>
 					</Tooltip>
 				</Group>
@@ -65,12 +65,12 @@ export default function ChatHeader({ fixed }: { fixed: boolean }) {
 							variant="subtle"
 							className="nav-link-like"
 							onClick={() => {
-								if (chat.data) ChatService.setChat({ id: null });
+								if (chat.data) ChatService.newChat();
 								setTemporary(!isTemporary);
 							}}
 							data-active={isTemporary}
 						>
-							<Icon icon="lucide:eye-off" height={18} />
+							<EyeSlashIcon size={20} />
 						</ActionIcon>
 					</Tooltip>
 					<Tooltip label="Anonymous" position="bottom" color="gray">
@@ -79,12 +79,12 @@ export default function ChatHeader({ fixed }: { fixed: boolean }) {
 							variant="subtle"
 							className="nav-link-like"
 							onClick={() => {
-								if (chat.data) ChatService.setChat({ id: null });
+								if (chat.data) ChatService.newChat();
 								setIncognito(!isIncognito);
 							}}
 							data-active={isIncognito}
 						>
-							<Icon icon="lucide:ghost" height={18} />
+							<GhostIcon size={20} />
 						</ActionIcon>
 					</Tooltip>
 				</Group>

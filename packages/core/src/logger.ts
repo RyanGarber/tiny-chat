@@ -1,3 +1,5 @@
+export const VERBOSE = true;
+
 export const LogLevel = {
 	log: "log",
 	info: "info",

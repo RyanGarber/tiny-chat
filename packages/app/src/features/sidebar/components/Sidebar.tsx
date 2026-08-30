@@ -1,7 +1,8 @@
 import { Spotlight } from "@mantine/spotlight";
 import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
 import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
-import { useCallback, useState } from "react";
+import { useEmbedding } from "@tiny-chat/client/src/features/user/hooks/useEmbedding.ts";
+import { type CSSProperties, useCallback, useState } from "react";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import AccountDrawer from "#app/features/sidebar/components/AccountDrawer.tsx";
@@ -38,6 +39,8 @@ export default function Sidebar() {
 	const [query, setQuery] = useState("");
 	const { actions } = useSearch({ query, onSelect: close });
 
+	const { embeddingStatus } = useEmbedding();
+
 	return (
 		<>
 			{isMobile && (
@@ -57,10 +60,11 @@ export default function Sidebar() {
 						style={{
 							position: "absolute",
 							inset: 0,
-							opacity: isSidebarOpen ? 1 : 0,
-							visibility: isSidebarOpen ? "visible" : "hidden",
+							opacity: `var(--sidebar-expanded-opacity, ${isSidebarOpen ? 1 : 0})`,
+							visibility:
+								`var(--sidebar-expanded-visibility, ${isSidebarOpen ? "visible" : "hidden"})` as CSSProperties["visibility"],
 							transition:
-								"opacity 200ms ease 50ms, visibility 0ms linear " +
+								"var(--sidebar-opacity-transition, opacity 200ms ease 50ms), visibility 0ms linear " +
 								(isSidebarOpen ? "0ms" : "250ms"),
 							display: "flex",
 							flexDirection: "column",
@@ -77,11 +81,15 @@ export default function Sidebar() {
 					<div
 						style={{
 							position: "absolute",
-							inset: 0,
-							opacity: isSidebarOpen ? 0 : 1,
-							visibility: isSidebarOpen ? "hidden" : "visible",
+							top: 0,
+							bottom: 0,
+							left: 0,
+							width: 40,
+							opacity: `var(--sidebar-collapsed-opacity, ${isSidebarOpen ? 0 : 1})`,
+							visibility:
+								`var(--sidebar-collapsed-visibility, ${isSidebarOpen ? "hidden" : "visible"})` as CSSProperties["visibility"],
 							transition:
-								"opacity 200ms ease 50ms, visibility 0ms linear " +
+								"var(--sidebar-opacity-transition, opacity 200ms ease 50ms), visibility 0ms linear " +
 								(isSidebarOpen ? "250ms" : "0ms"),
 							display: "flex",
 							flexDirection: "column",
@@ -104,6 +112,7 @@ export default function Sidebar() {
 			<SettingsDrawer
 				opened={currentDrawer === "settings"}
 				onClose={() => setCurrentDrawer(null)}
+				embeddingStatus={embeddingStatus}
 			/>
 			<Spotlight
 				actions={actions.data?.pages.flatMap((p) => p.results) ?? []}

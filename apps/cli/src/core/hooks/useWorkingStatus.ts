@@ -23,6 +23,7 @@ export const useWorkingStatus = (
 	);
 
 	useEffect(() => {
+		// biome-ignore lint/nursery/useReactCompiler: this effect registers work in an external Zustand status store.
 		if (isWorking) setWorkingStatus(id);
 		else unsetWorkingStatus(id);
 		return () => unsetWorkingStatus(id);

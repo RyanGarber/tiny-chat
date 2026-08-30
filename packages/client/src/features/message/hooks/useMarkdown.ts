@@ -1,3 +1,4 @@
+import type { zData } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { Root as HastRoot } from "hast";
 import type { Code, Root as MdastRoot, Nodes } from "mdast";
 import { type JSX, useMemo } from "react";
@@ -12,9 +13,43 @@ import RemarkParse from "remark-parse";
 import RemarkRehype from "remark-rehype";
 import { type PluggableList, type Processor, unified } from "unified";
 import { visit } from "unist-util-visit";
+import { MarkdownPreprocessorUtils } from "../utils/MarkdownPreprocessorUtils.ts";
 
 export type * from "mdast";
 export type * from "mdast-util-to-hast";
+
+export type MarkdownSource = string | zData;
+
+const encodeDirectiveAttribute = (value: string) =>
+	value.replace(/[&"\r\n]/g, (character) => {
+		if (character === "&") return "&amp;";
+		if (character === '"') return "&quot;";
+		if (character === "\r") return "&#13;";
+		return "&#10;";
+	});
+
+export const MarkdownSourceUtils = {
+	/**
+	 * Rebuild the editor's inline Markdown stream from structured message parts.
+	 * No separator is introduced: the surrounding text parts already own every
+	 * intentional space (or lack of one) on either side of an attachment.
+	 */
+	fromData: (data: zData): string =>
+		data
+			.flat()
+			.flatMap((part) => {
+				if (part.type === "text") return [part.value];
+				if (part.type !== "attachment") return [];
+
+				const attributes = [
+					`source="${encodeDirectiveAttribute(part.source)}"`,
+					`name="${encodeDirectiveAttribute(part.label)}"`,
+					...(part.content.type === "directory" ? ['is-directory="true"'] : []),
+				].join(" ");
+				return [`:attachment[]{${attributes}}`];
+			})
+			.join(""),
+} as const;
 
 const allowedTags: Partial<Record<keyof JSX.IntrinsicElements, string[]>> = {
 	blockquote: ["model"],
@@ -228,15 +263,20 @@ export const useMarkdown = ({
 	source,
 	withKatex,
 }: {
-	source: string;
+	source: MarkdownSource;
 	withKatex?: boolean;
 }) => {
 	const content = useMemo(
 		() =>
-			source
-				.replace(MESSAGE_OPEN, "")
-				.replace(MESSAGE_CLOSE, "")
-				.replace(/<cite([/ ])/g, "<mark$1"),
+			MarkdownPreprocessorUtils.preprocess(
+				(typeof source === "string"
+					? source
+					: MarkdownSourceUtils.fromData(source)
+				)
+					.replace(MESSAGE_OPEN, "")
+					.replace(MESSAGE_CLOSE, "")
+					.replace(/<cite([/ ])/g, "<mark$1"),
+			),
 		[source],
 	);
 

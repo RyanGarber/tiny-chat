@@ -21,17 +21,6 @@ export const AppService = {
 		return () => window.removeEventListener("resize", listener);
 	},
 
-	openSidebar: () => {
-		const { currentModal, setSidebarOpen } = useAppStore.getState();
-
-		if (!currentModal) {
-			setSidebarOpen(true);
-			return true;
-		}
-
-		return false;
-	},
-
 	closeSidebar: () => {
 		const {
 			currentModal,
@@ -51,17 +40,6 @@ export const AppService = {
 				setSidebarOpen(false);
 				return true;
 			}
-		}
-
-		return false;
-	},
-
-	openAside: () => {
-		const { currentModal, setAsideOpen } = useAppStore.getState();
-
-		if (!currentModal) {
-			setAsideOpen(true);
-			return true;
 		}
 
 		return false;

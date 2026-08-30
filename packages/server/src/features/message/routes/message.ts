@@ -1,3 +1,4 @@
+import { zId } from "@tiny-chat/core/src/core/types/common.ts";
 import { ChatLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
 import {
 	Author,
@@ -15,13 +16,19 @@ export const message = router({
 		.input(
 			z.object({
 				chat: ChatLike.nullish(),
-				limit: z.number().optional(),
-				cursor: z.cuid2().optional(),
+				limit: z.number().int().positive().max(100).optional(),
+				start: zId.optional(),
+				branches: z.record(z.string(), z.string()).optional(),
+				cursor: zId.optional(),
 			}),
 		)
 		.query(async ({ ctx, input }) => {
 			if (!input.chat) {
-				return { messages: [], nextCursor: null };
+				return {
+					messages: [],
+					nextCursor: null,
+					branchOptions: {} as Record<string, string[]>,
+				};
 			}
 
 			return await MessageService.getMessages({
@@ -29,14 +36,19 @@ export const message = router({
 				chat: input.chat,
 				limit: input.limit,
 				cursor: input.cursor,
+				start: input.start,
+				branches: input.branches,
 				omit: !!input.limit,
 			});
 		}),
 
+	// TODO - zData inferring as `unknown[][]` in FilesystemService.test.ts
+	//  	  could this be related the tool part issue?
 	createMessage: procedure
 		.input(
 			z.object({
 				chat: ChatLike.nullish(),
+				folderId: z.string().nullish(),
 				author: z.enum(Author),
 				config: zConfig,
 				data: zData,
@@ -50,6 +62,7 @@ export const message = router({
 			return await MessageService.createMessage({
 				user: ctx.session.user,
 				chat: input.chat,
+				folderId: input.folderId,
 				author: input.author,
 				config: input.config,
 				data: input.data,
@@ -57,6 +70,29 @@ export const message = router({
 				previous: input.previous,
 				temporary: input.temporary,
 				incognito: input.incognito,
+			});
+		}),
+
+	editMessage: procedure
+		.input(
+			z.object({
+				message: MessageLike,
+				author: z.enum(Author),
+				config: zConfig,
+				data: zData,
+				metadata: zMetadata,
+				truncate: z.boolean().optional(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			return await MessageService.editMessage({
+				user: ctx.session.user,
+				message: input.message,
+				author: input.author,
+				config: input.config,
+				data: input.data,
+				metadata: input.metadata,
+				truncate: input.truncate,
 			});
 		}),
 

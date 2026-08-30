@@ -43,6 +43,7 @@ export default function Commands({
 
 	const cliCommands = useMemo<CommandItem[]>(
 		() => [
+			{ name: "folders", value: "folders", run: () => setPage("folders") },
 			{
 				name: "chats",
 				value: "chats",
@@ -91,8 +92,8 @@ export default function Commands({
 		],
 		[
 			isAnonymous,
-			requestClone.mutate,
-			doUpdate.mutate,
+			requestClone,
+			doUpdate,
 			version,
 			setPage,
 			setStatus,

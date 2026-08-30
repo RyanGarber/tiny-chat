@@ -3,6 +3,11 @@ import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 
 interface MessagingStore {
+	activeFolder: { id: string; title: string | null } | null;
+	setActiveFolder: (
+		folder: { id: string; title: string | null } | null,
+	) => void;
+
 	editing: MessageState | null;
 	setEditing: (editing: MessageState | null) => void;
 
@@ -17,6 +22,9 @@ interface MessagingStore {
 
 export const useMessagingStore = create(
 	subscribeWithSelector<MessagingStore>((set) => ({
+		activeFolder: null,
+		setActiveFolder: (activeFolder) => set({ activeFolder }),
+
 		editing: null,
 		setEditing: (value) => set({ editing: value }),
 

@@ -1,11 +1,13 @@
-import { Icon } from "@iconify/react";
 import { Group, type GroupProps, Image } from "@mantine/core";
+import { BrowserIcon } from "@phosphor-icons/react";
+import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
 import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
-import { type HTMLAttributes, type ReactNode, useMemo, useState } from "react";
-import { FileViewer } from "#app/features/upload/components/FileViewer.tsx";
-import { FileIcon } from "#app/generated/index.js";
-import MaterialIconTheme from "#app/generated/material-icon-theme.js";
+import { type HTMLAttributes, type ReactNode, useMemo } from "react";
+import { useAppStore } from "#app/core/stores/useAppStore.ts";
+import { useChatFilesStore } from "#app/features/chat/stores/useChatFilesStore.ts";
+import { FileIcon } from "../../../../generated/stylicious";
+import MaterialIconTheme from "../../../../generated/stylicious/material-icon-theme.js";
 
 export default function FileTag({
 	path,
@@ -28,7 +30,9 @@ export default function FileTag({
 	viewable?: boolean;
 }) {
 	const name = PathUtils.name(path);
-	const [isViewing, setIsViewing] = useState(false);
+	const setAsideOpen = useAppStore((state) => state.setAsideOpen);
+	const viewFile = useChatFilesStore((state) => state.viewFile);
+	const chatId = useChatStore((state) => state.chatId);
 
 	const thumbnail = useMemo(() => {
 		if (thumbnailBytes) {
@@ -49,7 +53,7 @@ export default function FileTag({
 			/>
 		);
 	} else if (path.startsWith("web:")) {
-		icon = <Icon icon={"lucide:link"} height={size} />;
+		icon = <BrowserIcon size={size} />;
 	} else {
 		icon = (
 			<FileIcon
@@ -64,22 +68,24 @@ export default function FileTag({
 
 	const events = useMemo<HTMLAttributes<HTMLElement>>(() => {
 		if (viewable) {
+			const open = () => {
+				viewFile({ path, directory, chatId });
+				setAsideOpen(true);
+			};
 			return {
-				onClick: () => {
-					setIsViewing(true);
-				},
+				onClick: open,
 				onKeyDown: (event) => {
 					if (event.key === "Enter") {
-						setIsViewing(true);
+						open();
 					}
 				},
 				style: {
-					cursor: "pointer",
+					cursor: directory ? undefined : "pointer",
 				},
 			};
 		}
 		return {};
-	}, [viewable]);
+	}, [viewable, directory, path, chatId, setAsideOpen, viewFile]);
 
 	if (inline) {
 		return (
@@ -94,30 +100,14 @@ export default function FileTag({
 				>
 					{children}
 				</span>
-				{isViewing && (
-					<FileViewer
-						opened={isViewing}
-						onClose={() => setIsViewing(false)}
-						files={[{ path, directory }]}
-					/>
-				)}
 			</>
 		);
 	}
 
 	return (
-		<>
-			<Group gap={5} {...events} {...props}>
-				{icon}
-				{children}
-			</Group>
-			{isViewing && (
-				<FileViewer
-					opened={isViewing}
-					onClose={() => setIsViewing(false)}
-					files={[{ path, directory }]}
-				/>
-			)}
-		</>
+		<Group gap={5} {...events} {...props}>
+			{icon}
+			{children}
+		</Group>
 	);
 }

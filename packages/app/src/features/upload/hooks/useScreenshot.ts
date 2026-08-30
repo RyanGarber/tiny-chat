@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { useUploads } from "@tiny-chat/client/src/features/upload/hooks/useUploads.ts";
-import { UploadType } from "@tiny-chat/core/src/features/file/types/upload.ts";
+import { UploadKind } from "@tiny-chat/core/src/features/file/types/upload.ts";
 import { useState } from "react";
 import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
 
@@ -54,7 +54,7 @@ export const useScreenshot = () => {
 						const file = new File([blob], `Screenshot-${timestamp}.png`, {
 							type: "image/png",
 						});
-						upload.mutate({ type: UploadType.ATTACHMENT, file });
+						upload.mutate({ kind: UploadKind.ATTACHMENT, file });
 					}
 				}, "image/png");
 			} catch (e) {

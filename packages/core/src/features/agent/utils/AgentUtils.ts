@@ -1,6 +1,5 @@
 import type { zDataPart } from "../../data/types/message.ts";
 import { DataUtils } from "../../data/utils/DataUtils.ts";
-import { DirectiveUtils } from "../../data/utils/DirectiveUtils.ts";
 import { PathUtils } from "../../file/utils/PathUtils.ts";
 import type { zAgentMessage } from "../types/agent.ts";
 
@@ -10,13 +9,15 @@ export const AgentUtils = {
 	 */
 	getLastPrompt: ({
 		messages,
+		withText,
 	}: {
 		messages: zAgentMessage[];
+		withText: boolean;
 	}): { prompt?: zAgentMessage; index?: number } => {
 		for (let i = messages.length - 1; i >= 0; i--) {
 			if (
 				messages[i].author === "USER" &&
-				DataUtils.getText(messages[i]).length > 0
+				(!withText || DataUtils.getText(messages[i]).length > 0)
 			) {
 				return { prompt: messages[i], index: i };
 			}
@@ -29,8 +30,8 @@ export const AgentUtils = {
 	 *
 	 * Neither has any standing in a chat of its own: it is there because
 	 * something in the chat points into it. A skill is named by the message's
-	 * config, and an upload by an attachment directive written in its text — so
-	 * referencing any path below one, not just its root, is what pulls it in.
+	 * config, and an upload by an attachment part — so referencing any path
+	 * below one, not just its root, is what pulls it in.
 	 *
 	 * This is the whole of what a filesystem is built from, which is why it asks
 	 * for messages and nothing else: a message being typed has these references
@@ -55,12 +56,8 @@ export const AgentUtils = {
 				add(skills, skill);
 			}
 			for (const part of message.data.flat()) {
-				if (part.type !== "text") continue;
-				for (const { directive } of DirectiveUtils.extractFromMarkdown(
-					part.value,
-					"attachment",
-				)) {
-					add(uploads, directive?.attributes.source);
+				if (part.type === "attachment") {
+					add(uploads, part.source);
 				}
 			}
 		}

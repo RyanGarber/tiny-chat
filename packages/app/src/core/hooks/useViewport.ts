@@ -13,6 +13,7 @@ export function useViewport() {
 		let frameId: number;
 
 		const onUpdate = () => {
+			// biome-ignore lint/nursery/useReactCompiler: ???
 			cancelAnimationFrame(frameId);
 			frameId = requestAnimationFrame(() => {
 				setHeight(vv.height);

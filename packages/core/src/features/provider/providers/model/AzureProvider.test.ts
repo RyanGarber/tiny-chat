@@ -8,7 +8,7 @@ describe("providers - azure", () => {
 	it("stores signatures", () => {
 		const event: TextStreamPart<any> = {
 			type: "reasoning-delta",
-			id: "",
+			id: "thought-1",
 			text: "",
 			providerMetadata: {
 				azure: {
@@ -30,7 +30,7 @@ describe("providers - azure", () => {
 	it("returns matching signatures", () => {
 		const part: zDataPart = {
 			type: "thought",
-			id: "",
+			id: "thought-1",
 			value: "",
 			signature: {
 				model: "gpt-5",

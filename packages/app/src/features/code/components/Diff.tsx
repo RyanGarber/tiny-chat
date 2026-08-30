@@ -25,9 +25,9 @@ export default function Diff({
 	);
 
 	return (
-		<HighlightBody {...props}>
+		<HighlightBody highlight={baseHighlight} {...props}>
 			<HighlightContent
-				code={baseHighlight}
+				highlight={baseHighlight}
 				language={language ?? ""}
 				filename={filename}
 				lineNumbers={false}

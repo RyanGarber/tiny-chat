@@ -1,12 +1,13 @@
 import { z } from "zod";
-import type { UserCapability } from "../../../../core/types/capability.ts";
+import type { MemoriesCapability } from "../../../../core/types/capability.ts";
+import { zId } from "../../../../core/types/common.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
 export const delete_memory = {
 	name: "delete_memory",
 	description: "Delete a fact about the user.",
 	input: z.object({
-		id: z.cuid2(),
+		id: zId,
 		reason: z
 			.string()
 			.describe(
@@ -14,17 +15,17 @@ export const delete_memory = {
 			),
 	}),
 	output: z.object({
-		deleted_memory_id: z.cuid2(),
+		deleted_memory_id: zId,
 	}),
 } as const satisfies ToolDefinition;
 
 export const createDeleteMemoryTool: ToolFactory<
-	Tool<typeof delete_memory, { user: UserCapability }>
+	Tool<typeof delete_memory, { memories: MemoriesCapability }>
 > = (options) => ({
 	...delete_memory,
 	...options,
 	execute: async ({ input }) => {
-		const memory = await options.capabilities.user.deleteMemory({
+		const memory = await options.capabilities.memories.deleteMemory({
 			id: input.id,
 		});
 		return [{ type: "json", value: { deleted_memory_id: memory.id } }];

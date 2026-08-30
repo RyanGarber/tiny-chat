@@ -1,4 +1,7 @@
-import type { UserCapability } from "../../../core/types/capability.ts";
+import type {
+	EmbeddingCapability,
+	MemoriesCapability,
+} from "../../../core/types/capability.ts";
 import type { Toolset, ToolsetFactory } from "../types/tool.ts";
 import { createCreateMemoryTool } from "./memories/create_memory.ts";
 import { createDeleteMemoryTool } from "./memories/delete_memory.ts";
@@ -7,9 +10,7 @@ import { createSearchMemoriesTool } from "./memories/search_memories.ts";
 import { createUpdateMemoryTool } from "./memories/update_memory.ts";
 
 export const createMemoriesToolset: ToolsetFactory<
-	Toolset<{
-		user: UserCapability;
-	}>
+	Toolset<{ embedding?: EmbeddingCapability; memories: MemoriesCapability }>
 > = async (options) => ({
 	name: "memories",
 	tools: [

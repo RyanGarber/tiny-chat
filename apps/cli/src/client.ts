@@ -1,17 +1,18 @@
 import { spawn } from "node:child_process";
+import { mkdirSync } from "node:fs";
 import { readdir, readFile, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { createClient } from "@tiny-chat/client/src/client.ts";
 import { AtomUtils } from "@tiny-chat/client/src/features/editor/utils/AtomUtils.ts";
-import { AttachmentUtils } from "@tiny-chat/client/src/features/editor/utils/AttachmentUtils.ts";
+import { MarkdownDataUtils } from "@tiny-chat/client/src/features/message/utils/MarkdownDataUtils.ts";
 import type { zEnv } from "@tiny-chat/core/src/core/types/env.ts";
-import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { KeyringService } from "./core/services/KeyringService.ts";
 import { StorageService } from "./core/services/StorageService.ts";
 import { CliUtils } from "./core/utils/CliUtils.ts";
 import {
-	insertAttachment,
+	insertNode,
 	useEditorStore,
 } from "./features/editor/stores/useEditorStore.ts";
 
@@ -47,22 +48,18 @@ export const client = createClient({
 		// back out here, and read back in when a message is loaded for editing.
 		getData: () => {
 			const { content } = useEditorStore.getState();
-			return [[{ type: "text", value: AtomUtils.serialize({ content }) }]];
+			return MarkdownDataUtils.fromMarkdown(
+				AtomUtils.serialize({ content }),
+				true,
+			);
 		},
 		setData: ({ data }) => {
 			const { setContent } = useEditorStore.getState();
 			setContent(
-				AtomUtils.deserialize(DataUtils.getText({ data, join: "\n" })),
+				AtomUtils.deserialize(MarkdownDataUtils.toMarkdown(data, true)),
 			);
 		},
-		insertAttachment: ({ item }) => {
-			insertAttachment({
-				source: item.value,
-				directory: item.directory,
-				label: item.label,
-				markdown: AttachmentUtils.toDirective({ item }),
-			});
-		},
+		insertNode: ({ node }) => insertNode(node),
 	},
 	shell: {
 		cwd: async () => {
@@ -80,6 +77,7 @@ export const client = createClient({
 		},
 		writeFile: async ({ path, content }) => {
 			path = CliUtils.resolve(path);
+			mkdirSync(dirname(path), { recursive: true });
 			await writeFile(path, content);
 			return {
 				path,

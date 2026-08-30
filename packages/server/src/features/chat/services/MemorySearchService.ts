@@ -1,5 +1,8 @@
+import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import type { MemorySearchResult } from "@tiny-chat/core/src/features/data/types/memory.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
+import { VERBOSE } from "@tiny-chat/core/src/logger.ts";
+import { MemoryBudgetUtils } from "../utils/MemoryBudgetUtils.ts";
 
 export const MemorySearchService = {
 	searchMemories: async ({
@@ -7,31 +10,38 @@ export const MemorySearchService = {
 		searchText,
 		searchEmbedding,
 		limit = 20,
+		minConfidence = 0,
+		tokens = 2_500,
 	}: {
 		user: zUser;
 		searchText: string;
 		searchEmbedding?: number[];
 		limit?: number;
+		minConfidence?: number;
+		tokens?: number;
 	}) => {
-		console.log(
-			`searching "${searchText}"${searchEmbedding ? " (with embedding)" : ""} in memories`,
-		);
-
-		// TODO - 1.5x normal websearch, 0.5x 'OR'-joined search as fallback when embeddings aren't available
-		const results = await globalThis.prisma.$queryRaw<MemorySearchResult[]>`
+		if (VERBOSE)
+			console.log(
+				`searching "${searchText}"${searchEmbedding ? " (with embedding)" : ""} in memories`,
+			);
+		const rows = await globalThis.db
+			.runtime()
+			.query(
+				globalThis.db.raw.sql`
     WITH search AS (
-      SELECT websearch_to_tsquery('english', ${searchText}) AS query
+      SELECT to_tsquery('english', COALESCE((SELECT string_agg(quote_literal(term), ' | ') FROM unnest(tsvector_to_array(to_tsvector('english', ${searchText}))) term), '')) AS query
     ),
 
     embedding_hits AS (
       SELECT
         m.id,
-        (m.embedding <=> ${JSON.stringify(searchEmbedding)}) AS distance,
-        ROW_NUMBER() OVER (ORDER BY m.embedding <=> ${JSON.stringify(searchEmbedding)}) AS rank
+        (m.embedding <=> NULLIF(${searchEmbedding ? JSON.stringify(searchEmbedding) : ""}, '')::vector) AS distance,
+        ROW_NUMBER() OVER (ORDER BY m.embedding <=> NULLIF(${searchEmbedding ? JSON.stringify(searchEmbedding) : ""}, '')::vector) AS rank
       FROM memory m
       WHERE m."userId" = ${user.id}
         AND m.embedding IS NOT NULL
-        AND m.confidence >= 0.5
+        AND (m.embedding <=> NULLIF(${searchEmbedding ? JSON.stringify(searchEmbedding) : ""}, '')::vector) < 0.65
+        AND m.confidence >= ${minConfidence}
       ORDER BY distance
       LIMIT 150
     ),
@@ -39,15 +49,15 @@ export const MemorySearchService = {
     lexicon_hits AS (
       SELECT
         m.id,
-        ts_rank_cd(m.lexicon, search.query, 32) AS ts_score,
-        ROW_NUMBER() OVER (ORDER BY ts_rank_cd(m.lexicon, search.query, 32) DESC) AS rank
+        ts_rank_cd(to_tsvector('english', m.fact), search.query, 32) AS ts_score,
+        ROW_NUMBER() OVER (ORDER BY ts_rank_cd(to_tsvector('english', m.fact), search.query, 32) DESC, m.id) AS rank
       FROM memory m
       CROSS JOIN search
       WHERE m."userId" = ${user.id}
         AND search.query != ''::tsquery
-        AND m.lexicon @@ search.query
-        AND m.confidence >= 0.5
-      ORDER BY ts_score DESC
+        AND to_tsvector('english', m.fact) @@ search.query
+        AND m.confidence >= ${minConfidence}
+      ORDER BY ts_score DESC, m.id
       LIMIT 150
     ),
 
@@ -63,11 +73,6 @@ export const MemorySearchService = {
 
     SELECT
       m.id,
-      m.fact,
-      m.category,
-      m.stability,
-      m."createdAt",
-      c.rrf AS base_score,
       (
         c.rrf
 
@@ -95,12 +100,44 @@ export const MemorySearchService = {
       ) AS final_score
     FROM combined c
     JOIN memory m ON m.id = c.id
-    ORDER BY final_score DESC
+    ORDER BY final_score DESC, m.id
     LIMIT ${limit}
-  `;
+  `
+					.returnsRow({ id: globalThis.db.sql.public.memory.columns.id })
+					.build(),
+			)
+			.toArray();
+		if (!rows.length) return [];
+		const memories = await globalThis.db.orm.public.Memory.where({
+			userId: user.id,
+		})
+			.where((m) => m.id.in(rows.map((row) => row.id)))
+			.select(
+				"id",
+				"fact",
+				"category",
+				"stability",
+				"createdAt",
+				"evidence",
+				"confidence",
+			)
+			.all();
+		const byId = new Map(memories.map((memory) => [memory.id, memory]));
+		const results: MemorySearchResult[] = rows.flatMap((row) => {
+			const memory = byId.get(row.id);
+			return memory
+				? [
+						{
+							...memory,
+							evidence: [...memory.evidence],
+							createdAt: CommonUtils.toDate(memory.createdAt),
+						},
+					]
+				: [];
+		});
 
 		console.log(`found ${results.length} memories`);
 
-		return results;
+		return MemoryBudgetUtils.withinBudget(results, tokens);
 	},
 } as const;

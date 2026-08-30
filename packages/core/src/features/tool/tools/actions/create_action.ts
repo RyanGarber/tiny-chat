@@ -1,5 +1,7 @@
 import { z } from "zod";
-import type { UserCapability } from "../../../../core/types/capability.ts";
+import type { ActionsCapability } from "../../../../core/types/capability.ts";
+import { zId } from "../../../../core/types/common.ts";
+import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
 import { RRule } from "../../../../index.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
@@ -24,18 +26,20 @@ export const create_action = {
 			),
 	}),
 	output: z.object({
-		created_action_id: z.cuid2(),
+		created_action_id: zId,
 	}),
 } as const satisfies ToolDefinition;
 
 export const createCreateActionTool: ToolFactory<
-	Tool<typeof create_action, { user: UserCapability }>
+	Tool<typeof create_action, { actions: ActionsCapability }>
 > = (options) => ({
 	...create_action,
 	...options,
 	execute: async ({ input, context }) => {
-		const action = await options.capabilities.user.createAction({
-			data: [[{ type: "text", value: input.prompt }]],
+		const action = await options.capabilities.actions.createAction({
+			data: [
+				[{ id: CommonUtils.getRandomId(), type: "text", value: input.prompt }],
+			],
 			schedule: input.schedule,
 			timezone: context.timezone,
 		});

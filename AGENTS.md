@@ -104,7 +104,7 @@ tRPC is composed in `packages/server/src/core/utils/ApiRouter.ts`:
 Client types it as `createTRPCClient<ApiRouter>`. Adding a namespace: write the route file, add it to `ApiRouter`,
 consume `client.api.<ns>.*`. Always `.input(zod)`.
 
-`testing.worker` / `testing.tool` exist only when `DEV` is truthy.
+`testing.tool` exists only when `DEV` is truthy.
 
 ## Agent, tools, capabilities
 
@@ -139,7 +139,7 @@ Dedicated file tools (`read_file`, `edit_file`, `find_files`, `grep_files`,
 MCP servers are extra toolsets, created by the runtime's `transports` (Tauri invoke vs Node stdio/HTTP). They are not
 native tools.
 
-Skills are uploads (`UploadType.SKILL`) with a `SKILL.md`. Mounted read-only under `/mnt/skills/<id>` when enabled on
+Skills are uploads (`UploadKind.SKILL`) with a `SKILL.md`. Mounted read-only under `/mnt/skills/<id>` when enabled on
 the message `config.skills`.
 
 ### Generation path
@@ -207,13 +207,13 @@ tRPC client for product work.
 Scratch files and test harnesses:
 
 - **Server / data / FS / worker:** import the real `prisma` from
-  `@tiny-chat/server/src/db.ts`. That module loads `prisma.config.ts` →
+  `@tiny-chat/server/src/db.ts`. That module loads `prisma7.config.ts` →
   `env.ts` → the repo-root `.env`.
 - **Client / hooks / generation / UI:** `createClient` + wrap with the real
   `QueryClientProvider` (`client.queryClient`) and `ClientContext` from
   `@tiny-chat/client/src/client.ts` — the same wrapping as
-  `packages/app/src/main.tsx` and `apps/cli/src/main.tsx` (see
-  `apps/cli/src/test.tsx`). `createClient` parses `zEnv` from that same `.env`.
+  `packages/app/src/main.tsx` and `apps/cli/src/main.tsx`.
+  `createClient` parses `zEnv` from that same `.env`.
 
 Vitest (`vitest.config.ts`) includes `packages/**/*.test.ts`. Global setup:
 

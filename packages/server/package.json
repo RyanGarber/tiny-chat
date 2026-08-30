@@ -6,19 +6,20 @@
 		"start": "node src/server.ts"
 	},
 	"dependencies": {
-		"@paralleldrive/cuid2": "^3.3.0",
 		"@prisma/adapter-pg": "^7.9.1",
-		"@prisma/client": "^7.9.1",
+		"@prisma/client": "^7.10.0",
 		"@ryangarber/ai-sdk-antigravity-proxy": "^0.1.4",
 		"@ryangarber/legiscan-ts": "^2.1.2",
 		"@tiny-chat/core": "workspace:*",
+		"chalk": "^6.0.0",
 		"fflate": "^0.8.3",
 		"internal-ip": "^9.0.0",
-		"just-bash": "^3.3.0",
+		"just-bash": "^3.4.2",
 		"rrule": "^2.8.1",
 		"sharp": "^0.35.3"
 	},
 	"devDependencies": {
-		"prisma": "^7.9.1"
+		"@prisma/prisma7": "^7.10.0",
+		"tsdown": "^0.23.0"
 	}
 }

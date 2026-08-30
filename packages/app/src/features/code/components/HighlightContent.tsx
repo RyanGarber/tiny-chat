@@ -6,44 +6,47 @@ import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { type ReactNode, useMemo } from "react";
 
 export default function HighlightContent({
-	code,
+	highlight,
 	children,
 	language,
 	filename,
 	startLine = 1,
 	lineNumbers = true,
+	fillHeight = false,
 }: {
-	code: CodeResult;
+	highlight: CodeResult;
 	children?: ReactNode;
 	language: string;
 	filename?: string;
 	startLine?: number;
 	lineNumbers?: boolean;
+	fillHeight?: boolean;
 }) {
 	const preStyle = useMemo(() => {
 		const style: Record<string, string> = {};
 
-		if (code.bg) {
-			style["--sdm-bg"] = code.bg;
+		if (highlight.bg) {
+			style["--sdm-bg"] = highlight.bg;
 		}
-		if (code.fg) {
-			style["--sdm-fg"] = code.fg;
+		if (highlight.fg) {
+			style["--sdm-fg"] = highlight.fg;
 		}
 
-		if (code.rootStyle) {
-			Object.assign(style, CommonUtils.toStyleObject(code.rootStyle));
+		if (highlight.rootStyle) {
+			Object.assign(style, CommonUtils.toStyleObject(highlight.rootStyle));
 		}
 
 		return style;
-	}, [code.bg, code.fg, code.rootStyle]);
+	}, [highlight.bg, highlight.fg, highlight.rootStyle]);
 
 	return (
 		<div
-			className="overflow-x-auto rounded-md border border-(--mantine-color-default-border) p-4 text-sm"
+			className={`${fillHeight ? "h-full overflow-auto" : "overflow-x-auto"} rounded-md border border-(--mantine-color-default-border) p-4 text-sm`}
 			data-language={language}
 			data-streamdown="code-block-body"
+			style={{ backgroundColor: highlight?.bg?.split(";")[0] }}
 		>
-			<pre className="bg-[var(--sdm-bg),inherit]" style={preStyle}>
+			<pre className="bg-(--sdm-bg)" style={preStyle}>
 				<code
 					className={
 						lineNumbers

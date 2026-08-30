@@ -1,5 +1,6 @@
 import "./env.ts";
 
+import { JsonService } from "@tiny-chat/core/src/core/services/JsonService.ts";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { zConfig } from "@tiny-chat/core/src/features/data/types/message.ts";
 import { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
@@ -10,7 +11,6 @@ import {
 	inferAdditionalFields,
 } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
-import superjson from "superjson";
 import { inject } from "vitest";
 import type { TestProject } from "vitest/node";
 import waitOn from "wait-on";
@@ -19,10 +19,10 @@ import type { AuthServer } from "./core/utils/AuthServer.ts";
 
 declare module "vitest" {
 	export interface ProvidedContext {
-		backend_backendUrl: string;
-		backend_token: string;
-		backend_user: zUser;
-		backend_config: zConfig;
+		server_serverUrl: string;
+		server_token: string;
+		server_user: zUser;
+		server_config: zConfig;
 	}
 }
 
@@ -61,10 +61,10 @@ export async function setup(project: TestProject) {
 	});
 
 	console.log("[tests] test user ready", user);
-	project.provide("backend_backendUrl", backendUrl);
-	project.provide("backend_token", session.data.token);
-	project.provide("backend_user", user);
-	project.provide("backend_config", config);
+	project.provide("server_serverUrl", backendUrl);
+	project.provide("server_token", session.data.token);
+	project.provide("server_user", user);
+	project.provide("server_config", config);
 
 	return async () => {
 		console.log("[tests] cleaning up test user");
@@ -79,15 +79,15 @@ export async function setup(project: TestProject) {
 }
 
 export function testClient(
-	backendUrl = inject("backend_backendUrl"),
-	token: string | null = inject("backend_token"),
+	backendUrl = inject("server_serverUrl"),
+	token: string | null = inject("server_token"),
 ) {
 	return {
 		api: createTRPCClient<ApiRouter>({
 			links: [
 				httpLink({
 					url: `${backendUrl}${CommonUtils.endpoints.api}/`,
-					transformer: superjson,
+					transformer: JsonService.transformer,
 					headers: () => ({ Authorization: `Bearer ${token}` }),
 					methodOverride: "POST",
 				}),

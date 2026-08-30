@@ -3,7 +3,6 @@ import type { Capabilities } from "../../../../core/types/capability.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 import { ShellUtils } from "../../utils/ShellUtils.ts";
 
-// TODO - replace specific line numbers
 export const write_file = {
 	name: "write_file",
 	description: "Write content to a file.",

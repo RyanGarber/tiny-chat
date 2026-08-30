@@ -41,6 +41,8 @@ export const ClientAgentService = {
 		providers,
 		streamKey,
 		streamChat,
+		toolNames,
+		instructions,
 	}: {
 		client: Client;
 		context: zAgentContext;
@@ -53,6 +55,8 @@ export const ClientAgentService = {
 		providers: ProviderState<ProviderStatus>[];
 		streamKey: string;
 		streamChat: string | null;
+		toolNames?: string[];
+		instructions?: string;
 	}): Promise<{ data: zData; metadata: zMetadata }> => {
 		console.log(
 			"[ClientAgentService] running agent",
@@ -66,8 +70,10 @@ export const ClientAgentService = {
 			user: context.user,
 		});
 
-		const { prompt: lastPrompt } = AgentUtils.getLastPrompt(context);
-
+		const { prompt: lastPrompt } = AgentUtils.getLastPrompt({
+			messages: context.messages,
+			withText: false,
+		});
 		const provider = modelProviders.find(
 			(p) => p.name === lastPrompt?.config?.provider,
 		);
@@ -83,17 +89,25 @@ export const ClientAgentService = {
 			messages: context.messages,
 			providers,
 			incognito: chat.incognito,
+			temporary: chat.temporary,
 			skills,
 			mcpTools,
 		});
 
-		const toolsets = [
+		let toolsets = [
 			...mcpTools,
 			...(await ToolService.getTools({
 				capabilities,
-				incognito: chat.incognito,
 			})),
 		];
+		if (toolNames) {
+			toolsets = toolsets
+				.map((toolset) => ({
+					...toolset,
+					tools: toolset.tools.filter((tool) => toolNames.includes(tool.name)),
+				}))
+				.filter((toolset) => toolset.tools.length > 0);
+		}
 
 		const abort = AgentStreamService.start(streamKey, {
 			chat: streamChat,
@@ -115,6 +129,7 @@ export const ClientAgentService = {
 			skills,
 			data,
 			metadata,
+			instructions,
 			env: client.providerEnv,
 			options: {
 				abortSignal: abort.signal,
@@ -156,7 +171,7 @@ export const ClientAgentService = {
 		user,
 		chat,
 		part,
-		value,
+		feedback,
 		message,
 		messages,
 		skills,
@@ -167,14 +182,14 @@ export const ClientAgentService = {
 		user: zUser;
 		chat: ChatState;
 		part: Extract<zDataPart, { type: "toolCall" }>;
-		value: unknown;
+		feedback: unknown;
 		message: MessageState;
 		messages: MessageState[];
 		skills: zSkill[];
 		mcpTools: Toolset<any>[];
 		interactive: boolean;
 	}): Promise<Extract<zDataPart, { type: "toolResult" }>> => {
-		console.log("[ClientAgentService] running tool", part, value);
+		console.log("[ClientAgentService] running tool", part, feedback);
 
 		const capabilities = await ClientCapabilityService.getCapabilities({
 			client,
@@ -183,13 +198,13 @@ export const ClientAgentService = {
 			message,
 			messages,
 			incognito: chat.incognito,
+			temporary: chat.temporary,
 			skills,
 			mcpTools,
 		});
 
 		const toolsets = await ToolService.getTools({
 			capabilities,
-			incognito: chat.incognito,
 		});
 
 		const { tool } = ToolUtils.find({ toolsets, part });
@@ -198,25 +213,30 @@ export const ClientAgentService = {
 		try {
 			ToolStreamService.start(part.id);
 
+			const output = await tool.execute({
+				input: part.input,
+				feedback,
+				stream: (mutation) => {
+					ToolStreamService.mutate(part.id, mutation);
+				},
+				context: {
+					user,
+					chat,
+					messages,
+					timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+					interactive,
+				},
+			});
+
 			return {
 				type: "toolResult",
 				id: part.id,
 				name: part.name,
 				error: false,
-				value: await tool.execute({
-					input: part.args,
-					feedback: value,
-					stream: (mutation) => {
-						ToolStreamService.mutate(part.id, mutation);
-					},
-					context: {
-						user,
-						chat,
-						messages,
-						timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-						interactive,
-					},
-				}),
+				output: output.map((value) => ({
+					...value,
+					id: CommonUtils.getRandomId(),
+				})),
 			};
 		} catch (error) {
 			return {
@@ -224,10 +244,11 @@ export const ClientAgentService = {
 				id: part.id,
 				name: part.name,
 				error: true,
-				value: [
+				output: [
 					{
-						type: "json",
+						type: "text",
 						value: CommonUtils.formatError({ error, details: true }),
+						id: CommonUtils.getRandomId(),
 					},
 				],
 			};

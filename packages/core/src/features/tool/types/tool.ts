@@ -2,6 +2,7 @@
 
 import type { z } from "zod";
 import type { Capabilities } from "../../../core/types/capability.ts";
+import type { DistributiveOmit } from "../../../core/types/common.ts";
 import type { StreamMutation } from "../../../core/types/stream.ts";
 import type { zAgentContext } from "../../agent/types/agent.ts";
 import type { zDataBasicPart } from "../../data/types/message.ts";
@@ -18,6 +19,12 @@ export interface ToolDefinition {
 export interface ToolValidation {
 	approval?: boolean;
 }
+
+export type OutputPart<TDefinition extends ToolDefinition> =
+	| Exclude<zDataBasicPart, { type: "json" }>
+	| (Omit<Extract<zDataBasicPart, { type: "json" }>, "value"> & {
+			value: z.infer<TDefinition["output"]>;
+	  });
 
 export interface Tool<
 	TDefinition extends ToolDefinition,
@@ -53,12 +60,7 @@ export interface Tool<
 		context: zAgentContext;
 		stream?: (_: StreamMutation<z.infer<TDefinition["stream"]>>) => void;
 		abort?: AbortSignal;
-	}) => Promise<
-		(
-			| Exclude<zDataBasicPart, { type: "json" }>
-			| { type: "json"; value: z.infer<TDefinition["output"]> }
-		)[]
-	>;
+	}) => Promise<DistributiveOmit<OutputPart<TDefinition>, "id">[]>;
 }
 
 export type ToolFactory<T extends Tool<any, any>> = (options: {

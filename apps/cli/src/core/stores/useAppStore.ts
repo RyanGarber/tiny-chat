@@ -4,6 +4,7 @@ import { _debug } from "../../features/settings/components/Settings.tsx";
 export type Page =
 	| "chat"
 	| "chats"
+	| "folders"
 	| "tools"
 	| "skills"
 	| "settings"

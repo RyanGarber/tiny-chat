@@ -198,6 +198,7 @@ export function useAutoScroll({
 				const move = Math.max(Math.ceil(diff * 0.3), 2);
 				el.scrollTop = Math.min(currentTop + move, targetTop);
 			}
+			// biome-ignore lint/nursery/useReactCompiler: step is a recursive callback-local function, not a hook dependency.
 			scrollRafIdRef.current = requestAnimationFrame(step);
 		};
 

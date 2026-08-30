@@ -9,7 +9,8 @@
 				"title": "Tiny Chat",
 				"width": 1280,
 				"height": 720,
-				"titleBarStyle": "Transparent"
+				"titleBarStyle": "Transparent",
+				"dragDropEnabled": false
 			}
 		],
 		"security": {

@@ -26,7 +26,7 @@ export const createSubagentsCapability: CapabilityFactory<
 	SubagentsCapability
 > = async ({ client, chat, message, providers, skills, mcpTools }) => {
 	return {
-		runSubagent: async ({ context, onData }) => {
+		runSubagent: async ({ context, instructions, onData }) => {
 			const streamKey = Math.random().toString(36);
 			AgentStreamService.subscribe(streamKey, () => {
 				const state = AgentStreamService.get(streamKey)?.items.at(-1);
@@ -43,6 +43,7 @@ export const createSubagentsCapability: CapabilityFactory<
 					providers,
 					streamKey,
 					streamChat: null,
+					instructions,
 				});
 				return data;
 			} finally {

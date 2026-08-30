@@ -1,19 +1,14 @@
-import { createId } from "@paralleldrive/cuid2";
+import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import { unzipSync } from "fflate";
 import sharp from "sharp";
-import { Prisma } from "../../../../generated/prisma/client.ts";
-import type {
-	UploadCreateInput,
-	UploadWhereInput,
-} from "../../../../generated/prisma/models/Upload.ts";
+import {
+	Prisma,
+	type UploadKind,
+} from "../../../../generated/prisma/client.ts";
 import { UploadUtils } from "../utils/UploadUtils.ts";
-
-export type UploadCreateOptions = Partial<
-	Pick<UploadCreateInput, "name" | "type" | "thumbnail">
->;
 
 /**
  * File preprocessing and upload handling.
@@ -25,17 +20,17 @@ export const UploadFileService = {
 	uploadZip: async ({
 		user,
 		zip,
-		create,
-		connect,
+		kind,
 		include,
 		skipRoot,
+		replaceName,
 	}: {
 		user: zUser;
 		zip: [string, ArrayBufferLike][] | ArrayBufferLike;
-		create?: UploadCreateOptions;
-		connect?: UploadWhereInput;
+		kind: UploadKind;
 		include?: (path: string) => boolean;
 		skipRoot?: boolean;
+		replaceName?: string;
 	}) => {
 		if (Array.isArray(zip)) zip = zip[0][1];
 
@@ -48,7 +43,8 @@ export const UploadFileService = {
 
 		return await UploadFileService.upload({
 			user,
-			create,
+			kind,
+			replaceName,
 			files: files.map(([name, data]) => [
 				name
 					.split("/")
@@ -56,7 +52,6 @@ export const UploadFileService = {
 					.join("/"),
 				data.buffer,
 			]),
-			connect,
 			include,
 		});
 	},
@@ -67,19 +62,20 @@ export const UploadFileService = {
 	upload: async ({
 		user,
 		files,
-		create,
-		connect,
+		kind,
 		include,
+		replaceName,
 	}: {
 		user: zUser;
 		files: [string, ArrayBufferLike][];
-		create?: UploadCreateOptions;
-		connect?: UploadWhereInput;
+		kind: UploadKind;
+		name?: string;
 		include?: (path: string) => boolean;
+		replaceName?: string;
 	}) => {
-		const existing = connect
+		const existing = replaceName
 			? await globalThis.prisma.upload.findFirst({
-					where: { userId: user.id, ...connect },
+					where: { userId: user.id, kind, name: replaceName },
 					include: { files: true },
 				})
 			: null;
@@ -161,19 +157,19 @@ export const UploadFileService = {
 			`${toCreate.length} to create, ${toUpdate.length} to update, ${toDelete.length} to delete`,
 		);
 
-		const uploadId = existing?.id ?? createId();
+		const uploadId = existing?.id ?? CommonUtils.getRandomId();
 		const upload = await globalThis.prisma.upload.upsert({
 			where: { id: uploadId },
 			create: {
 				id: uploadId,
 				user: { connect: { id: user.id } },
-				name: name ?? "",
+				name: replaceName ?? name ?? "",
 				thumbnail,
-				...create,
+				kind,
 			},
 			update: {
 				createdAt: new Date(),
-				...create,
+				kind,
 			},
 		});
 
@@ -182,7 +178,7 @@ export const UploadFileService = {
 			...toCreate.map((file) =>
 				globalThis.prisma.file.create({
 					data: {
-						id: createId(),
+						id: CommonUtils.getRandomId(),
 						user: { connect: { id: user.id } },
 						upload: { connect: { id: upload.id } },
 						path: file.path,

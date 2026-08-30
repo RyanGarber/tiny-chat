@@ -1,16 +1,12 @@
-import { createId } from "@paralleldrive/cuid2";
+import { or } from "@prisma/orm-postgres/orm-client";
+import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import type {
 	ChatLike,
 	ChatState,
+	FolderState,
 } from "@tiny-chat/core/src/features/data/types/chat.ts";
-import type { MessageLike } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
-import type { Folder } from "../../../../generated/prisma/client.ts";
-import type {
-	MessageCreateManyChatInput,
-	MessageCreateWithoutChatInput,
-} from "../../../../generated/prisma/models/Message.ts";
-import { MessageService } from "../../message/services/MessageService.ts";
+import { selectAll } from "../../../db.ts";
 import { ChatUtils } from "../utils/ChatUtils.ts";
 
 export const ChatService = {
@@ -23,25 +19,22 @@ export const ChatService = {
 	}: {
 		user: zUser;
 		chat: ChatLike;
-	}) => {
+	}): Promise<ChatState> => {
 		if (typeof chatLike === "string") chatLike = { id: chatLike };
 
-		const chat = await globalThis.prisma.chat.findFirstOrThrow({
-			where: {
-				userId: user.id,
-				OR: [{ id: chatLike.id }, { messages: { some: { id: chatLike.id } } }],
-			},
-			include: {
-				messages: {
-					select: {
-						createdAt: true,
-					},
-				},
-				folder: {
-					select: { title: true, _count: { select: { chats: true } } },
-				},
-			},
-		});
+		const chat = await globalThis.db.orm.public.Chat.where({
+			userId: user.id,
+		})
+			.where((chat) =>
+				or(
+					chat.id.eq(chatLike.id),
+					chat.messages.some((message) => message.id.eq(chatLike.id)),
+				),
+			)
+			.include("messages", (message) => message.select("createdAt"))
+			.first();
+
+		if (!chat) throw new Error(`no chat or message with id ${chatLike.id}`);
 
 		return ChatUtils.toChatState(chat);
 	},
@@ -49,6 +42,14 @@ export const ChatService = {
 	/**
 	 * Get a user's chat list.
 	 */
+	createFolder: async ({ user }: { user: zUser }) => {
+		return globalThis.db.orm.public.Folder.create({
+			id: CommonUtils.getRandomId(),
+			userId: user.id,
+			title: null,
+		});
+	},
+
 	getChats: async ({
 		user,
 		limit,
@@ -58,128 +59,69 @@ export const ChatService = {
 		limit?: number;
 		cursor?: string;
 	}): Promise<{
-		folders: (Folder & { chats: ChatState[] })[];
+		folders: FolderState[];
+		chats: ChatState[];
 		nextCursor: string | null;
 	}> => {
-		let folders = (
-			await globalThis.prisma.folder.findMany({
-				where: {
-					userId: user.id,
-					chats: { some: { temporary: false } },
-				},
-				include: {
-					chats: {
-						where: { temporary: false },
-						include: {
-							messages: { select: { createdAt: true } },
-							folder: {
-								select: { title: true, _count: { select: { chats: true } } },
-							},
-						},
-					},
-				},
+		const [folderRows, chatRows] = await Promise.all([
+			cursor
+				? []
+				: db.orm.public.Folder.where({ userId: user.id })
+						.include("chats", (chat) =>
+							selectAll(chat, "public", "Chat")
+								.where({ temporary: false })
+								.include("messages", (message) => message.select("createdAt")),
+						)
+						.orderBy((f) => f.createdAt.desc())
+						.all(),
+			db.orm.public.Chat.where({
+				userId: user.id,
+				folderId: null,
+				temporary: false,
 			})
-		).map((folder) => ({
-			...folder,
-			chats: folder.chats.map(ChatUtils.toChatState),
-		}));
+				.include("messages", (message) => message.select("createdAt"))
+				.all(),
+		]);
 
-		folders
-			.sort((a, b) => {
-				const aLatest = Math.max(
-					...a.chats.map((item) =>
-						Math.max(
-							item.createdAt.getTime(),
-							...item.messages.map((item) => item.createdAt.getTime()),
-						),
-					),
-				);
-				const bLatest = Math.max(
-					...b.chats.map((item) =>
-						Math.max(
-							item.createdAt.getTime(),
-							...item.messages.map((item) => item.createdAt.getTime()),
-						),
-					),
-				);
-				return bLatest - aLatest;
-			})
-			.forEach((chat) => {
-				chat.chats.sort((a, b) => {
-					const aLatest = Math.max(
-						a.createdAt.getTime(),
-						...a.messages.map((item) => item.createdAt.getTime()),
-					);
-					const bLatest = Math.max(
-						b.createdAt.getTime(),
-						...b.messages.map((item) => item.createdAt.getTime()),
-					);
-					return bLatest - aLatest;
-				});
-			});
-
-		if (limit) {
-			const index = Math.max(
-				0,
-				folders.findIndex((f) => f.id === cursor),
+		const timestamp = (chat: ChatState) => {
+			return Math.max(
+				chat.createdAt.toZonedDateTime("UTC").epochMilliseconds,
+				...chat.messages.map(
+					(message) =>
+						message.createdAt.toZonedDateTime("UTC").epochMilliseconds,
+				),
 			);
-			const nextCursor =
-				index + limit < folders.length ? folders[index + limit].id : null;
-			folders = folders.slice(index, index + limit);
-			return { folders, nextCursor };
-		}
+		};
 
-		return { folders, nextCursor: null };
+		const sortChats = (chats: ChatState[]) => {
+			return chats.sort(
+				(a, b) => timestamp(b) - timestamp(a) || a.id.localeCompare(b.id),
+			);
+		};
+
+		const folders = folderRows.map((folder) => ({
+			...folder,
+			chats: sortChats(folder.chats.map(ChatUtils.toChatState)),
+		}));
+		const chats = sortChats(chatRows.map(ChatUtils.toChatState));
+
+		const start = cursor
+			? Math.max(
+					0,
+					chats.findIndex((chat) => chat.id === cursor),
+				)
+			: 0;
+		const end = limit ? start + limit : chats.length;
+
+		return {
+			folders,
+			chats: chats.slice(start, end),
+			nextCursor: chats[end]?.id ?? null,
+		};
 	},
 
 	/**
-	 * Create a chat, as well as a folder if one doesn't exist.
-	 * @returns The first message in the chat if one was created.
-	 */
-	createChat: async ({
-		user,
-		temporary,
-		incognito,
-		message,
-	}: {
-		user: zUser;
-		temporary?: boolean;
-		incognito?: boolean;
-		message: MessageCreateWithoutChatInput;
-	}) => {
-		const folderId = createId();
-
-		const folder = await globalThis.prisma.folder.create({
-			data: {
-				id: folderId,
-				user: { connect: { id: user.id } },
-				chats: {
-					create: {
-						id: createId(),
-						user: { connect: { id: user.id } },
-						temporary,
-						incognito,
-						...(message
-							? {
-									messages: {
-										create: {
-											...message,
-											folder: { connect: { id: folderId } },
-										},
-									},
-								}
-							: {}),
-					},
-				},
-			},
-			include: { chats: { include: { messages: true } } },
-		});
-
-		return folder.chats[0].messages[0];
-	},
-
-	/**
-	 * Set the title of a chat, as well as its folder if they are the same.
+	 * Set the title of a chat.
 	 */
 	setChatTitle: async ({
 		user,
@@ -190,96 +132,37 @@ export const ChatService = {
 		chat: ChatLike;
 		title: string;
 	}) => {
-		const {
-			id,
-			folder,
-			title: oldTitle,
-		} = await ChatService.getChat({
+		const { id } = await ChatService.getChat({
 			user,
 			chat,
 		});
-		await globalThis.prisma.chat.update({
-			where: { id },
-			data: {
-				title,
-				...(folder.title === oldTitle ? { folder: { update: { title } } } : {}),
-			},
-		});
+		await globalThis.db.orm.public.Chat.where({ id }).update({ title });
 	},
 
 	/**
-	 * Clone a chat up to a given message.
-	 */
-	cloneChat: async ({
-		user,
-		chat,
-		title,
-		upToMessage,
-	}: {
-		user: zUser;
-		chat: ChatLike;
-		title: string;
-		upToMessage: MessageLike;
-	}) => {
-		if (typeof upToMessage === "string") upToMessage = { id: upToMessage };
-
-		const { folder, folderId, temporary, incognito } =
-			await ChatService.getChat({ user, chat });
-
-		if (folder._count.chats === 1) {
-			await globalThis.prisma.folder.update({
-				where: { id: folderId },
-				data: { title },
-			});
-		}
-
-		const { messages } = await MessageService.getMessages({ user, chat });
-
-		let reachedMessage = false;
-		let previousId: string | null = null;
-
-		return globalThis.prisma.chat.create({
-			data: {
-				id: createId(),
-				user: { connect: { id: user.id } },
-				folder: { connect: { id: folderId } },
-				title,
-				temporary,
-				incognito,
-				messages: {
-					createMany: {
-						data: messages.flatMap((m) => {
-							if (reachedMessage) return [];
-							if (m.id === upToMessage.id) reachedMessage = true;
-
-							const id = createId();
-							const message = {
-								id,
-								userId: user.id,
-								folderId,
-								author: m.author,
-								config: m.config,
-								data: m.data,
-								metadata: m.metadata,
-								previousId,
-							} satisfies MessageCreateManyChatInput;
-							previousId = id;
-
-							return message;
-						}),
-					},
-				},
-			},
-		});
-	},
-
-	/**
-	 * Delete a chat, as well as its folder if it would become empty.
+	 * Delete a chat, preserving its folder.
 	 */
 	deleteChat: async ({ user, chat }: { user: zUser; chat: ChatLike }) => {
-		const { id, folder, folderId } = await ChatService.getChat({ user, chat });
-		if (folder._count.chats === 1)
-			await globalThis.prisma.folder.delete({ where: { id: folderId } });
-		else await globalThis.prisma.chat.delete({ where: { id } });
+		if (typeof chat === "string") chat = { id: chat };
+		const id = chat.id;
+		await globalThis.db.transaction(async (tx) => {
+			const existing = await tx.orm.public.Chat.where({ userId: user.id, id })
+				.select("id")
+				.first();
+			if (!existing) return;
+			// TODO - confirm relations delete and remove this
+			await tx.orm.public.ChatMemory.where({ chatId: id }).deleteAll();
+			const messages = await tx.orm.public.Message.where({
+				chatId: id,
+				userId: user.id,
+			})
+				.select("id")
+				.all();
+			if (messages.length)
+				await tx.orm.public.DreamMessage.where((link) =>
+					link.messageId.in(messages.map((message) => message.id)),
+				).deleteAll();
+			await tx.orm.public.Chat.where({ userId: user.id, id }).delete();
+		});
 	},
 } as const;

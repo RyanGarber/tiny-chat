@@ -1,5 +1,7 @@
-import { useDraftStore } from "@tiny-chat/client/src/features/chat/stores/useDraftStore.ts";
-import { useEstimatedTokens } from "@tiny-chat/client/src/features/editor/hooks/useEstimatedTokens.ts";
+import type {
+	Categories,
+	Usage,
+} from "@tiny-chat/client/src/features/editor/hooks/useEstimatedTokens.ts";
 import Spinner from "ink-spinner";
 import { useState } from "react";
 import Box from "../../../core/components/Box.tsx";
@@ -7,16 +9,13 @@ import Text from "../../../core/components/Text.tsx";
 import type { Color } from "../../../core/hooks/useColor.ts";
 import { useMouseInput } from "../../../core/hooks/useMouseInput.ts";
 
-export default function TokenUsage() {
-	// Estimated against what the message will actually carry: an atom stands for
-	// far more than the few characters it takes up in the editor.
-	const data = useDraftStore((state) => state.data);
-
-	const { categories, totalUsage } = useEstimatedTokens<Color>({
-		data,
-		colors: { low: "primary", moderate: "yellowBright", high: "redBright" },
-	});
-
+export default function TokenUsage({
+	usage,
+	categories,
+}: {
+	usage: Usage<Color>;
+	categories: Categories;
+}) {
 	const [expanded, setExpanded] = useState(false);
 
 	const [hovered, setHovered] = useState(false);
@@ -50,7 +49,7 @@ export default function TokenUsage() {
 							</Text>
 						))}
 					{expanded && (
-						<Text bold color={totalUsage.color} dimColor={hovered}>
+						<Text bold color={usage.color} dimColor={hovered}>
 							total:{" "}
 						</Text>
 					)}
@@ -64,9 +63,9 @@ export default function TokenUsage() {
 									Math.round(category.tokens).toLocaleString()}
 							</Text>
 						))}
-					<Text color={totalUsage.color} dimColor={hovered}>
-						{totalUsage.loading && <Spinner type="dots" />}
-						{!totalUsage.loading && `${Math.round(totalUsage.percent)}%`}
+					<Text color={usage.color} dimColor={hovered}>
+						{usage.loading && <Spinner type="dots" />}
+						{!usage.loading && `${Math.round(usage.percent)}%`}
 					</Text>
 				</Box>
 			</Box>

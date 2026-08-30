@@ -2,6 +2,8 @@ import { create } from "zustand";
 
 interface ChatStore {
 	chatId: string | null;
+	branches: Record<string, string>;
+	selectBranch: (parentId: string | null, messageId: string) => void;
 	setChatId: (id: string | null) => void;
 
 	lastSeen: Record<string, number>;
@@ -21,7 +23,11 @@ interface ChatStore {
 
 export const useChatStore = create<ChatStore>((set) => ({
 	chatId: null,
-	setChatId: (id) => set({ chatId: id }),
+	setChatId: (id) =>
+		set((s) => (s.chatId === id ? {} : { chatId: id, branches: {} })),
+	branches: {},
+	selectBranch: (parentId, messageId) =>
+		set((s) => ({ branches: { ...s.branches, [parentId ?? ""]: messageId } })),
 
 	lastSeen: {},
 	setLastSeen: (id, lastSeen) =>

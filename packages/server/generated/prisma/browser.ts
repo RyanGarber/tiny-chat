@@ -18,57 +18,77 @@ export { Prisma }
 export * as $Enums from './enums.ts'
 export * from './enums.ts';
 /**
- * Model User
- * 
- */
-export type User = Prisma.UserModel
-/**
- * Model Session
- * 
- */
-export type Session = Prisma.SessionModel
-/**
  * Model Account
  * 
  */
 export type Account = Prisma.AccountModel
-/**
- * Model Verification
- * 
- */
-export type Verification = Prisma.VerificationModel
-/**
- * Model Folder
- * 
- */
-export type Folder = Prisma.FolderModel
-/**
- * Model Chat
- * 
- */
-export type Chat = Prisma.ChatModel
-/**
- * Model Message
- * 
- */
-export type Message = Prisma.MessageModel
-/**
- * Model Memory
- * 
- */
-export type Memory = Prisma.MemoryModel
 /**
  * Model Action
  * 
  */
 export type Action = Prisma.ActionModel
 /**
- * Model Upload
+ * Model Chat
  * 
  */
-export type Upload = Prisma.UploadModel
+export type Chat = Prisma.ChatModel
+/**
+ * Model ChatMemory
+ * 
+ */
+export type ChatMemory = Prisma.ChatMemoryModel
+/**
+ * Model Dream
+ * 
+ */
+export type Dream = Prisma.DreamModel
+/**
+ * Model DreamMessage
+ * 
+ */
+export type DreamMessage = Prisma.DreamMessageModel
 /**
  * Model File
  * 
  */
 export type File = Prisma.FileModel
+/**
+ * Model Folder
+ * 
+ */
+export type Folder = Prisma.FolderModel
+/**
+ * Model Memory
+ * 
+ */
+export type Memory = Prisma.MemoryModel
+/**
+ * Model Message
+ * 
+ */
+export type Message = Prisma.MessageModel
+/**
+ * Model Session
+ * 
+ */
+export type Session = Prisma.SessionModel
+/**
+ * Model Subagent
+ * The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+ */
+export type Subagent = Prisma.SubagentModel
+/**
+ * Model Upload
+ * 
+ */
+export type Upload = Prisma.UploadModel
+/**
+ * Model User
+ * 
+ */
+export type User = Prisma.UserModel
+/**
+ * Model Verification
+ * 
+ */
+export type Verification = Prisma.VerificationModel

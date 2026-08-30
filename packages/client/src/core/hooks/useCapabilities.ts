@@ -30,8 +30,12 @@ export const useCapabilities = ({
 	const { providers } = useProviders();
 	const { chat } = useChat();
 
+	const branches = useChatStore((s) => s.branches);
 	const messages = useQuery({
-		...client.query.message.getMessages.queryOptions({ chat: chat.data?.id }),
+		...client.query.message.getMessages.queryOptions({
+			chat: chat.data?.id,
+			branches,
+		}),
 		refetchOnWindowFocus: false,
 		refetchOnReconnect: false,
 		staleTime: Infinity,
@@ -39,6 +43,7 @@ export const useCapabilities = ({
 	});
 
 	const createIncognito = useChatStore((s) => s.createIncognito);
+	const createTemporary = useChatStore((s) => s.createTemporary);
 
 	const sources = useMemo(
 		(): zAgentMessage[] => [
@@ -71,6 +76,7 @@ export const useCapabilities = ({
 				message: future ? true : (messages.data?.messages.at(-1) ?? true),
 				messages: sources,
 				incognito: chat.data?.incognito ?? createIncognito,
+				temporary: chat.data?.temporary ?? createTemporary,
 				providers: providers.data,
 			});
 		},

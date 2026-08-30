@@ -22,6 +22,12 @@ export const read_file = {
 			.optional()
 			.describe("First line to read, 1-based (default 1)."),
 		limit: z.number().optional().describe("Lines to read (default 1000)."),
+		line_numbers: z
+			.boolean()
+			.optional()
+			.describe(
+				"Whether to prepend line numbers to the output (default false).",
+			),
 	}),
 	output: z.never(),
 } as const satisfies ToolDefinition;
@@ -61,9 +67,16 @@ export const createReadFileTool: ToolFactory<
 		// Not binary, but not cleanly decodable either — an unknown encoding or a
 		// few stray bytes. Reading it with replacement characters is far more
 		// useful than refusing to read it at all.
-		const content =
+		let content =
 			FileUtils.getTextFromBytes({ data, mime }) ??
 			new TextDecoder().decode(data);
+
+		if (input.line_numbers) {
+			content = content
+				.split("\n")
+				.map((line, index) => `${index}. ${line}`)
+				.join("\n");
+		}
 
 		const window = FileOperationService.getTextWindow({
 			path: file.path,

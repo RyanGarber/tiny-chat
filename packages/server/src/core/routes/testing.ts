@@ -10,16 +10,6 @@ import { procedure, router } from "../../index.ts";
 import { ServerCapabilityService } from "../services/ServerCapabilityService.ts";
 
 export const testing = router({
-	worker: procedure.mutation(async ({ ctx }) => {
-		if (!CommonUtils.isTruthy(process.env.DEV))
-			throw new Error("tests not allowed in this environment");
-
-		const { WorkerService } = await import(
-			"../../features/agent/services/WorkerService.ts"
-		);
-		await WorkerService.next({ testUserId: ctx.session.user.id });
-	}),
-
 	tool: procedure
 		.input(
 			z.object({
@@ -33,7 +23,10 @@ export const testing = router({
 			if (!CommonUtils.isTruthy(process.env.DEV))
 				throw new Error("tests not allowed in this environment");
 
-			const { prompt } = AgentUtils.getLastPrompt(input.context);
+			const { prompt } = AgentUtils.getLastPrompt({
+				messages: input.context.messages,
+				withText: false,
+			});
 
 			const capabilities = await ServerCapabilityService.getCapabilities({
 				user: ctx.session.user,
@@ -51,11 +44,11 @@ export const testing = router({
 					: null,
 				messages: input.context.messages,
 				incognito: input.context.chat?.incognito,
+				temporary: input.context.chat?.temporary,
 			});
 
 			const toolsets = await ToolService.getTools({
 				capabilities,
-				incognito: input.context.chat?.incognito ?? false,
 			});
 
 			const { tool } = ToolUtils.find({ toolsets, name: input.name });

@@ -1,6 +1,22 @@
 import { z } from "zod";
 
+export const ID_ALPHABET = "23456789abcdefghjkmnpqrstuvwxyz";
+export const ID_LENGTH = 12;
+export const zId = z.union([
+	z.stringFormat("zId", new RegExp(`^[${ID_ALPHABET}]{${ID_LENGTH}}$`)),
+	z.cuid2(),
+]);
+export type zId = z.infer<typeof zId>;
+
 export const zStringify = z
 	.union([z.string(), z.number(), z.boolean()])
 	.transform((value) => String(value));
 export type zStringify = z.infer<typeof zStringify>;
+
+export type DistributiveOmit<T, K extends keyof any> = T extends unknown
+	? Omit<T, K>
+	: never;
+
+export type CleanOmit<T, K extends PropertyKey> = {
+	[P in keyof T as P extends K ? never : P]: T[P];
+};

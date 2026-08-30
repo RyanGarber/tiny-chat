@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
-import { UploadType } from "@tiny-chat/core/src/features/file/types/upload.ts";
+import { UploadKind } from "@tiny-chat/core/src/features/file/types/upload.ts";
 import { useContext } from "react";
 import { ClientContext } from "../../../client.ts";
 import { MessagingService } from "../../chat/services/MessagingService.ts";
@@ -13,7 +13,7 @@ export const useUploads = () => {
 
 	const attachmentUploads = useInfiniteQuery({
 		...client.query.upload.getUploads.infiniteQueryOptions(
-			{ where: { type: UploadType.ATTACHMENT }, limit: 10 },
+			{ kind: UploadKind.ATTACHMENT, limit: 10 },
 			{
 				getNextPageParam: (lastPage, _pages) => lastPage.nextCursor,
 				select: (data) => ({
@@ -31,7 +31,7 @@ export const useUploads = () => {
 		queryKey: githubUploadsQueryKey,
 		queryFn: async () => {
 			const { uploads } = await client.api.upload.getUploads.query({
-				where: { type: UploadType.GITHUB },
+				kind: UploadKind.GITHUB,
 			});
 			return uploads.flatMap((upload) => {
 				if (!upload.name.includes("@")) {
@@ -54,20 +54,20 @@ export const useUploads = () => {
 
 	const upload = useMutation({
 		mutationKey: uploadMutationKey,
-		mutationFn: async ({ type, file }: { type: UploadType; file: File }) => {
+		mutationFn: async ({ kind, file }: { kind: UploadKind; file: File }) => {
 			const data = new FormData();
-			data.set("type", type);
+			data.set("kind", kind);
 			data.set("file", file);
 			return client.api.upload.createUpload.mutate(data);
 		},
-		onSuccess: (result, variables) => {
+		onSuccess: async (result, variables) => {
 			console.log("[useUploads] uploaded:", result);
 			void attachmentUploads.refetch();
 			void UserService.fetchNextEmbeddingBatch({ client });
 			// A skill is carried by the message's config rather than its text, so
 			// it is the one upload that is not written into the editor.
-			if (variables.type !== "SKILL") {
-				MessagingService.attachUpload({ client, upload: result });
+			if (variables.kind !== "SKILL") {
+				await MessagingService.attachUpload({ client, upload: result });
 			}
 		},
 	});

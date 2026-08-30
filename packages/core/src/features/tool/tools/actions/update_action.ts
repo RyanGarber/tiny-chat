@@ -1,5 +1,7 @@
 import { z } from "zod";
-import type { UserCapability } from "../../../../core/types/capability.ts";
+import type { ActionsCapability } from "../../../../core/types/capability.ts";
+import { zId } from "../../../../core/types/common.ts";
+import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
 import { RRule } from "../../../../index.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
@@ -7,7 +9,7 @@ export const update_action = {
 	name: "update_action",
 	description: "Update a scheduled prompt or its schedule.",
 	input: z.object({
-		id: z.cuid2().describe("The ID of the action to update."),
+		id: zId.describe("The ID of the action to update."),
 		prompt: z.string().describe("The prompt to send to the assistant."),
 		schedule: z
 			.string()
@@ -25,19 +27,21 @@ export const update_action = {
 			),
 	}),
 	output: z.object({
-		updated_action_id: z.cuid2(),
+		updated_action_id: zId,
 	}),
 } as const satisfies ToolDefinition;
 
 export const createUpdateActionTool: ToolFactory<
-	Tool<typeof update_action, { user: UserCapability }>
+	Tool<typeof update_action, { actions: ActionsCapability }>
 > = (options) => ({
 	...update_action,
 	...options,
 	execute: async ({ input, context }) => {
-		const action = await options.capabilities.user.updateAction({
+		const action = await options.capabilities.actions.updateAction({
 			id: input.id,
-			data: [[{ type: "text", value: input.prompt }]],
+			data: [
+				[{ id: CommonUtils.getRandomId(), type: "text", value: input.prompt }],
+			],
 			schedule: input.schedule,
 			timezone: context.timezone,
 		});

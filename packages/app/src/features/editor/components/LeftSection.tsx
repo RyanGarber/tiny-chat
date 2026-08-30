@@ -1,5 +1,10 @@
-import { Icon } from "@iconify/react";
 import { ActionIcon, Menu } from "@mantine/core";
+import {
+	FileIcon,
+	GithubLogoIcon,
+	PaperclipIcon,
+	ScreencastIcon,
+} from "@phosphor-icons/react";
 import { useIsMutating } from "@tanstack/react-query";
 import { AppService } from "#app/core/services/AppService.ts";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
@@ -22,19 +27,19 @@ export default function LeftSection({ disabled }: { disabled: boolean }) {
 					disabled={disabled}
 					loading={isUploading}
 				>
-					<Icon icon="lucide:paperclip" height={18} />
+					<PaperclipIcon size={20} />
 				</ActionIcon>
 			</Menu.Target>
 			<Menu.Dropdown style={{ boxShadow: StyleUtils.shadow }}>
 				<Menu.Item
-					leftSection={<Icon icon="lucide:file" height={18} />}
+					leftSection={<FileIcon size={20} />}
 					onClick={() => AppService.openUploads("attachment")}
 					disabled={disabled}
 				>
 					File
 				</Menu.Item>
 				<Menu.Item
-					leftSection={<Icon icon="lucide:github" height={18} />}
+					leftSection={<GithubLogoIcon size={20} />}
 					onClick={() => AppService.openUploads("github")}
 					disabled={disabled}
 				>
@@ -42,7 +47,7 @@ export default function LeftSection({ disabled }: { disabled: boolean }) {
 				</Menu.Item>
 				{isScreenshotSupported && (
 					<Menu.Item
-						leftSection={<Icon icon="lucide:screen-share" height={18} />}
+						leftSection={<ScreencastIcon size={20} />}
 						onClick={() => uploadScreenshot.mutate()}
 						disabled={disabled || uploadScreenshot.isPending}
 					>

@@ -19,6 +19,7 @@ import {
 import type { StoreApi } from "zustand/vanilla";
 import { ClientContext } from "../../../client.ts";
 import { useSession } from "../../../core/hooks/useSession.ts";
+import { ToolStreamService } from "../../../core/services/StreamService.ts";
 import { useProviders } from "../../agent/hooks/useProviders.ts";
 import { useSkills } from "../../agent/hooks/useSkills.ts";
 import { useTools } from "../../agent/hooks/useTools.ts";
@@ -138,7 +139,11 @@ function MessageSync({ store }: { store: StoreApi<MessageStore> }) {
 		for (const message of messageList) {
 			const parts = DataUtils.getRenderedParts(message.data);
 			for (const part of parts) {
-				if (part.type === "toolCall" && !part.result) {
+				if (
+					part.type === "toolCall" &&
+					!part.result &&
+					!ToolStreamService.get(part.id)
+				) {
 					pendingFeedbackIds.push(part.id);
 					if (!nextFeedbackId) {
 						nextFeedbackId = part.id;
@@ -174,7 +179,7 @@ function MessageSync({ store }: { store: StoreApi<MessageStore> }) {
 			staleIds,
 			pendingFeedbackIds,
 			nextFeedbackId,
-			retry,
+			regenerate: retry,
 		});
 	}, [
 		store,

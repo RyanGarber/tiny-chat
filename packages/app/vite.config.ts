@@ -1,6 +1,7 @@
+import RolldownBabel from "@rolldown/plugin-babel";
 import ViteTailwind from "@tailwindcss/vite";
-import ViteReact from "@vitejs/plugin-react";
-import RollupVisualizer from "rollup-plugin-visualizer";
+import ViteReact, { reactCompilerPreset } from "@vitejs/plugin-react";
+import RolldownVisualizer from "rollup-plugin-visualizer";
 import ViteTailwindMantine from "tailwind-preset-mantine/vite";
 import { defineConfig } from "vite";
 import ViteInspect from "vite-plugin-inspect";
@@ -17,10 +18,11 @@ export default defineConfig(() => ({
 	envDir: "../../",
 	plugins: [
 		ViteReact(),
+		RolldownBabel({ presets: [reactCompilerPreset()] }),
 		ViteTailwind(),
 		ViteTailwindMantine({ input: "src/theme.tsx" }),
 		ViteInspect(),
-		RollupVisualizer({
+		RolldownVisualizer({
 			filename: "dist/stats.html",
 			template: "flamegraph",
 		}),
@@ -37,7 +39,7 @@ export default defineConfig(() => ({
 		port: parseInt(process.env.VITE_WEB_PORT as string, 10),
 		strictPort: true,
 		host: "0.0.0.0",
-		hmr: host
+		ws: host
 			? {
 					protocol: "ws",
 					host: host, // must stay here

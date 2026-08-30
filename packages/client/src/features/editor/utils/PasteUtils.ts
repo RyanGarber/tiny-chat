@@ -1,12 +1,20 @@
 import { CodeUtils } from "@tiny-chat/core/src/core/utils/CodeUtils.ts";
 
-/** Lines a paste may run to before it is collapsed into a `:::paste` block. */
-export const PASTE_LINE_LIMIT = 10;
+/** Genuine newline characters a paste may contain before it is collapsed. */
+export const PASTE_NEWLINE_LIMIT = 10;
+
+/** Kept as the resulting minimum line count for atom labels and callers. */
+export const PASTE_LINE_LIMIT = PASTE_NEWLINE_LIMIT + 1;
 
 const LIST_LINE = /^\s*(?:[-*+]|\d+\.)\s+\S/;
 
-const CODE_TOKEN =
-	/[{}();]|=>|:=|::|\b(?:function|const|let|var|def|fn|func|class|import|export|return|public|private|package|using|select|from|where)\b|#!\//;
+const CODE_LINE =
+	/^\s*(?:(?:#!|\/\/|\/\*|\*\/|#include\b)|(?:import|export|from|package|using)\b|(?:async\s+)?(?:function|class|interface|type|enum|def|fn|func)\b|(?:const|let|var|public|private|protected|static|readonly)\b|(?:if|else|for|while|switch|case|try|catch|finally|return|throw|yield)\b|(?:SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP)\b|[}\])]+[,;]?\s*$|<\/?[A-Za-z][^>]*>\s*$|[.#]?[A-Za-z_$][\w$.-]*\s*\{|[A-Za-z_$][\w$.[\]'"-]*\s*(?:=|:=|=>|\+=|-=|\*=|\/=)\s*\S|[A-Za-z_$][\w$.-]*\s*\([^)]*\)\s*(?:[{:;]|=>|$)|[\w.-]+\s*:\s*(?:[[{]|["']|true\b|false\b|null\b|-?\d))/
+		.source;
+
+const CODE_LINE_PATTERN = new RegExp(CODE_LINE, "i");
+const CODE_PUNCTUATION = /[{};]|=>|:=|::|&&|\|\||===?|!==?|\+\+|--/;
+const SQL_STRUCTURE = /\bselect\b[\s\S]*\bfrom\b/i;
 
 /**
  * Pastes that are too long to leave in an input, and pastes that are source
@@ -22,7 +30,9 @@ export const PasteUtils = {
 
 	lines: (text: string) => PasteUtils.normalize(text).split("\n"),
 
-	isLong: (text: string) => PasteUtils.lines(text).length >= PASTE_LINE_LIMIT,
+	isLong: (text: string) =>
+		(PasteUtils.normalize(text).match(/\n/g)?.length ?? 0) >=
+		PASTE_NEWLINE_LIMIT,
 
 	/**
 	 * The body of a fenced block, when the whole paste is one. Null when it is
@@ -56,7 +66,7 @@ export const PasteUtils = {
 		}
 
 		const lines = trimmed.split("\n");
-		if (lines.length < 5) return null;
+		if (lines.length < 2) return null;
 
 		const nonempty = lines.filter((line) => line.trim());
 		if (
@@ -66,30 +76,27 @@ export const PasteUtils = {
 			return null;
 		}
 
+		// Flourite is deliberately not part of this decision. It is useful for
+		// naming source that we have already identified, but eagerly assigns a
+		// language to ordinary prose (for example repeated SQL/C keywords).
+		const syntaxLines = nonempty.filter((line) =>
+			CODE_LINE_PATTERN.test(line),
+		).length;
+		const punctuationLines = nonempty.filter((line) =>
+			CODE_PUNCTUATION.test(line),
+		).length;
+		const yamlPairs = nonempty.filter((line) =>
+			/^\s*[\w.-]+\s*:\s+\S/.test(line),
+		).length;
+		const looksLikeCode =
+			SQL_STRUCTURE.test(trimmed) ||
+			yamlPairs >= 2 ||
+			syntaxLines >= Math.max(1, Math.ceil(nonempty.length / 4)) ||
+			punctuationLines >= Math.max(2, Math.ceil(nonempty.length / 3));
+		if (!looksLikeCode) return null;
+
 		const detected = CodeUtils.detect(trimmed);
-		if (detected.name === "markdown" || detected.name === "md") return null;
-
-		const hasToken = CODE_TOKEN.test(trimmed);
-		const indented = lines.some((line) => /^\s+\S/.test(line));
-
-		if (lines.length === 1) {
-			if (!hasToken) return null;
-			return { language: detected.language };
-		}
-
-		if (detected.name === "yaml" && !hasToken && !indented) {
-			const pairs = nonempty.filter((line) => /^[\w.-]+\s*:\s+\S/.test(line));
-			if (pairs.length >= 2) return { language: "yaml" };
-			return null;
-		}
-
-		if (hasToken || indented || (detected.name && detected.name !== "yaml")) {
-			return { language: detected.language };
-		}
-
-		if (detected.name === "yaml" && indented) return { language: "yaml" };
-
-		return null;
+		return { language: detected.language };
 	},
 
 	/** A fenced block long enough that fences inside the text stay literal. */

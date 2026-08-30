@@ -1,12 +1,15 @@
 import { Text } from "@mantine/core";
+import { ClientContext } from "@tiny-chat/client/src/client.ts";
 import { useAttachments } from "@tiny-chat/client/src/features/editor/hooks/useAttachments.ts";
+import { AttachmentService } from "@tiny-chat/client/src/features/editor/services/AttachmentService.ts";
 import type { AttachmentItem } from "@tiny-chat/client/src/features/editor/types/attachment.ts";
 import { AttachmentUtils } from "@tiny-chat/client/src/features/editor/utils/AttachmentUtils.ts";
+import { useMarkdownDataStore } from "@tiny-chat/client/src/features/message/stores/useMarkdownDataStore.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import { PluginKey } from "@tiptap/pm/state";
 import { Node, NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import { Suggestion } from "@tiptap/suggestion";
-import { useMemo } from "react";
+import { useCallback, useContext, useMemo } from "react";
 import {
 	type CompletionGroup,
 	renderCompletions,
@@ -24,6 +27,7 @@ interface AttachmentOptions {
 		query: string,
 		signal?: AbortSignal,
 	) => Promise<AttachmentGroup[]>;
+	attach: (item: AttachmentItem) => Promise<string>;
 }
 
 const pluginKey = new PluginKey("attachment");
@@ -34,43 +38,26 @@ const Attachment = Node.create({
 	inline: true,
 	atom: true,
 	selectable: true,
-	draggable: true,
 	isolating: true,
+	draggable: true,
+	extendNodeSchema() {
+		return { disableDropCursor: true };
+	},
 	addOptions(): AttachmentOptions {
 		return {
 			getAttachables: async () => [],
+			attach: async () => "",
 		};
 	},
 	addAttributes() {
 		return {
-			source: {
+			id: {
 				default: null,
 				parseHTML(element) {
-					return element.getAttribute("source");
+					return element.getAttribute("id");
 				},
 				renderHTML(attributes) {
-					return { source: attributes.source };
-				},
-			},
-			"is-directory": {
-				default: false,
-				parseHTML(element) {
-					return element.getAttribute("is-directory");
-				},
-				renderHTML(attributes) {
-					return { "is-directory": attributes["is-directory"] };
-				},
-			},
-			// What the attachment reads as when its path does not say — an upload
-			// is mounted under its id, so it travels under the name it was
-			// attached as.
-			name: {
-				default: null,
-				parseHTML(element) {
-					return element.getAttribute("name");
-				},
-				renderHTML(attributes) {
-					return attributes.name ? { name: attributes.name } : {};
+					return { id: attributes.id };
 				},
 			},
 		};
@@ -83,16 +70,7 @@ const Attachment = Node.create({
 	},
 	addNodeView() {
 		return ReactNodeViewRenderer(
-			({ node }) => (
-				<NodeViewWrapper as="span" contentEditable={false} data-drag-handle>
-					<AttachmentView
-						source={node.attrs.source}
-						directory={node.attrs["is-directory"] === "true"}
-						name={node.attrs.name ?? undefined}
-						grabbable
-					/>
-				</NodeViewWrapper>
-			),
+			({ node }) => <AttachmentNodeView id={node.attrs.id} />,
 			{ as: "attachment", attrs: ({ node }) => node.attrs },
 		);
 	},
@@ -141,22 +119,17 @@ const Attachment = Node.create({
 					];
 				},
 				command: ({ editor, range, props }) => {
-					editor
-						.chain()
-						.focus()
-						.insertContentAt(range, [
-							{ type: "text", text: " " },
-							{
-								type: this.name,
-								attrs: {
-									source: props.value,
-									"is-directory": props.directory ? "true" : "false",
-									...(props.label ? { name: props.label } : {}),
-								},
-							},
-							{ type: "text", text: " " },
-						])
-						.run();
+					void (this.options as AttachmentOptions).attach(props).then((id) => {
+						editor
+							.chain()
+							.focus()
+							.insertContentAt(range, [
+								{ type: "text", text: " " },
+								{ type: this.name, attrs: { id } },
+								{ type: "text", text: " " },
+							])
+							.run();
+					});
 				},
 				render: renderCompletions({
 					renderEmpty: () => "No matches",
@@ -167,6 +140,7 @@ const Attachment = Node.create({
 								directory={item.directory}
 								miw={0}
 								wrap="nowrap"
+								viewable={false}
 							>
 								<Text
 									size="sm"
@@ -199,10 +173,35 @@ const Attachment = Node.create({
 });
 
 export const useAttachment = () => {
+	const client = useContext(ClientContext);
 	const { getAttachables } = useAttachments();
+	const attach = useCallback(
+		async (item: AttachmentItem) =>
+			(await AttachmentService.create({ client, item })).id,
+		[client],
+	);
 
 	return useMemo(
-		() => Attachment.configure({ getAttachables } satisfies AttachmentOptions),
-		[getAttachables],
+		() =>
+			Attachment.configure({
+				getAttachables,
+				attach,
+			} satisfies AttachmentOptions),
+		[getAttachables, attach],
 	);
 };
+
+function AttachmentNodeView({ id }: { id: string }) {
+	const attachment = useMarkdownDataStore((state) => state.attachments[id]);
+	if (!attachment) return null;
+	return (
+		<NodeViewWrapper as="span" contentEditable={false} data-drag-handle>
+			<AttachmentView
+				source={attachment.source}
+				directory={attachment.content.type === "directory"}
+				name={attachment.label}
+				grabbable
+			/>
+		</NodeViewWrapper>
+	);
+}

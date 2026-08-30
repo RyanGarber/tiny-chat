@@ -1,10 +1,7 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import type { ChatState } from "@tiny-chat/core/src/features/data/types/chat.ts";
-import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
+import { useQuery } from "@tanstack/react-query";
 import { ChatUtils } from "@tiny-chat/core/src/features/data/utils/ChatUtils.ts";
 import { useContext } from "react";
 import { ClientContext } from "../../../client.ts";
-import { ChatService } from "../services/ChatService.ts";
 import { useChatStore } from "../stores/useChatStore.ts";
 
 export const useChat = () => {
@@ -32,8 +29,10 @@ export const useChat = () => {
 			.getQueryData(
 				client.query.chat.getChatList.infiniteQueryKey({ limit: 10 }),
 			)
-			?.pages.flatMap((page) => page.folders)
-			.flatMap((folder) => folder.chats)
+			?.pages.flatMap((page) => [
+				...page.chats,
+				...page.folders.flatMap((folder) => folder.chats),
+			])
 			.find((chat) => chat.id === chatId),
 		enabled: !!chatId,
 		staleTime: Infinity,
@@ -41,25 +40,5 @@ export const useChat = () => {
 		refetchOnReconnect: false,
 	});
 
-	const cloneChat = useMutation({
-		mutationFn: async ({
-			chat,
-			upToMessage,
-		}: {
-			chat: ChatState;
-			upToMessage: MessageState;
-		}) => {
-			return client.api.chat.cloneChat.mutate({
-				chat,
-				upToMessage,
-				title: chat.title ? `Fork of ${chat.title}` : "Forked Chat",
-			});
-		},
-		onSuccess: async (clone, input) => {
-			await ChatService.fetchChat({ client, id: clone.id });
-			if (input.chat.id === chatId) ChatService.setChat(clone);
-		},
-	});
-
-	return { chat, cloneChat };
+	return { chat };
 };

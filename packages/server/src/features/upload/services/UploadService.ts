@@ -1,9 +1,6 @@
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
-import type { UploadType } from "../../../../generated/prisma/enums.ts";
-import type {
-	UploadInclude,
-	UploadWhereInput,
-} from "../../../../generated/prisma/models/Upload.ts";
+import type { UploadKind } from "../../../../generated/prisma/enums.ts";
+import type { UploadInclude } from "../../../../generated/prisma/models/Upload.ts";
 import { UploadFileService } from "./UploadFileService.ts";
 
 /**
@@ -12,19 +9,19 @@ import { UploadFileService } from "./UploadFileService.ts";
 export const UploadService = {
 	getUploads: async ({
 		user,
-		where,
+		kind,
 		files,
 		limit,
 		cursor,
 	}: {
 		user: zUser;
-		where?: UploadWhereInput;
+		kind?: UploadKind;
 		files?: UploadInclude["files"];
 		limit?: number;
 		cursor?: string;
 	}) => {
 		let uploads = await globalThis.prisma.upload.findMany({
-			where: { userId: user.id, ...where },
+			where: { userId: user.id, kind },
 			include: { files },
 			orderBy: { createdAt: "desc" },
 		});
@@ -45,27 +42,23 @@ export const UploadService = {
 
 	createUpload: async ({
 		user,
-		type,
+		kind,
 		file,
 	}: {
 		user: zUser;
-		type: UploadType;
+		kind: UploadKind;
 		file: File;
 	}) => {
 		return file.name.endsWith(".zip")
 			? await UploadFileService.uploadZip({
 					user,
-					create: {
-						type,
-					},
 					zip: await file.arrayBuffer(),
+					kind,
 				})
 			: await UploadFileService.upload({
 					user,
-					create: {
-						type,
-					},
 					files: [[file.name, await file.arrayBuffer()]],
+					kind,
 				});
 	},
 

@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
+import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { AgentService } from "@tiny-chat/core/src/features/agent/services/AgentService.ts";
 import {
 	AgentTokensService,
-	type TokenBreakdown,
+	type CompactionResult,
 } from "@tiny-chat/core/src/features/agent/services/AgentTokensService.ts";
 import type { zAgentMessage } from "@tiny-chat/core/src/features/agent/types/agent.ts";
 import type { zData } from "@tiny-chat/core/src/features/data/types/message.ts";
@@ -18,6 +19,22 @@ import { useChatStore } from "../../chat/stores/useChatStore.ts";
 
 export type UsageLevel = "low" | "moderate" | "high";
 
+export type Categories = { name: string; tokens: number; loading: boolean }[];
+
+export type Usage<T> = {
+	percent: number;
+	level: UsageLevel;
+	color: T;
+	loading: boolean;
+};
+
+const ZERO: CompactionResult = {
+	before: AgentTokensService.zero,
+	compaction: new Map(),
+	after: AgentTokensService.zero,
+	messages: [],
+};
+
 export const chatTokensQueryKey = [
 	"useEstimatedTokens",
 	"estimatedTokens",
@@ -26,20 +43,32 @@ export const chatTokensQueryKey = [
 export const editorTokensQueryKey = ["useEstimatedTokens", "editorTokens"];
 
 export const useEstimatedTokens = <T>({
-	data,
+	draft,
 	colors,
 }: {
-	data: zData;
+	draft: zData;
 	colors?: Partial<Record<UsageLevel, T>>;
 }) => {
 	const { session } = useSession();
 	const { chat } = useChat();
-	const { config } = useConfig();
+	const { config: baseConfig, modelArgs } = useConfig();
 	const { toolsets } = useTools();
 	const { skills } = useSkills();
 
+	const config = useMemo(() => {
+		return {
+			...baseConfig,
+			args: {
+				...baseConfig.args,
+				"tokens-in":
+					baseConfig.args["tokens-in"] ??
+					modelArgs.find((arg) => arg.name === "tokens-in")?.default,
+			},
+		};
+	}, [baseConfig, modelArgs]);
+
 	const createIncognito = useChatStore((state) => state.createIncognito);
-	const [debouncedData, setDebouncedData] = useState(data);
+	const [debouncedDraft, setDebouncedDraft] = useState(draft);
 	const debouncedTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	useEffect(() => {
@@ -47,21 +76,21 @@ export const useEstimatedTokens = <T>({
 			clearTimeout(debouncedTimeout.current);
 		}
 		debouncedTimeout.current = setTimeout(() => {
-			setDebouncedData(data);
+			setDebouncedDraft(draft);
 		}, 1000);
 		return () => {
 			if (debouncedTimeout.current) {
 				clearTimeout(debouncedTimeout.current);
 			}
 		};
-	}, [data]);
+	}, [draft]);
 
 	/**
 	 * The message being written, counted as a message. Its attachments are read
 	 * off the mount like any other, which is what lets an upload attached here
 	 * cost what it will cost before it is sent.
 	 */
-	const draft = useMemo(
+	const draftMessage = useMemo(
 		(): zAgentMessage[] => [
 			{
 				id: null,
@@ -69,16 +98,19 @@ export const useEstimatedTokens = <T>({
 				config,
 				// TODO: empty data gets dropped, preventing token count, so we add a '.' here
 				//       this won't meaningfully change the result but should be fixed another way eventually
-				data: [[{ type: "text", value: "." }], ...debouncedData],
+				data: [
+					[{ id: CommonUtils.getRandomId(), type: "text", value: "." }],
+					...debouncedDraft,
+				],
 				createdAt: new Date(),
 			},
 		],
-		[config, debouncedData],
+		[config, debouncedDraft],
 	);
 
 	const { presumedCapabilities, sourceMessages } = useCapabilities({
 		future: false,
-		draft,
+		draft: draftMessage,
 	});
 
 	const messagesKey = useStableKey({
@@ -97,9 +129,10 @@ export const useEstimatedTokens = <T>({
 			chat.data?.id,
 			messagesKey,
 			createIncognito,
+			config,
 		],
-		queryFn: async (): Promise<TokenBreakdown> => {
-			if (!session.data) return AgentTokensService.zero;
+		queryFn: async (): Promise<CompactionResult> => {
+			if (!session.data) return ZERO;
 
 			return await AgentService.estimate({
 				context: {
@@ -109,6 +142,7 @@ export const useEstimatedTokens = <T>({
 					timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 					interactive: true,
 				},
+				config,
 				capabilities: presumedCapabilities.data ?? {},
 				toolsets,
 				skills,
@@ -119,7 +153,7 @@ export const useEstimatedTokens = <T>({
 		staleTime: Infinity,
 	});
 
-	const draftKey = useStableKey({ messages: draft, toolsets });
+	const draftKey = useStableKey({ messages: draftMessage, toolsets });
 
 	const draftTokens = useQuery({
 		queryKey: [
@@ -129,17 +163,18 @@ export const useEstimatedTokens = <T>({
 			draftKey,
 			messagesEmpty,
 		],
-		queryFn: async () => {
-			if (!session.data) return AgentTokensService.zero;
+		queryFn: async (): Promise<CompactionResult> => {
+			if (!session.data) return ZERO;
 
 			return await AgentService.estimate({
 				context: {
 					user: session.data.user,
 					chat: chat.data,
-					messages: draft,
+					messages: draftMessage,
 					timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 					interactive: true,
 				},
+				config,
 				capabilities: presumedCapabilities.data ?? {},
 				toolsets,
 				skills,
@@ -150,9 +185,13 @@ export const useEstimatedTokens = <T>({
 		staleTime: Infinity,
 	});
 
-	const { totalTokens, totalUsage } = useMemo(() => {
+	const { totalTokens, usage } = useMemo<{
+		totalTokens: number;
+		usage: Usage<T>;
+	}>(() => {
 		const totalTokens =
-			(chatTokens.data?.total ?? 0) + (draftTokens.data?.total ?? 0);
+			(chatTokens.data?.before.total ?? 0) +
+			(draftTokens.data?.before.total ?? 0);
 		const maxTokens =
 			config.args?.["tokens-in"] !== undefined
 				? Number(config.args["tokens-in"])
@@ -162,9 +201,9 @@ export const useEstimatedTokens = <T>({
 		let level: UsageLevel = "low";
 		if (percent >= 75) level = "moderate";
 		if (percent >= 100) level = "high";
-		const color = colors?.[level] ?? "";
+		const color = colors?.[level] ?? ("" as T);
 		const loading = chatTokens.isFetching || draftTokens.isFetching;
-		return { totalTokens, totalUsage: { percent, level, color, loading } };
+		return { totalTokens, usage: { percent, level, color, loading } };
 	}, [
 		chatTokens.data,
 		draftTokens.data,
@@ -174,62 +213,64 @@ export const useEstimatedTokens = <T>({
 		colors,
 	]);
 
-	const categories = useMemo<
-		{ name: string; tokens: number; loading: boolean }[]
-	>(
+	const categories = useMemo<Categories>(
 		() => [
 			{
 				name: "Instructions",
 				tokens: Math.max(
-					chatTokens.data?.instructions ?? 0,
-					draftTokens.data?.instructions ?? 0,
+					chatTokens.data?.before.instructions ?? 0,
+					draftTokens.data?.before.instructions ?? 0,
 				),
 				loading: chatTokens.isFetching || draftTokens.isFetching,
 			},
 			{
 				name: "Memories",
 				tokens: Math.max(
-					chatTokens.data?.memories ?? 0,
-					draftTokens.data?.memories ?? 0,
+					chatTokens.data?.before.memories ?? 0,
+					draftTokens.data?.before.memories ?? 0,
 				),
 				loading: chatTokens.isFetching || draftTokens.isFetching,
 			},
 			{
 				name: "Thoughts",
-				tokens: chatTokens.data?.thoughts ?? 0,
+				tokens: chatTokens.data?.before.thoughts ?? 0,
 				loading: chatTokens.isFetching,
 			},
 			{
 				name: "Tools",
-				tokens: chatTokens.data?.tools ?? 0,
+				tokens: chatTokens.data?.before.tools ?? 0,
 				loading: chatTokens.isFetching,
 			},
 			{
 				name: "Text",
-				tokens: (chatTokens.data?.text ?? 0) + (draftTokens.data?.text ?? 0),
+				tokens:
+					(chatTokens.data?.before.text ?? 0) +
+					(draftTokens.data?.before.text ?? 0),
 				loading: chatTokens.isFetching || draftTokens.isFetching,
 			},
 			{
 				name: "Files",
-				tokens: (chatTokens.data?.files ?? 0) + (draftTokens.data?.files ?? 0),
+				tokens:
+					(chatTokens.data?.before.files ?? 0) +
+					(draftTokens.data?.before.files ?? 0),
 				loading: chatTokens.isFetching || draftTokens.isFetching,
 			},
 		],
 		[
-			chatTokens.data?.files,
-			chatTokens.data?.instructions,
-			chatTokens.data?.memories,
-			chatTokens.data?.text,
-			chatTokens.data?.thoughts,
-			chatTokens.data?.tools,
+			chatTokens.data?.before.files,
+			chatTokens.data?.before.instructions,
+			chatTokens.data?.before.memories,
+			chatTokens.data?.before.text,
+			chatTokens.data?.before.thoughts,
+			chatTokens.data?.before.tools,
 			chatTokens.isFetching,
-			draftTokens.data?.instructions,
-			draftTokens.data?.memories,
-			draftTokens.data?.files,
-			draftTokens.data?.text,
+			draftTokens.data?.before.instructions,
+			draftTokens.data?.before.memories,
+			draftTokens.data?.before.files,
+			draftTokens.data?.before.text,
 			draftTokens.isFetching,
 		],
 	);
 
-	return { totalTokens, totalUsage, categories };
+	return { chatTokens, draftTokens, totalTokens, usage, categories };
 };

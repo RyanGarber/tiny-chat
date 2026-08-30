@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { useMarkdownDataStore } from "../../message/stores/useMarkdownDataStore.ts";
 import { useAtomStore } from "../stores/useAtomStore.ts";
 import { AtomUtils } from "./AtomUtils.ts";
 import { PASTE_LINE_LIMIT, PasteUtils } from "./PasteUtils.ts";
 
 const attachment = (source: string) =>
 	AtomUtils.attachment({
+		id: source,
 		source,
-		markdown: `:attachment[]{source="${source}" is-directory="false"}`,
+		markdown: `:attachment[]{id="${source}"}`,
 	});
 
 const longPaste = Array.from(
@@ -17,6 +19,7 @@ const longPaste = Array.from(
 describe("AtomUtils", () => {
 	beforeEach(() => {
 		useAtomStore.getState().setAtoms([]);
+		useMarkdownDataStore.getState().setAttachments([]);
 	});
 
 	it("stands an attachment as its name alone", () => {
@@ -36,6 +39,7 @@ describe("AtomUtils", () => {
 	it("stands an upload as its name rather than its id", () => {
 		expect(
 			AtomUtils.attachment({
+				id: "upload",
 				source: "/mnt/chat/aaaaaaaaaaaaaaaaaaaaaaaa",
 				directory: true,
 				label: "tiny-chat @ main",
@@ -44,12 +48,17 @@ describe("AtomUtils", () => {
 		).toBe("@tiny-chat @ main/");
 	});
 
-	it("takes an upload's name back out of its directive", () => {
-		expect(
-			AtomUtils.deserialize(
-				'see :attachment[]{source="/mnt/chat/aaaaaaaaaaaaaaaaaaaaaaaa" is-directory="true" name="notes.pdf"}',
-			),
-		).toBe("see @notes.pdf/");
+	it("takes an upload's name back out of its attachment id", () => {
+		useMarkdownDataStore.getState().addAttachment({
+			id: "upload",
+			type: "attachment",
+			source: "/mnt/chat/aaaaaaaaaaaaaaaaaaaaaaaa",
+			label: "notes.pdf",
+			content: { type: "directory", items: [] },
+		});
+		expect(AtomUtils.deserialize('see :attachment[]{id="upload"}')).toBe(
+			"see @notes.pdf/",
+		);
 	});
 
 	it("stands a command as it was typed", () => {
@@ -76,14 +85,21 @@ describe("AtomUtils", () => {
 		expect(
 			AtomUtils.serialize({ content: `look at ${file} and ${pasted}` }),
 		).toBe(
-			`look at :attachment[]{source="src/index.ts" is-directory="false"} and \n${PasteUtils.markdown(longPaste)}\n`,
+			`look at :attachment[]{id="src/index.ts"} and \n${PasteUtils.markdown(longPaste)}\n`,
 		);
 	});
 
 	it("takes the directives of a message back into atoms", () => {
+		useMarkdownDataStore.getState().addAttachment({
+			id: "file",
+			type: "attachment",
+			source: "src/index.ts",
+			label: "index.ts",
+			content: { type: "file", data: "" },
+		});
 		const markdown =
 			'run :command[opus]{name="model" value="model"} on ' +
-			':attachment[]{source="src/index.ts" is-directory="false"}';
+			':attachment[]{id="file"}';
 
 		const content = AtomUtils.deserialize(markdown);
 
@@ -119,8 +135,9 @@ describe("AtomUtils", () => {
 		// The buffer has been emptied since, so nothing stands in it any more.
 		AtomUtils.attachment({
 			content: "",
+			id: "last",
 			source: "src/last.ts",
-			markdown: ':attachment[]{source="src/last.ts" is-directory="false"}',
+			markdown: ':attachment[]{id="last"}',
 		});
 
 		expect(useAtomStore.getState().atoms.map((atom) => atom.text)).toEqual([

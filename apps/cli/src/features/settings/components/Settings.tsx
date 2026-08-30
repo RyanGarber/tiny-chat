@@ -5,7 +5,7 @@ import type {
 import { useThemes } from "@tiny-chat/client/src/features/settings/hooks/useThemes.ts";
 import { ThemeUtils } from "@tiny-chat/core/src/core/utils/ThemeUtils.ts";
 import chalk from "chalk";
-import { useMemo, useRef } from "react";
+import { useMemo, useState } from "react";
 import Text from "../../../core/components/Text.tsx";
 import { usePage } from "../../../core/hooks/usePage.ts";
 import { useWorkingStatus } from "../../../core/hooks/useWorkingStatus.ts";
@@ -52,12 +52,14 @@ export default function Settings() {
 		];
 	}, [theme, setTheme, codeTheme, setCodeTheme]);
 
-	const itemRef = useRef<SettingsItem<any>>(null);
+	const [selected, setSelected] = useState(0);
+	const selectedItem = groups.flatMap((group) => group.items)[selected];
 
 	return (
 		<Completions<SettingsGroup, SettingsItem<any>>
 			groups={groups}
-			itemRef={itemRef}
+			selected={selected}
+			setSelected={(update) => setSelected((previous) => update(previous))}
 			itemProps={{
 				flexGrow: 1,
 				flexShrink: 1,
@@ -112,7 +114,7 @@ export default function Settings() {
 			}}
 			actions={[
 				"back",
-				...(itemRef.current?.choices ? [{ key: "←→", name: "pick" }] : []),
+				...(selectedItem?.choices ? [{ key: "←→", name: "pick" }] : []),
 			]}
 		/>
 	);

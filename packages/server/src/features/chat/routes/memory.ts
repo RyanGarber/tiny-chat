@@ -1,3 +1,5 @@
+import { zId } from "@tiny-chat/core/src/core/types/common.ts";
+import { ChatLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
 import {
 	MemoryCategory,
 	MemoryStability,
@@ -5,10 +7,20 @@ import {
 import { MessageLike } from "@tiny-chat/core/src/features/data/types/message.ts";
 import { z } from "zod";
 import { procedure, router } from "../../../index.ts";
+import { MemoryRetrievalService } from "../services/MemoryRetrievalService.ts";
 import { MemorySearchService } from "../services/MemorySearchService.ts";
 import { MemoryService } from "../services/MemoryService.ts";
 
 export const memory = router({
+	retrieveMemories: procedure
+		.input(z.object({ chat: z.union([ChatLike, MessageLike]).nullish() }))
+		.query(async ({ ctx, input }) =>
+			MemoryRetrievalService.retrieve({
+				user: ctx.session.user,
+				chat: input.chat,
+			}),
+		),
+
 	getMemories: procedure.query(async ({ ctx }) => {
 		return await MemoryService.getMemories({ user: ctx.session.user });
 	}),
@@ -56,7 +68,7 @@ export const memory = router({
 	updateMemory: procedure
 		.input(
 			z.object({
-				id: z.cuid2(),
+				id: zId,
 				message: MessageLike.nullish(),
 				fact: z.string(),
 				category: z.enum(MemoryCategory),
@@ -79,7 +91,7 @@ export const memory = router({
 		}),
 
 	deleteMemory: procedure
-		.input(z.object({ id: z.cuid2() }))
+		.input(z.object({ id: zId }))
 		.mutation(async ({ ctx, input }) => {
 			return await MemoryService.deleteMemory({
 				user: ctx.session.user,

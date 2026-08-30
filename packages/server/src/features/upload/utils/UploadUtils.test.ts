@@ -134,7 +134,7 @@ describe("utils - files", () => {
 
 	beforeAll(async () => {
 		const data = new FormData();
-		data.set("type", "ATTACHMENT");
+		data.set("kind", "ATTACHMENT");
 		data.set(
 			"file",
 			new File(["This should not be embedded."], "package-lock.json"),

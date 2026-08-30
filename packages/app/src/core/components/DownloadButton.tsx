@@ -1,4 +1,4 @@
-import { Icon } from "@iconify/react";
+import { DownloadSimpleIcon } from "@phosphor-icons/react";
 import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeUtils.ts";
 import {
 	extractTableDataFromElement,
@@ -19,6 +19,7 @@ namespace DownloadButton {
 		filename?: string;
 		streaming?: boolean;
 	}) {
+		filename = filename?.split("/").at(-1);
 		if (!filename?.includes(".")) filename = "file.txt";
 		filename = `${filename.replace(/\.[A-Za-z0-9]+$/, "")}.${FileTypeUtils.getExtension({ name: filename, fallback: "txt" })}`;
 
@@ -35,15 +36,17 @@ namespace DownloadButton {
 		};
 
 		return (
-			<button
-				className="cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:opacity-50"
-				data-streamdown="code-block-download-button"
-				disabled={streaming}
-				onClick={downloadCode}
-				type="button"
-			>
-				<Icon icon="lucide:download" width={16} height={16} />
-			</button>
+			<div className="relative flex">
+				<button
+					className="cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:opacity-50"
+					data-streamdown="code-block-download-button"
+					disabled={streaming}
+					onClick={downloadCode}
+					type="button"
+				>
+					<DownloadSimpleIcon size={18} />
+				</button>
+			</div>
 		);
 	}
 	export function Mermaid({
@@ -104,14 +107,14 @@ namespace DownloadButton {
 		};
 
 		return (
-			<div className="relative" ref={insideRef}>
+			<div className="relative flex" ref={insideRef}>
 				<button
 					className="cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:opacity-50"
 					disabled={streaming}
 					onClick={() => setIsOpen(!isOpen)}
 					type="button"
 				>
-					<Icon icon="lucide:download" />
+					<DownloadSimpleIcon size={18} />
 				</button>
 				{isOpen ? (
 					<div className="absolute top-full right-0 z-10 mt-1 min-w-30 overflow-hidden rounded-md border border-border bg-background shadow-lg">
@@ -176,24 +179,17 @@ namespace DownloadButton {
 		};
 
 		return (
-			<div className="relative" ref={insideRef}>
+			<div className="relative flex" ref={insideRef}>
 				<button
-					className="p-1 text-muted-foreground transition-all hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+					className="cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:opacity-50"
 					disabled={streaming}
 					onClick={() => setIsOpen(!isOpen)}
 					type="button"
 				>
-					<Icon icon="lucide:download" />
+					<DownloadSimpleIcon size={18} />
 				</button>
 				{isOpen ? (
 					<div className="absolute top-full right-0 z-20 mt-1 min-w-30 overflow-hidden rounded-md border border-border bg-background shadow-lg">
-						<button
-							className="w-full px-3 py-2 text-left text-sm transition-colors hover:bg-muted/40"
-							onClick={() => downloadTableData("csv")}
-							type="button"
-						>
-							CSV
-						</button>
 						<button
 							className="w-full px-3 py-2 text-left text-sm transition-colors hover:bg-muted/40"
 							onClick={() => downloadTableData("markdown")}
@@ -201,8 +197,49 @@ namespace DownloadButton {
 						>
 							MD
 						</button>
+						<button
+							className="w-full px-3 py-2 text-left text-sm transition-colors hover:bg-muted/40"
+							onClick={() => downloadTableData("csv")}
+							type="button"
+						>
+							CSV
+						</button>
 					</div>
 				) : null}
+			</div>
+		);
+	}
+
+	export function Image({
+		src,
+		filename,
+		streaming,
+	}: {
+		src: string;
+		filename?: string;
+		streaming?: boolean;
+	}) {
+		const downloadImage = async () => {
+			try {
+				const blob = await (await fetch(src)).blob();
+				filename = filename?.split("/").at(-1);
+				if (!filename?.includes(".")) filename = "image.webp";
+				filename = `${filename.replace(/\.[A-Za-z0-9]+$/, "")}.${FileTypeUtils.getExtension({ name: filename, fallback: "webp" })}`;
+				ControlUtils.download({ filename, content: blob, mime: blob.type });
+			} catch (error) {
+				console.error("[DownloadButton] failed to download image:", error);
+			}
+		};
+		return (
+			<div className="relative flex">
+				<button
+					className="cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:opacity-50"
+					disabled={streaming}
+					onClick={() => downloadImage()}
+					type="button"
+				>
+					<DownloadSimpleIcon size={18} />
+				</button>
 			</div>
 		);
 	}

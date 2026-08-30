@@ -1,4 +1,4 @@
-import { createId } from "@paralleldrive/cuid2";
+import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import type {
 	FileNode,
@@ -83,7 +83,7 @@ export class FilesystemService implements IFileSystem {
       f.id,
       CASE
         WHEN f."chatId" IS NOT NULL THEN 'chat'
-        WHEN u.type = 'SKILL' THEN 'skills'
+        WHEN u.kind = 'SKILL' THEN 'skills'
         ELSE 'uploads'
       END                                   AS mount,
       COALESCE(f."chatId", f."uploadId")    AS owner_id,
@@ -171,6 +171,7 @@ export class FilesystemService implements IFileSystem {
 
 	/** Parse `path`, or fail the way the caller's operation should fail. */
 	protected parse(path: string) {
+		path = path.replace(/\s/g, " ");
 		const uri = PathUtils.fromMount({ path, root: this.root });
 		if (!uri) throw new Error(`ENOENT: no such file or directory: ${path}`);
 		return uri;
@@ -294,7 +295,7 @@ export class FilesystemService implements IFileSystem {
 		if (!this.chat) throw new Error("EROFS: read-only file system");
 
 		const { exact } = this.locate(["chat", this.chat, ...path]);
-		const id = exact?.file ?? createId();
+		const id = exact?.file ?? CommonUtils.getRandomId();
 
 		const file = {
 			path,

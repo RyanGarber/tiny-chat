@@ -7,6 +7,8 @@ import {
 } from "ai";
 import { z } from "zod";
 import type { zEnv } from "../../../core/types/env.ts";
+import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
+import { VERBOSE } from "../../../logger.ts";
 import type { zAgentEvent } from "../../agent/types/agent.ts";
 import type { zConfig } from "../../data/types/message.ts";
 import type { zUser } from "../../data/types/user.ts";
@@ -112,7 +114,7 @@ export const ModelProviderService = {
 			messages: sdkMessages,
 		} satisfies Parameters<typeof streamText>[0];
 
-		console.log("[ModelProviderService] final sdk input:", input);
+		if (VERBOSE) console.log("[ModelProviderService] final sdk input:", input);
 
 		const { stream, output } = streamText(input);
 
@@ -147,6 +149,7 @@ export const ModelProviderService = {
 			yield {
 				type: "data",
 				value: {
+					id: CommonUtils.getRandomId(),
 					type: "json",
 					value: await output,
 				},

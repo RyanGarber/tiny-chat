@@ -1,3 +1,4 @@
+import { dirname } from "node:path";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import type {
 	FileNode,
@@ -88,7 +89,10 @@ export const FileService = {
 		...spec
 	}: { user: zUser; path: PathLike; content: string } & FilesystemSpec) => {
 		const { filesystem } = await FileService.get({ user, ...spec });
-		return await filesystem.writeFile(PathUtils.asMount(path) ?? "", content);
+		const uri = PathUtils.asMount(path);
+		if (!uri) throw new Error(`invalid path: ${path}`);
+		await filesystem.mkdir(dirname(uri), { recursive: true });
+		return await filesystem.writeFile(uri, content);
 	},
 
 	exec: async ({

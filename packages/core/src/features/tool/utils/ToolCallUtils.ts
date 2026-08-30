@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { CodeLanguage } from "../../../core/utils/CodeUtils.ts";
-import type { zDataBasicPart, zDataPart } from "../../data/types/message.ts";
+import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
+import type { zDataBasicPart } from "../../data/types/message.ts";
 import type { RenderedPart } from "../../data/utils/DataUtils.ts";
 import { FileTypeUtils } from "../../file/utils/FileTypeUtils.ts";
 import { FileUtils } from "../../file/utils/FileUtils.ts";
@@ -27,7 +28,7 @@ import { spawn_subagent } from "../tools/subagents/spawn_subagent.ts";
 import { search_web } from "../tools/web/search_web.ts";
 import { view_web } from "../tools/web/view_web.ts";
 import type { ToolDefinition, Toolset } from "../types/tool.ts";
-import { ToolUtils } from "./ToolUtils.ts";
+import { type ToolCall, ToolUtils } from "./ToolUtils.ts";
 
 const UNKNOWN = {
 	name: "unknown" as const,
@@ -44,6 +45,7 @@ export type ToolCallDisplay<
 	status: (string | { subject: string })[];
 	approval?: "pending" | "approved" | "rejected";
 	feedback?: "pending" | "complete";
+	feedbackDefault?: z.infer<T["feedback"]>;
 	result: "pending" | "success" | "error";
 	input: z.infer<T["input"]>;
 	output?: U extends true ? z.infer<T["output"]>[] : z.infer<T["output"]>;
@@ -83,7 +85,7 @@ export type ToolCallDisplayType =
  * out a new wrapper object for each tool call on every render, which rules out
  * keying a cache on the part itself.
  *
- * The fields the display is derived from — `args`, `result`, `validation` — are
+ * The fields the display is derived from — `input`, `result`, `validation` — are
  * carried through that wrapper by reference and are only ever replaced whole,
  * never mutated in place, so they make a sound identity key. Caching on them
  * means a settled tool call keeps one display object for the life of the
@@ -91,7 +93,7 @@ export type ToolCallDisplayType =
  */
 interface DisplayCacheEntry {
 	name: string;
-	args: unknown;
+	input: unknown;
 	result: unknown;
 	validation: unknown;
 	display: ToolCallDisplayType;
@@ -103,10 +105,28 @@ const displayCache = new WeakMap<
 	Map<string, DisplayCacheEntry>
 >();
 
+const __rejection = {
+	type: "text",
+	value: "[Tool call rejected by user]",
+} satisfies Omit<Extract<zDataBasicPart, { type: "text" }>, "id">;
+
 export const ToolCallUtils = {
-	rejection: [
-		{ type: "json", value: "Tool call rejected by user" },
-	] satisfies zDataBasicPart[],
+	isRejection: (output: zDataBasicPart[]) => {
+		return (
+			output.length === 1 &&
+			output[0].type === "text" &&
+			output[0].value === __rejection.value
+		);
+	},
+
+	getRejection: (): zDataBasicPart[] => {
+		return [
+			{
+				id: CommonUtils.getRandomId(),
+				...__rejection,
+			},
+		];
+	},
 
 	getDisplay: ({
 		part,
@@ -125,7 +145,7 @@ export const ToolCallUtils = {
 		if (
 			cached &&
 			cached.name === part.name &&
-			cached.args === part.args &&
+			cached.input === part.input &&
 			cached.result === part.result &&
 			cached.validation === part.validation
 		) {
@@ -135,7 +155,7 @@ export const ToolCallUtils = {
 		const display = ToolCallUtils._createDisplay({ part, toolsets });
 		cache.set(part.id, {
 			name: part.name,
-			args: part.args,
+			input: part.input,
 			result: part.result,
 			validation: part.validation,
 			display,
@@ -171,7 +191,7 @@ export const ToolCallUtils = {
 				approval: part.validation?.approval
 					? part.result === undefined
 						? "pending"
-						: ToolCallUtils.isRejected(part.result)
+						: ToolCallUtils.isRejection(part.result.output)
 							? "rejected"
 							: "approved"
 					: undefined,
@@ -180,7 +200,7 @@ export const ToolCallUtils = {
 						? "pending"
 						: "complete"
 					: undefined,
-				input: part.args as z.infer<T["input"]>,
+				input: part.input as z.infer<T["input"]>,
 				output: (multiple
 					? ToolUtils.json<T>(part.result, true)
 					: ToolUtils.json<T>(part.result)[0]) as U extends true
@@ -195,7 +215,7 @@ export const ToolCallUtils = {
 					search_web,
 					[
 						["Searching web for", "Searched web for"],
-						{ subject: part.args.query },
+						{ subject: part.input.query },
 					],
 					true,
 				),
@@ -204,28 +224,28 @@ export const ToolCallUtils = {
 			return {
 				...base(view_web, [
 					["Viewing link", "Viewed link"],
-					{ subject: part.args.url },
+					{ subject: PathUtils.name(part.input.url) },
 				]),
 			};
 		} else if (ToolUtils.is(toolsets, part, create_action)) {
 			return {
 				...base(create_action, [
 					["Scheduling action", "Scheduled action"],
-					{ subject: part.args.prompt },
+					{ subject: part.input.prompt },
 				]),
 			};
 		} else if (ToolUtils.is(toolsets, part, update_action)) {
 			return {
 				...base(update_action, [
 					["Updating action", "Updated action"],
-					{ subject: part.args.prompt },
+					{ subject: part.input.prompt },
 				]),
 			};
 		} else if (ToolUtils.is(toolsets, part, delete_action)) {
 			return {
 				...base(delete_action, [
 					["Deleting action", "Deleted action"],
-					{ subject: part.args.reason },
+					{ subject: part.input.reason },
 				]),
 			};
 		} else if (ToolUtils.is(toolsets, part, list_actions)) {
@@ -236,21 +256,21 @@ export const ToolCallUtils = {
 			return {
 				...base(create_memory, [
 					["Remembering", "Remembered"],
-					{ subject: part.args.fact },
+					{ subject: part.input.fact },
 				]),
 			};
 		} else if (ToolUtils.is(toolsets, part, update_memory)) {
 			return {
 				...base(update_memory, [
 					["Updating memory", "Updated memory"],
-					{ subject: part.args.fact },
+					{ subject: part.input.fact },
 				]),
 			};
 		} else if (ToolUtils.is(toolsets, part, delete_memory)) {
 			return {
 				...base(delete_memory, [
 					["Deleting memory", "Deleted memory"],
-					{ subject: part.args.reason },
+					{ subject: part.input.reason },
 				]),
 			};
 		} else if (ToolUtils.is(toolsets, part, search_memories)) {
@@ -259,7 +279,7 @@ export const ToolCallUtils = {
 					search_memories,
 					[
 						["Searching memory for", "Searched memory for"],
-						{ subject: part.args.query },
+						{ subject: part.input.query },
 					],
 					true,
 				),
@@ -270,7 +290,7 @@ export const ToolCallUtils = {
 					search_chats,
 					[
 						["Searching chats for", "Searched chats for"],
-						{ subject: part.args.query },
+						{ subject: part.input.query },
 					],
 					true,
 				),
@@ -281,7 +301,7 @@ export const ToolCallUtils = {
 					read_dir,
 					[
 						["Browsing folder", "Browsed folder"],
-						{ subject: PathUtils.name(part.args.path) },
+						{ subject: PathUtils.name(part.input.path) },
 					],
 					true,
 				),
@@ -291,8 +311,10 @@ export const ToolCallUtils = {
 				...base(
 					find_files,
 					[
-						["Finding files matching", "Found files matching"],
-						{ subject: part.args.pattern },
+						["Looking for", "Looked for"],
+						{ subject: part.input.pattern },
+						["in", "in"],
+						{ subject: PathUtils.name(part.input.path) },
 					],
 					true,
 				),
@@ -303,7 +325,7 @@ export const ToolCallUtils = {
 					search_files,
 					[
 						["Searching files for", "Searched files for"],
-						{ subject: part.args.query },
+						{ subject: part.input.query },
 					],
 					true,
 				),
@@ -313,8 +335,10 @@ export const ToolCallUtils = {
 				...base(
 					grep_files,
 					[
-						["Grepping files for", "Grepped files for"],
-						{ subject: part.args.query },
+						["Grepping", "Grepped"],
+						{ subject: part.input.query },
+						["in", "in"],
+						{ subject: PathUtils.name(part.input.path) },
 					],
 					true,
 				),
@@ -328,7 +352,7 @@ export const ToolCallUtils = {
 			return {
 				...base(read_file, [
 					["Reading file", "Read file"],
-					{ subject: PathUtils.name(part.args) },
+					{ subject: PathUtils.name(part.input.path) },
 				]),
 				content: image
 					? { type: "image", value: image }
@@ -347,33 +371,34 @@ export const ToolCallUtils = {
 			return {
 				...base(write_file, [
 					["Writing file", "Wrote file"],
-					{ subject: PathUtils.name(part.args) },
+					{ subject: PathUtils.name(part.input.path) },
 				]),
 				language: FileTypeUtils.getLanguage({
-					path: part.args.path,
+					path: part.input.path,
 				}),
 			};
 		} else if (ToolUtils.is(toolsets, part, edit_file)) {
 			return {
 				...base(edit_file, [
 					["Editing file", "Edited file"],
-					{ subject: PathUtils.name(part.args) },
+					{ subject: PathUtils.name(part.input.path) },
 				]),
 				language: FileTypeUtils.getLanguage({
-					path: part.args.path,
+					path: part.input.path,
 				}),
 			};
 		} else if (ToolUtils.is(toolsets, part, shell_exec)) {
 			const json = ToolUtils.json<typeof shell_exec>(part.result)[0];
 			const content = json
-				? `# stdin\n${part.args.command.trim()}\n\n${[
+				? `# stdin\n${part.input.command.trim()}\n\n${[
 						json.stdout ? `# stdout\n${json.stdout.trim()}` : "",
 						json.stderr ? `# stderr\n${json.stderr.trim()}` : "",
 					]
 						.filter(Boolean)
 						.join("\n\n")}`
 				: undefined;
-			const commands = part.args.command
+			// TODO - fix type inference
+			const commands = (part as ToolCall<typeof shell_exec>).input.command
 				.split("&&")
 				.map((command) => {
 					const parts = command
@@ -405,21 +430,14 @@ export const ToolCallUtils = {
 		} else if (ToolUtils.is(toolsets, part, spawn_subagent)) {
 			return {
 				...base(spawn_subagent, [
-					["Using subagent to", "Used subagent to"],
-					{ subject: part.args.task },
+					["Using subagent", "Used subagent"],
+					{ subject: part.input.task },
 				]),
-			};
+			} satisfies ToolCallDisplay<typeof spawn_subagent>;
 		}
 
 		return {
 			...base(UNKNOWN, [["Using tool", "Used tool"], { subject: part.name }]),
 		};
-	},
-
-	isRejected: (toolResult?: Extract<zDataPart, { type: "toolResult" }>) => {
-		return (
-			JSON.stringify(toolResult?.value) ===
-			JSON.stringify(ToolCallUtils.rejection)
-		);
 	},
 };

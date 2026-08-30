@@ -1,3 +1,4 @@
+import { VERBOSE } from "../../../logger.ts";
 import type { zConfig, zDataPart } from "../../data/types/message.ts";
 import { FileExtractionService } from "../../file/services/FileExtractionService.ts";
 import { FileUtils } from "../../file/utils/FileUtils.ts";
@@ -70,12 +71,13 @@ export const ModelProviderUtils = {
 						name: part.name,
 						mime: part.mime,
 					});
-					if (extracted) return { type: "text", value: extracted };
+					if (extracted) return { id: part.id, type: "text", value: extracted };
 				}
 
 				const text = FileUtils.getTextFromBytes(part);
-				if (text) return { type: "text", value: text };
+				if (text) return { id: part.id, type: "text", value: text };
 				return {
+					id: part.id,
 					type: "text",
 					value: `[Unsupported file: ${part.name ?? part.mime}]`,
 				};
@@ -91,7 +93,7 @@ export const ModelProviderUtils = {
 		config: zConfig;
 		args: zModelArg[];
 	}) => {
-		console.log("[ModelProviderUtils] model args:", args);
+		if (VERBOSE) console.log("[ModelProviderUtils] model args:", args);
 		const inputArgs = (config.args ?? {}) as Record<string, unknown>;
 		for (const arg of args) {
 			if (inputArgs?.[arg.name] === undefined) {

@@ -1,5 +1,11 @@
-import { Icon } from "@iconify/react";
 import { ActionIcon, Avatar, Burger, Stack, Tooltip } from "@mantine/core";
+import {
+	EyeSlashIcon,
+	GearIcon,
+	GhostIcon,
+	PlusCircleIcon,
+	UserCircleIcon,
+} from "@phosphor-icons/react";
 import type { useSession } from "@tiny-chat/client/src/core/hooks/useSession.ts";
 import type { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
 import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
@@ -41,9 +47,9 @@ export default function SidebarCollapsed({
 						c="dimmed"
 						className="nav-link-like filled"
 						data-active={!chat.data}
-						onClick={() => close(() => ChatService.setChat({ id: null }))}
+						onClick={() => close(() => ChatService.newChat())}
 					>
-						<Icon icon="lucide:message-circle-plus" height={18} />
+						<PlusCircleIcon size={20} />
 					</ActionIcon>
 				</Tooltip>
 				<Tooltip label="Temporary" color="gray" position="right">
@@ -55,12 +61,12 @@ export default function SidebarCollapsed({
 						data-active={isTemporary}
 						onClick={() =>
 							close(() => {
-								if (chat.data) ChatService.setChat({ id: null });
+								if (chat.data) ChatService.newChat();
 								setCreateTemporary(!isTemporary);
 							})
 						}
 					>
-						<Icon icon="lucide:eye-off" height={18} />
+						<EyeSlashIcon size={20} />
 					</ActionIcon>
 				</Tooltip>
 				<Tooltip label="Anonymous" color="gray" position="right">
@@ -72,12 +78,12 @@ export default function SidebarCollapsed({
 						data-active={isIncognito}
 						onClick={() =>
 							close(() => {
-								if (chat.data) ChatService.setChat({ id: null });
+								if (chat.data) ChatService.newChat();
 								setCreateIncognito(!isIncognito);
 							})
 						}
 					>
-						<Icon icon="lucide:ghost" height={18} />
+						<GhostIcon size={20} />
 					</ActionIcon>
 				</Tooltip>
 			</Stack>
@@ -99,9 +105,9 @@ export default function SidebarCollapsed({
 						onClick={() => setCurrentDrawer("account")}
 					>
 						{session?.data?.user?.image ? (
-							<Avatar src={session.data.user.image} size={18} />
+							<Avatar src={session.data.user.image} size={20} />
 						) : (
-							<Icon icon="lucide:user-x" height={18} />
+							<UserCircleIcon size={20} />
 						)}
 					</ActionIcon>
 				</Tooltip>
@@ -113,7 +119,7 @@ export default function SidebarCollapsed({
 						className="nav-link-like"
 						onClick={() => setCurrentDrawer("settings")}
 					>
-						<Icon icon="lucide:settings" height={18} />
+						<GearIcon size={20} />
 					</ActionIcon>
 				</Tooltip>
 			</Stack>

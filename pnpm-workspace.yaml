@@ -5,9 +5,9 @@ allowBuilds:
     '@google/genai': true
     '@mongodb-js/zstd': true
     '@prisma/engines': true
-    bson: set this to true or false
     bun: true
     esbuild: true
+    msgpackr-extract: true
     node-liblzma: true
     node-pty: true
     onnxruntime-node: true
@@ -17,6 +17,7 @@ allowBuilds:
     tesseract.js: true
     tree-sitter-bash: true
     unrs-resolver: true
+    workerd: true
 allowedDeprecatedVersions:
     glob: '*'
     'node-domexception': '*'
@@ -31,6 +32,8 @@ minimumReleaseAgeExclude:
 peerDependencyRules:
     allowedVersions:
         '@browser-ai/web-llm>ai': '7'
+        'capnp-es>typescript': '7'
+        'alchemy>mysql2': '3'
 overrides:
     'conventional-changelog-writer': '^9.1.1'
 patchedDependencies:

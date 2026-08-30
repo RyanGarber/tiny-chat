@@ -1,6 +1,14 @@
 import { useHotkeys } from "@mantine/hooks";
+import { MarkdownDataUtils } from "@tiny-chat/client/src/features/message/utils/MarkdownDataUtils.ts";
 import { Markdown } from "@tiptap/markdown";
-import { useEditor as _useEditor, type JSONContent } from "@tiptap/react";
+import type { Slice } from "@tiptap/pm/model";
+import { Selection } from "@tiptap/pm/state";
+import type { EditorView } from "@tiptap/pm/view";
+import {
+	useEditor as _useEditor,
+	Extension,
+	type JSONContent,
+} from "@tiptap/react";
 import { StarterKit } from "@tiptap/starter-kit";
 import {
 	type RefObject,
@@ -10,8 +18,9 @@ import {
 	useState,
 } from "react";
 import { useMessaging } from "#client/src/features/chat/hooks/useMessaging.ts";
+import { MarkdownPreprocessorUtils } from "#client/src/features/message/utils/MarkdownPreprocessorUtils.ts";
 import { useUploads } from "#client/src/features/upload/hooks/useUploads.ts";
-import { UploadType } from "#core/features/file/types/upload";
+import { UploadKind } from "#core/features/file/types/upload";
 import { useAttachment } from "../hooks/useAttachment.tsx";
 import { useBlockquote } from "../hooks/useBlockquote.tsx";
 import { useCodeBlock } from "../hooks/useCodeBlock.tsx";
@@ -22,6 +31,93 @@ import { usePaste } from "../hooks/usePaste.tsx";
 import { useEditorStore } from "../stores/useEditorStore.ts";
 import { EditorUtils } from "../utils/EditorUtils.ts";
 
+const EnterKeymap = Extension.create({
+	name: "enterKeymap",
+	addKeyboardShortcuts() {
+		const enter = () =>
+			this.editor.commands.first(({ commands }) => [
+				() => commands.newlineInCode(),
+				() => commands.createParagraphNear(),
+				() => commands.liftEmptyBlock(),
+				() => commands.splitBlock(),
+			]);
+
+		return { "Shift-Enter": enter };
+	},
+});
+
+function dropOutsideAtom(
+	view: EditorView,
+	event: DragEvent,
+	slice: Slice,
+	moved: boolean,
+) {
+	const eventPos = view.posAtCoords({
+		left: event.clientX,
+		top: event.clientY,
+	});
+	if (!eventPos) return false;
+
+	const $event = view.state.doc.resolve(eventPos.pos);
+	let atom =
+		eventPos.inside >= 0 ? view.state.doc.nodeAt(eventPos.inside) : null;
+	let atomPos = eventPos.inside;
+
+	if (!atom?.type.spec.atom) {
+		let atomDepth = $event.depth;
+		while (atomDepth > 0 && !$event.node(atomDepth).type.spec.atom) {
+			atomDepth -= 1;
+		}
+		if (atomDepth === 0) return false;
+
+		atom = $event.node(atomDepth);
+		atomPos = $event.before(atomDepth);
+	}
+
+	const atomDom = view.nodeDOM(atomPos);
+	const atomRect =
+		atomDom instanceof HTMLElement ? atomDom.getBoundingClientRect() : null;
+	const insertAfter = atomRect
+		? atom.isInline
+			? event.clientX >= atomRect.left + atomRect.width / 2
+			: event.clientY >= atomRect.top + atomRect.height / 2
+		: eventPos.pos > atomPos + atom.nodeSize / 2;
+	const insertPos = insertAfter ? atomPos + atom.nodeSize : atomPos;
+
+	const { from, to } = view.state.selection;
+	if (moved && insertPos >= from && insertPos <= to) return true;
+
+	const tr = view.state.tr;
+	if (moved) tr.deleteSelection();
+
+	const mappedInsertPos = tr.mapping.map(insertPos);
+	const beforeInsert = tr.doc;
+	const isNode =
+		slice.openStart === 0 &&
+		slice.openEnd === 0 &&
+		slice.content.childCount === 1;
+
+	if (isNode) {
+		tr.replaceRangeWith(
+			mappedInsertPos,
+			mappedInsertPos,
+			slice.content.firstChild as NonNullable<typeof slice.content.firstChild>,
+		);
+	} else {
+		tr.replaceRange(mappedInsertPos, mappedInsertPos, slice);
+	}
+	if (tr.doc.eq(beforeInsert)) return true;
+
+	const selectionPos = Math.min(
+		tr.doc.content.size,
+		mappedInsertPos + slice.size,
+	);
+	tr.setSelection(Selection.near(tr.doc.resolve(selectionPos)));
+	view.focus();
+	view.dispatch(tr.setMeta("uiEvent", "drop"));
+	return true;
+}
+
 export const useEditor = ({
 	ref,
 	disabled,
@@ -29,8 +125,6 @@ export const useEditor = ({
 	ref: RefObject<HTMLDivElement | null>;
 	disabled?: boolean;
 }) => {
-	const setEditor = useEditorStore((s) => s.setEditor);
-
 	const { upload } = useUploads();
 	const { sendMessage } = useMessaging();
 
@@ -39,13 +133,14 @@ export const useEditor = ({
 
 	const editor = _useEditor({
 		editorProps: {
+			handleDrop: dropOutsideAtom,
 			handlePaste: (_view, event): boolean => {
 				let uploaded = false;
 				for (const item of event.clipboardData?.items ?? []) {
 					if (item.kind === "file") {
 						const file = item.getAsFile();
 						if (file) {
-							upload.mutate({ type: UploadType.ATTACHMENT, file });
+							upload.mutate({ kind: UploadKind.ATTACHMENT, file });
 							uploaded = true;
 						}
 					}
@@ -53,12 +148,17 @@ export const useEditor = ({
 				if (uploaded) return true;
 
 				const text = event.clipboardData?.getData("text/plain");
-				return text ? EditorUtils.insertPasted(text) : false;
+				// TODO - re-enable text after fixing prosemirror bug
+				return text ? EditorUtils.insertPasted(text, false) : false;
 			},
 			handleKeyDown: (_view, event) => {
 				if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
 					if (event.shiftKey) {
+						console.log(editor.getJSON());
 						console.log(editor.getMarkdown());
+						console.log(
+							MarkdownDataUtils.fromMarkdown(editor?.getMarkdown(), true),
+						);
 						return;
 					}
 					void sendMessage.mutate();
@@ -72,7 +172,9 @@ export const useEditor = ({
 				link: false,
 				blockquote: false,
 				codeBlock: false,
+				hardBreak: false,
 			}),
+			EnterKeymap,
 			Markdown.configure({ markedOptions: { gfm: true, breaks: true } }),
 			useDocument(),
 			useLink(),
@@ -88,21 +190,25 @@ export const useEditor = ({
 			},
 		},
 		onCreate: ({ editor }) => {
-			(
-				editor.storage.markdown.manager as unknown as {
-					encodeTextForMarkdown: unknown;
-					codeTypes: { has: (_: unknown) => boolean };
-					escapeMarkdownSyntax: (_: string) => string;
-				}
-			).encodeTextForMarkdown = function (
+			const markdown = editor.storage.markdown.manager as unknown as {
+				encodeTextForMarkdown: unknown;
+				codeTypes: { has: (_: unknown) => boolean };
+				escapeMarkdownSyntax: (_: string) => string;
+				parse: (markdown: string) => JSONContent;
+			};
+			const parseMarkdown = markdown.parse.bind(markdown);
+			markdown.parse = (source) =>
+				parseMarkdown(MarkdownPreprocessorUtils.preprocess(source));
+
+			markdown.encodeTextForMarkdown = function (
 				text: string,
 				node: JSONContent,
 				parentNode?: JSONContent,
 			) {
 				const isInsideCode =
 					(parentNode?.type != null && this.codeTypes.has(parentNode.type)) ||
-					(node.marks ?? []).some((m) =>
-						this.codeTypes.has(typeof m === "string" ? m : m.type),
+					(node.marks ?? []).some((mark) =>
+						this.codeTypes.has(typeof mark === "string" ? mark : mark.type),
 					);
 
 				if (isInsideCode) {
@@ -121,9 +227,13 @@ export const useEditor = ({
 	});
 
 	useEffect(() => {
-		setEditor(editor);
-		return () => setEditor(null);
-	}, [editor, setEditor]);
+		useEditorStore.setState({ editor });
+		return () => {
+			if (useEditorStore.getState().editor === editor) {
+				useEditorStore.setState({ editor: null });
+			}
+		};
+	}, [editor]);
 
 	useLayoutEffect(() => {
 		const observer = new ResizeObserver((entries) => {

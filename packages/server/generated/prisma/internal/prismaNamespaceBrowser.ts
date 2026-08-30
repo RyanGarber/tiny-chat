@@ -51,17 +51,21 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
-  User: 'User',
-  Session: 'Session',
   Account: 'Account',
-  Verification: 'Verification',
-  Folder: 'Folder',
-  Chat: 'Chat',
-  Message: 'Message',
-  Memory: 'Memory',
   Action: 'Action',
+  Chat: 'Chat',
+  ChatMemory: 'ChatMemory',
+  Dream: 'Dream',
+  DreamMessage: 'DreamMessage',
+  File: 'File',
+  Folder: 'Folder',
+  Memory: 'Memory',
+  Message: 'Message',
+  Session: 'Session',
+  Subagent: 'Subagent',
   Upload: 'Upload',
-  File: 'File'
+  User: 'User',
+  Verification: 'Verification'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -78,37 +82,6 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 } as const)
 
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
-
-
-export const UserScalarFieldEnum = {
-  id: 'id',
-  name: 'name',
-  email: 'email',
-  emailVerified: 'emailVerified',
-  image: 'image',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  isAnonymous: 'isAnonymous',
-  settings: 'settings',
-  cache: 'cache',
-  isEphemeral: 'isEphemeral'
-} as const
-
-export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
-
-
-export const SessionScalarFieldEnum = {
-  id: 'id',
-  expiresAt: 'expiresAt',
-  token: 'token',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  ipAddress: 'ipAddress',
-  userAgent: 'userAgent',
-  userId: 'userId'
-} as const
-
-export type SessionScalarFieldEnum = (typeof SessionScalarFieldEnum)[keyof typeof SessionScalarFieldEnum]
 
 
 export const AccountScalarFieldEnum = {
@@ -130,26 +103,19 @@ export const AccountScalarFieldEnum = {
 export type AccountScalarFieldEnum = (typeof AccountScalarFieldEnum)[keyof typeof AccountScalarFieldEnum]
 
 
-export const VerificationScalarFieldEnum = {
-  id: 'id',
-  identifier: 'identifier',
-  value: 'value',
-  expiresAt: 'expiresAt',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type VerificationScalarFieldEnum = (typeof VerificationScalarFieldEnum)[keyof typeof VerificationScalarFieldEnum]
-
-
-export const FolderScalarFieldEnum = {
+export const ActionScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
-  title: 'title',
-  createdAt: 'createdAt'
+  schedule: 'schedule',
+  config: 'config',
+  data: 'data',
+  createdAt: 'createdAt',
+  messageId: 'messageId',
+  lastRanAt: 'lastRanAt',
+  timezone: 'timezone'
 } as const
 
-export type FolderScalarFieldEnum = (typeof FolderScalarFieldEnum)[keyof typeof FolderScalarFieldEnum]
+export type ActionScalarFieldEnum = (typeof ActionScalarFieldEnum)[keyof typeof ActionScalarFieldEnum]
 
 
 export const ChatScalarFieldEnum = {
@@ -165,67 +131,32 @@ export const ChatScalarFieldEnum = {
 export type ChatScalarFieldEnum = (typeof ChatScalarFieldEnum)[keyof typeof ChatScalarFieldEnum]
 
 
-export const MessageScalarFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  folderId: 'folderId',
+export const ChatMemoryScalarFieldEnum = {
   chatId: 'chatId',
-  previousId: 'previousId',
-  author: 'author',
-  config: 'config',
-  data: 'data',
-  metadata: 'metadata',
-  createdAt: 'createdAt'
+  memoryId: 'memoryId'
 } as const
 
-export type MessageScalarFieldEnum = (typeof MessageScalarFieldEnum)[keyof typeof MessageScalarFieldEnum]
+export type ChatMemoryScalarFieldEnum = (typeof ChatMemoryScalarFieldEnum)[keyof typeof ChatMemoryScalarFieldEnum]
 
 
-export const MemoryScalarFieldEnum = {
+export const DreamScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
-  folderId: 'folderId',
-  chatId: 'chatId',
-  config: 'config',
-  fact: 'fact',
-  category: 'category',
-  stability: 'stability',
-  evidence: 'evidence',
-  confidence: 'confidence',
+  data: 'data',
+  metadata: 'metadata',
   createdAt: 'createdAt',
+  config: 'config'
+} as const
+
+export type DreamScalarFieldEnum = (typeof DreamScalarFieldEnum)[keyof typeof DreamScalarFieldEnum]
+
+
+export const DreamMessageScalarFieldEnum = {
+  dreamId: 'dreamId',
   messageId: 'messageId'
 } as const
 
-export type MemoryScalarFieldEnum = (typeof MemoryScalarFieldEnum)[keyof typeof MemoryScalarFieldEnum]
-
-
-export const ActionScalarFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  folderId: 'folderId',
-  chatId: 'chatId',
-  schedule: 'schedule',
-  config: 'config',
-  data: 'data',
-  createdAt: 'createdAt',
-  messageId: 'messageId',
-  lastRanAt: 'lastRanAt',
-  timezone: 'timezone'
-} as const
-
-export type ActionScalarFieldEnum = (typeof ActionScalarFieldEnum)[keyof typeof ActionScalarFieldEnum]
-
-
-export const UploadScalarFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  name: 'name',
-  createdAt: 'createdAt',
-  type: 'type',
-  thumbnail: 'thumbnail'
-} as const
-
-export type UploadScalarFieldEnum = (typeof UploadScalarFieldEnum)[keyof typeof UploadScalarFieldEnum]
+export type DreamMessageScalarFieldEnum = (typeof DreamMessageScalarFieldEnum)[keyof typeof DreamMessageScalarFieldEnum]
 
 
 export const FileScalarFieldEnum = {
@@ -240,6 +171,114 @@ export const FileScalarFieldEnum = {
 } as const
 
 export type FileScalarFieldEnum = (typeof FileScalarFieldEnum)[keyof typeof FileScalarFieldEnum]
+
+
+export const FolderScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  title: 'title',
+  createdAt: 'createdAt'
+} as const
+
+export type FolderScalarFieldEnum = (typeof FolderScalarFieldEnum)[keyof typeof FolderScalarFieldEnum]
+
+
+export const MemoryScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  config: 'config',
+  fact: 'fact',
+  category: 'category',
+  stability: 'stability',
+  evidence: 'evidence',
+  confidence: 'confidence',
+  createdAt: 'createdAt',
+  messageId: 'messageId'
+} as const
+
+export type MemoryScalarFieldEnum = (typeof MemoryScalarFieldEnum)[keyof typeof MemoryScalarFieldEnum]
+
+
+export const MessageScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  chatId: 'chatId',
+  previousId: 'previousId',
+  author: 'author',
+  config: 'config',
+  data: 'data',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
+} as const
+
+export type MessageScalarFieldEnum = (typeof MessageScalarFieldEnum)[keyof typeof MessageScalarFieldEnum]
+
+
+export const SessionScalarFieldEnum = {
+  id: 'id',
+  expiresAt: 'expiresAt',
+  token: 'token',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  ipAddress: 'ipAddress',
+  userAgent: 'userAgent',
+  userId: 'userId'
+} as const
+
+export type SessionScalarFieldEnum = (typeof SessionScalarFieldEnum)[keyof typeof SessionScalarFieldEnum]
+
+
+export const SubagentScalarFieldEnum = {
+  createdAt: 'createdAt',
+  data: 'data',
+  id: 'id',
+  messageId: 'messageId',
+  metadata: 'metadata',
+  userId: 'userId'
+} as const
+
+export type SubagentScalarFieldEnum = (typeof SubagentScalarFieldEnum)[keyof typeof SubagentScalarFieldEnum]
+
+
+export const UploadScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  name: 'name',
+  createdAt: 'createdAt',
+  kind: 'kind',
+  thumbnail: 'thumbnail'
+} as const
+
+export type UploadScalarFieldEnum = (typeof UploadScalarFieldEnum)[keyof typeof UploadScalarFieldEnum]
+
+
+export const UserScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  email: 'email',
+  emailVerified: 'emailVerified',
+  image: 'image',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  isAnonymous: 'isAnonymous',
+  settings: 'settings',
+  cache: 'cache',
+  isEphemeral: 'isEphemeral'
+} as const
+
+export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const VerificationScalarFieldEnum = {
+  id: 'id',
+  identifier: 'identifier',
+  value: 'value',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type VerificationScalarFieldEnum = (typeof VerificationScalarFieldEnum)[keyof typeof VerificationScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -273,6 +312,14 @@ export const QueryMode = {
 export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
 
 
+export const NullsOrder = {
+  first: 'first',
+  last: 'last'
+} as const
+
+export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
 export const JsonNullValueFilter = {
   DbNull: DbNull,
   JsonNull: JsonNull,
@@ -280,12 +327,4 @@ export const JsonNullValueFilter = {
 } as const
 
 export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
-
-
-export const NullsOrder = {
-  first: 'first',
-  last: 'last'
-} as const
-
-export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 

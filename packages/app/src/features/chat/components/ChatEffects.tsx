@@ -1,7 +1,7 @@
-import { Icon } from "@iconify/react";
 import { ActionIcon, Box, Group } from "@mantine/core";
+import { XIcon } from "@phosphor-icons/react";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
-import type { ReactNode, RefObject } from "react";
+import type { ReactNode, Ref } from "react";
 import { client } from "#app/client.ts";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
@@ -42,7 +42,7 @@ function Effect({
 				onClick={onDelete}
 				disabled={isAny}
 			>
-				<Icon icon="lucide:x" height={18} />
+				<XIcon size={20} />
 			</ActionIcon>
 			<Box>{content}</Box>
 		</Group>
@@ -54,7 +54,7 @@ export default function ChatEffects({
 	inputMaxWidth,
 	disabled,
 }: {
-	inputEffectsRef: RefObject<HTMLDivElement | null>;
+	inputEffectsRef: Ref<HTMLDivElement>;
 	inputMaxWidth: number;
 	disabled: boolean;
 }) {
@@ -95,11 +95,11 @@ export default function ChatEffects({
 							isAny={disabled}
 						/>
 					)}
-					{truncating && (
+					{editing && !truncating && (
 						<Effect
-							content={"Deleting newer"}
+							content="Keeping newer messages"
 							onDelete={() =>
-								MessagingService.setTruncating({ truncating: false })
+								MessagingService.setTruncating({ truncating: true })
 							}
 							isAny={disabled}
 						/>

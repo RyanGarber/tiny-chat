@@ -1,16 +1,13 @@
 import { z } from "zod";
-import type { Chat } from "../../../../../server/generated/prisma/browser.ts";
+import type { FieldOutputTypes } from "../../../../generated/prisma/contract.d.ts";
+import { zId } from "../../../core/types/common.ts";
 
-export type ChatState = Chat & {
-	messages: {
-		createdAt: Date;
-	}[];
-	folder: {
-		title: string | null;
-		_count: {
-			chats: number;
-		};
-	};
+export type FolderState = FieldOutputTypes["public"]["Folder"] & {
+	chats: ChatState[];
+};
+
+export type ChatState = FieldOutputTypes["public"]["Chat"] & {
+	messages: Pick<FieldOutputTypes["public"]["Message"], "createdAt">[];
 	unseen: boolean;
 };
 
@@ -18,9 +15,10 @@ export type ChatLike = { id: string } | string;
 export const ChatLike = z.custom<ChatLike>();
 
 export const zChat = z.object({
-	id: z.cuid2(),
+	id: zId,
 	userId: z.string(),
-	folderId: z.cuid2(),
+	folderId: zId.nullable(),
 	incognito: z.boolean(),
+	temporary: z.boolean(),
 });
 export type zChat = z.infer<typeof zChat>;

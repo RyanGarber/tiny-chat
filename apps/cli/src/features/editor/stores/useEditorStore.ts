@@ -1,3 +1,4 @@
+import type { EditorNode } from "@tiny-chat/client/src/features/editor/types/node.ts";
 import { AtomUtils } from "@tiny-chat/client/src/features/editor/utils/AtomUtils.ts";
 import type { TextAreaHandle } from "react-ink-textarea";
 import { create } from "zustand";
@@ -47,29 +48,10 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
 	},
 }));
 
-/**
- * Write an attachment into the editor as the atom standing for its directive.
- */
-export const insertAttachment = ({
-	source,
-	directory,
-	label,
-	markdown,
-}: {
-	source?: string;
-	directory?: boolean;
-	label?: string;
-	markdown: string;
-}) => {
+/** Write a shared editor node as the atom standing for it in the CLI buffer. */
+export const insertNode = (node: EditorNode) => {
 	const { content, insert } = useEditorStore.getState();
-
-	const text = AtomUtils.attachment({
-		content,
-		source,
-		directory,
-		label,
-		markdown,
-	});
+	const text = AtomUtils.fromNode({ content, node });
 
 	insert(`${text} `);
 };

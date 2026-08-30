@@ -1,14 +1,18 @@
 import { ThemeContext } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
+import { useDraftStore } from "@tiny-chat/client/src/features/chat/stores/useDraftStore.ts";
+import { useEstimatedTokens } from "@tiny-chat/client/src/features/editor/hooks/useEstimatedTokens.ts";
 import { Box, useInput, useWindowSize } from "ink";
 import { useContext, useEffect } from "react";
 import Capabilities from "../../features/agent/components/Capabilities.tsx";
 import Chat from "../../features/chat/components/Chat.tsx";
 import ChatList from "../../features/chat/components/ChatList.tsx";
+import FolderList from "../../features/chat/components/FolderList.tsx";
 import Editor from "../../features/editor/components/Editor.tsx";
 import Settings from "../../features/settings/components/Settings.tsx";
 import { useUpdate } from "../../features/update/hooks/useUpdate.ts";
 import GitHub from "../../features/upload/components/GitHub.tsx";
 import Uploads from "../../features/upload/components/Uploads.tsx";
+import type { Color } from "../hooks/useColor.ts";
 import { useAppStore } from "../stores/useAppStore.ts";
 import StatusText from "./StatusText.tsx";
 
@@ -28,6 +32,7 @@ export default function App() {
 
 	useEffect(() => {
 		if (!update.data) return;
+		// biome-ignore lint/nursery/useReactCompiler: this effect synchronizes query data to the external app status store.
 		setStatus({
 			id: "update",
 			text: `v${update.data} available - /update`,
@@ -46,13 +51,19 @@ export default function App() {
 		}
 	});
 
+	const draft = useDraftStore((state) => state.data);
+	const { chatTokens, categories, usage } = useEstimatedTokens<Color>({
+		draft,
+		colors: { low: "primary", moderate: "yellowBright", high: "redBright" },
+	});
+
 	return (
 		<Box
 			flexDirection="column"
 			height={rows}
 			backgroundColor={colorScheme.exterior}
 		>
-			<Chat />
+			<Chat compaction={chatTokens.data?.compaction} />
 			<Box
 				flexDirection="column"
 				position="static"
@@ -62,6 +73,7 @@ export default function App() {
 			>
 				<StatusText />
 				{page === "chats" && <ChatList />}
+				{page === "folders" && <FolderList />}
 				{page === "uploads" && <Uploads />}
 				{page === "github" && <GitHub />}
 				{page === "settings" && <Settings />}
@@ -70,6 +82,8 @@ export default function App() {
 					disabled={
 						page !== "chat" || statuses.some((status) => !status.passive)
 					}
+					usage={usage}
+					categories={categories}
 				/>
 			</Box>
 		</Box>

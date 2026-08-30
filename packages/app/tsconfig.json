@@ -8,7 +8,7 @@
 		"useDefineForClassFields": true,
 		"jsx": "react-jsx"
 	},
-	"include": ["src"],
+	"include": ["src", "generated/stylicious/**/*.d.ts"],
 	"references": [
 		{
 			"path": "./tsconfig.node.json"

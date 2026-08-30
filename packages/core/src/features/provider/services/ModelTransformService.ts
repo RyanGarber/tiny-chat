@@ -1,4 +1,5 @@
 import type { FilePart, ModelMessage, TextStreamPart } from "ai";
+import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 import type { zAgentEvent } from "../../agent/types/agent.ts";
 import {
 	Author,
@@ -132,7 +133,7 @@ export const ModelTransformService = {
 									type: "tool-call",
 									toolCallId: part.id,
 									toolName: part.name,
-									input: part.args,
+									input: part.input,
 									providerOptions,
 								},
 							];
@@ -146,14 +147,14 @@ export const ModelTransformService = {
 									)),
 								);
 							}
-							const parsed = zDataBasicPart.array().safeParse(part.value);
+							const parsed = zDataBasicPart.array().safeParse(part.output);
 							return [
 								{
 									type: "tool-result",
 									toolCallId: part.id,
 									toolName: part.name,
 									output: part.error
-										? { type: "error-json", value: part.value }
+										? { type: "error-json", value: part.output }
 										: parsed.success
 											? {
 													type: "content",
@@ -162,7 +163,7 @@ export const ModelTransformService = {
 														toSdkPart,
 													),
 												}
-											: { type: "json", value: part.value },
+											: { type: "json", value: part.output },
 									providerOptions,
 								},
 							];
@@ -238,6 +239,7 @@ export const ModelTransformService = {
 			return {
 				type: "data",
 				value: {
+					id: CommonUtils.getRandomId(),
 					type: "file",
 					mime: event.file.mediaType,
 					data: event.file.base64,
@@ -251,7 +253,7 @@ export const ModelTransformService = {
 					type: "toolCall",
 					name: event.toolName,
 					id: event.toolCallId,
-					args: event.input,
+					input: event.input,
 					signature,
 				},
 			};
@@ -262,8 +264,9 @@ export const ModelTransformService = {
 					type: "toolResult",
 					name: event.toolName,
 					id: event.toolCallId,
-					value: [
+					output: [
 						{
+							id: CommonUtils.getRandomId(),
 							type: "json",
 							value: event.output,
 						},
@@ -285,6 +288,7 @@ export const ModelTransformService = {
 			return {
 				type: "data",
 				value: {
+					id: CommonUtils.getRandomId(),
 					type: "abort",
 					reason:
 						event.finishReason === "content-filter"

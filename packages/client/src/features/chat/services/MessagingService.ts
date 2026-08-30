@@ -4,7 +4,9 @@ import type {
 } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { Client } from "../../../client.ts";
 import { useConfigStore } from "../../agent/stores/useConfigStore.ts";
+import { AttachmentService } from "../../editor/services/AttachmentService.ts";
 import type { AttachmentItem } from "../../editor/types/attachment.ts";
+import type { EditorNode } from "../../editor/types/node.ts";
 import { AttachmentUtils } from "../../editor/utils/AttachmentUtils.ts";
 import { useDraftStore } from "../stores/useDraftStore.ts";
 import { useMessagingStore } from "../stores/useMessagingStore.ts";
@@ -16,17 +18,10 @@ export interface ClientInput {
 	 * Write an attachment into the editor wherever the cursor is, as whatever
 	 * stands for one there — a node, or an atom in a plain text buffer.
 	 *
-	 * An attachment travels inside the message's text, so anything offering one
-	 * from outside the editor — an upload finishing, a repository being picked —
-	 * has to put it there rather than alongside.
+	 * Attachment nodes point at an already-built attachment part in the shared
+	 * editor registry.
 	 */
-	insertAttachment: ({
-		client,
-		item,
-	}: {
-		client: Client;
-		item: AttachmentItem;
-	}) => void;
+	insertNode: ({ client, node }: { client: Client; node: EditorNode }) => void;
 }
 
 export const MessagingService = {
@@ -54,12 +49,24 @@ export const MessagingService = {
 		useDraftStore.getState().setData(data);
 	},
 
+	insertAttachment: async ({
+		client,
+		item,
+	}: {
+		client: Client;
+		item: AttachmentItem;
+	}) => {
+		if (!client.input) throw new Error("missing client input");
+		const node = await AttachmentService.create({ client, item });
+		client.input.insertNode({ client, node });
+	},
+
 	/**
 	 * Attach an upload to the message being written, by referencing its
 	 * directory on the chat mount. That reference is the whole of it: an upload
 	 * is in a chat because a message points into it.
 	 */
-	attachUpload: ({
+	attachUpload: async ({
 		client,
 		upload,
 	}: {
@@ -68,7 +75,7 @@ export const MessagingService = {
 	}) => {
 		if (!client.input) throw new Error("missing client input");
 
-		client.input.insertAttachment({
+		await MessagingService.insertAttachment({
 			client,
 			item: AttachmentUtils.forUpload({ upload }),
 		});
@@ -87,7 +94,7 @@ export const MessagingService = {
 		if (message) setInsertingAfter(null);
 
 		setEditing(message);
-		setTruncating(message !== null);
+		setTruncating(message === null);
 
 		MessagingService.setData({ client, data: message?.data ?? [] });
 

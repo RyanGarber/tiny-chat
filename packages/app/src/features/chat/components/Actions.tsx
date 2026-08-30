@@ -1,5 +1,5 @@
-import { Icon } from "@iconify/react";
 import { Box, Card, Divider, Group, Stack, Text } from "@mantine/core";
+import { ClockIcon } from "@phosphor-icons/react";
 import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
 import { useActions } from "@tiny-chat/client/src/features/user/hooks/useActions.ts";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
@@ -32,7 +32,7 @@ export default function Actions() {
 	return activeActions.length ? (
 		<Card w="100%" px={20} py={10}>
 			<Group w="100%" c="dimmed">
-				<Icon icon="lucide:clock" />
+				<ClockIcon size={20} />
 				<Stack gap={0} flex={1}>
 					{activeActions.map((action, i, array) => (
 						<Box key={action.id}>

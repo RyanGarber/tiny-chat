@@ -1,4 +1,4 @@
-import { createId } from "@paralleldrive/cuid2";
+import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import type { Session } from "better-auth";
 
@@ -13,7 +13,7 @@ const clones: Clone[] = [];
  */
 export const CloneService = {
 	createClone: (_: { user: zUser }) => {
-		const id = createId();
+		const id = CommonUtils.getRandomId();
 		clones.push({ id, userId: null });
 		return id;
 	},

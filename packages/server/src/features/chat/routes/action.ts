@@ -1,3 +1,4 @@
+import { zId } from "@tiny-chat/core/src/core/types/common.ts";
 import {
 	MessageLike,
 	zData,
@@ -33,7 +34,7 @@ export const action = router({
 	updateAction: procedure
 		.input(
 			z.object({
-				id: z.cuid2(),
+				id: zId,
 				message: MessageLike,
 				schedule: z.string(),
 				timezone: z.string(),
@@ -54,7 +55,7 @@ export const action = router({
 	deleteAction: procedure
 		.input(
 			z.object({
-				id: z.cuid2(),
+				id: zId,
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {

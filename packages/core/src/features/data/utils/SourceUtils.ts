@@ -1,10 +1,12 @@
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 import { PathUtils } from "../../file/utils/PathUtils.ts";
 import type { zWebContext } from "../../provider/types/web.ts";
+import { edit_file } from "../../tool/tools/shell/edit_file.ts";
 import { grep_files } from "../../tool/tools/shell/grep_files.ts";
 import { read_dir } from "../../tool/tools/shell/read_dir.ts";
 import { read_file } from "../../tool/tools/shell/read_file.ts";
 import { search_files } from "../../tool/tools/shell/search_files.ts";
+import { write_file } from "../../tool/tools/shell/write_file.ts";
 import { search_web } from "../../tool/tools/web/search_web.ts";
 import { view_web } from "../../tool/tools/web/view_web.ts";
 import type { Toolset } from "../../tool/types/tool.ts";
@@ -50,10 +52,13 @@ export const SourceUtils = {
 		toolsets: Toolset<any>[];
 	}): Source[] => {
 		return message.data.flat().flatMap((part, _index, array): Source[] => {
-			if (part.type === "toolResult") {
-				const { tool } = ToolUtils.find({ toolsets, part });
-				if (tool?.name === search_web.name) {
-					const output = ToolUtils.json<typeof search_web>(part, true);
+			if (part.type === "toolCall") {
+				const result = array.find(
+					(p): p is Extract<zDataPart, { type: "toolResult" }> =>
+						p.type === "toolResult" && p.id === part.id,
+				);
+				if (ToolUtils.is(toolsets, part, search_web)) {
+					const output = ToolUtils.json<typeof search_web>(result, true);
 					return (
 						output.map((value) => ({
 							key: value.url,
@@ -61,29 +66,27 @@ export const SourceUtils = {
 							value,
 						})) ?? []
 					);
-				} else if (tool?.name === view_web.name) {
-					const output = ToolUtils.json<typeof view_web>(part);
+				} else if (ToolUtils.is(toolsets, part, view_web)) {
+					const output = ToolUtils.json<typeof view_web>(result);
 					return output[0]
 						? [{ key: output[0].url, type: "web", value: output[0] }]
 						: [];
-				} else if (tool?.name === read_file.name) {
-					const output = ToolUtils.file(part);
-					const toolCall = array.find(
-						(p): p is Extract<zDataPart, { type: "toolCall" }> =>
-							p.type === "toolCall" && p.id === part.id,
-					);
-					if (toolCall && ToolUtils.is(toolsets, toolCall, read_file)) {
-						return output.map((file) => ({
-							key: toolCall.args.path ?? file.name,
-							type: "file",
-							value: {
-								path: toolCall.args.path ?? file.name,
-								directory: false,
-							},
-						}));
-					}
-				} else if (tool?.name === read_dir.name) {
-					const output = ToolUtils.json<typeof read_dir>(part, true);
+				} else if (ToolUtils.is(toolsets, part, read_file)) {
+					const output = ToolUtils.file(result);
+					return output[0]
+						? [
+								{
+									key: part.input.path,
+									type: "file",
+									value: {
+										path: part.input.path,
+										directory: false,
+									},
+								},
+							]
+						: [];
+				} else if (ToolUtils.is(toolsets, part, read_dir)) {
+					const output = ToolUtils.json<typeof read_dir>(result, true);
 					return output.map((item) => ({
 						key: item.path,
 						type: "file",
@@ -93,12 +96,12 @@ export const SourceUtils = {
 						},
 					}));
 				} else if (
-					tool?.name === grep_files.name ||
-					tool?.name === search_files.name
+					ToolUtils.is(toolsets, part, search_files) ||
+					ToolUtils.is(toolsets, part, grep_files)
 				) {
 					const output = ToolUtils.json<
 						typeof grep_files | typeof search_files
-					>(part, true);
+					>(result, true);
 					return output.map((item) => ({
 						key: item.path,
 						type: "file",
@@ -107,6 +110,25 @@ export const SourceUtils = {
 							directory: false,
 						},
 					}));
+				} else if (
+					ToolUtils.is(toolsets, part, write_file) ||
+					ToolUtils.is(toolsets, part, edit_file)
+				) {
+					const output = ToolUtils.json<typeof write_file | typeof edit_file>(
+						result,
+					);
+					return output[0]
+						? [
+								{
+									key: output[0].path,
+									type: "file",
+									value: {
+										path: output[0].path,
+										directory: false,
+									},
+								},
+							]
+						: [];
 				}
 			}
 			return [];

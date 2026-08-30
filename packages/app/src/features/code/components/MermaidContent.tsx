@@ -1,7 +1,7 @@
 /** @author https://github.com/vercel/streamdown/blob/main/packages/streamdown/lib/mermaid/index.tsx */
 
-import { Icon } from "@iconify/react";
 import { Loader, UnstyledButton } from "@mantine/core";
+import { ArrowClockwiseIcon } from "@phosphor-icons/react";
 import { useEffect, useMemo, useState } from "react";
 import Code from "#app/features/code/components/Code.tsx";
 import PanZoom from "#app/features/code/components/PanZoom.tsx";
@@ -60,6 +60,7 @@ export default function MermaidContent({
 				// Don't update svgContent here - just keep what we have
 
 				// Only set error if we don't have any valid SVG
+				// biome-ignore lint/nursery/useReactCompiler: "Required for Mermaid"
 				if (!(lastValidSvg || svgContent)) {
 					const errorMessage =
 						err instanceof Error
@@ -107,12 +108,7 @@ export default function MermaidContent({
 						setRetryCount(retryCount + 1);
 					}}
 				>
-					<Icon
-						icon="lucide:refresh-cw"
-						className="mr-1 inline-block"
-						width={9}
-						height={9}
-					/>
+					<ArrowClockwiseIcon size={12} className="mr-1 inline-block" />
 					Retry
 				</UnstyledButton>
 				<details>

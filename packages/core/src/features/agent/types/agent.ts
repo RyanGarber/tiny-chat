@@ -1,4 +1,5 @@
 import z from "zod";
+import { zId } from "../../../core/types/common.ts";
 import { zChat } from "../../data/types/chat.ts";
 import {
 	Author,
@@ -10,7 +11,7 @@ import {
 import { zUser } from "../../data/types/user.ts";
 
 export const zAgentMessage = z.object({
-	id: z.cuid2().nullable(),
+	id: zId.nullable(),
 	author: z.enum(Author),
 	data: zData,
 	config: zConfig.nullable(),

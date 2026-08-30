@@ -9,15 +9,6 @@
 * 🟢 You can import this file directly.
 */
 
-export const UploadType = {
-  ATTACHMENT: 'ATTACHMENT',
-  SKILL: 'SKILL',
-  GITHUB: 'GITHUB'
-} as const
-
-export type UploadType = (typeof UploadType)[keyof typeof UploadType]
-
-
 export const Author = {
   USER: 'USER',
   MODEL: 'MODEL'
@@ -44,3 +35,12 @@ export const MemoryStability = {
 } as const
 
 export type MemoryStability = (typeof MemoryStability)[keyof typeof MemoryStability]
+
+
+export const UploadKind = {
+  ATTACHMENT: 'ATTACHMENT',
+  SKILL: 'SKILL',
+  GITHUB: 'GITHUB'
+} as const
+
+export type UploadKind = (typeof UploadKind)[keyof typeof UploadKind]

@@ -1,4 +1,3 @@
-import { format } from "timeago.js";
 import type { Capabilities } from "../../../core/types/capability.ts";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 import { type zConfig, zData } from "../../data/types/message.ts";
@@ -7,7 +6,6 @@ import type { zSkill } from "../../skill/types/skill.ts";
 import type { Toolset } from "../../tool/types/tool.ts";
 import { ToolUtils } from "../../tool/utils/ToolUtils.ts";
 import type { zAgentContext } from "../types/agent.ts";
-import { AgentUtils } from "../utils/AgentUtils.ts";
 
 export const AgentInstructionsService = {
 	buildInstructions: async ({
@@ -23,37 +21,12 @@ export const AgentInstructionsService = {
 		enabledToolsets: Toolset<any>[];
 		enabledSkills: zSkill[];
 	}) => {
-		let promptText: string | undefined;
-		let promptEmbedding: number[] | undefined;
-
-		const { prompt } = AgentUtils.getLastPrompt(context);
-		if (prompt) {
-			promptText = DataUtils.getTextCleaned(prompt);
-			promptEmbedding = prompt.id
-				? ((await capabilities.embedding?.getEmbedding({
-						message: { id: prompt.id },
-					})) ?? undefined)
-				: await capabilities.embedding?.runEmbedding({ text: promptText });
-
-			console.log(
-				`[InstructionsService] prompt [${prompt.id}]: '${promptText.slice(0, 100)}...' (embedding: ${!!promptEmbedding?.length})`,
-			);
-		} else {
-			console.log("[InstructionsService] no prompt, using generic search");
-			promptText = "user";
-		}
-
-		// TODO - remove capability when incognito or keep direct incognito check?
-		const memories =
-			promptText && !context.chat?.incognito
-				? await capabilities.user?.searchMemories({
-						searchText: promptText,
-						searchEmbedding: promptEmbedding ?? undefined,
-					})
-				: undefined;
+		const memories = (
+			await capabilities.memories?.retrieveMemories({ chat: context.chat })
+		)?.sort((a, b) => a.id.localeCompare(b.id));
 
 		const actions = !context.chat?.incognito
-			? await capabilities.user?.getActions()
+			? await capabilities.actions?.getActions()
 			: undefined;
 
 		const userInstructions = !context.chat?.incognito
@@ -104,12 +77,8 @@ When referencing past assistant messages, always use the model name - do not say
 
 		instructions += `\n
 ## Instructions\n
-It is currently ${CommonUtils.formatDate(context)}. Always consider ${CommonUtils.formatDate(context)} the date and time. Never convert to UTC when calling tools.`;
-
-		if (context.messages.some((message) => message.createdAt)) {
-			instructions += `
-Always take conversation timing into account. Do not assume the chat is continuous. Consider whether the user's intent has changed between messages.`;
-		}
+The times mentioned in <message> blocks are the user's local time. Never convert to UTC when calling tools, always use the user's time.
+Always take those times into account. Do not assume the chat is continuous. Consider whether the user's intent has changed between messages.`;
 
 		instructions += `\n
 Markdown, Mermaid, and LaTeX are supported. Use headers, tables, lists, math, code blocks, diagrams, and images when they would genuinely help illustrate your point.
@@ -145,7 +114,7 @@ ${actions?.map((action) => `<action id="${action.id}" schedule="${action.schedul
 			if (memories?.length) {
 				instructions += `\n
 <memories>
-${memories.map((memory) => `<memory id="${memory.id}" category="${memory.category}" stability="${memory.stability}" learned="${format(memory.createdAt)}">\n${memory.fact}\n</memory>`).join("\n")}
+${memories.map((memory) => `<memory id="${memory.id}" category="${memory.category}" stability="${memory.stability}" learned="${CommonUtils.formatDate({ date: memory.createdAt, timezone: context.timezone })}">\n${memory.fact}\n</memory>`).join("\n")}
 </memories>`;
 			}
 

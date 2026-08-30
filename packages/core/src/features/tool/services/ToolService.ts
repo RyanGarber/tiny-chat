@@ -18,30 +18,27 @@ import type { Toolset } from "../types/tool.ts";
 export const ToolService = {
 	getTools: async ({
 		capabilities,
-		incognito,
 	}: {
 		capabilities: Capabilities;
-		incognito: boolean;
 	}): Promise<Toolset<any>[]> => {
-		if (incognito) capabilities.user = undefined;
-
 		return await Promise.all([
 			await createActionsToolset({
 				instructions:
 					"Actions are recurring prompts, good for reminders and regular updates on topics. When a topic would benefit from such updates, ask the user if they'd like an action.",
 				capabilities: {
-					user: capabilities.user ?? (void 0 as never),
+					actions: capabilities.actions ?? (void 0 as never),
 				},
-				status: { valid: !!capabilities.user },
+				status: { valid: !!capabilities.actions },
 			}),
 
 			await createMemoriesToolset({
 				instructions:
-					"You're in charge of storing memories. The system will curate and surface relevant facts for you, so do not hesitate to store any potentially useful fact you encounter.",
+					"Use these tools to manage memories about the user or to search prior memories/chats when it would improve a response.",
 				capabilities: {
-					user: capabilities.user ?? (void 0 as never),
+					memories: capabilities.memories ?? (void 0 as never),
+					embedding: capabilities.embedding ?? (void 0 as never),
 				},
-				status: { valid: !!capabilities.user },
+				status: { valid: !!capabilities.memories },
 			}),
 
 			await createWebToolset({
@@ -94,9 +91,9 @@ Current working directory in the user's local shell: ${(await capabilities.shell
 				instructions:
 					"You can spawn subagents to do work for you and come back with a result. Use this for tasks that require a lot of context, such as exploring a codebase, to keep your context clean so you can focus on reasoning.",
 				capabilities: {
-					subagent: capabilities.subagent ?? (void 0 as never),
+					subagents: capabilities.subagents ?? (void 0 as never),
 				},
-				status: { valid: !!capabilities.subagent },
+				status: { valid: !!capabilities.subagents },
 			}),
 		]);
 	},

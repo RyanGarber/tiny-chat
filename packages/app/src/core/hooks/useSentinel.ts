@@ -99,7 +99,9 @@ export function useSentinel({
 		isSentinelVisible,
 	]);
 
-	fetchNextRef.current = fetchNext;
+	useEffect(() => {
+		fetchNextRef.current = fetchNext;
+	}, [fetchNext]);
 
 	useEffect(() => {
 		if (entry?.isIntersecting) fetchNext();

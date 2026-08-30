@@ -8,7 +8,7 @@ describe("providers - anthropic", () => {
 	it("stores signatures", () => {
 		const event: TextStreamPart<any> = {
 			type: "reasoning-delta",
-			id: "",
+			id: "thought-1",
 			text: "",
 			providerMetadata: {
 				anthropic: {
@@ -29,7 +29,7 @@ describe("providers - anthropic", () => {
 	it("returns matching signatures", () => {
 		const part: zDataPart = {
 			type: "thought",
-			id: "",
+			id: "thought-1",
 			value: "",
 			signature: {
 				model: "claude-sonnet-5",

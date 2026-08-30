@@ -33,10 +33,10 @@ export function getPartKey(part?: zDataPart) {
 		keys = `${part.name}:${part.mime}`;
 		value = part.data;
 	} else if (part.type === "toolCall") {
-		keys = `${part.id}:${part.name}`;
-		value = `${part.id}:${part.name}:${JSON.stringify(part.args)}`;
+		keys = part.name;
+		value = `${part.name}:${JSON.stringify(part.input)}`;
 	} else if (part.type === "toolResult") {
-		keys = `${part.id}:${part.name}:${part.error}:${getPartsKey(part.value)}`;
+		keys = `${part.name}:${part.error}:${getPartsKey(part.output)}`;
 	} else if (part.type === "abort") {
 		keys = `${part.reason}:${part.message}`;
 		value = JSON.stringify(part.details);

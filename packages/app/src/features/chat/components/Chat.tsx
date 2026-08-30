@@ -1,29 +1,26 @@
-import { Icon } from "@iconify/react";
 import {
 	ActionIcon,
 	Box,
+	type DefaultMantineColor,
 	Group,
 	ScrollArea,
 	Stack,
 	Text,
 	Transition,
 } from "@mantine/core";
-import { useMergedRef } from "@mantine/hooks";
+import { useElementSize, useMergedRef } from "@mantine/hooks";
+import { ArrowClockwiseIcon, CaretDoubleDownIcon } from "@phosphor-icons/react";
 import { useIsMutating } from "@tanstack/react-query";
 import { useGreeting } from "@tiny-chat/client/src/core/hooks/useGreeting.ts";
 import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
 import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
 import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
+import { useDraftStore } from "@tiny-chat/client/src/features/chat/stores/useDraftStore.ts";
 import { useDisabled } from "@tiny-chat/client/src/features/editor/hooks/useDisabled.ts";
+import { useEstimatedTokens } from "@tiny-chat/client/src/features/editor/hooks/useEstimatedTokens.ts";
 import { MessageProvider } from "@tiny-chat/client/src/features/message/components/MessageProvider.tsx";
 import { useMessages } from "@tiny-chat/client/src/features/message/hooks/useMessages.ts";
-import {
-	type RefObject,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "react";
+import { useEffect, useLayoutEffect, useMemo } from "react";
 import { client } from "#app/client.ts";
 import Sentinel from "#app/core/components/Sentinel.tsx";
 import { useAutoScroll } from "#app/core/hooks/useAutoScroll.ts";
@@ -33,38 +30,25 @@ import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import Actions from "#app/features/chat/components/Actions.tsx";
 import ChatEffects from "#app/features/chat/components/ChatEffects.tsx";
 import ChatHeader from "#app/features/chat/components/ChatHeader.tsx";
-import { Editor } from "#app/features/editor/components/Editor.tsx";
+import Editor from "#app/features/editor/components/Editor.tsx";
 import { useEditorStore } from "#app/features/editor/stores/useEditorStore.ts";
 import Message from "#app/features/message/components/Message.tsx";
 import { useMessagingStore } from "#client/src/features/chat/stores/useMessagingStore.ts";
 import { uploadMutationKey } from "#client/src/features/upload/hooks/useUploads.ts";
 
-function useElementHeight(initialHeight = 0): {
-	ref: RefObject<HTMLDivElement | null>;
-	height: number;
-} {
-	const ref = useRef<HTMLDivElement>(null);
-	const [height, setHeight] = useState(initialHeight);
-
-	useLayoutEffect(() => {
-		const el = ref.current;
-		if (!el) return;
-
-		const observer = new ResizeObserver(() => {
-			setHeight(el.clientHeight);
-		});
-
-		observer.observe(el);
-		setHeight(el.clientHeight);
-		return () => observer.disconnect();
-	}, []);
-
-	return { ref, height };
-}
-
 export default function Chat() {
 	const { chat } = useChat();
 	const { messages } = useMessages();
+	const draft = useDraftStore((state) => state.data);
+	const { chatTokens, usage, categories } =
+		useEstimatedTokens<DefaultMantineColor>({
+			draft,
+			colors: { low: "blue", moderate: "orange", high: "red" },
+		});
+
+	useEffect(() => {
+		console.log(chatTokens.data);
+	}, [chatTokens.data]);
 
 	const createTemporary = useChatStore((s) => s.createTemporary);
 	const createIncognito = useChatStore((s) => s.createIncognito);
@@ -132,11 +116,9 @@ export default function Chat() {
 	}, [messageList, editing, insertingAfter, truncating]);
 
 	const inputMaxWidth = 860;
-	const inputRef = useRef<HTMLDivElement>(null);
-
-	const { ref: inputEffectsRef, height: inputEffectsHeight } =
-		useElementHeight();
-	const { ref: chatContainerRef } = useElementHeight(600);
+	const { ref: inputRef, width: inputWidth } = useElementSize();
+	const { ref: inputEffectsRef, height: inputEffectsHeight } = useElementSize();
+	const { ref: chatContainerRef } = useElementSize();
 
 	const greeting = useGreeting();
 	const isNewChat = !chat.data;
@@ -270,6 +252,7 @@ export default function Chat() {
 					style={{
 						opacity: isNewChat ? 0 : 1,
 						transition: "opacity 400ms ease",
+						pointerEvents: isNewChat ? "none" : "auto",
 					}}
 					flex={1}
 					inset={0}
@@ -286,6 +269,7 @@ export default function Chat() {
 									message={message}
 									opacity={messageOpacities.get(message.id) ?? 1}
 									isLast={message.id === lastMessageId}
+									compaction={chatTokens.data?.compaction}
 								/>
 							))}
 						</MessageProvider>
@@ -340,7 +324,7 @@ export default function Chat() {
 								loading={chat.isFetching}
 								disabled={chat.isFetching}
 							>
-								<Icon icon="lucide:refresh-cw" height={18} />
+								<ArrowClockwiseIcon size={20} />
 							</ActionIcon>
 						)}
 					</Transition>
@@ -363,7 +347,7 @@ export default function Chat() {
 									scrollToBottom("smooth");
 								}}
 							>
-								<Icon icon="lucide:chevrons-down" height={18} />
+								<CaretDoubleDownIcon size={20} />
 							</ActionIcon>
 						)}
 					</Transition>
@@ -389,7 +373,14 @@ export default function Chat() {
 					p={isMobile ? "0 10px 10px 10px" : "0 20px 20px 20px"}
 					ref={inputRef}
 				>
-					<Editor key={_key} style={{ borderRadius: 25 }} disabled={disabled} />
+					<Editor
+						key={_key}
+						width={inputWidth}
+						bdrs={25}
+						disabled={disabled}
+						usage={usage}
+						categories={categories}
+					/>
 				</Box>
 			</Box>
 		</Stack>

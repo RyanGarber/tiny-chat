@@ -2,6 +2,7 @@ import { useGreeting } from "@tiny-chat/client/src/core/hooks/useGreeting.ts";
 import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
 import { MessageProvider } from "@tiny-chat/client/src/features/message/components/MessageProvider.tsx";
 import { useMessages } from "@tiny-chat/client/src/features/message/hooks/useMessages.ts";
+import type { Compaction } from "@tiny-chat/core/src/features/agent/services/AgentTokensService.ts";
 import { useMemo } from "react";
 import Box from "../../../core/components/Box.tsx";
 import ScrollView from "../../../core/components/ScrollView.tsx";
@@ -10,7 +11,7 @@ import { useSentinel } from "../../../core/hooks/useSentinel.ts";
 import { useWorkingStatus } from "../../../core/hooks/useWorkingStatus.ts";
 import Message from "../../message/components/Message.tsx";
 
-export default function Chat() {
+export default function Chat({ compaction }: { compaction?: Compaction }) {
 	const { chat } = useChat();
 	const { messages } = useMessages();
 	useWorkingStatus(chat, messages);
@@ -49,7 +50,7 @@ export default function Chat() {
 				onReachTop={fetchOlder}
 			>
 				{messageList.map((message) => (
-					<Message key={message.id} message={message} />
+					<Message key={message.id} message={message} compaction={compaction} />
 				))}
 			</ScrollView>
 		</MessageProvider>

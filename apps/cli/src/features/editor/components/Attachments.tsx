@@ -1,4 +1,5 @@
 import { useAttachments } from "@tiny-chat/client/src/features/editor/hooks/useAttachments.ts";
+import { AttachmentService } from "@tiny-chat/client/src/features/editor/services/AttachmentService.ts";
 import type {
 	AttachmentGroup,
 	AttachmentItem,
@@ -7,6 +8,7 @@ import type { CommandEdit } from "@tiny-chat/client/src/features/editor/types/co
 import { AttachmentUtils } from "@tiny-chat/client/src/features/editor/utils/AttachmentUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import { useCallback, useEffect, useState } from "react";
+import { client } from "../../../client.ts";
 import Completions from "./Completions.tsx";
 
 export default function Attachments({
@@ -26,12 +28,8 @@ export default function Attachments({
 
 	const [groups, setGroups] = useState<AttachmentGroup[]>([]);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: only re-fetch when the typed path changes
 	useEffect(() => {
-		if (!query) {
-			setGroups([]);
-			return;
-		}
+		if (!query) return;
 
 		const controller = new AbortController();
 
@@ -60,7 +58,7 @@ export default function Attachments({
 			});
 
 		return () => controller.abort();
-	}, [getAttachables, query?.text]);
+	}, [getAttachables, query]);
 
 	const apply = useCallback(
 		(edit: CommandEdit | null) => {
@@ -85,7 +83,13 @@ export default function Attachments({
 			}}
 			onInput={({ item, key }) => {
 				if (key.return && item) {
-					apply(AttachmentUtils.apply({ content, query, item }));
+					void AttachmentService.create({ client, item })
+						.then((node) =>
+							apply(
+								AttachmentUtils.apply({ content, query, item, id: node.id }),
+							),
+						)
+						.catch((error) => console.warn("Failed to attach item", error));
 				}
 				if (key.tab && item) {
 					apply(AttachmentUtils.complete({ content, query, item }));

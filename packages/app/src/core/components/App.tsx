@@ -1,13 +1,7 @@
-import {
-	AppShell,
-	Box,
-	LoadingOverlay,
-	MantineProvider,
-	Overlay,
-} from "@mantine/core";
+import { AppShell, Box, LoadingOverlay, MantineProvider } from "@mantine/core";
 import { ModalsProvider } from "@mantine/modals";
 import { useDrag } from "@use-gesture/react";
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Background from "#app/core/components/Background.tsx";
 import Console from "#app/core/components/Console.tsx";
 import Tauri from "#app/core/components/Tauri.tsx";
@@ -44,23 +38,117 @@ export default function App() {
 	const isSidebarOpen = useAppStore((s) => s.isSidebarOpen);
 	const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
 	const isAsideOpen = useAppStore((s) => s.isAsideOpen);
-	const getSidebarWidth = useAppStore((s) => s.getSidebarWidth);
+	const setAsideOpen = useAppStore((s) => s.setAsideOpen);
+	const asideWidth = useAppStore((s) => s.asideWidth);
+	const setAsideWidth = useAppStore((s) => s.setAsideWidth);
+	const [isResizingSidebar, setIsResizingSidebar] = useState(false);
+	const [isResizingAside, setIsResizingAside] = useState(false);
+	const appShellRef = useRef<HTMLDivElement>(null);
+	const sidebarResizeHandleRef = useRef<HTMLDivElement>(null);
+	const asideResizeHandleRef = useRef<HTMLDivElement>(null);
+	const sidebarContentRef = useRef<HTMLDivElement>(null);
+	const asideContentRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => AppService.initialize(), []);
 
-	// TODO - find a way to increase this drag area without blocking mouse events
-	const dragSidebarOpen = useDrag(
-		({ movement: [movementX], direction: [directionX], cancel }) =>
-			movementX > 50 && directionX > 0 && AppService.openSidebar() && cancel(),
+	const dragSidebarResize = useDrag(
+		({ first, last, xy: [pointerX] }) => {
+			if (first) {
+				setIsResizingSidebar(true);
+				setSidebarOpen(true);
+			}
+			const closedWidth = isMobile ? 0 : 60;
+			const width = Math.min(300, Math.max(closedWidth, pointerX));
+			const expandedOpacity = Math.max(
+				0,
+				(width - closedWidth) / (300 - closedWidth),
+			);
+			if (sidebarContentRef.current && isMobile) {
+				sidebarContentRef.current.style.opacity = `${Math.max(
+					0,
+					expandedOpacity,
+				)}`;
+			}
+			if (sidebarResizeHandleRef.current)
+				sidebarResizeHandleRef.current.style.left = `${width - 7}px`;
+			if (appShellRef.current) {
+				appShellRef.current.style.setProperty(
+					"--app-shell-navbar-width",
+					`${width}px`,
+				);
+				if (!isMobile)
+					appShellRef.current.style.setProperty(
+						"--app-shell-navbar-offset",
+						`${width}px`,
+					);
+				if (!isMobile) {
+					appShellRef.current.style.setProperty(
+						"--sidebar-expanded-opacity",
+						`${expandedOpacity}`,
+					);
+					appShellRef.current.style.setProperty(
+						"--sidebar-collapsed-opacity",
+						`${1 - expandedOpacity}`,
+					);
+					appShellRef.current.style.setProperty(
+						"--sidebar-expanded-visibility",
+						"visible",
+					);
+					appShellRef.current.style.setProperty(
+						"--sidebar-collapsed-visibility",
+						"visible",
+					);
+					appShellRef.current.style.setProperty(
+						"--sidebar-opacity-transition",
+						"none",
+					);
+				}
+			}
+
+			if (last) {
+				setSidebarOpen(width > 150);
+				setIsResizingSidebar(false);
+			}
+		},
 		{ axis: "x", filterTaps: true },
 	);
-	const dragAsideOpen = useDrag(
-		({ movement: [movementX], direction: [directionX], cancel }) =>
-			movementX < -50 && directionX < 0 && AppService.openAside() && cancel(),
+	const dragAsideResize = useDrag(
+		({ first, last, xy: [pointerX] }) => {
+			if (first) {
+				setIsResizingAside(true);
+				setAsideOpen(true);
+			}
+			const width = Math.min(
+				window.innerWidth,
+				Math.max(0, window.innerWidth - pointerX),
+			);
+			if (asideContentRef.current)
+				asideContentRef.current.style.opacity = `${Math.min(1, width / 300)}`;
+			if (asideResizeHandleRef.current)
+				asideResizeHandleRef.current.style.right = `${width - 7}px`;
+			if (appShellRef.current) {
+				appShellRef.current.style.setProperty(
+					"--app-shell-aside-width",
+					`${width}px`,
+				);
+				appShellRef.current.style.setProperty(
+					"--app-shell-aside-offset",
+					`${width}px`,
+				);
+			}
+
+			if (last) {
+				const staysOpen = width > 300;
+				if (staysOpen) setAsideWidth(width);
+				setAsideOpen(staysOpen);
+				setIsResizingAside(false);
+			}
+		},
 		{ axis: "x", filterTaps: true },
 	);
 	const dragSidebarClose = useDrag(
 		({ movement: [movementX], direction: [directionX], cancel }) =>
+			isMobile &&
 			movementX < -50 &&
 			directionX < 0 &&
 			AppService.closeSidebar() &&
@@ -72,6 +160,45 @@ export default function App() {
 			movementX > 50 && directionX > 0 && AppService.closeAside() && cancel(),
 		{ axis: "x", filterTaps: true },
 	);
+
+	useEffect(() => {
+		document.body.classList.toggle(
+			"unselectable",
+			isResizingSidebar || isResizingAside,
+		);
+	}, [isResizingAside, isResizingSidebar]);
+	useLayoutEffect(() => {
+		if (isResizingSidebar) return;
+		appShellRef.current?.style.removeProperty("--app-shell-navbar-width");
+		appShellRef.current?.style.removeProperty("--app-shell-navbar-offset");
+		appShellRef.current?.style.removeProperty("--sidebar-expanded-opacity");
+		appShellRef.current?.style.removeProperty("--sidebar-collapsed-opacity");
+		appShellRef.current?.style.removeProperty("--sidebar-expanded-visibility");
+		appShellRef.current?.style.removeProperty("--sidebar-collapsed-visibility");
+		appShellRef.current?.style.removeProperty("--sidebar-opacity-transition");
+		if (sidebarContentRef.current)
+			sidebarContentRef.current.style.opacity = "1";
+		if (sidebarResizeHandleRef.current) {
+			sidebarResizeHandleRef.current.style.left = isSidebarOpen
+				? "293px"
+				: isMobile
+					? "0px"
+					: "53px";
+		}
+	}, [isMobile, isResizingSidebar, isSidebarOpen]);
+	useLayoutEffect(() => {
+		if (isResizingAside) return;
+		appShellRef.current?.style.removeProperty("--app-shell-aside-width");
+		appShellRef.current?.style.removeProperty("--app-shell-aside-offset");
+		if (asideContentRef.current) asideContentRef.current.style.opacity = "1";
+		if (asideResizeHandleRef.current) {
+			asideResizeHandleRef.current.style.right = isAsideOpen
+				? isMobile
+					? "calc(100% - 7px)"
+					: `${asideWidth - 7}px`
+				: "0px";
+		}
+	}, [asideWidth, isAsideOpen, isMobile, isResizingAside]);
 
 	return (
 		<MantineProvider
@@ -88,14 +215,15 @@ export default function App() {
 						overlayProps={{ blur: 2 }}
 					/>
 					<AppShell
+						ref={appShellRef}
 						withBorder={false}
 						navbar={{
-							width: isMobile ? 300 : getSidebarWidth(),
+							width: isMobile ? 300 : isSidebarOpen ? 300 : 60,
 							breakpoint: AppService.breakpoint,
 							collapsed: { desktop: false, mobile: !isSidebarOpen },
 						}}
 						aside={{
-							width: 300,
+							width: isMobile ? "100%" : asideWidth,
 							breakpoint: AppService.breakpoint,
 							collapsed: { desktop: !isAsideOpen, mobile: !isAsideOpen },
 						}}
@@ -108,8 +236,9 @@ export default function App() {
 						styles={{
 							navbar: {
 								zIndex: "calc(var(--mantine-z-index-app) + 2)",
-								transition:
-									"width 250ms ease, min-width 250ms ease, transform 300ms ease",
+								transition: isResizingSidebar
+									? "width 0ms, min-width 0ms, transform 300ms ease"
+									: "width 250ms ease, min-width 250ms ease, transform 300ms ease",
 								...StyleUtils.glass,
 								borderLeft: "none",
 								borderBottom: "none",
@@ -117,49 +246,56 @@ export default function App() {
 							},
 							aside: {
 								zIndex: "calc(var(--mantine-z-index-app) + 2)",
+								transition: isResizingAside
+									? "width 0ms, min-width 0ms, transform 300ms ease"
+									: "width 250ms ease, min-width 250ms ease, transform 300ms ease",
 								...StyleUtils.glass,
 								borderRight: "none",
 								borderBottom: "none",
 								borderTop: "none",
 							},
 							main: {
-								transition: "padding-inline-start 250ms ease",
+								transition:
+									isResizingSidebar || isResizingAside
+										? "padding-inline-start 0ms, padding-inline-end 0ms"
+										: "padding-inline-start 250ms ease, padding-inline-end 250ms ease",
 							},
 						}}
 					>
-						<div
-							{...dragSidebarOpen()}
-							style={{
-								position: "absolute",
-								top: 0,
-								left: 0,
-								bottom: 0,
-								width: 15,
-								zIndex: "var(--mantine-z-index-max)",
-								touchAction: "none",
-							}}
-						></div>
-						<div
-							{...dragAsideOpen()}
-							style={{
-								position: "absolute",
-								top: 0,
-								right: 0,
-								bottom: 0,
-								width: 15,
-								zIndex: "var(--mantine-z-index-max)",
-								touchAction: "none",
-							}}
-						></div>
-
-						{isSidebarOpen && isMobile && (
-							<Overlay
-								opacity={1}
-								color="#000"
-								zIndex="calc(var(--mantine-z-index-app) + 1)"
-								onClick={() => setSidebarOpen(false)}
-								{...dragSidebarClose()}
-								style={{ touchAction: "none" }}
+						{(!isAsideOpen || !isMobile) && (
+							<div
+								ref={sidebarResizeHandleRef}
+								{...dragSidebarResize()}
+								style={{
+									position: "absolute",
+									top: 0,
+									left: isSidebarOpen ? 293 : isMobile ? 0 : 53,
+									bottom: 0,
+									width: 15,
+									zIndex: "var(--mantine-z-index-max)",
+									touchAction: "none",
+									cursor: "ew-resize",
+								}}
+							/>
+						)}
+						{(!isSidebarOpen || !isMobile) && (
+							<div
+								ref={asideResizeHandleRef}
+								{...dragAsideResize()}
+								style={{
+									position: "absolute",
+									top: 0,
+									right: isAsideOpen
+										? isMobile
+											? "calc(100% - 7px)"
+											: asideWidth - 7
+										: 0,
+									bottom: 0,
+									width: 15,
+									zIndex: "var(--mantine-z-index-max)",
+									touchAction: "none",
+									cursor: "ew-resize",
+								}}
 							/>
 						)}
 						<AppShell.Navbar
@@ -172,7 +308,9 @@ export default function App() {
 								fontWeight: 450,
 							}}
 						>
-							<Sidebar />
+							<div ref={sidebarContentRef} style={{ height: "100%" }}>
+								<Sidebar />
+							</div>
 						</AppShell.Navbar>
 						<AppShell.Main
 							style={{
@@ -193,7 +331,9 @@ export default function App() {
 								fontWeight: 450,
 							}}
 						>
-							<ChatFiles />
+							<div ref={asideContentRef} style={{ height: "100%" }}>
+								<ChatFiles />
+							</div>
 						</AppShell.Aside>
 					</AppShell>
 				</Box>

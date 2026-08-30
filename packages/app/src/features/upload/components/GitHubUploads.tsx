@@ -1,4 +1,3 @@
-import { Icon } from "@iconify/react";
 import {
 	ActionIcon,
 	Badge,
@@ -10,6 +9,12 @@ import {
 	Text,
 	TextInput,
 } from "@mantine/core";
+import {
+	ArrowClockwiseIcon,
+	CloudArrowDownIcon,
+	MagnifyingGlassIcon,
+	TrashIcon,
+} from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { useState } from "react";
@@ -42,7 +47,7 @@ export function GitHubUploads({ close }: { close: () => void }) {
 		<Stack h="100%" gap="md">
 			<TextInput
 				placeholder="Search repositories…"
-				leftSection={<Icon icon="lucide:search" height={16} />}
+				leftSection={<MagnifyingGlassIcon size={16} />}
 				value={search}
 				onChange={(e) => setSearch(e.currentTarget.value)}
 			/>
@@ -91,7 +96,7 @@ export function GitHubUploads({ close }: { close: () => void }) {
 									}}
 									onClick={() => {
 										if (!existing) return;
-										MessagingService.attachUpload({
+										void MessagingService.attachUpload({
 											client,
 											upload: existing,
 										});
@@ -151,7 +156,7 @@ export function GitHubUploads({ close }: { close: () => void }) {
 															deleteUpload.variables.id === existing.id
 														}
 													>
-														<Icon icon="lucide:trash" height={16} />
+														<TrashIcon size={18} />
 													</ActionIcon>
 												)}
 												<ActionIcon
@@ -169,9 +174,9 @@ export function GitHubUploads({ close }: { close: () => void }) {
 													disabled={isCloning}
 												>
 													{existing ? (
-														<Icon icon="lucide:refresh-cw" height={16} />
+														<ArrowClockwiseIcon size={18} />
 													) : (
-														<Icon icon="lucide:download-cloud" height={16} />
+														<CloudArrowDownIcon size={18} />
 													)}
 												</ActionIcon>
 											</Group>

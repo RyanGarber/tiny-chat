@@ -4,7 +4,7 @@ import { useCode } from "@tiny-chat/client/src/core/hooks/useCode.ts";
 import { Text } from "ink";
 import { useMemo } from "react";
 import { CliUtils } from "../../../core/utils/CliUtils.ts";
-import { CodeLines } from "./CodeLines.tsx";
+import CodeLines from "./CodeLines.tsx";
 import Highlight from "./Highlight.tsx";
 
 export const Code = ({

@@ -6,7 +6,51 @@ import { PathUtils } from "../../file/utils/PathUtils.ts";
 import type { zAgentMessage } from "../types/agent.ts";
 import { AgentMessagesService } from "./AgentMessagesService.ts";
 
+type NoId<T, K extends keyof any> = T extends any ? Omit<T, K> : never;
+type zAgentMessageNoPartIds = Omit<zAgentMessage, "data"> & {
+	data: (NoId<zAgentMessage["data"][number][number], "id"> & {
+		id?: string;
+	})[][];
+};
+function noPartIds(message: zAgentMessageNoPartIds): zAgentMessage {
+	return {
+		...message,
+		data: message.data.map((step) => step.map(({ id, ...rest }) => rest)),
+	} as zAgentMessage;
+}
+
 describe("AgentMessagesService", () => {
+	it("builds model parts from a stored attachment without reading it again", () => {
+		const parts = AgentMessagesService.buildAttachmentParts({
+			id: "attachment-1",
+			type: "attachment",
+			source: "/project/src",
+			label: "src",
+			content: {
+				type: "directory",
+				items: [
+					{ path: "/project/src/index.ts" },
+					{ path: "/project/src/components", directory: true },
+				],
+			},
+		});
+
+		expect(parts).toEqual([
+			expect.objectContaining({
+				type: "text",
+				value: '<attachment source="/project/src" name="src">',
+			}),
+			expect.objectContaining({
+				id: "attachment-1",
+				type: "text",
+				value: expect.stringContaining(
+					'<file name="index.ts" path="/project/src/index.ts" />',
+				),
+			}),
+			expect.objectContaining({ type: "text", value: "</attachment>" }),
+		]);
+	});
+
 	it("builds a message tree from context", () => {
 		const config = zConfig.parse({
 			provider: "openai",
@@ -21,21 +65,33 @@ describe("AgentMessagesService", () => {
 				id: "1",
 				author: "USER",
 				config,
-				data: [[{ type: "text", value: "Hello" }]],
+				data: [
+					[{ id: CommonUtils.getRandomId(), type: "text", value: "Hello" }],
+				],
 				createdAt: new Date("2026-01-01T00:00:00Z"),
 			},
 			{
 				id: "2",
 				author: "MODEL",
 				config,
-				data: [[{ type: "text", value: "Hi there" }]],
+				data: [
+					[{ id: CommonUtils.getRandomId(), type: "text", value: "Hi there" }],
+				],
 				createdAt: new Date("2026-01-01T00:00:01Z"),
 			},
 			{
 				id: "3",
 				author: "USER",
 				config,
-				data: [[{ type: "text", value: "Hello again" }]],
+				data: [
+					[
+						{
+							id: CommonUtils.getRandomId(),
+							type: "text",
+							value: "Hello again",
+						},
+					],
+				],
 				createdAt: new Date("2026-01-01T00:15:01Z"),
 			},
 		];
@@ -49,47 +105,53 @@ describe("AgentMessagesService", () => {
 			}),
 		);
 
-		expect(builtContext[0]).toEqual({
-			...context[0],
-			data: [
-				[
-					{
-						type: "text",
-						value: `<message role="user" sent="${CommonUtils.formatDate({ date: context[0].createdAt ?? undefined, timezone: "America/New_York" })}">`,
-					},
-					...context[0].data.flat(),
-					{ type: "text", value: "</message>" },
+		expect(noPartIds(builtContext[0])).toEqual(
+			noPartIds({
+				...context[0],
+				data: [
+					[
+						{
+							type: "text",
+							value: `<message role="user" sent="${CommonUtils.formatDate({ date: context[0].createdAt ?? undefined, timezone: "America/New_York" })}">`,
+						},
+						...context[0].data.flat(),
+						{ type: "text", value: "</message>" },
+					],
 				],
-			],
-		} satisfies zAgentMessage);
+			} satisfies zAgentMessageNoPartIds),
+		);
 
-		expect(builtContext[1]).toEqual({
-			...context[1],
-			data: [
-				[
-					{
-						type: "text",
-						value: `<message role="assistant" model="gpt-5" sent="${CommonUtils.formatDate({ date: context[1].createdAt ?? undefined, timezone: "America/New_York" })}">`,
-					},
-					...context[1].data.flat(),
-					{ type: "text", value: "</message>" },
+		expect(noPartIds(builtContext[1])).toEqual(
+			noPartIds({
+				...context[1],
+				data: [
+					[
+						{
+							type: "text",
+							value: `<message role="assistant" model="gpt-5" sent="${CommonUtils.formatDate({ date: context[1].createdAt ?? undefined, timezone: "America/New_York" })}">`,
+						},
+						...context[1].data.flat(),
+						{ type: "text", value: "</message>" },
+					],
 				],
-			],
-		} satisfies zAgentMessage);
+			} satisfies zAgentMessageNoPartIds),
+		);
 
-		expect(builtContext[2]).toEqual({
-			...context[2],
-			data: [
-				[
-					{
-						type: "text",
-						value: `<message role="user" sent="${CommonUtils.formatDate({ date: context[2].createdAt ?? undefined, timezone: "America/New_York" })}" gap="15 minutes">`,
-					},
-					...context[2].data.flat(),
-					{ type: "text", value: "</message>" },
+		expect(noPartIds(builtContext[2])).toEqual(
+			noPartIds({
+				...context[2],
+				data: [
+					[
+						{
+							type: "text",
+							value: `<message role="user" sent="${CommonUtils.formatDate({ date: context[2].createdAt ?? undefined, timezone: "America/New_York" })}" gap="15 minutes">`,
+						},
+						...context[2].data.flat(),
+						{ type: "text", value: "</message>" },
+					],
 				],
-			],
-		} satisfies zAgentMessage);
+			} satisfies zAgentMessageNoPartIds),
+		);
 	});
 
 	it("builds a file tree from a directory", () => {

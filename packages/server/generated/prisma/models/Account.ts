@@ -336,7 +336,7 @@ export type AccountCreateInput = {
   scope?: string | null
   password?: string | null
   createdAt?: Date | string
-  updatedAt?: Date | string
+  updatedAt: Date | string
   user: Prisma.UserCreateNestedOneWithoutAccountsInput
 }
 
@@ -353,7 +353,7 @@ export type AccountUncheckedCreateInput = {
   scope?: string | null
   password?: string | null
   createdAt?: Date | string
-  updatedAt?: Date | string
+  updatedAt: Date | string
 }
 
 export type AccountUpdateInput = {
@@ -401,7 +401,7 @@ export type AccountCreateManyInput = {
   scope?: string | null
   password?: string | null
   createdAt?: Date | string
-  updatedAt?: Date | string
+  updatedAt: Date | string
 }
 
 export type AccountUpdateManyMutationInput = {
@@ -433,16 +433,6 @@ export type AccountUncheckedUpdateManyInput = {
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type AccountListRelationFilter = {
-  every?: Prisma.AccountWhereInput
-  some?: Prisma.AccountWhereInput
-  none?: Prisma.AccountWhereInput
-}
-
-export type AccountOrderByRelationAggregateInput = {
-  _count?: Prisma.SortOrder
 }
 
 export type AccountCountOrderByAggregateInput = {
@@ -493,6 +483,32 @@ export type AccountMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
+export type AccountListRelationFilter = {
+  every?: Prisma.AccountWhereInput
+  some?: Prisma.AccountWhereInput
+  none?: Prisma.AccountWhereInput
+}
+
+export type AccountOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
+}
+
+export type StringFieldUpdateOperationsInput = {
+  set?: string
+}
+
+export type NullableStringFieldUpdateOperationsInput = {
+  set?: string | null
+}
+
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
+}
+
+export type DateTimeFieldUpdateOperationsInput = {
+  set?: Date | string
+}
+
 export type AccountCreateNestedManyWithoutUserInput = {
   create?: Prisma.XOR<Prisma.AccountCreateWithoutUserInput, Prisma.AccountUncheckedCreateWithoutUserInput> | Prisma.AccountCreateWithoutUserInput[] | Prisma.AccountUncheckedCreateWithoutUserInput[]
   connectOrCreate?: Prisma.AccountCreateOrConnectWithoutUserInput | Prisma.AccountCreateOrConnectWithoutUserInput[]
@@ -535,10 +551,6 @@ export type AccountUncheckedUpdateManyWithoutUserNestedInput = {
   deleteMany?: Prisma.AccountScalarWhereInput | Prisma.AccountScalarWhereInput[]
 }
 
-export type NullableDateTimeFieldUpdateOperationsInput = {
-  set?: Date | string | null
-}
-
 export type AccountCreateWithoutUserInput = {
   id: string
   accountId: string
@@ -551,7 +563,7 @@ export type AccountCreateWithoutUserInput = {
   scope?: string | null
   password?: string | null
   createdAt?: Date | string
-  updatedAt?: Date | string
+  updatedAt: Date | string
 }
 
 export type AccountUncheckedCreateWithoutUserInput = {
@@ -566,7 +578,7 @@ export type AccountUncheckedCreateWithoutUserInput = {
   scope?: string | null
   password?: string | null
   createdAt?: Date | string
-  updatedAt?: Date | string
+  updatedAt: Date | string
 }
 
 export type AccountCreateOrConnectWithoutUserInput = {
@@ -626,7 +638,7 @@ export type AccountCreateManyUserInput = {
   scope?: string | null
   password?: string | null
   createdAt?: Date | string
-  updatedAt?: Date | string
+  updatedAt: Date | string
 }
 
 export type AccountUpdateWithoutUserInput = {

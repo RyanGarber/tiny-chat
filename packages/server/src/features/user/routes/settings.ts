@@ -167,12 +167,7 @@ export const settings = router({
 				user: ctx.session.user,
 				update: (settings) => ({
 					...settings,
-					embeddingConfig: input.config
-						? ({
-								model: input.config.model,
-								provider: input.config.provider,
-							} satisfies Partial<zConfig> as zConfig)
-						: undefined,
+					embeddingConfig: input.config ?? undefined,
 				}),
 			});
 		}),
@@ -185,6 +180,30 @@ export const settings = router({
 				update: (settings) => ({
 					...settings,
 					useEmbeddingSearch: input.useEmbeddingSearch,
+				}),
+			});
+		}),
+
+	setDreamConfig: procedure
+		.input(z.object({ config: zConfig.nullish() }))
+		.mutation(async ({ ctx, input }) => {
+			return SettingsService.setSettings({
+				user: ctx.session.user,
+				update: (settings) => ({
+					...settings,
+					dreamConfig: input.config ?? undefined,
+				}),
+			});
+		}),
+
+	setSubagentConfig: procedure
+		.input(z.object({ config: zConfig.nullish() }))
+		.mutation(async ({ ctx, input }) => {
+			return SettingsService.setSettings({
+				user: ctx.session.user,
+				update: (settings) => ({
+					...settings,
+					subagentConfig: input.config ?? undefined,
 				}),
 			});
 		}),

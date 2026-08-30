@@ -1,8 +1,8 @@
-import { Icon } from "@iconify/react";
 import {
 	ActionIcon,
 	Box,
 	Button,
+	type DefaultMantineColor,
 	Popover,
 	PopoverDropdown,
 	PopoverTarget,
@@ -11,6 +11,7 @@ import {
 	Stack,
 	Text,
 } from "@mantine/core";
+import { GearIcon, PaperPlaneTiltIcon, StopIcon } from "@phosphor-icons/react";
 import { AgentStreamService } from "@tiny-chat/client/src/core/services/StreamService.ts";
 import { useConfig } from "@tiny-chat/client/src/features/agent/hooks/useConfig.ts";
 import { useSkills } from "@tiny-chat/client/src/features/agent/hooks/useSkills.ts";
@@ -19,6 +20,10 @@ import { useStreamStore } from "@tiny-chat/client/src/features/agent/stores/useS
 import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
 import { useMessaging } from "@tiny-chat/client/src/features/chat/hooks/useMessaging.ts";
 import { useDraftStore } from "@tiny-chat/client/src/features/chat/stores/useDraftStore.ts";
+import type {
+	Categories,
+	Usage,
+} from "@tiny-chat/client/src/features/editor/hooks/useEstimatedTokens.ts";
 import { ToolUtils } from "@tiny-chat/core/src/features/tool/utils/ToolUtils.ts";
 import { useMemo } from "react";
 import ModelSelect from "#app/core/components/ModelSelect.tsx";
@@ -27,7 +32,17 @@ import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import TokenUsage from "#app/features/editor/components/TokenUsage.tsx";
 import { useEditorStore } from "#app/features/editor/stores/useEditorStore.ts";
 
-export default function RightSection({ disabled }: { disabled: boolean }) {
+export default function RightSection({
+	width,
+	disabled,
+	usage,
+	categories,
+}: {
+	width: number;
+	disabled: boolean;
+	usage: Usage<DefaultMantineColor>;
+	categories: Categories;
+}) {
 	const { chat } = useChat();
 	const { sendMessage } = useMessaging();
 	const { config, setConfig, modelArgs, setModelArg } = useConfig();
@@ -52,23 +67,39 @@ export default function RightSection({ disabled }: { disabled: boolean }) {
 	const isEmpty = useDraftStore((state) => state.isEmpty);
 	const isIncomplete = useEditorStore((state) => state.isIncomplete);
 
+	const modelWidth = width * 0.25;
+
 	return (
 		<>
-			<TokenUsage />
+			<TokenUsage usage={usage} categories={categories} />
 			<Popover position="top" transitionProps={{ transition: "fade-up" }}>
 				<PopoverTarget>
-					<Button
-						fw="normal"
-						variant="subtle"
-						color="var(--mantine-color-text)"
-						maw="25vw"
-						radius={20}
-						h={40}
-						px={15}
-						disabled={disabled}
-					>
-						{config.model}
-					</Button>
+					{modelWidth < 100 ? (
+						<ActionIcon
+							variant="subtle"
+							radius={25}
+							h={30}
+							w={30}
+							disabled={disabled}
+							color="var(--mantine-color-dimmed)"
+						>
+							<GearIcon size={20} />
+						</ActionIcon>
+					) : (
+						<Button
+							fw="normal"
+							variant="subtle"
+							radius={20}
+							h={40}
+							px={15}
+							disabled={disabled}
+							color="var(--mantine-color-dimmed)"
+						>
+							<Text size="sm" truncate="start" maw={modelWidth}>
+								{config.model}
+							</Text>
+						</Button>
+					)}
 				</PopoverTarget>
 				<PopoverDropdown maw={400} style={{ boxShadow: StyleUtils.shadow }}>
 					<ModelSelect
@@ -165,11 +196,7 @@ export default function RightSection({ disabled }: { disabled: boolean }) {
 				loading={sendMessage.isPending}
 				disabled={(isEmpty || isIncomplete || disabled) && stream === undefined}
 			>
-				{stream ? (
-					<Icon icon="lucide:square" height={18} />
-				) : (
-					<Icon icon="lucide:send" height={18} />
-				)}
+				{stream ? <StopIcon size={20} /> : <PaperPlaneTiltIcon size={20} />}
 			</ActionIcon>
 		</>
 	);

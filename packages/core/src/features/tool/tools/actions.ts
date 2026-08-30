@@ -1,4 +1,4 @@
-import type { UserCapability } from "../../../core/types/capability.ts";
+import type { ActionsCapability } from "../../../core/types/capability.ts";
 import type { Toolset, ToolsetFactory } from "../types/tool.ts";
 import { createCreateActionTool } from "./actions/create_action.ts";
 import { createDeleteActionTool } from "./actions/delete_action.ts";
@@ -7,7 +7,7 @@ import { createUpdateActionTool } from "./actions/update_action.ts";
 
 export const createActionsToolset: ToolsetFactory<
 	Toolset<{
-		user: UserCapability;
+		actions: ActionsCapability;
 	}>
 > = async (options) => ({
 	name: "actions",

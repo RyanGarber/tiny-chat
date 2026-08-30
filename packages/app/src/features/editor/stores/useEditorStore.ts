@@ -6,7 +6,6 @@ import { EditorUtils } from "#app/features/editor/utils/EditorUtils.ts";
 
 interface EditorStore {
 	editor: Editor | null;
-	setEditor: (editor: Editor | null) => void;
 
 	isIncomplete: boolean;
 	update: () => void;
@@ -17,7 +16,6 @@ interface EditorStore {
 
 export const useEditorStore = create<EditorStore>((set) => ({
 	editor: null,
-	setEditor: (editor) => set({ editor }),
 
 	isIncomplete: false,
 	update: () => {

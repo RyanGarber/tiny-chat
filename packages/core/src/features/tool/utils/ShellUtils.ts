@@ -1,15 +1,170 @@
+import { type ParsedScript, parse, type Redirect, type Word } from "unbash";
 import type {
 	Capabilities,
 	ShellCapability,
 } from "../../../core/types/capability.ts";
 import { PathUtils } from "../../file/utils/PathUtils.ts";
 
+const WRITE_REDIRECTS = new Set([">", ">>", "<>", ">|", "&>", "&>>"]);
+const FIND_WRITE_ACTIONS = new Set([
+	"-delete",
+	"-exec",
+	"-execdir",
+	"-fls",
+	"-fprint",
+	"-fprint0",
+	"-fprintf",
+	"-ok",
+	"-okdir",
+]);
+const GIT_BRANCH_WRITE_OPTIONS = new Set([
+	"-c",
+	"-C",
+	"-d",
+	"-D",
+	"-m",
+	"-M",
+	"--copy",
+	"--delete",
+	"--edit-description",
+	"--move",
+	"--set-upstream-to",
+	"--unset-upstream",
+]);
+const GIT_REMOTE_WRITE_SUBCOMMANDS = new Set([
+	"add",
+	"prune",
+	"remove",
+	"rename",
+	"set-branches",
+	"set-head",
+	"set-url",
+	"update",
+]);
+
+const isStaticWord = (word: Word): boolean =>
+	(word.parts ?? []).every((part) => {
+		switch (part.type) {
+			case "Literal":
+			case "SingleQuoted":
+			case "AnsiCQuoted":
+				return true;
+			case "DoubleQuoted":
+			case "LocaleString":
+				return part.parts.every((child) => child.type === "Literal");
+			default:
+				return false;
+		}
+	});
+
+const hasWriteRedirect = (redirect: Redirect): boolean => {
+	if (WRITE_REDIRECTS.has(redirect.operator)) {
+		return redirect.target?.value !== "/dev/null";
+	}
+	if (redirect.operator !== ">&") return false;
+	return !redirect.target || !/^(?:[0-9]+|-)$/.test(redirect.target.value);
+};
+
+const isGitSafe = (args: string[]): boolean => {
+	const subcommandIndex = args.findIndex((arg) => !arg.startsWith("-"));
+	if (subcommandIndex === -1) return false;
+	const subcommand = args[subcommandIndex];
+	const subcommandArgs = args.slice(subcommandIndex + 1);
+	if (
+		subcommandArgs.some(
+			(arg) => arg === "--output" || arg.startsWith("--output="),
+		)
+	) {
+		return false;
+	}
+
+	if (ShellUtils.safeCommandsGit.has(subcommand)) return true;
+	if (subcommand === "branch") {
+		if (subcommandArgs.some((arg) => GIT_BRANCH_WRITE_OPTIONS.has(arg))) {
+			return false;
+		}
+		const positional = subcommandArgs.filter((arg) => !arg.startsWith("-"));
+		return positional.length === 0 || subcommandArgs.includes("--list");
+	}
+	if (subcommand === "remote") {
+		return !subcommandArgs.some((arg) => GIT_REMOTE_WRITE_SUBCOMMANDS.has(arg));
+	}
+	return false;
+};
+
+const commandWrites = (command: string, args: string[]): boolean => {
+	if (command === "find") {
+		return args.some((arg) => FIND_WRITE_ACTIONS.has(arg));
+	}
+	if (command === "sort") {
+		return args.some((arg) => arg === "-o" || arg.startsWith("--output="));
+	}
+	if (command === "uniq") {
+		return args.filter((arg) => !arg.startsWith("-")).length > 1;
+	}
+	if (command === "diff") {
+		return args.some(
+			(arg) => arg === "--output" || arg.startsWith("--output="),
+		);
+	}
+	if (command === "tree") {
+		return args.some((arg) => arg === "-o" || arg.startsWith("--output="));
+	}
+	return false;
+};
+
+const isScriptSafe = (script: ParsedScript): boolean => {
+	if (script.errors?.length) return false;
+
+	const seen = new Set<object>();
+	const visit = (value: unknown): boolean => {
+		if (!value || typeof value !== "object") return true;
+		if (seen.has(value)) return true;
+		seen.add(value);
+
+		const item = value as Record<string, unknown>;
+		if (item.type === "Script" && (value as ParsedScript).errors?.length) {
+			return false;
+		}
+		if ("operator" in item && "target" in item) {
+			if (hasWriteRedirect(value as Redirect)) return false;
+		}
+		if (item.type === "Command") {
+			const node = value as {
+				name?: Word;
+				prefix: unknown[];
+				redirects: Redirect[];
+				suffix: Word[];
+			};
+			if (!node.name) {
+				return node.prefix.every(visit) && node.redirects.every(visit);
+			}
+			if (!isStaticWord(node.name)) return false;
+			const args = node.suffix.map((word) => word.value);
+			const allowed =
+				ShellUtils.safeCommands.has(node.name.value) &&
+				!commandWrites(node.name.value, args);
+			if (!allowed && !(node.name.value === "git" && isGitSafe(args)))
+				return false;
+		}
+
+		// unbash exposes Word.parts via a lazy, non-enumerable getter.
+		if ("text" in item && "value" in item && "pos" in item && "end" in item) {
+			const word = value as unknown as Word;
+			if (!(word.parts ?? []).every(visit)) return false;
+		}
+		return Object.keys(item).every((key) =>
+			key === "parts" ? true : visit(item[key]),
+		);
+	};
+
+	return visit(script);
+};
+
 export const ShellUtils = {
-	/**
-	 * Read-only, side-effect-free commands that never warrant an approval prompt
-	 * on their own.
-	 */
+	/** Read-only commands that can run without an approval prompt. */
 	safeCommands: new Set([
+		"cd",
 		"ls",
 		"pwd",
 		"cat",
@@ -37,64 +192,37 @@ export const ShellUtils = {
 		"basename",
 		"dirname",
 		"realpath",
+		"true",
+		"false",
+		"test",
+		"[",
 	]),
 
-	/** `git` subcommands that only read state and never mutate the repository. */
+	/** `git` subcommands whose normal operation only reads repository state. */
 	safeCommandsGit: new Set([
 		"status",
 		"diff",
 		"log",
 		"show",
-		"branch",
-		"remote",
 		"describe",
 		"blame",
 		"rev-parse",
+		"grep",
+		"ls-files",
+		"ls-tree",
+		"cat-file",
+		"name-rev",
+		"shortlog",
 	]),
 
-	/** Splits a single `&&`-free command segment into its tokens, respecting quotes. */
-	parse: (segment: string): string[] => {
-		const tokens: string[] = [];
-		const pattern = /"([^"]*)"|'([^']*)'|(\S+)/g;
-		let match: RegExpExecArray | null;
-		while (true) {
-			match = pattern.exec(segment);
-			if (!match) break;
-			const token = match[1] ?? match[2] ?? match[3];
-			if (token !== undefined) tokens.push(token);
-		}
-		return tokens;
-	},
-
-	isSegmentSafe: (segment: string): boolean => {
-		const [command, ...args] = ShellUtils.parse(segment);
-		if (!command) return false;
-		if (ShellUtils.safeCommands.has(command)) return true;
-		if (command === "git") {
-			const subcommand = args[0];
-			return (
-				subcommand !== undefined && ShellUtils.safeCommandsGit.has(subcommand)
-			);
-		}
-		return false;
-	},
-
-	/**
-	 * Parses `command` into its `&&`-separated parts and checks each against the
-	 * safe command whitelist. Any other shell control character (`;`, `|`, `` ` ``,
-	 * `$()`, redirects, backgrounding, ...) is treated as unsafe since it is not
-	 * accounted for here.
-	 */
+	/** Parses the full Bash syntax tree and rejects commands that may write to disk. */
 	isSafe: (command: string): boolean => {
-		const trimmed = command.trim();
-		if (!trimmed) return false;
-		if (/[;|`$<>]/.test(trimmed)) return false;
-		if (trimmed.replace(/&&/g, "").includes("&")) return false;
-
-		const segments = trimmed.split("&&").map((segment) => segment.trim());
-		if (segments.some((segment) => segment.length === 0)) return false;
-
-		return segments.every(ShellUtils.isSegmentSafe);
+		if (!command.trim()) return false;
+		try {
+			return isScriptSafe(parse(command));
+		} catch {
+			return false;
+		}
 	},
 
 	detect: (

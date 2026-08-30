@@ -2,7 +2,10 @@ import type { Capabilities } from "@tiny-chat/core/src/core/types/capability.ts"
 import type { zAgentMessage } from "@tiny-chat/core/src/features/agent/types/agent.ts";
 import { AgentUtils } from "@tiny-chat/core/src/features/agent/utils/AgentUtils.ts";
 import type { ChatState } from "@tiny-chat/core/src/features/data/types/chat.ts";
-import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type {
+	MessageState,
+	zConfig,
+} from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { WebProviderService } from "@tiny-chat/core/src/features/provider/services/WebProviderService.ts";
 import type {
@@ -14,11 +17,12 @@ import type { zSkill } from "@tiny-chat/core/src/features/skill/types/skill.ts";
 import type { Toolset } from "@tiny-chat/core/src/features/tool/types/tool.ts";
 import type { Client } from "../../client.ts";
 import { ClientProviderService } from "../../features/agent/services/ClientProviderService.ts";
+import { createActionsCapability } from "../capabilities/createActionsCapability.ts";
 import { createChatShellCapability } from "../capabilities/createChatShellCapability.ts";
 import { createEmbeddingCapability } from "../capabilities/createEmbeddingCapability.ts";
+import { createMemoriesCapability } from "../capabilities/createMemoriesCapability.ts";
 import { createShellCapability } from "../capabilities/createShellCapability.ts";
 import { createSubagentsCapability } from "../capabilities/createSubagentsCapability.ts";
-import { createUserCapability } from "../capabilities/createUserCapability.ts";
 import { createWebCapability } from "../capabilities/createWebCapability.ts";
 
 export const ClientCapabilityService = {
@@ -29,6 +33,7 @@ export const ClientCapabilityService = {
 		message,
 		messages,
 		incognito,
+		temporary,
 		providers,
 		skills = [],
 		mcpTools = [],
@@ -40,14 +45,22 @@ export const ClientCapabilityService = {
 		/** What the mount is built from; a chat only adds somewhere to write. */
 		messages?: zAgentMessage[];
 		incognito: boolean | undefined;
+		temporary: boolean | undefined;
 		providers?: ProviderState<ProviderStatus>[];
 		skills?: zSkill[];
 		mcpTools?: Toolset<any>[];
 	}): Promise<Capabilities> => {
 		const capabilities: Capabilities = {};
 
-		if (message?.id && !incognito) {
-			capabilities.user = await createUserCapability({ client, message });
+		if (message?.id && !incognito && !temporary) {
+			capabilities.actions = await createActionsCapability({ client, message });
+		}
+
+		if (!incognito && !temporary) {
+			capabilities.memories = await createMemoriesCapability({
+				client,
+				message,
+			});
 		}
 
 		capabilities.chatShell = await createChatShellCapability({
@@ -64,15 +77,21 @@ export const ClientCapabilityService = {
 			client,
 			user,
 		});
+		const hasProvider = (config?: zConfig) =>
+			config &&
+			providers.some(
+				(provider) =>
+					provider.name === config.provider && provider.status.valid,
+			);
 
-		const embeddingConfig = user.settings.embeddingConfig;
-		const embed = providers.some(
-			(provider) =>
-				provider.name === embeddingConfig?.provider && provider.status.valid,
-		);
-
-		if (chat?.id && message?.id) {
-			capabilities.subagent = await createSubagentsCapability({
+		if (hasProvider(user.settings.embeddingConfig)) {
+			capabilities.embedding = await createEmbeddingCapability({
+				client,
+				user,
+			});
+		}
+		if (chat?.id && message?.id && hasProvider(user.settings.subagentConfig)) {
+			capabilities.subagents = await createSubagentsCapability({
 				client,
 				chat,
 				message,
@@ -94,13 +113,6 @@ export const ClientCapabilityService = {
 			capabilities.web = await createWebCapability({ client });
 		}
 
-		if (embed) {
-			capabilities.embedding = await createEmbeddingCapability({
-				client,
-				user,
-			});
-		}
-
 		return capabilities;
 	},
 
@@ -116,6 +128,7 @@ export const ClientCapabilityService = {
 		message,
 		messages,
 		incognito,
+		temporary,
 		providers,
 	}: {
 		client: Client;
@@ -124,6 +137,7 @@ export const ClientCapabilityService = {
 		message: MessageState | boolean | null;
 		messages?: zAgentMessage[];
 		incognito: boolean | undefined;
+		temporary: boolean | undefined;
 		providers?: ProviderState<ProviderStatus>[];
 	}) => {
 		if (typeof chat === "boolean") {
@@ -139,6 +153,7 @@ export const ClientCapabilityService = {
 			message,
 			messages,
 			incognito,
+			temporary,
 			providers,
 		});
 	},

@@ -247,7 +247,7 @@ export const PathUtils = {
 		id,
 		root = MOUNT,
 	}: {
-		path?: string[] | string;
+		path?: readonly string[] | string[] | string;
 		mount?: FileMount;
 		id?: string | null;
 		root?: string;

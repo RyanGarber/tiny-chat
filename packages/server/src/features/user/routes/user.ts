@@ -1,3 +1,4 @@
+import { zId } from "@tiny-chat/core/src/core/types/common.ts";
 import { z } from "zod";
 import { AuthService } from "../../../core/services/AuthService.ts";
 import { AuthServer } from "../../../core/utils/AuthServer.ts";
@@ -26,7 +27,7 @@ export const user = router({
 	}),
 
 	continueClone: procedure
-		.input(z.object({ id: z.cuid2() }))
+		.input(z.object({ id: zId }))
 		.mutation(({ ctx, input }) => {
 			return CloneService.continueClone({
 				user: ctx.session.user,
@@ -35,7 +36,7 @@ export const user = router({
 		}),
 
 	completeClone: procedure
-		.input(z.object({ id: z.cuid2() }))
+		.input(z.object({ id: zId }))
 		.mutation(async ({ ctx, input }) => {
 			return CloneService.completeClone({
 				user: ctx.session.user,

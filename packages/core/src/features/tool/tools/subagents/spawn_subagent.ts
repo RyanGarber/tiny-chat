@@ -1,11 +1,7 @@
 import { z } from "zod";
 import type { SubagentsCapability } from "../../../../core/types/capability.ts";
-import {
-	Author,
-	zConfig,
-	zData,
-	zDataPart,
-} from "../../../data/types/message.ts";
+import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
+import { Author, zData, zDataPart } from "../../../data/types/message.ts";
 import { DataUtils } from "../../../data/utils/DataUtils.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
@@ -24,7 +20,6 @@ export const spawn_subagent = {
 				"Detailed instructions for the agent, including the task to perform and the results to provide.",
 			),
 	}),
-	feedback: zConfig,
 	output: z.object({
 		response: z.string(),
 		errors: z.array(
@@ -41,12 +36,15 @@ export const spawn_subagent = {
 } as const satisfies ToolDefinition;
 
 export const createSpawnSubagentTool: ToolFactory<
-	Tool<typeof spawn_subagent, { subagent: SubagentsCapability }>
+	Tool<typeof spawn_subagent, { subagents: SubagentsCapability }>
 > = (options) => ({
 	...spawn_subagent,
 	...options,
-	execute: async ({ input, feedback, stream, abort, context }) => {
-		const data = await options.capabilities.subagent.runSubagent({
+	execute: async ({ input, stream, abort, context }) => {
+		if (!context.user.settings.subagentConfig)
+			throw new Error("missing subagent config");
+
+		const data = await options.capabilities.subagents.runSubagent({
 			context: {
 				user: context.user,
 				chat: context.chat,
@@ -54,14 +52,22 @@ export const createSpawnSubagentTool: ToolFactory<
 					{
 						id: null,
 						author: Author.USER,
-						config: feedback,
-						data: [[{ type: "text", value: input.prompt }]],
+						config: context.user.settings.subagentConfig,
+						data: [
+							[
+								{
+									id: CommonUtils.getRandomId(),
+									type: "text",
+									value: input.prompt,
+								},
+							],
+						],
 						createdAt: new Date(),
 					},
 					{
 						id: null,
 						author: Author.MODEL,
-						config: feedback,
+						config: context.user.settings.subagentConfig,
 						data: [],
 						createdAt: new Date(),
 					},
@@ -69,12 +75,19 @@ export const createSpawnSubagentTool: ToolFactory<
 				timezone: context.timezone,
 				interactive: false,
 			},
-			config: feedback,
+			instructions:
+				"You are an autonomous subagent running in a non-interactive context. Read-only tools and bash commands will work, but those that require approval (such as sed) will not. Use the tools available to you to complete your task to the best of your abilities.",
 			onData: (data) => stream?.({ mode: "replace", data }),
 			abort,
 		});
 		console.log("[spawn_subagent] response from agent:", data);
 		const error = data.flat().find((part) => part.type === "abort");
+		if (error?.reason === "error") {
+			console.error("Subagent error:", error);
+			throw new Error(
+				`Failed to run subagent due to ${error.reason}: ${CommonUtils.formatError(error)}`,
+			);
+		}
 		return [
 			{
 				type: "json",

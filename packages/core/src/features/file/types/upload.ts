@@ -1,7 +1,8 @@
 import { z } from "zod";
 import type { Upload } from "../../../../../server/generated/prisma/browser.ts";
+import { zId } from "../../../core/types/common.ts";
 
-export { UploadType } from "../../../../../server/generated/prisma/browser.ts";
+export { UploadKind } from "../../../../../server/generated/prisma/browser.ts";
 
 export type UploadState = Upload;
 
@@ -11,7 +12,7 @@ export type UploadState = Upload;
  * mount, so this is what an attachment directive is built out of.
  */
 export const zUploadResult = z.object({
-	id: z.cuid2(),
+	id: zId,
 	name: z.string(),
 	thumbnail: z.custom<Uint8Array>().nullish(),
 });

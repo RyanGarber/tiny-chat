@@ -1,12 +1,74 @@
-import { Icon } from "@iconify/react";
+import { Modal } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
+import { FrameCornersIcon, XIcon } from "@phosphor-icons/react";
+import type { CodeLanguage } from "@tiny-chat/core/src/core/utils/CodeUtils.ts";
 import { type ReactNode, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import CopyButton from "#app/core/components/CopyButton.tsx";
 import DownloadButton from "#app/core/components/DownloadButton.tsx";
 import { ControlUtils } from "#app/core/utils/ControlUtils.ts";
+import _Code from "#app/features/code/components/Code.tsx";
 import MermaidContent from "#app/features/code/components/MermaidContent.tsx";
+import _Image from "#app/features/part/components/Image.tsx";
 
 namespace FullscreenButton {
+	export function Code({
+		code,
+		language,
+		filename,
+		streaming,
+	}: {
+		code: string;
+		language?: "text" | CodeLanguage;
+		filename?: string;
+		streaming?: boolean;
+	}) {
+		const [opened, { open, close }] = useDisclosure();
+
+		return (
+			<div className="relative flex">
+				<button
+					className="cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:opacity-50"
+					disabled={streaming}
+					onClick={open}
+					type="button"
+				>
+					<FrameCornersIcon size={18} />
+				</button>
+				{opened && (
+					<Modal
+						opened={opened}
+						onClose={close}
+						fullScreen={true}
+						withCloseButton={false}
+						styles={{ body: { height: "100%" } }}
+					>
+						<_Code
+							code={code}
+							language={language}
+							filename={filename}
+							streaming={streaming}
+							fillHeight
+							flex={1}
+							h="100%"
+							close={
+								<div className="relative flex">
+									<button
+										className="cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:opacity-50"
+										onClick={close}
+										type="button"
+									>
+										<XIcon size={18} />
+									</button>
+								</div>
+							}
+						/>
+					</Modal>
+				)}
+			</div>
+		);
+	}
+
 	export function Mermaid({
 		chart,
 		streaming,
@@ -40,14 +102,14 @@ namespace FullscreenButton {
 		}, [isFullscreen]);
 
 		return (
-			<>
+			<div className="relative flex">
 				<button
 					className="cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:opacity-50"
 					disabled={streaming}
 					onClick={handleToggle}
 					type="button"
 				>
-					<Icon icon="lucide:maximize" width={16} height={16} />
+					<FrameCornersIcon size={18} />
 				</button>
 
 				{isFullscreen
@@ -73,13 +135,15 @@ namespace FullscreenButton {
 								>
 									<DownloadButton.Mermaid chart={chart} streaming={streaming} />
 									<CopyButton.Mermaid chart={chart} streaming={streaming} />
-									<button
-										className="rounded-md p-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
-										onClick={handleToggle}
-										type="button"
-									>
-										<Icon icon="lucide:x" width={16} height={16} />
-									</button>
+									<div className="relative flex">
+										<button
+											className="cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:opacity-50"
+											onClick={handleToggle}
+											type="button"
+										>
+											<XIcon size={18} />
+										</button>
+									</div>
 								</div>
 								{/* biome-ignore lint/a11y/noStaticElementInteractions: "div with role=presentation is used for event propagation control" */}
 								<div
@@ -93,7 +157,7 @@ namespace FullscreenButton {
 							document.body,
 						)
 					: null}
-			</>
+			</div>
 		);
 	}
 
@@ -133,14 +197,14 @@ namespace FullscreenButton {
 		}, [isFullscreen]);
 
 		return (
-			<>
+			<div className="relative flex">
 				<button
-					className="p-1 text-muted-foreground transition-all hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+					className="cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:opacity-50"
 					disabled={streaming}
 					onClick={handleOpen}
 					type="button"
 				>
-					<Icon icon="lucide:maximize" />
+					<FrameCornersIcon size={18} />
 				</button>
 
 				{isFullscreen
@@ -166,17 +230,19 @@ namespace FullscreenButton {
 									<div className="flex items-center justify-end gap-1 p-4">
 										<CopyButton.Table />
 										<DownloadButton.Table />
-										<button
-											className="rounded-md p-1 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
-											onClick={handleClose}
-											type="button"
-										>
-											<Icon icon="lucide:x" />
-										</button>
+										<div className="relative flex">
+											<button
+												className="cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:opacity-50"
+												onClick={handleClose}
+												type="button"
+											>
+												<XIcon size={18} />
+											</button>
+										</div>
 									</div>
 									<div className="flex-1 overflow-auto p-4 pt-0 [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-10">
 										<table
-											className="w-full border-collapse border border-border"
+											className="w-full *:divide-none [&_th]:first:ps-6 [&_th]:last:pe-6 [&_td]:first:ps-6 [&_td]:last:pe-6 [&_th]:py-3 [&_td]:py-4"
 											data-streamdown="table"
 										>
 											{children}
@@ -187,7 +253,59 @@ namespace FullscreenButton {
 							document.body,
 						)
 					: null}
-			</>
+			</div>
+		);
+	}
+
+	export function Image({
+		src,
+		filename,
+		streaming,
+	}: {
+		src: string;
+		filename?: string;
+		streaming?: boolean;
+	}) {
+		const [opened, { open, close }] = useDisclosure();
+
+		return (
+			<div className="relative flex">
+				<button
+					className="cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:opacity-50"
+					disabled={streaming}
+					onClick={open}
+					type="button"
+				>
+					<FrameCornersIcon size={18} />
+				</button>
+				{opened && (
+					<Modal
+						opened={opened}
+						onClose={close}
+						fullScreen={true}
+						withCloseButton={false}
+						styles={{ body: { height: "100%" } }}
+					>
+						<_Image
+							src={src}
+							filename={filename}
+							streaming={streaming}
+							grow
+							close={
+								<div className="relative flex">
+									<button
+										className="cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:opacity-50"
+										onClick={close}
+										type="button"
+									>
+										<XIcon size={18} />
+									</button>
+								</div>
+							}
+						/>
+					</Modal>
+				)}
+			</div>
 		);
 	}
 }

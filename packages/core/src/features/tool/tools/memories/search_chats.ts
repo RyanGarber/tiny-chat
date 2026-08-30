@@ -1,5 +1,9 @@
 import { z } from "zod";
-import type { UserCapability } from "../../../../core/types/capability.ts";
+import type {
+	EmbeddingCapability,
+	MemoriesCapability,
+} from "../../../../core/types/capability.ts";
+import { zId } from "../../../../core/types/common.ts";
 import { SnippetService } from "../../../data/services/SnippetService.ts";
 import { Author } from "../../../data/types/message.ts";
 import { DataUtils } from "../../../data/utils/DataUtils.ts";
@@ -12,8 +16,8 @@ export const search_chats = {
 		query: z.string(),
 	}),
 	output: z.object({
-		id: z.cuid2(),
-		chat_id: z.cuid2(),
+		id: zId,
+		chat_id: zId,
 		chat_title: z.string().nullable(),
 		author: z.enum(Author),
 		snippet: z.string(),
@@ -22,13 +26,27 @@ export const search_chats = {
 } as const satisfies ToolDefinition;
 
 export const createSearchChatsTool: ToolFactory<
-	Tool<typeof search_chats, { user: UserCapability }>
+	Tool<
+		typeof search_chats,
+		{ embedding?: EmbeddingCapability; memories: MemoriesCapability }
+	>
 > = (options) => ({
 	...search_chats,
 	...options,
 	execute: async ({ input }) => {
-		const messages = await options.capabilities.user.searchChats({
+		let embedding: number[] | undefined;
+		if (options.capabilities.embedding) {
+			try {
+				embedding = await options.capabilities.embedding?.runEmbedding({
+					text: input.query,
+				});
+			} catch (error) {
+				console.error("error running embedding:", error);
+			}
+		}
+		const messages = await options.capabilities.memories.searchChats({
 			searchText: input.query,
+			searchEmbedding: embedding,
 		});
 		return messages.map((message) => ({
 			type: "json",

@@ -12,6 +12,17 @@ export const useChatList = () => {
 	const lastSeen = useChatStore((s) => s.lastSeen);
 	const chatId = useChatStore((s) => s.chatId);
 
+	const markSeen = (chat: ChatState): ChatState => {
+		if (!(chat.id in lastSeen))
+			useChatStore
+				.getState()
+				.setLastSeen(chat.id, ChatUtils.getTimestamp(chat));
+		return {
+			...chat,
+			unseen: ChatUtils.getTimestamp(chat) > lastSeen[chat.id],
+		};
+	};
+
 	const folders = useInfiniteQuery({
 		...client.query.chat.getChatList.infiniteQueryOptions(
 			{ limit: 10 },
@@ -21,18 +32,10 @@ export const useChatList = () => {
 					return {
 						pages: data.pages.map((page) => ({
 							...page,
+							chats: page.chats.map(markSeen),
 							folders: page.folders.map((folder) => ({
 								...folder,
-								chats: folder.chats.map((chat): ChatState => {
-									if (!(chat.id in lastSeen))
-										useChatStore
-											.getState()
-											.setLastSeen(chat.id, ChatUtils.getTimestamp(chat));
-									return {
-										...chat,
-										unseen: ChatUtils.getTimestamp(chat) > lastSeen[chat.id],
-									};
-								}),
+								chats: folder.chats.map(markSeen),
 							})),
 						})),
 						pageParams: data.pageParams,
@@ -62,5 +65,10 @@ export const useChatList = () => {
 		onSuccess: () => ChatService.fetchChatList({ client }),
 	});
 
-	return { folders, deleteChat, renameChat };
+	const createFolder = useMutation({
+		mutationFn: () => client.api.chat.createFolder.mutate({}),
+		onSuccess: () => ChatService.fetchChatList({ client }),
+	});
+
+	return { folders, deleteChat, renameChat, createFolder };
 };

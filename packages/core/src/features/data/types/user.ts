@@ -50,6 +50,8 @@ export const zSettings = z
 		instructions: z.array(z.string()),
 		embeddingConfig: zConfig,
 		useEmbeddingSearch: z.boolean(),
+		subagentConfig: zConfig,
+		dreamConfig: zConfig,
 		preferredWebProvider: z.string(),
 		hiddenModels: zHiddenModels,
 		useProviderCache: z.boolean(),

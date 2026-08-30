@@ -1,5 +1,6 @@
 import type { zAgentContext } from "../../features/agent/types/agent.ts";
 import type { ActionState } from "../../features/data/types/action.ts";
+import type { ChatLike } from "../../features/data/types/chat.ts";
 import type {
 	MemoryCategory,
 	MemorySearchResult,
@@ -9,7 +10,6 @@ import type {
 import type {
 	MessageLike,
 	MessageSearchResult,
-	zConfig,
 	zData,
 } from "../../features/data/types/message.ts";
 import type { FileNode } from "../../features/file/types/file.ts";
@@ -30,13 +30,13 @@ export interface EmbeddingCapability {
 export interface SubagentsCapability {
 	runSubagent: (_: {
 		context: zAgentContext;
-		config: zConfig;
+		instructions?: string;
 		onData: (data: zData) => void;
 		abort?: AbortSignal;
 	}) => Promise<zData>;
 }
 
-export interface UserCapability {
+export interface ActionsCapability {
 	getActions: () => Promise<ActionState[]>;
 
 	createAction: (_: {
@@ -53,6 +53,12 @@ export interface UserCapability {
 	}) => Promise<ActionState>;
 
 	deleteAction: (_: { id: string }) => Promise<ActionState>;
+}
+
+export interface MemoriesCapability {
+	retrieveMemories: (_?: {
+		chat?: ChatLike | MessageLike | null;
+	}) => Promise<MemoryState[]>;
 
 	searchMemories: (_: {
 		searchText: string;
@@ -118,8 +124,9 @@ export interface ShellCapability {
 export interface Capabilities {
 	web?: WebCapability;
 	embedding?: EmbeddingCapability;
-	subagent?: SubagentsCapability;
-	user?: UserCapability;
+	subagents?: SubagentsCapability;
+	actions?: ActionsCapability;
+	memories?: MemoriesCapability;
 	chatShell?: ShellCapability;
 	shell?: ShellCapability;
 }

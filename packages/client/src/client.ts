@@ -1,5 +1,8 @@
+import "temporal-polyfill/full/global";
+
 import type { Transport } from "@modelcontextprotocol/client";
 import { QueryClient } from "@tanstack/react-query";
+import { JsonService } from "@tiny-chat/core/src/core/services/JsonService.ts";
 import type { ShellCapability } from "@tiny-chat/core/src/core/types/capability.ts";
 import { zEnv, type zProviderEnv } from "@tiny-chat/core/src/core/types/env.ts";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
@@ -19,7 +22,6 @@ import {
 } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 import { createContext } from "react";
-import superjson from "superjson";
 import { z } from "zod";
 import type { ClientInput } from "./features/chat/services/MessagingService.ts";
 
@@ -107,7 +109,7 @@ export const createClient = ({
 		links: [
 			httpLink({
 				url: `${serverUrl}${CommonUtils.endpoints.api}`,
-				transformer: superjson,
+				transformer: JsonService.transformer,
 				headers: () => {
 					const token = getToken();
 					return { Authorization: token ? `Bearer ${token}` : undefined };

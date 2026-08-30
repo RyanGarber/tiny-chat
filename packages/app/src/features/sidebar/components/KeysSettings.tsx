@@ -1,4 +1,3 @@
-import { Icon } from "@iconify/react";
 import {
 	ActionIcon,
 	Box,
@@ -9,6 +8,7 @@ import {
 	TextInput,
 	Tooltip,
 } from "@mantine/core";
+import { ArrowClockwiseIcon } from "@phosphor-icons/react";
 import { useIsMutating } from "@tanstack/react-query";
 import {
 	providerCacheMutationKey,
@@ -120,7 +120,7 @@ export default function KeysSettings() {
 						loading={setProviderSetting.isPending || areProvidersUpdating}
 						disabled={setProviderSetting.isPending || areProvidersUpdating}
 					>
-						<Icon icon="lucide:refresh-cw" />
+						<ArrowClockwiseIcon size={20} />
 					</ActionIcon>
 				</Tooltip>
 			</Group>

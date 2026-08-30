@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 import { zConfig } from "../../data/types/message.ts";
 import { PathUtils } from "../../file/utils/PathUtils.ts";
 import type { zAgentMessage } from "../types/agent.ts";
@@ -16,23 +17,30 @@ const config = zConfig.parse({
 	skills: [],
 });
 
-const message = (value: string, skills: string[] = []): zAgentMessage => ({
+const message = (
+	attachments: string[] = [],
+	skills: string[] = [],
+): zAgentMessage => ({
 	id: null,
 	author: "USER",
 	config: { ...config, skills },
-	data: [[{ type: "text", value }]],
+	data: [
+		attachments.map((source) => ({
+			id: CommonUtils.getRandomId(),
+			type: "attachment" as const,
+			source,
+			label: PathUtils.name(source),
+			content: { type: "directory" as const, items: [] },
+		})),
+	],
 	createdAt: null,
 });
 
 describe("AgentUtils.getMounts", () => {
-	it("takes an upload from an attachment directive", () => {
+	it("takes an upload from an attachment part", () => {
 		expect(
 			AgentUtils.getMounts({
-				messages: [
-					message(
-						`look at :attachment[]{source="/mnt/uploads/${UPLOAD}" is-directory="true" name="repo@main"}`,
-					),
-				],
+				messages: [message([`/mnt/uploads/${UPLOAD}`])],
 			}),
 		).toEqual({ uploads: [UPLOAD], skills: [] });
 	});
@@ -40,11 +48,7 @@ describe("AgentUtils.getMounts", () => {
 	it("takes an upload from a path pointing inside it", () => {
 		expect(
 			AgentUtils.getMounts({
-				messages: [
-					message(
-						`:attachment[]{source="/mnt/uploads/${UPLOAD}/src/index.ts" is-directory="false"}`,
-					),
-				],
+				messages: [message([`/mnt/uploads/${UPLOAD}/src/index.ts`])],
 			}),
 		).toEqual({ uploads: [UPLOAD], skills: [] });
 	});
@@ -53,13 +57,16 @@ describe("AgentUtils.getMounts", () => {
 		expect(
 			AgentUtils.getMounts({
 				messages: [
-					message(`:attachment[]{source="/mnt/uploads/${UPLOAD}"}`, [
-						PathUtils.toMount({
-							mount: "skills",
-							id: SKILL,
-							path: ["SKILL.md"],
-						}),
-					]),
+					message(
+						[`/mnt/uploads/${UPLOAD}`],
+						[
+							PathUtils.toMount({
+								mount: "skills",
+								id: SKILL,
+								path: ["SKILL.md"],
+							}),
+						],
+					),
 				],
 			}),
 		).toEqual({ uploads: [UPLOAD], skills: [SKILL] });
@@ -70,10 +77,10 @@ describe("AgentUtils.getMounts", () => {
 			AgentUtils.getMounts({
 				messages: [
 					message(
-						`:attachment[]{source="/Users/me/notes.md" is-directory="false"}`,
+						["/Users/me/notes.md"],
 						["/Users/me/.agents/skills/pdf/SKILL.md"],
 					),
-					message(`:attachment[]{source="web:https://example.com"}`),
+					message(["web:https://example.com"]),
 				],
 			}),
 		).toEqual({ uploads: [], skills: [] });
@@ -83,9 +90,9 @@ describe("AgentUtils.getMounts", () => {
 		expect(
 			AgentUtils.getMounts({
 				messages: [
-					message(`:attachment[]{source="/mnt/uploads/${UPLOAD}"}`),
-					message(`:attachment[]{source="/mnt/uploads/${UPLOAD}/README.md"}`),
-					message(`:attachment[]{source="/mnt/uploads/${OTHER}"}`),
+					message([`/mnt/uploads/${UPLOAD}`]),
+					message([`/mnt/uploads/${UPLOAD}/README.md`]),
+					message([`/mnt/uploads/${OTHER}`]),
 				],
 			}),
 		).toEqual({ uploads: [UPLOAD, OTHER], skills: [] });

@@ -1,5 +1,5 @@
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
-import { UploadType } from "../../../../generated/prisma/enums.ts";
+import { UploadKind } from "../../../../generated/prisma/enums.ts";
 import { AuthServer } from "../../../core/utils/AuthServer.ts";
 import { UploadUtils } from "../utils/UploadUtils.ts";
 import { UploadFileService } from "./UploadFileService.ts";
@@ -111,13 +111,8 @@ export const GitHubService = {
 		return await UploadFileService.uploadZip({
 			user,
 			zip: await result.arrayBuffer(),
-			create: {
-				type: UploadType.GITHUB,
-				name: uploadName,
-			},
-			connect: {
-				name: uploadName,
-			},
+			kind: UploadKind.GITHUB,
+			replaceName: uploadName,
 			include: (path) => UploadUtils.shouldIncludeFile({ path }),
 			skipRoot: true,
 		});

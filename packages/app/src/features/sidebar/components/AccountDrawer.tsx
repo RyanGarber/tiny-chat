@@ -1,4 +1,3 @@
-import { Icon } from "@iconify/react";
 import {
 	Button,
 	Divider,
@@ -9,6 +8,11 @@ import {
 	Text,
 	Tooltip,
 } from "@mantine/core";
+import {
+	GithubLogoIcon,
+	GoogleLogoIcon,
+	SmileyIcon,
+} from "@phosphor-icons/react";
 import type { JSX } from "react";
 import { client } from "#app/client.ts";
 import { useAccounts } from "#app/core/hooks/useAccounts.ts";
@@ -151,17 +155,17 @@ export default function AccountDrawer({
 						<Account
 							providerId="google"
 							name="Google"
-							icon={<Icon icon="lucide:chromium" />}
+							icon={<GoogleLogoIcon size={20} />}
 						/>
 						<Account
 							providerId="github"
 							name="GitHub"
-							icon={<Icon icon="lucide:github" />}
+							icon={<GithubLogoIcon size={20} />}
 						/>
 						<Account
 							providerId="huggingface"
 							name="Hugging Face"
-							icon={<Icon icon="lucide:smile" />}
+							icon={<SmileyIcon size={20} />}
 						/>
 					</>
 				)}

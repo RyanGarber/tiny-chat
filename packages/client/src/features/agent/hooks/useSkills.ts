@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { UploadType } from "@tiny-chat/core/src/features/file/types/upload.ts";
+import { UploadKind } from "@tiny-chat/core/src/features/file/types/upload.ts";
 import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import type { zSkill } from "@tiny-chat/core/src/features/skill/types/skill.ts";
@@ -88,7 +88,7 @@ export const useSkills = () => {
 			const skills: zSkill[] = [];
 
 			const remoteSkills = await client.api.upload.getUploads.query({
-				where: { type: UploadType.SKILL },
+				kind: UploadKind.SKILL,
 				files: { where: { path: { has: "SKILL.md" } } },
 			});
 			for (const { id, files } of remoteSkills.uploads) {

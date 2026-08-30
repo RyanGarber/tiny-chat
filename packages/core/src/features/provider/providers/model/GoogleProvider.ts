@@ -145,6 +145,7 @@ export const GoogleProvider: ModelProvider<GoogleGenerativeAIProvider> = {
 					parts.push({ ...part, value: textBefore });
 				}
 				parts.push({
+					id: CommonUtils.getRandomId(),
 					type: "file",
 					data: `https://www.youtube.com/watch?v=${match[1]}`,
 					mime: "video/mp4",

@@ -3,7 +3,13 @@ import type { Capabilities } from "../../../core/types/capability.ts";
 import type { zEnv } from "../../../core/types/env.ts";
 import type { StreamMutation } from "../../../core/types/stream.ts";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
-import type { zData, zDataPart, zMetadata } from "../../data/types/message.ts";
+import { VERBOSE } from "../../../logger.ts";
+import type {
+	zConfig,
+	zData,
+	zDataPart,
+	zMetadata,
+} from "../../data/types/message.ts";
 import {
 	ModelProviderService,
 	type RunLanguageModelOptions,
@@ -16,7 +22,10 @@ import type { zAgentContext, zAgentEvent } from "../types/agent.ts";
 import { AgentUtils } from "../utils/AgentUtils.ts";
 import { AgentInstructionsService } from "./AgentInstructionsService.ts";
 import { AgentMessagesService } from "./AgentMessagesService.ts";
-import { AgentTokensService } from "./AgentTokensService.ts";
+import {
+	AgentTokensService,
+	type CompactionResult,
+} from "./AgentTokensService.ts";
 
 export const AgentService = {
 	build: async ({
@@ -32,16 +41,18 @@ export const AgentService = {
 		skills: zSkill[];
 		skipInstructions?: boolean;
 	}) => {
-		const { prompt } = AgentUtils.getLastPrompt(context);
+		const { prompt } = AgentUtils.getLastPrompt({messages: context.messages, withText: false});
 
-		const enabledToolsets = toolsets.filter((toolset) =>
-			prompt?.config?.toolsets?.includes(ToolUtils.name({ toolset })),
+		const enabledToolsets = toolsets.filter(
+			(toolset) =>
+				toolset.status.valid &&
+				prompt?.config?.toolsets?.includes(ToolUtils.name({ toolset })),
 		);
-		console.log("[AgentService] enabled tools:", enabledToolsets);
-		const enabledSkills = skills.filter((skill) =>
-			prompt?.config?.skills?.includes(skill.path),
+		if (VERBOSE) console.log("[AgentService] enabled tools:", enabledToolsets);
+		const enabledSkills = skills.filter(
+			(skill) => skill.name && prompt?.config?.skills?.includes(skill.path),
 		);
-		console.log("[AgentService] enabled skills:", enabledSkills);
+		if (VERBOSE) console.log("[AgentService] enabled skills:", enabledSkills);
 
 		const { messages, customInstructions } =
 			await AgentMessagesService.buildMessages({
@@ -60,7 +71,8 @@ export const AgentService = {
 					enabledSkills,
 				})));
 
-		console.log("[AgentService] built agent:", messages, instructions);
+		if (VERBOSE)
+			console.log("[AgentService] built agent:", messages, instructions);
 
 		return {
 			config: prompt?.config,
@@ -73,16 +85,18 @@ export const AgentService = {
 	estimate: async ({
 		context,
 		capabilities,
+		config,
 		toolsets,
 		skills,
 		skipInstructions,
 	}: {
 		context: zAgentContext;
 		capabilities: Capabilities;
+		config: zConfig;
 		toolsets: Toolset<any>[];
 		skills: zSkill[];
 		skipInstructions?: boolean;
-	}) => {
+	}): Promise<CompactionResult> => {
 		const { messages, instructions } = await AgentService.build({
 			context,
 			capabilities,
@@ -91,9 +105,10 @@ export const AgentService = {
 			skipInstructions,
 		});
 
-		return AgentTokensService.getTokenBreakdown({
+		return await AgentTokensService.compactMessages({
 			messages,
 			instructions,
+			config,
 		});
 	},
 
@@ -106,6 +121,7 @@ export const AgentService = {
 		data,
 		metadata,
 		env,
+		instructions: instructionOverride,
 		options,
 		toolStream,
 	}: {
@@ -117,8 +133,10 @@ export const AgentService = {
 		data: zData;
 		metadata: zMetadata;
 		env: Partial<zEnv>;
-		options: Partial<Omit<RunLanguageModelOptions, "system">>;
-		/** Output a tool reports while it is still running, keyed by call id. */
+		/** Override the normal chat instructions for specialized agent runs. */
+		instructions?: string;
+		options?: Partial<Omit<RunLanguageModelOptions, "system">>;
+		/** Output a tool reports while it is still running, keyed by call id */
 		toolStream?: (_: {
 			tool: Tool<any, any>;
 			part: Extract<zDataPart, { type: "toolCall" }>;
@@ -127,8 +145,13 @@ export const AgentService = {
 			>;
 		}) => void;
 	}) {
-		const { config, enabledToolsets, messages, instructions } =
-			await AgentService.build({ context, capabilities, toolsets, skills });
+		const {
+			config,
+			enabledToolsets,
+			messages,
+			instructions: builtInstructions,
+		} = await AgentService.build({ context, capabilities, toolsets, skills });
+		const instructions = instructionOverride ?? builtInstructions;
 
 		if (!config) throw new Error("missing config");
 
@@ -153,14 +176,15 @@ export const AgentService = {
 			};
 
 			try {
+				const compacted = await AgentTokensService.compactMessages({
+					instructions,
+					messages,
+					config,
+				});
 				const stream = ModelProviderService.runLanguageModel({
 					user: context.user,
 					provider,
-					messages: await AgentTokensService.trimMessages({
-						instructions,
-						messages,
-						config,
-					}),
+					messages: compacted.messages,
 					config,
 					tools: enabledToolsets.flatMap((toolset) =>
 						toolset.tools
@@ -172,8 +196,8 @@ export const AgentService = {
 					),
 					env,
 					options: {
-						...options,
 						system: instructions,
+						...options,
 					},
 				});
 
@@ -221,7 +245,7 @@ export const AgentService = {
 							if (tool?.validate) {
 								try {
 									event.value.validation = await tool.validate({
-										input: event.value.args,
+										input: event.value.input,
 										context,
 									});
 								} catch (error) {
@@ -255,6 +279,7 @@ export const AgentService = {
 
 				if (options?.abortSignal?.aborted) {
 					yield push({
+						id: CommonUtils.getRandomId(),
 						type: "abort",
 						reason: "user",
 						message: "Aborted",
@@ -265,6 +290,7 @@ export const AgentService = {
 			} catch (e: any) {
 				console.error("[AgentService] error during stream:", e);
 				yield push({
+					id: CommonUtils.getRandomId(),
 					type: "abort",
 					reason: e.name === "AbortError" ? "user" : "error",
 					message: e.message,
@@ -274,10 +300,11 @@ export const AgentService = {
 			}
 
 			const toolCalls = parts.filter((p) => p.type === "toolCall");
-			console.log(
-				`[AgentService] ${toolCalls.length} tools called:`,
-				toolCalls,
-			);
+			if (VERBOSE)
+				console.log(
+					`[AgentService] ${toolCalls.length} tools called:`,
+					toolCalls,
+				);
 
 			let stop = false;
 
@@ -293,8 +320,12 @@ export const AgentService = {
 						id: toolCall.id,
 						name: toolCall.name,
 						error: true,
-						value: [
-							{ type: "text", value: `Tool "${toolCall.name}" not found` },
+						output: [
+							{
+								id: CommonUtils.getRandomId(),
+								type: "text",
+								value: `Tool "${toolCall.name}" not found`,
+							},
 						],
 					});
 					continue;
@@ -306,8 +337,9 @@ export const AgentService = {
 						id: toolCall.id,
 						name: toolCall.name,
 						error: true,
-						value: [
+						output: [
 							{
+								id: CommonUtils.getRandomId(),
 								type: "text",
 								value: CommonUtils.formatError({
 									error: toolValidationErrors.get(toolCall.id),
@@ -325,42 +357,48 @@ export const AgentService = {
 				}
 
 				try {
-					console.log(
-						`[AgentService] running tool ${toolCall.name} with args:`,
-						toolCall.args,
-					);
+					if (VERBOSE)
+						console.log(
+							`[AgentService] running tool ${toolCall.name} with args:`,
+							toolCall.input,
+						);
 					const value = await tool.execute({
-						input: toolCall.args,
+						input: toolCall.input,
 						feedback: undefined,
 						context,
 						stream: toolStream
 							? (mutation) => toolStream({ tool, part: toolCall, mutation })
 							: undefined,
 					});
-					console.log(
-						`[AgentService] tool ${toolCall.name} finished with result:`,
-						value,
-					);
+					if (VERBOSE)
+						console.log(
+							`[AgentService] tool ${toolCall.name} finished with result:`,
+							value,
+						);
 					yield push({
 						type: "toolResult",
 						id: toolCall.id,
 						name: toolCall.name,
-						value,
+						output: value.map((part) => ({
+							...part,
+							id: CommonUtils.getRandomId(),
+						})),
 					});
-				} catch (e: any) {
+				} catch (error: any) {
 					console.warn(
 						`[AgentService] error running tool ${toolCall.name}:`,
-						e,
+						error,
 					);
 					yield push({
 						type: "toolResult",
 						id: toolCall.id,
 						name: toolCall.name,
 						error: true,
-						value: [
+						output: [
 							{
 								type: "text",
-								value: e instanceof Error ? e.message : JSON.stringify(e),
+								value: CommonUtils.formatError({ error, details: true }),
+								id: CommonUtils.getRandomId(),
 							},
 						],
 					});

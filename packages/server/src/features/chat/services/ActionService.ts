@@ -1,20 +1,22 @@
-import { createId } from "@paralleldrive/cuid2";
-import type {
-	MessageLike,
-	zData,
+import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
+import {
+	type MessageLike,
+	zConfig,
+	type zData,
 } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { MessageService } from "../../message/services/MessageService.ts";
 import { ActionUtils } from "../utils/ActionUtils.ts";
-import { ChatService } from "./ChatService.ts";
 
 export const ActionService = {
 	getActions: async ({ user }: { user: zUser }) => {
 		return (
-			await globalThis.prisma.action.findMany({
-				where: { userId: user.id },
-			})
-		).map(ActionUtils.toActionState);
+			await globalThis.db.orm.public.Action.where({ userId: user.id })
+				.include("message", (message) => message.select("chatId"))
+				.all()
+		).map((action) =>
+			ActionUtils.toActionState({ ...action, chatId: action.message.chatId }),
+		);
 	},
 
 	createAction: async ({
@@ -32,27 +34,20 @@ export const ActionService = {
 	}) => {
 		if (typeof message === "string") message = { id: message };
 
-		const { id: chatId, folderId } = await ChatService.getChat({
-			user,
-			chat: message,
+		const source = await MessageService.getMessage({ user, message });
+		return ActionUtils.toActionState({
+			...(await globalThis.db.orm.public.Action.create({
+				id: CommonUtils.getRandomId(),
+				userId: user.id,
+				messageId: source.id,
+				config: zConfig.parse(source.config),
+				schedule,
+				timezone,
+				data,
+				lastRanAt: null,
+			})),
+			chatId: source.chatId,
 		});
-		const { config } = await MessageService.getMessage({ user, message });
-
-		return ActionUtils.toActionState(
-			await globalThis.prisma.action.create({
-				data: {
-					id: createId(),
-					user: { connect: { id: user.id } },
-					folder: { connect: { id: folderId } },
-					message: { connect: { id: message.id } },
-					chat: { connect: { id: chatId } },
-					config,
-					schedule,
-					timezone,
-					data,
-				},
-			}),
-		);
 	},
 
 	updateAction: async ({
@@ -72,33 +67,36 @@ export const ActionService = {
 	}) => {
 		if (typeof message === "string") message = { id: message };
 
-		const { id: chatId, folderId } = await ChatService.getChat({
-			user,
-			chat: message,
+		const source = await MessageService.getMessage({ user, message });
+		const action = await globalThis.db.orm.public.Action.where({
+			id,
+			userId: user.id,
+		}).update({
+			messageId: source.id,
+			config: zConfig.parse(source.config),
+			schedule,
+			timezone,
+			data,
 		});
-		const { config } = await MessageService.getMessage({ user, message });
-
-		return ActionUtils.toActionState(
-			await globalThis.prisma.action.update({
-				where: { id, userId: user.id },
-				data: {
-					message: { connect: { id: message.id } },
-					folder: { connect: { id: folderId } },
-					chat: { connect: { id: chatId } },
-					config,
-					schedule,
-					timezone,
-					data,
-				},
-			}),
-		);
+		if (!action) throw new Error("Action not found");
+		return ActionUtils.toActionState({ ...action, chatId: source.chatId });
 	},
 
 	deleteAction: async ({ user, id }: { user: zUser; id: string }) => {
-		return ActionUtils.toActionState(
-			await globalThis.prisma.action.delete({
-				where: { id, userId: user.id },
-			}),
-		);
+		const action = await globalThis.db.orm.public.Action.where({
+			id,
+			userId: user.id,
+		})
+			.include("message", (m) => m.select("chatId"))
+			.first();
+		if (!action) throw new Error("Action not found");
+		await globalThis.db.orm.public.Action.where({
+			id,
+			userId: user.id,
+		}).delete();
+		return ActionUtils.toActionState({
+			...action,
+			chatId: action.message.chatId,
+		});
 	},
 } as const;

@@ -1,10 +1,18 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ModelProviderService } from "@tiny-chat/core/src/features/provider/services/ModelProviderService.ts";
-import { useContext, useEffect, useRef } from "react";
-import { ClientContext } from "../../../client.ts";
+import { useContext, useEffect, useMemo, useRef } from "react";
+import { type Client, ClientContext } from "../../../client.ts";
 import { useSession } from "../../../core/hooks/useSession.ts";
 import { ClientProviderService } from "../../agent/services/ClientProviderService.ts";
 import { useEmbeddingSettings } from "../../settings/hooks/useEmbeddingSettings.ts";
+
+export type EmbeddingStatus = {
+	batch: Awaited<
+		ReturnType<Client["api"]["embedding"]["getMissingEmbeddings"]["query"]>
+	>;
+	batchCount: number;
+	totalCount: number;
+};
 
 export const nextEmbeddingBatchQueryKey = ["embedding", "next"] as const;
 export const runEmbeddingBatchMutationKey = ["embedding", "run"] as const;
@@ -146,5 +154,19 @@ export const useEmbedding = () => {
 		client.queryClient.getMutationCache,
 	]);
 
-	return { nextEmbeddingBatch, runEmbeddingBatch };
+	const embeddingStatus = useMemo<EmbeddingStatus>(() => {
+		return {
+			batch: nextEmbeddingBatch.data ?? null,
+			batchCount:
+				(nextEmbeddingBatch.data?.messages.length ?? 0) +
+				(nextEmbeddingBatch.data?.memories.length ?? 0) +
+				(nextEmbeddingBatch.data?.files.length ?? 0),
+			totalCount:
+				Number(nextEmbeddingBatch.data?.messages[0]?.total ?? 0) +
+				Number(nextEmbeddingBatch.data?.memories[0]?.total ?? 0) +
+				Number(nextEmbeddingBatch.data?.files[0]?.total ?? 0),
+		};
+	}, [nextEmbeddingBatch.data]);
+
+	return { embeddingStatus, nextEmbeddingBatch, runEmbeddingBatch };
 };

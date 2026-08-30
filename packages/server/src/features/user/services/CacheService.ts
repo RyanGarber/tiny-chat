@@ -28,6 +28,21 @@ export const CacheService = {
 		);
 	},
 
+	setCache: async ({
+		user,
+		values,
+	}: {
+		user: zUser;
+		values: Partial<zCache>;
+	}) => {
+		const existing = await CacheService.getCache({ user });
+		const updatedCache: zCache = { ...existing, ...values };
+		await globalThis.prisma.user.update({
+			where: { id: user.id },
+			data: { cache: updatedCache as any },
+		});
+	},
+
 	updateCache: async ({ user }: { user: zUser }) => {
 		const cache = zCache.parse(
 			(

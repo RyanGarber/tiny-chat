@@ -1,11 +1,17 @@
+import { zId } from "@tiny-chat/core/src/core/types/common.ts";
 import { ChatLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
-import { MessageLike } from "@tiny-chat/core/src/features/data/types/message.ts";
 import { z } from "zod";
 import { procedure, router } from "../../../index.ts";
 import { ChatSearchService } from "../services/ChatSearchService.ts";
 import { ChatService } from "../services/ChatService.ts";
 
 export const chat = router({
+	createFolder: procedure
+		.input(z.object({}))
+		.mutation(({ ctx }) =>
+			ChatService.createFolder({ user: ctx.session.user }),
+		),
+
 	getChat: procedure.input(ChatLike).query(async ({ ctx, input }) => {
 		return await ChatService.getChat({
 			user: ctx.session.user,
@@ -15,7 +21,9 @@ export const chat = router({
 
 	getChatList: procedure
 		.input(
-			z.object({ limit: z.number().optional(), cursor: z.cuid2().optional() }),
+			z
+				.object({ limit: z.number().optional(), cursor: zId.optional() })
+				.default({}),
 		)
 		.query(async ({ ctx, input }) => {
 			return await ChatService.getChats({
@@ -51,23 +59,6 @@ export const chat = router({
 				user: ctx.session.user,
 				chat: input.chat,
 				title: input.title,
-			});
-		}),
-
-	cloneChat: procedure
-		.input(
-			z.object({
-				chat: ChatLike,
-				title: z.string(),
-				upToMessage: MessageLike,
-			}),
-		)
-		.mutation(async ({ ctx, input }) => {
-			return await ChatService.cloneChat({
-				user: ctx.session.user,
-				chat: input.chat,
-				title: input.title,
-				upToMessage: input.upToMessage,
 			});
 		}),
 

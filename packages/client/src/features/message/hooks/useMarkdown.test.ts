@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { processor } from "./useMarkdown.ts";
+import { MarkdownSourceUtils, processor } from "./useMarkdown.ts";
 
 type Slim = string | [string, ...Slim[]];
 
@@ -73,5 +73,50 @@ describe("markdown directives", () => {
 			["paragraph", ':command{name="x"}'],
 		]);
 		expect(parse(":quote")).toEqual(["root", ["paragraph", ":quote"]]);
+	});
+});
+
+describe("MarkdownSourceUtils", () => {
+	it("rebuilds inline attachments without adding whitespace", () => {
+		const source = MarkdownSourceUtils.fromData([
+			[
+				{ id: "before", type: "text", value: "before(" },
+				{
+					id: "attachment",
+					type: "attachment",
+					source: "/tmp/a",
+					label: "a",
+					content: { type: "unavailable" },
+				},
+				{ id: "after", type: "text", value: ")after" },
+			],
+		]);
+
+		expect(source).toBe('before(:attachment[]{source="/tmp/a" name="a"})after');
+		expect(run(source)).toEqual(["root", ["p", "before(", ["link"], ")after"]]);
+	});
+
+	it("preserves surrounding spaces and attachment attributes", () => {
+		const source = MarkdownSourceUtils.fromData([
+			[
+				{ id: "before", type: "text", value: "before  " },
+				{
+					id: "attachment",
+					type: "attachment",
+					source: '/tmp/a&"b',
+					label: 'a&"b',
+					content: { type: "directory", items: [] },
+				},
+				{ id: "after", type: "text", value: "  after" },
+			],
+		]);
+
+		expect(source).toBe(
+			'before  :attachment[]{source="/tmp/a&amp;&quot;b" name="a&amp;&quot;b" is-directory="true"}  after',
+		);
+		expect(run(source)).toEqual([
+			"root",
+			["p", "before  ", ["link"], "  after"],
+		]);
 	});
 });

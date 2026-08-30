@@ -1,3 +1,4 @@
+import { zId } from "@tiny-chat/core/src/core/types/common.ts";
 import { MessageLike } from "@tiny-chat/core/src/features/data/types/message.ts";
 import { z } from "zod";
 import { procedure, router } from "../../../index.ts";
@@ -27,7 +28,7 @@ export const embedding = router({
 			z.array(
 				z.object({
 					type: z.enum(["message", "memory", "action", "file"]),
-					id: z.cuid2(),
+					id: zId,
 					embedding: z.array(z.number()),
 				}),
 			),

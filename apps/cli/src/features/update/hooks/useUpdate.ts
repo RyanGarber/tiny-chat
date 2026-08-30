@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { useAppStore } from "../../../core/stores/useAppStore.ts";
 import { UpdateService } from "../services/UpdateService.ts";
 
@@ -14,7 +15,7 @@ export const useUpdate = () => {
 		},
 		// A build run from source has no binary of ours to replace, so there is
 		// nothing to tell it about.
-		enabled: !!UpdateService.binary(),
+		enabled: !!UpdateService.binary() && !CommonUtils.isTruthy(process.env.DEV),
 		refetchInterval: INTERVAL,
 		staleTime: INTERVAL,
 		retry: false,

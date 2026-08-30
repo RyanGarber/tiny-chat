@@ -1,5 +1,5 @@
 import { createClient } from "@tiny-chat/client/src/client.ts";
-import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
+import { MarkdownDataUtils } from "@tiny-chat/client/src/features/message/utils/MarkdownDataUtils.ts";
 import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
 import type {
 	ModelProvider,
@@ -7,6 +7,7 @@ import type {
 } from "@tiny-chat/core/src/features/provider/types/model.ts";
 import type { ProviderState } from "@tiny-chat/core/src/features/provider/types/provider.ts";
 import { useEditorStore } from "#app/features/editor/stores/useEditorStore.ts";
+import { EditorUtils } from "#app/features/editor/utils/EditorUtils.ts";
 import { TauriHttpTransport } from "#app/features/tauri/services/TauriHttpTransport.ts";
 import { TauriStdioTransport } from "#app/features/tauri/services/TauriStdioTransport.ts";
 import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
@@ -75,35 +76,18 @@ export const client = createClient({
 			const { editor } = useEditorStore.getState();
 			if (!editor) return [];
 
-			return [[{ type: "text", value: editor.getMarkdown() }]];
+			return MarkdownDataUtils.fromMarkdown(editor.getMarkdown(), true);
 		},
 		setData: ({ data }) => {
 			const { editor } = useEditorStore.getState();
 			if (!editor) return;
 
-			editor.commands.setContent(DataUtils.getText({ data, join: "\n" }), {
+			editor.commands.setContent(MarkdownDataUtils.toMarkdown(data, true), {
 				contentType: "markdown",
 			});
 		},
-		insertAttachment: ({ item }) => {
-			const { editor } = useEditorStore.getState();
-			if (!editor) return;
-
-			editor
-				.chain()
-				.focus()
-				.insertContent([
-					{
-						type: "attachment",
-						attrs: {
-							source: item.value,
-							"is-directory": item.directory ? "true" : "false",
-							...(item.label ? { name: item.label } : {}),
-						},
-					},
-					{ type: "text", text: " " },
-				])
-				.run();
+		insertNode: ({ node }) => {
+			EditorUtils.insertNode(node);
 		},
 	},
 	shell: (await TauriUtils.isTauriDesktop())

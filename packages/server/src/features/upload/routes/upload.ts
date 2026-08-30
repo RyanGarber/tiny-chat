@@ -1,10 +1,8 @@
+import { zId } from "@tiny-chat/core/src/core/types/common.ts";
 import type { zUploadResult } from "@tiny-chat/core/src/features/file/types/upload.ts";
 import { z } from "zod";
-import { UploadType } from "../../../../generated/prisma/enums.ts";
-import type {
-	UploadInclude,
-	UploadWhereInput,
-} from "../../../../generated/prisma/models/Upload.ts";
+import { UploadKind } from "../../../../generated/prisma/enums.ts";
+import type { UploadInclude } from "../../../../generated/prisma/models/Upload.ts";
 import { procedure, router } from "../../../index.ts";
 import { GitHubService } from "../services/GitHubService.ts";
 import { UploadService } from "../services/UploadService.ts";
@@ -13,7 +11,7 @@ export const upload = router({
 	getUploads: procedure
 		.input(
 			z.object({
-				where: z.custom<UploadWhereInput>().optional(),
+				kind: z.enum(UploadKind).optional(),
 				files: z.custom<UploadInclude["files"]>().optional(),
 				limit: z.number().optional(),
 				cursor: z.string().optional(),
@@ -22,7 +20,7 @@ export const upload = router({
 		.query(async ({ ctx, input }) => {
 			return await UploadService.getUploads({
 				user: ctx.session.user,
-				where: input.where,
+				kind: input.kind,
 				files: input.files,
 				limit: input.limit,
 				cursor: input.cursor,
@@ -36,7 +34,7 @@ export const upload = router({
 				.transform((fd) => Object.fromEntries(fd.entries()))
 				.pipe(
 					z.object({
-						type: z.enum(UploadType),
+						kind: z.enum(UploadKind),
 						file: z.file(),
 					}),
 				),
@@ -44,13 +42,13 @@ export const upload = router({
 		.mutation(async ({ ctx, input }): Promise<zUploadResult> => {
 			return await UploadService.createUpload({
 				user: ctx.session.user,
-				type: input.type,
+				kind: input.kind,
 				file: input.file,
 			});
 		}),
 
 	deleteUpload: procedure
-		.input(z.object({ id: z.cuid2() }))
+		.input(z.object({ id: zId }))
 		.mutation(async ({ ctx, input }) => {
 			return await UploadService.deleteUpload({
 				user: ctx.session.user,

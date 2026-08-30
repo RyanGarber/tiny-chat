@@ -8,7 +8,7 @@ describe("providers - antigravity", () => {
 	it("stores signatures", () => {
 		const event: TextStreamPart<any> = {
 			type: "tool-call",
-			toolCallId: "",
+			toolCallId: "tool-call-1",
 			toolName: "",
 			input: {},
 			providerMetadata: {
@@ -30,9 +30,9 @@ describe("providers - antigravity", () => {
 	it("returns matching signatures", () => {
 		const part: zDataPart = {
 			type: "toolCall",
-			id: "",
+			id: "tool-call-1",
 			name: "",
-			args: {},
+			input: {},
 			signature: {
 				model: "gemini-3-flash",
 				reasoning: "__TEST__",

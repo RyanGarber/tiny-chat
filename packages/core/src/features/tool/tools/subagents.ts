@@ -3,7 +3,7 @@ import type { Toolset, ToolsetFactory } from "../types/tool.ts";
 import { createSpawnSubagentTool } from "./subagents/spawn_subagent.ts";
 
 export const createSubagentsToolset: ToolsetFactory<
-	Toolset<{ subagent: SubagentsCapability }>
+	Toolset<{ subagents: SubagentsCapability }>
 > = async (options) => ({
 	name: "subagents",
 	tools: [await createSpawnSubagentTool(options)],

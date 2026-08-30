@@ -78,14 +78,21 @@ export const useMessaging = () => {
 	const sendMessage = useMutation({
 		mutationKey: sendMessageMutationKey,
 		mutationFn: async () => {
-			const { truncating, editing, insertingAfter } =
+			const { truncating, editing, insertingAfter, activeFolder } =
 				useMessagingStore.getState();
 			const { createTemporary, createIncognito } = useChatStore.getState();
 
 			const data = MessagingService.getData({ client });
-			if (!data.length || !data.some((step) => step.length)) return;
+			const isEmpty = !data
+				.flat()
+				.some((part) => part.type !== "text" || part.value.trim().length);
+			if (isEmpty) {
+				return;
+			}
 
-			if (!session.data) throw new Error("missing session");
+			if (!session.data) {
+				throw new Error("missing session");
+			}
 
 			sendingData.current = {
 				data: data,
@@ -96,9 +103,21 @@ export const useMessaging = () => {
 			MessagingService.reset({ client });
 			useChatStore.setState({ createTemporary: false, createIncognito: false });
 
-			const chatId = useChatStore.getState().chatId ?? undefined;
+			const { chatId: selectedChatId, branches } = useChatStore.getState();
+			const chatId = selectedChatId ?? undefined;
+			const previous =
+				insertingAfter?.id ??
+				(!editing && chatId
+					? (
+							await client.api.message.getMessages.query({
+								chat: chatId,
+								branches,
+								limit: 1,
+							})
+						).messages.at(-1)?.id
+					: undefined);
 			const message = editing
-				? await client.api.message.updateMessage.mutate({
+				? await client.api.message.editMessage.mutate({
 						message: editing.id,
 						author: editing.author,
 						config: config,
@@ -108,14 +127,18 @@ export const useMessaging = () => {
 					})
 				: await client.api.message.createMessage.mutate({
 						chat: chatId,
+						folderId: chatId ? undefined : activeFolder?.id,
 						author: Author.USER,
 						config: config,
 						data: data,
 						metadata: [],
-						previous: insertingAfter?.id,
+						previous,
 						temporary: createTemporary,
 						incognito: createIncognito,
 					});
+
+			if (chatId === useChatStore.getState().chatId)
+				useChatStore.getState().selectBranch(message.previousId, message.id);
 
 			const text = DataUtils.getText(message);
 			if (
@@ -201,26 +224,32 @@ export const useMessaging = () => {
 		mutationFn: async ({
 			seed,
 			part,
-			value,
+			feedback,
 			approved,
 			append = [],
 		}: {
 			seed: MessageState;
 			part: Extract<zDataPart, { type: "toolCall" }>;
-			value?: unknown;
+			feedback?: unknown;
 			approved?: boolean;
 			append?: zDataBasicPart[] | zDataBasicPart | null;
 		}) => {
 			console.log(
 				"[useMessaging] applying tool feedback:",
 				part,
-				value,
+				feedback,
 				approved,
 			);
 			if (!session.data || !chat.data || !providers.data) return;
-			const { messages } = await client.api.message.getMessages.query({
-				chat: chat.data,
-			});
+			const { messages: branchMessages } =
+				await client.api.message.getMessages.query({
+					chat: chat.data,
+					start: seed.id,
+				});
+			const messages = branchMessages.slice(
+				0,
+				branchMessages.findIndex((m) => m.id === seed.id) + 1,
+			);
 			const message = messages.at(-1);
 			if (!message) throw new Error("missing message");
 
@@ -238,7 +267,7 @@ export const useMessaging = () => {
 					id: part.id,
 					name: part.name,
 					error: true,
-					value: ToolCallUtils.rejection,
+					output: ToolCallUtils.getRejection(),
 					append: append ?? undefined,
 				};
 			} else {
@@ -248,7 +277,7 @@ export const useMessaging = () => {
 						user: session.data.user,
 						chat: chat.data,
 						part,
-						value,
+						feedback,
 						message: seed,
 						messages,
 						skills,

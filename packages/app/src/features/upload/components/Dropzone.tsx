@@ -1,4 +1,3 @@
-import { Icon } from "@iconify/react";
 import {
 	ActionIcon,
 	Box,
@@ -12,20 +11,21 @@ import {
 	type DropzoneProps,
 	Dropzone as MantineDropzone,
 } from "@mantine/dropzone";
+import { UploadIcon, XIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import { useUploads } from "#client/src/features/upload/hooks/useUploads.ts";
 import type {
-	UploadType,
+	UploadKind,
 	zUploadResult,
 } from "#core/features/file/types/upload.ts";
 
 export default function Dropzone({
-	type,
+	kind,
 	options,
 	...props
 }: Partial<DropzoneProps> & {
-	type: UploadType;
+	kind: UploadKind;
 	options?: Parameters<ReturnType<typeof useUploads>["upload"]["mutate"]>[1];
 }) {
 	const { upload } = useUploads();
@@ -41,36 +41,26 @@ export default function Dropzone({
 				h={120}
 				styles={{ inner: { height: "100%" }, root: { cursor: "pointer" } }}
 				onDrop={(files) => {
-					for (const file of files) {
-						setUploads((prev) =>
-							new Map(prev).set(file, { progress: Math.random() * 25 }),
-						);
-						upload.mutate(
-							{
-								type,
-								file,
-							},
-							{
-								...options,
-								onError: (error, ...rest) => {
-									setUploads((prev) =>
-										new Map(prev).set(file, { progress: 100, error: error }),
-									);
-									options?.onError?.(error, ...rest);
-								},
-								onSuccess: (data, ...rest) => {
-									// TODO - replace with onResult, call when deleting too
-									setUploads((prev) =>
-										new Map(prev).set(file, {
-											progress: 100,
-											result: data,
-										}),
-									);
-									options?.onSuccess?.(data, ...rest);
-								},
-							},
-						);
-					}
+					void Promise.all(
+						files.map(async (file) => {
+							setUploads((prev) =>
+								new Map(prev).set(file, { progress: Math.random() * 25 }),
+							);
+							try {
+								const result = await upload.mutateAsync(
+									{ kind, file },
+									options,
+								);
+								setUploads((prev) =>
+									new Map(prev).set(file, { progress: 100, result }),
+								);
+							} catch (error) {
+								setUploads((prev) =>
+									new Map(prev).set(file, { progress: 100, error }),
+								);
+							}
+						}),
+					);
 				}}
 			>
 				<Group
@@ -80,25 +70,13 @@ export default function Dropzone({
 					h="100%"
 				>
 					<MantineDropzone.Accept>
-						<Icon
-							icon="lucide:upload"
-							height={50}
-							color="var(--mantine-color-blue-6)"
-						/>
+						<UploadIcon size={50} color="var(--mantine-color-blue-6)" />
 					</MantineDropzone.Accept>
 					<MantineDropzone.Reject>
-						<Icon
-							icon="lucide:x"
-							height={50}
-							color="var(--mantine-color-red-6)"
-						/>
+						<XIcon size={50} color="var(--mantine-color-red-6)" />
 					</MantineDropzone.Reject>
 					<MantineDropzone.Idle>
-						<Icon
-							icon="lucide:file-up"
-							height={50}
-							color="var(--mantine-color-dimmed)"
-						/>
+						<UploadIcon size={50} color="var(--mantine-color-dimmed)" />
 					</MantineDropzone.Idle>
 					<Stack gap={0} align="center">
 						<Text size="xl" inline style={{ textAlign: "center" }}>
@@ -138,7 +116,7 @@ export default function Dropzone({
 												})
 											}
 										>
-											<Icon icon="lucide:x" height={16} />
+											<XIcon size={18} />
 										</ActionIcon>
 									)}
 								</Group>

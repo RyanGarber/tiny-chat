@@ -1,5 +1,6 @@
 import { z } from "zod";
-import type { UserCapability } from "../../../../core/types/capability.ts";
+import type { MemoriesCapability } from "../../../../core/types/capability.ts";
+import { zId } from "../../../../core/types/common.ts";
 import { MemoryCategory, MemoryStability } from "../../../data/types/memory.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
@@ -7,7 +8,7 @@ export const update_memory = {
 	name: "update_memory",
 	description: "Update a fact about the user.",
 	input: z.object({
-		id: z.cuid2(),
+		id: zId,
 		fact: z.string().describe("The fact about the user."),
 		category: z
 			.enum(MemoryCategory)
@@ -25,17 +26,17 @@ export const update_memory = {
 			.describe("Confidence that the fact is accurate and worth remembering."),
 	}),
 	output: z.object({
-		updated_memory_id: z.cuid2(),
+		updated_memory_id: zId,
 	}),
 } as const satisfies ToolDefinition;
 
 export const createUpdateMemoryTool: ToolFactory<
-	Tool<typeof update_memory, { user: UserCapability }>
+	Tool<typeof update_memory, { memories: MemoriesCapability }>
 > = (options) => ({
 	...update_memory,
 	...options,
 	execute: async ({ input }) => {
-		const memory = await options.capabilities.user.updateMemory({
+		const memory = await options.capabilities.memories.updateMemory({
 			id: input.id,
 			fact: input.fact,
 			category: input.category,

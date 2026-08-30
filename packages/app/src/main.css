@@ -143,7 +143,7 @@ body {
 	-webkit-user-select: none;
 }
 
-.selectable * {
+body:not(.unselectable) .selectable * {
 	user-select: text;
 	-webkit-user-select: text;
 }
@@ -160,12 +160,12 @@ body {
 	text-overflow: ellipsis;
 }
 
-.section-on-hover .mantine-NavLink-section {
+.right-section-hover .mantine-NavLink-section[data-position="right"] {
 	display: none;
 }
 
-.section-on-hover:hover .mantine-NavLink-section,
-.section-on-hover.hover .mantine-NavLink-section {
+.right-section-hover:hover .mantine-NavLink-section[data-position="right"],
+.right-section-hover.hover .mantine-NavLink-section[data-position="right"] {
 	display: flex;
 }
 
@@ -458,4 +458,37 @@ body {
 	background-clip: text;
 	-webkit-background-clip: text;
 	animation: shimmer 4s linear infinite;
+}
+
+::selection {
+	background-color: var(--mantine-primary-color-filled);
+}
+
+.ProseMirror-noderangeselection {
+	*::selection {
+		background: transparent;
+	}
+
+	/* biome-ignore lint/style/noDescendingSpecificity: false positive */
+	* {
+		caret-color: transparent;
+	}
+}
+
+.ProseMirror-selectednode,
+.ProseMirror-selectednoderange {
+	position: relative;
+
+	&::before {
+		position: absolute;
+		pointer-events: none;
+		z-index: -1;
+		content: "";
+		top: -0.25rem;
+		left: -0.25rem;
+		right: -0.25rem;
+		bottom: -0.25rem;
+		background-color: var(--mantine-primary-color-filled);
+		border-radius: 0.2rem;
+	}
 }

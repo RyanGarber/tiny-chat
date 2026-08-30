@@ -1,48 +1,56 @@
-import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
+import type {
+	zData,
+	zDataPart,
+} from "@tiny-chat/core/src/features/data/types/message.ts";
 import { read_file } from "@tiny-chat/core/src/features/tool/tools/shell/read_file.ts";
 import { shell_exec } from "@tiny-chat/core/src/features/tool/tools/shell/shell_exec.ts";
 import { beforeAll, describe, expect, inject, it } from "vitest";
 import type { z } from "zod";
-import { testGenerationContext } from "../../../tests.helpers.ts";
+import { testAgentContext } from "../../../tests.helpers.ts";
 import { testClient } from "../../../tests.ts";
 
 const { api } = testClient();
 
 /** The attachment directive that points a message into an upload. */
-const attach = (upload: { id: string; name: string }) =>
-	`:attachment[]{source="${PathUtils.toMount({ mount: "uploads", id: upload.id })}" is-directory="true" name="${upload.name}"}`;
-
 const upload = async (name: string, content: string) => {
 	const data = new FormData();
-	data.set("type", "ATTACHMENT");
+	data.set("kind", "ATTACHMENT");
 	data.set("file", new File([content], name));
-	return await api.upload.createUpload.mutate(data);
+	const upload = await api.upload.createUpload.mutate(data);
+	return {
+		type: "attachment",
+		id: upload.id,
+		label: name,
+		source: `/mnt/uploads/${upload.id}`,
+		content: {
+			type: "directory",
+			items: [{ path: `/mnt/uploads/${upload.id}/${name}` }],
+		},
+	} satisfies zDataPart;
 };
 
 describe("FilesystemService", () => {
 	let upload1: Awaited<ReturnType<typeof upload>>;
 	let upload2: Awaited<ReturnType<typeof upload>>;
 	let chatId: string;
-	let context: ReturnType<typeof testGenerationContext>;
+	let context: ReturnType<typeof testAgentContext>;
 
 	beforeAll(async () => {
 		upload1 = await upload("question space.md", "Files suck. I hate files.");
-		upload2 = await upload("question nbsp.md", "Files suck. I hate files.");
+		upload2 = await upload("question nbsp.md", "Files suck. I hate files.");
 
 		// An upload is on the mount because a message points into it, so what
 		// mounts these two is the attachment directives referencing them.
 		const message = await api.message.createMessage.mutate({
 			author: "USER",
-			config: inject("backend_config"),
-			data: [
-				[{ type: "text", value: [upload1, upload2].map(attach).join(" ") }],
-			],
+			config: inject("server_config"),
+			data: [[upload1, upload2]] satisfies zData,
 			metadata: [],
 		});
 		const chat = await api.chat.getChat.query(message);
 		if (!chat) throw new Error("Test chat not found");
 		chatId = chat.id;
-		context = testGenerationContext({ chat, messages: [message] });
+		context = testAgentContext({ chat, messages: [message] });
 	});
 
 	const exec = async (
@@ -80,12 +88,12 @@ describe("FilesystemService", () => {
 		expect(output.stdout).toContain(".md");
 	});
 
-	it("reads a file with nbsp", async () => {
+	it("resolves a path despite bad unicode", async () => {
 		const output = await api.testing.tool.mutate({
 			name: read_file.name,
 			context,
 			input: {
-				path: `/mnt/uploads/${upload2.id}/${upload2.name}`,
+				path: `/mnt/uploads/${upload2.id}/question nbsp.md`,
 			} satisfies z.infer<typeof read_file.input>,
 		});
 		expect.assert(output[0].type === "file");
@@ -115,12 +123,12 @@ describe("FilesystemService", () => {
 
 	it("refuses to write over an upload", async () => {
 		const output = await exec(
-			`echo "nope" > "/mnt/uploads/${upload1.id}/question space.md"`,
+			`echo "nope" > "/mnt/uploads/${upload1.id}/${upload1.label}"`,
 		);
 		expect(output.stderr).toMatch(/read-only/i);
 
 		const read = await exec(
-			`cat "/mnt/uploads/${upload1.id}/question space.md"`,
+			`cat "/mnt/uploads/${upload1.id}/${upload1.label}"`,
 		);
 		expect(read.stdout).toContain("Files suck. I hate files.");
 	});
@@ -132,7 +140,7 @@ describe("FilesystemService", () => {
 	});
 
 	it("copies an upload into the chat, where it can be changed", async () => {
-		const source = `/mnt/uploads/${upload2.id}/${upload2.name}`;
+		const source = `/mnt/uploads/${upload2.id}/${upload2.label}`;
 		const destination = `/mnt/chat/${chatId}/copied.md`;
 
 		let output = await exec(`cp "${source}" "${destination}"`);
@@ -162,7 +170,7 @@ describe("FilesystemService", () => {
 		);
 		expect.assert(uploaded);
 		expect(uploaded.path.slice(0, 2)).toEqual(["uploads", upload1.id]);
-		expect(uploaded.name).toBe(upload1.name);
+		expect(uploaded.name).toBe(upload1.label);
 
 		const written = files.find((file) => file.path.includes("hello.txt"));
 		expect.assert(written);
@@ -184,7 +192,7 @@ describe("FilesystemService", () => {
 			path: ["uploads"],
 		});
 		expect(uploads.find((entry) => entry.name === upload1.id)?.label).toBe(
-			upload1.name,
+			upload1.label,
 		);
 
 		const files = await api.file.getDirectory.query({

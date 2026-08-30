@@ -35,6 +35,7 @@ export const AnthropicProvider: ModelProvider<_AnthropicProvider> = {
 								}
 							: undefined,
 				effort: config.args?.effort,
+				cacheControl: { type: "ephemeral", ttl: "5m" },
 			} satisfies AnthropicLanguageModelOptions,
 		};
 	},

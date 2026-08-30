@@ -119,6 +119,7 @@ export const useMouse = ({
 	useEffect(() => {
 		if (!isActive || !input || !isRawModeSupported) return;
 
+		// biome-ignore lint/nursery/useReactCompiler: setRawMode controls Ink's external terminal input mode, not React state.
 		setRawMode(true);
 		subscribe(input, listener, motion, drag);
 

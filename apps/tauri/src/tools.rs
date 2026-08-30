@@ -1,41 +1,44 @@
 use crate::Error;
 use base64::Engine;
 
-fn expand_path(path: &str, accept_parent: bool) -> Result<std::path::PathBuf, Error> {
+fn resolve(path: &str) -> Result<std::path::PathBuf, Error> {
     let expanded =
         shellexpand::full(path).map_err(|e| Error::Other(format!("Path expansion failed: {e}")))?;
     let p = std::path::PathBuf::from(expanded.as_ref());
-    let canonical = if accept_parent && let Some(parent) = p.parent() {
-        let resolved_parent = parent.canonicalize().map_err(|e| {
-            Error::Io(format!(
-                "Cannot resolve parent dir '{}': {e}",
-                parent.display()
-            ))
-        })?;
-        resolved_parent.join(p.file_name().ok_or("Invalid filename")?)
-    } else {
-        p.canonicalize()
-            .map_err(|e| Error::Io(format!("Cannot resolve path '{}': {e}", p.display())))?
-    };
+    let canonical = p
+        .canonicalize()
+        .map_err(|e| Error::Io(format!("Cannot resolve path '{}': {e}", p.display())))?;
     Ok(canonical)
+}
+fn parent(path: &str) -> std::path::PathBuf {
+    let p = std::path::PathBuf::from(path);
+    p.parent()
+        .map(std::path::PathBuf::from)
+        .map(|p| {
+            if p.components().count() > 0 {
+                p
+            } else {
+                std::path::PathBuf::from(".")
+            }
+        })
+        .unwrap_or_else(|| std::path::PathBuf::from("."))
 }
 
 #[tauri::command]
 pub fn is_dir(path: &str) -> Result<bool, Error> {
-    let dir = expand_path(path, false)?;
+    let dir = resolve(path)?;
     Ok(dir.is_dir())
 }
 
 #[tauri::command]
 pub fn make_dir(path: &str) -> Result<(), Error> {
-    let dir = expand_path(path, true)?;
-    std::fs::create_dir_all(&dir)?;
+    std::fs::create_dir_all(path)?;
     Ok(())
 }
 
 #[tauri::command]
 pub fn read_dir(path: &str) -> Result<Vec<FileInfo>, Error> {
-    let dir = expand_path(path, false)?;
+    let dir = resolve(path)?;
     let entries = std::fs::read_dir(&dir)?;
     let outputs = entries
         .map(|e| {
@@ -51,7 +54,7 @@ pub fn read_dir(path: &str) -> Result<Vec<FileInfo>, Error> {
 
 #[tauri::command]
 pub fn read_file(path: &str) -> Result<FileData, Error> {
-    let path = expand_path(path, false)?;
+    let path = resolve(path)?;
     let bytes = std::fs::read(&path).map_err(|e| Error::Io(format!("Cannot read file: {e}")))?;
     let data = base64::engine::general_purpose::STANDARD.encode(&bytes);
     Ok(FileData {
@@ -62,21 +65,22 @@ pub fn read_file(path: &str) -> Result<FileData, Error> {
 
 #[tauri::command]
 pub fn write_file(path: &str, content: &str) -> Result<(), Error> {
-    let path = expand_path(path, true)?;
+    let parent = parent(path);
+    std::fs::create_dir_all(&parent).map_err(|e| {
+        Error::Io(format!(
+            "Cannot create parent dir '{}': {e}",
+            parent.display()
+        ))
+    })?;
 
-    let canonical = if let Some(parent) = path.parent() {
-        let resolved_parent = parent.canonicalize().map_err(|e| {
-            Error::Io(format!(
-                "Cannot resolve parent dir '{}': {e}",
-                parent.display()
-            ))
-        })?;
-        resolved_parent.join(path.file_name().ok_or("Invalid filename")?)
-    } else {
-        path
-    };
+    let file = std::path::PathBuf::from(path);
+    let file_name = file
+        .file_name()
+        .ok_or_else(|| Error::Other(format!("Invalid file path: {}", path)))?;
 
-    std::fs::write(&canonical, content)?;
+    let path = resolve(parent.to_str().unwrap())?.join(file_name);
+
+    std::fs::write(&path, content)?;
     Ok(())
 }
 
@@ -167,7 +171,7 @@ pub fn cwd() -> Result<String, Error> {
 
 #[tauri::command]
 pub fn chdir(path: &str) -> Result<(), Error> {
-    let path = expand_path(path, false)?;
+    let path = resolve(path)?;
     std::env::set_current_dir(&path)?;
     Ok(())
 }
@@ -179,7 +183,7 @@ mod tests {
     #[test]
     fn test_expand_path() {
         let path = "~";
-        let expanded = expand_path(path, false).unwrap();
+        let expanded = resolve(path).unwrap();
         assert!(expanded.is_absolute());
     }
 
@@ -195,5 +199,11 @@ mod tests {
         let path = ".";
         let files = read_dir(path).unwrap();
         assert!(!files.is_empty());
+    }
+
+    #[test]
+    fn test_write_file() {
+        let path = "test";
+        let _pathbuf = write_file(path, "1").unwrap();
     }
 }

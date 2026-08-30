@@ -1,3 +1,4 @@
+import { useEmbedding } from "@tiny-chat/client/src/features/user/hooks/useEmbedding.ts";
 import Spinner from "ink-spinner";
 import { useShallow } from "zustand/react/shallow";
 import { type Status, useAppStore } from "../stores/useAppStore.ts";
@@ -14,10 +15,20 @@ export default function StatusText() {
 		]),
 	);
 
+	const { embeddingStatus } = useEmbedding();
+
 	return (
 		<Box marginLeft={2} marginY={1} flexDirection="column">
+			{!!embeddingStatus.batch && (
+				<Box>
+					<Text color="primary">
+						<Spinner type="circleQuarters" />
+						embedding ({embeddingStatus.totalCount})
+					</Text>
+				</Box>
+			)}
 			{statuses.map((status) => (
-				<Box key={status.id} gap={1}>
+				<Box key={status.id}>
 					<Text color="primary">
 						{!status.passive && <Spinner type="circleQuarters" />}
 						{status.text && (status.passive ? status.text : ` ${status.text}`)}

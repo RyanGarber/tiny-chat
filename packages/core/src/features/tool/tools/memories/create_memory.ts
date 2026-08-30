@@ -1,5 +1,6 @@
 import { z } from "zod";
-import type { UserCapability } from "../../../../core/types/capability.ts";
+import type { MemoriesCapability } from "../../../../core/types/capability.ts";
+import { zId } from "../../../../core/types/common.ts";
 import { MemoryCategory, MemoryStability } from "../../../data/types/memory.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
@@ -24,17 +25,17 @@ export const create_memory = {
 			.describe("Confidence that the fact is accurate and worth remembering."),
 	}),
 	output: z.object({
-		created_memory_id: z.cuid2(),
+		created_memory_id: zId,
 	}),
 } as const satisfies ToolDefinition;
 
 export const createCreateMemoryTool: ToolFactory<
-	Tool<typeof create_memory, { user: UserCapability }>
+	Tool<typeof create_memory, { memories: MemoriesCapability }>
 > = (options) => ({
 	...create_memory,
 	...options,
 	execute: async ({ input }) => {
-		const memory = await options.capabilities.user.createMemory({
+		const memory = await options.capabilities.memories.createMemory({
 			fact: input.fact,
 			category: input.category,
 			stability: input.stability,

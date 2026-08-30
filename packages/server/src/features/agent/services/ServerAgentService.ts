@@ -1,10 +1,10 @@
 import { zProviderEnv } from "@tiny-chat/core/src/core/types/env.ts";
 import { AgentService } from "@tiny-chat/core/src/features/agent/services/AgentService.ts";
 import type { zAgentContext } from "@tiny-chat/core/src/features/agent/types/agent.ts";
-import type { ChatState } from "@tiny-chat/core/src/features/data/types/chat.ts";
+import { AgentUtils } from "@tiny-chat/core/src/features/agent/utils/AgentUtils.ts";
+import type { zChat } from "@tiny-chat/core/src/features/data/types/chat.ts";
 import type {
 	MessageState,
-	zConfig,
 	zData,
 	zMetadata,
 } from "@tiny-chat/core/src/features/data/types/message.ts";
@@ -12,25 +12,32 @@ import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts"
 import { ModelProviderService } from "@tiny-chat/core/src/features/provider/services/ModelProviderService.ts";
 import { SkillUtils } from "@tiny-chat/core/src/features/skill/utils/SkillUtils.ts";
 import { ToolService } from "@tiny-chat/core/src/features/tool/services/ToolService.ts";
+import chalk from "chalk";
 import { ServerCapabilityService } from "../../../core/services/ServerCapabilityService.ts";
 
 export const ServerAgentService = {
 	runAgent: async ({
 		chat,
 		context,
-		config,
 		prompt,
+		instructions,
+		toolNames,
 	}: {
-		chat: ChatState;
+		chat: zChat | null;
+		prompt: MessageState | null;
 		context: zAgentContext;
-		config: zConfig;
-		prompt: MessageState;
+		/** Override normal chat instructions for a specialized agent run. */
+		instructions?: string;
+		/** Optional tool allowlist. */
+		toolNames?: string[];
 	}) => {
 		const skills = (
-			await globalThis.prisma.upload.findMany({
-				where: { userId: context.user.id, type: "SKILL" },
-				include: { files: true },
+			await globalThis.db.orm.public.Upload.where({
+				userId: context.user.id,
+				kind: "SKILL",
 			})
+				.include("files", (file) => file.select("path", "data"))
+				.all()
 		).flatMap(({ id, files }) => {
 			try {
 				return (
@@ -51,12 +58,16 @@ export const ServerAgentService = {
 			}
 		});
 
+		const { prompt: lastPrompt } = AgentUtils.getLastPrompt({
+			messages: context.messages,
+			withText: false,
+		});
 		const modelProvider = ModelProviderService.providers.find(
-			(provider) => provider.name === config.provider,
+			(provider) => provider.name === lastPrompt?.config?.provider,
 		);
 		if (!modelProvider) {
 			throw new Error(
-				`[ServerAgentService] provider not found: ${config.provider}`,
+				`[ServerAgentService] provider not found: ${lastPrompt?.config?.provider}`,
 			);
 		}
 
@@ -65,13 +76,22 @@ export const ServerAgentService = {
 			chat,
 			message: prompt,
 			messages: context.messages,
-			incognito: chat.incognito,
+			incognito: chat?.incognito,
+			temporary: chat?.temporary,
 		});
 
-		const toolsets = await ToolService.getTools({
+		let toolsets = await ToolService.getTools({
 			capabilities,
-			incognito: chat.incognito,
 		});
+
+		if (toolNames) {
+			toolsets = toolsets
+				.map((toolset) => ({
+					...toolset,
+					tools: toolset.tools.filter((tool) => toolNames.includes(tool.name)),
+				}))
+				.filter((toolset) => toolset.tools.length > 0);
+		}
 
 		const data: zData = [];
 		const metadata: zMetadata = [];
@@ -85,11 +105,38 @@ export const ServerAgentService = {
 			data,
 			metadata,
 			env: { ...zProviderEnv.parse(process.env) },
-			options: {},
+			instructions,
 		});
 
-		for await (const _ of stream) {
-			// nothing to do here
+		let lastId = "";
+		for await (const part of stream) {
+			if (part.type === "start") {
+				console.log("-- start --");
+			} else if (part.type === "data") {
+				if (part.value.id !== lastId) {
+					console.log(`[${part.value.type}] `);
+					lastId = part.value.id;
+				}
+				if (part.value.type === "thought") {
+					process.stdout.write(chalk.dim(part.value.value));
+				} else if (part.value.type === "toolCall") {
+					process.stdout.write(
+						chalk.dim(
+							`${part.value.name}(${JSON.stringify(part.value.input)})`,
+						),
+					);
+				} else if (part.value.type === "toolResult") {
+					process.stdout.write(
+						chalk.dim(
+							`${part.value.error ? chalk.redBright(">") : ">"} ${JSON.stringify(part.value.output)}`,
+						),
+					);
+				} else if (part.value.type === "text") {
+					process.stdout.write(chalk.dim(part.value.value));
+				}
+			} else if (part.type === "end") {
+				console.log("\n-- end --");
+			}
 		}
 
 		return { data, metadata };

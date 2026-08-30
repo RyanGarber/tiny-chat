@@ -174,11 +174,8 @@ export type FolderWhereInput = {
   userId?: Prisma.StringFilter<"Folder"> | string
   title?: Prisma.StringNullableFilter<"Folder"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Folder"> | Date | string
-  action?: Prisma.ActionListRelationFilter
   chats?: Prisma.ChatListRelationFilter
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  memories?: Prisma.MemoryListRelationFilter
-  messages?: Prisma.MessageListRelationFilter
 }
 
 export type FolderOrderByWithRelationInput = {
@@ -186,11 +183,8 @@ export type FolderOrderByWithRelationInput = {
   userId?: Prisma.SortOrder
   title?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  action?: Prisma.ActionOrderByRelationAggregateInput
   chats?: Prisma.ChatOrderByRelationAggregateInput
   user?: Prisma.UserOrderByWithRelationInput
-  memories?: Prisma.MemoryOrderByRelationAggregateInput
-  messages?: Prisma.MessageOrderByRelationAggregateInput
 }
 
 export type FolderWhereUniqueInput = Prisma.AtLeast<{
@@ -201,11 +195,8 @@ export type FolderWhereUniqueInput = Prisma.AtLeast<{
   userId?: Prisma.StringFilter<"Folder"> | string
   title?: Prisma.StringNullableFilter<"Folder"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Folder"> | Date | string
-  action?: Prisma.ActionListRelationFilter
   chats?: Prisma.ChatListRelationFilter
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  memories?: Prisma.MemoryListRelationFilter
-  messages?: Prisma.MessageListRelationFilter
 }, "id">
 
 export type FolderOrderByWithAggregationInput = {
@@ -232,11 +223,8 @@ export type FolderCreateInput = {
   id: string
   title?: string | null
   createdAt?: Date | string
-  action?: Prisma.ActionCreateNestedManyWithoutFolderInput
   chats?: Prisma.ChatCreateNestedManyWithoutFolderInput
   user: Prisma.UserCreateNestedOneWithoutFoldersInput
-  memories?: Prisma.MemoryCreateNestedManyWithoutFolderInput
-  messages?: Prisma.MessageCreateNestedManyWithoutFolderInput
 }
 
 export type FolderUncheckedCreateInput = {
@@ -244,21 +232,15 @@ export type FolderUncheckedCreateInput = {
   userId: string
   title?: string | null
   createdAt?: Date | string
-  action?: Prisma.ActionUncheckedCreateNestedManyWithoutFolderInput
   chats?: Prisma.ChatUncheckedCreateNestedManyWithoutFolderInput
-  memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutFolderInput
-  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutFolderInput
 }
 
 export type FolderUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  action?: Prisma.ActionUpdateManyWithoutFolderNestedInput
   chats?: Prisma.ChatUpdateManyWithoutFolderNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutFoldersNestedInput
-  memories?: Prisma.MemoryUpdateManyWithoutFolderNestedInput
-  messages?: Prisma.MessageUpdateManyWithoutFolderNestedInput
 }
 
 export type FolderUncheckedUpdateInput = {
@@ -266,10 +248,7 @@ export type FolderUncheckedUpdateInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  action?: Prisma.ActionUncheckedUpdateManyWithoutFolderNestedInput
   chats?: Prisma.ChatUncheckedUpdateManyWithoutFolderNestedInput
-  memories?: Prisma.MemoryUncheckedUpdateManyWithoutFolderNestedInput
-  messages?: Prisma.MessageUncheckedUpdateManyWithoutFolderNestedInput
 }
 
 export type FolderCreateManyInput = {
@@ -292,14 +271,9 @@ export type FolderUncheckedUpdateManyInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
-export type FolderListRelationFilter = {
-  every?: Prisma.FolderWhereInput
-  some?: Prisma.FolderWhereInput
-  none?: Prisma.FolderWhereInput
-}
-
-export type FolderOrderByRelationAggregateInput = {
-  _count?: Prisma.SortOrder
+export type FolderNullableScalarRelationFilter = {
+  is?: Prisma.FolderWhereInput | null
+  isNot?: Prisma.FolderWhereInput | null
 }
 
 export type FolderCountOrderByAggregateInput = {
@@ -323,14 +297,30 @@ export type FolderMinOrderByAggregateInput = {
   createdAt?: Prisma.SortOrder
 }
 
-export type FolderScalarRelationFilter = {
-  is?: Prisma.FolderWhereInput
-  isNot?: Prisma.FolderWhereInput
+export type FolderListRelationFilter = {
+  every?: Prisma.FolderWhereInput
+  some?: Prisma.FolderWhereInput
+  none?: Prisma.FolderWhereInput
 }
 
-export type FolderNullableScalarRelationFilter = {
-  is?: Prisma.FolderWhereInput | null
-  isNot?: Prisma.FolderWhereInput | null
+export type FolderOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
+}
+
+export type FolderCreateNestedOneWithoutChatsInput = {
+  create?: Prisma.XOR<Prisma.FolderCreateWithoutChatsInput, Prisma.FolderUncheckedCreateWithoutChatsInput>
+  connectOrCreate?: Prisma.FolderCreateOrConnectWithoutChatsInput
+  connect?: Prisma.FolderWhereUniqueInput
+}
+
+export type FolderUpdateOneWithoutChatsNestedInput = {
+  create?: Prisma.XOR<Prisma.FolderCreateWithoutChatsInput, Prisma.FolderUncheckedCreateWithoutChatsInput>
+  connectOrCreate?: Prisma.FolderCreateOrConnectWithoutChatsInput
+  upsert?: Prisma.FolderUpsertWithoutChatsInput
+  disconnect?: Prisma.FolderWhereInput | boolean
+  delete?: Prisma.FolderWhereInput | boolean
+  connect?: Prisma.FolderWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.FolderUpdateToOneWithWhereWithoutChatsInput, Prisma.FolderUpdateWithoutChatsInput>, Prisma.FolderUncheckedUpdateWithoutChatsInput>
 }
 
 export type FolderCreateNestedManyWithoutUserInput = {
@@ -375,82 +365,62 @@ export type FolderUncheckedUpdateManyWithoutUserNestedInput = {
   deleteMany?: Prisma.FolderScalarWhereInput | Prisma.FolderScalarWhereInput[]
 }
 
-export type FolderCreateNestedOneWithoutChatsInput = {
-  create?: Prisma.XOR<Prisma.FolderCreateWithoutChatsInput, Prisma.FolderUncheckedCreateWithoutChatsInput>
-  connectOrCreate?: Prisma.FolderCreateOrConnectWithoutChatsInput
-  connect?: Prisma.FolderWhereUniqueInput
+export type FolderCreateWithoutChatsInput = {
+  id: string
+  title?: string | null
+  createdAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutFoldersInput
 }
 
-export type FolderUpdateOneRequiredWithoutChatsNestedInput = {
-  create?: Prisma.XOR<Prisma.FolderCreateWithoutChatsInput, Prisma.FolderUncheckedCreateWithoutChatsInput>
-  connectOrCreate?: Prisma.FolderCreateOrConnectWithoutChatsInput
-  upsert?: Prisma.FolderUpsertWithoutChatsInput
-  connect?: Prisma.FolderWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.FolderUpdateToOneWithWhereWithoutChatsInput, Prisma.FolderUpdateWithoutChatsInput>, Prisma.FolderUncheckedUpdateWithoutChatsInput>
+export type FolderUncheckedCreateWithoutChatsInput = {
+  id: string
+  userId: string
+  title?: string | null
+  createdAt?: Date | string
 }
 
-export type FolderCreateNestedOneWithoutMessagesInput = {
-  create?: Prisma.XOR<Prisma.FolderCreateWithoutMessagesInput, Prisma.FolderUncheckedCreateWithoutMessagesInput>
-  connectOrCreate?: Prisma.FolderCreateOrConnectWithoutMessagesInput
-  connect?: Prisma.FolderWhereUniqueInput
+export type FolderCreateOrConnectWithoutChatsInput = {
+  where: Prisma.FolderWhereUniqueInput
+  create: Prisma.XOR<Prisma.FolderCreateWithoutChatsInput, Prisma.FolderUncheckedCreateWithoutChatsInput>
 }
 
-export type FolderUpdateOneRequiredWithoutMessagesNestedInput = {
-  create?: Prisma.XOR<Prisma.FolderCreateWithoutMessagesInput, Prisma.FolderUncheckedCreateWithoutMessagesInput>
-  connectOrCreate?: Prisma.FolderCreateOrConnectWithoutMessagesInput
-  upsert?: Prisma.FolderUpsertWithoutMessagesInput
-  connect?: Prisma.FolderWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.FolderUpdateToOneWithWhereWithoutMessagesInput, Prisma.FolderUpdateWithoutMessagesInput>, Prisma.FolderUncheckedUpdateWithoutMessagesInput>
+export type FolderUpsertWithoutChatsInput = {
+  update: Prisma.XOR<Prisma.FolderUpdateWithoutChatsInput, Prisma.FolderUncheckedUpdateWithoutChatsInput>
+  create: Prisma.XOR<Prisma.FolderCreateWithoutChatsInput, Prisma.FolderUncheckedCreateWithoutChatsInput>
+  where?: Prisma.FolderWhereInput
 }
 
-export type FolderCreateNestedOneWithoutMemoriesInput = {
-  create?: Prisma.XOR<Prisma.FolderCreateWithoutMemoriesInput, Prisma.FolderUncheckedCreateWithoutMemoriesInput>
-  connectOrCreate?: Prisma.FolderCreateOrConnectWithoutMemoriesInput
-  connect?: Prisma.FolderWhereUniqueInput
+export type FolderUpdateToOneWithWhereWithoutChatsInput = {
+  where?: Prisma.FolderWhereInput
+  data: Prisma.XOR<Prisma.FolderUpdateWithoutChatsInput, Prisma.FolderUncheckedUpdateWithoutChatsInput>
 }
 
-export type FolderUpdateOneWithoutMemoriesNestedInput = {
-  create?: Prisma.XOR<Prisma.FolderCreateWithoutMemoriesInput, Prisma.FolderUncheckedCreateWithoutMemoriesInput>
-  connectOrCreate?: Prisma.FolderCreateOrConnectWithoutMemoriesInput
-  upsert?: Prisma.FolderUpsertWithoutMemoriesInput
-  disconnect?: Prisma.FolderWhereInput | boolean
-  delete?: Prisma.FolderWhereInput | boolean
-  connect?: Prisma.FolderWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.FolderUpdateToOneWithWhereWithoutMemoriesInput, Prisma.FolderUpdateWithoutMemoriesInput>, Prisma.FolderUncheckedUpdateWithoutMemoriesInput>
+export type FolderUpdateWithoutChatsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutFoldersNestedInput
 }
 
-export type FolderCreateNestedOneWithoutActionInput = {
-  create?: Prisma.XOR<Prisma.FolderCreateWithoutActionInput, Prisma.FolderUncheckedCreateWithoutActionInput>
-  connectOrCreate?: Prisma.FolderCreateOrConnectWithoutActionInput
-  connect?: Prisma.FolderWhereUniqueInput
-}
-
-export type FolderUpdateOneRequiredWithoutActionNestedInput = {
-  create?: Prisma.XOR<Prisma.FolderCreateWithoutActionInput, Prisma.FolderUncheckedCreateWithoutActionInput>
-  connectOrCreate?: Prisma.FolderCreateOrConnectWithoutActionInput
-  upsert?: Prisma.FolderUpsertWithoutActionInput
-  connect?: Prisma.FolderWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.FolderUpdateToOneWithWhereWithoutActionInput, Prisma.FolderUpdateWithoutActionInput>, Prisma.FolderUncheckedUpdateWithoutActionInput>
+export type FolderUncheckedUpdateWithoutChatsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type FolderCreateWithoutUserInput = {
   id: string
   title?: string | null
   createdAt?: Date | string
-  action?: Prisma.ActionCreateNestedManyWithoutFolderInput
   chats?: Prisma.ChatCreateNestedManyWithoutFolderInput
-  memories?: Prisma.MemoryCreateNestedManyWithoutFolderInput
-  messages?: Prisma.MessageCreateNestedManyWithoutFolderInput
 }
 
 export type FolderUncheckedCreateWithoutUserInput = {
   id: string
   title?: string | null
   createdAt?: Date | string
-  action?: Prisma.ActionUncheckedCreateNestedManyWithoutFolderInput
   chats?: Prisma.ChatUncheckedCreateNestedManyWithoutFolderInput
-  memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutFolderInput
-  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutFolderInput
 }
 
 export type FolderCreateOrConnectWithoutUserInput = {
@@ -489,230 +459,6 @@ export type FolderScalarWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"Folder"> | Date | string
 }
 
-export type FolderCreateWithoutChatsInput = {
-  id: string
-  title?: string | null
-  createdAt?: Date | string
-  action?: Prisma.ActionCreateNestedManyWithoutFolderInput
-  user: Prisma.UserCreateNestedOneWithoutFoldersInput
-  memories?: Prisma.MemoryCreateNestedManyWithoutFolderInput
-  messages?: Prisma.MessageCreateNestedManyWithoutFolderInput
-}
-
-export type FolderUncheckedCreateWithoutChatsInput = {
-  id: string
-  userId: string
-  title?: string | null
-  createdAt?: Date | string
-  action?: Prisma.ActionUncheckedCreateNestedManyWithoutFolderInput
-  memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutFolderInput
-  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutFolderInput
-}
-
-export type FolderCreateOrConnectWithoutChatsInput = {
-  where: Prisma.FolderWhereUniqueInput
-  create: Prisma.XOR<Prisma.FolderCreateWithoutChatsInput, Prisma.FolderUncheckedCreateWithoutChatsInput>
-}
-
-export type FolderUpsertWithoutChatsInput = {
-  update: Prisma.XOR<Prisma.FolderUpdateWithoutChatsInput, Prisma.FolderUncheckedUpdateWithoutChatsInput>
-  create: Prisma.XOR<Prisma.FolderCreateWithoutChatsInput, Prisma.FolderUncheckedCreateWithoutChatsInput>
-  where?: Prisma.FolderWhereInput
-}
-
-export type FolderUpdateToOneWithWhereWithoutChatsInput = {
-  where?: Prisma.FolderWhereInput
-  data: Prisma.XOR<Prisma.FolderUpdateWithoutChatsInput, Prisma.FolderUncheckedUpdateWithoutChatsInput>
-}
-
-export type FolderUpdateWithoutChatsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  action?: Prisma.ActionUpdateManyWithoutFolderNestedInput
-  user?: Prisma.UserUpdateOneRequiredWithoutFoldersNestedInput
-  memories?: Prisma.MemoryUpdateManyWithoutFolderNestedInput
-  messages?: Prisma.MessageUpdateManyWithoutFolderNestedInput
-}
-
-export type FolderUncheckedUpdateWithoutChatsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  userId?: Prisma.StringFieldUpdateOperationsInput | string
-  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  action?: Prisma.ActionUncheckedUpdateManyWithoutFolderNestedInput
-  memories?: Prisma.MemoryUncheckedUpdateManyWithoutFolderNestedInput
-  messages?: Prisma.MessageUncheckedUpdateManyWithoutFolderNestedInput
-}
-
-export type FolderCreateWithoutMessagesInput = {
-  id: string
-  title?: string | null
-  createdAt?: Date | string
-  action?: Prisma.ActionCreateNestedManyWithoutFolderInput
-  chats?: Prisma.ChatCreateNestedManyWithoutFolderInput
-  user: Prisma.UserCreateNestedOneWithoutFoldersInput
-  memories?: Prisma.MemoryCreateNestedManyWithoutFolderInput
-}
-
-export type FolderUncheckedCreateWithoutMessagesInput = {
-  id: string
-  userId: string
-  title?: string | null
-  createdAt?: Date | string
-  action?: Prisma.ActionUncheckedCreateNestedManyWithoutFolderInput
-  chats?: Prisma.ChatUncheckedCreateNestedManyWithoutFolderInput
-  memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutFolderInput
-}
-
-export type FolderCreateOrConnectWithoutMessagesInput = {
-  where: Prisma.FolderWhereUniqueInput
-  create: Prisma.XOR<Prisma.FolderCreateWithoutMessagesInput, Prisma.FolderUncheckedCreateWithoutMessagesInput>
-}
-
-export type FolderUpsertWithoutMessagesInput = {
-  update: Prisma.XOR<Prisma.FolderUpdateWithoutMessagesInput, Prisma.FolderUncheckedUpdateWithoutMessagesInput>
-  create: Prisma.XOR<Prisma.FolderCreateWithoutMessagesInput, Prisma.FolderUncheckedCreateWithoutMessagesInput>
-  where?: Prisma.FolderWhereInput
-}
-
-export type FolderUpdateToOneWithWhereWithoutMessagesInput = {
-  where?: Prisma.FolderWhereInput
-  data: Prisma.XOR<Prisma.FolderUpdateWithoutMessagesInput, Prisma.FolderUncheckedUpdateWithoutMessagesInput>
-}
-
-export type FolderUpdateWithoutMessagesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  action?: Prisma.ActionUpdateManyWithoutFolderNestedInput
-  chats?: Prisma.ChatUpdateManyWithoutFolderNestedInput
-  user?: Prisma.UserUpdateOneRequiredWithoutFoldersNestedInput
-  memories?: Prisma.MemoryUpdateManyWithoutFolderNestedInput
-}
-
-export type FolderUncheckedUpdateWithoutMessagesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  userId?: Prisma.StringFieldUpdateOperationsInput | string
-  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  action?: Prisma.ActionUncheckedUpdateManyWithoutFolderNestedInput
-  chats?: Prisma.ChatUncheckedUpdateManyWithoutFolderNestedInput
-  memories?: Prisma.MemoryUncheckedUpdateManyWithoutFolderNestedInput
-}
-
-export type FolderCreateWithoutMemoriesInput = {
-  id: string
-  title?: string | null
-  createdAt?: Date | string
-  action?: Prisma.ActionCreateNestedManyWithoutFolderInput
-  chats?: Prisma.ChatCreateNestedManyWithoutFolderInput
-  user: Prisma.UserCreateNestedOneWithoutFoldersInput
-  messages?: Prisma.MessageCreateNestedManyWithoutFolderInput
-}
-
-export type FolderUncheckedCreateWithoutMemoriesInput = {
-  id: string
-  userId: string
-  title?: string | null
-  createdAt?: Date | string
-  action?: Prisma.ActionUncheckedCreateNestedManyWithoutFolderInput
-  chats?: Prisma.ChatUncheckedCreateNestedManyWithoutFolderInput
-  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutFolderInput
-}
-
-export type FolderCreateOrConnectWithoutMemoriesInput = {
-  where: Prisma.FolderWhereUniqueInput
-  create: Prisma.XOR<Prisma.FolderCreateWithoutMemoriesInput, Prisma.FolderUncheckedCreateWithoutMemoriesInput>
-}
-
-export type FolderUpsertWithoutMemoriesInput = {
-  update: Prisma.XOR<Prisma.FolderUpdateWithoutMemoriesInput, Prisma.FolderUncheckedUpdateWithoutMemoriesInput>
-  create: Prisma.XOR<Prisma.FolderCreateWithoutMemoriesInput, Prisma.FolderUncheckedCreateWithoutMemoriesInput>
-  where?: Prisma.FolderWhereInput
-}
-
-export type FolderUpdateToOneWithWhereWithoutMemoriesInput = {
-  where?: Prisma.FolderWhereInput
-  data: Prisma.XOR<Prisma.FolderUpdateWithoutMemoriesInput, Prisma.FolderUncheckedUpdateWithoutMemoriesInput>
-}
-
-export type FolderUpdateWithoutMemoriesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  action?: Prisma.ActionUpdateManyWithoutFolderNestedInput
-  chats?: Prisma.ChatUpdateManyWithoutFolderNestedInput
-  user?: Prisma.UserUpdateOneRequiredWithoutFoldersNestedInput
-  messages?: Prisma.MessageUpdateManyWithoutFolderNestedInput
-}
-
-export type FolderUncheckedUpdateWithoutMemoriesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  userId?: Prisma.StringFieldUpdateOperationsInput | string
-  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  action?: Prisma.ActionUncheckedUpdateManyWithoutFolderNestedInput
-  chats?: Prisma.ChatUncheckedUpdateManyWithoutFolderNestedInput
-  messages?: Prisma.MessageUncheckedUpdateManyWithoutFolderNestedInput
-}
-
-export type FolderCreateWithoutActionInput = {
-  id: string
-  title?: string | null
-  createdAt?: Date | string
-  chats?: Prisma.ChatCreateNestedManyWithoutFolderInput
-  user: Prisma.UserCreateNestedOneWithoutFoldersInput
-  memories?: Prisma.MemoryCreateNestedManyWithoutFolderInput
-  messages?: Prisma.MessageCreateNestedManyWithoutFolderInput
-}
-
-export type FolderUncheckedCreateWithoutActionInput = {
-  id: string
-  userId: string
-  title?: string | null
-  createdAt?: Date | string
-  chats?: Prisma.ChatUncheckedCreateNestedManyWithoutFolderInput
-  memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutFolderInput
-  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutFolderInput
-}
-
-export type FolderCreateOrConnectWithoutActionInput = {
-  where: Prisma.FolderWhereUniqueInput
-  create: Prisma.XOR<Prisma.FolderCreateWithoutActionInput, Prisma.FolderUncheckedCreateWithoutActionInput>
-}
-
-export type FolderUpsertWithoutActionInput = {
-  update: Prisma.XOR<Prisma.FolderUpdateWithoutActionInput, Prisma.FolderUncheckedUpdateWithoutActionInput>
-  create: Prisma.XOR<Prisma.FolderCreateWithoutActionInput, Prisma.FolderUncheckedCreateWithoutActionInput>
-  where?: Prisma.FolderWhereInput
-}
-
-export type FolderUpdateToOneWithWhereWithoutActionInput = {
-  where?: Prisma.FolderWhereInput
-  data: Prisma.XOR<Prisma.FolderUpdateWithoutActionInput, Prisma.FolderUncheckedUpdateWithoutActionInput>
-}
-
-export type FolderUpdateWithoutActionInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  chats?: Prisma.ChatUpdateManyWithoutFolderNestedInput
-  user?: Prisma.UserUpdateOneRequiredWithoutFoldersNestedInput
-  memories?: Prisma.MemoryUpdateManyWithoutFolderNestedInput
-  messages?: Prisma.MessageUpdateManyWithoutFolderNestedInput
-}
-
-export type FolderUncheckedUpdateWithoutActionInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  userId?: Prisma.StringFieldUpdateOperationsInput | string
-  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  chats?: Prisma.ChatUncheckedUpdateManyWithoutFolderNestedInput
-  memories?: Prisma.MemoryUncheckedUpdateManyWithoutFolderNestedInput
-  messages?: Prisma.MessageUncheckedUpdateManyWithoutFolderNestedInput
-}
-
 export type FolderCreateManyUserInput = {
   id: string
   title?: string | null
@@ -723,20 +469,14 @@ export type FolderUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  action?: Prisma.ActionUpdateManyWithoutFolderNestedInput
   chats?: Prisma.ChatUpdateManyWithoutFolderNestedInput
-  memories?: Prisma.MemoryUpdateManyWithoutFolderNestedInput
-  messages?: Prisma.MessageUpdateManyWithoutFolderNestedInput
 }
 
 export type FolderUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  action?: Prisma.ActionUncheckedUpdateManyWithoutFolderNestedInput
   chats?: Prisma.ChatUncheckedUpdateManyWithoutFolderNestedInput
-  memories?: Prisma.MemoryUncheckedUpdateManyWithoutFolderNestedInput
-  messages?: Prisma.MessageUncheckedUpdateManyWithoutFolderNestedInput
 }
 
 export type FolderUncheckedUpdateManyWithoutUserInput = {
@@ -751,17 +491,11 @@ export type FolderUncheckedUpdateManyWithoutUserInput = {
  */
 
 export type FolderCountOutputType = {
-  action: number
   chats: number
-  memories: number
-  messages: number
 }
 
 export type FolderCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  action?: boolean | FolderCountOutputTypeCountActionArgs
   chats?: boolean | FolderCountOutputTypeCountChatsArgs
-  memories?: boolean | FolderCountOutputTypeCountMemoriesArgs
-  messages?: boolean | FolderCountOutputTypeCountMessagesArgs
 }
 
 /**
@@ -777,29 +511,8 @@ export type FolderCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Exten
 /**
  * FolderCountOutputType without action
  */
-export type FolderCountOutputTypeCountActionArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.ActionWhereInput
-}
-
-/**
- * FolderCountOutputType without action
- */
 export type FolderCountOutputTypeCountChatsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.ChatWhereInput
-}
-
-/**
- * FolderCountOutputType without action
- */
-export type FolderCountOutputTypeCountMemoriesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.MemoryWhereInput
-}
-
-/**
- * FolderCountOutputType without action
- */
-export type FolderCountOutputTypeCountMessagesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.MessageWhereInput
 }
 
 
@@ -808,11 +521,8 @@ export type FolderSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   userId?: boolean
   title?: boolean
   createdAt?: boolean
-  action?: boolean | Prisma.Folder$actionArgs<ExtArgs>
   chats?: boolean | Prisma.Folder$chatsArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  memories?: boolean | Prisma.Folder$memoriesArgs<ExtArgs>
-  messages?: boolean | Prisma.Folder$messagesArgs<ExtArgs>
   _count?: boolean | Prisma.FolderCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["folder"]>
 
@@ -841,11 +551,8 @@ export type FolderSelectScalar = {
 
 export type FolderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "title" | "createdAt", ExtArgs["result"]["folder"]>
 export type FolderInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  action?: boolean | Prisma.Folder$actionArgs<ExtArgs>
   chats?: boolean | Prisma.Folder$chatsArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  memories?: boolean | Prisma.Folder$memoriesArgs<ExtArgs>
-  messages?: boolean | Prisma.Folder$messagesArgs<ExtArgs>
   _count?: boolean | Prisma.FolderCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type FolderIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -858,11 +565,8 @@ export type FolderIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
 export type $FolderPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Folder"
   objects: {
-    action: Prisma.$ActionPayload<ExtArgs>[]
     chats: Prisma.$ChatPayload<ExtArgs>[]
     user: Prisma.$UserPayload<ExtArgs>
-    memories: Prisma.$MemoryPayload<ExtArgs>[]
-    messages: Prisma.$MessagePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1263,11 +967,8 @@ readonly fields: FolderFieldRefs;
  */
 export interface Prisma__FolderClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  action<T extends Prisma.Folder$actionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Folder$actionArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ActionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   chats<T extends Prisma.Folder$chatsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Folder$chatsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ChatPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  memories<T extends Prisma.Folder$memoriesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Folder$memoriesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MemoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  messages<T extends Prisma.Folder$messagesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Folder$messagesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1702,30 +1403,6 @@ export type FolderDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Intern
 }
 
 /**
- * Folder.action
- */
-export type Folder$actionArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Action
-   */
-  select?: Prisma.ActionSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Action
-   */
-  omit?: Prisma.ActionOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.ActionInclude<ExtArgs> | null
-  where?: Prisma.ActionWhereInput
-  orderBy?: Prisma.ActionOrderByWithRelationInput | Prisma.ActionOrderByWithRelationInput[]
-  cursor?: Prisma.ActionWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.ActionScalarFieldEnum | Prisma.ActionScalarFieldEnum[]
-}
-
-/**
  * Folder.chats
  */
 export type Folder$chatsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1747,54 +1424,6 @@ export type Folder$chatsArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
   take?: number
   skip?: number
   distinct?: Prisma.ChatScalarFieldEnum | Prisma.ChatScalarFieldEnum[]
-}
-
-/**
- * Folder.memories
- */
-export type Folder$memoriesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Memory
-   */
-  select?: Prisma.MemorySelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Memory
-   */
-  omit?: Prisma.MemoryOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.MemoryInclude<ExtArgs> | null
-  where?: Prisma.MemoryWhereInput
-  orderBy?: Prisma.MemoryOrderByWithRelationInput | Prisma.MemoryOrderByWithRelationInput[]
-  cursor?: Prisma.MemoryWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.MemoryScalarFieldEnum | Prisma.MemoryScalarFieldEnum[]
-}
-
-/**
- * Folder.messages
- */
-export type Folder$messagesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Message
-   */
-  select?: Prisma.MessageSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Message
-   */
-  omit?: Prisma.MessageOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.MessageInclude<ExtArgs> | null
-  where?: Prisma.MessageWhereInput
-  orderBy?: Prisma.MessageOrderByWithRelationInput | Prisma.MessageOrderByWithRelationInput[]
-  cursor?: Prisma.MessageWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.MessageScalarFieldEnum | Prisma.MessageScalarFieldEnum[]
 }
 
 /**

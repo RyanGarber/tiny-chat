@@ -141,6 +141,7 @@ export default function Tauri() {
 					);
 
 					if (t < 1) {
+						// biome-ignore lint/nursery/useReactCompiler: animate is a recursive effect-local callback, not a hook dependency.
 						animFramesRef.current[id] = requestAnimationFrame(animate);
 					} else {
 						delete animFramesRef.current[id];
@@ -216,6 +217,7 @@ export default function Tauri() {
 				return changed ? updated : prev;
 			});
 
+			// biome-ignore lint/nursery/useReactCompiler: tick is a recursive effect-local callback, not a hook dependency.
 			jitterTimerRef.current = setTimeout(tick, 500 + Math.random() * 1500);
 		};
 

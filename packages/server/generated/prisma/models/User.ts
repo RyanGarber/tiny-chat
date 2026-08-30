@@ -223,13 +223,15 @@ export type UserWhereInput = {
   cache?: Prisma.JsonFilter<"User">
   isEphemeral?: Prisma.BoolNullableFilter<"User"> | boolean | null
   accounts?: Prisma.AccountListRelationFilter
-  action?: Prisma.ActionListRelationFilter
+  actions?: Prisma.ActionListRelationFilter
   chats?: Prisma.ChatListRelationFilter
+  dreams?: Prisma.DreamListRelationFilter
   files?: Prisma.FileListRelationFilter
   folders?: Prisma.FolderListRelationFilter
   memories?: Prisma.MemoryListRelationFilter
   messages?: Prisma.MessageListRelationFilter
   sessions?: Prisma.SessionListRelationFilter
+  subagents?: Prisma.SubagentListRelationFilter
   uploads?: Prisma.UploadListRelationFilter
 }
 
@@ -246,13 +248,15 @@ export type UserOrderByWithRelationInput = {
   cache?: Prisma.SortOrder
   isEphemeral?: Prisma.SortOrderInput | Prisma.SortOrder
   accounts?: Prisma.AccountOrderByRelationAggregateInput
-  action?: Prisma.ActionOrderByRelationAggregateInput
+  actions?: Prisma.ActionOrderByRelationAggregateInput
   chats?: Prisma.ChatOrderByRelationAggregateInput
+  dreams?: Prisma.DreamOrderByRelationAggregateInput
   files?: Prisma.FileOrderByRelationAggregateInput
   folders?: Prisma.FolderOrderByRelationAggregateInput
   memories?: Prisma.MemoryOrderByRelationAggregateInput
   messages?: Prisma.MessageOrderByRelationAggregateInput
   sessions?: Prisma.SessionOrderByRelationAggregateInput
+  subagents?: Prisma.SubagentOrderByRelationAggregateInput
   uploads?: Prisma.UploadOrderByRelationAggregateInput
 }
 
@@ -272,13 +276,15 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   cache?: Prisma.JsonFilter<"User">
   isEphemeral?: Prisma.BoolNullableFilter<"User"> | boolean | null
   accounts?: Prisma.AccountListRelationFilter
-  action?: Prisma.ActionListRelationFilter
+  actions?: Prisma.ActionListRelationFilter
   chats?: Prisma.ChatListRelationFilter
+  dreams?: Prisma.DreamListRelationFilter
   files?: Prisma.FileListRelationFilter
   folders?: Prisma.FolderListRelationFilter
   memories?: Prisma.MemoryListRelationFilter
   messages?: Prisma.MessageListRelationFilter
   sessions?: Prisma.SessionListRelationFilter
+  subagents?: Prisma.SubagentListRelationFilter
   uploads?: Prisma.UploadListRelationFilter
 }, "id" | "email">
 
@@ -323,19 +329,21 @@ export type UserCreateInput = {
   emailVerified?: boolean
   image?: string | null
   createdAt?: Date | string
-  updatedAt?: Date | string
+  updatedAt: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: boolean | null
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
-  action?: Prisma.ActionCreateNestedManyWithoutUserInput
+  actions?: Prisma.ActionCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatCreateNestedManyWithoutUserInput
+  dreams?: Prisma.DreamCreateNestedManyWithoutUserInput
   files?: Prisma.FileCreateNestedManyWithoutUserInput
   folders?: Prisma.FolderCreateNestedManyWithoutUserInput
   memories?: Prisma.MemoryCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  subagents?: Prisma.SubagentCreateNestedManyWithoutUserInput
   uploads?: Prisma.UploadCreateNestedManyWithoutUserInput
 }
 
@@ -346,19 +354,21 @@ export type UserUncheckedCreateInput = {
   emailVerified?: boolean
   image?: string | null
   createdAt?: Date | string
-  updatedAt?: Date | string
+  updatedAt: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: boolean | null
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
-  action?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
+  actions?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
+  dreams?: Prisma.DreamUncheckedCreateNestedManyWithoutUserInput
   files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
   folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  subagents?: Prisma.SubagentUncheckedCreateNestedManyWithoutUserInput
   uploads?: Prisma.UploadUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -375,13 +385,15 @@ export type UserUpdateInput = {
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
-  action?: Prisma.ActionUpdateManyWithoutUserNestedInput
+  actions?: Prisma.ActionUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
+  dreams?: Prisma.DreamUpdateManyWithoutUserNestedInput
   files?: Prisma.FileUpdateManyWithoutUserNestedInput
   folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  subagents?: Prisma.SubagentUpdateManyWithoutUserNestedInput
   uploads?: Prisma.UploadUpdateManyWithoutUserNestedInput
 }
 
@@ -398,13 +410,15 @@ export type UserUncheckedUpdateInput = {
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
-  action?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
+  actions?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
+  dreams?: Prisma.DreamUncheckedUpdateManyWithoutUserNestedInput
   files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
   folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  subagents?: Prisma.SubagentUncheckedUpdateManyWithoutUserNestedInput
   uploads?: Prisma.UploadUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -415,7 +429,7 @@ export type UserCreateManyInput = {
   emailVerified?: boolean
   image?: string | null
   createdAt?: Date | string
-  updatedAt?: Date | string
+  updatedAt: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
@@ -448,6 +462,11 @@ export type UserUncheckedUpdateManyInput = {
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+}
+
+export type UserScalarRelationFilter = {
+  is?: Prisma.UserWhereInput
+  isNot?: Prisma.UserWhereInput
 }
 
 export type UserCountOrderByAggregateInput = {
@@ -488,45 +507,6 @@ export type UserMinOrderByAggregateInput = {
   isEphemeral?: Prisma.SortOrder
 }
 
-export type UserScalarRelationFilter = {
-  is?: Prisma.UserWhereInput
-  isNot?: Prisma.UserWhereInput
-}
-
-export type StringFieldUpdateOperationsInput = {
-  set?: string
-}
-
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
-}
-
-export type NullableStringFieldUpdateOperationsInput = {
-  set?: string | null
-}
-
-export type DateTimeFieldUpdateOperationsInput = {
-  set?: Date | string
-}
-
-export type NullableBoolFieldUpdateOperationsInput = {
-  set?: boolean | null
-}
-
-export type UserCreateNestedOneWithoutSessionsInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutSessionsInput, Prisma.UserUncheckedCreateWithoutSessionsInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSessionsInput
-  connect?: Prisma.UserWhereUniqueInput
-}
-
-export type UserUpdateOneRequiredWithoutSessionsNestedInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutSessionsInput, Prisma.UserUncheckedCreateWithoutSessionsInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSessionsInput
-  upsert?: Prisma.UserUpsertWithoutSessionsInput
-  connect?: Prisma.UserWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutSessionsInput, Prisma.UserUpdateWithoutSessionsInput>, Prisma.UserUncheckedUpdateWithoutSessionsInput>
-}
-
 export type UserCreateNestedOneWithoutAccountsInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutAccountsInput, Prisma.UserUncheckedCreateWithoutAccountsInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutAccountsInput
@@ -541,18 +521,18 @@ export type UserUpdateOneRequiredWithoutAccountsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutAccountsInput, Prisma.UserUpdateWithoutAccountsInput>, Prisma.UserUncheckedUpdateWithoutAccountsInput>
 }
 
-export type UserCreateNestedOneWithoutFoldersInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutFoldersInput, Prisma.UserUncheckedCreateWithoutFoldersInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutFoldersInput
+export type UserCreateNestedOneWithoutActionsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutActionsInput, Prisma.UserUncheckedCreateWithoutActionsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutActionsInput
   connect?: Prisma.UserWhereUniqueInput
 }
 
-export type UserUpdateOneRequiredWithoutFoldersNestedInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutFoldersInput, Prisma.UserUncheckedCreateWithoutFoldersInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutFoldersInput
-  upsert?: Prisma.UserUpsertWithoutFoldersInput
+export type UserUpdateOneRequiredWithoutActionsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutActionsInput, Prisma.UserUncheckedCreateWithoutActionsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutActionsInput
+  upsert?: Prisma.UserUpsertWithoutActionsInput
   connect?: Prisma.UserWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutFoldersInput, Prisma.UserUpdateWithoutFoldersInput>, Prisma.UserUncheckedUpdateWithoutFoldersInput>
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutActionsInput, Prisma.UserUpdateWithoutActionsInput>, Prisma.UserUncheckedUpdateWithoutActionsInput>
 }
 
 export type UserCreateNestedOneWithoutChatsInput = {
@@ -569,60 +549,18 @@ export type UserUpdateOneRequiredWithoutChatsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutChatsInput, Prisma.UserUpdateWithoutChatsInput>, Prisma.UserUncheckedUpdateWithoutChatsInput>
 }
 
-export type UserCreateNestedOneWithoutMessagesInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutMessagesInput, Prisma.UserUncheckedCreateWithoutMessagesInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutMessagesInput
+export type UserCreateNestedOneWithoutDreamsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutDreamsInput, Prisma.UserUncheckedCreateWithoutDreamsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutDreamsInput
   connect?: Prisma.UserWhereUniqueInput
 }
 
-export type UserUpdateOneRequiredWithoutMessagesNestedInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutMessagesInput, Prisma.UserUncheckedCreateWithoutMessagesInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutMessagesInput
-  upsert?: Prisma.UserUpsertWithoutMessagesInput
+export type UserUpdateOneRequiredWithoutDreamsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutDreamsInput, Prisma.UserUncheckedCreateWithoutDreamsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutDreamsInput
+  upsert?: Prisma.UserUpsertWithoutDreamsInput
   connect?: Prisma.UserWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutMessagesInput, Prisma.UserUpdateWithoutMessagesInput>, Prisma.UserUncheckedUpdateWithoutMessagesInput>
-}
-
-export type UserCreateNestedOneWithoutMemoriesInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutMemoriesInput, Prisma.UserUncheckedCreateWithoutMemoriesInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutMemoriesInput
-  connect?: Prisma.UserWhereUniqueInput
-}
-
-export type UserUpdateOneRequiredWithoutMemoriesNestedInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutMemoriesInput, Prisma.UserUncheckedCreateWithoutMemoriesInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutMemoriesInput
-  upsert?: Prisma.UserUpsertWithoutMemoriesInput
-  connect?: Prisma.UserWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutMemoriesInput, Prisma.UserUpdateWithoutMemoriesInput>, Prisma.UserUncheckedUpdateWithoutMemoriesInput>
-}
-
-export type UserCreateNestedOneWithoutActionInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutActionInput, Prisma.UserUncheckedCreateWithoutActionInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutActionInput
-  connect?: Prisma.UserWhereUniqueInput
-}
-
-export type UserUpdateOneRequiredWithoutActionNestedInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutActionInput, Prisma.UserUncheckedCreateWithoutActionInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutActionInput
-  upsert?: Prisma.UserUpsertWithoutActionInput
-  connect?: Prisma.UserWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutActionInput, Prisma.UserUpdateWithoutActionInput>, Prisma.UserUncheckedUpdateWithoutActionInput>
-}
-
-export type UserCreateNestedOneWithoutUploadsInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutUploadsInput, Prisma.UserUncheckedCreateWithoutUploadsInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutUploadsInput
-  connect?: Prisma.UserWhereUniqueInput
-}
-
-export type UserUpdateOneRequiredWithoutUploadsNestedInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutUploadsInput, Prisma.UserUncheckedCreateWithoutUploadsInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutUploadsInput
-  upsert?: Prisma.UserUpsertWithoutUploadsInput
-  connect?: Prisma.UserWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutUploadsInput, Prisma.UserUpdateWithoutUploadsInput>, Prisma.UserUncheckedUpdateWithoutUploadsInput>
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutDreamsInput, Prisma.UserUpdateWithoutDreamsInput>, Prisma.UserUncheckedUpdateWithoutDreamsInput>
 }
 
 export type UserCreateNestedOneWithoutFilesInput = {
@@ -639,108 +577,92 @@ export type UserUpdateOneRequiredWithoutFilesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutFilesInput, Prisma.UserUpdateWithoutFilesInput>, Prisma.UserUncheckedUpdateWithoutFilesInput>
 }
 
-export type UserCreateWithoutSessionsInput = {
-  id: string
-  name: string
-  email: string
-  emailVerified?: boolean
-  image?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  isAnonymous?: boolean | null
-  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  isEphemeral?: boolean | null
-  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
-  action?: Prisma.ActionCreateNestedManyWithoutUserInput
-  chats?: Prisma.ChatCreateNestedManyWithoutUserInput
-  files?: Prisma.FileCreateNestedManyWithoutUserInput
-  folders?: Prisma.FolderCreateNestedManyWithoutUserInput
-  memories?: Prisma.MemoryCreateNestedManyWithoutUserInput
-  messages?: Prisma.MessageCreateNestedManyWithoutUserInput
-  uploads?: Prisma.UploadCreateNestedManyWithoutUserInput
+export type UserCreateNestedOneWithoutFoldersInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutFoldersInput, Prisma.UserUncheckedCreateWithoutFoldersInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutFoldersInput
+  connect?: Prisma.UserWhereUniqueInput
 }
 
-export type UserUncheckedCreateWithoutSessionsInput = {
-  id: string
-  name: string
-  email: string
-  emailVerified?: boolean
-  image?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  isAnonymous?: boolean | null
-  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  isEphemeral?: boolean | null
-  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
-  action?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
-  chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
-  files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
-  folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
-  memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutUserInput
-  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutUserInput
-  uploads?: Prisma.UploadUncheckedCreateNestedManyWithoutUserInput
+export type UserUpdateOneRequiredWithoutFoldersNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutFoldersInput, Prisma.UserUncheckedCreateWithoutFoldersInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutFoldersInput
+  upsert?: Prisma.UserUpsertWithoutFoldersInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutFoldersInput, Prisma.UserUpdateWithoutFoldersInput>, Prisma.UserUncheckedUpdateWithoutFoldersInput>
 }
 
-export type UserCreateOrConnectWithoutSessionsInput = {
-  where: Prisma.UserWhereUniqueInput
-  create: Prisma.XOR<Prisma.UserCreateWithoutSessionsInput, Prisma.UserUncheckedCreateWithoutSessionsInput>
+export type UserCreateNestedOneWithoutMemoriesInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutMemoriesInput, Prisma.UserUncheckedCreateWithoutMemoriesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutMemoriesInput
+  connect?: Prisma.UserWhereUniqueInput
 }
 
-export type UserUpsertWithoutSessionsInput = {
-  update: Prisma.XOR<Prisma.UserUpdateWithoutSessionsInput, Prisma.UserUncheckedUpdateWithoutSessionsInput>
-  create: Prisma.XOR<Prisma.UserCreateWithoutSessionsInput, Prisma.UserUncheckedCreateWithoutSessionsInput>
-  where?: Prisma.UserWhereInput
+export type UserUpdateOneRequiredWithoutMemoriesNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutMemoriesInput, Prisma.UserUncheckedCreateWithoutMemoriesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutMemoriesInput
+  upsert?: Prisma.UserUpsertWithoutMemoriesInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutMemoriesInput, Prisma.UserUpdateWithoutMemoriesInput>, Prisma.UserUncheckedUpdateWithoutMemoriesInput>
 }
 
-export type UserUpdateToOneWithWhereWithoutSessionsInput = {
-  where?: Prisma.UserWhereInput
-  data: Prisma.XOR<Prisma.UserUpdateWithoutSessionsInput, Prisma.UserUncheckedUpdateWithoutSessionsInput>
+export type UserCreateNestedOneWithoutMessagesInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutMessagesInput, Prisma.UserUncheckedCreateWithoutMessagesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutMessagesInput
+  connect?: Prisma.UserWhereUniqueInput
 }
 
-export type UserUpdateWithoutSessionsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
-  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
-  action?: Prisma.ActionUpdateManyWithoutUserNestedInput
-  chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
-  files?: Prisma.FileUpdateManyWithoutUserNestedInput
-  folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
-  memories?: Prisma.MemoryUpdateManyWithoutUserNestedInput
-  messages?: Prisma.MessageUpdateManyWithoutUserNestedInput
-  uploads?: Prisma.UploadUpdateManyWithoutUserNestedInput
+export type UserUpdateOneRequiredWithoutMessagesNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutMessagesInput, Prisma.UserUncheckedCreateWithoutMessagesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutMessagesInput
+  upsert?: Prisma.UserUpsertWithoutMessagesInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutMessagesInput, Prisma.UserUpdateWithoutMessagesInput>, Prisma.UserUncheckedUpdateWithoutMessagesInput>
 }
 
-export type UserUncheckedUpdateWithoutSessionsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
-  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
-  action?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
-  chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
-  files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
-  folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
-  memories?: Prisma.MemoryUncheckedUpdateManyWithoutUserNestedInput
-  messages?: Prisma.MessageUncheckedUpdateManyWithoutUserNestedInput
-  uploads?: Prisma.UploadUncheckedUpdateManyWithoutUserNestedInput
+export type UserCreateNestedOneWithoutSessionsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutSessionsInput, Prisma.UserUncheckedCreateWithoutSessionsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSessionsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutSessionsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutSessionsInput, Prisma.UserUncheckedCreateWithoutSessionsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSessionsInput
+  upsert?: Prisma.UserUpsertWithoutSessionsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutSessionsInput, Prisma.UserUpdateWithoutSessionsInput>, Prisma.UserUncheckedUpdateWithoutSessionsInput>
+}
+
+export type UserCreateNestedOneWithoutSubagentsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutSubagentsInput, Prisma.UserUncheckedCreateWithoutSubagentsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSubagentsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutSubagentsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutSubagentsInput, Prisma.UserUncheckedCreateWithoutSubagentsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSubagentsInput
+  upsert?: Prisma.UserUpsertWithoutSubagentsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutSubagentsInput, Prisma.UserUpdateWithoutSubagentsInput>, Prisma.UserUncheckedUpdateWithoutSubagentsInput>
+}
+
+export type UserCreateNestedOneWithoutUploadsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutUploadsInput, Prisma.UserUncheckedCreateWithoutUploadsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutUploadsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutUploadsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutUploadsInput, Prisma.UserUncheckedCreateWithoutUploadsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutUploadsInput
+  upsert?: Prisma.UserUpsertWithoutUploadsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutUploadsInput, Prisma.UserUpdateWithoutUploadsInput>, Prisma.UserUncheckedUpdateWithoutUploadsInput>
+}
+
+export type NullableBoolFieldUpdateOperationsInput = {
+  set?: boolean | null
 }
 
 export type UserCreateWithoutAccountsInput = {
@@ -750,18 +672,20 @@ export type UserCreateWithoutAccountsInput = {
   emailVerified?: boolean
   image?: string | null
   createdAt?: Date | string
-  updatedAt?: Date | string
+  updatedAt: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: boolean | null
-  action?: Prisma.ActionCreateNestedManyWithoutUserInput
+  actions?: Prisma.ActionCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatCreateNestedManyWithoutUserInput
+  dreams?: Prisma.DreamCreateNestedManyWithoutUserInput
   files?: Prisma.FileCreateNestedManyWithoutUserInput
   folders?: Prisma.FolderCreateNestedManyWithoutUserInput
   memories?: Prisma.MemoryCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  subagents?: Prisma.SubagentCreateNestedManyWithoutUserInput
   uploads?: Prisma.UploadCreateNestedManyWithoutUserInput
 }
 
@@ -772,18 +696,20 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   emailVerified?: boolean
   image?: string | null
   createdAt?: Date | string
-  updatedAt?: Date | string
+  updatedAt: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: boolean | null
-  action?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
+  actions?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
+  dreams?: Prisma.DreamUncheckedCreateNestedManyWithoutUserInput
   files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
   folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  subagents?: Prisma.SubagentUncheckedCreateNestedManyWithoutUserInput
   uploads?: Prisma.UploadUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -815,13 +741,15 @@ export type UserUpdateWithoutAccountsInput = {
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  action?: Prisma.ActionUpdateManyWithoutUserNestedInput
+  actions?: Prisma.ActionUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
+  dreams?: Prisma.DreamUpdateManyWithoutUserNestedInput
   files?: Prisma.FileUpdateManyWithoutUserNestedInput
   folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  subagents?: Prisma.SubagentUpdateManyWithoutUserNestedInput
   uploads?: Prisma.UploadUpdateManyWithoutUserNestedInput
 }
 
@@ -837,77 +765,83 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  action?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
+  actions?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
+  dreams?: Prisma.DreamUncheckedUpdateManyWithoutUserNestedInput
   files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
   folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  subagents?: Prisma.SubagentUncheckedUpdateManyWithoutUserNestedInput
   uploads?: Prisma.UploadUncheckedUpdateManyWithoutUserNestedInput
 }
 
-export type UserCreateWithoutFoldersInput = {
+export type UserCreateWithoutActionsInput = {
   id: string
   name: string
   email: string
   emailVerified?: boolean
   image?: string | null
   createdAt?: Date | string
-  updatedAt?: Date | string
+  updatedAt: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: boolean | null
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
-  action?: Prisma.ActionCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatCreateNestedManyWithoutUserInput
+  dreams?: Prisma.DreamCreateNestedManyWithoutUserInput
   files?: Prisma.FileCreateNestedManyWithoutUserInput
+  folders?: Prisma.FolderCreateNestedManyWithoutUserInput
   memories?: Prisma.MemoryCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  subagents?: Prisma.SubagentCreateNestedManyWithoutUserInput
   uploads?: Prisma.UploadCreateNestedManyWithoutUserInput
 }
 
-export type UserUncheckedCreateWithoutFoldersInput = {
+export type UserUncheckedCreateWithoutActionsInput = {
   id: string
   name: string
   email: string
   emailVerified?: boolean
   image?: string | null
   createdAt?: Date | string
-  updatedAt?: Date | string
+  updatedAt: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: boolean | null
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
-  action?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
+  dreams?: Prisma.DreamUncheckedCreateNestedManyWithoutUserInput
   files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
+  folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  subagents?: Prisma.SubagentUncheckedCreateNestedManyWithoutUserInput
   uploads?: Prisma.UploadUncheckedCreateNestedManyWithoutUserInput
 }
 
-export type UserCreateOrConnectWithoutFoldersInput = {
+export type UserCreateOrConnectWithoutActionsInput = {
   where: Prisma.UserWhereUniqueInput
-  create: Prisma.XOR<Prisma.UserCreateWithoutFoldersInput, Prisma.UserUncheckedCreateWithoutFoldersInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutActionsInput, Prisma.UserUncheckedCreateWithoutActionsInput>
 }
 
-export type UserUpsertWithoutFoldersInput = {
-  update: Prisma.XOR<Prisma.UserUpdateWithoutFoldersInput, Prisma.UserUncheckedUpdateWithoutFoldersInput>
-  create: Prisma.XOR<Prisma.UserCreateWithoutFoldersInput, Prisma.UserUncheckedCreateWithoutFoldersInput>
+export type UserUpsertWithoutActionsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutActionsInput, Prisma.UserUncheckedUpdateWithoutActionsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutActionsInput, Prisma.UserUncheckedCreateWithoutActionsInput>
   where?: Prisma.UserWhereInput
 }
 
-export type UserUpdateToOneWithWhereWithoutFoldersInput = {
+export type UserUpdateToOneWithWhereWithoutActionsInput = {
   where?: Prisma.UserWhereInput
-  data: Prisma.XOR<Prisma.UserUpdateWithoutFoldersInput, Prisma.UserUncheckedUpdateWithoutFoldersInput>
+  data: Prisma.XOR<Prisma.UserUpdateWithoutActionsInput, Prisma.UserUncheckedUpdateWithoutActionsInput>
 }
 
-export type UserUpdateWithoutFoldersInput = {
+export type UserUpdateWithoutActionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
@@ -920,16 +854,18 @@ export type UserUpdateWithoutFoldersInput = {
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
-  action?: Prisma.ActionUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
+  dreams?: Prisma.DreamUpdateManyWithoutUserNestedInput
   files?: Prisma.FileUpdateManyWithoutUserNestedInput
+  folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  subagents?: Prisma.SubagentUpdateManyWithoutUserNestedInput
   uploads?: Prisma.UploadUpdateManyWithoutUserNestedInput
 }
 
-export type UserUncheckedUpdateWithoutFoldersInput = {
+export type UserUncheckedUpdateWithoutActionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
@@ -942,12 +878,14 @@ export type UserUncheckedUpdateWithoutFoldersInput = {
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
-  action?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
+  dreams?: Prisma.DreamUncheckedUpdateManyWithoutUserNestedInput
   files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
+  folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  subagents?: Prisma.SubagentUncheckedUpdateManyWithoutUserNestedInput
   uploads?: Prisma.UploadUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -958,18 +896,20 @@ export type UserCreateWithoutChatsInput = {
   emailVerified?: boolean
   image?: string | null
   createdAt?: Date | string
-  updatedAt?: Date | string
+  updatedAt: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: boolean | null
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
-  action?: Prisma.ActionCreateNestedManyWithoutUserInput
+  actions?: Prisma.ActionCreateNestedManyWithoutUserInput
+  dreams?: Prisma.DreamCreateNestedManyWithoutUserInput
   files?: Prisma.FileCreateNestedManyWithoutUserInput
   folders?: Prisma.FolderCreateNestedManyWithoutUserInput
   memories?: Prisma.MemoryCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  subagents?: Prisma.SubagentCreateNestedManyWithoutUserInput
   uploads?: Prisma.UploadCreateNestedManyWithoutUserInput
 }
 
@@ -980,18 +920,20 @@ export type UserUncheckedCreateWithoutChatsInput = {
   emailVerified?: boolean
   image?: string | null
   createdAt?: Date | string
-  updatedAt?: Date | string
+  updatedAt: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: boolean | null
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
-  action?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
+  actions?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
+  dreams?: Prisma.DreamUncheckedCreateNestedManyWithoutUserInput
   files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
   folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  subagents?: Prisma.SubagentUncheckedCreateNestedManyWithoutUserInput
   uploads?: Prisma.UploadUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -1024,12 +966,14 @@ export type UserUpdateWithoutChatsInput = {
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
-  action?: Prisma.ActionUpdateManyWithoutUserNestedInput
+  actions?: Prisma.ActionUpdateManyWithoutUserNestedInput
+  dreams?: Prisma.DreamUpdateManyWithoutUserNestedInput
   files?: Prisma.FileUpdateManyWithoutUserNestedInput
   folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  subagents?: Prisma.SubagentUpdateManyWithoutUserNestedInput
   uploads?: Prisma.UploadUpdateManyWithoutUserNestedInput
 }
 
@@ -1046,284 +990,82 @@ export type UserUncheckedUpdateWithoutChatsInput = {
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
-  action?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
+  actions?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
+  dreams?: Prisma.DreamUncheckedUpdateManyWithoutUserNestedInput
   files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
   folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  subagents?: Prisma.SubagentUncheckedUpdateManyWithoutUserNestedInput
   uploads?: Prisma.UploadUncheckedUpdateManyWithoutUserNestedInput
 }
 
-export type UserCreateWithoutMessagesInput = {
+export type UserCreateWithoutDreamsInput = {
   id: string
   name: string
   email: string
   emailVerified?: boolean
   image?: string | null
   createdAt?: Date | string
-  updatedAt?: Date | string
+  updatedAt: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: boolean | null
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
-  action?: Prisma.ActionCreateNestedManyWithoutUserInput
-  chats?: Prisma.ChatCreateNestedManyWithoutUserInput
-  files?: Prisma.FileCreateNestedManyWithoutUserInput
-  folders?: Prisma.FolderCreateNestedManyWithoutUserInput
-  memories?: Prisma.MemoryCreateNestedManyWithoutUserInput
-  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
-  uploads?: Prisma.UploadCreateNestedManyWithoutUserInput
-}
-
-export type UserUncheckedCreateWithoutMessagesInput = {
-  id: string
-  name: string
-  email: string
-  emailVerified?: boolean
-  image?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  isAnonymous?: boolean | null
-  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  isEphemeral?: boolean | null
-  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
-  action?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
-  chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
-  files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
-  folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
-  memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutUserInput
-  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
-  uploads?: Prisma.UploadUncheckedCreateNestedManyWithoutUserInput
-}
-
-export type UserCreateOrConnectWithoutMessagesInput = {
-  where: Prisma.UserWhereUniqueInput
-  create: Prisma.XOR<Prisma.UserCreateWithoutMessagesInput, Prisma.UserUncheckedCreateWithoutMessagesInput>
-}
-
-export type UserUpsertWithoutMessagesInput = {
-  update: Prisma.XOR<Prisma.UserUpdateWithoutMessagesInput, Prisma.UserUncheckedUpdateWithoutMessagesInput>
-  create: Prisma.XOR<Prisma.UserCreateWithoutMessagesInput, Prisma.UserUncheckedCreateWithoutMessagesInput>
-  where?: Prisma.UserWhereInput
-}
-
-export type UserUpdateToOneWithWhereWithoutMessagesInput = {
-  where?: Prisma.UserWhereInput
-  data: Prisma.XOR<Prisma.UserUpdateWithoutMessagesInput, Prisma.UserUncheckedUpdateWithoutMessagesInput>
-}
-
-export type UserUpdateWithoutMessagesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
-  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
-  action?: Prisma.ActionUpdateManyWithoutUserNestedInput
-  chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
-  files?: Prisma.FileUpdateManyWithoutUserNestedInput
-  folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
-  memories?: Prisma.MemoryUpdateManyWithoutUserNestedInput
-  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
-  uploads?: Prisma.UploadUpdateManyWithoutUserNestedInput
-}
-
-export type UserUncheckedUpdateWithoutMessagesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
-  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
-  action?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
-  chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
-  files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
-  folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
-  memories?: Prisma.MemoryUncheckedUpdateManyWithoutUserNestedInput
-  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
-  uploads?: Prisma.UploadUncheckedUpdateManyWithoutUserNestedInput
-}
-
-export type UserCreateWithoutMemoriesInput = {
-  id: string
-  name: string
-  email: string
-  emailVerified?: boolean
-  image?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  isAnonymous?: boolean | null
-  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  isEphemeral?: boolean | null
-  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
-  action?: Prisma.ActionCreateNestedManyWithoutUserInput
-  chats?: Prisma.ChatCreateNestedManyWithoutUserInput
-  files?: Prisma.FileCreateNestedManyWithoutUserInput
-  folders?: Prisma.FolderCreateNestedManyWithoutUserInput
-  messages?: Prisma.MessageCreateNestedManyWithoutUserInput
-  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
-  uploads?: Prisma.UploadCreateNestedManyWithoutUserInput
-}
-
-export type UserUncheckedCreateWithoutMemoriesInput = {
-  id: string
-  name: string
-  email: string
-  emailVerified?: boolean
-  image?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  isAnonymous?: boolean | null
-  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  isEphemeral?: boolean | null
-  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
-  action?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
-  chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
-  files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
-  folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
-  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutUserInput
-  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
-  uploads?: Prisma.UploadUncheckedCreateNestedManyWithoutUserInput
-}
-
-export type UserCreateOrConnectWithoutMemoriesInput = {
-  where: Prisma.UserWhereUniqueInput
-  create: Prisma.XOR<Prisma.UserCreateWithoutMemoriesInput, Prisma.UserUncheckedCreateWithoutMemoriesInput>
-}
-
-export type UserUpsertWithoutMemoriesInput = {
-  update: Prisma.XOR<Prisma.UserUpdateWithoutMemoriesInput, Prisma.UserUncheckedUpdateWithoutMemoriesInput>
-  create: Prisma.XOR<Prisma.UserCreateWithoutMemoriesInput, Prisma.UserUncheckedCreateWithoutMemoriesInput>
-  where?: Prisma.UserWhereInput
-}
-
-export type UserUpdateToOneWithWhereWithoutMemoriesInput = {
-  where?: Prisma.UserWhereInput
-  data: Prisma.XOR<Prisma.UserUpdateWithoutMemoriesInput, Prisma.UserUncheckedUpdateWithoutMemoriesInput>
-}
-
-export type UserUpdateWithoutMemoriesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
-  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
-  action?: Prisma.ActionUpdateManyWithoutUserNestedInput
-  chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
-  files?: Prisma.FileUpdateManyWithoutUserNestedInput
-  folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
-  messages?: Prisma.MessageUpdateManyWithoutUserNestedInput
-  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
-  uploads?: Prisma.UploadUpdateManyWithoutUserNestedInput
-}
-
-export type UserUncheckedUpdateWithoutMemoriesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
-  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
-  action?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
-  chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
-  files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
-  folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
-  messages?: Prisma.MessageUncheckedUpdateManyWithoutUserNestedInput
-  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
-  uploads?: Prisma.UploadUncheckedUpdateManyWithoutUserNestedInput
-}
-
-export type UserCreateWithoutActionInput = {
-  id: string
-  name: string
-  email: string
-  emailVerified?: boolean
-  image?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  isAnonymous?: boolean | null
-  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  isEphemeral?: boolean | null
-  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  actions?: Prisma.ActionCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatCreateNestedManyWithoutUserInput
   files?: Prisma.FileCreateNestedManyWithoutUserInput
   folders?: Prisma.FolderCreateNestedManyWithoutUserInput
   memories?: Prisma.MemoryCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  subagents?: Prisma.SubagentCreateNestedManyWithoutUserInput
   uploads?: Prisma.UploadCreateNestedManyWithoutUserInput
 }
 
-export type UserUncheckedCreateWithoutActionInput = {
+export type UserUncheckedCreateWithoutDreamsInput = {
   id: string
   name: string
   email: string
   emailVerified?: boolean
   image?: string | null
   createdAt?: Date | string
-  updatedAt?: Date | string
+  updatedAt: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: boolean | null
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  actions?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
   files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
   folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  subagents?: Prisma.SubagentUncheckedCreateNestedManyWithoutUserInput
   uploads?: Prisma.UploadUncheckedCreateNestedManyWithoutUserInput
 }
 
-export type UserCreateOrConnectWithoutActionInput = {
+export type UserCreateOrConnectWithoutDreamsInput = {
   where: Prisma.UserWhereUniqueInput
-  create: Prisma.XOR<Prisma.UserCreateWithoutActionInput, Prisma.UserUncheckedCreateWithoutActionInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutDreamsInput, Prisma.UserUncheckedCreateWithoutDreamsInput>
 }
 
-export type UserUpsertWithoutActionInput = {
-  update: Prisma.XOR<Prisma.UserUpdateWithoutActionInput, Prisma.UserUncheckedUpdateWithoutActionInput>
-  create: Prisma.XOR<Prisma.UserCreateWithoutActionInput, Prisma.UserUncheckedCreateWithoutActionInput>
+export type UserUpsertWithoutDreamsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutDreamsInput, Prisma.UserUncheckedUpdateWithoutDreamsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutDreamsInput, Prisma.UserUncheckedCreateWithoutDreamsInput>
   where?: Prisma.UserWhereInput
 }
 
-export type UserUpdateToOneWithWhereWithoutActionInput = {
+export type UserUpdateToOneWithWhereWithoutDreamsInput = {
   where?: Prisma.UserWhereInput
-  data: Prisma.XOR<Prisma.UserUpdateWithoutActionInput, Prisma.UserUncheckedUpdateWithoutActionInput>
+  data: Prisma.XOR<Prisma.UserUpdateWithoutDreamsInput, Prisma.UserUncheckedUpdateWithoutDreamsInput>
 }
 
-export type UserUpdateWithoutActionInput = {
+export type UserUpdateWithoutDreamsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1336,16 +1078,18 @@ export type UserUpdateWithoutActionInput = {
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  actions?: Prisma.ActionUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
   files?: Prisma.FileUpdateManyWithoutUserNestedInput
   folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  subagents?: Prisma.SubagentUpdateManyWithoutUserNestedInput
   uploads?: Prisma.UploadUpdateManyWithoutUserNestedInput
 }
 
-export type UserUncheckedUpdateWithoutActionInput = {
+export type UserUncheckedUpdateWithoutDreamsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1358,117 +1102,15 @@ export type UserUncheckedUpdateWithoutActionInput = {
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  actions?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
   files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
   folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  subagents?: Prisma.SubagentUncheckedUpdateManyWithoutUserNestedInput
   uploads?: Prisma.UploadUncheckedUpdateManyWithoutUserNestedInput
-}
-
-export type UserCreateWithoutUploadsInput = {
-  id: string
-  name: string
-  email: string
-  emailVerified?: boolean
-  image?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  isAnonymous?: boolean | null
-  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  isEphemeral?: boolean | null
-  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
-  action?: Prisma.ActionCreateNestedManyWithoutUserInput
-  chats?: Prisma.ChatCreateNestedManyWithoutUserInput
-  files?: Prisma.FileCreateNestedManyWithoutUserInput
-  folders?: Prisma.FolderCreateNestedManyWithoutUserInput
-  memories?: Prisma.MemoryCreateNestedManyWithoutUserInput
-  messages?: Prisma.MessageCreateNestedManyWithoutUserInput
-  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
-}
-
-export type UserUncheckedCreateWithoutUploadsInput = {
-  id: string
-  name: string
-  email: string
-  emailVerified?: boolean
-  image?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  isAnonymous?: boolean | null
-  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  isEphemeral?: boolean | null
-  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
-  action?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
-  chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
-  files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
-  folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
-  memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutUserInput
-  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutUserInput
-  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
-}
-
-export type UserCreateOrConnectWithoutUploadsInput = {
-  where: Prisma.UserWhereUniqueInput
-  create: Prisma.XOR<Prisma.UserCreateWithoutUploadsInput, Prisma.UserUncheckedCreateWithoutUploadsInput>
-}
-
-export type UserUpsertWithoutUploadsInput = {
-  update: Prisma.XOR<Prisma.UserUpdateWithoutUploadsInput, Prisma.UserUncheckedUpdateWithoutUploadsInput>
-  create: Prisma.XOR<Prisma.UserCreateWithoutUploadsInput, Prisma.UserUncheckedCreateWithoutUploadsInput>
-  where?: Prisma.UserWhereInput
-}
-
-export type UserUpdateToOneWithWhereWithoutUploadsInput = {
-  where?: Prisma.UserWhereInput
-  data: Prisma.XOR<Prisma.UserUpdateWithoutUploadsInput, Prisma.UserUncheckedUpdateWithoutUploadsInput>
-}
-
-export type UserUpdateWithoutUploadsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
-  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
-  action?: Prisma.ActionUpdateManyWithoutUserNestedInput
-  chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
-  files?: Prisma.FileUpdateManyWithoutUserNestedInput
-  folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
-  memories?: Prisma.MemoryUpdateManyWithoutUserNestedInput
-  messages?: Prisma.MessageUpdateManyWithoutUserNestedInput
-  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
-}
-
-export type UserUncheckedUpdateWithoutUploadsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
-  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
-  action?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
-  chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
-  files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
-  folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
-  memories?: Prisma.MemoryUncheckedUpdateManyWithoutUserNestedInput
-  messages?: Prisma.MessageUncheckedUpdateManyWithoutUserNestedInput
-  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutFilesInput = {
@@ -1478,18 +1120,20 @@ export type UserCreateWithoutFilesInput = {
   emailVerified?: boolean
   image?: string | null
   createdAt?: Date | string
-  updatedAt?: Date | string
+  updatedAt: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: boolean | null
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
-  action?: Prisma.ActionCreateNestedManyWithoutUserInput
+  actions?: Prisma.ActionCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatCreateNestedManyWithoutUserInput
+  dreams?: Prisma.DreamCreateNestedManyWithoutUserInput
   folders?: Prisma.FolderCreateNestedManyWithoutUserInput
   memories?: Prisma.MemoryCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  subagents?: Prisma.SubagentCreateNestedManyWithoutUserInput
   uploads?: Prisma.UploadCreateNestedManyWithoutUserInput
 }
 
@@ -1500,18 +1144,20 @@ export type UserUncheckedCreateWithoutFilesInput = {
   emailVerified?: boolean
   image?: string | null
   createdAt?: Date | string
-  updatedAt?: Date | string
+  updatedAt: Date | string
   isAnonymous?: boolean | null
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: boolean | null
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
-  action?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
+  actions?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
   chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
+  dreams?: Prisma.DreamUncheckedCreateNestedManyWithoutUserInput
   folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutUserInput
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  subagents?: Prisma.SubagentUncheckedCreateNestedManyWithoutUserInput
   uploads?: Prisma.UploadUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -1544,12 +1190,14 @@ export type UserUpdateWithoutFilesInput = {
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
-  action?: Prisma.ActionUpdateManyWithoutUserNestedInput
+  actions?: Prisma.ActionUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
+  dreams?: Prisma.DreamUpdateManyWithoutUserNestedInput
   folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  subagents?: Prisma.SubagentUpdateManyWithoutUserNestedInput
   uploads?: Prisma.UploadUpdateManyWithoutUserNestedInput
 }
 
@@ -1566,13 +1214,687 @@ export type UserUncheckedUpdateWithoutFilesInput = {
   cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
-  action?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
+  actions?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
   chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
+  dreams?: Prisma.DreamUncheckedUpdateManyWithoutUserNestedInput
+  folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
+  memories?: Prisma.MemoryUncheckedUpdateManyWithoutUserNestedInput
+  messages?: Prisma.MessageUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  subagents?: Prisma.SubagentUncheckedUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutFoldersInput = {
+  id: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt: Date | string
+  isAnonymous?: boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: boolean | null
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  actions?: Prisma.ActionCreateNestedManyWithoutUserInput
+  chats?: Prisma.ChatCreateNestedManyWithoutUserInput
+  dreams?: Prisma.DreamCreateNestedManyWithoutUserInput
+  files?: Prisma.FileCreateNestedManyWithoutUserInput
+  memories?: Prisma.MemoryCreateNestedManyWithoutUserInput
+  messages?: Prisma.MessageCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  subagents?: Prisma.SubagentCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutFoldersInput = {
+  id: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt: Date | string
+  isAnonymous?: boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: boolean | null
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  actions?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
+  chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
+  dreams?: Prisma.DreamUncheckedCreateNestedManyWithoutUserInput
+  files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
+  memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutUserInput
+  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  subagents?: Prisma.SubagentUncheckedCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutFoldersInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutFoldersInput, Prisma.UserUncheckedCreateWithoutFoldersInput>
+}
+
+export type UserUpsertWithoutFoldersInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutFoldersInput, Prisma.UserUncheckedUpdateWithoutFoldersInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutFoldersInput, Prisma.UserUncheckedCreateWithoutFoldersInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutFoldersInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutFoldersInput, Prisma.UserUncheckedUpdateWithoutFoldersInput>
+}
+
+export type UserUpdateWithoutFoldersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  actions?: Prisma.ActionUpdateManyWithoutUserNestedInput
+  chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
+  dreams?: Prisma.DreamUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUpdateManyWithoutUserNestedInput
+  memories?: Prisma.MemoryUpdateManyWithoutUserNestedInput
+  messages?: Prisma.MessageUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  subagents?: Prisma.SubagentUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutFoldersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  actions?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
+  chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
+  dreams?: Prisma.DreamUncheckedUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
+  memories?: Prisma.MemoryUncheckedUpdateManyWithoutUserNestedInput
+  messages?: Prisma.MessageUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  subagents?: Prisma.SubagentUncheckedUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutMemoriesInput = {
+  id: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt: Date | string
+  isAnonymous?: boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: boolean | null
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  actions?: Prisma.ActionCreateNestedManyWithoutUserInput
+  chats?: Prisma.ChatCreateNestedManyWithoutUserInput
+  dreams?: Prisma.DreamCreateNestedManyWithoutUserInput
+  files?: Prisma.FileCreateNestedManyWithoutUserInput
+  folders?: Prisma.FolderCreateNestedManyWithoutUserInput
+  messages?: Prisma.MessageCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  subagents?: Prisma.SubagentCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutMemoriesInput = {
+  id: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt: Date | string
+  isAnonymous?: boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: boolean | null
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  actions?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
+  chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
+  dreams?: Prisma.DreamUncheckedCreateNestedManyWithoutUserInput
+  files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
+  folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
+  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  subagents?: Prisma.SubagentUncheckedCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutMemoriesInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutMemoriesInput, Prisma.UserUncheckedCreateWithoutMemoriesInput>
+}
+
+export type UserUpsertWithoutMemoriesInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutMemoriesInput, Prisma.UserUncheckedUpdateWithoutMemoriesInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutMemoriesInput, Prisma.UserUncheckedCreateWithoutMemoriesInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutMemoriesInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutMemoriesInput, Prisma.UserUncheckedUpdateWithoutMemoriesInput>
+}
+
+export type UserUpdateWithoutMemoriesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  actions?: Prisma.ActionUpdateManyWithoutUserNestedInput
+  chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
+  dreams?: Prisma.DreamUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUpdateManyWithoutUserNestedInput
+  folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
+  messages?: Prisma.MessageUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  subagents?: Prisma.SubagentUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutMemoriesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  actions?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
+  chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
+  dreams?: Prisma.DreamUncheckedUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
+  folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
+  messages?: Prisma.MessageUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  subagents?: Prisma.SubagentUncheckedUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutMessagesInput = {
+  id: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt: Date | string
+  isAnonymous?: boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: boolean | null
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  actions?: Prisma.ActionCreateNestedManyWithoutUserInput
+  chats?: Prisma.ChatCreateNestedManyWithoutUserInput
+  dreams?: Prisma.DreamCreateNestedManyWithoutUserInput
+  files?: Prisma.FileCreateNestedManyWithoutUserInput
+  folders?: Prisma.FolderCreateNestedManyWithoutUserInput
+  memories?: Prisma.MemoryCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  subagents?: Prisma.SubagentCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutMessagesInput = {
+  id: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt: Date | string
+  isAnonymous?: boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: boolean | null
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  actions?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
+  chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
+  dreams?: Prisma.DreamUncheckedCreateNestedManyWithoutUserInput
+  files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
+  folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
+  memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  subagents?: Prisma.SubagentUncheckedCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutMessagesInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutMessagesInput, Prisma.UserUncheckedCreateWithoutMessagesInput>
+}
+
+export type UserUpsertWithoutMessagesInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutMessagesInput, Prisma.UserUncheckedUpdateWithoutMessagesInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutMessagesInput, Prisma.UserUncheckedCreateWithoutMessagesInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutMessagesInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutMessagesInput, Prisma.UserUncheckedUpdateWithoutMessagesInput>
+}
+
+export type UserUpdateWithoutMessagesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  actions?: Prisma.ActionUpdateManyWithoutUserNestedInput
+  chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
+  dreams?: Prisma.DreamUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUpdateManyWithoutUserNestedInput
+  folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
+  memories?: Prisma.MemoryUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  subagents?: Prisma.SubagentUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutMessagesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  actions?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
+  chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
+  dreams?: Prisma.DreamUncheckedUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
+  folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
+  memories?: Prisma.MemoryUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  subagents?: Prisma.SubagentUncheckedUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutSessionsInput = {
+  id: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt: Date | string
+  isAnonymous?: boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: boolean | null
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  actions?: Prisma.ActionCreateNestedManyWithoutUserInput
+  chats?: Prisma.ChatCreateNestedManyWithoutUserInput
+  dreams?: Prisma.DreamCreateNestedManyWithoutUserInput
+  files?: Prisma.FileCreateNestedManyWithoutUserInput
+  folders?: Prisma.FolderCreateNestedManyWithoutUserInput
+  memories?: Prisma.MemoryCreateNestedManyWithoutUserInput
+  messages?: Prisma.MessageCreateNestedManyWithoutUserInput
+  subagents?: Prisma.SubagentCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutSessionsInput = {
+  id: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt: Date | string
+  isAnonymous?: boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: boolean | null
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  actions?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
+  chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
+  dreams?: Prisma.DreamUncheckedCreateNestedManyWithoutUserInput
+  files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
+  folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
+  memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutUserInput
+  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutUserInput
+  subagents?: Prisma.SubagentUncheckedCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutSessionsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutSessionsInput, Prisma.UserUncheckedCreateWithoutSessionsInput>
+}
+
+export type UserUpsertWithoutSessionsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutSessionsInput, Prisma.UserUncheckedUpdateWithoutSessionsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutSessionsInput, Prisma.UserUncheckedCreateWithoutSessionsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutSessionsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutSessionsInput, Prisma.UserUncheckedUpdateWithoutSessionsInput>
+}
+
+export type UserUpdateWithoutSessionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  actions?: Prisma.ActionUpdateManyWithoutUserNestedInput
+  chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
+  dreams?: Prisma.DreamUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUpdateManyWithoutUserNestedInput
+  folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
+  memories?: Prisma.MemoryUpdateManyWithoutUserNestedInput
+  messages?: Prisma.MessageUpdateManyWithoutUserNestedInput
+  subagents?: Prisma.SubagentUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutSessionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  actions?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
+  chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
+  dreams?: Prisma.DreamUncheckedUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
+  folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
+  memories?: Prisma.MemoryUncheckedUpdateManyWithoutUserNestedInput
+  messages?: Prisma.MessageUncheckedUpdateManyWithoutUserNestedInput
+  subagents?: Prisma.SubagentUncheckedUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutSubagentsInput = {
+  id: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt: Date | string
+  isAnonymous?: boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: boolean | null
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  actions?: Prisma.ActionCreateNestedManyWithoutUserInput
+  chats?: Prisma.ChatCreateNestedManyWithoutUserInput
+  dreams?: Prisma.DreamCreateNestedManyWithoutUserInput
+  files?: Prisma.FileCreateNestedManyWithoutUserInput
+  folders?: Prisma.FolderCreateNestedManyWithoutUserInput
+  memories?: Prisma.MemoryCreateNestedManyWithoutUserInput
+  messages?: Prisma.MessageCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutSubagentsInput = {
+  id: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt: Date | string
+  isAnonymous?: boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: boolean | null
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  actions?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
+  chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
+  dreams?: Prisma.DreamUncheckedCreateNestedManyWithoutUserInput
+  files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
+  folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
+  memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutUserInput
+  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  uploads?: Prisma.UploadUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutSubagentsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutSubagentsInput, Prisma.UserUncheckedCreateWithoutSubagentsInput>
+}
+
+export type UserUpsertWithoutSubagentsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutSubagentsInput, Prisma.UserUncheckedUpdateWithoutSubagentsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutSubagentsInput, Prisma.UserUncheckedCreateWithoutSubagentsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutSubagentsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutSubagentsInput, Prisma.UserUncheckedUpdateWithoutSubagentsInput>
+}
+
+export type UserUpdateWithoutSubagentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  actions?: Prisma.ActionUpdateManyWithoutUserNestedInput
+  chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
+  dreams?: Prisma.DreamUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUpdateManyWithoutUserNestedInput
+  folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
+  memories?: Prisma.MemoryUpdateManyWithoutUserNestedInput
+  messages?: Prisma.MessageUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  uploads?: Prisma.UploadUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutSubagentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  actions?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
+  chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
+  dreams?: Prisma.DreamUncheckedUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
   folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutUserNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   uploads?: Prisma.UploadUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutUploadsInput = {
+  id: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt: Date | string
+  isAnonymous?: boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: boolean | null
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  actions?: Prisma.ActionCreateNestedManyWithoutUserInput
+  chats?: Prisma.ChatCreateNestedManyWithoutUserInput
+  dreams?: Prisma.DreamCreateNestedManyWithoutUserInput
+  files?: Prisma.FileCreateNestedManyWithoutUserInput
+  folders?: Prisma.FolderCreateNestedManyWithoutUserInput
+  memories?: Prisma.MemoryCreateNestedManyWithoutUserInput
+  messages?: Prisma.MessageCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  subagents?: Prisma.SubagentCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutUploadsInput = {
+  id: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt: Date | string
+  isAnonymous?: boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: boolean | null
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  actions?: Prisma.ActionUncheckedCreateNestedManyWithoutUserInput
+  chats?: Prisma.ChatUncheckedCreateNestedManyWithoutUserInput
+  dreams?: Prisma.DreamUncheckedCreateNestedManyWithoutUserInput
+  files?: Prisma.FileUncheckedCreateNestedManyWithoutUserInput
+  folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
+  memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutUserInput
+  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  subagents?: Prisma.SubagentUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutUploadsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutUploadsInput, Prisma.UserUncheckedCreateWithoutUploadsInput>
+}
+
+export type UserUpsertWithoutUploadsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutUploadsInput, Prisma.UserUncheckedUpdateWithoutUploadsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutUploadsInput, Prisma.UserUncheckedCreateWithoutUploadsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutUploadsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutUploadsInput, Prisma.UserUncheckedUpdateWithoutUploadsInput>
+}
+
+export type UserUpdateWithoutUploadsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  actions?: Prisma.ActionUpdateManyWithoutUserNestedInput
+  chats?: Prisma.ChatUpdateManyWithoutUserNestedInput
+  dreams?: Prisma.DreamUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUpdateManyWithoutUserNestedInput
+  folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
+  memories?: Prisma.MemoryUpdateManyWithoutUserNestedInput
+  messages?: Prisma.MessageUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  subagents?: Prisma.SubagentUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutUploadsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  isAnonymous?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cache?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isEphemeral?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  actions?: Prisma.ActionUncheckedUpdateManyWithoutUserNestedInput
+  chats?: Prisma.ChatUncheckedUpdateManyWithoutUserNestedInput
+  dreams?: Prisma.DreamUncheckedUpdateManyWithoutUserNestedInput
+  files?: Prisma.FileUncheckedUpdateManyWithoutUserNestedInput
+  folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
+  memories?: Prisma.MemoryUncheckedUpdateManyWithoutUserNestedInput
+  messages?: Prisma.MessageUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  subagents?: Prisma.SubagentUncheckedUpdateManyWithoutUserNestedInput
 }
 
 
@@ -1582,25 +1904,29 @@ export type UserUncheckedUpdateWithoutFilesInput = {
 
 export type UserCountOutputType = {
   accounts: number
-  action: number
+  actions: number
   chats: number
+  dreams: number
   files: number
   folders: number
   memories: number
   messages: number
   sessions: number
+  subagents: number
   uploads: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   accounts?: boolean | UserCountOutputTypeCountAccountsArgs
-  action?: boolean | UserCountOutputTypeCountActionArgs
+  actions?: boolean | UserCountOutputTypeCountActionsArgs
   chats?: boolean | UserCountOutputTypeCountChatsArgs
+  dreams?: boolean | UserCountOutputTypeCountDreamsArgs
   files?: boolean | UserCountOutputTypeCountFilesArgs
   folders?: boolean | UserCountOutputTypeCountFoldersArgs
   memories?: boolean | UserCountOutputTypeCountMemoriesArgs
   messages?: boolean | UserCountOutputTypeCountMessagesArgs
   sessions?: boolean | UserCountOutputTypeCountSessionsArgs
+  subagents?: boolean | UserCountOutputTypeCountSubagentsArgs
   uploads?: boolean | UserCountOutputTypeCountUploadsArgs
 }
 
@@ -1624,7 +1950,7 @@ export type UserCountOutputTypeCountAccountsArgs<ExtArgs extends runtime.Types.E
 /**
  * UserCountOutputType without action
  */
-export type UserCountOutputTypeCountActionArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type UserCountOutputTypeCountActionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.ActionWhereInput
 }
 
@@ -1633,6 +1959,13 @@ export type UserCountOutputTypeCountActionArgs<ExtArgs extends runtime.Types.Ext
  */
 export type UserCountOutputTypeCountChatsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.ChatWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountDreamsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.DreamWhereInput
 }
 
 /**
@@ -1673,6 +2006,13 @@ export type UserCountOutputTypeCountSessionsArgs<ExtArgs extends runtime.Types.E
 /**
  * UserCountOutputType without action
  */
+export type UserCountOutputTypeCountSubagentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SubagentWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
 export type UserCountOutputTypeCountUploadsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.UploadWhereInput
 }
@@ -1691,13 +2031,15 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   cache?: boolean
   isEphemeral?: boolean
   accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>
-  action?: boolean | Prisma.User$actionArgs<ExtArgs>
+  actions?: boolean | Prisma.User$actionsArgs<ExtArgs>
   chats?: boolean | Prisma.User$chatsArgs<ExtArgs>
+  dreams?: boolean | Prisma.User$dreamsArgs<ExtArgs>
   files?: boolean | Prisma.User$filesArgs<ExtArgs>
   folders?: boolean | Prisma.User$foldersArgs<ExtArgs>
   memories?: boolean | Prisma.User$memoriesArgs<ExtArgs>
   messages?: boolean | Prisma.User$messagesArgs<ExtArgs>
   sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
+  subagents?: boolean | Prisma.User$subagentsArgs<ExtArgs>
   uploads?: boolean | Prisma.User$uploadsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
@@ -1747,13 +2089,15 @@ export type UserSelectScalar = {
 export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "emailVerified" | "image" | "createdAt" | "updatedAt" | "isAnonymous" | "settings" | "cache" | "isEphemeral", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>
-  action?: boolean | Prisma.User$actionArgs<ExtArgs>
+  actions?: boolean | Prisma.User$actionsArgs<ExtArgs>
   chats?: boolean | Prisma.User$chatsArgs<ExtArgs>
+  dreams?: boolean | Prisma.User$dreamsArgs<ExtArgs>
   files?: boolean | Prisma.User$filesArgs<ExtArgs>
   folders?: boolean | Prisma.User$foldersArgs<ExtArgs>
   memories?: boolean | Prisma.User$memoriesArgs<ExtArgs>
   messages?: boolean | Prisma.User$messagesArgs<ExtArgs>
   sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
+  subagents?: boolean | Prisma.User$subagentsArgs<ExtArgs>
   uploads?: boolean | Prisma.User$uploadsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
@@ -1764,13 +2108,15 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   name: "User"
   objects: {
     accounts: Prisma.$AccountPayload<ExtArgs>[]
-    action: Prisma.$ActionPayload<ExtArgs>[]
+    actions: Prisma.$ActionPayload<ExtArgs>[]
     chats: Prisma.$ChatPayload<ExtArgs>[]
+    dreams: Prisma.$DreamPayload<ExtArgs>[]
     files: Prisma.$FilePayload<ExtArgs>[]
     folders: Prisma.$FolderPayload<ExtArgs>[]
     memories: Prisma.$MemoryPayload<ExtArgs>[]
     messages: Prisma.$MessagePayload<ExtArgs>[]
     sessions: Prisma.$SessionPayload<ExtArgs>[]
+    subagents: Prisma.$SubagentPayload<ExtArgs>[]
     uploads: Prisma.$UploadPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -2180,13 +2526,15 @@ readonly fields: UserFieldRefs;
 export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   accounts<T extends Prisma.User$accountsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$accountsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AccountPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  action<T extends Prisma.User$actionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$actionArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ActionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  actions<T extends Prisma.User$actionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$actionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ActionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   chats<T extends Prisma.User$chatsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$chatsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ChatPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  dreams<T extends Prisma.User$dreamsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$dreamsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DreamPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   files<T extends Prisma.User$filesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$filesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FilePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   folders<T extends Prisma.User$foldersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$foldersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FolderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   memories<T extends Prisma.User$memoriesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$memoriesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MemoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   messages<T extends Prisma.User$messagesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$messagesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   sessions<T extends Prisma.User$sessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$sessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  subagents<T extends Prisma.User$subagentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$subagentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SubagentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   uploads<T extends Prisma.User$uploadsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$uploadsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UploadPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -2645,9 +2993,9 @@ export type User$accountsArgs<ExtArgs extends runtime.Types.Extensions.InternalA
 }
 
 /**
- * User.action
+ * User.actions
  */
-export type User$actionArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type User$actionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
    * Select specific fields to fetch from the Action
    */
@@ -2690,6 +3038,30 @@ export type User$chatsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs
   take?: number
   skip?: number
   distinct?: Prisma.ChatScalarFieldEnum | Prisma.ChatScalarFieldEnum[]
+}
+
+/**
+ * User.dreams
+ */
+export type User$dreamsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Dream
+   */
+  select?: Prisma.DreamSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Dream
+   */
+  omit?: Prisma.DreamOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DreamInclude<ExtArgs> | null
+  where?: Prisma.DreamWhereInput
+  orderBy?: Prisma.DreamOrderByWithRelationInput | Prisma.DreamOrderByWithRelationInput[]
+  cursor?: Prisma.DreamWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.DreamScalarFieldEnum | Prisma.DreamScalarFieldEnum[]
 }
 
 /**
@@ -2810,6 +3182,30 @@ export type User$sessionsArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   take?: number
   skip?: number
   distinct?: Prisma.SessionScalarFieldEnum | Prisma.SessionScalarFieldEnum[]
+}
+
+/**
+ * User.subagents
+ */
+export type User$subagentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Subagent
+   */
+  select?: Prisma.SubagentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Subagent
+   */
+  omit?: Prisma.SubagentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SubagentInclude<ExtArgs> | null
+  where?: Prisma.SubagentWhereInput
+  orderBy?: Prisma.SubagentOrderByWithRelationInput | Prisma.SubagentOrderByWithRelationInput[]
+  cursor?: Prisma.SubagentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SubagentScalarFieldEnum | Prisma.SubagentScalarFieldEnum[]
 }
 
 /**

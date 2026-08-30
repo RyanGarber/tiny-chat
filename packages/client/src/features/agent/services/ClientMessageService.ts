@@ -19,6 +19,7 @@ import type { Toolset } from "@tiny-chat/core/src/features/tool/types/tool.ts";
 import type { Client } from "../../../client.ts";
 import { AgentStreamService } from "../../../core/services/StreamService.ts";
 import { ChatService } from "../../chat/services/ChatService.ts";
+import { useChatStore } from "../../chat/stores/useChatStore.ts";
 import { UserService } from "../../user/services/UserService.ts";
 import { ClientAgentService } from "./ClientAgentService.ts";
 
@@ -56,6 +57,7 @@ export const ClientMessageService = {
 			message,
 			chat,
 			append,
+			message.author === Author.MODEL ? message.id : undefined,
 		);
 
 		if (!mcpTools) {
@@ -67,6 +69,7 @@ export const ClientMessageService = {
 		if (message.author === Author.MODEL) {
 			const { messages } = await client.api.message.getMessages.query({
 				chat,
+				start: message.id,
 			});
 			prompt = messages.find((m) => m.id === message.previousId);
 		}
@@ -125,6 +128,7 @@ export const ClientMessageService = {
 		prompt: MessageState,
 		chat: ChatState,
 		append?: zDataPart[],
+		responseId?: string,
 	): Promise<{ response: MessageState; messages: zAgentMessage[] }> => {
 		console.log(
 			"[ClientMessageService] preparing response",
@@ -136,6 +140,11 @@ export const ClientMessageService = {
 		// and build the generation context from a single source of truth.
 		const { messages } = await client.api.message.getMessages.query({
 			chat: prompt.chatId,
+			start: responseId ?? prompt.id,
+			branches:
+				useChatStore.getState().chatId === prompt.chatId
+					? useChatStore.getState().branches
+					: undefined,
 		});
 		const existing = messages.find((m) => m.previousId === prompt.id);
 
@@ -173,12 +182,15 @@ export const ClientMessageService = {
 			response = { ...created };
 		}
 
+		if (useChatStore.getState().chatId === prompt.chatId)
+			useChatStore.getState().selectBranch(response.previousId, response.id);
 		await ChatService.fetchMessages({ client, chatId: prompt.chatId });
 
 		// Re-fetch to ensure the context reflects the inserted/edited reply.
 		const { messages: updatedMessages } =
 			await client.api.message.getMessages.query({
 				chat: prompt.chatId,
+				start: response.id,
 			});
 		const responseIndex = updatedMessages.findIndex(
 			(m) => m.id === response.id,

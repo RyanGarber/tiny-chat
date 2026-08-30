@@ -4,6 +4,6 @@
 		"moduleResolution": "nodenext",
 		"lib": ["ES2022"]
 	},
-	"include": ["src"],
+	"include": ["src", "generated/prisma/**/*.d.ts"],
 	"extends": "../../tsconfig.base.json"
 }

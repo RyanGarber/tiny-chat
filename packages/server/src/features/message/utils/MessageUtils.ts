@@ -1,4 +1,4 @@
-import type { JsonValue } from "@prisma/client/runtime/client";
+import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import {
 	type MessageState,
 	zConfig,
@@ -7,7 +7,12 @@ import {
 } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { Message } from "../../../../generated/prisma/client.ts";
 
-type MessageWithMetadataOptional = Message & { metadata?: JsonValue | null };
+type Message8 = Awaited<
+	ReturnType<typeof globalThis.db.orm.public.Message.all>
+>[number];
+type MessageWithMetadataOptional =
+	| Omit<Message, "metadata">
+	| Omit<Message8, "metadata">;
 
 export const MessageUtils = {
 	/**
@@ -16,33 +21,26 @@ export const MessageUtils = {
 	toMessageState: (message: MessageWithMetadataOptional): MessageState => {
 		return {
 			...message,
+			createdAt:
+				message.createdAt instanceof Date
+					? message.createdAt
+					: CommonUtils.toDate(message.createdAt),
 			config: zConfig.parse(message.config),
 			data: zData.parse(message.data),
-			metadata: zMetadata.parse(message.metadata ?? [[{ _omit: true }]]),
+			metadata: zMetadata.parse(
+				("metadata" in message ? message.metadata : undefined) ?? [
+					[{ _omit: true }],
+				],
+			),
 		};
 	},
 
 	/**
-	 * Wrap raw message rows into sorted {@link MessageState MessageStates}.
+	 * Parse raw message rows without dropping sibling branches into {@link MessageState MessageStates}.
 	 */
 	toMessageStates: (
 		messages: MessageWithMetadataOptional[],
 	): MessageState[] => {
-		if (messages.length <= 1) return messages.map(MessageUtils.toMessageState);
-
-		const firstMessage = messages.find((m) => m.previousId === null);
-		if (!firstMessage) return messages.map(MessageUtils.toMessageState);
-
-		const sorted = [firstMessage];
-
-		let currentId = firstMessage.id;
-		while (sorted.length < messages.length) {
-			const nextMessage = messages.find((m) => m.previousId === currentId);
-			if (!nextMessage) break;
-			sorted.push(nextMessage);
-			currentId = nextMessage.id;
-		}
-
-		return sorted.map(MessageUtils.toMessageState);
+		return messages.map(MessageUtils.toMessageState);
 	},
 } as const;

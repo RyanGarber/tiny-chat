@@ -1,5 +1,6 @@
 import type { Client } from "@modelcontextprotocol/client";
 import { useQuery } from "@tanstack/react-query";
+import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import type { zDataBasicPart } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { zMCPServers } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { ToolService } from "@tiny-chat/core/src/features/tool/services/ToolService.ts";
@@ -10,8 +11,6 @@ import type {
 import { useMemo } from "react";
 import { useCapabilities } from "../../../core/hooks/useCapabilities.ts";
 import { useStableKey } from "../../../core/hooks/useStableKey.ts";
-import { useChat } from "../../chat/hooks/useChat.ts";
-import { useChatStore } from "../../chat/stores/useChatStore.ts";
 import { useMcp } from "./useMcp.ts";
 
 export interface McpToolset extends Toolset<void> {
@@ -27,15 +26,12 @@ export const useTools = () => {
 		future: true,
 	});
 	const { mcpServers } = useMcp();
-	const { chat } = useChat();
-	const createIncognito = useChatStore((state) => state.createIncognito);
 
 	const nativeTools = useQuery({
 		queryKey: [...nativeToolsQueryKey, presumedCapabilities.data],
 		queryFn: async () => {
 			return await ToolService.getTools({
 				capabilities: presumedCapabilities.data ?? {},
-				incognito: chat.data?.incognito ?? createIncognito,
 			});
 		},
 		staleTime: Infinity,
@@ -81,7 +77,31 @@ export const useTools = () => {
 									});
 									console.log("[useTools] mcp response:", { isError, content });
 									if (isError) throw new Error(JSON.stringify(content));
-									return [{ type: "json", value: content }];
+									return content.map((part): zDataBasicPart => {
+										if (part.type === "text") {
+											return {
+												id: CommonUtils.getRandomId(),
+												type: "text",
+												value: part.text,
+											};
+										} else if (part.type === "image" || part.type === "audio") {
+											return {
+												id: CommonUtils.getRandomId(),
+												type: "file",
+												mime: part.mimeType,
+												data: part.data,
+											};
+										}
+										console.warn(
+											"[useTools] mcp returned part with unknown support:",
+											part,
+										);
+										return {
+											id: CommonUtils.getRandomId(),
+											type: "json",
+											value: part,
+										};
+									});
 								},
 
 								capabilities: void 0,

@@ -1,9 +1,9 @@
-import { format } from "timeago.js";
 import type {
 	Capabilities,
 	ShellCapability,
 } from "../../../core/types/capability.ts";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
+import { VERBOSE } from "../../../logger.ts";
 import { Author, type zDataPart } from "../../data/types/message.ts";
 import { DirectiveUtils } from "../../data/utils/DirectiveUtils.ts";
 import { FileOperationService } from "../../file/services/FileOperationService.ts";
@@ -35,8 +35,10 @@ export const AgentMessagesService = {
 					const directives = DirectiveUtils.extractFromMarkdown(
 						part.value,
 						"command",
-						"attachment",
 						"quote",
+						// Keep the synthesized skill attachment typed below without
+						// recognizing persisted attachment directives at runtime.
+						...([] as "attachment"[]),
 					);
 					for (const { text, directive } of directives) {
 						// convert skill command to attached SKILL.md
@@ -53,6 +55,7 @@ export const AgentMessagesService = {
 
 						if (directive?.tag === "quote") {
 							transformedParts.push({
+								id: part.id,
 								type: "text",
 								value: DirectiveUtils.convertToHtml(
 									[{ text, directive }],
@@ -90,6 +93,7 @@ export const AgentMessagesService = {
 									});
 									if (web) {
 										attachment = {
+											id: part.id,
 											type: "text",
 											value: web.content,
 										};
@@ -101,6 +105,7 @@ export const AgentMessagesService = {
 									});
 									if (xml) {
 										attachment = {
+											id: part.id,
 											type: "text",
 											value: xml,
 										};
@@ -111,6 +116,7 @@ export const AgentMessagesService = {
 									});
 									if (file) {
 										attachment = {
+											id: CommonUtils.getRandomId(),
 											type: "file",
 											name: PathUtils.name(file),
 											data: FileUtils.getBase64FromBytes(file),
@@ -120,10 +126,10 @@ export const AgentMessagesService = {
 										};
 									}
 								}
-							} catch (e: any) {
+							} catch (error: any) {
 								console.error(
 									"[AgentMessagesService] error reading attachment:",
-									e,
+									error,
 								);
 							}
 							// An upload is mounted under its id, which says nothing about
@@ -136,18 +142,28 @@ export const AgentMessagesService = {
 							transformedParts.push(
 								{
 									...part,
+									id: CommonUtils.getRandomId(),
 									value: `<attachment source="${PathUtils.normalize({ path: directive.attributes.source })}"${name}>`,
 								},
 								attachment ?? {
+									id: part.id,
 									type: "text",
 									value: "<!-- content unavailable -->",
 								},
-								{ ...part, value: "</attachment>" },
+								{
+									...part,
+									id: CommonUtils.getRandomId(),
+									value: "</attachment>",
+								},
 							);
 						} else {
 							transformedParts.push({ ...part, value: text });
 						}
 					}
+				} else if (part.type === "attachment") {
+					transformedParts.push(
+						...AgentMessagesService.buildAttachmentParts(part),
+					);
 				} else {
 					transformedParts.push(part);
 				}
@@ -163,9 +179,84 @@ export const AgentMessagesService = {
 			);
 		}
 
-		console.log("[AgentMessagesService] built messages:", messages);
+		if (VERBOSE)
+			console.log("[AgentMessagesService] built messages:", messages);
 
 		return { messages, customInstructions };
+	},
+
+	buildAttachmentParts: (
+		attachment: Extract<zDataPart, { type: "attachment" }>,
+	): zDataPart[] => {
+		const source = PathUtils.normalize({ path: attachment.source });
+		let content: zDataPart;
+
+		if (attachment.content.type === "file") {
+			content = {
+				id: attachment.id,
+				type: "file",
+				name: PathUtils.name(attachment.source),
+				mime: attachment.content.mime ?? "application/octet-stream",
+				data: attachment.content.data,
+			};
+		} else if (attachment.content.type === "web") {
+			content = {
+				id: attachment.id,
+				type: "text",
+				value: attachment.content.content,
+			};
+		} else if (attachment.content.type === "directory") {
+			content = {
+				id: attachment.id,
+				type: "text",
+				value: AgentMessagesService.buildDirectoryItems({
+					path: attachment.source,
+					items: attachment.content.items,
+				}),
+			};
+		} else {
+			content = {
+				id: attachment.id,
+				type: "text",
+				value: "<!-- content unavailable -->",
+			};
+		}
+
+		return [
+			{
+				id: CommonUtils.getRandomId(),
+				type: "text",
+				value: `<attachment source="${source}" name="${attachment.label}">`,
+			},
+			content,
+			{
+				id: CommonUtils.getRandomId(),
+				type: "text",
+				value: "</attachment>",
+			},
+		];
+	},
+
+	buildDirectoryItems: ({
+		path,
+		items,
+	}: {
+		path: string;
+		items: { path: string; directory?: boolean }[];
+	}) => {
+		const base = PathUtils.normalize({ path, unix: true }).replace(/\/+$/, "");
+		const nodes = items.map((item) => {
+			const normalized = PathUtils.normalize({ path: item.path, unix: true });
+			return {
+				uri: item.path,
+				is_dir: item.directory ?? false,
+				path: PathUtils.split(PathUtils.relative({ base, path: normalized })),
+			};
+		});
+		return AgentMessagesService.buildTree({
+			tree: FileUtils.toTree({ nodes }),
+			depth: 0,
+		});
 	},
 
 	buildMessageBlock: ({
@@ -193,16 +284,12 @@ export const AgentMessagesService = {
 				date: message.createdAt,
 				timezone,
 			});
-		}
-
-		if (message.author === Author.USER) {
-			const after =
-				message.createdAt && previous?.createdAt
-					? format(previous.createdAt, undefined, {
-							relativeDate: message.createdAt,
-						}).replace(" ago", "")
-					: null;
-			if (after) attributes.gap = after;
+			if (previous?.createdAt && message.author === Author.USER) {
+				attributes.gap = CommonUtils.formatTimespan({
+					from: previous.createdAt,
+					to: message.createdAt,
+				});
+			}
 		}
 
 		return {
@@ -210,13 +297,14 @@ export const AgentMessagesService = {
 			data: [
 				[
 					{
+						id: CommonUtils.getRandomId(),
 						type: "text",
 						value: `<message${Object.entries(attributes)
 							.map(([k, v]) => ` ${k}="${v}"`)
 							.join("")}>`,
 					},
 					...parts,
-					{ type: "text", value: "</message>" },
+					{ id: CommonUtils.getRandomId(), type: "text", value: "</message>" },
 				],
 			],
 		};

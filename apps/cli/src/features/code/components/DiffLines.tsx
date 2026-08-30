@@ -11,46 +11,39 @@ import {
 } from "@tiny-chat/core/src/features/file/utils/DiffUtils.ts";
 import chalk from "chalk";
 import { Text } from "ink";
-import { memo, type ReactNode } from "react";
-import { CodeLines } from "./CodeLines.tsx";
+import type { ReactNode } from "react";
+import CodeLines from "./CodeLines.tsx";
 
-const DiffLines = memo(
-	({
-		diff,
-		highlighted,
-		language = null,
-	}: {
-		diff: ReturnType<typeof DiffUtils.context>;
-		highlighted: CodeResult;
-		language: string | null | undefined;
-	}) => {
-		return diff.map((change, index) => (
-			<Block key={index} type={change.type} highlighted={highlighted}>
-				{change.type === "unchanged" &&
-					` ⋮ ${change.lines.length} unchanged line${change.lines.length === 1 ? "" : "s"}`}
-				{change.type !== "unchanged" && (
-					<>
-						{change.type === "changed" && (
-							<ChangedLines change={change} language={language} />
-						)}
-						{change.type !== "changed" && (
-							<CodeLines
-								code={change.line}
-								language={language}
-								lineNumbers={false}
-							/>
-						)}
-					</>
-				)}
-			</Block>
-		));
-	},
-	(previous, next) =>
-		previous.diff === next.diff &&
-		previous.highlighted === next.highlighted &&
-		previous.language === next.language,
-);
-export default DiffLines;
+export default function DiffLines({
+	diff,
+	highlighted,
+	language = null,
+}: {
+	diff: ReturnType<typeof DiffUtils.context>;
+	highlighted: CodeResult;
+	language: string | null | undefined;
+}) {
+	return diff.map((change, index) => (
+		<Block key={index} type={change.type} highlighted={highlighted}>
+			{change.type === "unchanged" &&
+				` ⋮ ${change.lines.length} unchanged line${change.lines.length === 1 ? "" : "s"}`}
+			{change.type !== "unchanged" && (
+				<>
+					{change.type === "changed" && (
+						<ChangedLines change={change} language={language} />
+					)}
+					{change.type !== "changed" && (
+						<CodeLines
+							code={change.line}
+							language={language}
+							lineNumbers={false}
+						/>
+					)}
+				</>
+			)}
+		</Block>
+	));
+}
 
 function ChangedLines({
 	change,
@@ -71,82 +64,109 @@ function ChangedLines({
 		language,
 	});
 
-	let beforeOffset = 0;
-	let afterOffset = 0;
-
 	const bgColor = (type: DiffContext["type"], highlighted: CodeResult) => {
 		const color = DiffUtils.color(type, highlighted);
 		const hex = color?.split(";")[0];
 		return hex ? chalk.bgHex(hex) : chalk;
 	};
 
-	return change.parts.map((part, partIndex) => {
-		let node: ReactNode;
+	return change.parts.reduce<{
+		nodes: ReactNode[];
+		beforeOffset: number;
+		afterOffset: number;
+	}>(
+		(accumulator, part, partIndex) => {
+			const { beforeOffset, afterOffset } = accumulator;
+			let nextBeforeOffset = beforeOffset;
+			let nextAfterOffset = afterOffset;
+			let node: ReactNode;
 
-		if (part.type === "changed") {
-			const bStart = beforeOffset;
-			const aStart = afterOffset;
-			beforeOffset += part.partBefore.length;
-			afterOffset += part.partAfter.length;
-			node = (
-				<Text backgroundColor={DiffUtils.color("changed", beforeHL)}>
+			if (part.type === "changed") {
+				const bStart = beforeOffset;
+				const aStart = afterOffset;
+				nextBeforeOffset += part.partBefore.length;
+				nextAfterOffset += part.partAfter.length;
+				node = (
+					<Text backgroundColor={DiffUtils.color("changed", beforeHL)}>
+						<CodeLines
+							code={CodeUtils.extractTokenRange(
+								beforeHL,
+								bStart,
+								nextBeforeOffset,
+							)}
+							language={language}
+							lineNumbers={false}
+							chalk={bgColor("removed", beforeHL)}
+						/>
+						<CodeLines
+							code={CodeUtils.extractTokenRange(
+								afterHL,
+								aStart,
+								nextAfterOffset,
+							)}
+							language={language}
+							lineNumbers={false}
+							chalk={bgColor("added", afterHL)}
+						/>
+					</Text>
+				);
+			} else if (part.type === "removed") {
+				const bStart = beforeOffset;
+				nextBeforeOffset += part.part.length;
+				const tokens = CodeUtils.extractTokenRange(
+					beforeHL,
+					bStart,
+					nextBeforeOffset,
+				);
+				node = (
 					<CodeLines
-						code={CodeUtils.extractTokenRange(beforeHL, bStart, beforeOffset)}
+						code={tokens}
 						language={language}
 						lineNumbers={false}
 						chalk={bgColor("removed", beforeHL)}
 					/>
+				);
+			} else if (part.type === "added") {
+				const aStart = afterOffset;
+				nextAfterOffset += part.part.length;
+				const tokens = CodeUtils.extractTokenRange(
+					afterHL,
+					aStart,
+					nextAfterOffset,
+				);
+				node = (
 					<CodeLines
-						code={CodeUtils.extractTokenRange(afterHL, aStart, afterOffset)}
+						code={tokens}
 						language={language}
 						lineNumbers={false}
 						chalk={bgColor("added", afterHL)}
 					/>
-				</Text>
-			);
-		} else if (part.type === "removed") {
-			const bStart = beforeOffset;
-			beforeOffset += part.part.length;
-			const tokens = CodeUtils.extractTokenRange(
-				beforeHL,
-				bStart,
-				beforeOffset,
-			);
-			node = (
-				<CodeLines
-					code={tokens}
-					language={language}
-					lineNumbers={false}
-					chalk={bgColor("removed", beforeHL)}
-				/>
-			);
-		} else if (part.type === "added") {
-			const aStart = afterOffset;
-			afterOffset += part.part.length;
-			const tokens = CodeUtils.extractTokenRange(afterHL, aStart, afterOffset);
-			node = (
-				<CodeLines
-					code={tokens}
-					language={language}
-					lineNumbers={false}
-					chalk={bgColor("added", afterHL)}
-				/>
-			);
-		} else {
-			const bStart = beforeOffset;
-			beforeOffset += part.part.length;
-			afterOffset += part.part.length;
-			node = (
-				<CodeLines
-					code={CodeUtils.extractTokenRange(beforeHL, bStart, beforeOffset)}
-					language={language}
-					lineNumbers={false}
-				/>
-			);
-		}
+				);
+			} else {
+				const bStart = beforeOffset;
+				nextBeforeOffset += part.part.length;
+				nextAfterOffset += part.part.length;
+				node = (
+					<CodeLines
+						code={CodeUtils.extractTokenRange(
+							beforeHL,
+							bStart,
+							nextBeforeOffset,
+						)}
+						language={language}
+						lineNumbers={false}
+					/>
+				);
+			}
 
-		return <Text key={partIndex}>{node}</Text>;
-	});
+			return {
+				nodes: [...accumulator.nodes, <Text key={partIndex}>{node}</Text>],
+				beforeOffset: nextBeforeOffset,
+				afterOffset: nextAfterOffset,
+			};
+		},
+		{ nodes: [], beforeOffset: 0, afterOffset: 0 },
+	).nodes;
 }
 
 function Block({

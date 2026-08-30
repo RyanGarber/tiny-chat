@@ -21,7 +21,9 @@ createLogger({
 const cli = new Command()
 	.name("tiny-chat")
 	.description("Tiny Chat in the terminal.")
-	.version(tauri.version);
+	.version(
+		tauri.version + (CommonUtils.isTruthy(process.env.DEV) ? "-dev" : ""),
+	);
 
 cli.action(() => {
 	render(

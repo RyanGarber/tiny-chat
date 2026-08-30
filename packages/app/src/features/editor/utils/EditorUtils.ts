@@ -1,19 +1,15 @@
-import { PasteUtils } from "@tiny-chat/client/src/features/editor/utils/PasteUtils.ts";
-import { CodeUtils } from "@tiny-chat/core/src/core/utils/CodeUtils.ts";
-import type { Editor } from "@tiptap/react";
+import type { EditorNode } from "@tiny-chat/client/src/features/editor/types/node.ts";
+import { EditorNodeUtils } from "@tiny-chat/client/src/features/editor/utils/EditorNodeUtils.ts";
+import { useMarkdownDataStore } from "@tiny-chat/client/src/features/message/stores/useMarkdownDataStore.ts";
+import type { Fragment, Node } from "@tiptap/pm/model";
+import { Selection } from "@tiptap/pm/state";
+import type { Content } from "@tiptap/react";
 import { hasPendingCommandNode } from "../hooks/useCommand.tsx";
 import { useEditorStore } from "../stores/useEditorStore.ts";
 
 export const EditorUtils = {
 	insertQuote: (model: string, text: string) => {
-		const { editor } = useEditorStore.getState();
-		if (!editor) return;
-
-		editor.commands.insertContent({
-			type: "quote",
-			attrs: { model },
-			content: [{ type: "paragraph", content: [{ type: "text", text }] }],
-		});
+		return EditorUtils.insertNode(EditorNodeUtils.quote({ model, text }));
 	},
 
 	/**
@@ -21,43 +17,84 @@ export const EditorUtils = {
 	 * code block when it looks like source. Returns false when the editor
 	 * should keep its default paste.
 	 */
-	insertPasted: (text: string, editor?: Editor | null) => {
-		const target = editor ?? useEditorStore.getState().editor;
-		if (!target) return false;
-		if (target.isActive("codeBlock") || target.isActive("pasteBlock")) {
+	insertPasted: (text: string, collapse = true) => {
+		const { editor } = useEditorStore.getState();
+		if (!editor) return false;
+
+		if (editor.isActive("codeBlock") || editor.isActive("pasteBlock")) {
 			return false;
 		}
 
-		const pasted = PasteUtils.normalize(text);
-		if (!pasted) return false;
+		const node = EditorNodeUtils.paste(text, collapse);
+		return node ? EditorUtils.insertNode(node) : false;
+	},
 
-		const unwrapped = PasteUtils.unwrapFence(pasted.trim());
-		const body = unwrapped?.text ?? pasted;
-		const language =
-			CodeUtils.getLanguage(unwrapped?.language ?? null) ??
-			PasteUtils.detectCode(body)?.language ??
-			null;
-		const asCode = !!unwrapped || PasteUtils.detectCode(body);
-
-		const codeBlock = {
-			type: "codeBlock",
-			attrs: { language },
-			content: body ? [{ type: "text", text: body }] : [],
-		};
-
-		if (PasteUtils.isLong(body)) {
-			return target.commands.insertContent({
-				type: "pasteBlock",
-				attrs: { lines: String(body.split("\n").length) },
-				content: [codeBlock],
+	insertNode: (node: EditorNode) => {
+		if (node.type === "quote") {
+			return EditorUtils.insert({
+				type: "quote",
+				attrs: { model: node.model },
+				content: [
+					{ type: "paragraph", content: [{ type: "text", text: node.text }] },
+				],
 			});
 		}
-
-		if (asCode) {
-			return target.commands.insertContent(codeBlock);
+		if (node.type === "attachment") {
+			if (!useMarkdownDataStore.getState().attachments[node.id]) return false;
+			return EditorUtils.insert([
+				{
+					type: "attachment",
+					attrs: { id: node.id },
+				},
+				{ type: "text", text: " " },
+			]);
 		}
+		if (node.type === "command") return false;
+		const codeBlock = {
+			type: "codeBlock",
+			attrs: { language: node.language },
+			content: node.text ? [{ type: "text", text: node.text }] : [],
+		};
+		return EditorUtils.insert(
+			node.collapsed
+				? {
+						type: "pasteBlock",
+						attrs: { lines: String(node.lines) },
+						content: [codeBlock],
+					}
+				: codeBlock,
+		);
+	},
 
-		return false;
+	insert: (content: Content | Node | Fragment) => {
+		const { editor } = useEditorStore.getState();
+		if (!editor) return false;
+
+		return editor
+			.chain()
+			.focus()
+			.insertContent(content)
+			.command(({ tr, dispatch, editor }) => {
+				if (!dispatch) return true;
+
+				const end = tr.selection.to;
+				const cursor = () => Selection.findFrom(tr.doc.resolve(end), 1, true);
+
+				// An atom block — a quote or a paste — inserted at the end of the
+				// document leaves nowhere to type: the paragraph the trailing node
+				// extension adds only lands once this transaction has gone through,
+				// by which time the selection has fallen back onto the block itself.
+				if (!cursor()) {
+					const paragraph = editor.schema.nodes.paragraph?.createAndFill();
+					if (paragraph) tr.insert(end, paragraph);
+				}
+
+				const selection = cursor();
+				if (selection) tr.setSelection(selection);
+
+				return true;
+			})
+			.run();
 	},
 
 	getIncomplete: () => {

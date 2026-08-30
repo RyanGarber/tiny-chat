@@ -10,7 +10,7 @@ describe("GoogleProvider", () => {
 	it("stores signatures", () => {
 		const event: TextStreamPart<any> = {
 			type: "reasoning-delta",
-			id: "",
+			id: "id",
 			text: "",
 			providerMetadata: {
 				google: {
@@ -30,7 +30,7 @@ describe("GoogleProvider", () => {
 	it("returns matching signatures", () => {
 		const part: zDataPart = {
 			type: "thought",
-			id: "",
+			id: "id",
 			value: "",
 			signature: {
 				model: "gemini-3-flash",
@@ -57,6 +57,7 @@ describe("GoogleProvider", () => {
 
 	it("transforms youtube links to video parts", async () => {
 		const part: zDataPart = {
+			id: "id",
 			type: "text",
 			value: "content: https://www.youtube.com/watch?v=___________",
 		};
@@ -82,14 +83,16 @@ describe("GoogleProvider", () => {
 						type: "toolResult",
 						id: "id",
 						name: "name",
-						value: [
+						output: [
 							{
+								id: "id",
 								type: "file",
 								name: "file.exe",
 								mime: "application/octet-stream",
 								data: "",
 							},
 							{
+								id: "id",
 								type: "file",
 								name: "file.png",
 								mime: "image/png",
@@ -108,6 +111,7 @@ describe("GoogleProvider", () => {
 			provider: GoogleProvider,
 			messages: [message],
 		});
+		console.log(transformed[1].content[0]);
 		expect.assert(Array.isArray(transformed[1].content));
 		expect.assert(transformed[1].content[0].type === "tool-result");
 		expect.assert(transformed[1].content[0].output.type === "content");

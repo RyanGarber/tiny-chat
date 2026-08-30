@@ -1,6 +1,10 @@
 /** @author https://github.com/vercel/streamdown/blob/main/packages/streamdown/lib/mermaid/pan-zoom.tsx */
 
-import { Icon } from "@iconify/react";
+import {
+	ArrowClockwiseIcon,
+	MagnifyingGlassMinusIcon,
+	MagnifyingGlassPlusIcon,
+} from "@phosphor-icons/react";
 import type { PointerEventHandler, ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -130,7 +134,7 @@ export default function PanZoom({
 
 		if (isPanning) {
 			// Prevent text selection while panning
-			document.body.style.userSelect = "none";
+			document.body.classList.add("unselectable");
 			content.addEventListener("pointermove", handlePointerMove, {
 				passive: false,
 			});
@@ -138,7 +142,7 @@ export default function PanZoom({
 			content.addEventListener("pointercancel", handlePointerUp);
 
 			return () => {
-				document.body.style.userSelect = "";
+				document.body.classList.remove("unselectable");
 				content.removeEventListener("pointermove", handlePointerMove);
 				content.removeEventListener("pointerup", handlePointerUp);
 				content.removeEventListener("pointercancel", handlePointerUp);
@@ -161,7 +165,7 @@ export default function PanZoom({
 					onClick={handleZoomIn}
 					type="button"
 				>
-					<Icon icon="lucide:zoom-in" width={16} height={16} />
+					<MagnifyingGlassPlusIcon size={18} />
 				</button>
 				<button
 					className="flex items-center justify-center rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
@@ -169,14 +173,14 @@ export default function PanZoom({
 					onClick={handleZoomOut}
 					type="button"
 				>
-					<Icon icon="lucide:zoom-out" width={16} height={16} />
+					<MagnifyingGlassMinusIcon size={18} />
 				</button>
 				<button
 					className="flex items-center justify-center rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 					onClick={handleReset}
 					type="button"
 				>
-					<Icon icon="lucide:rotate-cw" width={16} height={16} />
+					<ArrowClockwiseIcon size={18} />
 				</button>
 			</div>
 			<div

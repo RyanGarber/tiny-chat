@@ -27,6 +27,9 @@ const Blockquote = _Blockquote.extend({
 				atom: true,
 				isolating: true,
 				draggable: true,
+				extendNodeSchema() {
+					return { disableDropCursor: true };
+				},
 				addAttributes() {
 					return {
 						model: {
@@ -53,11 +56,8 @@ const Blockquote = _Blockquote.extend({
 				addNodeView() {
 					return ReactNodeViewRenderer(({ node }) => (
 						<NodeViewWrapper contentEditable={false} data-drag-handle>
-							<Quote
-								model={node.attrs.model as string}
-								style={{ cursor: "grab" }}
-							>
-								<NodeViewContent />
+							<Quote model={node.attrs.model as string} className="cursor-grab">
+								<NodeViewContent contentEditable={false} />
 							</Quote>
 						</NodeViewWrapper>
 					));

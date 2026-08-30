@@ -5,9 +5,9 @@
 	},
 	"include": [
 		"src",
-		"drizzle.config.ts",
-		"generated/prisma/**/*",
-		"../core/src/logger.ts"
+		"generated/prisma/**/*.ts",
+		"../core/src/logger.ts",
+		"../core/generated/prisma/**/*.d.ts"
 	],
 	"extends": "../../tsconfig.base.json"
 }

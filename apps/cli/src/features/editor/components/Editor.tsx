@@ -2,19 +2,26 @@ import { ThemeContext } from "@tiny-chat/client/src/core/components/ThemeContext
 import { useConfig } from "@tiny-chat/client/src/features/agent/hooks/useConfig.ts";
 import { useMessaging } from "@tiny-chat/client/src/features/chat/hooks/useMessaging.ts";
 import { MessagingService } from "@tiny-chat/client/src/features/chat/services/MessagingService.ts";
+import { useMessagingStore } from "@tiny-chat/client/src/features/chat/stores/useMessagingStore.ts";
 import { useDisabled } from "@tiny-chat/client/src/features/editor/hooks/useDisabled.ts";
+import type {
+	Categories,
+	Usage,
+} from "@tiny-chat/client/src/features/editor/hooks/useEstimatedTokens.ts";
+import { AttachmentService } from "@tiny-chat/client/src/features/editor/services/AttachmentService.ts";
 import { useAtomStore } from "@tiny-chat/client/src/features/editor/stores/useAtomStore.ts";
 import { useCompletionStore } from "@tiny-chat/client/src/features/editor/stores/useCompletionStore.ts";
 import { AtomUtils } from "@tiny-chat/client/src/features/editor/utils/AtomUtils.ts";
-import { AttachmentUtils } from "@tiny-chat/client/src/features/editor/utils/AttachmentUtils.ts";
+import { EditorNodeUtils } from "@tiny-chat/client/src/features/editor/utils/EditorNodeUtils.ts";
 import { useMessages } from "@tiny-chat/client/src/features/message/hooks/useMessages.ts";
 import { useUploads } from "@tiny-chat/client/src/features/upload/hooks/useUploads.ts";
-import { UploadType } from "@tiny-chat/core/src/features/file/types/upload.ts";
+import { UploadKind } from "@tiny-chat/core/src/features/file/types/upload.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import { useInput, usePaste, useWindowSize } from "ink";
 import { useContext, useEffect, useMemo, useState } from "react";
 import { client } from "../../../client.ts";
 import Box from "../../../core/components/Box.tsx";
+import type { Color } from "../../../core/hooks/useColor.ts";
 import { useWorkingStatus } from "../../../core/hooks/useWorkingStatus.ts";
 import { ClipboardService } from "../../../core/services/ClipboardService.ts";
 import { StdinUtils } from "../../../core/utils/StdinUtils.ts";
@@ -29,7 +36,15 @@ import TokenUsage from "./TokenUsage.tsx";
 /** Rows the editor holds on to while it is empty. */
 const LINE_COUNT = 1;
 
-export default function Editor({ disabled: _disabled }: { disabled: boolean }) {
+export default function Editor({
+	disabled: _disabled,
+	usage,
+	categories,
+}: {
+	disabled: boolean;
+	usage: Usage<Color>;
+	categories: Categories;
+}) {
 	const { colorScheme } = useContext(ThemeContext);
 	const { columns } = useWindowSize();
 
@@ -60,9 +75,12 @@ export default function Editor({ disabled: _disabled }: { disabled: boolean }) {
 		(state) => state.isCompletionsEmpty,
 	);
 
+	const activeFolder = useMessagingStore((state) => state.activeFolder);
 	const placeholder = useMemo(() => {
-		if (!config) return "";
+		if (!config)
+			return activeFolder ? activeFolder.title || "Untitled" : "/folders";
 		return [
+			activeFolder ? activeFolder.title || "Untitled" : "/folders",
 			config.model,
 			...modelArgs.map(
 				(arg) => `${arg.name} ${config.args?.[arg.name] ?? arg.default}`,
@@ -70,7 +88,7 @@ export default function Editor({ disabled: _disabled }: { disabled: boolean }) {
 		]
 			.join(" · ")
 			.slice(0, columns - 10);
-	}, [config, modelArgs, columns]);
+	}, [config, modelArgs, columns, activeFolder]);
 
 	const labels = useMemo(() => EditorUtils.tokenLabels({ atoms }), [atoms]);
 
@@ -80,6 +98,7 @@ export default function Editor({ disabled: _disabled }: { disabled: boolean }) {
 	// biome-ignore lint/correctness/useExhaustiveDependencies: re-read on every change to what the editor holds
 	useEffect(() => {
 		MessagingService.getData({ client });
+		// biome-ignore lint/nursery/useReactCompiler: content and atoms intentionally trigger a re-read from their external stores.
 	}, [content, atoms]);
 
 	const offset = EditorUtils.offset(content, cursor);
@@ -138,29 +157,29 @@ export default function Editor({ disabled: _disabled }: { disabled: boolean }) {
 		// text.
 		const files = FilePasteUtils.detect(pasted);
 		if (files) {
-			insert(
-				files
-					.map(
-						(file) =>
-							`${AtomUtils.attachment({
-								content,
-								source: file.path,
-								directory: file.directory,
-								markdown: AttachmentUtils.toDirective({
-									item: {
-										name: PathUtils.name(file.path),
-										value: file.path,
-										directory: file.directory,
-									},
-								}),
-							})} `,
-					)
-					.join(""),
-			);
+			void Promise.all(
+				files.map((file) =>
+					AttachmentService.create({
+						client,
+						item: {
+							name: PathUtils.name(file.path),
+							value: file.path,
+							directory: file.directory,
+						},
+					}),
+				),
+			).then((nodes) => {
+				insert(
+					nodes
+						.map((node) => `${AtomUtils.fromNode({ content, node })} `)
+						.join(""),
+				);
+			});
 			return;
 		}
 
-		insert(AtomUtils.paste({ content, text: pasted }) ?? pasted);
+		const node = EditorNodeUtils.paste(pasted);
+		insert(node ? AtomUtils.fromNode({ content, node }) : pasted);
 	};
 
 	usePaste(paste, { isActive: !disabled });
@@ -184,7 +203,7 @@ export default function Editor({ disabled: _disabled }: { disabled: boolean }) {
 
 				const name = `Pasted-${new Date().toISOString().replace(/[:.]/g, "-")}.png`;
 				upload.mutate({
-					type: UploadType.ATTACHMENT,
+					kind: UploadKind.ATTACHMENT,
 					file: new File([clipboard.data], name, { type: "image/png" }),
 				});
 			})();
@@ -277,6 +296,17 @@ export default function Editor({ disabled: _disabled }: { disabled: boolean }) {
 		{ isActive: !disabled },
 	);
 
+	useInput(
+		(_, key) => {
+			if (!key.meta || key.shift) return;
+			if (isCompletionsOpen && !isCompletionsEmpty) return;
+			if (!key.return) return;
+
+			sendMessage.mutate();
+		},
+		{ isActive: !disabled },
+	);
+
 	return (
 		<>
 			<Commands
@@ -301,7 +331,6 @@ export default function Editor({ disabled: _disabled }: { disabled: boolean }) {
 					focus={!disabled}
 					value={content}
 					onChange={setContent}
-					onSubmit={() => sendMessage.mutate()}
 					cursor={cursor}
 					onCursorChange={setCursor}
 					selection={selection}
@@ -315,8 +344,12 @@ export default function Editor({ disabled: _disabled }: { disabled: boolean }) {
 					}
 					// Word motion and word deletion are answered above, where an atom
 					// is stepped over and taken whole.
+					onSubmit={() => {
+						insert("\n");
+					}}
 					keybindings={{
 						Enter: !isCompletionsOpen,
+						"Shift+Enter": !isCompletionsOpen,
 						Backspace: !backward,
 						Delete: !forward,
 						"Alt+Backspace": false,
@@ -335,7 +368,7 @@ export default function Editor({ disabled: _disabled }: { disabled: boolean }) {
 					}}
 					placeholder={placeholder}
 				/>
-				<TokenUsage />
+				<TokenUsage usage={usage} categories={categories} />
 			</Box>
 		</>
 	);

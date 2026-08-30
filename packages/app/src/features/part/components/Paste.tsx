@@ -1,5 +1,5 @@
-import { Icon } from "@iconify/react";
 import { Box, Collapse, Group, Text } from "@mantine/core";
+import { ClipboardTextIcon } from "@phosphor-icons/react";
 import { type ReactNode, useState } from "react";
 
 export default function Paste({
@@ -20,22 +20,20 @@ export default function Paste({
 	return (
 		<Box my={10}>
 			<Group
-				onClick={() => setExpanded(!expanded)}
+				onClick={() => {
+					setExpanded(!expanded);
+				}}
 				style={{ cursor: grabbable ? "grab" : "pointer" }}
 				gap="xs"
 				wrap="nowrap"
 			>
-				<Icon
-					icon="lucide:clipboard-paste"
-					height={18}
-					style={{ minWidth: 18 }}
-					color="var(--mantine-color-dimmed)"
-				/>
+				<ClipboardTextIcon size={24} color="var(--mantine-color-dimmed)" />
 				<Text truncate="end">{label}</Text>
 			</Group>
 			<Collapse expanded={expanded}>
 				{(expanded || mounted) && (
 					<Box
+						hidden={!expanded}
 						style={{
 							borderLeft: "2px solid var(--mantine-color-default-border)",
 						}}

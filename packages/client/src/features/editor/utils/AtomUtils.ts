@@ -1,12 +1,15 @@
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { DirectiveUtils } from "@tiny-chat/core/src/features/data/utils/DirectiveUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
+import { useMarkdownDataStore } from "../../message/stores/useMarkdownDataStore.ts";
 import { useAtomStore } from "../stores/useAtomStore.ts";
 import type { Atom, AtomKind, AtomText, AtomToken } from "../types/atom.ts";
+import type { EditorNode } from "../types/node.ts";
+import { EditorNodeUtils } from "./EditorNodeUtils.ts";
 import { PASTE_LINE_LIMIT, PasteUtils } from "./PasteUtils.ts";
 
 /** The directives a message carries that an atom can be read back out of. */
-const DIRECTIVES = ["command", "attachment", "paste"] as const;
+const DIRECTIVES = ["command", "attachment", "paste", "quote"] as const;
 
 /**
  * Atoms: the runs of a plain text buffer that stand in for the Markdown a
@@ -138,8 +141,50 @@ export const AtomUtils = {
 			const atom = AtomUtils.find({ atoms, text: match });
 			if (!atom) return match;
 			// A paste is a container directive, which only parses as a block.
-			if (atom.kind === "paste") return `\n${atom.markdown}\n`;
+			if (atom.kind === "paste" || atom.kind === "quote") {
+				return `\n${atom.markdown}\n`;
+			}
 			return atom.markdown;
+		});
+	},
+
+	/** Adapt a shared editor node to the short stand-in used by a plain buffer. */
+	fromNode: ({ content, node }: { content: string; node: EditorNode }) => {
+		const markdown = EditorNodeUtils.toMarkdown(node);
+		if (node.type === "attachment") {
+			const attachment = useMarkdownDataStore.getState().attachments[node.id];
+			if (!attachment) return "";
+			return AtomUtils.attachment({
+				content,
+				id: node.id,
+				source: attachment.source,
+				directory: attachment.content.type === "directory",
+				label: attachment.label,
+				markdown,
+			});
+		}
+		if (node.type === "command") {
+			return AtomUtils.command({
+				content,
+				name: node.name,
+				value: node.value,
+				markdown,
+			});
+		}
+		if (node.type === "paste") {
+			return (
+				AtomUtils.paste({
+					content,
+					text: node.text,
+					markdown,
+					lines: node.lines,
+				}) ?? node.text
+			);
+		}
+		return AtomUtils.quote({
+			content,
+			model: node.model,
+			markdown,
 		});
 	},
 
@@ -161,10 +206,14 @@ export const AtomUtils = {
 					});
 				}
 				if (directive?.tag === "attachment") {
+					const id = directive.attributes.id;
+					const attachment = useMarkdownDataStore.getState().attachments[id];
+					if (!attachment) return text;
 					return AtomUtils.attachment({
-						source: directive.attributes.source,
-						directory: directive.attributes["is-directory"] === "true",
-						label: directive.attributes.name,
+						id,
+						source: attachment.source,
+						directory: attachment.content.type === "directory",
+						label: attachment.label,
 						markdown: text,
 					});
 				}
@@ -177,6 +226,12 @@ export const AtomUtils = {
 							lines: Number.isFinite(parsed) && parsed > 0 ? parsed : undefined,
 						}) ?? text
 					);
+				}
+				if (directive?.tag === "quote") {
+					return AtomUtils.quote({
+						model: directive.attributes.model,
+						markdown: text,
+					});
 				}
 				return text;
 			})
@@ -208,6 +263,26 @@ export const AtomUtils = {
 		});
 	},
 
+	/** A quote atom is supported by plain buffers even when their UI does not expose it. */
+	quote: ({
+		content,
+		model,
+		markdown,
+	}: {
+		content?: string;
+		model?: string;
+		markdown: string;
+	}) =>
+		AtomUtils.register({
+			content,
+			kind: "quote",
+			text: (index) =>
+				index
+					? `[Quoted ${model ?? "message"} #${index + 1}]`
+					: `[Quoted ${model ?? "message"}]`,
+			markdown,
+		}),
+
 	/**
 	 * An atom for an attachment, which stands as its name alone. Two files of
 	 * the same name are told apart by as much of their path as it takes.
@@ -217,12 +292,14 @@ export const AtomUtils = {
 	 */
 	attachment: ({
 		content,
+		id,
 		source,
 		directory,
 		label,
 		markdown,
 	}: {
 		content?: string;
+		id: string;
 		source?: string;
 		directory?: boolean;
 		label?: string;
@@ -242,7 +319,7 @@ export const AtomUtils = {
 				}
 				return `@${PathUtils.name({ path })}${trailing} #${index - path.length + 2}`;
 			},
-			markdown,
+			markdown: markdown || `:attachment[]{id="${id}"}`,
 		});
 	},
 

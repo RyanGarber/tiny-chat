@@ -1,11 +1,15 @@
 import { Box, type BoxProps, Loader } from "@mantine/core";
-import type { CodeLanguage } from "@tiny-chat/core/src/core/utils/CodeUtils.ts";
+import type {
+	CodeLanguage,
+	CodeResult,
+} from "@tiny-chat/core/src/core/utils/CodeUtils.ts";
 import { type ReactNode, Suspense } from "react";
 import CopyButton from "#app/core/components/CopyButton.tsx";
 import DownloadButton from "#app/core/components/DownloadButton.tsx";
 import FullscreenButton from "#app/core/components/FullscreenButton.tsx";
 
 export default function HighlightBody({
+	highlight,
 	code,
 	chart,
 	language,
@@ -13,15 +17,18 @@ export default function HighlightBody({
 	streaming,
 	style,
 	withButtons = true,
+	close,
 	children,
 	...props
 }: BoxProps & {
+	highlight?: CodeResult;
 	code?: string;
 	chart?: string;
 	language?: CodeLanguage | "text";
 	filename?: string;
 	streaming?: boolean;
 	withButtons?: boolean;
+	close?: ReactNode;
 	children?: ReactNode;
 }) {
 	return (
@@ -36,7 +43,7 @@ export default function HighlightBody({
 			}
 		>
 			<Box
-				className="relative"
+				className="relative selectable"
 				data-streamdown={
 					code ? "code-block" : chart ? "mermaid-block" : undefined
 				}
@@ -60,6 +67,14 @@ export default function HighlightBody({
 							filename={filename}
 							streaming={streaming}
 						/>
+						{close ?? (
+							<FullscreenButton.Code
+								code={code}
+								language={language}
+								filename={filename}
+								streaming={streaming}
+							/>
+						)}
 					</div>
 				)}
 				{chart && withButtons && (

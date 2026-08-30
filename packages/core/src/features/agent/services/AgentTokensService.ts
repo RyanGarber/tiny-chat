@@ -1,3 +1,4 @@
+import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 import type {
 	zConfig,
 	zDataBasicPart,
@@ -49,7 +50,7 @@ const MAX_ANYWHERE_CHARS = 50_000;
 /** Characters of a digested turn's text that survive. */
 const DIGEST_TEXT_CHARS = 400;
 
-export type TokenBreakdown = {
+export type TokenizationResult = {
 	memories: number;
 	instructions: number;
 	text: number;
@@ -60,8 +61,15 @@ export type TokenBreakdown = {
 	total: number;
 };
 
-const cloneMessages = (messages: zAgentMessage[]): zAgentMessage[] =>
-	structuredClone(messages);
+export type CompactionType = "trimmed" | "dropped";
+export type Compaction = Map<string, CompactionType>;
+
+export type CompactionResult = {
+	messages: zAgentMessage[];
+	before: TokenizationResult;
+	compaction: Compaction;
+	after: TokenizationResult;
+};
 
 const getSerialized = (value: unknown): string => {
 	if (value === null || value === undefined) return "";
@@ -77,9 +85,9 @@ const getSerializedLength = (value: unknown): number =>
 
 const getPartLength = (part: zDataPart | zDataBasicPart): number => {
 	if (part.type === "text" || part.type === "thought") return part.value.length;
-	if (part.type === "toolCall") return getSerializedLength(part.args);
+	if (part.type === "toolCall") return getSerializedLength(part.input);
 	if (part.type === "toolResult") {
-		return [...part.value, ...(part.append ?? [])].reduce(
+		return [...part.output, ...(part.append ?? [])].reduce(
 			(length, value) => length + getPartLength(value),
 			0,
 		);
@@ -119,7 +127,7 @@ const getLineCount = (parts: zDataBasicPart[]): number =>
 const getToolResultMarker = (
 	part: Extract<zDataPart, { type: "toolResult" }>,
 ): string => {
-	const parts = [...part.value, ...(part.append ?? [])];
+	const parts = [...part.output, ...(part.append ?? [])];
 	const bytes = parts.reduce((total, value) => total + getByteLength(value), 0);
 	const lines = getLineCount(parts);
 	const detail = [lines > 0 ? `${lines} lines` : null, `${bytes} bytes`]
@@ -138,7 +146,11 @@ const getFileMarker = (part: Extract<zDataPart, { type: "file" }>): string => {
  * splice arrays while it holds indexes into them, so removals are marked with
  * this exact object and filtered out once every stage has run.
  */
-const OMITTED: zDataPart = Object.freeze({ type: "text", value: "" });
+const OMITTED: zDataPart = Object.freeze({
+	type: "text",
+	id: "OMITTED",
+	value: "",
+});
 
 const getExcerpt = (text: string, length: number): string => {
 	if (text.length <= length) return text;
@@ -171,7 +183,13 @@ const compactToolResult = (
 	part: Extract<zDataPart, { type: "toolResult" }>,
 ): zDataPart => ({
 	...part,
-	value: [{ type: "text", value: getToolResultMarker(part) }],
+	output: [
+		{
+			id: part.output.map((value) => value.id).at(0) ?? part.id,
+			type: "text",
+			value: getToolResultMarker(part),
+		},
+	],
 	append: undefined,
 });
 
@@ -187,7 +205,7 @@ function compactLivePart(
 	if (part.type === "toolResult") {
 		return {
 			...part,
-			value: part.value.map((value) => compactLivePart(value, useMarker)),
+			output: part.output.map((value) => compactLivePart(value, useMarker)),
 			append: part.append?.map((value) => compactLivePart(value, useMarker)),
 		};
 	}
@@ -213,50 +231,67 @@ function compactLivePart(
 		};
 	}
 	if (part.type === "toolCall") {
-		return { ...part, args: useMarker ? { compacted: true } : null };
+		return { ...part, input: useMarker ? { compacted: true } : null };
 	}
 	return part;
 }
 
-function preprocessParts(parts: zDataBasicPart[]): zDataBasicPart[];
-function preprocessParts(parts: zDataPart[]): zDataPart[];
-function preprocessParts(
-	parts: zDataPart[] | zDataBasicPart[],
-): zDataPart[] | zDataBasicPart[] {
+const preprocessParts = (parts: zDataPart[] | zDataBasicPart[]): Compaction => {
+	const compaction: Compaction = new Map();
+
 	parts.forEach((part, index) => {
 		if (part.type === "toolResult") {
-			preprocessParts(part.value);
-			if (part.append) preprocessParts(part.append);
+			for (const [id, type] of preprocessParts(part.output)) {
+				compaction.set(id, type);
+			}
+			if (part.append) {
+				for (const [id, type] of preprocessParts(part.append)) {
+					compaction.set(id, type);
+				}
+			}
 		}
 		if (part.type === "file") {
 			try {
 				const text = FileUtils.getTextFromBytes(part);
 				if (text !== null) {
-					replaceIfSmaller(parts, index, {
-						type: "text",
-						value: getExcerpt(text, MAX_ANYWHERE_CHARS),
-					});
+					if (
+						replaceIfSmaller(parts, index, {
+							type: "text",
+							id: part.id,
+							value: getExcerpt(text, MAX_ANYWHERE_CHARS),
+						})
+					) {
+						if (part.id) compaction.set(part.id, "trimmed");
+					}
 				}
 			} catch {
 				// binary will be handled by generic compaction
 			}
 		}
 		if (part.type === "json") {
-			replaceIfSmaller(parts, index, {
-				...part,
-				value: getExcerpt(JSON.stringify(part.value), MAX_ANYWHERE_CHARS),
-			});
+			if (
+				replaceIfSmaller(parts, index, {
+					...part,
+					value: getExcerpt(JSON.stringify(part.value), MAX_ANYWHERE_CHARS),
+				})
+			) {
+				if (part.id) compaction.set(part.id, "trimmed");
+			}
 		}
 		// if text or thoughts ever get big enough to trigger this, we got bigger problems...
 		if (part.type === "text" || part.type === "thought") {
-			replaceIfSmaller(parts, index, {
-				...part,
-				value: getExcerpt(part.value, MAX_ANYWHERE_CHARS),
-			});
+			if (
+				replaceIfSmaller(parts, index, {
+					...part,
+					value: getExcerpt(part.value, MAX_ANYWHERE_CHARS),
+				})
+			) {
+				if (part.id) compaction.set(part.id, "trimmed");
+			}
 		}
 	});
-	return parts;
-}
+	return compaction;
+};
 
 /** One part, with everything a compaction stage needs to judge it. */
 interface Entry {
@@ -277,7 +312,8 @@ interface Entry {
 interface Candidate {
 	/** Tokens this saves. Candidates that save nothing are never collected. */
 	saving: number;
-	apply: () => void;
+	/** Apply the compaction. */
+	apply: () => { id: string; type: CompactionType } | undefined;
 }
 
 const getEntries = (messages: zAgentMessage[]): Entry[] => {
@@ -330,7 +366,7 @@ const getDigest = (message: zAgentMessage): string => {
 		if (part.type === "text" && part.value.trim())
 			texts.push(part.value.trim());
 		if (part.type === "toolCall") {
-			const summary = getArgumentSummary(part.args);
+			const summary = getArgumentSummary(part.input);
 			calls.push(summary ? `${part.name}(${summary})` : part.name);
 		}
 	}
@@ -359,7 +395,11 @@ const getDigest = (message: zAgentMessage): string => {
  * framing that {@link AgentMessagesService} wrapped around it.
  */
 const setDigest = (message: zAgentMessage) => {
-	const digest: zDataPart = { type: "text", value: getDigest(message) };
+	const digest: zDataPart = {
+		type: "text",
+		id: CommonUtils.getRandomId(),
+		value: getDigest(message),
+	};
 
 	const opening = message.data[0]?.[0];
 	const closing = message.data.at(-1)?.at(-1);
@@ -393,6 +433,7 @@ const getLiveCandidate = (entry: Entry): Candidate[] => {
 			saving,
 			apply: () => {
 				entry.parts[entry.index] = replacement;
+				if ("id" in part && part.id) return { id: part.id, type: "trimmed" };
 			},
 		},
 	];
@@ -415,12 +456,16 @@ const stages: {
 		collect: ({ entries }) =>
 			entries
 				.filter((entry) => !entry.recent && entry.part.type === "thought")
-				.map((entry) => ({
-					saving: getPartTokens(entry.part),
-					apply: () => {
-						entry.parts[entry.index] = OMITTED;
-					},
-				})),
+				.map(
+					(entry): Candidate => ({
+						saving: getPartTokens(entry.part),
+						apply: () => {
+							entry.parts[entry.index] = OMITTED;
+							if ("id" in entry.part && entry.part.id)
+								return { id: entry.part.id, type: "dropped" };
+						},
+					}),
+				),
 	},
 	{
 		// Tool output is the largest and most reproducible thing in the window.
@@ -429,7 +474,7 @@ const stages: {
 		collect: ({ entries }) =>
 			entries
 				.filter((entry) => !entry.recent && entry.part.type === "toolResult")
-				.flatMap((entry) => {
+				.flatMap((entry): Candidate[] => {
 					const part = entry.part as Extract<zDataPart, { type: "toolResult" }>;
 					const replacement = compactToolResult(part);
 					const saving = getPartTokens(part) - getPartTokens(replacement);
@@ -439,6 +484,7 @@ const stages: {
 							saving,
 							apply: () => {
 								entry.parts[entry.index] = replacement;
+								return { id: part.id, type: "trimmed" };
 							},
 						},
 					];
@@ -454,7 +500,7 @@ const stages: {
 						!entry.recent &&
 						(entry.part.type === "file" || entry.part.type === "json"),
 				)
-				.flatMap((entry) => {
+				.flatMap((entry): Candidate[] => {
 					const part = entry.part;
 					let replacement: zDataPart | null = null;
 
@@ -467,6 +513,7 @@ const stages: {
 						}
 						replacement = {
 							type: "text",
+							id: CommonUtils.getRandomId(),
 							value:
 								text === null
 									? getFileMarker(part)
@@ -488,6 +535,8 @@ const stages: {
 							saving,
 							apply: () => {
 								entry.parts[entry.index] = replacement as zDataPart;
+								if ("id" in part && part.id)
+									return { id: part.id, type: "trimmed" };
 							},
 						},
 					];
@@ -503,7 +552,7 @@ const stages: {
 					(entry) =>
 						!entry.recent && !entry.pinned && entry.part.type === "text",
 				)
-				.flatMap((entry) => {
+				.flatMap((entry): Candidate[] => {
 					const part = entry.part as Extract<zDataPart, { type: "text" }>;
 					const replacement: zDataPart = {
 						...part,
@@ -516,6 +565,7 @@ const stages: {
 							saving,
 							apply: () => {
 								entry.parts[entry.index] = replacement;
+								if (part.id) return { id: part.id, type: "trimmed" };
 							},
 						},
 					];
@@ -534,20 +584,25 @@ const stages: {
 				eligible.set(entry.messageIndex, group);
 			}
 
-			return [...eligible.entries()].flatMap(([messageIndex, group]) => {
-				const message = messages[messageIndex];
-				const before = message.data
-					.flat()
-					.reduce((tokens, part) => tokens + getPartTokens(part), 0);
-				const saving = before - getDigest(message).length / CHARS_PER_TOKEN;
-				if (saving <= 0 || !group.length) return [];
-				return [
-					{
-						saving,
-						apply: () => setDigest(message),
-					},
-				];
-			});
+			return [...eligible.entries()].flatMap(
+				([messageIndex, group]): Candidate[] => {
+					const message = messages[messageIndex];
+					const before = message.data
+						.flat()
+						.reduce((tokens, part) => tokens + getPartTokens(part), 0);
+					const saving = before - getDigest(message).length / CHARS_PER_TOKEN;
+					if (saving <= 0 || !group.length) return [];
+					return [
+						{
+							saving,
+							apply: () => {
+								setDigest(message);
+								if (message.id) return { id: message.id, type: "dropped" };
+							},
+						},
+					];
+				},
+			);
 		},
 	},
 	{
@@ -560,7 +615,7 @@ const stages: {
 					(entry) =>
 						entry.recent && entry.age > 0 && entry.part.type === "toolResult",
 				)
-				.flatMap((entry) => {
+				.flatMap((entry): Candidate[] => {
 					const part = entry.part as Extract<zDataPart, { type: "toolResult" }>;
 					const replacement = compactToolResult(part);
 					const saving = getPartTokens(part) - getPartTokens(replacement);
@@ -570,6 +625,7 @@ const stages: {
 							saving,
 							apply: () => {
 								entry.parts[entry.index] = replacement;
+								return { id: part.id, type: "trimmed" };
 							},
 						},
 					];
@@ -595,15 +651,18 @@ const stages: {
 		// empty out; positions and signatures still survive.
 		name: "empty payloads",
 		collect: ({ entries }) =>
-			entries.flatMap((entry) => {
-				const replacement = compactLivePart(entry.part, false);
-				const saving = getPartTokens(entry.part) - getPartTokens(replacement);
+			entries.flatMap((entry): Candidate[] => {
+				const part = entry.part;
+				const replacement = compactLivePart(part, false);
+				const saving = getPartTokens(part) - getPartTokens(replacement);
 				if (saving <= 0) return [];
 				return [
 					{
 						saving,
 						apply: () => {
 							entry.parts[entry.index] = replacement;
+							if ("id" in part && part.id)
+								return { id: part.id, type: "trimmed" };
 						},
 					},
 				];
@@ -619,57 +678,74 @@ export const AgentTokensService = {
 		messages,
 	}: {
 		messages: zAgentMessage[];
-	}): zAgentMessage[] => {
-		const processed = cloneMessages(messages);
+	}): { preprocessed: zAgentMessage[]; compaction: Compaction } => {
+		const preprocessed = structuredClone(messages);
 
-		for (const message of processed) {
+		const compaction: Compaction = new Map();
+
+		for (const message of preprocessed) {
 			for (const parts of message.data) {
-				preprocessParts(parts);
+				for (const [id, type] of preprocessParts(parts)) {
+					compaction.set(id, type);
+				}
 			}
 		}
 
-		return processed;
+		return { preprocessed, compaction };
 	},
 
 	/**
 	 * Trims messages and data to fit the given token limit.
 	 */
-	trimMessages: async ({
+	compactMessages: async ({
 		instructions,
-		messages: _messages,
+		messages,
 		config,
 	}: {
 		instructions?: string;
 		messages: zAgentMessage[];
-		config: zConfig;
-	}): Promise<zAgentMessage[]> => {
-		const messages = AgentTokensService.preprocessMessages({
-			messages: _messages,
+		config?: zConfig | null;
+	}): Promise<CompactionResult> => {
+		const before = AgentTokensService.tokenizeMessages({
+			instructions,
+			messages,
 		});
 
-		if (config.args?.["tokens-in"] === undefined) {
+		const { preprocessed, compaction } = AgentTokensService.preprocessMessages({
+			messages,
+		});
+
+		let after = AgentTokensService.tokenizeMessages({
+			instructions,
+			messages: preprocessed,
+		});
+
+		if (config?.args?.["tokens-in"] === undefined) {
 			console.warn(
 				"[AgentTokensService] no `tokens-in` arg, skipping compaction",
 			);
-			return messages;
+
+			return { messages: preprocessed, before, compaction, after };
 		}
 
 		const target = Math.max(0, config.args["tokens-in"]);
-		let tokens = AgentTokensService.getTokens({ instructions, messages });
+		let tokens = before.total;
 
 		console.log("[AgentTokensService] estimated tokens:", tokens);
 
 		if (tokens <= target) {
 			console.log("[AgentTokensService] no compaction needed");
-			return messages;
+			return { messages: preprocessed, before, compaction, after };
 		}
+
+		const compacted = preprocessed;
 
 		for (const stage of stages) {
 			if (tokens <= target) break;
 
 			// Recollected per stage, so each one prices what the last ones left.
 			const candidates = stage
-				.collect({ entries: getEntries(messages), messages })
+				.collect({ entries: getEntries(compacted), messages: compacted })
 				.filter((candidate) => candidate.saving > 0)
 				// Largest payload first: one bloated result should go before many
 				// small ones that each carry as much meaning as it does.
@@ -678,7 +754,8 @@ export const AgentTokensService = {
 			let applied = 0;
 			for (const candidate of candidates) {
 				if (tokens <= target) break;
-				candidate.apply();
+				const result = candidate.apply();
+				if (result) compaction.set(result.id, result.type);
 				tokens -= candidate.saving;
 				applied++;
 			}
@@ -692,47 +769,34 @@ export const AgentTokensService = {
 
 		// Dropped parts were only marked in place; take them out now that no
 		// stage is holding an index into the arrays they sit in.
-		for (const message of messages) {
+		for (const message of compacted) {
 			message.data = message.data
 				.map((parts) => parts.filter((part) => part !== OMITTED))
 				.filter((parts) => parts.length);
 		}
 
-		const finalTokens = AgentTokensService.getTokens({
+		after = AgentTokensService.tokenizeMessages({
 			instructions,
-			messages,
+			messages: compacted,
 		});
 		console.log(
 			"[AgentTokensService] estimated tokens after compaction:",
-			finalTokens,
+			after.total,
 		);
-		return messages;
+		return { messages: compacted, before, compaction, after };
 	},
 
-	getTokens: ({
+	tokenizeMessages: ({
 		instructions = "",
 		messages = [],
 	}: {
 		instructions?: string;
 		messages?: zAgentMessage[];
-	}): number => {
-		return AgentTokensService.getTokenBreakdown({
-			instructions,
-			messages,
-		}).total;
-	},
-
-	getTokenBreakdown: ({
-		instructions = "",
-		messages = [],
-	}: {
-		instructions?: string;
-		messages?: zAgentMessage[];
-	}): TokenBreakdown => {
+	}): TokenizationResult => {
 		const memories =
 			/^<memories>$(.*)^<\/memories>$/ms.exec(instructions)?.[1]?.length ?? 0;
 		const tokens = (part: zDataPart) => getPartLength(part) / CHARS_PER_TOKEN;
-		const categories: Omit<TokenBreakdown, "total"> = {
+		const categories: Omit<TokenizationResult, "total"> = {
 			...AgentTokensService.zero,
 			memories: memories / CHARS_PER_TOKEN,
 			instructions: (instructions.length - memories) / CHARS_PER_TOKEN,
@@ -763,5 +827,5 @@ export const AgentTokensService = {
 		memories: 0,
 		instructions: 0,
 		total: 0,
-	} satisfies TokenBreakdown,
+	} satisfies TokenizationResult,
 } as const;

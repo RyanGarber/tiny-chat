@@ -10,22 +10,25 @@ export default function Code({
 	startLine = 1,
 	lineNumbers = true,
 	streaming,
+	fillHeight = false,
 	...props
 }: Omit<Parameters<typeof HighlightBody>[0], "code"> & {
 	code: string;
 	startLine?: number;
 	lineNumbers?: boolean;
 	streaming?: boolean;
+	fillHeight?: boolean;
 }) {
 	const { highlighted } = useCode({ code, language });
 
 	return (
 		<HighlightBody
 			code={code}
+			highlight={highlighted}
 			language={language}
 			streaming={streaming}
 			filename={filename}
-			className="selectable"
+			h={fillHeight ? "100%" : undefined}
 			{...props}
 		>
 			<HighlightContent
@@ -33,7 +36,8 @@ export default function Code({
 				filename={filename}
 				lineNumbers={lineNumbers}
 				startLine={startLine}
-				code={highlighted}
+				highlight={highlighted}
+				fillHeight={fillHeight}
 			>
 				<CodeLines
 					code={highlighted}

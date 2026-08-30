@@ -1,5 +1,9 @@
 import { z } from "zod";
-import type { UserCapability } from "../../../../core/types/capability.ts";
+import type {
+	EmbeddingCapability,
+	MemoriesCapability,
+} from "../../../../core/types/capability.ts";
+import { zId } from "../../../../core/types/common.ts";
 import { MemoryCategory, MemoryStability } from "../../../data/types/memory.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
@@ -10,22 +14,38 @@ export const search_memories = {
 		query: z.string(),
 	}),
 	output: z.object({
-		id: z.cuid2(),
+		id: zId,
 		fact: z.string(),
 		category: z.enum(MemoryCategory),
 		stability: z.enum(MemoryStability),
 		created_at: z.date(),
+		evidence: z.array(z.string()),
+		confidence: z.number(),
 	}),
 } as const satisfies ToolDefinition;
 
 export const createSearchMemoriesTool: ToolFactory<
-	Tool<typeof search_memories, { user: UserCapability }>
+	Tool<
+		typeof search_memories,
+		{ embedding?: EmbeddingCapability; memories: MemoriesCapability }
+	>
 > = (options) => ({
 	...search_memories,
 	...options,
 	execute: async ({ input }) => {
-		const memories = await options.capabilities.user.searchMemories({
+		let embedding: number[] | undefined;
+		if (options.capabilities.embedding) {
+			try {
+				embedding = await options.capabilities.embedding?.runEmbedding({
+					text: input.query,
+				});
+			} catch (error) {
+				console.error("error running embedding:", error);
+			}
+		}
+		const memories = await options.capabilities.memories.searchMemories({
 			searchText: input.query,
+			searchEmbedding: embedding,
 		});
 		return memories.map((memory) => ({
 			type: "json",
@@ -35,6 +55,8 @@ export const createSearchMemoriesTool: ToolFactory<
 				category: memory.category,
 				stability: memory.stability,
 				created_at: memory.createdAt,
+				evidence: memory.evidence,
+				confidence: memory.confidence,
 			},
 		}));
 	},

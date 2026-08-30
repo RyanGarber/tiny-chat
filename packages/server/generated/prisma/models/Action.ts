@@ -27,8 +27,6 @@ export type AggregateAction = {
 export type ActionMinAggregateOutputType = {
   id: string | null
   userId: string | null
-  folderId: string | null
-  chatId: string | null
   schedule: string | null
   createdAt: Date | null
   messageId: string | null
@@ -39,8 +37,6 @@ export type ActionMinAggregateOutputType = {
 export type ActionMaxAggregateOutputType = {
   id: string | null
   userId: string | null
-  folderId: string | null
-  chatId: string | null
   schedule: string | null
   createdAt: Date | null
   messageId: string | null
@@ -51,8 +47,6 @@ export type ActionMaxAggregateOutputType = {
 export type ActionCountAggregateOutputType = {
   id: number
   userId: number
-  folderId: number
-  chatId: number
   schedule: number
   config: number
   data: number
@@ -67,8 +61,6 @@ export type ActionCountAggregateOutputType = {
 export type ActionMinAggregateInputType = {
   id?: true
   userId?: true
-  folderId?: true
-  chatId?: true
   schedule?: true
   createdAt?: true
   messageId?: true
@@ -79,8 +71,6 @@ export type ActionMinAggregateInputType = {
 export type ActionMaxAggregateInputType = {
   id?: true
   userId?: true
-  folderId?: true
-  chatId?: true
   schedule?: true
   createdAt?: true
   messageId?: true
@@ -91,8 +81,6 @@ export type ActionMaxAggregateInputType = {
 export type ActionCountAggregateInputType = {
   id?: true
   userId?: true
-  folderId?: true
-  chatId?: true
   schedule?: true
   config?: true
   data?: true
@@ -178,13 +166,11 @@ export type ActionGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalA
 export type ActionGroupByOutputType = {
   id: string
   userId: string
-  folderId: string
-  chatId: string
   schedule: string
   config: runtime.JsonValue
   data: runtime.JsonValue
   createdAt: Date
-  messageId: string | null
+  messageId: string
   lastRanAt: Date | null
   timezone: string
   _count: ActionCountAggregateOutputType | null
@@ -213,35 +199,27 @@ export type ActionWhereInput = {
   NOT?: Prisma.ActionWhereInput | Prisma.ActionWhereInput[]
   id?: Prisma.StringFilter<"Action"> | string
   userId?: Prisma.StringFilter<"Action"> | string
-  folderId?: Prisma.StringFilter<"Action"> | string
-  chatId?: Prisma.StringFilter<"Action"> | string
   schedule?: Prisma.StringFilter<"Action"> | string
   config?: Prisma.JsonFilter<"Action">
   data?: Prisma.JsonFilter<"Action">
   createdAt?: Prisma.DateTimeFilter<"Action"> | Date | string
-  messageId?: Prisma.StringNullableFilter<"Action"> | string | null
+  messageId?: Prisma.StringFilter<"Action"> | string
   lastRanAt?: Prisma.DateTimeNullableFilter<"Action"> | Date | string | null
   timezone?: Prisma.StringFilter<"Action"> | string
-  chat?: Prisma.XOR<Prisma.ChatScalarRelationFilter, Prisma.ChatWhereInput>
-  folder?: Prisma.XOR<Prisma.FolderScalarRelationFilter, Prisma.FolderWhereInput>
-  message?: Prisma.XOR<Prisma.MessageNullableScalarRelationFilter, Prisma.MessageWhereInput> | null
+  message?: Prisma.XOR<Prisma.MessageScalarRelationFilter, Prisma.MessageWhereInput>
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }
 
 export type ActionOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  folderId?: Prisma.SortOrder
-  chatId?: Prisma.SortOrder
   schedule?: Prisma.SortOrder
   config?: Prisma.SortOrder
   data?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  messageId?: Prisma.SortOrderInput | Prisma.SortOrder
+  messageId?: Prisma.SortOrder
   lastRanAt?: Prisma.SortOrderInput | Prisma.SortOrder
   timezone?: Prisma.SortOrder
-  chat?: Prisma.ChatOrderByWithRelationInput
-  folder?: Prisma.FolderOrderByWithRelationInput
   message?: Prisma.MessageOrderByWithRelationInput
   user?: Prisma.UserOrderByWithRelationInput
 }
@@ -252,31 +230,25 @@ export type ActionWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.ActionWhereInput[]
   NOT?: Prisma.ActionWhereInput | Prisma.ActionWhereInput[]
   userId?: Prisma.StringFilter<"Action"> | string
-  folderId?: Prisma.StringFilter<"Action"> | string
-  chatId?: Prisma.StringFilter<"Action"> | string
   schedule?: Prisma.StringFilter<"Action"> | string
   config?: Prisma.JsonFilter<"Action">
   data?: Prisma.JsonFilter<"Action">
   createdAt?: Prisma.DateTimeFilter<"Action"> | Date | string
-  messageId?: Prisma.StringNullableFilter<"Action"> | string | null
+  messageId?: Prisma.StringFilter<"Action"> | string
   lastRanAt?: Prisma.DateTimeNullableFilter<"Action"> | Date | string | null
   timezone?: Prisma.StringFilter<"Action"> | string
-  chat?: Prisma.XOR<Prisma.ChatScalarRelationFilter, Prisma.ChatWhereInput>
-  folder?: Prisma.XOR<Prisma.FolderScalarRelationFilter, Prisma.FolderWhereInput>
-  message?: Prisma.XOR<Prisma.MessageNullableScalarRelationFilter, Prisma.MessageWhereInput> | null
+  message?: Prisma.XOR<Prisma.MessageScalarRelationFilter, Prisma.MessageWhereInput>
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }, "id">
 
 export type ActionOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  folderId?: Prisma.SortOrder
-  chatId?: Prisma.SortOrder
   schedule?: Prisma.SortOrder
   config?: Prisma.SortOrder
   data?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  messageId?: Prisma.SortOrderInput | Prisma.SortOrder
+  messageId?: Prisma.SortOrder
   lastRanAt?: Prisma.SortOrderInput | Prisma.SortOrder
   timezone?: Prisma.SortOrder
   _count?: Prisma.ActionCountOrderByAggregateInput
@@ -290,13 +262,11 @@ export type ActionScalarWhereWithAggregatesInput = {
   NOT?: Prisma.ActionScalarWhereWithAggregatesInput | Prisma.ActionScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Action"> | string
   userId?: Prisma.StringWithAggregatesFilter<"Action"> | string
-  folderId?: Prisma.StringWithAggregatesFilter<"Action"> | string
-  chatId?: Prisma.StringWithAggregatesFilter<"Action"> | string
   schedule?: Prisma.StringWithAggregatesFilter<"Action"> | string
   config?: Prisma.JsonWithAggregatesFilter<"Action">
   data?: Prisma.JsonWithAggregatesFilter<"Action">
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Action"> | Date | string
-  messageId?: Prisma.StringNullableWithAggregatesFilter<"Action"> | string | null
+  messageId?: Prisma.StringWithAggregatesFilter<"Action"> | string
   lastRanAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Action"> | Date | string | null
   timezone?: Prisma.StringWithAggregatesFilter<"Action"> | string
 }
@@ -309,22 +279,18 @@ export type ActionCreateInput = {
   createdAt?: Date | string
   lastRanAt?: Date | string | null
   timezone: string
-  chat: Prisma.ChatCreateNestedOneWithoutActionInput
-  folder: Prisma.FolderCreateNestedOneWithoutActionInput
-  message?: Prisma.MessageCreateNestedOneWithoutActionInput
-  user: Prisma.UserCreateNestedOneWithoutActionInput
+  message: Prisma.MessageCreateNestedOneWithoutActionsInput
+  user: Prisma.UserCreateNestedOneWithoutActionsInput
 }
 
 export type ActionUncheckedCreateInput = {
   id: string
   userId: string
-  folderId: string
-  chatId: string
   schedule: string
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  messageId?: string | null
+  messageId: string
   lastRanAt?: Date | string | null
   timezone: string
 }
@@ -337,22 +303,18 @@ export type ActionUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
-  chat?: Prisma.ChatUpdateOneRequiredWithoutActionNestedInput
-  folder?: Prisma.FolderUpdateOneRequiredWithoutActionNestedInput
-  message?: Prisma.MessageUpdateOneWithoutActionNestedInput
-  user?: Prisma.UserUpdateOneRequiredWithoutActionNestedInput
+  message?: Prisma.MessageUpdateOneRequiredWithoutActionsNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutActionsNestedInput
 }
 
 export type ActionUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  folderId?: Prisma.StringFieldUpdateOperationsInput | string
-  chatId?: Prisma.StringFieldUpdateOperationsInput | string
   schedule?: Prisma.StringFieldUpdateOperationsInput | string
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  messageId?: Prisma.StringFieldUpdateOperationsInput | string
   lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
 }
@@ -360,13 +322,11 @@ export type ActionUncheckedUpdateInput = {
 export type ActionCreateManyInput = {
   id: string
   userId: string
-  folderId: string
-  chatId: string
   schedule: string
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  messageId?: string | null
+  messageId: string
   lastRanAt?: Date | string | null
   timezone: string
 }
@@ -384,32 +344,18 @@ export type ActionUpdateManyMutationInput = {
 export type ActionUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  folderId?: Prisma.StringFieldUpdateOperationsInput | string
-  chatId?: Prisma.StringFieldUpdateOperationsInput | string
   schedule?: Prisma.StringFieldUpdateOperationsInput | string
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  messageId?: Prisma.StringFieldUpdateOperationsInput | string
   lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
-}
-
-export type ActionListRelationFilter = {
-  every?: Prisma.ActionWhereInput
-  some?: Prisma.ActionWhereInput
-  none?: Prisma.ActionWhereInput
-}
-
-export type ActionOrderByRelationAggregateInput = {
-  _count?: Prisma.SortOrder
 }
 
 export type ActionCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  folderId?: Prisma.SortOrder
-  chatId?: Prisma.SortOrder
   schedule?: Prisma.SortOrder
   config?: Prisma.SortOrder
   data?: Prisma.SortOrder
@@ -422,8 +368,6 @@ export type ActionCountOrderByAggregateInput = {
 export type ActionMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  folderId?: Prisma.SortOrder
-  chatId?: Prisma.SortOrder
   schedule?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   messageId?: Prisma.SortOrder
@@ -434,8 +378,6 @@ export type ActionMaxOrderByAggregateInput = {
 export type ActionMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  folderId?: Prisma.SortOrder
-  chatId?: Prisma.SortOrder
   schedule?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   messageId?: Prisma.SortOrder
@@ -443,130 +385,14 @@ export type ActionMinOrderByAggregateInput = {
   timezone?: Prisma.SortOrder
 }
 
-export type ActionCreateNestedManyWithoutUserInput = {
-  create?: Prisma.XOR<Prisma.ActionCreateWithoutUserInput, Prisma.ActionUncheckedCreateWithoutUserInput> | Prisma.ActionCreateWithoutUserInput[] | Prisma.ActionUncheckedCreateWithoutUserInput[]
-  connectOrCreate?: Prisma.ActionCreateOrConnectWithoutUserInput | Prisma.ActionCreateOrConnectWithoutUserInput[]
-  createMany?: Prisma.ActionCreateManyUserInputEnvelope
-  connect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
+export type ActionListRelationFilter = {
+  every?: Prisma.ActionWhereInput
+  some?: Prisma.ActionWhereInput
+  none?: Prisma.ActionWhereInput
 }
 
-export type ActionUncheckedCreateNestedManyWithoutUserInput = {
-  create?: Prisma.XOR<Prisma.ActionCreateWithoutUserInput, Prisma.ActionUncheckedCreateWithoutUserInput> | Prisma.ActionCreateWithoutUserInput[] | Prisma.ActionUncheckedCreateWithoutUserInput[]
-  connectOrCreate?: Prisma.ActionCreateOrConnectWithoutUserInput | Prisma.ActionCreateOrConnectWithoutUserInput[]
-  createMany?: Prisma.ActionCreateManyUserInputEnvelope
-  connect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-}
-
-export type ActionUpdateManyWithoutUserNestedInput = {
-  create?: Prisma.XOR<Prisma.ActionCreateWithoutUserInput, Prisma.ActionUncheckedCreateWithoutUserInput> | Prisma.ActionCreateWithoutUserInput[] | Prisma.ActionUncheckedCreateWithoutUserInput[]
-  connectOrCreate?: Prisma.ActionCreateOrConnectWithoutUserInput | Prisma.ActionCreateOrConnectWithoutUserInput[]
-  upsert?: Prisma.ActionUpsertWithWhereUniqueWithoutUserInput | Prisma.ActionUpsertWithWhereUniqueWithoutUserInput[]
-  createMany?: Prisma.ActionCreateManyUserInputEnvelope
-  set?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  disconnect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  delete?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  connect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  update?: Prisma.ActionUpdateWithWhereUniqueWithoutUserInput | Prisma.ActionUpdateWithWhereUniqueWithoutUserInput[]
-  updateMany?: Prisma.ActionUpdateManyWithWhereWithoutUserInput | Prisma.ActionUpdateManyWithWhereWithoutUserInput[]
-  deleteMany?: Prisma.ActionScalarWhereInput | Prisma.ActionScalarWhereInput[]
-}
-
-export type ActionUncheckedUpdateManyWithoutUserNestedInput = {
-  create?: Prisma.XOR<Prisma.ActionCreateWithoutUserInput, Prisma.ActionUncheckedCreateWithoutUserInput> | Prisma.ActionCreateWithoutUserInput[] | Prisma.ActionUncheckedCreateWithoutUserInput[]
-  connectOrCreate?: Prisma.ActionCreateOrConnectWithoutUserInput | Prisma.ActionCreateOrConnectWithoutUserInput[]
-  upsert?: Prisma.ActionUpsertWithWhereUniqueWithoutUserInput | Prisma.ActionUpsertWithWhereUniqueWithoutUserInput[]
-  createMany?: Prisma.ActionCreateManyUserInputEnvelope
-  set?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  disconnect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  delete?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  connect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  update?: Prisma.ActionUpdateWithWhereUniqueWithoutUserInput | Prisma.ActionUpdateWithWhereUniqueWithoutUserInput[]
-  updateMany?: Prisma.ActionUpdateManyWithWhereWithoutUserInput | Prisma.ActionUpdateManyWithWhereWithoutUserInput[]
-  deleteMany?: Prisma.ActionScalarWhereInput | Prisma.ActionScalarWhereInput[]
-}
-
-export type ActionCreateNestedManyWithoutFolderInput = {
-  create?: Prisma.XOR<Prisma.ActionCreateWithoutFolderInput, Prisma.ActionUncheckedCreateWithoutFolderInput> | Prisma.ActionCreateWithoutFolderInput[] | Prisma.ActionUncheckedCreateWithoutFolderInput[]
-  connectOrCreate?: Prisma.ActionCreateOrConnectWithoutFolderInput | Prisma.ActionCreateOrConnectWithoutFolderInput[]
-  createMany?: Prisma.ActionCreateManyFolderInputEnvelope
-  connect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-}
-
-export type ActionUncheckedCreateNestedManyWithoutFolderInput = {
-  create?: Prisma.XOR<Prisma.ActionCreateWithoutFolderInput, Prisma.ActionUncheckedCreateWithoutFolderInput> | Prisma.ActionCreateWithoutFolderInput[] | Prisma.ActionUncheckedCreateWithoutFolderInput[]
-  connectOrCreate?: Prisma.ActionCreateOrConnectWithoutFolderInput | Prisma.ActionCreateOrConnectWithoutFolderInput[]
-  createMany?: Prisma.ActionCreateManyFolderInputEnvelope
-  connect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-}
-
-export type ActionUpdateManyWithoutFolderNestedInput = {
-  create?: Prisma.XOR<Prisma.ActionCreateWithoutFolderInput, Prisma.ActionUncheckedCreateWithoutFolderInput> | Prisma.ActionCreateWithoutFolderInput[] | Prisma.ActionUncheckedCreateWithoutFolderInput[]
-  connectOrCreate?: Prisma.ActionCreateOrConnectWithoutFolderInput | Prisma.ActionCreateOrConnectWithoutFolderInput[]
-  upsert?: Prisma.ActionUpsertWithWhereUniqueWithoutFolderInput | Prisma.ActionUpsertWithWhereUniqueWithoutFolderInput[]
-  createMany?: Prisma.ActionCreateManyFolderInputEnvelope
-  set?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  disconnect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  delete?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  connect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  update?: Prisma.ActionUpdateWithWhereUniqueWithoutFolderInput | Prisma.ActionUpdateWithWhereUniqueWithoutFolderInput[]
-  updateMany?: Prisma.ActionUpdateManyWithWhereWithoutFolderInput | Prisma.ActionUpdateManyWithWhereWithoutFolderInput[]
-  deleteMany?: Prisma.ActionScalarWhereInput | Prisma.ActionScalarWhereInput[]
-}
-
-export type ActionUncheckedUpdateManyWithoutFolderNestedInput = {
-  create?: Prisma.XOR<Prisma.ActionCreateWithoutFolderInput, Prisma.ActionUncheckedCreateWithoutFolderInput> | Prisma.ActionCreateWithoutFolderInput[] | Prisma.ActionUncheckedCreateWithoutFolderInput[]
-  connectOrCreate?: Prisma.ActionCreateOrConnectWithoutFolderInput | Prisma.ActionCreateOrConnectWithoutFolderInput[]
-  upsert?: Prisma.ActionUpsertWithWhereUniqueWithoutFolderInput | Prisma.ActionUpsertWithWhereUniqueWithoutFolderInput[]
-  createMany?: Prisma.ActionCreateManyFolderInputEnvelope
-  set?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  disconnect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  delete?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  connect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  update?: Prisma.ActionUpdateWithWhereUniqueWithoutFolderInput | Prisma.ActionUpdateWithWhereUniqueWithoutFolderInput[]
-  updateMany?: Prisma.ActionUpdateManyWithWhereWithoutFolderInput | Prisma.ActionUpdateManyWithWhereWithoutFolderInput[]
-  deleteMany?: Prisma.ActionScalarWhereInput | Prisma.ActionScalarWhereInput[]
-}
-
-export type ActionCreateNestedManyWithoutChatInput = {
-  create?: Prisma.XOR<Prisma.ActionCreateWithoutChatInput, Prisma.ActionUncheckedCreateWithoutChatInput> | Prisma.ActionCreateWithoutChatInput[] | Prisma.ActionUncheckedCreateWithoutChatInput[]
-  connectOrCreate?: Prisma.ActionCreateOrConnectWithoutChatInput | Prisma.ActionCreateOrConnectWithoutChatInput[]
-  createMany?: Prisma.ActionCreateManyChatInputEnvelope
-  connect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-}
-
-export type ActionUncheckedCreateNestedManyWithoutChatInput = {
-  create?: Prisma.XOR<Prisma.ActionCreateWithoutChatInput, Prisma.ActionUncheckedCreateWithoutChatInput> | Prisma.ActionCreateWithoutChatInput[] | Prisma.ActionUncheckedCreateWithoutChatInput[]
-  connectOrCreate?: Prisma.ActionCreateOrConnectWithoutChatInput | Prisma.ActionCreateOrConnectWithoutChatInput[]
-  createMany?: Prisma.ActionCreateManyChatInputEnvelope
-  connect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-}
-
-export type ActionUpdateManyWithoutChatNestedInput = {
-  create?: Prisma.XOR<Prisma.ActionCreateWithoutChatInput, Prisma.ActionUncheckedCreateWithoutChatInput> | Prisma.ActionCreateWithoutChatInput[] | Prisma.ActionUncheckedCreateWithoutChatInput[]
-  connectOrCreate?: Prisma.ActionCreateOrConnectWithoutChatInput | Prisma.ActionCreateOrConnectWithoutChatInput[]
-  upsert?: Prisma.ActionUpsertWithWhereUniqueWithoutChatInput | Prisma.ActionUpsertWithWhereUniqueWithoutChatInput[]
-  createMany?: Prisma.ActionCreateManyChatInputEnvelope
-  set?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  disconnect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  delete?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  connect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  update?: Prisma.ActionUpdateWithWhereUniqueWithoutChatInput | Prisma.ActionUpdateWithWhereUniqueWithoutChatInput[]
-  updateMany?: Prisma.ActionUpdateManyWithWhereWithoutChatInput | Prisma.ActionUpdateManyWithWhereWithoutChatInput[]
-  deleteMany?: Prisma.ActionScalarWhereInput | Prisma.ActionScalarWhereInput[]
-}
-
-export type ActionUncheckedUpdateManyWithoutChatNestedInput = {
-  create?: Prisma.XOR<Prisma.ActionCreateWithoutChatInput, Prisma.ActionUncheckedCreateWithoutChatInput> | Prisma.ActionCreateWithoutChatInput[] | Prisma.ActionUncheckedCreateWithoutChatInput[]
-  connectOrCreate?: Prisma.ActionCreateOrConnectWithoutChatInput | Prisma.ActionCreateOrConnectWithoutChatInput[]
-  upsert?: Prisma.ActionUpsertWithWhereUniqueWithoutChatInput | Prisma.ActionUpsertWithWhereUniqueWithoutChatInput[]
-  createMany?: Prisma.ActionCreateManyChatInputEnvelope
-  set?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  disconnect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  delete?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  connect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
-  update?: Prisma.ActionUpdateWithWhereUniqueWithoutChatInput | Prisma.ActionUpdateWithWhereUniqueWithoutChatInput[]
-  updateMany?: Prisma.ActionUpdateManyWithWhereWithoutChatInput | Prisma.ActionUpdateManyWithWhereWithoutChatInput[]
-  deleteMany?: Prisma.ActionScalarWhereInput | Prisma.ActionScalarWhereInput[]
+export type ActionOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
 }
 
 export type ActionCreateNestedManyWithoutMessageInput = {
@@ -611,177 +437,46 @@ export type ActionUncheckedUpdateManyWithoutMessageNestedInput = {
   deleteMany?: Prisma.ActionScalarWhereInput | Prisma.ActionScalarWhereInput[]
 }
 
-export type ActionCreateWithoutUserInput = {
-  id: string
-  schedule: string
-  config: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  data: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Date | string
-  lastRanAt?: Date | string | null
-  timezone: string
-  chat: Prisma.ChatCreateNestedOneWithoutActionInput
-  folder: Prisma.FolderCreateNestedOneWithoutActionInput
-  message?: Prisma.MessageCreateNestedOneWithoutActionInput
+export type ActionCreateNestedManyWithoutUserInput = {
+  create?: Prisma.XOR<Prisma.ActionCreateWithoutUserInput, Prisma.ActionUncheckedCreateWithoutUserInput> | Prisma.ActionCreateWithoutUserInput[] | Prisma.ActionUncheckedCreateWithoutUserInput[]
+  connectOrCreate?: Prisma.ActionCreateOrConnectWithoutUserInput | Prisma.ActionCreateOrConnectWithoutUserInput[]
+  createMany?: Prisma.ActionCreateManyUserInputEnvelope
+  connect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
 }
 
-export type ActionUncheckedCreateWithoutUserInput = {
-  id: string
-  folderId: string
-  chatId: string
-  schedule: string
-  config: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  data: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Date | string
-  messageId?: string | null
-  lastRanAt?: Date | string | null
-  timezone: string
+export type ActionUncheckedCreateNestedManyWithoutUserInput = {
+  create?: Prisma.XOR<Prisma.ActionCreateWithoutUserInput, Prisma.ActionUncheckedCreateWithoutUserInput> | Prisma.ActionCreateWithoutUserInput[] | Prisma.ActionUncheckedCreateWithoutUserInput[]
+  connectOrCreate?: Prisma.ActionCreateOrConnectWithoutUserInput | Prisma.ActionCreateOrConnectWithoutUserInput[]
+  createMany?: Prisma.ActionCreateManyUserInputEnvelope
+  connect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
 }
 
-export type ActionCreateOrConnectWithoutUserInput = {
-  where: Prisma.ActionWhereUniqueInput
-  create: Prisma.XOR<Prisma.ActionCreateWithoutUserInput, Prisma.ActionUncheckedCreateWithoutUserInput>
+export type ActionUpdateManyWithoutUserNestedInput = {
+  create?: Prisma.XOR<Prisma.ActionCreateWithoutUserInput, Prisma.ActionUncheckedCreateWithoutUserInput> | Prisma.ActionCreateWithoutUserInput[] | Prisma.ActionUncheckedCreateWithoutUserInput[]
+  connectOrCreate?: Prisma.ActionCreateOrConnectWithoutUserInput | Prisma.ActionCreateOrConnectWithoutUserInput[]
+  upsert?: Prisma.ActionUpsertWithWhereUniqueWithoutUserInput | Prisma.ActionUpsertWithWhereUniqueWithoutUserInput[]
+  createMany?: Prisma.ActionCreateManyUserInputEnvelope
+  set?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
+  disconnect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
+  delete?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
+  connect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
+  update?: Prisma.ActionUpdateWithWhereUniqueWithoutUserInput | Prisma.ActionUpdateWithWhereUniqueWithoutUserInput[]
+  updateMany?: Prisma.ActionUpdateManyWithWhereWithoutUserInput | Prisma.ActionUpdateManyWithWhereWithoutUserInput[]
+  deleteMany?: Prisma.ActionScalarWhereInput | Prisma.ActionScalarWhereInput[]
 }
 
-export type ActionCreateManyUserInputEnvelope = {
-  data: Prisma.ActionCreateManyUserInput | Prisma.ActionCreateManyUserInput[]
-  skipDuplicates?: boolean
-}
-
-export type ActionUpsertWithWhereUniqueWithoutUserInput = {
-  where: Prisma.ActionWhereUniqueInput
-  update: Prisma.XOR<Prisma.ActionUpdateWithoutUserInput, Prisma.ActionUncheckedUpdateWithoutUserInput>
-  create: Prisma.XOR<Prisma.ActionCreateWithoutUserInput, Prisma.ActionUncheckedCreateWithoutUserInput>
-}
-
-export type ActionUpdateWithWhereUniqueWithoutUserInput = {
-  where: Prisma.ActionWhereUniqueInput
-  data: Prisma.XOR<Prisma.ActionUpdateWithoutUserInput, Prisma.ActionUncheckedUpdateWithoutUserInput>
-}
-
-export type ActionUpdateManyWithWhereWithoutUserInput = {
-  where: Prisma.ActionScalarWhereInput
-  data: Prisma.XOR<Prisma.ActionUpdateManyMutationInput, Prisma.ActionUncheckedUpdateManyWithoutUserInput>
-}
-
-export type ActionScalarWhereInput = {
-  AND?: Prisma.ActionScalarWhereInput | Prisma.ActionScalarWhereInput[]
-  OR?: Prisma.ActionScalarWhereInput[]
-  NOT?: Prisma.ActionScalarWhereInput | Prisma.ActionScalarWhereInput[]
-  id?: Prisma.StringFilter<"Action"> | string
-  userId?: Prisma.StringFilter<"Action"> | string
-  folderId?: Prisma.StringFilter<"Action"> | string
-  chatId?: Prisma.StringFilter<"Action"> | string
-  schedule?: Prisma.StringFilter<"Action"> | string
-  config?: Prisma.JsonFilter<"Action">
-  data?: Prisma.JsonFilter<"Action">
-  createdAt?: Prisma.DateTimeFilter<"Action"> | Date | string
-  messageId?: Prisma.StringNullableFilter<"Action"> | string | null
-  lastRanAt?: Prisma.DateTimeNullableFilter<"Action"> | Date | string | null
-  timezone?: Prisma.StringFilter<"Action"> | string
-}
-
-export type ActionCreateWithoutFolderInput = {
-  id: string
-  schedule: string
-  config: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  data: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Date | string
-  lastRanAt?: Date | string | null
-  timezone: string
-  chat: Prisma.ChatCreateNestedOneWithoutActionInput
-  message?: Prisma.MessageCreateNestedOneWithoutActionInput
-  user: Prisma.UserCreateNestedOneWithoutActionInput
-}
-
-export type ActionUncheckedCreateWithoutFolderInput = {
-  id: string
-  userId: string
-  chatId: string
-  schedule: string
-  config: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  data: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Date | string
-  messageId?: string | null
-  lastRanAt?: Date | string | null
-  timezone: string
-}
-
-export type ActionCreateOrConnectWithoutFolderInput = {
-  where: Prisma.ActionWhereUniqueInput
-  create: Prisma.XOR<Prisma.ActionCreateWithoutFolderInput, Prisma.ActionUncheckedCreateWithoutFolderInput>
-}
-
-export type ActionCreateManyFolderInputEnvelope = {
-  data: Prisma.ActionCreateManyFolderInput | Prisma.ActionCreateManyFolderInput[]
-  skipDuplicates?: boolean
-}
-
-export type ActionUpsertWithWhereUniqueWithoutFolderInput = {
-  where: Prisma.ActionWhereUniqueInput
-  update: Prisma.XOR<Prisma.ActionUpdateWithoutFolderInput, Prisma.ActionUncheckedUpdateWithoutFolderInput>
-  create: Prisma.XOR<Prisma.ActionCreateWithoutFolderInput, Prisma.ActionUncheckedCreateWithoutFolderInput>
-}
-
-export type ActionUpdateWithWhereUniqueWithoutFolderInput = {
-  where: Prisma.ActionWhereUniqueInput
-  data: Prisma.XOR<Prisma.ActionUpdateWithoutFolderInput, Prisma.ActionUncheckedUpdateWithoutFolderInput>
-}
-
-export type ActionUpdateManyWithWhereWithoutFolderInput = {
-  where: Prisma.ActionScalarWhereInput
-  data: Prisma.XOR<Prisma.ActionUpdateManyMutationInput, Prisma.ActionUncheckedUpdateManyWithoutFolderInput>
-}
-
-export type ActionCreateWithoutChatInput = {
-  id: string
-  schedule: string
-  config: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  data: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Date | string
-  lastRanAt?: Date | string | null
-  timezone: string
-  folder: Prisma.FolderCreateNestedOneWithoutActionInput
-  message?: Prisma.MessageCreateNestedOneWithoutActionInput
-  user: Prisma.UserCreateNestedOneWithoutActionInput
-}
-
-export type ActionUncheckedCreateWithoutChatInput = {
-  id: string
-  userId: string
-  folderId: string
-  schedule: string
-  config: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  data: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Date | string
-  messageId?: string | null
-  lastRanAt?: Date | string | null
-  timezone: string
-}
-
-export type ActionCreateOrConnectWithoutChatInput = {
-  where: Prisma.ActionWhereUniqueInput
-  create: Prisma.XOR<Prisma.ActionCreateWithoutChatInput, Prisma.ActionUncheckedCreateWithoutChatInput>
-}
-
-export type ActionCreateManyChatInputEnvelope = {
-  data: Prisma.ActionCreateManyChatInput | Prisma.ActionCreateManyChatInput[]
-  skipDuplicates?: boolean
-}
-
-export type ActionUpsertWithWhereUniqueWithoutChatInput = {
-  where: Prisma.ActionWhereUniqueInput
-  update: Prisma.XOR<Prisma.ActionUpdateWithoutChatInput, Prisma.ActionUncheckedUpdateWithoutChatInput>
-  create: Prisma.XOR<Prisma.ActionCreateWithoutChatInput, Prisma.ActionUncheckedCreateWithoutChatInput>
-}
-
-export type ActionUpdateWithWhereUniqueWithoutChatInput = {
-  where: Prisma.ActionWhereUniqueInput
-  data: Prisma.XOR<Prisma.ActionUpdateWithoutChatInput, Prisma.ActionUncheckedUpdateWithoutChatInput>
-}
-
-export type ActionUpdateManyWithWhereWithoutChatInput = {
-  where: Prisma.ActionScalarWhereInput
-  data: Prisma.XOR<Prisma.ActionUpdateManyMutationInput, Prisma.ActionUncheckedUpdateManyWithoutChatInput>
+export type ActionUncheckedUpdateManyWithoutUserNestedInput = {
+  create?: Prisma.XOR<Prisma.ActionCreateWithoutUserInput, Prisma.ActionUncheckedCreateWithoutUserInput> | Prisma.ActionCreateWithoutUserInput[] | Prisma.ActionUncheckedCreateWithoutUserInput[]
+  connectOrCreate?: Prisma.ActionCreateOrConnectWithoutUserInput | Prisma.ActionCreateOrConnectWithoutUserInput[]
+  upsert?: Prisma.ActionUpsertWithWhereUniqueWithoutUserInput | Prisma.ActionUpsertWithWhereUniqueWithoutUserInput[]
+  createMany?: Prisma.ActionCreateManyUserInputEnvelope
+  set?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
+  disconnect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
+  delete?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
+  connect?: Prisma.ActionWhereUniqueInput | Prisma.ActionWhereUniqueInput[]
+  update?: Prisma.ActionUpdateWithWhereUniqueWithoutUserInput | Prisma.ActionUpdateWithWhereUniqueWithoutUserInput[]
+  updateMany?: Prisma.ActionUpdateManyWithWhereWithoutUserInput | Prisma.ActionUpdateManyWithWhereWithoutUserInput[]
+  deleteMany?: Prisma.ActionScalarWhereInput | Prisma.ActionScalarWhereInput[]
 }
 
 export type ActionCreateWithoutMessageInput = {
@@ -792,16 +487,12 @@ export type ActionCreateWithoutMessageInput = {
   createdAt?: Date | string
   lastRanAt?: Date | string | null
   timezone: string
-  chat: Prisma.ChatCreateNestedOneWithoutActionInput
-  folder: Prisma.FolderCreateNestedOneWithoutActionInput
-  user: Prisma.UserCreateNestedOneWithoutActionInput
+  user: Prisma.UserCreateNestedOneWithoutActionsInput
 }
 
 export type ActionUncheckedCreateWithoutMessageInput = {
   id: string
   userId: string
-  folderId: string
-  chatId: string
   schedule: string
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data: Prisma.JsonNullValueInput | runtime.InputJsonValue
@@ -836,167 +527,72 @@ export type ActionUpdateManyWithWhereWithoutMessageInput = {
   data: Prisma.XOR<Prisma.ActionUpdateManyMutationInput, Prisma.ActionUncheckedUpdateManyWithoutMessageInput>
 }
 
-export type ActionCreateManyUserInput = {
+export type ActionScalarWhereInput = {
+  AND?: Prisma.ActionScalarWhereInput | Prisma.ActionScalarWhereInput[]
+  OR?: Prisma.ActionScalarWhereInput[]
+  NOT?: Prisma.ActionScalarWhereInput | Prisma.ActionScalarWhereInput[]
+  id?: Prisma.StringFilter<"Action"> | string
+  userId?: Prisma.StringFilter<"Action"> | string
+  schedule?: Prisma.StringFilter<"Action"> | string
+  config?: Prisma.JsonFilter<"Action">
+  data?: Prisma.JsonFilter<"Action">
+  createdAt?: Prisma.DateTimeFilter<"Action"> | Date | string
+  messageId?: Prisma.StringFilter<"Action"> | string
+  lastRanAt?: Prisma.DateTimeNullableFilter<"Action"> | Date | string | null
+  timezone?: Prisma.StringFilter<"Action"> | string
+}
+
+export type ActionCreateWithoutUserInput = {
   id: string
-  folderId: string
-  chatId: string
   schedule: string
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  messageId?: string | null
   lastRanAt?: Date | string | null
   timezone: string
+  message: Prisma.MessageCreateNestedOneWithoutActionsInput
 }
 
-export type ActionUpdateWithoutUserInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  schedule?: Prisma.StringFieldUpdateOperationsInput | string
-  config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  timezone?: Prisma.StringFieldUpdateOperationsInput | string
-  chat?: Prisma.ChatUpdateOneRequiredWithoutActionNestedInput
-  folder?: Prisma.FolderUpdateOneRequiredWithoutActionNestedInput
-  message?: Prisma.MessageUpdateOneWithoutActionNestedInput
-}
-
-export type ActionUncheckedUpdateWithoutUserInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  folderId?: Prisma.StringFieldUpdateOperationsInput | string
-  chatId?: Prisma.StringFieldUpdateOperationsInput | string
-  schedule?: Prisma.StringFieldUpdateOperationsInput | string
-  config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  timezone?: Prisma.StringFieldUpdateOperationsInput | string
-}
-
-export type ActionUncheckedUpdateManyWithoutUserInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  folderId?: Prisma.StringFieldUpdateOperationsInput | string
-  chatId?: Prisma.StringFieldUpdateOperationsInput | string
-  schedule?: Prisma.StringFieldUpdateOperationsInput | string
-  config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  timezone?: Prisma.StringFieldUpdateOperationsInput | string
-}
-
-export type ActionCreateManyFolderInput = {
+export type ActionUncheckedCreateWithoutUserInput = {
   id: string
-  userId: string
-  chatId: string
   schedule: string
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  messageId?: string | null
+  messageId: string
   lastRanAt?: Date | string | null
   timezone: string
 }
 
-export type ActionUpdateWithoutFolderInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  schedule?: Prisma.StringFieldUpdateOperationsInput | string
-  config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  timezone?: Prisma.StringFieldUpdateOperationsInput | string
-  chat?: Prisma.ChatUpdateOneRequiredWithoutActionNestedInput
-  message?: Prisma.MessageUpdateOneWithoutActionNestedInput
-  user?: Prisma.UserUpdateOneRequiredWithoutActionNestedInput
+export type ActionCreateOrConnectWithoutUserInput = {
+  where: Prisma.ActionWhereUniqueInput
+  create: Prisma.XOR<Prisma.ActionCreateWithoutUserInput, Prisma.ActionUncheckedCreateWithoutUserInput>
 }
 
-export type ActionUncheckedUpdateWithoutFolderInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  userId?: Prisma.StringFieldUpdateOperationsInput | string
-  chatId?: Prisma.StringFieldUpdateOperationsInput | string
-  schedule?: Prisma.StringFieldUpdateOperationsInput | string
-  config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  timezone?: Prisma.StringFieldUpdateOperationsInput | string
+export type ActionCreateManyUserInputEnvelope = {
+  data: Prisma.ActionCreateManyUserInput | Prisma.ActionCreateManyUserInput[]
+  skipDuplicates?: boolean
 }
 
-export type ActionUncheckedUpdateManyWithoutFolderInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  userId?: Prisma.StringFieldUpdateOperationsInput | string
-  chatId?: Prisma.StringFieldUpdateOperationsInput | string
-  schedule?: Prisma.StringFieldUpdateOperationsInput | string
-  config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  timezone?: Prisma.StringFieldUpdateOperationsInput | string
+export type ActionUpsertWithWhereUniqueWithoutUserInput = {
+  where: Prisma.ActionWhereUniqueInput
+  update: Prisma.XOR<Prisma.ActionUpdateWithoutUserInput, Prisma.ActionUncheckedUpdateWithoutUserInput>
+  create: Prisma.XOR<Prisma.ActionCreateWithoutUserInput, Prisma.ActionUncheckedCreateWithoutUserInput>
 }
 
-export type ActionCreateManyChatInput = {
-  id: string
-  userId: string
-  folderId: string
-  schedule: string
-  config: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  data: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Date | string
-  messageId?: string | null
-  lastRanAt?: Date | string | null
-  timezone: string
+export type ActionUpdateWithWhereUniqueWithoutUserInput = {
+  where: Prisma.ActionWhereUniqueInput
+  data: Prisma.XOR<Prisma.ActionUpdateWithoutUserInput, Prisma.ActionUncheckedUpdateWithoutUserInput>
 }
 
-export type ActionUpdateWithoutChatInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  schedule?: Prisma.StringFieldUpdateOperationsInput | string
-  config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  timezone?: Prisma.StringFieldUpdateOperationsInput | string
-  folder?: Prisma.FolderUpdateOneRequiredWithoutActionNestedInput
-  message?: Prisma.MessageUpdateOneWithoutActionNestedInput
-  user?: Prisma.UserUpdateOneRequiredWithoutActionNestedInput
-}
-
-export type ActionUncheckedUpdateWithoutChatInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  userId?: Prisma.StringFieldUpdateOperationsInput | string
-  folderId?: Prisma.StringFieldUpdateOperationsInput | string
-  schedule?: Prisma.StringFieldUpdateOperationsInput | string
-  config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  timezone?: Prisma.StringFieldUpdateOperationsInput | string
-}
-
-export type ActionUncheckedUpdateManyWithoutChatInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  userId?: Prisma.StringFieldUpdateOperationsInput | string
-  folderId?: Prisma.StringFieldUpdateOperationsInput | string
-  schedule?: Prisma.StringFieldUpdateOperationsInput | string
-  config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  messageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  timezone?: Prisma.StringFieldUpdateOperationsInput | string
+export type ActionUpdateManyWithWhereWithoutUserInput = {
+  where: Prisma.ActionScalarWhereInput
+  data: Prisma.XOR<Prisma.ActionUpdateManyMutationInput, Prisma.ActionUncheckedUpdateManyWithoutUserInput>
 }
 
 export type ActionCreateManyMessageInput = {
   id: string
   userId: string
-  folderId: string
-  chatId: string
   schedule: string
   config: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data: Prisma.JsonNullValueInput | runtime.InputJsonValue
@@ -1013,16 +609,12 @@ export type ActionUpdateWithoutMessageInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
-  chat?: Prisma.ChatUpdateOneRequiredWithoutActionNestedInput
-  folder?: Prisma.FolderUpdateOneRequiredWithoutActionNestedInput
-  user?: Prisma.UserUpdateOneRequiredWithoutActionNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutActionsNestedInput
 }
 
 export type ActionUncheckedUpdateWithoutMessageInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  folderId?: Prisma.StringFieldUpdateOperationsInput | string
-  chatId?: Prisma.StringFieldUpdateOperationsInput | string
   schedule?: Prisma.StringFieldUpdateOperationsInput | string
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
@@ -1034,12 +626,54 @@ export type ActionUncheckedUpdateWithoutMessageInput = {
 export type ActionUncheckedUpdateManyWithoutMessageInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  folderId?: Prisma.StringFieldUpdateOperationsInput | string
-  chatId?: Prisma.StringFieldUpdateOperationsInput | string
   schedule?: Prisma.StringFieldUpdateOperationsInput | string
   config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  timezone?: Prisma.StringFieldUpdateOperationsInput | string
+}
+
+export type ActionCreateManyUserInput = {
+  id: string
+  schedule: string
+  config: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  data: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  messageId: string
+  lastRanAt?: Date | string | null
+  timezone: string
+}
+
+export type ActionUpdateWithoutUserInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  schedule?: Prisma.StringFieldUpdateOperationsInput | string
+  config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  timezone?: Prisma.StringFieldUpdateOperationsInput | string
+  message?: Prisma.MessageUpdateOneRequiredWithoutActionsNestedInput
+}
+
+export type ActionUncheckedUpdateWithoutUserInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  schedule?: Prisma.StringFieldUpdateOperationsInput | string
+  config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  messageId?: Prisma.StringFieldUpdateOperationsInput | string
+  lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  timezone?: Prisma.StringFieldUpdateOperationsInput | string
+}
+
+export type ActionUncheckedUpdateManyWithoutUserInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  schedule?: Prisma.StringFieldUpdateOperationsInput | string
+  config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  messageId?: Prisma.StringFieldUpdateOperationsInput | string
   lastRanAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
 }
@@ -1049,8 +683,6 @@ export type ActionUncheckedUpdateManyWithoutMessageInput = {
 export type ActionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   userId?: boolean
-  folderId?: boolean
-  chatId?: boolean
   schedule?: boolean
   config?: boolean
   data?: boolean
@@ -1058,17 +690,13 @@ export type ActionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   messageId?: boolean
   lastRanAt?: boolean
   timezone?: boolean
-  chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
-  message?: boolean | Prisma.Action$messageArgs<ExtArgs>
+  message?: boolean | Prisma.MessageDefaultArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["action"]>
 
 export type ActionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   userId?: boolean
-  folderId?: boolean
-  chatId?: boolean
   schedule?: boolean
   config?: boolean
   data?: boolean
@@ -1076,17 +704,13 @@ export type ActionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   messageId?: boolean
   lastRanAt?: boolean
   timezone?: boolean
-  chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
-  message?: boolean | Prisma.Action$messageArgs<ExtArgs>
+  message?: boolean | Prisma.MessageDefaultArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["action"]>
 
 export type ActionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   userId?: boolean
-  folderId?: boolean
-  chatId?: boolean
   schedule?: boolean
   config?: boolean
   data?: boolean
@@ -1094,17 +718,13 @@ export type ActionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   messageId?: boolean
   lastRanAt?: boolean
   timezone?: boolean
-  chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
-  message?: boolean | Prisma.Action$messageArgs<ExtArgs>
+  message?: boolean | Prisma.MessageDefaultArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["action"]>
 
 export type ActionSelectScalar = {
   id?: boolean
   userId?: boolean
-  folderId?: boolean
-  chatId?: boolean
   schedule?: boolean
   config?: boolean
   data?: boolean
@@ -1114,44 +734,34 @@ export type ActionSelectScalar = {
   timezone?: boolean
 }
 
-export type ActionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "folderId" | "chatId" | "schedule" | "config" | "data" | "createdAt" | "messageId" | "lastRanAt" | "timezone", ExtArgs["result"]["action"]>
+export type ActionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "schedule" | "config" | "data" | "createdAt" | "messageId" | "lastRanAt" | "timezone", ExtArgs["result"]["action"]>
 export type ActionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
-  message?: boolean | Prisma.Action$messageArgs<ExtArgs>
+  message?: boolean | Prisma.MessageDefaultArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type ActionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
-  message?: boolean | Prisma.Action$messageArgs<ExtArgs>
+  message?: boolean | Prisma.MessageDefaultArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type ActionIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  chat?: boolean | Prisma.ChatDefaultArgs<ExtArgs>
-  folder?: boolean | Prisma.FolderDefaultArgs<ExtArgs>
-  message?: boolean | Prisma.Action$messageArgs<ExtArgs>
+  message?: boolean | Prisma.MessageDefaultArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 
 export type $ActionPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Action"
   objects: {
-    chat: Prisma.$ChatPayload<ExtArgs>
-    folder: Prisma.$FolderPayload<ExtArgs>
-    message: Prisma.$MessagePayload<ExtArgs> | null
+    message: Prisma.$MessagePayload<ExtArgs>
     user: Prisma.$UserPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     userId: string
-    folderId: string
-    chatId: string
     schedule: string
     config: runtime.JsonValue
     data: runtime.JsonValue
     createdAt: Date
-    messageId: string | null
+    messageId: string
     lastRanAt: Date | null
     timezone: string
   }, ExtArgs["result"]["action"]>
@@ -1548,9 +1158,7 @@ readonly fields: ActionFieldRefs;
  */
 export interface Prisma__ActionClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  chat<T extends Prisma.ChatDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ChatDefaultArgs<ExtArgs>>): Prisma.Prisma__ChatClient<runtime.Types.Result.GetResult<Prisma.$ChatPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  folder<T extends Prisma.FolderDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FolderDefaultArgs<ExtArgs>>): Prisma.Prisma__FolderClient<runtime.Types.Result.GetResult<Prisma.$FolderPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  message<T extends Prisma.Action$messageArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Action$messageArgs<ExtArgs>>): Prisma.Prisma__MessageClient<runtime.Types.Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  message<T extends Prisma.MessageDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.MessageDefaultArgs<ExtArgs>>): Prisma.Prisma__MessageClient<runtime.Types.Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1583,8 +1191,6 @@ export interface Prisma__ActionClient<T, Null = never, ExtArgs extends runtime.T
 export interface ActionFieldRefs {
   readonly id: Prisma.FieldRef<"Action", 'String'>
   readonly userId: Prisma.FieldRef<"Action", 'String'>
-  readonly folderId: Prisma.FieldRef<"Action", 'String'>
-  readonly chatId: Prisma.FieldRef<"Action", 'String'>
   readonly schedule: Prisma.FieldRef<"Action", 'String'>
   readonly config: Prisma.FieldRef<"Action", 'Json'>
   readonly data: Prisma.FieldRef<"Action", 'Json'>
@@ -1990,25 +1596,6 @@ export type ActionDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * Limit how many Actions to delete.
    */
   limit?: number
-}
-
-/**
- * Action.message
- */
-export type Action$messageArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Message
-   */
-  select?: Prisma.MessageSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Message
-   */
-  omit?: Prisma.MessageOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.MessageInclude<ExtArgs> | null
-  where?: Prisma.MessageWhereInput
 }
 
 /**

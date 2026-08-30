@@ -1,4 +1,3 @@
-import { Icon } from "@iconify/react";
 import {
 	ActionIcon,
 	Box,
@@ -13,6 +12,14 @@ import {
 	Text,
 	TextInput,
 } from "@mantine/core";
+import {
+	ArrowClockwiseIcon,
+	GraduationCapIcon,
+	TrashIcon,
+	WarningCircleIcon,
+	WarningDiamondIcon,
+	WrenchIcon,
+} from "@phosphor-icons/react";
 import { useIsFetching } from "@tanstack/react-query";
 import { useConfig } from "@tiny-chat/client/src/features/agent/hooks/useConfig.ts";
 import {
@@ -22,7 +29,7 @@ import {
 } from "@tiny-chat/client/src/features/agent/hooks/useTools.ts";
 import { useMcpServerSettings } from "@tiny-chat/client/src/features/settings/hooks/useMcpServerSettings.ts";
 import { read_file } from "@tiny-chat/core/src/features/tool/tools/shell/read_file.ts";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useState } from "react";
 import { ZodError } from "zod";
 import {
 	type CapabilitiesType,
@@ -45,11 +52,144 @@ import { ToolUtils } from "#core/features/tool/utils/ToolUtils.ts";
 
 const SHELL_TOOLSET = "shell";
 
+function ToolsetView({
+	toolsets,
+}: {
+	toolsets: McpToolset[] | Toolset<any>[];
+}) {
+	const { config, setConfig } = useConfig();
+
+	return toolsets.map((toolset) => {
+		const toolsetName = ToolUtils.name({ toolset });
+		const toolNames = toolset.tools.map((tool) =>
+			ToolUtils.name({ toolset, tool }),
+		);
+
+		return (
+			<Checkbox.Card
+				key={toolsetName}
+				p="xs"
+				checked={ToolUtils.checkOne({ toolset, config })}
+				onClick={() => {
+					setConfig({
+						...config,
+						toolsets: !config.toolsets.includes(toolsetName)
+							? [...config.toolsets, toolsetName]
+							: config.toolsets.filter((name) => name !== toolsetName),
+					});
+				}}
+				style={{
+					...StyleUtils.glass,
+					cursor: !toolset.status.valid ? "not-allowed" : undefined,
+				}}
+				disabled={!toolset.status.valid}
+				opacity={!toolset.status.valid ? 0.5 : 1}
+			>
+				<Group wrap="nowrap" align="flex-start">
+					<Checkbox.Indicator />
+					<Stack gap={5} miw={0}>
+						<Text size="xs">{toolsetName}</Text>
+						<Text size="xs" c="dimmed">
+							{toolNames.map((toolName, i) => (
+								<span key={toolName}>
+									{`${toolName}${i < toolset.tools.length - 1 ? ", " : ""}`}
+								</span>
+							))}
+						</Text>
+						{!!toolset.status.error && (
+							<Group gap="xs" c="red">
+								<WarningCircleIcon size={14} />
+								<Text size="xs">{CommonUtils.formatError(toolset.status)}</Text>
+							</Group>
+						)}
+					</Stack>
+				</Group>
+			</Checkbox.Card>
+		);
+	});
+}
+
+function SkillView({ skills, native }: { skills: zSkill[]; native?: boolean }) {
+	const { config, setConfig } = useConfig();
+	const { deleteNativeSkill } = useSkills();
+
+	return skills.map((skill) => (
+		<Group key={skill.name + skill.path}>
+			<Box flex={1} miw={0}>
+				<Checkbox.Card
+					p="xs"
+					checked={config.skills?.includes(skill.path)}
+					disabled={!skill.name}
+					onClick={() => {
+						setConfig({
+							...config,
+							skills: !config.skills?.includes(skill.path)
+								? [...config.skills, skill.path]
+								: config.skills?.filter((cs) => cs !== skill.path),
+						});
+					}}
+					style={{ ...StyleUtils.glass }}
+				>
+					<Group wrap="nowrap" align="flex-start">
+						<Checkbox.Indicator />
+						<Stack gap={5} miw={0}>
+							<Text size="xs">{skill.name}</Text>
+							<Text
+								size="xs"
+								c="dimmed"
+								style={{
+									overflow: "hidden",
+									textOverflow: "ellipsis",
+									whiteSpace: "nowrap",
+								}}
+							>
+								{DataUtils.getTextCleaned({ data: skill.description })}
+							</Text>
+							{config.skills?.includes(skill.path) &&
+								!config.toolsets?.includes(SHELL_TOOLSET) && (
+									<Group gap={5} c="yellow">
+										<WarningDiamondIcon size={14} />
+										<Text size="xs">
+											Needs{" "}
+											<span style={{ fontWeight: 450 }}>{read_file.name}</span>
+										</Text>
+									</Group>
+								)}
+						</Stack>
+					</Group>
+				</Checkbox.Card>
+			</Box>
+			{native && (
+				<ActionIcon
+					variant="subtle"
+					color="red"
+					loading={
+						deleteNativeSkill.isPending &&
+						deleteNativeSkill.variables.id ===
+							(PathUtils.fromMountOrThrow(skill).id as string)
+					}
+					disabled={
+						deleteNativeSkill.isPending &&
+						deleteNativeSkill.variables.id ===
+							(PathUtils.fromMountOrThrow(skill).id as string)
+					}
+					onClick={() =>
+						deleteNativeSkill.mutate({
+							id: PathUtils.fromMountOrThrow(skill).id as string,
+						})
+					}
+				>
+					<TrashIcon size={18} />
+				</ActionIcon>
+			)}
+		</Group>
+	));
+}
+
 export default function Capabilities() {
 	const { isTauriDesktop } = useTauri();
-	const { config, setConfig } = useConfig();
 	const { nativeTools, mcpTools } = useTools();
-	const { localSkills, nativeSkills, deleteNativeSkill } = useSkills();
+	const { localSkills, nativeSkills } = useSkills();
 	const { mcpServerSettingsUnparsed, setMcpServerSettings } =
 		useMcpServerSettings();
 
@@ -64,175 +204,23 @@ export default function Capabilities() {
 	const [mcpInputActive, setMcpInputActive] = useState(false);
 	const [mcpInputError, setMcpInputError] = useState<string | null>(null);
 
-	const [mcpInputValue, setMcpInputValue] = useState<string>("[]");
-	useEffect(() => {
-		if (!mcpInputActive && !mcpInputError && !setMcpServerSettings.isPending) {
-			setMcpInputValue(
-				`mcp.json (${JSON.stringify(mcpServerSettingsUnparsed.data ?? [], null, 2).split("\n").length} lines)`,
-			);
-		} else {
-			setMcpInputValue(
-				JSON.stringify(mcpServerSettingsUnparsed.data ?? [], null, 2) ?? "[]",
-			);
-		}
-	}, [
-		mcpInputActive,
-		mcpInputError,
-		setMcpServerSettings.isPending,
-		mcpServerSettingsUnparsed.data,
-	]);
-
 	const [mcpInputValueOverride, setMcpInputValueOverride] = useState<
 		string | null
 	>(null);
-	useLayoutEffect(() => {
-		if (!mcpInputActive && !mcpInputError && !setMcpServerSettings.isPending) {
-			setMcpInputValueOverride(null);
-		}
-	}, [mcpInputActive, mcpInputError, setMcpServerSettings.isPending]);
+	const mcpSettingsJson = JSON.stringify(
+		mcpServerSettingsUnparsed.data ?? [],
+		null,
+		2,
+	);
+	const mcpInputExpanded =
+		mcpInputActive || !!mcpInputError || setMcpServerSettings.isPending;
+	const mcpInputValue = mcpInputExpanded
+		? (mcpInputValueOverride ?? mcpSettingsJson)
+		: `mcp.json (${mcpSettingsJson.split("\n").length} lines)`;
 
 	const areMcpToolsUpdating = useIsFetching({ queryKey: mcpToolsQueryKey }) > 0;
 	const areLocalSkillsUpdating =
 		useIsFetching({ queryKey: localSkillsQueryKey }) > 0;
-
-	const SkillView = ({
-		skills,
-		native,
-	}: {
-		skills: zSkill[];
-		native?: boolean;
-	}) => {
-		return skills.map((skill) => (
-			<Group key={skill.name + skill.path}>
-				<Box flex={1} miw={0}>
-					<Checkbox.Card
-						p="xs"
-						checked={config.skills?.includes(skill.path)}
-						disabled={!skill.name}
-						onClick={() => {
-							setConfig({
-								...config,
-								skills: !config.skills?.includes(skill.path)
-									? [...config.skills, skill.path]
-									: config.skills?.filter((cs) => cs !== skill.path),
-							});
-						}}
-						style={{ ...StyleUtils.glass }}
-					>
-						<Group wrap="nowrap" align="flex-start">
-							<Checkbox.Indicator />
-							<Stack gap={5} miw={0}>
-								<Text size="xs">{skill.name}</Text>
-								<Text
-									size="xs"
-									c="dimmed"
-									style={{
-										overflow: "hidden",
-										textOverflow: "ellipsis",
-										whiteSpace: "nowrap",
-									}}
-								>
-									{DataUtils.getTextCleaned({ data: skill.description })}
-								</Text>
-								{config.skills?.includes(skill.path) &&
-									!config.toolsets?.includes(SHELL_TOOLSET) && (
-										<Group gap="xs" c="yellow">
-											<Icon icon="lucide:alert-triangle" width={12} />
-											<Text size="xs">
-												Missing tools:{" "}
-												<span style={{ fontWeight: 450 }}>
-													{read_file.name}
-												</span>
-											</Text>
-										</Group>
-									)}
-							</Stack>
-						</Group>
-					</Checkbox.Card>
-				</Box>
-				{native && (
-					<ActionIcon
-						variant="subtle"
-						color="red"
-						loading={
-							deleteNativeSkill.isPending &&
-							deleteNativeSkill.variables.id ===
-								(PathUtils.fromMountOrThrow(skill).id as string)
-						}
-						disabled={
-							deleteNativeSkill.isPending &&
-							deleteNativeSkill.variables.id ===
-								(PathUtils.fromMountOrThrow(skill).id as string)
-						}
-						onClick={() =>
-							deleteNativeSkill.mutate({
-								id: PathUtils.fromMountOrThrow(skill).id as string,
-							})
-						}
-					>
-						<Icon icon="lucide:trash" />
-					</ActionIcon>
-				)}
-			</Group>
-		));
-	};
-
-	const ToolsetView = ({
-		toolsets,
-	}: {
-		toolsets: McpToolset[] | Toolset<any>[];
-	}) => {
-		return toolsets.map((toolset) => {
-			const toolsetName = ToolUtils.name({ toolset });
-			const toolNames = toolset.tools.map((tool) =>
-				ToolUtils.name({ toolset, tool }),
-			);
-
-			return (
-				<Checkbox.Card
-					key={toolsetName}
-					p="xs"
-					checked={ToolUtils.checkOne({ toolset, config })}
-					onClick={() => {
-						setConfig({
-							...config,
-							toolsets: !config.toolsets.includes(toolsetName)
-								? [...config.toolsets, toolsetName]
-								: config.toolsets.filter((name) => name !== toolsetName),
-						});
-					}}
-					style={{
-						...StyleUtils.glass,
-						cursor: !toolset.status.valid ? "not-allowed" : undefined,
-					}}
-					disabled={!toolset.status.valid}
-					opacity={!toolset.status.valid ? 0.5 : 1}
-				>
-					<Group wrap="nowrap" align="flex-start">
-						<Checkbox.Indicator />
-						<Stack gap={5} miw={0}>
-							<Text size="xs">{toolsetName}</Text>
-							<Text size="xs" c="dimmed">
-								{toolNames.map((toolName, i) => (
-									<span key={toolName}>
-										{`${toolName}${i < toolset.tools.length - 1 ? ", " : ""}`}
-									</span>
-								))}
-							</Text>
-							{!!toolset.status.error && (
-								<Group gap="xs" c="red">
-									<Icon icon="lucide:alert-circle" width={12} />
-									<Text size="xs">
-										{CommonUtils.formatError(toolset.status)}
-									</Text>
-								</Group>
-							)}
-						</Stack>
-					</Group>
-				</Checkbox.Card>
-			);
-		});
-	};
 
 	return (
 		<Modal
@@ -253,14 +241,14 @@ export default function Capabilities() {
 					<Group gap={10}>
 						<Group gap={7} mr={10}>
 							<Box c="dimmed">
-								<Icon icon="lucide:wrench" width={14} />
+								<WrenchIcon size={16} />
 							</Box>
 							<Tabs.Tab value="tools:native">Native</Tabs.Tab>
 							<Tabs.Tab value="tools:mcp">MCP</Tabs.Tab>
 						</Group>
 						<Group gap={7}>
 							<Box c="dimmed">
-								<Icon icon="lucide:graduation-cap" width={14} />
+								<GraduationCapIcon size={16} />
 							</Box>
 							<Tabs.Tab value="skills:native">Native</Tabs.Tab>
 							{(isTauriDesktop.data ?? !isMobile) && (
@@ -282,7 +270,7 @@ export default function Capabilities() {
 					<ScrollArea type="auto" offsetScrollbars h={400}>
 						<Stack gap="xs">
 							<JsonInput
-								value={mcpInputValueOverride ?? mcpInputValue}
+								value={mcpInputValue}
 								onChange={(value) => setMcpInputValueOverride(value)}
 								serialize={(value) => JSON.stringify(value, null, 2)}
 								deserialize={(value) => {
@@ -290,7 +278,10 @@ export default function Capabilities() {
 									zMCPServers.parse(JSON.parse(value));
 								}}
 								validationError={mcpInputError ?? undefined}
-								onFocus={() => setMcpInputActive(true)}
+								onFocus={() => {
+									setMcpInputValueOverride(mcpSettingsJson);
+									setMcpInputActive(true);
+								}}
 								onBlur={(e) => {
 									setMcpInputActive(false);
 									try {
@@ -347,7 +338,7 @@ export default function Capabilities() {
 										loading={areMcpToolsUpdating}
 										onClick={() => void mcpTools.refetch()}
 									>
-										<Icon icon="lucide:refresh-cw" />
+										<ArrowClockwiseIcon size={18} />
 									</ActionIcon>
 								}
 							/>
@@ -357,7 +348,7 @@ export default function Capabilities() {
 				</Tabs.Panel>
 				<Tabs.Panel value="skills:native">
 					<Dropzone
-						type="SKILL"
+						kind="SKILL"
 						accept={{ "application/zip": [".zip"], "text/markdown": [".md"] }}
 						options={{ onSuccess: () => void nativeSkills.refetch() }}
 					/>
@@ -388,7 +379,7 @@ export default function Capabilities() {
 										loading={areLocalSkillsUpdating}
 										onClick={() => void localSkills.refetch()}
 									>
-										<Icon icon="lucide:refresh-cw" />
+										<ArrowClockwiseIcon size={18} />
 									</ActionIcon>
 								}
 							/>

@@ -1,5 +1,5 @@
-import { Icon } from "@iconify/react";
 import { ActionIcon, Group, ScrollArea, Stack, Text } from "@mantine/core";
+import { TrashIcon } from "@phosphor-icons/react";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { client } from "#app/client.ts";
 import Sentinel from "#app/core/components/Sentinel.tsx";
@@ -20,7 +20,7 @@ export function AttachmentUploads({ close }: { close: () => void }) {
 
 	return (
 		<Stack h="100%">
-			<Dropzone type="ATTACHMENT" />
+			<Dropzone kind="ATTACHMENT" />
 			<ScrollArea h={300} viewportRef={viewportRef}>
 				<Stack gap="xs">
 					{attachmentUploads.data?.pages.flatMap((page) => page.uploads)
@@ -39,7 +39,7 @@ export function AttachmentUploads({ close }: { close: () => void }) {
 								bdrs="lg"
 								style={{ ...StyleUtils.glass, cursor: "pointer" }}
 								onClick={() => {
-									MessagingService.attachUpload({ client, upload });
+									void MessagingService.attachUpload({ client, upload });
 									close();
 								}}
 							>
@@ -50,6 +50,7 @@ export function AttachmentUploads({ close }: { close: () => void }) {
 									size={30}
 									style={{ minWidth: 0, flex: 1 }}
 									gap={10}
+									viewable={false}
 								>
 									<Stack gap={0} style={{ minWidth: 0, flex: 1 }}>
 										<Text
@@ -89,7 +90,7 @@ export function AttachmentUploads({ close }: { close: () => void }) {
 										deleteUpload.variables.id === upload.id
 									}
 								>
-									<Icon icon="lucide:trash" height={16} />
+									<TrashIcon size={18} />
 								</ActionIcon>
 							</Group>
 						))}

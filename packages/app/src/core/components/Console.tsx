@@ -1,7 +1,7 @@
 import { JsonTree } from "@gfazioli/mantine-json-tree";
-import { Icon } from "@iconify/react";
 import {
 	ActionIcon,
+	Box,
 	Group,
 	Modal,
 	ScrollArea,
@@ -9,6 +9,7 @@ import {
 	Tabs,
 	Text,
 } from "@mantine/core";
+import { EraserIcon } from "@phosphor-icons/react";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
 import { useConsoleStore } from "#app/core/stores/useConsoleStore.ts";
@@ -30,7 +31,7 @@ export default function Console() {
 				<Group gap={5}>
 					Console{" "}
 					<ActionIcon variant="transparent" c="dimmed" onClick={clearLogs}>
-						<Icon icon="lucide:eraser" />
+						<EraserIcon size={20} />
 					</ActionIcon>
 				</Group>
 			}
@@ -59,11 +60,9 @@ export default function Console() {
 										bdrs="md"
 										p="5px 10px 4px"
 									>
-										<Icon
-											icon="lucide:dot"
-											color="gray"
-											style={{ margin: "0 -2.5px 0 -5px" }}
-										/>
+										<Box m="-6px 2.5px 0 -5px">
+											<Text c="dimmed">&middot;</Text>
+										</Box>
 										<Group
 											align="flex-start"
 											flex={1}

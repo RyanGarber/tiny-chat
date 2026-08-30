@@ -1,4 +1,3 @@
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import type {
 	AttachmentGroup,
@@ -76,20 +75,6 @@ export const AttachmentUtils = {
 	},
 
 	/**
-	 * An attachment directive, which is how an attachment travels with the
-	 * message it was written in.
-	 */
-	toDirective: ({ item }: { item: AttachmentItem }) => {
-		const attributes = CommonUtils.toAttributesString({
-			source: item.value,
-			"is-directory": item.directory ? "true" : "false",
-			...(item.label ? { name: item.label } : {}),
-		});
-
-		return `:attachment[]{${attributes}}`;
-	},
-
-	/**
 	 * An upload as an attachment: its own directory on the mount, under the name
 	 * it was uploaded or cloned as. Attaching it is what pulls it into the
 	 * message — there is nothing else holding it there.
@@ -119,17 +104,20 @@ export const AttachmentUtils = {
 		content,
 		query,
 		item,
+		id,
 	}: {
 		content: string;
 		query: AttachmentQuery;
 		item: AttachmentItem;
+		id: string;
 	}): CommandEdit => {
 		const text = AtomUtils.attachment({
 			content,
+			id,
 			source: item.value,
 			directory: item.directory,
 			label: item.label,
-			markdown: AttachmentUtils.toDirective({ item }),
+			markdown: `:attachment[]{id="${id}"}`,
 		});
 
 		return CommandUtils.edit({

@@ -1,5 +1,5 @@
 import { Anchor, Box, Pill, Stack, Text } from "@mantine/core";
-import { MarkdownContext } from "@tiny-chat/client/src/features/message/components/MarkdownContext.tsx";
+import { StreamContext } from "@tiny-chat/client/src/features/message/components/StreamContext.tsx";
 import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
 import { ComponentUtils } from "@tiny-chat/client/src/features/message/utils/ComponentUtils";
 import type { CodeLanguage } from "@tiny-chat/core/src/core/utils/CodeUtils.ts";
@@ -35,7 +35,7 @@ const CodeComponent: Components["code"] = ({
 	...props
 }) => {
 	const inline = !useContext(CodeBlockContext);
-	const { streaming } = useContext(MarkdownContext);
+	const streaming = useContext(StreamContext);
 
 	const language = className?.match(LANGUAGE_REGEX)?.[1] ?? "";
 
@@ -218,7 +218,7 @@ const DetailsComponent: Components["details"] = ({ node, children }) => {
 };
 
 const TableComponent: Components["table"] = ({ children }) => {
-	const { streaming } = useContext(MarkdownContext);
+	const streaming = useContext(StreamContext);
 	return (
 		<Table withButtons={true} streaming={streaming}>
 			{children}

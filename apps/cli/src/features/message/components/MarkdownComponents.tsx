@@ -1,4 +1,3 @@
-import { MarkdownContext } from "@tiny-chat/client/src/features/message/components/MarkdownContext.tsx";
 import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
 import { ComponentUtils } from "@tiny-chat/client/src/features/message/utils/ComponentUtils.ts";
 import { SourceUtils } from "@tiny-chat/core/src/features/data/utils/SourceUtils.ts";
@@ -22,6 +21,7 @@ import Text, { type TextProps } from "../../../core/components/Text.tsx";
 import { CliUtils } from "../../../core/utils/CliUtils.ts";
 import { Code } from "../../code/components/Code.tsx";
 import Paste from "../../part/components/Paste.tsx";
+import Quote from "../../part/components/Quote.tsx";
 import {
 	TableComponent,
 	TbodyComponent,
@@ -54,19 +54,13 @@ function BaseComponent({
 	gap?: number;
 	text?: TextProps;
 }) {
-	const context = useContext(MarkdownContext);
-
 	const childArray = Children.toArray(children).map((child) =>
 		typeof child === "string" ? CliUtils.display(child) : child,
 	);
 	if (childArray.length === 0) return null;
 
 	if (childArray.every((c) => !isBlockNode(c))) {
-		return (
-			<Text color={context.style?.textColor} {...text}>
-				{childArray}
-			</Text>
-		);
+		return <Text {...text}>{childArray}</Text>;
 	}
 
 	const groups: ReactNode[] = [];
@@ -76,7 +70,7 @@ function BaseComponent({
 	const flush = () => {
 		if (inlineBuffer.length > 0) {
 			groups.push(
-				<Text key={key++} color={context.style?.textColor} {...text}>
+				<Text key={key++} {...text}>
 					{inlineBuffer}
 				</Text>,
 			);
@@ -276,14 +270,7 @@ const BrComponent: Components["br"] = () => <Text>{"\n"}</Text>;
 
 const BlockquoteComponent: Components["blockquote"] = ({ children, node }) => {
 	const { model } = ComponentUtils.props(node, { model: undefined });
-	return (
-		<Box paddingLeft={2} flexDirection="column">
-			{!!model && <Text bold>💬 {model}</Text>}
-			<Box flexDirection="column" gap={1}>
-				{children}
-			</Box>
-		</Box>
-	);
+	return <Quote model={model}>{children}</Quote>;
 };
 
 const SubComponent: Components["sub"] = ({ children }) => (

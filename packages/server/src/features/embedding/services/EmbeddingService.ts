@@ -21,13 +21,16 @@ export const EmbeddingService = {
 
 		if (typeof message === "string") message = { id: message };
 
-		const embedding = (
-			await globalThis.prisma.$queryRaw<
-				{ embedding: string }[]
-			>`SELECT embedding FROM message WHERE id = ${message.id} AND "userId" = ${user.id}`
-		)[0]?.embedding;
-
-		return embedding ? (JSON.parse(embedding) as number[]) : null;
+		const row = await globalThis.db
+			.runtime()
+			.query(
+				globalThis.db.raw
+					.sql`SELECT COALESCE(embedding::text, 'null') AS embedding FROM message WHERE id = ${message.id} AND "userId" = ${user.id}`
+					.returnsRow({ embedding: "pg/text@1" })
+					.build(),
+			)
+			.first();
+		return row ? (JSON.parse(row.embedding) as number[] | null) : null;
 	},
 
 	getMissingEmbeddings: async ({

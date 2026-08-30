@@ -7,17 +7,15 @@ import { ToolOutputUtils } from "../../utils/ToolOutputUtils.ts";
 
 const MAX_LINE_LENGTH = 2_000;
 
+const MNT_DESCRIPTION = `MUST set to TRUE any time the command should run in the virtual \`${PathUtils.mount}\` filesystem.`;
+
 export const shell_exec = {
 	name: "shell_exec",
 	description:
 		"Execute a shell command. Prefer the dedicated file tools for reading, searching and editing; use this for builds, tests, version control and anything else they do not cover. Long output is truncated in the middle, so pipe through a filter when you need all of it.",
 	input: z.object({
 		command: z.string(),
-		mnt: z
-			.boolean()
-			.describe(
-				`MUST set to TRUE any time the command should run in the virtual \`${PathUtils.mount}\` filesystem.`,
-			),
+		mnt: z.boolean().describe(MNT_DESCRIPTION),
 	}),
 	output: z.object({
 		code: z.number().optional(),

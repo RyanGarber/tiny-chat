@@ -69,6 +69,7 @@ export default function Background() {
 
 		animFrameId = requestAnimationFrame(draw);
 		return () => {
+			// biome-ignore lint/nursery/useReactCompiler: animFrameId is local effect state, not a hook dependency.
 			if (animFrameId !== undefined) cancelAnimationFrame(animFrameId);
 			window.removeEventListener("resize", resize);
 		};

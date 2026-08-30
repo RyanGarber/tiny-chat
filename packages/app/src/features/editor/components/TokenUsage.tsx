@@ -6,23 +6,24 @@ import {
 	Stack,
 	Text,
 } from "@mantine/core";
-import { useDraftStore } from "@tiny-chat/client/src/features/chat/stores/useDraftStore.ts";
-import { useEstimatedTokens } from "@tiny-chat/client/src/features/editor/hooks/useEstimatedTokens.ts";
+import type {
+	Categories,
+	Usage,
+} from "@tiny-chat/client/src/features/editor/hooks/useEstimatedTokens.ts";
 import Popup from "#app/core/components/Popup.tsx";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 
-export default function TokenUsage() {
-	const data = useDraftStore((state) => state.data);
-
-	const { totalUsage, categories } = useEstimatedTokens<DefaultMantineColor>({
-		data,
-		colors: { low: "blue", moderate: "orange", high: "red" },
-	});
-
+export default function TokenUsage({
+	usage,
+	categories,
+}: {
+	usage: Usage<DefaultMantineColor>;
+	categories: Categories;
+}) {
 	return (
 		<Popup position="top">
 			<Popup.Target>
-				{totalUsage.loading ? (
+				{usage.loading ? (
 					<Loader size="xs" />
 				) : (
 					<RingProgress
@@ -31,8 +32,8 @@ export default function TokenUsage() {
 						roundCaps
 						sections={[
 							{
-								value: totalUsage.percent,
-								color: totalUsage.color,
+								value: usage.percent,
+								color: usage.color,
 							},
 						]}
 					/>

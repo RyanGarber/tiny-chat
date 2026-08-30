@@ -18,7 +18,7 @@ export interface MessageStore {
 	/** The id of the next tool call that needs feedback. */
 	nextFeedbackId: string | undefined;
 	/** Re-runs the agent for a message (retry / refresh after an edit). */
-	retry: (message: MessageState) => void;
+	regenerate: (message: MessageState) => void;
 	publish: (next: MessageStoreValues) => void;
 }
 
@@ -52,7 +52,7 @@ export const createMessageStore = () =>
 		staleIds: new Set(),
 		pendingFeedbackIds: [],
 		nextFeedbackId: undefined,
-		retry: () => {},
+		regenerate: () => {},
 
 		publish: (next) =>
 			set((state) => {
@@ -68,7 +68,8 @@ export const createMessageStore = () =>
 					patch.pendingFeedbackIds = next.pendingFeedbackIds;
 				if (next.nextFeedbackId !== state.nextFeedbackId)
 					patch.nextFeedbackId = next.nextFeedbackId;
-				if (next.retry !== state.retry) patch.retry = next.retry;
+				if (next.regenerate !== state.regenerate)
+					patch.regenerate = next.regenerate;
 				return patch;
 			}),
 	}));

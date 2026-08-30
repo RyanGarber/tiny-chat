@@ -1,8 +1,13 @@
 import type { Client } from "../../../client.ts";
 import { useConfigStore } from "../../agent/stores/useConfigStore.ts";
 import { useChatStore } from "../stores/useChatStore.ts";
+import { useMessagingStore } from "../stores/useMessagingStore.ts";
 
 export const ChatService = {
+	newChat: (folder: { id: string; title: string | null } | null = null) => {
+		useMessagingStore.getState().setActiveFolder(folder);
+		ChatService.setChat({ id: null });
+	},
 	setChat: ({ id }: { id: string | null }) => {
 		useChatStore.getState().setChatId(id);
 		useChatStore.getState().requestScrollInstant();

@@ -2,7 +2,7 @@
  * The kinds of run a plain text buffer only ever handles whole. Each one is
  * also the label the run is painted under.
  */
-export type AtomKind = "command" | "attachment" | "paste";
+export type AtomKind = "command" | "attachment" | "paste" | "quote";
 
 /**
  * A run of a plain text buffer that stands in for something longer.

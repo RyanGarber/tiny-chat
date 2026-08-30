@@ -5,8 +5,8 @@ export type DrawerType = "settings" | "account";
 export type ModalType =
 	| "embedding-config"
 	| "delete-account"
-	| "rename-chat"
-	| "delete-chat"
+	| "edit-chat"
+	| "edit-folder"
 	| "capabilities"
 	| "uploads"
 	| "console";
@@ -25,10 +25,11 @@ interface LayoutStore {
 
 	isSidebarOpen: boolean;
 	setSidebarOpen: (value: boolean) => void;
-	getSidebarWidth: () => number;
 
 	isAsideOpen: boolean;
 	setAsideOpen: (value: boolean) => void;
+	asideWidth: number;
+	setAsideWidth: (value: number) => void;
 
 	currentDrawer: DrawerType | null;
 	setCurrentDrawer: (drawer: DrawerType | null) => void;
@@ -43,16 +44,17 @@ interface LayoutStore {
 	setCurrentCapabilities: (capability: CapabilitiesType) => void;
 }
 
-export const useAppStore = create<LayoutStore>((set, get) => ({
+export const useAppStore = create<LayoutStore>((set) => ({
 	isMobile: false,
 	setMobile: (isMobile) => set({ isMobile }),
 
 	isSidebarOpen: false,
 	setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
-	getSidebarWidth: () => (get().isSidebarOpen ? 300 : 60),
 
 	isAsideOpen: false,
 	setAsideOpen: (isAsideOpen) => set({ isAsideOpen }),
+	asideWidth: 300,
+	setAsideWidth: (asideWidth) => set({ asideWidth }),
 
 	currentDrawer: null,
 	setCurrentDrawer: (currentDrawer) => set({ currentDrawer }),

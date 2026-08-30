@@ -1,4 +1,6 @@
 import { distance } from "fastest-levenshtein";
+import { customAlphabet } from "nanoid";
+import type { Temporal } from "temporal-polyfill";
 import { format } from "timeago.js";
 import {
 	adjectives,
@@ -6,6 +8,13 @@ import {
 	uniqueNamesGenerator,
 } from "unique-names-generator";
 import { RRule } from "../../index.ts";
+import { ID_ALPHABET, ID_LENGTH } from "../types/common.ts";
+
+type MaybeNullish<TIn, TOut> = TIn extends undefined
+	? undefined
+	: TIn extends null
+		? null
+		: TOut;
 
 const getRandomName = () => {
 	return uniqueNamesGenerator({
@@ -15,6 +24,8 @@ const getRandomName = () => {
 		separator: " ",
 	});
 };
+
+const getRandomId = customAlphabet(ID_ALPHABET, ID_LENGTH);
 
 export const CommonUtils = {
 	endpoints: {
@@ -32,6 +43,8 @@ export const CommonUtils = {
 
 	getRandomName,
 
+	getRandomId,
+
 	getHash: (data: string) => {
 		let hash = 5381;
 		for (let i = 0; i < data.length; i++) {
@@ -40,15 +53,27 @@ export const CommonUtils = {
 		return hash >>> 0;
 	},
 
+	toDate: <T extends Temporal.PlainDateTime | Date | null | undefined>(
+		datetime?: T,
+	): MaybeNullish<T, Date> => {
+		if (!datetime) return datetime as MaybeNullish<T, Date>;
+		if (datetime instanceof Date)
+			return datetime as Date as MaybeNullish<T, Date>;
+		return new Date(
+			datetime.toZonedDateTime("UTC").epochMilliseconds,
+		) as MaybeNullish<T, Date>;
+	},
+
 	formatDate: ({
 		date = new Date(),
 		timezone,
 		relative = false,
 	}: {
-		date?: Date;
+		date?: Date | Temporal.PlainDateTime;
 		timezone?: string;
 		relative?: boolean;
 	}) => {
+		date = CommonUtils.toDate(date) ?? new Date();
 		return relative
 			? format(date, timezone)
 			: date.toLocaleString("en-US", {
@@ -56,6 +81,13 @@ export const CommonUtils = {
 					dateStyle: "long",
 					timeStyle: "short",
 				});
+	},
+
+	formatTimespan: ({ from, to }: { from: Date; to: Date }) => {
+		if (from.getTime() > to.getTime()) {
+			[from, to] = [to, from];
+		}
+		return format(from, undefined, { relativeDate: to }).replace(" ago", "");
 	},
 
 	formatError: ({ error, details }: { error?: unknown; details?: boolean }) => {
@@ -71,6 +103,15 @@ export const CommonUtils = {
 
 	escapeRegex: (value: string) => {
 		return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+	},
+
+	escapeQuery: (value: string) => {
+		return value
+			.replace(/["“”]/g, " ")
+			.replace(/\bor\b/gi, " ")
+			.replace(/(^|\s)-+/g, " $1".trim())
+			.replace(/\s+/g, " ")
+			.trim();
 	},
 
 	toStyleObject: (styleString: string): Record<string, string> => {

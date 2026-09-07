@@ -1,11 +1,9 @@
 import type { Capabilities } from "@tiny-chat/core/src/core/types/capability.ts";
+import type { MaybeNullish } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import type { zAgentMessage } from "@tiny-chat/core/src/features/agent/types/agent.ts";
 import { AgentUtils } from "@tiny-chat/core/src/features/agent/utils/AgentUtils.ts";
 import type { ChatState } from "@tiny-chat/core/src/features/data/types/chat.ts";
-import type {
-	MessageState,
-	zConfig,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { WebProviderService } from "@tiny-chat/core/src/features/provider/services/WebProviderService.ts";
 import type {
@@ -13,6 +11,7 @@ import type {
 	ProviderStatus,
 } from "@tiny-chat/core/src/features/provider/types/provider.ts";
 import type { zWebFeature } from "@tiny-chat/core/src/features/provider/types/web.ts";
+import { ProviderUtils } from "@tiny-chat/core/src/features/provider/utils/ProviderUtils.ts";
 import type { zSkill } from "@tiny-chat/core/src/features/skill/types/skill.ts";
 import type { Toolset } from "@tiny-chat/core/src/features/tool/types/tool.ts";
 import type { Client } from "../../client.ts";
@@ -24,6 +23,17 @@ import { createMemoriesCapability } from "../capabilities/createMemoriesCapabili
 import { createShellCapability } from "../capabilities/createShellCapability.ts";
 import { createSubagentsCapability } from "../capabilities/createSubagentsCapability.ts";
 import { createWebCapability } from "../capabilities/createWebCapability.ts";
+
+const unpresume = <
+	TIn extends { id: string } | null | undefined,
+	TOut extends { id: string },
+>(
+	value: TIn,
+): MaybeNullish<TIn, TOut> => {
+	return (value as any)?.id !== "any"
+		? (value as unknown as MaybeNullish<TIn, TOut>)
+		: (null as MaybeNullish<TIn, TOut>);
+};
 
 export const ClientCapabilityService = {
 	getCapabilities: async ({
@@ -53,19 +63,22 @@ export const ClientCapabilityService = {
 		const capabilities: Capabilities = {};
 
 		if (message?.id && !incognito && !temporary) {
-			capabilities.actions = await createActionsCapability({ client, message });
+			capabilities.actions = await createActionsCapability({
+				client,
+				message: unpresume(message),
+			});
 		}
 
 		if (!incognito && !temporary) {
 			capabilities.memories = await createMemoriesCapability({
 				client,
-				message,
+				message: unpresume(message),
 			});
 		}
 
 		capabilities.chatShell = await createChatShellCapability({
 			client,
-			chat: chat?.id,
+			chat: unpresume(chat)?.id,
 			...AgentUtils.getMounts({ messages: messages ?? [] }),
 		});
 
@@ -77,24 +90,22 @@ export const ClientCapabilityService = {
 			client,
 			user,
 		});
-		const hasProvider = (config?: zConfig) =>
-			config &&
-			providers.some(
-				(provider) =>
-					provider.name === config.provider && provider.status.valid,
-			);
 
-		if (hasProvider(user.settings.embeddingConfig)) {
+		if (ProviderUtils.isValid(providers, user.settings.embeddingConfig)) {
 			capabilities.embedding = await createEmbeddingCapability({
 				client,
 				user,
 			});
 		}
-		if (chat?.id && message?.id && hasProvider(user.settings.subagentConfig)) {
+		if (
+			chat?.id &&
+			message?.id &&
+			ProviderUtils.isValid(providers, user.settings.subagentConfig)
+		) {
 			capabilities.subagents = await createSubagentsCapability({
 				client,
-				chat,
-				message,
+				chat: unpresume(chat),
+				message: unpresume(message),
 				providers,
 				skills,
 				mcpTools,

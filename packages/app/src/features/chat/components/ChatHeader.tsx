@@ -4,7 +4,6 @@ import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
 import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
 import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
-import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 
 export default function ChatHeader({ fixed }: { fixed: boolean }) {
 	const { chat } = useChat();
@@ -29,13 +28,10 @@ export default function ChatHeader({ fixed }: { fixed: boolean }) {
 			p={10}
 			gap={5}
 			display={isMobile ? undefined : "none"}
+			className="glass"
 			style={{
 				zIndex: "calc(var(--mantine-z-index-app) + 1)",
-				...StyleUtils.glass,
-				borderTop: "none",
-				borderLeft: "none",
-				borderRight: "none",
-				boxShadow: StyleUtils.shadow,
+				borderBottom: "1px solid var(--mantine-color-default-border)",
 			}}
 		>
 			<Burger
@@ -46,7 +42,7 @@ export default function ChatHeader({ fixed }: { fixed: boolean }) {
 			/>
 			<Group justify="space-between" flex={1}>
 				<Group gap={4}>
-					<Tooltip label="New Chat" position="bottom" color="gray">
+					<Tooltip label="New Chat">
 						<ActionIcon
 							size={32}
 							variant="subtle"
@@ -59,7 +55,7 @@ export default function ChatHeader({ fixed }: { fixed: boolean }) {
 					</Tooltip>
 				</Group>
 				<Group gap={4}>
-					<Tooltip label="Temporary" position="bottom" color="gray">
+					<Tooltip label="Temporary">
 						<ActionIcon
 							size={32}
 							variant="subtle"
@@ -73,7 +69,7 @@ export default function ChatHeader({ fixed }: { fixed: boolean }) {
 							<EyeSlashIcon size={20} />
 						</ActionIcon>
 					</Tooltip>
-					<Tooltip label="Anonymous" position="bottom" color="gray">
+					<Tooltip label="Anonymous">
 						<ActionIcon
 							size={32}
 							variant="subtle"

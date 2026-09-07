@@ -15,23 +15,15 @@ import {
 import { CheckIcon } from "@phosphor-icons/react";
 import { useMessaging } from "@tiny-chat/client/src/features/chat/hooks/useMessaging.ts";
 import { useToolContents } from "@tiny-chat/client/src/features/message/hooks/useToolContents.ts";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import {
-	DataUtils,
-	type RenderedPart,
-} from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
+import type { RenderedPart } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import type { ask_question } from "@tiny-chat/core/src/features/tool/tools/questions/ask_question.ts";
 import type { ToolCallDisplayType } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
 import { type ReactNode, useState } from "react";
 import type { z } from "zod";
-import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import Code from "#app/features/code/components/Code.tsx";
 import Diff from "#app/features/code/components/Diff.tsx";
 import Markdown from "#app/features/message/components/Markdown.tsx";
-import type {
-	MessageState,
-	zDataBasicPart,
-} from "#core/features/data/types/message";
+import type { MessageState } from "#core/features/data/types/message";
 
 export default function ToolFeedback({
 	message,
@@ -59,10 +51,6 @@ export default function ToolFeedback({
 	const [inputValue, setInputValue] = useState<unknown>(
 		part.result?.output ?? display.feedbackDefault,
 	);
-	const [appendValue, setAppendValue] = useState<Extract<
-		zDataBasicPart,
-		{ type: "text" }
-	> | null>();
 
 	let input: ReactNode | undefined;
 	if (display?.name === "shell_exec" && display.result === "pending") {
@@ -147,45 +135,13 @@ export default function ToolFeedback({
 		);
 	}
 
-	const followUp = (
-		<Box
-			style={{ borderLeft: "2px solid var(--tc-interior)" }}
-			pl={15}
-			ml={7.5}
-			flex={1}
-		>
-			<Textarea
-				autosize
-				disabled={locked || !isFocused}
-				placeholder="Add follow-up..."
-				value={
-					part.result?.append
-						? DataUtils.getText({ data: [part.result.append] })
-						: appendValue?.value
-				}
-				onChange={(event) =>
-					setAppendValue(
-						event.target.value.trim().length
-							? {
-									id: CommonUtils.getRandomId(),
-									type: "text",
-									value: event.target.value,
-								}
-							: null,
-					)
-				}
-			/>
-		</Box>
-	);
-
 	if (input) {
 		return (
 			<Stack gap="xs" mb={10}>
-				<Card withBorder style={{ ...StyleUtils.glass }}>
+				<Card withBorder>
 					<Stack gap="xs">{input}</Stack>
 				</Card>
 				<Group gap="xs" justify="flex-end">
-					{followUp}
 					{display?.approval ? (
 						<Group gap="xs">
 							<Button
@@ -196,7 +152,6 @@ export default function ToolFeedback({
 										part,
 										approved: true,
 										feedback: inputValue,
-										append: appendValue,
 									})
 								}
 								leftSection={display.approval === "approved" && <CheckIcon />}
@@ -217,7 +172,6 @@ export default function ToolFeedback({
 										part,
 										approved: false,
 										feedback: inputValue,
-										append: appendValue,
 									})
 								}
 								leftSection={display.approval === "rejected" && <CheckIcon />}
@@ -239,7 +193,6 @@ export default function ToolFeedback({
 									seed: message,
 									part,
 									feedback: inputValue,
-									append: appendValue,
 								})
 							}
 							leftSection={display.result !== "pending" && <CheckIcon />}
@@ -260,7 +213,5 @@ export default function ToolFeedback({
 				Tool <code>{part?.name}</code> can't be used in this context.
 			</Alert>
 		);
-	} else if (part.result?.append?.length) {
-		return followUp;
 	}
 }

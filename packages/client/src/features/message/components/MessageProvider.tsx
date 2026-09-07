@@ -1,7 +1,4 @@
-import {
-	Author,
-	type MessageState,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import {
 	type Source,
@@ -123,9 +120,10 @@ function MessageSync({ store }: { store: StoreApi<MessageStore> }) {
 		let newestPrior = -Infinity;
 
 		for (const message of messageList) {
-			const createdAt = new Date(message.createdAt).getTime();
+			const createdAt =
+				message.createdAt.toZonedDateTime("UTC").epochMilliseconds;
 			if (newestPrior > createdAt) stale.add(message.id);
-			if (message.author === Author.MODEL && createdAt > newestPrior) {
+			if (message.author === "MODEL" && createdAt > newestPrior) {
 				newestPrior = createdAt;
 			}
 		}

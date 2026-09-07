@@ -1,4 +1,3 @@
-import { beforeEach, describe, expect, it } from "vitest";
 import { useMarkdownDataStore } from "../../message/stores/useMarkdownDataStore.ts";
 import { useAtomStore } from "../stores/useAtomStore.ts";
 import { AtomUtils } from "./AtomUtils.ts";
@@ -95,7 +94,7 @@ describe("AtomUtils", () => {
 			type: "attachment",
 			source: "src/index.ts",
 			label: "index.ts",
-			content: { type: "file", data: "" },
+			content: { type: "file", mime: "", data: "" },
 		});
 		const markdown =
 			'run :command[opus]{name="model" value="model"} on ' +

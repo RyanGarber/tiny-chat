@@ -1,13 +1,10 @@
 import type { FilePart, ModelMessage, TextStreamPart } from "ai";
+import { z } from "zod";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
+import { AgentMessagesService } from "../../agent/services/AgentMessagesService.ts";
 import type { zAgentEvent } from "../../agent/types/agent.ts";
-import {
-	Author,
-	type zConfig,
-	zData,
-	zDataBasicPart,
-	type zDataPart,
-} from "../../data/types/message.ts";
+import type { zConfig } from "../../data/types/message.ts";
+import { type zDataPart, zDataSimplePart } from "../../data/types/part.ts";
 import type { zUser } from "../../data/types/user.ts";
 import type { ModelProvider, zModelMessage } from "../types/model.ts";
 import { ModelProviderUtils } from "../utils/ModelProviderUtils.ts";
@@ -37,7 +34,7 @@ export const ModelTransformService = {
 		const sdkMessages: SdkMessage[] = [];
 		for (const message of messages) {
 			const sdkMessage: SdkMessage = {
-				role: message.author === Author.MODEL ? "assistant" : "user",
+				role: message.author === "MODEL" ? "assistant" : "user",
 				content: [],
 			};
 
@@ -45,10 +42,12 @@ export const ModelTransformService = {
 			// everything inside. Awaited because a document attached to a model
 			// that cannot read one is unpacked here.
 			async function transform(part: zDataPart): Promise<zDataPart[]>;
-			async function transform(part: zDataBasicPart): Promise<zDataBasicPart[]>;
+			async function transform(
+				part: zDataSimplePart,
+			): Promise<zDataSimplePart[]>;
 			async function transform(
 				part: zDataPart,
-			): Promise<zDataPart[] | zDataBasicPart[]> {
+			): Promise<zDataPart[] | zDataSimplePart[]> {
 				let result =
 					(await provider.getPartTransformed?.({ user, config, part })) ??
 					(await ModelProviderUtils.getPartTransformed({ part }));
@@ -64,25 +63,26 @@ export const ModelTransformService = {
 				return (await Promise.all(items.map(map))).flat();
 			}
 
-			const parts = zData.parse(message.data).flat();
-			const appendParts: SdkBasicPart[] = [];
+			const parts = message.data.flat();
 
 			for (const part of parts) {
-				const isToolResult = part.type === "toolResult";
-				const isToolRole = sdkMessage.role === "tool";
+				const role =
+					part.type === "toolResult"
+						? "tool"
+						: part.type === "interjection"
+							? "user"
+							: message.author === "MODEL"
+								? "assistant"
+								: "user";
 
 				// if transitioning between toolResult and non-toolResult blocks, push and reset
-				if ((isToolResult && !isToolRole) || (!isToolResult && isToolRole)) {
+				if (sdkMessage.role !== role && sdkMessage.content.length) {
 					sdkMessages.push({ ...sdkMessage });
 					sdkMessage.content = [];
 				}
 
 				// correctly assign the author for the current block
-				sdkMessage.role = isToolResult
-					? "tool"
-					: message.author === "MODEL"
-						? "assistant"
-						: "user";
+				sdkMessage.role = role;
 
 				let providerOptions = provider.getPartSignatureReturn?.({
 					user,
@@ -94,11 +94,26 @@ export const ModelTransformService = {
 
 				// convert to sdk parts with an equivalent basic/non-basic distinction
 				async function toSdkPart(part: zDataPart): Promise<SdkPart[]>;
-				async function toSdkPart(part: zDataBasicPart): Promise<SdkBasicPart[]>;
+				async function toSdkPart(
+					part: zDataSimplePart,
+				): Promise<SdkBasicPart[]>;
 				async function toSdkPart(
 					part: zDataPart,
 				): Promise<SdkPart[] | SdkBasicPart[]> {
-					if (part.type === "text") {
+					if (part.type === "interjection") {
+						return await flatMap(
+							await flatMap(part.value, transform),
+							toSdkPart,
+						);
+					} else if (part.type === "attachment") {
+						return await flatMap(
+							await flatMap(
+								AgentMessagesService.buildAttachmentParts(part),
+								(value) => transform(value),
+							),
+							(value) => toSdkPart(value),
+						);
+					} else if (part.type === "text") {
 						return [{ type: "text", text: part.value, providerOptions }];
 					} else if (part.type === "json") {
 						return [
@@ -138,16 +153,7 @@ export const ModelTransformService = {
 								},
 							];
 						} else if (part.type === "toolResult") {
-							// Store for appending in a new user part
-							if (part.append) {
-								appendParts.push(
-									...(await flatMap(
-										await flatMap(part.append, transform),
-										toSdkPart,
-									)),
-								);
-							}
-							const parsed = zDataBasicPart.array().safeParse(part.output);
+							const parsed = z.array(zDataSimplePart).safeParse(part.output);
 							return [
 								{
 									type: "tool-result",
@@ -179,13 +185,6 @@ export const ModelTransformService = {
 
 			if (sdkMessage.content.length) {
 				sdkMessages.push(sdkMessage);
-			}
-
-			if (appendParts.length) {
-				sdkMessages.push({
-					role: "user",
-					content: appendParts,
-				});
 			}
 		}
 

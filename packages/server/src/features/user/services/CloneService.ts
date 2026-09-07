@@ -32,11 +32,13 @@ export const CloneService = {
 	}) => {
 		const clone = clones.find((c) => c.id === id);
 		if (!clone) throw new Error("clone not found");
-		if (!clone.userId) return false;
+
+		const userId = clone.userId;
+		if (!userId) return false;
+
 		clones.splice(clones.indexOf(clone), 1);
-		await globalThis.prisma.session.update({
-			where: { id: session.id },
-			data: { user: { connect: { id: clone.userId } } },
+		await globalThis.db.orm.public.Session.where({ id: session.id }).update({
+			user: (user) => user.connect({ id: userId }),
 		});
 		return true;
 	},

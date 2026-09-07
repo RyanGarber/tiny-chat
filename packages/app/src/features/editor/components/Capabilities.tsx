@@ -1,20 +1,27 @@
 import {
 	ActionIcon,
 	Box,
+	Button,
+	Card,
 	Checkbox,
+	Collapse,
 	Group,
-	JsonInput,
 	Modal,
 	ScrollArea,
+	SegmentedControl,
 	Space,
 	Stack,
 	Tabs,
+	TagsInput,
 	Text,
 	TextInput,
 } from "@mantine/core";
 import {
 	ArrowClockwiseIcon,
+	CaretDownIcon,
+	CaretRightIcon,
 	GraduationCapIcon,
+	PlusIcon,
 	TrashIcon,
 	WarningCircleIcon,
 	WarningDiamondIcon,
@@ -30,12 +37,10 @@ import {
 import { useMcpServerSettings } from "@tiny-chat/client/src/features/settings/hooks/useMcpServerSettings.ts";
 import { read_file } from "@tiny-chat/core/src/features/tool/tools/shell/read_file.ts";
 import { useState } from "react";
-import { ZodError } from "zod";
 import {
 	type CapabilitiesType,
 	useAppStore,
 } from "#app/core/stores/useAppStore.ts";
-import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import { useTauri } from "#app/features/tauri/hooks/useTauri.ts";
 import Dropzone from "#app/features/upload/components/Dropzone.tsx";
 import {
@@ -43,7 +48,7 @@ import {
 	useSkills,
 } from "#client/src/features/agent/hooks/useSkills.ts";
 import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
-import { zMCPServers } from "#core/features/data/types/user.ts";
+import type { zMCPServers } from "#core/features/data/types/user.ts";
 import { DataUtils } from "#core/features/data/utils/DataUtils.ts";
 import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
 import type { zSkill } from "#core/features/skill/types/skill.ts";
@@ -51,6 +56,328 @@ import type { Toolset } from "#core/features/tool/types/tool.ts";
 import { ToolUtils } from "#core/features/tool/utils/ToolUtils.ts";
 
 const SHELL_TOOLSET = "shell";
+type McpServers = NonNullable<zMCPServers>;
+type McpServerSetting = McpServers[string];
+
+const getMcpToolsetName = (name: string) =>
+	name.replace("-", "_").toLowerCase();
+
+function KeyValueFields({
+	label,
+	value,
+	onChange,
+	onBlur,
+	disabled,
+}: {
+	label: string;
+	value: Record<string, string>;
+	onChange: (value: Record<string, string>) => void;
+	onBlur: (value: Record<string, string>) => void;
+	disabled: boolean;
+}) {
+	const [entries, setEntries] = useState(() =>
+		Object.entries(value).map(([key, entryValue]) => ({
+			id: CommonUtils.getRandomId(),
+			key,
+			value: entryValue,
+		})),
+	);
+	const updateEntries = (
+		nextEntries: { id: string; key: string; value: string }[],
+	) => {
+		setEntries(nextEntries);
+		onChange(toRecord(nextEntries));
+	};
+	const toRecord = (nextEntries = entries) =>
+		Object.fromEntries(
+			nextEntries
+				.filter((entry) => entry.key)
+				.map((entry) => [entry.key, entry.value]),
+		);
+
+	return (
+		<Stack gap={5}>
+			<Text size="xs" fw={500}>
+				{label}
+			</Text>
+			{entries.map((entry) => (
+				<Group key={entry.id} gap="xs" wrap="nowrap">
+					<TextInput
+						aria-label={`${label} key`}
+						placeholder="Name"
+						value={entry.key}
+						onChange={(event) => {
+							updateEntries(
+								entries.map((candidate) =>
+									candidate.id === entry.id
+										? { ...candidate, key: event.currentTarget.value }
+										: candidate,
+								),
+							);
+						}}
+						onBlur={() => onBlur(toRecord())}
+						flex={1}
+					/>
+					<TextInput
+						aria-label={`${label} value`}
+						placeholder="Value"
+						value={entry.value}
+						onChange={(event) => {
+							updateEntries(
+								entries.map((candidate) =>
+									candidate.id === entry.id
+										? { ...candidate, value: event.currentTarget.value }
+										: candidate,
+								),
+							);
+						}}
+						onBlur={() => onBlur(toRecord())}
+						flex={1}
+					/>
+					<ActionIcon
+						variant="subtle"
+						color="red"
+						disabled={disabled}
+						aria-label={`Remove ${label.toLowerCase()} entry`}
+						onClick={() => {
+							const nextEntries = entries.filter(
+								(candidate) => candidate.id !== entry.id,
+							);
+							updateEntries(nextEntries);
+							onBlur(toRecord(nextEntries));
+						}}
+					>
+						<TrashIcon size={16} />
+					</ActionIcon>
+				</Group>
+			))}
+			<Button
+				variant="subtle"
+				size="compact-xs"
+				leftSection={<PlusIcon size={14} />}
+				style={{ alignSelf: "flex-start" }}
+				disabled={disabled}
+				onClick={() =>
+					updateEntries([
+						...entries,
+						{ id: CommonUtils.getRandomId(), key: "", value: "" },
+					])
+				}
+			>
+				Add {label.toLowerCase()}
+			</Button>
+		</Stack>
+	);
+}
+
+function McpServerCard({
+	name,
+	server,
+	toolset,
+	existingNames,
+	disabled,
+	onUpdate,
+	onDelete,
+}: {
+	name: string;
+	server: McpServerSetting;
+	toolset?: McpToolset;
+	existingNames: string[];
+	disabled: boolean;
+	onUpdate: (name: string, nextName: string, server: McpServerSetting) => void;
+	onDelete: (name: string) => void;
+}) {
+	const { config, setConfig } = useConfig();
+	const [expanded, setExpanded] = useState(false);
+	const [draftName, setDraftName] = useState(name);
+	const [draft, setDraft] = useState(server);
+	const toolsetName = getMcpToolsetName(name);
+	const status = toolset?.status;
+	const nameTaken = draftName !== name && existingNames.includes(draftName);
+	const nameError = nameTaken
+		? "A server with this name already exists"
+		: !/^[a-z0-9-_]+$/.test(draftName)
+			? "Use lowercase letters, numbers, hyphens, and underscores"
+			: null;
+
+	const save = (nextDraft = draft, nextName = draftName) => {
+		if (!/^[a-z0-9-_]+$/.test(nextName) || nameTaken) return;
+		if ("url" in nextDraft) {
+			try {
+				new URL(nextDraft.url);
+			} catch {
+				return;
+			}
+		}
+		if (nextName !== name && config.toolsets.includes(toolsetName)) {
+			setConfig({
+				...config,
+				toolsets: config.toolsets.map((value) =>
+					value === toolsetName ? getMcpToolsetName(nextName) : value,
+				),
+			});
+		}
+		onUpdate(name, nextName, nextDraft);
+	};
+	const urlError =
+		"url" in draft
+			? (() => {
+					if (!draft.url) return "URL is required";
+					try {
+						new URL(draft.url);
+						return null;
+					} catch {
+						return "Enter a valid URL";
+					}
+				})()
+			: null;
+
+	return (
+		<Card withBorder padding={0}>
+			<Box
+				role="button"
+				tabIndex={0}
+				p="xs"
+				w="100%"
+				style={{ cursor: "pointer" }}
+				onClick={() => setExpanded((value) => !value)}
+				onKeyDown={(event) => {
+					if (event.key === "Enter" || event.key === " ") {
+						event.preventDefault();
+						setExpanded((value) => !value);
+					}
+				}}
+			>
+				<Group wrap="nowrap" align="flex-start">
+					<Box pt={2}>
+						{expanded ? (
+							<CaretDownIcon size={16} />
+						) : (
+							<CaretRightIcon size={16} />
+						)}
+					</Box>
+					<Checkbox
+						mt={2}
+						checked={toolset ? ToolUtils.checkOne({ toolset, config }) : false}
+						disabled={disabled || status?.valid === false}
+						onClick={(event) => event.stopPropagation()}
+						onChange={() => {
+							setConfig({
+								...config,
+								toolsets: !config.toolsets.includes(toolsetName)
+									? [...config.toolsets, toolsetName]
+									: config.toolsets.filter((value) => value !== toolsetName),
+							});
+						}}
+					/>
+					<Stack gap={5} miw={0} flex={1}>
+						<Text size="xs">{name}</Text>
+						<Text size="xs" c="dimmed">
+							{toolset
+								? toolset.tools.map((tool) => tool.name).join(", ") ||
+									"No tools"
+								: "Connecting…"}
+						</Text>
+						{!!status?.error && (
+							<Group gap="xs" c="red">
+								<WarningCircleIcon size={14} />
+								<Text size="xs">{CommonUtils.formatError(status)}</Text>
+							</Group>
+						)}
+					</Stack>
+				</Group>
+			</Box>
+			<Collapse expanded={expanded}>
+				<Stack px="xs" pb="xs" gap="xs">
+					<TextInput
+						label="Name"
+						value={draftName}
+						error={nameError}
+						disabled={disabled}
+						onChange={(event) => setDraftName(event.currentTarget.value)}
+						onBlur={() => save()}
+					/>
+					<SegmentedControl
+						fullWidth
+						value={"command" in draft ? "stdio" : "http"}
+						data={[
+							{ label: "stdio", value: "stdio" },
+							{ label: "HTTP", value: "http" },
+						]}
+						disabled={disabled}
+						onChange={(value) => {
+							setDraft(value === "stdio" ? { command: "" } : { url: "" });
+						}}
+					/>
+					{"command" in draft ? (
+						<>
+							<TextInput
+								label="Command"
+								placeholder="npx"
+								value={draft.command}
+								disabled={disabled}
+								onChange={(event) =>
+									setDraft({ ...draft, command: event.currentTarget.value })
+								}
+								onBlur={() => save()}
+							/>
+							<TagsInput
+								label="Arguments"
+								placeholder="Add argument"
+								value={draft.args ?? []}
+								disabled={disabled}
+								onChange={(args) => {
+									const next = { ...draft, args };
+									setDraft(next);
+									save(next);
+								}}
+							/>
+							<KeyValueFields
+								label="Environment"
+								value={draft.env ?? {}}
+								onChange={(env) => setDraft({ ...draft, env })}
+								onBlur={(env) => save({ ...draft, env })}
+								disabled={disabled}
+							/>
+						</>
+					) : (
+						<>
+							<TextInput
+								label="URL"
+								placeholder="https://example.com/mcp"
+								value={draft.url}
+								error={urlError}
+								disabled={disabled}
+								onChange={(event) =>
+									setDraft({ ...draft, url: event.currentTarget.value })
+								}
+								onBlur={() => save()}
+							/>
+							<KeyValueFields
+								label="Headers"
+								value={draft.headers ?? {}}
+								onChange={(headers) => setDraft({ ...draft, headers })}
+								onBlur={(headers) => save({ ...draft, headers })}
+								disabled={disabled}
+							/>
+						</>
+					)}
+					<Button
+						variant="subtle"
+						color="red"
+						size="compact-xs"
+						leftSection={<TrashIcon size={14} />}
+						style={{ alignSelf: "flex-start" }}
+						disabled={disabled}
+						onClick={() => onDelete(name)}
+					>
+						Remove server
+					</Button>
+				</Stack>
+			</Collapse>
+		</Card>
+	);
+}
 
 function ToolsetView({
 	toolsets,
@@ -79,7 +406,6 @@ function ToolsetView({
 					});
 				}}
 				style={{
-					...StyleUtils.glass,
 					cursor: !toolset.status.valid ? "not-allowed" : undefined,
 				}}
 				disabled={!toolset.status.valid}
@@ -128,7 +454,6 @@ function SkillView({ skills, native }: { skills: zSkill[]; native?: boolean }) {
 								: config.skills?.filter((cs) => cs !== skill.path),
 						});
 					}}
-					style={{ ...StyleUtils.glass }}
 				>
 					<Group wrap="nowrap" align="flex-start">
 						<Checkbox.Indicator />
@@ -201,26 +526,18 @@ export default function Capabilities() {
 		(state) => state.setCurrentCapabilities,
 	);
 
-	const [mcpInputActive, setMcpInputActive] = useState(false);
-	const [mcpInputError, setMcpInputError] = useState<string | null>(null);
-
-	const [mcpInputValueOverride, setMcpInputValueOverride] = useState<
-		string | null
-	>(null);
-	const mcpSettingsJson = JSON.stringify(
-		mcpServerSettingsUnparsed.data ?? [],
-		null,
-		2,
-	);
-	const mcpInputExpanded =
-		mcpInputActive || !!mcpInputError || setMcpServerSettings.isPending;
-	const mcpInputValue = mcpInputExpanded
-		? (mcpInputValueOverride ?? mcpSettingsJson)
-		: `mcp.json (${mcpSettingsJson.split("\n").length} lines)`;
+	const mcpServers = mcpServerSettingsUnparsed.data ?? {};
 
 	const areMcpToolsUpdating = useIsFetching({ queryKey: mcpToolsQueryKey }) > 0;
 	const areLocalSkillsUpdating =
 		useIsFetching({ queryKey: localSkillsQueryKey }) > 0;
+	const mcpSettingsDisabled =
+		mcpServerSettingsUnparsed.isPending ||
+		setMcpServerSettings.isPending ||
+		areMcpToolsUpdating;
+	const updateMcpServers = (next: McpServers) => {
+		setMcpServerSettings.mutate({ mcpServers: next });
+	};
 
 	return (
 		<Modal
@@ -229,7 +546,6 @@ export default function Capabilities() {
 			title="Tools & Skills"
 			zIndex={1000}
 			size="lg"
-			styles={{ content: { ...StyleUtils.glass } }}
 			centered
 		>
 			<Tabs
@@ -269,80 +585,56 @@ export default function Capabilities() {
 				<Tabs.Panel value="tools:mcp">
 					<ScrollArea type="auto" offsetScrollbars h={400}>
 						<Stack gap="xs">
-							<JsonInput
-								value={mcpInputValue}
-								onChange={(value) => setMcpInputValueOverride(value)}
-								serialize={(value) => JSON.stringify(value, null, 2)}
-								deserialize={(value) => {
-									if (value.includes("mcp.json (")) return value;
-									zMCPServers.parse(JSON.parse(value));
-								}}
-								validationError={mcpInputError ?? undefined}
-								onFocus={() => {
-									setMcpInputValueOverride(mcpSettingsJson);
-									setMcpInputActive(true);
-								}}
-								onBlur={(e) => {
-									setMcpInputActive(false);
-									try {
-										const mcpServers = zMCPServers.parse(
-											JSON.parse(e.target.value),
-										);
-										setMcpInputError(null);
-										setMcpServerSettings.mutate({ mcpServers });
-									} catch (error) {
-										setMcpInputError(
-											error instanceof ZodError
-												? error.issues.map((e) => e.message).join(", ")
-												: error instanceof Error
-													? error.message
-													: "Unknown error",
-										);
-										console.error(error);
-									}
-								}}
-								formatOnBlur
-								rows={1}
-								styles={{
-									input: {
-										fontFamily: "monospace",
-										height:
-											mcpInputActive ||
-											mcpInputError ||
-											setMcpServerSettings.isPending
-												? 300
-												: 20,
-										opacity:
-											mcpInputActive ||
-											mcpInputError ||
-											setMcpServerSettings.isPending
-												? 1
-												: 0.5,
-										transition: "height 200ms ease, opacity 200ms ease",
-										cursor:
-											setMcpServerSettings.isPending || areMcpToolsUpdating
-												? "not-allowed"
-												: !mcpInputActive && !mcpInputError
-													? "pointer"
-													: undefined,
-									},
-								}}
-								autoCorrect="off"
-								autoCapitalize="none"
-								spellCheck={false}
-								disabled={setMcpServerSettings.isPending || areMcpToolsUpdating}
-								readOnly={setMcpServerSettings.isPending || areMcpToolsUpdating}
-								rightSection={
-									<ActionIcon
-										variant="transparent"
-										loading={areMcpToolsUpdating}
-										onClick={() => void mcpTools.refetch()}
-									>
-										<ArrowClockwiseIcon size={18} />
-									</ActionIcon>
-								}
-							/>
-							<ToolsetView toolsets={mcpTools.data ?? []} />
+							<Group justify="space-between">
+								<Button
+									variant="subtle"
+									size="compact-xs"
+									leftSection={<PlusIcon size={14} />}
+									disabled={mcpSettingsDisabled}
+									onClick={() => {
+										let name = "server";
+										let suffix = 2;
+										while (name in mcpServers) name = `server-${suffix++}`;
+										updateMcpServers({
+											...mcpServers,
+											[name]: { command: "" },
+										});
+									}}
+								>
+									Add server
+								</Button>
+								<ActionIcon
+									variant="transparent"
+									loading={areMcpToolsUpdating}
+									aria-label="Refresh MCP servers"
+									onClick={() => void mcpTools.refetch()}
+								>
+									<ArrowClockwiseIcon size={18} />
+								</ActionIcon>
+							</Group>
+							{Object.entries(mcpServers).map(([name, server]) => (
+								<McpServerCard
+									key={name}
+									name={name}
+									server={server}
+									toolset={mcpTools.data?.find(
+										(toolset) => toolset.name === getMcpToolsetName(name),
+									)}
+									existingNames={Object.keys(mcpServers)}
+									disabled={mcpSettingsDisabled}
+									onUpdate={(oldName, nextName, nextServer) => {
+										const next = { ...mcpServers };
+										delete next[oldName];
+										next[nextName] = nextServer;
+										updateMcpServers(next);
+									}}
+									onDelete={(serverName) => {
+										const next = { ...mcpServers };
+										delete next[serverName];
+										updateMcpServers(next);
+									}}
+								/>
+							))}
 						</Stack>
 					</ScrollArea>
 				</Tabs.Panel>

@@ -60,7 +60,6 @@ export default function MermaidContent({
 				// Don't update svgContent here - just keep what we have
 
 				// Only set error if we don't have any valid SVG
-				// biome-ignore lint/nursery/useReactCompiler: "Required for Mermaid"
 				if (!(lastValidSvg || svgContent)) {
 					const errorMessage =
 						err instanceof Error
@@ -113,7 +112,7 @@ export default function MermaidContent({
 				</UnstyledButton>
 				<details>
 					<summary className="cursor-pointer text-xs">Show Code</summary>
-					<Code code={chart} language="mermaid" withButtons={false} mt={10} />
+					<Code code={chart} language="mermaid" mt={10} />
 				</details>
 			</div>
 		);

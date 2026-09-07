@@ -1,5 +1,4 @@
 import chalk from "chalk";
-import { describe, it } from "vitest";
 import { DiffUtils } from "./DiffUtils.ts";
 
 describe("DiffUtils", () => {

@@ -1,6 +1,6 @@
-import {
+import type {
 	zCache,
-	type zUser,
+	zUser,
 } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { ProviderService } from "@tiny-chat/core/src/features/provider/services/ProviderService.ts";
 
@@ -9,23 +9,14 @@ import { ProviderService } from "@tiny-chat/core/src/features/provider/services/
  */
 export const CacheService = {
 	getCache: async ({ user, update }: { user: zUser; update?: boolean }) => {
-		const existing = await globalThis.prisma.user.findUnique({
-			where: { id: user.id },
-			select: { cache: true },
-		});
+		const existing = await globalThis.db.orm.public.User.where({
+			id: user.id,
+		})
+			.select("cache")
+			.first();
+		if (!existing) throw new Error("missing user");
 
-		if (!existing?.cache || update) {
-			return CacheService.updateCache({ user });
-		}
-
-		return zCache.parse(
-			(
-				await globalThis.prisma.user.findUniqueOrThrow({
-					where: { id: user.id },
-					select: { cache: true },
-				})
-			).cache,
-		);
+		return update ? await CacheService.updateCache({ user }) : existing.cache;
 	},
 
 	setCache: async ({
@@ -37,29 +28,24 @@ export const CacheService = {
 	}) => {
 		const existing = await CacheService.getCache({ user });
 		const updatedCache: zCache = { ...existing, ...values };
-		await globalThis.prisma.user.update({
-			where: { id: user.id },
-			data: { cache: updatedCache as any },
+		await globalThis.db.orm.public.User.where({ id: user.id }).update({
+			cache: updatedCache as any,
 		});
 	},
 
-	updateCache: async ({ user }: { user: zUser }) => {
-		const cache = zCache.parse(
-			(
-				await globalThis.prisma.user.findUniqueOrThrow({
-					where: { id: user.id },
-					select: { cache: true },
-				})
-			).cache,
-		);
+	updateCache: async ({ user }: { user: zUser }): Promise<zCache> => {
+		const cache: zCache = (
+			await globalThis.db.orm.public.User.where({ id: user.id })
+				.select("cache")
+				.first()
+		)?.cache ?? { providers: [] };
 
 		cache.providers = JSON.parse(
 			JSON.stringify(await ProviderService.getProviderStates({ user })),
 		);
 
-		await globalThis.prisma.user.update({
-			where: { id: user.id },
-			data: { cache: cache as any },
+		await globalThis.db.orm.public.User.where({ id: user.id }).update({
+			cache: cache as any,
 		});
 
 		return cache;

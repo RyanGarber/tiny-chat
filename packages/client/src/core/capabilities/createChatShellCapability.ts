@@ -10,6 +10,10 @@ export const createChatShellCapability: CapabilityFactory<
 	ShellCapability
 > = async ({ client, ...spec }) => {
 	return {
+		cwd: async () => {
+			await client.workingDirectory.ready();
+			return await client.api.file.cwd.query(spec);
+		},
 		nodes: async () => {
 			return await client.api.file.getFiles.query(spec);
 		},
@@ -36,6 +40,7 @@ export const createChatShellCapability: CapabilityFactory<
 		},
 
 		exec: async ({ command }) => {
+			await client.workingDirectory.ready();
 			return await client.api.file.exec.mutate({ ...spec, command });
 		},
 	};

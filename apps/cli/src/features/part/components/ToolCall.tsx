@@ -5,14 +5,9 @@ import type {
 import { useStream } from "@tiny-chat/client/src/features/agent/hooks/useStream.ts";
 import type { StreamState } from "@tiny-chat/core/src/core/types/stream.ts";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import type {
-	MessageState,
-	zDataPart,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
-import {
-	DataUtils,
-	type RenderedPart,
-} from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
+import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { zToolCallPart } from "@tiny-chat/core/src/features/data/types/part.ts";
+import type { RenderedPart } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import type { shell_exec } from "@tiny-chat/core/src/features/tool/tools/shell/shell_exec.ts";
 import type { spawn_subagent } from "@tiny-chat/core/src/features/tool/tools/subagents/spawn_subagent.ts";
@@ -38,7 +33,7 @@ function ToolCallDetails({
 	part,
 	details,
 }: {
-	part: Extract<zDataPart, { type: "toolCall" }>;
+	part: zToolCallPart;
 	details: ReturnType<typeof ToolCallUtils.getDisplay>;
 }) {
 	const stream = useStream<ToolStreamEvent<any>>(part.id);
@@ -86,7 +81,7 @@ function ToolCallDetails({
 				<Text>
 					created{" "}
 					{CommonUtils.formatDate({
-						date: new Date(action.created_at),
+						date: action.created_at,
 						relative: true,
 					})}
 				</Text>
@@ -94,7 +89,7 @@ function ToolCallDetails({
 					<Text color="textSubtle">
 						next runs{" "}
 						{CommonUtils.formatDate({
-							date: new Date(action.next_run_at),
+							date: action.next_run_at,
 							relative: true,
 						})}
 					</Text>
@@ -111,7 +106,7 @@ function ToolCallDetails({
 				<Text color="textSubtle">
 					sent{" "}
 					{CommonUtils.formatDate({
-						date: new Date(message.created_at),
+						date: message.created_at,
 						relative: true,
 					})}
 				</Text>
@@ -136,7 +131,7 @@ function ToolCallDetails({
 				<Text color="textSubtle">
 					learned{" "}
 					{CommonUtils.formatDate({
-						date: new Date(memory.created_at),
+						date: memory.created_at,
 						relative: true,
 					})}
 				</Text>
@@ -283,16 +278,6 @@ export default function ToolCall({
 			<Task.Details>
 				<ToolCallDetails part={part} details={display} />
 			</Task.Details>
-			{part.result?.append?.length && (
-				<Task.Details collapse={false}>
-					<Box borderLeft="single" paddingLeft={1} gap={1}>
-						<Text color="primary">{"+ "}</Text>
-						<Text color="textSubtle">
-							{DataUtils.getText({ data: [part.result.append] })}
-						</Text>
-					</Box>
-				</Task.Details>
-			)}
 			{message && hasFeedback && (
 				<Task.Details collapse={false}>
 					<ToolFeedback

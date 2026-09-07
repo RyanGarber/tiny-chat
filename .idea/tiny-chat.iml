@@ -6,11 +6,21 @@
       <sourceFolder url="file://$MODULE_DIR$/apps/tauri/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/packages/server/generated" isTestSource="false" generated="true" />
       <sourceFolder url="file://$MODULE_DIR$/packages/app/generated" isTestSource="false" generated="true" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/core/prisma" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/apps/tauri/gen" />
       <excludeFolder url="file://$MODULE_DIR$/apps/tauri/target" />
       <excludeFolder url="file://$MODULE_DIR$/.idea/dataSources" />
       <excludeFolder url="file://$MODULE_DIR$/.serena/cache" />
       <excludeFolder url="file://$MODULE_DIR$/.reference" />
+      <excludeFolder url="file://$MODULE_DIR$/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/apps/cli/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/apps/tauri/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/apps/web/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/app/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/client/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/server/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/core/prisma/migrations/snapshots" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

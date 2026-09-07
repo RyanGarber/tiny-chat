@@ -1,6 +1,10 @@
 {
 	"compilerOptions": {
-		"types": ["vitest/importMeta", "temporal-polyfill/types/global"],
+		"types": [
+			"vitest/globals",
+			"vitest/importMeta",
+			"temporal-polyfill/types/global"
+		],
 		"skipLibCheck": true,
 		"allowImportingTsExtensions": true,
 		"resolveJsonModule": true,

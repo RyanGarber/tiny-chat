@@ -1,7 +1,7 @@
-import type { File } from "../../../../../server/generated/prisma/browser.ts";
+import type { Model } from "../../../core/services/PostgresService.ts";
 import type { FileMount } from "../utils/PathUtils.ts";
 
-export type FileState = File & {
+export type FileState = Omit<Model["File"], "embedding"> & {
 	uri: string;
 };
 
@@ -37,5 +37,6 @@ export interface FileNode {
 	name: string | null;
 	isDirectory: boolean;
 	lines: number;
-	createdAt: Date;
+	createdAt: Temporal.PlainDateTime;
+	updatedAt: Temporal.PlainDateTime | null;
 }

@@ -8,11 +8,6 @@
 		"useDefineForClassFields": true,
 		"jsx": "react-jsx"
 	},
-	"include": ["src", "generated/stylicious/**/*.d.ts"],
-	"references": [
-		{
-			"path": "./tsconfig.node.json"
-		}
-	],
+	"include": ["src", "generated/stylicious/**/*.d.ts", "vitest.config.ts"],
 	"extends": "../../tsconfig.base.json"
 }

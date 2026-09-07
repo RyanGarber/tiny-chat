@@ -1,12 +1,12 @@
 {
-  "name": "@tiny-chat/tauri",
-  "scripts": {
-    "tauri": "tauri",
-    "lint": "cargo clippy --fix --allow-dirty && cargo fmt",
-    "check": "cargo check",
-    "test": "cargo test"
-  },
-  "devDependencies": {
-    "@tauri-apps/cli": "^2.11.4"
-  }
+	"name": "@tiny-chat/tauri",
+	"scripts": {
+		"tauri": "tauri",
+		"lint": "cargo clippy --fix --allow-dirty && cargo fmt",
+		"typecheck": "cargo check",
+		"test": "cargo test"
+	},
+	"devDependencies": {
+		"@tauri-apps/cli": "^2.11.4"
+	}
 }

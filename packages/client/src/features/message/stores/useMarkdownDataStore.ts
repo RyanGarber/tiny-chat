@@ -1,7 +1,7 @@
-import type { zDataPart } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { zAttachmentPart } from "@tiny-chat/core/src/features/data/types/part.ts";
 import { create } from "zustand";
 
-export type AttachmentPart = Extract<zDataPart, { type: "attachment" }>;
+export type AttachmentPart = zAttachmentPart;
 
 interface AttachmentStore {
 	attachments: Record<string, AttachmentPart>;

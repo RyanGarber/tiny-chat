@@ -3,12 +3,13 @@ import { AgentService } from "@tiny-chat/core/src/features/agent/services/AgentS
 import type { zAgentContext } from "@tiny-chat/core/src/features/agent/types/agent.ts";
 import { AgentUtils } from "@tiny-chat/core/src/features/agent/utils/AgentUtils.ts";
 import type { ChatState } from "@tiny-chat/core/src/features/data/types/chat.ts";
+import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type {
-	MessageState,
 	zData,
-	zDataPart,
 	zMetadata,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
+	zToolCallPart,
+	zToolResultPart,
+} from "@tiny-chat/core/src/features/data/types/part.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import type {
 	ProviderState,
@@ -25,6 +26,7 @@ import {
 	AgentStreamService,
 	ToolStreamService,
 } from "../../../core/services/StreamService.ts";
+import { useMessageQueueStore } from "../../chat/stores/useMessageQueueStore.ts";
 import { ClientProviderService } from "./ClientProviderService.ts";
 
 export const ClientAgentService = {
@@ -135,6 +137,9 @@ export const ClientAgentService = {
 				abortSignal: abort.signal,
 				experimental_transform: [smoothStream({ delayInMs: 20 })],
 			},
+			interjections: streamChat
+				? () => useMessageQueueStore.getState().drain(streamChat)
+				: undefined,
 			toolStream: ({ part, mutation }) => {
 				if (!ToolStreamService.get(part.id)) {
 					ToolStreamService.start(part.id);
@@ -181,14 +186,14 @@ export const ClientAgentService = {
 		client: Client;
 		user: zUser;
 		chat: ChatState;
-		part: Extract<zDataPart, { type: "toolCall" }>;
+		part: zToolCallPart;
 		feedback: unknown;
 		message: MessageState;
 		messages: MessageState[];
 		skills: zSkill[];
 		mcpTools: Toolset<any>[];
 		interactive: boolean;
-	}): Promise<Extract<zDataPart, { type: "toolResult" }>> => {
+	}): Promise<zToolResultPart> => {
 		console.log("[ClientAgentService] running tool", part, feedback);
 
 		const capabilities = await ClientCapabilityService.getCapabilities({

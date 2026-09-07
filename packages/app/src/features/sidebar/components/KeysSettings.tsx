@@ -112,7 +112,7 @@ export default function KeysSettings() {
 						Access chat and embedding models
 					</Text>
 				</Box>
-				<Tooltip label="Check for new models" color="gray" position="right">
+				<Tooltip label="Check for new models" position="right">
 					<ActionIcon
 						variant="transparent"
 						c="dimmed"

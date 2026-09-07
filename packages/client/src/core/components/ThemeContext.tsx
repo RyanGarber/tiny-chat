@@ -37,7 +37,7 @@ export const palettes: Record<
 		"#636570", // [3]
 		"#35373e", // [4]
 		"#292b32", // [5]  subtle borders
-		"#1a1b22", // [6]  surface / card background
+		"#161616", // [6]  surface / card background
 		"#131317", // [7]  body / AppShell background
 		"#1e2027", // [8]
 		"#141418", // [9]  deepest

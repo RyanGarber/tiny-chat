@@ -3,7 +3,7 @@ import type {
 	WebCapability,
 } from "../../../core/types/capability.ts";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
-import type { zDataPart } from "../../data/types/message.ts";
+import type { zAttachmentPart } from "../../data/types/part.ts";
 import { FileTypeUtils } from "../utils/FileTypeUtils.ts";
 import { FileUtils } from "../utils/FileUtils.ts";
 import { PathUtils } from "../utils/PathUtils.ts";
@@ -16,7 +16,7 @@ export const AttachmentService = {
 	}: {
 		source: string;
 		label?: string;
-	}): Extract<zDataPart, { type: "attachment" }> => ({
+	}): zAttachmentPart => ({
 		id: CommonUtils.getRandomId(),
 		type: "attachment",
 		source,
@@ -36,9 +36,9 @@ export const AttachmentService = {
 		directory?: boolean;
 		shell?: Pick<ShellCapability, "readFile" | "readDir">;
 		web?: Pick<WebCapability, "view">;
-	}): Promise<Extract<zDataPart, { type: "attachment" }>> => {
+	}): Promise<zAttachmentPart> => {
 		const id = CommonUtils.getRandomId();
-		let content: Extract<zDataPart, { type: "attachment" }>["content"];
+		let content: zAttachmentPart["content"];
 
 		if (source.startsWith("web:")) {
 			if (!web) throw new Error(`Cannot read web attachment: ${source}`);

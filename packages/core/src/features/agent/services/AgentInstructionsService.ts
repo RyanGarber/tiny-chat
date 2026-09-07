@@ -1,11 +1,14 @@
 import type { Capabilities } from "../../../core/types/capability.ts";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
-import { type zConfig, zData } from "../../data/types/message.ts";
+import { SettingsUtils } from "../../../core/utils/SettingsUtils.ts";
+import { VERBOSE } from "../../../logger.ts";
+import type { zConfig } from "../../data/types/message.ts";
 import { DataUtils } from "../../data/utils/DataUtils.ts";
 import type { zSkill } from "../../skill/types/skill.ts";
 import type { Toolset } from "../../tool/types/tool.ts";
 import { ToolUtils } from "../../tool/utils/ToolUtils.ts";
 import type { zAgentContext } from "../types/agent.ts";
+import { AgentUtils } from "../utils/AgentUtils.ts";
 
 export const AgentInstructionsService = {
 	buildInstructions: async ({
@@ -21,17 +24,27 @@ export const AgentInstructionsService = {
 		enabledToolsets: Toolset<any>[];
 		enabledSkills: zSkill[];
 	}) => {
+		const settings = SettingsUtils.of(context.user, context.chat?.folder);
+
+		console.log(
+			`[AgentInstructionsService] retrieving memories for prompt:`,
+			AgentUtils.getLastPrompt({ messages: context.messages, withText: true }),
+		);
 		const memories = (
-			await capabilities.memories?.retrieveMemories({ chat: context.chat })
+			await capabilities.memories?.retrieveMemories({
+				chat: context.chat,
+				tokens: settings.memoryBudget,
+			})
 		)?.sort((a, b) => a.id.localeCompare(b.id));
+		if (VERBOSE)
+			console.log(
+				`[AgentInstructionsService] retrieved ${memories?.length ?? 0} memories`,
+				memories?.map((memory) => memory.fact),
+			);
 
 		const actions = !context.chat?.incognito
 			? await capabilities.actions?.getActions()
 			: undefined;
-
-		const userInstructions = !context.chat?.incognito
-			? context.user.settings.instructions
-			: [];
 
 		const cites = new Map<string, string>();
 		if (enabledToolsets.some((toolset) => toolset.name === "actions")) {
@@ -107,7 +120,7 @@ ${citeExamples.map((r) => `- ${r}`).join("\n")}`;
 			if (actions?.length) {
 				instructions += `\n
 <actions>
-${actions?.map((action) => `<action id="${action.id}" schedule="${action.schedule}">\n${DataUtils.getText({ data: zData.parse(action.data) })}\n</action>`).join("\n")}
+${actions?.map((action) => `<action id="${action.id}" schedule="${action.schedule}">\n${DataUtils.getText(action)}\n</action>`).join("\n")}
 </actions>`;
 			}
 
@@ -138,10 +151,10 @@ As an assistant, you may have access to additional skills. When one seems releva
 			}
 		}
 
-		if (userInstructions?.length) {
+		if (settings.instructions?.length) {
 			instructions += `\n
-## User Instructions\n
-${userInstructions.join("\n")}`;
+## Additional Instructions\n
+${settings.instructions.join("\n")}`;
 		}
 
 		return instructions;

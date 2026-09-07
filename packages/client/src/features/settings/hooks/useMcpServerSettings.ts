@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { zSettings } from "@tiny-chat/core/src/features/data/types/user.ts";
+import { SettingsUtils } from "@tiny-chat/core/src/core/utils/SettingsUtils.ts";
 import { useContext, useMemo } from "react";
 import { ClientContext } from "../../../client.ts";
 import { useSettings } from "./useSettings.ts";
@@ -10,13 +10,15 @@ export const useMcpServerSettings = () => {
 	const { settings, applySettings } = useSettings();
 
 	const mcpServerSettings = useMemo(() => {
-		return settings.data?.mcpServers ?? {};
+		return SettingsUtils.defaults({ mcpServers: settings.data?.mcpServers })
+			.mcpServers;
 	}, [settings.data?.mcpServers]);
 
 	const mcpServerSettingsUnparsed = useQuery({
-		...client.query.settings.getUnparsed.queryOptions(),
+		...client.query.settings.getRaw.queryOptions({}),
 		staleTime: Infinity,
-		select: (data) => (data as zSettings).mcpServers ?? {},
+		select: (data) =>
+			SettingsUtils.defaults(data as { mcpServers: never }).mcpServers,
 	});
 
 	const setMcpServerSettings = useMutation({
@@ -24,7 +26,7 @@ export const useMcpServerSettings = () => {
 		onSuccess: (data) => {
 			applySettings(data);
 			void client.queryClient.invalidateQueries({
-				queryKey: client.query.settings.getUnparsed.queryKey(),
+				queryKey: client.query.settings.getRaw.queryKey(),
 			});
 		},
 	});

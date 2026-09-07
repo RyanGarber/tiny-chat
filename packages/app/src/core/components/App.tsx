@@ -9,7 +9,6 @@ import { useExperiments } from "#app/core/hooks/useExperiments.tsx";
 import { useViewport } from "#app/core/hooks/useViewport.ts";
 import { AppService } from "#app/core/services/AppService.ts";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
-import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import Chat from "#app/features/chat/components/Chat.tsx";
 import ChatFiles from "#app/features/chat/components/ChatFiles.tsx";
 import Sidebar from "#app/features/sidebar/components/Sidebar.tsx";
@@ -239,20 +238,12 @@ export default function App() {
 								transition: isResizingSidebar
 									? "width 0ms, min-width 0ms, transform 300ms ease"
 									: "width 250ms ease, min-width 250ms ease, transform 300ms ease",
-								...StyleUtils.glass,
-								borderLeft: "none",
-								borderBottom: "none",
-								borderTop: "none",
 							},
 							aside: {
 								zIndex: "calc(var(--mantine-z-index-app) + 2)",
 								transition: isResizingAside
 									? "width 0ms, min-width 0ms, transform 300ms ease"
 									: "width 250ms ease, min-width 250ms ease, transform 300ms ease",
-								...StyleUtils.glass,
-								borderRight: "none",
-								borderBottom: "none",
-								borderTop: "none",
 							},
 							main: {
 								transition:
@@ -302,11 +293,10 @@ export default function App() {
 							{...dragSidebarClose()}
 							p={10}
 							style={{
-								...StyleUtils.glass,
-								boxShadow: isSidebarOpen || !isMobile ? StyleUtils.shadow : "",
 								touchAction: "pan-y",
 								fontWeight: 450,
 							}}
+							withBorder
 						>
 							<div ref={sidebarContentRef} style={{ height: "100%" }}>
 								<Sidebar />
@@ -326,10 +316,10 @@ export default function App() {
 							{...dragAsideClose()}
 							p={10}
 							style={{
-								boxShadow: isSidebarOpen || !isMobile ? StyleUtils.shadow : "",
 								touchAction: "pan-y",
 								fontWeight: 450,
 							}}
+							withBorder
 						>
 							<div ref={asideContentRef} style={{ height: "100%" }}>
 								<ChatFiles />

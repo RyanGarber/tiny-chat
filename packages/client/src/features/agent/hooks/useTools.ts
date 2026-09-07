@@ -1,7 +1,7 @@
 import type { Client } from "@modelcontextprotocol/client";
 import { useQuery } from "@tanstack/react-query";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import type { zDataBasicPart } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { zDataSimplePart } from "@tiny-chat/core/src/features/data/types/part.ts";
 import type { zMCPServers } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { ToolService } from "@tiny-chat/core/src/features/tool/services/ToolService.ts";
 import type {
@@ -66,7 +66,7 @@ export const useTools = () => {
 								execute: async ({
 									input,
 									...rest
-								}): Promise<zDataBasicPart[]> => {
+								}): Promise<zDataSimplePart[]> => {
 									console.log("[useTools] calling mcp tool:", {
 										input,
 										...rest,
@@ -77,7 +77,7 @@ export const useTools = () => {
 									});
 									console.log("[useTools] mcp response:", { isError, content });
 									if (isError) throw new Error(JSON.stringify(content));
-									return content.map((part): zDataBasicPart => {
+									return content.map((part): zDataSimplePart => {
 										if (part.type === "text") {
 											return {
 												id: CommonUtils.getRandomId(),

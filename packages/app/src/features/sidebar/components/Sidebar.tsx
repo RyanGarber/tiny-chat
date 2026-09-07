@@ -4,7 +4,6 @@ import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChat
 import { useEmbedding } from "@tiny-chat/client/src/features/user/hooks/useEmbedding.ts";
 import { type CSSProperties, useCallback, useState } from "react";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
-import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import AccountDrawer from "#app/features/sidebar/components/AccountDrawer.tsx";
 import SettingsDrawer from "#app/features/sidebar/components/SettingsDrawer.tsx";
 import SidebarCollapsed from "#app/features/sidebar/components/SidebarCollapsed.tsx";
@@ -134,9 +133,6 @@ export default function Sidebar() {
 							: "Type to search…"
 				}
 				filter={(_, actions) => actions}
-				styles={{
-					content: StyleUtils.glass,
-				}}
 			/>
 		</>
 	);

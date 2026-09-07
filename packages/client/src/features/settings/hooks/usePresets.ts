@@ -1,4 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
+import { SettingsUtils } from "@tiny-chat/core/src/core/utils/SettingsUtils.ts";
 import { useContext, useMemo } from "react";
 import { ClientContext } from "../../../client.ts";
 import { useSettings } from "./useSettings.ts";
@@ -9,7 +10,7 @@ export const usePresets = () => {
 	const { settings, applySettings } = useSettings();
 
 	const presets = useMemo(() => {
-		return settings.data?.presets ?? {};
+		return SettingsUtils.defaults({ presets: settings.data?.presets }).presets;
 	}, [settings.data?.presets]);
 
 	const setPreset = useMutation({

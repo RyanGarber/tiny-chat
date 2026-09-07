@@ -1,10 +1,9 @@
 import type { TextStreamPart } from "ai";
-import { describe, expect, inject, it } from "vitest";
-import { testConfig } from "../../../../tests.ts";
-import type { zDataPart } from "../../../data/types/message.ts";
+import { mockConfig, mockUser } from "../../../../tests.ts";
+import type { zDataPart } from "../../../data/types/part.ts";
 import { AzureProvider } from "./AzureProvider.ts";
 
-describe("providers - azure", () => {
+describe("AzureProvider", () => {
 	it("stores signatures", () => {
 		const event: TextStreamPart<any> = {
 			type: "reasoning-delta",
@@ -18,8 +17,8 @@ describe("providers - azure", () => {
 			},
 		};
 		const signature = AzureProvider.getPartSignature?.({
-			user: inject("shared_user"),
-			config: testConfig(AzureProvider, "gpt-5"),
+			user: mockUser(),
+			config: mockConfig(AzureProvider, "gpt-5"),
 			event,
 		});
 		expect(signature?.model).toBe("gpt-5");
@@ -40,16 +39,16 @@ describe("providers - azure", () => {
 		};
 
 		const metadata = AzureProvider.getPartSignatureReturn?.({
-			user: inject("shared_user"),
-			config: testConfig(AzureProvider, "gpt-5"),
+			user: mockUser(),
+			config: mockConfig(AzureProvider, "gpt-5"),
 			part,
 		});
 		expect(metadata?.azure?.itemId).toBe("__TEST__");
 		expect(metadata?.azure?.reasoningEncryptedContent).toBe("__TEST__");
 
 		const metadata2 = AzureProvider.getPartSignatureReturn?.({
-			user: inject("shared_user"),
-			config: testConfig(AzureProvider, "gpt-4"),
+			user: mockUser(),
+			config: mockConfig(AzureProvider, "gpt-4"),
 			part,
 		});
 		expect(metadata2?.azure?.itemId).toBe("__TEST__");
@@ -58,22 +57,22 @@ describe("providers - azure", () => {
 
 	it("provides the appropriate provider options", () => {
 		const options = AzureProvider.getSdkOptions({
-			user: inject("shared_user"),
-			config: testConfig(AzureProvider, "gpt-5"),
+			user: mockUser(),
+			config: mockConfig(AzureProvider, "gpt-5"),
 			env: {},
 		});
 		expect(options?.azure?.reasoningSummary).toBe("detailed");
 
 		const options2 = AzureProvider.getSdkOptions({
-			user: inject("shared_user"),
-			config: testConfig(AzureProvider, "claude-sonnet-5"),
+			user: mockUser(),
+			config: mockConfig(AzureProvider, "claude-sonnet-5"),
 			env: {},
 		});
 		expect(options2?.anthropic?.thinking?.type).toBe("adaptive");
 
 		const options3 = AzureProvider.getSdkOptions({
-			user: inject("shared_user"),
-			config: testConfig(AzureProvider, "deepseek-r1"),
+			user: mockUser(),
+			config: mockConfig(AzureProvider, "deepseek-r1"),
 			env: {},
 		});
 		expect(options3?.openai?.reasoningSummary).toBe("detailed");

@@ -1,108 +1,123 @@
-import "./env.ts";
+import "./db.ts";
 
+import { inferPrismaClient } from "@ryangarber/better-auth-adapter-prisma/client";
+import type { userFields } from "@tiny-chat/core/prisma/better-auth-adapter.ts";
 import { JsonService } from "@tiny-chat/core/src/core/services/JsonService.ts";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import { zConfig } from "@tiny-chat/core/src/features/data/types/message.ts";
-import { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
-import { TestProvider } from "@tiny-chat/core/src/features/provider/providers/model/TestProvider.ts";
+import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { createTRPCClient, httpLink } from "@trpc/client";
+import { createAuthClient } from "better-auth/client";
 import {
 	anonymousClient,
 	inferAdditionalFields,
 } from "better-auth/client/plugins";
-import { createAuthClient } from "better-auth/react";
-import { inject } from "vitest";
-import type { TestProject } from "vitest/node";
-import waitOn from "wait-on";
+import { beforeAll, inject } from "vitest";
 import type { ApiRouter } from "./core/utils/ApiRouter.ts";
 import type { AuthServer } from "./core/utils/AuthServer.ts";
 
-declare module "vitest" {
-	export interface ProvidedContext {
-		server_serverUrl: string;
-		server_token: string;
-		server_user: zUser;
-		server_config: zConfig;
-	}
-}
+const nextId = () => crypto.getRandomValues(new Uint8Array(24)).join("");
 
-export async function setup(project: TestProject) {
-	console.log(`[tests] waiting for backend`);
-	const backendUrl = `http://localhost:${process.env.VITE_SERVER_PORT}`;
-	await waitOn({ resources: [backendUrl], timeout: 30000 });
-
-	console.log(`[tests] creating test user`);
-	const { auth } = testClient(backendUrl, null);
-	const session = await auth.signIn.anonymous();
-	if (session.error)
-		throw new Error(`Failed to create session: ${session.error.message}`);
-	const update = await auth.updateUser({
+/**
+ * Creates a temporary test user and returns it.
+ * Best for simple server tests.
+ */
+export function testUser(overrides: Partial<zUser> = {}): zUser {
+	const user: zUser = {
+		id: CommonUtils.getRandomId(),
+		name: "Test User",
+		settings: {},
+		...overrides,
 		isEphemeral: true,
-		fetchOptions: {
-			headers: { Authorization: `Bearer ${session.data.token}` },
-		},
-	});
-	if (update.error)
-		throw new Error(`Failed to update session: ${update.error.message}`);
-
-	const user = zUser.parse({ ...session.data.user, isEphemeral: true });
-
-	console.log(`[tests] setting up test user with token:`, session.data.token);
-	const { models } = await TestProvider.getStatus({ user });
-	const model = models.find((m) => m.features.includes("language"));
-	if (!model) throw new Error("Failed to get test model");
-	const config = zConfig.parse({
-		provider: TestProvider.name,
-		model: model.name,
-		args: model.args.map((arg) => ({
-			name: arg.name,
-			value: arg.default,
-		})),
-	});
-
-	console.log("[tests] test user ready", user);
-	project.provide("server_serverUrl", backendUrl);
-	project.provide("server_token", session.data.token);
-	project.provide("server_user", user);
-	project.provide("server_config", config);
-
-	return async () => {
-		console.log("[tests] cleaning up test user");
-		const deletion = await auth.deleteAnonymousUser({
-			fetchOptions: {
-				headers: { Authorization: `Bearer ${session.data.token}` },
-			},
-		});
-		if (deletion.error)
-			throw new Error(`Failed to delete session: ${deletion.error.message}`);
 	};
+
+	beforeAll(async () => {
+		await globalThis.db.orm.public.User.create({
+			...user,
+			email: `${user.id}@test.com`,
+			emailVerified: false,
+			image: null,
+			updatedAt: Temporal.Now.plainDateTimeISO("UTC"),
+			isAnonymous: true,
+			cache: { providers: [] },
+		});
+	});
+
+	afterAll(async () => {
+		// TODO - confirm that these relations are cascading and remove
+
+		const dreams = await globalThis.db.orm.public.Dream.where({
+			userId: user.id,
+		})
+			.select("id")
+			.all();
+		for (const dream of dreams) {
+			await globalThis.db.orm.public.DreamMessage.where({
+				dreamId: dream.id,
+			}).deleteAll();
+		}
+
+		const chats = await globalThis.db.orm.public.Chat.where({ userId: user.id })
+			.select("id")
+			.all();
+		for (const chat of chats) {
+			await globalThis.db.orm.public.ChatMemory.where({
+				chatId: chat.id,
+			}).deleteAll();
+		}
+
+		await globalThis.db.orm.public.User.where({ id: user.id }).delete();
+	});
+
+	return user;
 }
 
-export function testClient(
-	backendUrl = inject("server_serverUrl"),
-	token: string | null = inject("server_token"),
-) {
+/**
+ * Crates a temporary user and session and returns an authenticated API client.
+ * Best for more complicated, real-world integration tests.
+ */
+export function testClient(user = testUser()) {
+	const session = {
+		id: nextId(),
+		userId: user.id,
+		token: nextId(),
+		updatedAt: Temporal.Now.plainDateTimeISO("UTC"),
+		expiresAt: Temporal.Now.plainDateTimeISO("UTC").add({ hours: 1 }),
+	};
+
+	beforeAll(async () => {
+		await globalThis.db.orm.public.Session.create(session);
+	});
+
+	const authPlugins = [
+		anonymousClient(),
+		inferAdditionalFields<typeof AuthServer>(),
+	];
+
 	return {
+		user,
+		session,
 		api: createTRPCClient<ApiRouter>({
 			links: [
 				httpLink({
-					url: `${backendUrl}${CommonUtils.endpoints.api}/`,
+					url: `${inject("serverUrl")}${CommonUtils.endpoints.api}/`,
 					transformer: JsonService.transformer,
-					headers: () => ({ Authorization: `Bearer ${token}` }),
+					headers: () => ({ Authorization: `Bearer ${session.token}` }),
 					methodOverride: "POST",
 				}),
 			],
 		}),
-		auth: createAuthClient({
-			baseURL: backendUrl,
-			basePath: CommonUtils.endpoints.auth,
-			fetchOptions: {
-				auth: {
-					type: "Bearer",
-					token: () => token ?? undefined,
+		auth: inferPrismaClient<typeof userFields>()(
+			createAuthClient({
+				baseURL: inject("serverUrl"),
+				basePath: CommonUtils.endpoints.auth,
+				fetchOptions: {
+					auth: {
+						type: "Bearer",
+						token: () => session.token,
+					},
 				},
-			},
-			plugins: [anonymousClient(), inferAdditionalFields<typeof AuthServer>()],
-		}),
+				plugins: authPlugins,
+			}),
+		),
 	};
 }

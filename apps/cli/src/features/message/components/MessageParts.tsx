@@ -1,10 +1,9 @@
 import type { AgentStreamEvent } from "@tiny-chat/client/src/core/services/StreamService.ts";
 import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
+import { MarkdownDataUtils } from "@tiny-chat/client/src/features/message/utils/MarkdownDataUtils.ts";
 import type { Compaction } from "@tiny-chat/core/src/features/agent/services/AgentTokensService.ts";
-import type {
-	MessageState,
-	zData,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { zData } from "@tiny-chat/core/src/features/data/types/part.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { ToolCallUtils } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
 import Box from "../../../core/components/Box.tsx";
@@ -48,6 +47,36 @@ export default function MessageParts({
 	);
 
 	return parts.flatMap((part, index) => {
+		if (part.type === "text" || part.type === "attachment") {
+			const previous = parts[index - 1];
+			if (previous?.type === "text" || previous?.type === "attachment")
+				return [];
+			const run = MarkdownDataUtils.toInlineParts(parts.slice(index));
+			return (
+				<Box key={index} flexDirection="column">
+					{run.map((item) => (
+						<CompactionBadge
+							key={item.id}
+							compaction={compaction}
+							id={item.id}
+						/>
+					))}
+					<Markdown source={[run]} streaming={status === "generating"} />
+				</Box>
+			);
+		}
+		if (part.type === "interjection")
+			return (
+				<Box
+					key={part.id}
+					backgroundColor="surface"
+					flexDirection="column"
+					paddingX={1}
+				>
+					<Text color="textSubtle">You</Text>
+					<MessageParts data={[part.value]} compaction={compaction} />
+				</Box>
+			);
 		if (part.type === "group") {
 			return (
 				<Task.Group
@@ -105,20 +134,6 @@ export default function MessageParts({
 						return [];
 					})}
 				</Task.Group>
-			);
-		} else if (part.type === "text") {
-			return (
-				<Box key={index} flexDirection="column">
-					<CompactionBadge compaction={compaction} id={part.id} />
-					<Markdown source={part.value} streaming={status === "generating"} />
-				</Box>
-			);
-		} else if (part.type === "attachment") {
-			return (
-				<Text key={index} color="cyan">
-					@{part.label}
-					{part.content.type === "directory" ? "/" : ""}
-				</Text>
 			);
 		} else if (part.type === "abort") {
 			return (

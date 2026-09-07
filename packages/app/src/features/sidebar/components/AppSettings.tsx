@@ -18,8 +18,7 @@ import { ModelMultiSelect } from "#app/core/components/ModelSelect.tsx";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 
 export default function AppSettings() {
-	const { theme, setTheme, codeTheme, setCodeTheme, blackout, setBlackout } =
-		useThemes();
+	const { theme, setTheme, codeTheme, setCodeTheme } = useThemes();
 	const {
 		useProviderCache,
 		setUseProviderCache,
@@ -36,7 +35,7 @@ export default function AppSettings() {
 					Changes the look of the app
 				</Text>
 			</Box>
-			<Tooltip label="Styles the app" color="gray" position="right">
+			<Tooltip label="Styles the app" position="right">
 				<Select
 					label="App Theme"
 					styles={StyleUtils.input}
@@ -51,7 +50,7 @@ export default function AppSettings() {
 					readOnly={setTheme.isPending}
 				></Select>
 			</Tooltip>
-			<Tooltip label="Styles code blocks" color="gray" position="right">
+			<Tooltip label="Styles code blocks" position="right">
 				<Select
 					label="Code Theme"
 					styles={StyleUtils.input}
@@ -66,24 +65,6 @@ export default function AppSettings() {
 					readOnly={setCodeTheme.isPending}
 				/>
 			</Tooltip>
-			<Tooltip
-				label="Replaces color with grayscale"
-				color="gray"
-				position="right"
-			>
-				<CheckboxCard
-					p="xs"
-					checked={blackout}
-					onChange={(value) => {
-						setBlackout.mutate({ blackout: value });
-					}}
-				>
-					<Group>
-						<CheckboxIndicator size="xs" />
-						<Text size="sm">Blackout</Text>
-					</Group>
-				</CheckboxCard>
-			</Tooltip>
 			<Space />
 			<Box>
 				<Text size="sm">Performance</Text>
@@ -91,11 +72,7 @@ export default function AppSettings() {
 					Optimizes performance of the app
 				</Text>
 			</Box>
-			<Tooltip
-				label="Reuse model lists for faster loading"
-				color="gray"
-				position="right"
-			>
+			<Tooltip label="Reuse model lists for faster loading" position="right">
 				<CheckboxCard
 					p="xs"
 					checked={useProviderCache}
@@ -111,7 +88,6 @@ export default function AppSettings() {
 			</Tooltip>
 			<Tooltip
 				label="Disable WebLLM support for faster loading"
-				color="gray"
 				position="right"
 			>
 				<CheckboxCard
@@ -135,11 +111,7 @@ export default function AppSettings() {
 				</Text>
 			</Box>
 			<Stack>
-				<Tooltip
-					label="Generative models to show"
-					color="gray"
-					position="right"
-				>
+				<Tooltip label="Generative models to show" position="right">
 					<ModelMultiSelect
 						label="Generation"
 						styles={StyleUtils.input}
@@ -157,7 +129,7 @@ export default function AppSettings() {
 						invert
 					/>
 				</Tooltip>
-				<Tooltip label="Embedding models to show" color="gray" position="right">
+				<Tooltip label="Embedding models to show" position="right">
 					<ModelMultiSelect
 						label="Embedding"
 						styles={StyleUtils.input}

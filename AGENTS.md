@@ -155,9 +155,9 @@ Providers live in **core** (`features/provider/providers/{model,web,other}/`), n
 
 ## Data (enough to not guess)
 
-Prisma + Postgres. Schema: `packages/server/prisma/schema.prisma`. Client:
-`packages/server/generated/prisma`. Runtime singleton: `prisma` from
-`packages/server/src/db.ts` (`globalThis.prisma`).
+Prisma + Postgres. Schema: `packages/core/prisma/contract.prisma`. Client:
+`packages/core/generated/prisma`. Runtime singleton: `db` from
+`packages/server/src/db.ts` (`globalThis.db`).
 
 Core domain types wrap those models and add Zod for JSON columns (`features/data/types/`). Changing a Prisma model means
 updating the matching core type.
@@ -215,11 +215,12 @@ Scratch files and test harnesses:
   `packages/app/src/main.tsx` and `apps/cli/src/main.tsx`.
   `createClient` parses `zEnv` from that same `.env`.
 
-Vitest (`vitest.config.ts`) includes `packages/**/*.test.ts`. Global setup:
+Vitest (`vitest.config.base.ts`) includes `packages/**/*.test.ts`. Global setup:
 
 - `packages/core/src/tests.ts` — mocked `__TEST__` user + `TestProvider` for pure unit tests that must not hit the
   network.
-- `packages/server/src/tests.ts` — waits on `localhost:$VITE_SERVER_PORT`, anonymous ephemeral user, `testClient()` for
+- `packages/server/src/tests.global.ts` — waits on `localhost:$VITE_SERVER_PORT`, anonymous ephemeral user,
+  `testClient()` for
   live API tests.
 
 Prefer the live `prisma` / `ClientContext` path unless the test is genuinely pure (string windows, path math, markdown).

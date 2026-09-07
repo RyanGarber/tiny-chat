@@ -2,9 +2,12 @@ import type { EditorNode } from "@tiny-chat/client/src/features/editor/types/nod
 import { AtomUtils } from "@tiny-chat/client/src/features/editor/utils/AtomUtils.ts";
 import type { TextAreaHandle } from "react-ink-textarea";
 import { create } from "zustand";
-import { EditorUtils } from "../utils/EditorUtils.ts";
+import { type EditorSelection, EditorUtils } from "../utils/EditorUtils.ts";
 
 interface EditorStore {
+	selection: EditorSelection | null;
+	setSelection: (selection: EditorSelection | null) => void;
+	focusedFeedbackId: string | null;
 	editor: TextAreaHandle | null;
 	setEditor: (editor: TextAreaHandle | null) => void;
 
@@ -24,6 +27,9 @@ interface EditorStore {
 }
 
 export const useEditorStore = create<EditorStore>((set, get) => ({
+	selection: null,
+	setSelection: (selection) => set({ selection }),
+	focusedFeedbackId: null,
 	editor: null,
 	setEditor: (editor) => set({ editor }),
 

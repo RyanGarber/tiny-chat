@@ -7,7 +7,6 @@ import {
 } from "@phosphor-icons/react";
 import { useIsMutating } from "@tanstack/react-query";
 import { AppService } from "#app/core/services/AppService.ts";
-import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import { useScreenshot } from "#app/features/upload/hooks/useScreenshot.ts";
 import { uploadMutationKey } from "#client/src/features/upload/hooks/useUploads.ts";
 
@@ -30,7 +29,7 @@ export default function LeftSection({ disabled }: { disabled: boolean }) {
 					<PaperclipIcon size={20} />
 				</ActionIcon>
 			</Menu.Target>
-			<Menu.Dropdown style={{ boxShadow: StyleUtils.shadow }}>
+			<Menu.Dropdown>
 				<Menu.Item
 					leftSection={<FileIcon size={20} />}
 					onClick={() => AppService.openUploads("attachment")}

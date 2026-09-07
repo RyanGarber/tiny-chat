@@ -1,5 +1,5 @@
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import { describe, expect, inject, it } from "vitest";
+import { mockConfig } from "@tiny-chat/core/src/tests.ts";
 import { testClient } from "../../../tests.ts";
 
 describe("message", () => {
@@ -8,11 +8,11 @@ describe("message", () => {
 	it("keeps new chats folderless and preserves manually created empty folders", async () => {
 		const content = {
 			author: "USER" as const,
-			config: inject("server_config"),
+			config: mockConfig(),
 			data: [],
 			metadata: [],
 		};
-		const folder = await api.chat.createFolder.mutate({});
+		const folder = await api.chat.createFolder.mutate();
 		expect(folder.title).toBeNull();
 		expect(
 			(await api.chat.getChatList.query()).folders.find(
@@ -26,7 +26,7 @@ describe("message", () => {
 			folderId: folder.id,
 		});
 		expect((await api.chat.getChat.query(nested)).folderId).toBe(folder.id);
-		const list = await api.chat.getChatList.query({});
+		const list = await api.chat.getChatList.query();
 		expect(list.chats.some((item) => item.id === recent.chatId)).toBe(true);
 		expect(list.chats.some((item) => item.id === nested.chatId)).toBe(false);
 		expect(
@@ -36,7 +36,7 @@ describe("message", () => {
 		).toEqual([nested.chatId]);
 		await api.message.deleteMessage.mutate(nested);
 		expect(
-			(await api.chat.getChatList.query({})).folders.find(
+			(await api.chat.getChatList.query()).folders.find(
 				(item) => item.id === folder.id,
 			)?.chats,
 		).toEqual([]);
@@ -49,10 +49,54 @@ describe("message", () => {
 		await api.chat.deleteChat.mutate({ id: recent.chatId });
 	});
 
+	it("moves chats into folders and back to recents", async () => {
+		const folder = await api.chat.createFolder.mutate();
+		const message = await api.message.createMessage.mutate({
+			author: "USER",
+			config: mockConfig(),
+			data: [],
+			metadata: [],
+		});
+
+		await api.chat.setChatFolder.mutate({
+			chat: message.chatId,
+			folderId: folder.id,
+		});
+
+		let list = await api.chat.getChatList.query();
+		expect(list.chats.some((chat) => chat.id === message.chatId)).toBe(false);
+		expect(
+			list.folders
+				.find((item) => item.id === folder.id)
+				?.chats.some((chat) => chat.id === message.chatId),
+		).toBe(true);
+
+		await api.chat.setChatFolder.mutate({
+			chat: message.chatId,
+			folderId: null,
+		});
+		list = await api.chat.getChatList.query();
+		expect(list.chats.some((chat) => chat.id === message.chatId)).toBe(true);
+		expect(
+			list.folders
+				.find((item) => item.id === folder.id)
+				?.chats.some((chat) => chat.id === message.chatId),
+		).toBe(false);
+
+		await expect(
+			api.chat.setChatFolder.mutate({
+				chat: message.chatId,
+				folderId: CommonUtils.getRandomId(),
+			}),
+		).rejects.toThrow();
+		await api.chat.deleteChat.mutate({ id: message.chatId });
+		await api.chat.deleteFolder.mutate({ folder, deleteChats: false });
+	});
+
 	it("creates a new chat with two messages", async () => {
 		const first = await api.message.createMessage.mutate({
 			author: "USER",
-			config: inject("server_config"),
+			config: mockConfig(),
 			data: [
 				[
 					{
@@ -68,7 +112,7 @@ describe("message", () => {
 		const second = await api.message.createMessage.mutate({
 			chat: first.chatId,
 			author: "MODEL",
-			config: inject("server_config"),
+			config: mockConfig(),
 			data: [
 				[
 					{
@@ -89,7 +133,7 @@ describe("message", () => {
 	it("edits onto a new branch without deleting the original", async () => {
 		const first = await api.message.createMessage.mutate({
 			author: "USER",
-			config: inject("server_config"),
+			config: mockConfig(),
 			data: [
 				[
 					{
@@ -105,7 +149,7 @@ describe("message", () => {
 		await api.message.createMessage.mutate({
 			chat: first.chatId,
 			author: "MODEL",
-			config: inject("server_config"),
+			config: mockConfig(),
 			data: [
 				[{ id: CommonUtils.getRandomId(), type: "text", value: "Model reply" }],
 			],
@@ -115,7 +159,7 @@ describe("message", () => {
 		const edited = await api.message.editMessage.mutate({
 			message: first.id,
 			author: "USER",
-			config: inject("server_config"),
+			config: mockConfig(),
 			data: [
 				[
 					{
@@ -143,7 +187,7 @@ describe("message", () => {
 	it("deletes the last message which deletes the chat", async () => {
 		const first = await api.message.createMessage.mutate({
 			author: "USER",
-			config: inject("server_config"),
+			config: mockConfig(),
 			data: [
 				[
 					{
@@ -159,7 +203,7 @@ describe("message", () => {
 		await api.message.createMessage.mutate({
 			chat: first.chatId,
 			author: "MODEL",
-			config: inject("server_config"),
+			config: mockConfig(),
 			data: [
 				[{ id: CommonUtils.getRandomId(), type: "text", value: "Model reply" }],
 			],
@@ -170,7 +214,7 @@ describe("message", () => {
 			id: first.id,
 		});
 
-		const chat = await api.chat.getChatList.query({});
+		const chat = await api.chat.getChatList.query();
 		expect(
 			[...chat.chats, ...chat.folders.flatMap((folder) => folder.chats)].filter(
 				(chat) => chat.id === first.chatId,

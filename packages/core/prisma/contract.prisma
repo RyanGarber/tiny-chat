@@ -1,5 +1,14 @@
 // use prisma-next
 // Contract inferred from the live database schema. Edit as needed, then run `prisma contract emit`.
+types {
+  Embedding = pgvector.Vector()
+  zSettings = zod.Json("zSettings")
+  zCache = zod.Json("zCache")
+  zConfig = zod.Json("zConfig")
+  zData = zod.Json("zData")
+  zMetadata = zod.Json("zMetadata")
+}
+
 namespace public {
   model User {
     id            String       @id(map: "user_pkey")
@@ -10,8 +19,8 @@ namespace public {
     createdAt     Timestamp(3) @default(now())
     updatedAt     Timestamp(3)
     isAnonymous   Boolean?     @default(false)
-    settings      Jsonb        @default(dbgenerated("'{}'::jsonb"))
-    cache         Jsonb        @default(dbgenerated("'{}'::jsonb"))
+    settings      zSettings    @default(dbgenerated("'{}'::jsonb"))
+    cache         zCache       @default(dbgenerated("'{}'::jsonb"))
     isEphemeral   Boolean?     @default(false)
     accounts      Account[]
     actions       Action[]
@@ -56,6 +65,8 @@ namespace public {
     createdAt Timestamp(3) @default(now())
     chats     Chat[]
     user      User         @relation(fields:[userId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "folder_userId_fkey")
+    cwd       String?
+    settings  zSettings    @default(dbgenerated("'{}'::jsonb"))
 
     @@index([userId], map: "folder_userId_idx")
     @@map("folder")
@@ -98,9 +109,10 @@ namespace public {
     chatId     String
     previousId String?
     author     pg.enum(Author)
-    config     Jsonb
-    data       Jsonb
-    metadata   Jsonb
+    config     zConfig
+    data       zData
+    metadata   zMetadata
+    embedding  Embedding?
     createdAt  Timestamp(3)    @default(now())
     actions    Action[]
     dreams     Dream[]
@@ -121,8 +133,9 @@ namespace public {
     id        String        @id(map: "action_pkey")
     userId    String
     schedule  String
-    config    Jsonb
-    data      Jsonb
+    config    zConfig
+    data      zData
+    embedding Embedding?
     createdAt Timestamp(3)  @default(now())
     messageId String
     lastRanAt Timestamp(3)?
@@ -138,10 +151,10 @@ namespace public {
   model Dream {
     id        String       @id(map: "dream_pkey")
     userId    String
-    data      Jsonb
-    metadata  Jsonb
+    data      zData
+    metadata  zMetadata
     createdAt Timestamp(3) @default(now())
-    config    Jsonb
+    config    zConfig
     messages  Message[]
     user      User         @relation(fields:[userId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "dream_userId_fkey")
 
@@ -182,7 +195,9 @@ namespace public {
     path      String[]     @noCheck(elementNotNull)
     mime      String
     data      Bytes
+    embedding Embedding?
     createdAt Timestamp(3) @default(now())
+	updatedAt  Timestamp(3)?
     chatId    String?
     chat      Chat?        @relation(fields:[chatId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "file_chatId_fkey")
     upload    Upload?      @relation(fields:[uploadId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "file_uploadId_fkey")
@@ -197,13 +212,15 @@ namespace public {
   model Memory {
     id         String                   @id(map: "memory_pkey")
     userId     String
-    config     Jsonb?
+    config     zConfig?
     fact       String
     category   pg.enum(MemoryCategory)
     stability  pg.enum(MemoryStability)
     evidence   String[]                 @noCheck(elementNotNull)
     confidence Float
+    embedding  Embedding?
     createdAt  Timestamp(3)             @default(now())
+    updatedAt  Timestamp(3)?
     messageId  String?
     message    Message?                 @relation(fields:[messageId], references:[id], onDelete: SetNull, onUpdate: Cascade, map: "memory_messageId_fkey")
     user       User                     @relation(fields:[userId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "memory_userId_fkey")
@@ -233,9 +250,9 @@ namespace public {
   model Subagent {
     id        String       @id(map: "subagent_pkey")
     createdAt Timestamp(3) @default(now())
-    data      Jsonb
+    data      zData
     messageId String
-    metadata  Jsonb
+    metadata  zMetadata
     userId    String
     message   Message      @relation(fields:[messageId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "subagent_messageId_fkey")
     user      User         @relation(fields:[userId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "subagent_userId_fkey")

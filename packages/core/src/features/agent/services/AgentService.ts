@@ -4,12 +4,14 @@ import type { zEnv } from "../../../core/types/env.ts";
 import type { StreamMutation } from "../../../core/types/stream.ts";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 import { VERBOSE } from "../../../logger.ts";
+import type { zConfig } from "../../data/types/message.ts";
 import type {
-	zConfig,
 	zData,
 	zDataPart,
+	zInterjectionPart,
 	zMetadata,
-} from "../../data/types/message.ts";
+	zToolCallPart,
+} from "../../data/types/part.ts";
 import {
 	ModelProviderService,
 	type RunLanguageModelOptions,
@@ -41,7 +43,10 @@ export const AgentService = {
 		skills: zSkill[];
 		skipInstructions?: boolean;
 	}) => {
-		const { prompt } = AgentUtils.getLastPrompt({messages: context.messages, withText: false});
+		const { prompt } = AgentUtils.getLastPrompt({
+			messages: context.messages,
+			withText: false,
+		});
 
 		const enabledToolsets = toolsets.filter(
 			(toolset) =>
@@ -72,7 +77,7 @@ export const AgentService = {
 				})));
 
 		if (VERBOSE)
-			console.log("[AgentService] built agent:", messages, instructions);
+			console.log("[AgentService] built agent:", { messages, instructions });
 
 		return {
 			config: prompt?.config,
@@ -124,6 +129,7 @@ export const AgentService = {
 		instructions: instructionOverride,
 		options,
 		toolStream,
+		interjections,
 	}: {
 		provider: ModelProvider<any>;
 		context: zAgentContext;
@@ -136,10 +142,12 @@ export const AgentService = {
 		/** Override the normal chat instructions for specialized agent runs. */
 		instructions?: string;
 		options?: Partial<Omit<RunLanguageModelOptions, "system">>;
+		/** Drain user messages queued for the next model step. */
+		interjections?: () => zInterjectionPart[] | Promise<zInterjectionPart[]>;
 		/** Output a tool reports while it is still running, keyed by call id */
 		toolStream?: (_: {
 			tool: Tool<any, any>;
-			part: Extract<zDataPart, { type: "toolCall" }>;
+			part: zToolCallPart;
 			mutation: StreamMutation<
 				z.infer<Exclude<ToolDefinition["stream"], void>>
 			>;
@@ -176,6 +184,8 @@ export const AgentService = {
 			};
 
 			try {
+				if (options?.abortSignal?.aborted) break;
+				for (const part of (await interjections?.()) ?? []) yield push(part);
 				const compacted = await AgentTokensService.compactMessages({
 					instructions,
 					messages,
@@ -405,7 +415,16 @@ export const AgentService = {
 				}
 			}
 
-			if (stop || !toolCalls.length || options?.abortSignal?.aborted) {
+			if (options?.abortSignal?.aborted) {
+				yield push({
+					id: CommonUtils.getRandomId(),
+					type: "abort",
+					reason: "user",
+					message: "Aborted",
+				});
+				break;
+			}
+			if (stop || !toolCalls.length) {
 				console.log("[AgentService] loop complete");
 				break;
 			}

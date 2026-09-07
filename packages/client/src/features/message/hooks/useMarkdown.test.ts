@@ -1,25 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { MarkdownSourceUtils, processor } from "./useMarkdown.ts";
+import { _useMarkdownTest } from "./useMarkdown.ts";
 
-type Slim = string | [string, ...Slim[]];
+const { parse, run } = _useMarkdownTest();
 
-const slim = (node: {
-	type: string;
-	name?: string;
-	tagName?: string;
-	value?: string;
-	children?: Array<typeof node>;
-}): Slim => {
-	if (node.type === "text") return node.value ?? "";
-	const name = node.tagName ?? node.name ?? node.type;
-	return [name, ...(node.children?.map(slim) ?? [])];
-};
-
-const parse = (source: string) => slim(processor.parse(source));
-const run = (source: string) =>
-	slim(processor.runSync(processor.parse(source)));
-
-describe("markdown directives", () => {
+describe("useMarkdown", () => {
 	it("does not treat ratios or IPv6 as directives", () => {
 		expect(parse("before 1:1 after")).toEqual([
 			"root",
@@ -73,50 +56,5 @@ describe("markdown directives", () => {
 			["paragraph", ':command{name="x"}'],
 		]);
 		expect(parse(":quote")).toEqual(["root", ["paragraph", ":quote"]]);
-	});
-});
-
-describe("MarkdownSourceUtils", () => {
-	it("rebuilds inline attachments without adding whitespace", () => {
-		const source = MarkdownSourceUtils.fromData([
-			[
-				{ id: "before", type: "text", value: "before(" },
-				{
-					id: "attachment",
-					type: "attachment",
-					source: "/tmp/a",
-					label: "a",
-					content: { type: "unavailable" },
-				},
-				{ id: "after", type: "text", value: ")after" },
-			],
-		]);
-
-		expect(source).toBe('before(:attachment[]{source="/tmp/a" name="a"})after');
-		expect(run(source)).toEqual(["root", ["p", "before(", ["link"], ")after"]]);
-	});
-
-	it("preserves surrounding spaces and attachment attributes", () => {
-		const source = MarkdownSourceUtils.fromData([
-			[
-				{ id: "before", type: "text", value: "before  " },
-				{
-					id: "attachment",
-					type: "attachment",
-					source: '/tmp/a&"b',
-					label: 'a&"b',
-					content: { type: "directory", items: [] },
-				},
-				{ id: "after", type: "text", value: "  after" },
-			],
-		]);
-
-		expect(source).toBe(
-			'before  :attachment[]{source="/tmp/a&amp;&quot;b" name="a&amp;&quot;b" is-directory="true"}  after',
-		);
-		expect(run(source)).toEqual([
-			"root",
-			["p", "before  ", ["link"], "  after"],
-		]);
 	});
 });

@@ -3,11 +3,11 @@ import { AgentService } from "@tiny-chat/core/src/features/agent/services/AgentS
 import type { zAgentContext } from "@tiny-chat/core/src/features/agent/types/agent.ts";
 import { AgentUtils } from "@tiny-chat/core/src/features/agent/utils/AgentUtils.ts";
 import type { zChat } from "@tiny-chat/core/src/features/data/types/chat.ts";
+import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type {
-	MessageState,
 	zData,
 	zMetadata,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
+} from "@tiny-chat/core/src/features/data/types/part.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import { ModelProviderService } from "@tiny-chat/core/src/features/provider/services/ModelProviderService.ts";
 import { SkillUtils } from "@tiny-chat/core/src/features/skill/utils/SkillUtils.ts";

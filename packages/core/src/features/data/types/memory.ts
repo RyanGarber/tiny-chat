@@ -1,11 +1,6 @@
-import type { FieldOutputTypes } from "../../../../generated/prisma/contract.d.ts";
+import type { Model } from "../../../core/services/PostgresService.ts";
 
-export {
-	MemoryCategory,
-	MemoryStability,
-} from "../../../../../server/generated/prisma/browser.ts";
-
-export type MemoryState = FieldOutputTypes["public"]["Memory"];
+export type MemoryState = Omit<Model["Memory"], "embedding">;
 
 export type MemorySearchResult = Pick<
 	MemoryState,

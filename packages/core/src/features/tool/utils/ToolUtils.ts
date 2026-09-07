@@ -1,11 +1,12 @@
 import type { z } from "zod";
 import type { DistributiveOmit } from "../../../core/types/common.ts";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
+import type { zConfig } from "../../data/types/message.ts";
 import type {
-	zConfig,
-	zDataBasicPart,
-	zDataPart,
-} from "../../data/types/message.ts";
+	zFilePart,
+	zToolCallPart,
+	zToolResultPart,
+} from "../../data/types/part.ts";
 import type { RenderedPart } from "../../data/utils/DataUtils.ts";
 import type {
 	OutputPart,
@@ -15,12 +16,12 @@ import type {
 } from "../types/tool.ts";
 
 export type ToolCall<T extends ToolDefinition> = Omit<
-	Extract<zDataPart, { type: "toolCall" }>,
+	zToolCallPart,
 	"name" | "input"
 > & { name: T["name"]; input: z.infer<T["input"]> };
 
 export type ToolResult<T extends ToolDefinition> = Omit<
-	Extract<zDataPart, { type: "toolResult" }>,
+	zToolResultPart,
 	"name" | "output"
 > & {
 	name: T["name"];
@@ -86,7 +87,7 @@ export const ToolUtils = {
 	}: {
 		toolsets: Toolset<any>[];
 		name?: string;
-		part?: Extract<zDataPart, { type: "toolCall" | "toolResult" }>;
+		part?: zToolCallPart | zToolResultPart;
 	}) => {
 		name ??= part?.name;
 		if (name === undefined) return { toolset: null, tool: null };
@@ -123,7 +124,7 @@ export const ToolUtils = {
 
 	is: <T extends ToolDefinition>(
 		toolsets: Toolset<any>[],
-		part: Extract<zDataPart | RenderedPart, { type: "toolCall" }>,
+		part: zToolCallPart | Extract<RenderedPart, { type: "toolCall" }>,
 		isTool: T,
 	): part is ToolCall<T> & { result: ToolResult<T> } => {
 		const { tool } = ToolUtils.find({ toolsets, part });
@@ -131,9 +132,7 @@ export const ToolUtils = {
 	},
 
 	json: <T extends ToolDefinition>(
-		value?:
-			| Extract<zDataPart, { type: "toolResult" }>
-			| Extract<zDataPart, { type: "toolResult" }>["output"],
+		value?: zToolResultPart | zToolResultPart["output"],
 		multiple?: boolean,
 	): z.infer<T["output"]>[] => {
 		if (!value) return [];
@@ -146,15 +145,13 @@ export const ToolUtils = {
 	},
 
 	file: (
-		value?:
-			| Extract<zDataPart, { type: "toolResult" }>
-			| Extract<zDataPart, { type: "toolResult" }>["output"],
+		value?: zToolResultPart | zToolResultPart["output"],
 		multiple?: boolean,
-	): Extract<zDataBasicPart, { type: "file" }>[] => {
+	): zFilePart[] => {
 		if (!value) return [];
 		if (!Array.isArray(value)) value = value.output;
 		let file = value.filter((part) => part.type === "file");
 		if (multiple && Array.isArray(file[0])) file = file.flat();
-		return file as Extract<zDataBasicPart, { type: "file" }>[];
+		return file as zFilePart[];
 	},
 } as const;

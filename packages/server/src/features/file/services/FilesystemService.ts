@@ -1,4 +1,6 @@
+import type { Model } from "@tiny-chat/core/src/core/services/PostgresService.ts";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
+import { TypeUtils } from "@tiny-chat/core/src/core/utils/TypeUtils.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import type {
 	FileNode,
@@ -10,7 +12,6 @@ import {
 	PathUtils,
 } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import type { ByteString, FileContent, FsStat, IFileSystem } from "just-bash";
-import { type File, Prisma } from "../../../../generated/prisma/client.ts";
 
 /**
  * The virtual filesystem behind the file tools and the virtual Bash
@@ -33,16 +34,6 @@ export interface FilesystemOptions extends FilesystemSpec {
 	user: zUser;
 	/** Where the root sits, for when this is mounted inside another filesystem. */
 	root?: string;
-}
-
-interface FileRow {
-	id: string;
-	mount: FileMount;
-	owner_id: string;
-	name: string | null;
-	path: string[];
-	lines: bigint | null;
-	created_at: Date;
 }
 
 export class FilesystemService implements IFileSystem {
@@ -70,7 +61,7 @@ export class FilesystemService implements IFileSystem {
 			skills: [...this.skills],
 			root: root ?? this.root,
 		});
-		clone.nodes = structuredClone(this.nodes);
+		clone.nodes = TypeUtils.deepClone(this.nodes);
 		clone.setRoot();
 		return clone;
 	}
@@ -78,58 +69,57 @@ export class FilesystemService implements IFileSystem {
 	async fetch(): Promise<void> {
 		// An id reaches here straight out of message text, so ownership is what
 		// keeps a guessed one from mounting someone else's upload.
-		const rows = await globalThis.prisma.$queryRaw<FileRow[]>`
-    SELECT
-      f.id,
-      CASE
-        WHEN f."chatId" IS NOT NULL THEN 'chat'
-        WHEN u.kind = 'SKILL' THEN 'skills'
-        ELSE 'uploads'
-      END                                   AS mount,
-      COALESCE(f."chatId", f."uploadId")    AS owner_id,
-      u.name                                AS name,
-      f.path                                AS path,
-      COALESCE(
-        array_length(string_to_array(try_decode_utf8(f.data), E'\n'), 1),
-        0
-      )                                     AS lines,
-      f."createdAt"                         AS created_at
-    FROM file f
-    LEFT JOIN upload u ON u.id = f."uploadId"
-    WHERE f."userId" = ${this.user.id}
-      AND (
-        ${
-					this.chat
-						? // A chat file belongs to no upload: nothing shadows anything on
-							// this mount, so a row claiming both is pre-migration leftover
-							// rather than a file at this path.
-							Prisma.sql`(f."chatId" = ${this.chat} AND f."uploadId" IS NULL)`
-						: Prisma.sql`FALSE`
-				}
-        OR ${
-					this.uploads.length || this.skills.length
-						? Prisma.sql`(
-              f."chatId" IS NULL
-              AND f."uploadId" = ANY(${[...this.uploads, ...this.skills]}::text[])
-            )`
-						: Prisma.sql`FALSE`
-				}
-      )
-  `;
+		const rows = await globalThis.db.runtime().query(
+			globalThis.db.sql.public.file
+				.as("file")
+				.outerLeftJoin(globalThis.db.sql.public.upload.as("upload"), (f, fns) =>
+					fns.eq(f.upload.id, f.file.uploadId),
+				)
+				.select((f, fns) => ({
+					id: f.file.id,
+					mount:
+						fns.raw`CASE WHEN ${f.file.chatId} IS NOT NULL THEN 'chat' WHEN ${fns.eq(f.upload.kind, "SKILL")} THEN 'skills' ELSE 'uploads' END`.returns(
+							"pg/text@1",
+						),
+					ownerId:
+						fns.raw`COALESCE(${f.file.chatId}, ${f.file.uploadId})`.returns(
+							"pg/text@1",
+						),
+					ownerName: f.upload.name,
+					path: f.file.path,
+					lines:
+						fns.raw`COALESCE(array_length(string_to_array(try_decode_utf8(${f.file.data}), E'\n'), 1), 0)`.returns(
+							"pg/int4@1",
+						),
+					createdAt: f.file.createdAt,
+					updatedAt: f.file.updatedAt,
+				}))
+				.where((f, fns) =>
+					fns.and(
+						fns.eq(f.file.userId, this.user.id),
+						fns.or(
+							fns.and(this.chat !== null, fns.eq(f.file.chatId, this.chat)),
+							fns.in(f.file.uploadId, [...this.uploads, ...this.skills]),
+						),
+					),
+				)
+				.build(),
+		);
 
 		this.nodes = [
 			...this.getRoots(),
 			...rows.map(
 				(row): FileNode => ({
 					uri: "",
-					path: [row.mount, row.owner_id, ...row.path],
-					mount: row.mount,
-					id: row.owner_id,
+					path: [row.mount, row.ownerId, ...row.path],
+					mount: row.mount as FileMount,
+					id: row.ownerId,
 					file: row.id,
-					name: row.name,
+					name: row.ownerName,
 					isDirectory: false,
 					lines: Number(row.lines ?? 0),
-					createdAt: row.created_at,
+					createdAt: row.createdAt,
+					updatedAt: row.updatedAt,
 				}),
 			),
 		];
@@ -153,7 +143,8 @@ export class FilesystemService implements IFileSystem {
 			name: null,
 			isDirectory: true,
 			lines: 0,
-			createdAt: new Date(0),
+			createdAt: CommonUtils.parsePlainDateTime(0),
+			updatedAt: CommonUtils.parsePlainDateTime(0),
 		});
 
 		return [
@@ -215,16 +206,28 @@ export class FilesystemService implements IFileSystem {
 		return { exact, hasDeeper };
 	}
 
-	async getFile(path: string): Promise<File> {
+	async getFile(path: string): Promise<Omit<Model["File"], "embedding">> {
 		const { path: parts } = this.parse(path);
 
 		const { exact } = this.locate(parts);
 		if (!exact?.file || exact.isDirectory)
 			throw new Error(`ENOENT: no such file or directory: ${path}`);
 
-		const file = await globalThis.prisma.file.findUnique({
-			where: { id: exact.file },
-		});
+		const file = await globalThis.db.orm.public.File.select(
+			"id",
+			"userId",
+			"chatId",
+			"uploadId",
+			"path",
+			"mime",
+			"data",
+			"createdAt",
+			"updatedAt",
+		)
+			.where({
+				id: exact.file,
+			})
+			.first();
 		if (!file) throw new Error(`ENOENT: no such file or directory: ${path}`);
 		return file;
 	}
@@ -272,7 +275,7 @@ export class FilesystemService implements IFileSystem {
 		const encoding = typeof options === "string" ? options : options?.encoding;
 		const data = toBuffer(content, encoding);
 
-		let existing: File | null;
+		let existing: Omit<Model["File"], "embedding"> | null;
 		try {
 			existing = await this.getFile(path);
 		} catch {
@@ -307,15 +310,17 @@ export class FilesystemService implements IFileSystem {
 			}),
 		};
 
-		await globalThis.prisma.file.upsert({
-			where: { id },
+		await globalThis.db.orm.public.File.where({ id }).upsert({
 			create: {
 				id,
-				user: { connect: { id: this.user.id } },
-				chat: { connect: { id: this.chat } },
+				userId: this.user.id,
+				chatId: this.chat,
 				...file,
 			},
-			update: { ...file, createdAt: new Date() },
+			update: {
+				...file,
+				updatedAt: Temporal.Now.plainDateTimeISO("UTC"),
+			},
 		});
 	}
 
@@ -343,7 +348,7 @@ export class FilesystemService implements IFileSystem {
 				isSymbolicLink: false,
 				mode: this.isWritable(uri) ? 0o755 : 0o555,
 				size: file.data.byteLength,
-				mtime: file.createdAt,
+				mtime: CommonUtils.toDate(file.updatedAt ?? file.createdAt),
 			};
 		}
 
@@ -352,15 +357,15 @@ export class FilesystemService implements IFileSystem {
 				.filter((f) =>
 					PathUtils.contains({ descendent: f.path, parent: uri.path }),
 				)
-				.map((f) => f.createdAt);
-			mtime.sort((a, b) => b.getTime() - a.getTime());
+				.map((f) => f.updatedAt ?? f.createdAt);
+			mtime.sort((a, b) => Temporal.PlainDateTime.compare(b, a));
 			return {
 				isFile: false,
 				isDirectory: true,
 				isSymbolicLink: false,
 				mode: this.isWritable(uri) ? 0o755 : 0o555,
 				size: 0,
-				mtime: mtime[0] ?? new Date(0),
+				mtime: CommonUtils.toDate(mtime[0] ?? new Date(0)),
 			};
 		}
 
@@ -404,13 +409,17 @@ export class FilesystemService implements IFileSystem {
 
 		// Collect the immediate child name of every known path nested under the
 		// directory, tracking the most recent mtime seen among its descendants.
-		const names = new Map<string, Date>();
+		const names = new Map<string, Temporal.PlainDateTime>();
 		for (const f of this.nodes) {
 			if (!PathUtils.contains({ descendent: f.path, parent: uri.path }))
 				continue;
 			const name = f.path[uri.path.length];
 			const mtime = names.get(name);
-			if (!mtime || f.createdAt > mtime) names.set(name, f.createdAt);
+			if (
+				!mtime ||
+				Temporal.PlainDateTime.compare(f.updatedAt ?? f.createdAt, mtime) > 0
+			)
+				names.set(name, f.updatedAt ?? f.createdAt);
 		}
 
 		return [...names].map(([name, mtime]) => {
@@ -441,7 +450,7 @@ export class FilesystemService implements IFileSystem {
 				isFile: !isDirectory,
 				isDirectory,
 				isSymbolicLink: false,
-				mtime,
+				mtime: CommonUtils.toDate(mtime),
 				uri: PathUtils.toMount({ path: childPath, root: this.root }),
 			};
 		});
@@ -467,7 +476,7 @@ export class FilesystemService implements IFileSystem {
 		this.checkWritable(path, "unlink");
 
 		if (exact?.file && !exact.isDirectory) {
-			await globalThis.prisma.file.delete({ where: { id: exact.file } });
+			await globalThis.db.orm.public.File.where({ id: exact.file }).delete();
 			await this.fetch();
 			return;
 		}
@@ -482,11 +491,11 @@ export class FilesystemService implements IFileSystem {
 				PathUtils.contains({ descendent: f.path, parent: uri.path }),
 		);
 
-		await globalThis.prisma.file.deleteMany({
-			where: {
-				id: { in: targets.flatMap((t) => (t.file ? [t.file] : [])) },
-			},
-		});
+		await globalThis.db.orm.public.File.where((file) =>
+			file.id.in(
+				targets.flatMap((target) => (target.file ? [target.file] : [])),
+			),
+		).deleteAndCount();
 
 		await this.fetch();
 	}

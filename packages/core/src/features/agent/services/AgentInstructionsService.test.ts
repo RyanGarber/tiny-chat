@@ -1,7 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { DataUtils } from "../../data/utils/DataUtils.ts";
 
-describe("chat - instructions", () => {
+describe("AgentInstructionsService", () => {
 	it("safely scrubs <message> from prompt", () => {
 		expect(
 			DataUtils.getTextCleaned({

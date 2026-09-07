@@ -1,5 +1,4 @@
 import {
-	ActionIcon,
 	Box,
 	Button,
 	CheckboxCard,
@@ -11,14 +10,12 @@ import {
 	Space,
 	Stack,
 	Text,
-	Textarea,
 	Tooltip,
 } from "@mantine/core";
-import { TrashIcon } from "@phosphor-icons/react";
 import { useMutationState } from "@tanstack/react-query";
 import { useProviders } from "@tiny-chat/client/src/features/agent/hooks/useProviders.ts";
+import { useMessagingStore } from "@tiny-chat/client/src/features/chat/stores/useMessagingStore.ts";
 import { useEmbeddingSettings } from "@tiny-chat/client/src/features/settings/hooks/useEmbeddingSettings.ts";
-import { useInstructions } from "@tiny-chat/client/src/features/settings/hooks/useInstructions.ts";
 import { useModelSettings } from "@tiny-chat/client/src/features/settings/hooks/useModelSettings.ts";
 import { useProviderSettings } from "@tiny-chat/client/src/features/settings/hooks/useProviderSettings.ts";
 import {
@@ -30,6 +27,7 @@ import { useState } from "react";
 import ModelSelect from "#app/core/components/ModelSelect.tsx";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
+import ContextSettings from "#app/features/sidebar/components/ContextSettings.tsx";
 
 export default function ChatSettings({
 	embeddingStatus,
@@ -38,8 +36,6 @@ export default function ChatSettings({
 }) {
 	const { providers } = useProviders();
 
-	const { instructions, addInstruction, editInstruction, removeInstruction } =
-		useInstructions();
 	const { preferredWebProvider, setPreferredWebProvider } =
 		useProviderSettings();
 	const {
@@ -52,6 +48,7 @@ export default function ChatSettings({
 		useModelSettings();
 	const currentModal = useAppStore((state) => state.currentModal);
 	const setCurrentModal = useAppStore((state) => state.setCurrentModal);
+	const folder = useMessagingStore((state) => state.activeFolder);
 
 	const [newEmbeddingConfig, setNewEmbeddingConfig] = useState<zConfig | null>(
 		null,
@@ -65,79 +62,7 @@ export default function ChatSettings({
 
 	return (
 		<Stack>
-			<Box>
-				<Text size="sm">Instructions</Text>
-				<Text size="xs" c="dimmed">
-					Shapes model responses
-				</Text>
-			</Box>
-			{instructions?.map((instruction, index) => (
-				<Textarea
-					key={instruction}
-					defaultValue={instruction}
-					autosize
-					onKeyDown={(e) =>
-						e.key === "Enter" && (e.target as HTMLInputElement).blur()
-					}
-					onBlur={(e) => {
-						if (e.target.value === instruction) return;
-						if (e.target.value)
-							editInstruction.mutate({
-								index,
-								instruction: e.target.value,
-							});
-						else removeInstruction.mutate({ index });
-					}}
-					leftSection={
-						<Text c="dimmed" size="xs">
-							{index + 1}
-						</Text>
-					}
-					rightSection={
-						<ActionIcon
-							variant="subtle"
-							onClick={() => removeInstruction.mutate({ index })}
-							disabled={
-								removeInstruction.isPending &&
-								removeInstruction.variables.index === index
-							}
-						>
-							<TrashIcon size={20} />
-						</ActionIcon>
-					}
-					disabled={
-						(editInstruction.isPending &&
-							editInstruction.variables.index === index) ||
-						(removeInstruction.isPending &&
-							removeInstruction.variables.index === index)
-					}
-				/>
-			))}
-			<Tooltip
-				label="System instructions for models"
-				color="gray"
-				position="right"
-			>
-				<Textarea
-					key="add"
-					autosize
-					label="Instruction"
-					styles={{
-						...StyleUtils.input,
-						...{ input: { paddingTop: 25 } },
-					}}
-					placeholder="Keep responses short."
-					onKeyDown={(e) =>
-						e.key === "Enter" && (e.target as HTMLInputElement).blur()
-					}
-					onBlur={(e) => {
-						if (!e.target.value) return;
-						addInstruction.mutate({ instruction: e.target.value });
-						e.target.value = "";
-					}}
-					disabled={addInstruction.isPending}
-				/>
-			</Tooltip>
+			<ContextSettings folder={folder} />
 			<Space />
 			<Box>
 				<Text size="sm">Retrieval</Text>
@@ -172,11 +97,7 @@ export default function ChatSettings({
 					/>
 				)}
 			</Box>
-			<Tooltip
-				label="Model that generates embeddings"
-				color="gray"
-				position="right"
-			>
+			<Tooltip label="Model that generates embeddings" position="right">
 				<ModelSelect
 					label="Embedding Model"
 					styles={StyleUtils.input}
@@ -232,7 +153,6 @@ export default function ChatSettings({
 						? "Considers semantic meaning of text"
 						: "Requires embedding model"
 				}
-				color="gray"
 				position="right"
 			>
 				<CheckboxCard
@@ -261,11 +181,7 @@ export default function ChatSettings({
 					Enables various agentic features
 				</Text>
 			</Box>
-			<Tooltip
-				label="Model used for forming memories"
-				color="gray"
-				position="right"
-			>
+			<Tooltip label="Model used for forming memories" position="right">
 				<ModelSelect
 					label="Dreaming Model"
 					styles={StyleUtils.input}
@@ -277,11 +193,7 @@ export default function ChatSettings({
 					disabled={setDreamConfig.isPending}
 				/>
 			</Tooltip>
-			<Tooltip
-				label="Model used for delegating tasks"
-				color="gray"
-				position="right"
-			>
+			<Tooltip label="Model used for delegating tasks" position="right">
 				<ModelSelect
 					label="Subagent Model"
 					styles={StyleUtils.input}
@@ -302,11 +214,7 @@ export default function ChatSettings({
 					Enables web browsing for chat models
 				</Text>
 			</Box>
-			<Tooltip
-				label="Provider used for web browsing"
-				color="gray"
-				position="right"
-			>
+			<Tooltip label="Provider used for web browsing" position="right">
 				<Select
 					label="Preferred Provider"
 					styles={StyleUtils.input}

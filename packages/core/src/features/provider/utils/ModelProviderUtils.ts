@@ -1,5 +1,6 @@
 import { VERBOSE } from "../../../logger.ts";
-import type { zConfig, zDataPart } from "../../data/types/message.ts";
+import type { zConfig } from "../../data/types/message.ts";
+import type { zDataPart } from "../../data/types/part.ts";
 import { FileExtractionService } from "../../file/services/FileExtractionService.ts";
 import { FileUtils } from "../../file/utils/FileUtils.ts";
 import type { ModelProvider, zModelArg } from "../types/model.ts";
@@ -86,7 +87,7 @@ export const ModelProviderUtils = {
 		return part;
 	},
 
-	getConfigDefaults: ({
+	applyDefaultArgs: ({
 		config,
 		args,
 	}: {
@@ -94,17 +95,15 @@ export const ModelProviderUtils = {
 		args: zModelArg[];
 	}) => {
 		if (VERBOSE) console.log("[ModelProviderUtils] model args:", args);
-		const inputArgs = (config.args ?? {}) as Record<string, unknown>;
+		if (config.args === undefined) config.args = {};
+		const appliedArgs: Record<string, unknown> = {};
 		for (const arg of args) {
-			if (inputArgs?.[arg.name] === undefined) {
-				console.log(
-					`[ModelProviderUtils] using default ${arg.default} for arg ${arg.name}`,
-				);
-				if (config.args === undefined) config.args = {};
-				inputArgs[arg.name] = arg.default;
-			}
+			appliedArgs[arg.name] = config.args[arg.name] ?? arg.default;
 		}
-		config.args = inputArgs;
+		config.args = appliedArgs;
+		console.log(
+			`[ModelProviderUtils] applied args (${Object.keys(config.args).filter((name) => !args.find((arg) => arg.name === name)).length} ignored, ${args.filter((arg) => config.args[arg.name] != null).length} defaults)`,
+		);
 		return config;
 	},
 

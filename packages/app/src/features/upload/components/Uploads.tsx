@@ -1,12 +1,19 @@
-import { Group, Modal, Overlay, Stack, Tabs, Text } from "@mantine/core";
+import {
+	Group,
+	Modal,
+	Overlay,
+	Portal,
+	Stack,
+	Tabs,
+	Text,
+} from "@mantine/core";
 import { Dropzone } from "@mantine/dropzone";
 import { FileIcon, GithubLogoIcon, UploadIcon } from "@phosphor-icons/react";
 import { type UploadsType, useAppStore } from "#app/core/stores/useAppStore.ts";
-import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import { AttachmentUploads } from "#app/features/upload/components/AttachmentUploads.tsx";
 import { GitHubUploads } from "#app/features/upload/components/GitHubUploads.tsx";
+import { useFileDrag } from "#app/features/upload/hooks/useFileDrag.ts";
 import { useUploads } from "#client/src/features/upload/hooks/useUploads.ts";
-import { UploadKind } from "#core/features/file/types/upload";
 
 export default function Uploads() {
 	const { upload } = useUploads();
@@ -16,29 +23,39 @@ export default function Uploads() {
 
 	const currentUploads = useAppStore((state) => state.currentUploads);
 	const setCurrentUploads = useAppStore((state) => state.setCurrentUploads);
+	const draggingFiles = useFileDrag(currentModal !== "uploads");
 
 	return (
 		<>
-			<Dropzone.FullScreen
-				onDrop={(files) =>
-					files.forEach((file) => {
-						upload.mutate({ kind: UploadKind.ATTACHMENT, file });
-					})
-				}
-				zIndex="calc(var(--mantine-z-index-modal) - 1)"
-				active={currentModal !== "uploads"}
-				styles={{
-					inner: {
-						position: "absolute",
-						top: 0,
-						left: 0,
-						right: 0,
-						bottom: 0,
-					},
-				}}
-			>
-				<Dropzone.Accept>
-					<Overlay>
+			<Portal>
+				<Dropzone
+					onDrop={(files) =>
+						files.forEach((file) => {
+							upload.mutate({ kind: "ATTACHMENT", file });
+						})
+					}
+					activateOnClick={false}
+					activateOnKeyboard={false}
+					style={{
+						position: "fixed",
+						inset: 0,
+						zIndex: "calc(var(--mantine-z-index-modal) - 1)",
+						opacity: draggingFiles ? 1 : 0,
+						pointerEvents: draggingFiles ? "all" : "none",
+					}}
+					styles={{
+						inner: {
+							position: "absolute",
+							top: 0,
+							left: 0,
+							right: 0,
+							bottom: 0,
+						},
+					}}
+				>
+					{/* Window-level file detection controls visibility, including when
+					    the webview does not report an accepted drag to this dropzone. */}
+					<Overlay blur={3}>
 						<Group
 							justify="center"
 							align="center"
@@ -52,14 +69,13 @@ export default function Uploads() {
 							</Stack>
 						</Group>
 					</Overlay>
-				</Dropzone.Accept>
-			</Dropzone.FullScreen>
+				</Dropzone>
+			</Portal>
 			<Modal
 				opened={currentModal === "uploads"}
 				onClose={() => setCurrentModal(null)}
 				title="Uploads"
 				size="lg"
-				styles={{ content: StyleUtils.glass }}
 				centered
 			>
 				<Tabs

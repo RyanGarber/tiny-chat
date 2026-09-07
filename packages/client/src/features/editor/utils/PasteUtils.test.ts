@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import {
 	PASTE_LINE_LIMIT,
 	PASTE_NEWLINE_LIMIT,

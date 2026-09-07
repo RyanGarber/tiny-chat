@@ -14,7 +14,8 @@ import { ToolUtils } from "../../tool/utils/ToolUtils.ts";
 import { SnippetService } from "../services/SnippetService.ts";
 import type { ActionState } from "../types/action.ts";
 import type { MemoryState } from "../types/memory.ts";
-import type { MessageState, zDataPart } from "../types/message.ts";
+import type { MessageState } from "../types/message.ts";
+import type { zToolResultPart } from "../types/part.ts";
 import { DataUtils } from "./DataUtils.ts";
 
 export type Source = { key: string } & (
@@ -43,18 +44,111 @@ type SourceDisplayType =
 	| SourceDisplay<"file">
 	| SourceDisplay<"unknown">;
 
+const SOURCE_DISTANCE_LIMIT = 0.1;
+
+const normalizeKey = (key: string) =>
+	key
+		.trim()
+		.replace(/^["'`]+|["'`]+$/g, "")
+		.toLowerCase();
+
+const findClosestSource = ({
+	sources,
+	key,
+}: {
+	sources?: Source[];
+	key: string;
+}) => {
+	const normalizedKey = normalizeKey(key);
+	if (!normalizedKey) return;
+
+	let closest: { source: Source; distance: number } | undefined;
+	for (const source of sources ?? []) {
+		const distance = CommonUtils.getDistance(
+			normalizeKey(source.key),
+			normalizedKey,
+		);
+		if (!closest || distance < closest.distance) closest = { source, distance };
+	}
+	return closest && closest.distance < SOURCE_DISTANCE_LIMIT
+		? closest.source
+		: undefined;
+};
+
+const matchClause = ({
+	sources,
+	clause,
+}: {
+	sources?: Source[];
+	clause: string;
+}) => {
+	const whole = findClosestSource({ sources, key: clause });
+	if (whole) return [whole.key];
+
+	const words = clause.trim().split(/\s+/).filter(Boolean);
+	const keys: string[] = [];
+	for (let start = 0; start < words.length; ) {
+		let match: Source | undefined;
+		let end = words.length;
+		for (; end > start; end--) {
+			match = findClosestSource({
+				sources,
+				key: words.slice(start, end).join(" "),
+			});
+			if (match) break;
+		}
+
+		if (match) {
+			keys.push(match.key);
+			start = end;
+		} else {
+			keys.push(words[start] ?? "");
+			start++;
+		}
+	}
+	return keys;
+};
+
 export const SourceUtils = {
+	/**
+	 * Resolves the simple source list emitted by models without requiring a
+	 * quoting or escaping format. A complete clause wins first (so file names
+	 * may contain spaces), then its longest matching word spans are consumed.
+	 */
+	matchKeys: ({ sources, keys }: { sources?: Source[]; keys: string }) => {
+		const whole = findClosestSource({ sources, key: keys });
+		if (whole) return [whole.key];
+
+		return keys
+			.split(/[;,\n]+/)
+			.flatMap((clause) => matchClause({ sources, clause }))
+			.filter(Boolean);
+	},
+
 	find: ({
 		message,
 		toolsets,
 	}: {
-		message: MessageState;
+		message: Pick<MessageState, "data">;
 		toolsets: Toolset<any>[];
 	}): Source[] => {
 		return message.data.flat().flatMap((part, _index, array): Source[] => {
+			if (part.type === "attachment" && part.content.type === "web") {
+				return [
+					{
+						key: part.source.replace(/^web:/, ""),
+						type: "web",
+						value: {
+							url: part.source.replace(/^web:/, ""),
+							title: part.content.title,
+							content: part.content.content,
+						},
+					},
+				];
+			}
 			if (part.type === "toolCall") {
 				const result = array.find(
-					(p): p is Extract<zDataPart, { type: "toolResult" }> =>
+					(p): p is zToolResultPart =>
 						p.type === "toolResult" && p.id === part.id,
 				);
 				if (ToolUtils.is(toolsets, part, search_web)) {
@@ -144,13 +238,8 @@ export const SourceUtils = {
 		key: string;
 		text: string;
 	}): SourceDisplayType => {
-		const source = sources?.find((source) => {
-			if (!key) {
-				console.warn("[SourceUtils] source is missing a key:", source);
-				return false;
-			}
-			return CommonUtils.getDistance(source.key, key) < 0.1;
-		});
+		if (!key) console.warn("[SourceUtils] source is missing a key");
+		const source = findClosestSource({ sources, key });
 
 		if (source?.type === "web") {
 			return {

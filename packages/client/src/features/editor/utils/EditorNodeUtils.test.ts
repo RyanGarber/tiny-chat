@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { EditorNodeUtils } from "./EditorNodeUtils.ts";
 
 describe("EditorNodeUtils", () => {

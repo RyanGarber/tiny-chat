@@ -4,7 +4,7 @@ import {
 	type GoogleLanguageModelOptions,
 } from "@ai-sdk/google";
 import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
-import type { zDataPart } from "../../../data/types/message.ts";
+import type { zDataPart } from "../../../data/types/part.ts";
 import type { ModelProvider, zModel, zModelArg } from "../../types/model.ts";
 import { ModelProviderUtils } from "../../utils/ModelProviderUtils.ts";
 

@@ -1,9 +1,13 @@
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
+import { TypeUtils } from "../../../core/utils/TypeUtils.ts";
+import type { zConfig } from "../../data/types/message.ts";
 import type {
-	zConfig,
-	zDataBasicPart,
 	zDataPart,
-} from "../../data/types/message.ts";
+	zDataSimplePart,
+	zFilePart,
+	zTextPart,
+	zToolResultPart,
+} from "../../data/types/part.ts";
 import { FileUtils } from "../../file/utils/FileUtils.ts";
 import type { zAgentMessage } from "../types/agent.ts";
 
@@ -83,30 +87,37 @@ const getSerialized = (value: unknown): string => {
 const getSerializedLength = (value: unknown): number =>
 	getSerialized(value).length;
 
-const getPartLength = (part: zDataPart | zDataBasicPart): number => {
+const getPartLength = (part: zDataPart | zDataSimplePart): number => {
 	if (part.type === "text" || part.type === "thought") return part.value.length;
 	if (part.type === "toolCall") return getSerializedLength(part.input);
+	if (part.type === "interjection")
+		return part.value.reduce(
+			(length, value) => length + getPartLength(value),
+			0,
+		);
 	if (part.type === "toolResult") {
-		return [...part.output, ...(part.append ?? [])].reduce(
+		return part.output.reduce(
 			(length, value) => length + getPartLength(value),
 			0,
 		);
 	}
 	if (part.type === "file") return part.data.length * (2 / 3);
 	if (part.type === "json") return getSerializedLength(part.value);
+	if (part.type === "attachment") return getSerializedLength(part.content);
 	return 0;
 };
 
-const getPartTokens = (part: zDataPart | zDataBasicPart): number =>
+const getPartTokens = (part: zDataPart | zDataSimplePart): number =>
 	getPartLength(part) / CHARS_PER_TOKEN;
 
-const getByteLength = (part: zDataBasicPart): number => {
+const getByteLength = (part: zDataSimplePart): number => {
+	if (part.type === "attachment") return getSerializedLength(part.content);
 	if (part.type === "file") return Math.floor((part.data.length * 3) / 4);
 	if (part.type === "text") return new TextEncoder().encode(part.value).length;
 	return new TextEncoder().encode(JSON.stringify(part.value) ?? "").length;
 };
 
-const getLineCount = (parts: zDataBasicPart[]): number =>
+const getLineCount = (parts: zDataSimplePart[]): number =>
 	parts.reduce((lines, part) => {
 		if (part.type === "text") return lines + part.value.split("\n").length;
 		if (part.type === "file") {
@@ -124,10 +135,8 @@ const getLineCount = (parts: zDataBasicPart[]): number =>
  * Markers name the tool and the size of what was dropped, so the model can tell
  * the difference between "nothing was found" and "this was elided".
  */
-const getToolResultMarker = (
-	part: Extract<zDataPart, { type: "toolResult" }>,
-): string => {
-	const parts = [...part.output, ...(part.append ?? [])];
+const getToolResultMarker = (part: zToolResultPart): string => {
+	const parts = part.output;
 	const bytes = parts.reduce((total, value) => total + getByteLength(value), 0);
 	const lines = getLineCount(parts);
 	const detail = [lines > 0 ? `${lines} lines` : null, `${bytes} bytes`]
@@ -136,7 +145,7 @@ const getToolResultMarker = (
 	return `[${part.name} result elided to save context: ${detail}. Run the tool again if you still need it.]`;
 };
 
-const getFileMarker = (part: Extract<zDataPart, { type: "file" }>): string => {
+const getFileMarker = (part: zFilePart): string => {
 	const bytes = Math.floor((part.data.length * 3) / 4);
 	return `[file elided: ${part.name ?? part.mime}, ${bytes} bytes]`;
 };
@@ -179,9 +188,7 @@ const replaceIfSmaller = (
 	return true;
 };
 
-const compactToolResult = (
-	part: Extract<zDataPart, { type: "toolResult" }>,
-): zDataPart => ({
+const compactToolResult = (part: zToolResultPart): zDataPart => ({
 	...part,
 	output: [
 		{
@@ -190,23 +197,26 @@ const compactToolResult = (
 			value: getToolResultMarker(part),
 		},
 	],
-	append: undefined,
 });
 
 function compactLivePart(
-	part: zDataBasicPart,
+	part: zDataSimplePart,
 	useMarker: boolean,
-): zDataBasicPart;
+): zDataSimplePart;
 function compactLivePart(part: zDataPart, useMarker: boolean): zDataPart;
 function compactLivePart(
-	part: zDataPart | zDataBasicPart,
+	part: zDataPart | zDataSimplePart,
 	useMarker: boolean,
-): zDataPart | zDataBasicPart {
+): zDataPart | zDataSimplePart {
+	if (part.type === "interjection")
+		return {
+			...part,
+			value: part.value.map((value) => compactLivePart(value, useMarker)),
+		};
 	if (part.type === "toolResult") {
 		return {
 			...part,
 			output: part.output.map((value) => compactLivePart(value, useMarker)),
-			append: part.append?.map((value) => compactLivePart(value, useMarker)),
 		};
 	}
 	if (part.type === "file") {
@@ -236,18 +246,18 @@ function compactLivePart(
 	return part;
 }
 
-const preprocessParts = (parts: zDataPart[] | zDataBasicPart[]): Compaction => {
+const preprocessParts = (
+	parts: zDataPart[] | zDataSimplePart[],
+): Compaction => {
 	const compaction: Compaction = new Map();
 
 	parts.forEach((part, index) => {
+		if (part.type === "interjection")
+			for (const [id, type] of preprocessParts(part.value))
+				compaction.set(id, type);
 		if (part.type === "toolResult") {
 			for (const [id, type] of preprocessParts(part.output)) {
 				compaction.set(id, type);
-			}
-			if (part.append) {
-				for (const [id, type] of preprocessParts(part.append)) {
-					compaction.set(id, type);
-				}
 			}
 		}
 		if (part.type === "file") {
@@ -475,7 +485,7 @@ const stages: {
 			entries
 				.filter((entry) => !entry.recent && entry.part.type === "toolResult")
 				.flatMap((entry): Candidate[] => {
-					const part = entry.part as Extract<zDataPart, { type: "toolResult" }>;
+					const part = entry.part as zToolResultPart;
 					const replacement = compactToolResult(part);
 					const saving = getPartTokens(part) - getPartTokens(replacement);
 					if (saving <= 0) return [];
@@ -553,7 +563,7 @@ const stages: {
 						!entry.recent && !entry.pinned && entry.part.type === "text",
 				)
 				.flatMap((entry): Candidate[] => {
-					const part = entry.part as Extract<zDataPart, { type: "text" }>;
+					const part = entry.part as zTextPart;
 					const replacement: zDataPart = {
 						...part,
 						value: getExcerpt(part.value, TEXT_EXCERPT_CHARS),
@@ -616,7 +626,7 @@ const stages: {
 						entry.recent && entry.age > 0 && entry.part.type === "toolResult",
 				)
 				.flatMap((entry): Candidate[] => {
-					const part = entry.part as Extract<zDataPart, { type: "toolResult" }>;
+					const part = entry.part as zToolResultPart;
 					const replacement = compactToolResult(part);
 					const saving = getPartTokens(part) - getPartTokens(replacement);
 					if (saving <= 0) return [];
@@ -679,7 +689,7 @@ export const AgentTokensService = {
 	}: {
 		messages: zAgentMessage[];
 	}): { preprocessed: zAgentMessage[]; compaction: Compaction } => {
-		const preprocessed = structuredClone(messages);
+		const preprocessed = TypeUtils.deepClone(messages);
 
 		const compaction: Compaction = new Map();
 

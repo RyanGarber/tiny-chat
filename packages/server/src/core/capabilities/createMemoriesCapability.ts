@@ -16,12 +16,15 @@ export const createMemoriesCapability: CapabilityFactory<
 > = async ({ user, message }) => ({
 	retrieveMemories: async ({
 		chat,
+		tokens,
 	}: {
 		chat?: ChatLike | MessageLike | null;
-	} = {}) => {
+		tokens: number;
+	}) => {
 		return await MemoryRetrievalService.retrieve({
 			user,
 			chat,
+			tokens,
 		});
 	},
 

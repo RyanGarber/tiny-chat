@@ -20,6 +20,11 @@ const Filesystem = z.object({
 });
 
 export const file = router({
+	cwd: procedure
+		.input(Filesystem)
+		.query(({ ctx, input }) =>
+			FileService.cwd({ user: ctx.session.user, ...input }),
+		),
 	getFile: procedure
 		.input(Filesystem.extend({ path: PathLike }))
 		.output(z.custom<FileState>())

@@ -4,8 +4,10 @@ import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts"
 import type { ReactNode, Ref } from "react";
 import { client } from "#app/client.ts";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
-import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import { MessagingService } from "#client/src/features/chat/services/MessagingService.ts";
+import { useChatStore } from "#client/src/features/chat/stores/useChatStore.ts";
+
+import { useMessageQueueStore } from "#client/src/features/chat/stores/useMessageQueueStore.ts";
 import { useMessagingStore } from "#client/src/features/chat/stores/useMessagingStore.ts";
 
 function Effect({
@@ -19,19 +21,19 @@ function Effect({
 }) {
 	return (
 		<Group
-			className="input-effect"
-			bg="transparent"
+			className="glass"
 			align="center"
 			gap={5}
 			px={10}
 			py={5}
+			mr={5}
+			mb={5}
 			w="fit-content"
 			bdrs={25}
 			fz={14}
 			opacity={isAny ? 0.5 : 1}
 			style={{
-				...StyleUtils.glass,
-				boxShadow: StyleUtils.shadow,
+				border: "1px solid var(--mantine-color-default-border)",
 				pointerEvents: "auto",
 			}}
 		>
@@ -58,6 +60,8 @@ export default function ChatEffects({
 	inputMaxWidth: number;
 	disabled: boolean;
 }) {
+	const chatId = useChatStore((s) => s.chatId);
+	const queues = useMessageQueueStore((s) => s.queues);
 	const editing = useMessagingStore((s) => s.editing);
 	const insertingAfter = useMessagingStore((s) => s.insertingAfter);
 	const truncating = useMessagingStore((s) => s.truncating);
@@ -75,7 +79,18 @@ export default function ChatEffects({
 			}}
 		>
 			<div style={{ width: "100%", maxWidth: inputMaxWidth - 40 }}>
-				<Group gap={3} pb={3} ref={inputEffectsRef}>
+				<Group gap={0} ref={inputEffectsRef}>
+					{chatId &&
+						queues[chatId]?.map((part) => (
+							<Effect
+								key={part.id}
+								content={`Queued: ${DataUtils.getTextCleaned({ data: [part.value], maxLength: 60 }) || "Attachment"}`}
+								onDelete={() =>
+									useMessageQueueStore.getState().remove(chatId, part.id)
+								}
+								isAny={false}
+							/>
+						))}
 					{editing && (
 						<Effect
 							content={

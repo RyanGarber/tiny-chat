@@ -13,7 +13,6 @@ import { EraserIcon } from "@phosphor-icons/react";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
 import { useConsoleStore } from "#app/core/stores/useConsoleStore.ts";
-import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import { LogLevel } from "#core/logger.ts";
 
 export default function Console() {
@@ -37,7 +36,6 @@ export default function Console() {
 			}
 			zIndex="calc(var(--mantine-z-index-modal) + 1)"
 			size="lg"
-			styles={{ content: StyleUtils.glass }}
 			fullScreen
 			className="selectable"
 		>

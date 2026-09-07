@@ -1,9 +1,6 @@
+import { Enum } from "@tiny-chat/core/src/core/services/PostgresService.ts";
 import { zId } from "@tiny-chat/core/src/core/types/common.ts";
 import { ChatLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
-import {
-	MemoryCategory,
-	MemoryStability,
-} from "@tiny-chat/core/src/features/data/types/memory.ts";
 import { MessageLike } from "@tiny-chat/core/src/features/data/types/message.ts";
 import { z } from "zod";
 import { procedure, router } from "../../../index.ts";
@@ -13,13 +10,19 @@ import { MemoryService } from "../services/MemoryService.ts";
 
 export const memory = router({
 	retrieveMemories: procedure
-		.input(z.object({ chat: z.union([ChatLike, MessageLike]).nullish() }))
-		.query(async ({ ctx, input }) =>
-			MemoryRetrievalService.retrieve({
+		.input(
+			z.object({
+				chat: z.union([ChatLike, MessageLike]).nullish(),
+				tokens: z.number(),
+			}),
+		)
+		.query(async ({ ctx, input }) => {
+			return await MemoryRetrievalService.retrieve({
 				user: ctx.session.user,
 				chat: input.chat,
-			}),
-		),
+				tokens: input.tokens,
+			});
+		}),
 
 	getMemories: procedure.query(async ({ ctx }) => {
 		return await MemoryService.getMemories({ user: ctx.session.user });
@@ -47,8 +50,8 @@ export const memory = router({
 			z.object({
 				message: MessageLike.nullish(),
 				fact: z.string(),
-				category: z.enum(MemoryCategory),
-				stability: z.enum(MemoryStability),
+				category: z.enum(Enum.MemoryCategory.values),
+				stability: z.enum(Enum.MemoryStability.values),
 				evidence: z.array(z.string()),
 				confidence: z.number(),
 			}),
@@ -71,8 +74,8 @@ export const memory = router({
 				id: zId,
 				message: MessageLike.nullish(),
 				fact: z.string(),
-				category: z.enum(MemoryCategory),
-				stability: z.enum(MemoryStability),
+				category: z.enum(Enum.MemoryCategory.values),
+				stability: z.enum(Enum.MemoryStability.values),
 				evidence: z.array(z.string()),
 				confidence: z.number(),
 			}),

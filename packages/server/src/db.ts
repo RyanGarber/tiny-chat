@@ -1,6 +1,7 @@
 import "temporal-polyfill/full/global";
 
-import { PrismaPg } from "@prisma/adapter-pg";
+import paradedb from "@prisma/orm-extension-paradedb/runtime";
+import pgvector from "@prisma/orm-extension-pgvector/runtime";
 import postgres from "@prisma/orm-postgres/runtime";
 import type {
 	Contract,
@@ -9,25 +10,18 @@ import type {
 import contractJson from "@tiny-chat/core/generated/prisma/contract.json" with {
 	type: "json",
 };
-import { PrismaClient } from "../generated/prisma/client.ts";
+import { zod } from "@tiny-chat/core/prisma/zod-extension.ts";
 import config from "../prisma.config.ts";
-import config7 from "../prisma7.config.ts";
 
 declare global {
-	var prisma: PrismaClient;
 	var db: ReturnType<typeof postgres<Contract>>;
 }
-
-// biome-ignore lint/suspicious/noRedeclare: definition
-export const prisma = new PrismaClient({
-	adapter: new PrismaPg({ connectionString: config7.datasource?.url }),
-});
-globalThis.prisma = prisma;
 
 // biome-ignore lint/suspicious/noRedeclare: definition
 export const db = postgres<Contract>({
 	url: config.orm.db?.connection as string,
 	contractJson,
+	extensions: [paradedb, pgvector, zod.runtime],
 });
 globalThis.db = db;
 

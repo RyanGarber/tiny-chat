@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { CodeLanguage } from "../../../core/utils/CodeUtils.ts";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
-import type { zDataBasicPart } from "../../data/types/message.ts";
+import type { zDataSimplePart, zTextPart } from "../../data/types/part.ts";
 import type { RenderedPart } from "../../data/utils/DataUtils.ts";
 import { FileTypeUtils } from "../../file/utils/FileTypeUtils.ts";
 import { FileUtils } from "../../file/utils/FileUtils.ts";
@@ -49,7 +49,6 @@ export type ToolCallDisplay<
 	result: "pending" | "success" | "error";
 	input: z.infer<T["input"]>;
 	output?: U extends true ? z.infer<T["output"]>[] : z.infer<T["output"]>;
-	append?: zDataBasicPart[];
 };
 
 export type ToolCallDisplayType =
@@ -108,10 +107,10 @@ const displayCache = new WeakMap<
 const __rejection = {
 	type: "text",
 	value: "[Tool call rejected by user]",
-} satisfies Omit<Extract<zDataBasicPart, { type: "text" }>, "id">;
+} satisfies Omit<zTextPart, "id">;
 
 export const ToolCallUtils = {
-	isRejection: (output: zDataBasicPart[]) => {
+	isRejection: (output: zDataSimplePart[]) => {
 		return (
 			output.length === 1 &&
 			output[0].type === "text" &&
@@ -119,7 +118,7 @@ export const ToolCallUtils = {
 		);
 	},
 
-	getRejection: (): zDataBasicPart[] => {
+	getRejection: (): zDataSimplePart[] => {
 		return [
 			{
 				id: CommonUtils.getRandomId(),
@@ -206,7 +205,6 @@ export const ToolCallUtils = {
 					: ToolUtils.json<T>(part.result)[0]) as U extends true
 					? z.infer<T["output"]>[]
 					: z.infer<T["output"]>,
-				append: part.result?.append,
 			}) satisfies ToolCallDisplay<any>;
 
 		if (ToolUtils.is(toolsets, part, search_web)) {

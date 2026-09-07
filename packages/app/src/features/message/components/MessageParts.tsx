@@ -2,12 +2,11 @@ import { Alert, Button, Stack, Text } from "@mantine/core";
 import { ArrowClockwiseIcon } from "@phosphor-icons/react";
 import type { AgentStreamEvent } from "@tiny-chat/client/src/core/services/StreamService.ts";
 import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
+import { MarkdownDataUtils } from "@tiny-chat/client/src/features/message/utils/MarkdownDataUtils.ts";
 import { useThemes } from "@tiny-chat/client/src/features/settings/hooks/useThemes.ts";
 import type { Compaction } from "@tiny-chat/core/src/features/agent/services/AgentTokensService.ts";
-import type {
-	MessageState,
-	zData,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { zData } from "@tiny-chat/core/src/features/data/types/part.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { ToolCallUtils } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
 import { MediaPlayer, MediaProvider } from "@vidstack/react";
@@ -18,7 +17,6 @@ import {
 } from "@vidstack/react/player/layouts/default";
 import Code from "#app/features/code/components/Code.tsx";
 import Markdown from "#app/features/message/components/Markdown.tsx";
-import Attachment from "#app/features/part/components/Attachment.tsx";
 import Image from "#app/features/part/components/Image.tsx";
 import Thought from "#app/features/part/components/Thought.tsx";
 import ToolCall from "#app/features/part/components/ToolCall.tsx";
@@ -65,6 +63,33 @@ export default function MessageParts({
 	);
 
 	return parts.map((part, index) => {
+		if (part.type === "text" || part.type === "attachment") {
+			const previous = parts[index - 1];
+			if (previous?.type === "text" || previous?.type === "attachment")
+				return null;
+			const run = MarkdownDataUtils.toInlineParts(parts.slice(index));
+			return (
+				<div key={index}>
+					{run.map((item) => (
+						<CompactionBadge
+							key={item.id}
+							compaction={compaction}
+							id={item.id}
+						/>
+					))}
+					<Markdown source={[run]} streaming={status !== undefined} />
+				</div>
+			);
+		}
+		if (part.type === "interjection")
+			return (
+				<Stack key={part.id} bg="var(--tc-surface)" p="sm" gap="xs">
+					<Text size="xs" c="dimmed">
+						You
+					</Text>
+					<MessageParts data={[part.value]} compaction={compaction} />
+				</Stack>
+			);
 		if (part.type === "group") {
 			const statusPart = part.value.find(
 				(value) => value.id && compaction?.has(value.id),
@@ -84,24 +109,14 @@ export default function MessageParts({
 				<div key={index}>
 					<CompactionBadge compaction={compaction} id={part.id} />
 					<ToolCall part={part} display={display} />
-					{message &&
-						(display.approval ||
-							display.feedback ||
-							!!part.result?.append?.length) && (
-							<ToolFeedback
-								message={message}
-								part={part}
-								display={display}
-								isFocused={nextFeedbackId === part.id}
-							/>
-						)}
-				</div>
-			);
-		} else if (part.type === "text") {
-			return (
-				<div key={index}>
-					<CompactionBadge compaction={compaction} id={part.id} />
-					<Markdown source={part.value} streaming={status !== undefined} />
+					{message && (display.approval || display.feedback) && (
+						<ToolFeedback
+							message={message}
+							part={part}
+							display={display}
+							isFocused={nextFeedbackId === part.id}
+						/>
+					)}
 				</div>
 			);
 		} else if (part.type === "json") {
@@ -153,17 +168,6 @@ export default function MessageParts({
 					</div>
 				);
 			}
-		} else if (part.type === "attachment") {
-			return (
-				<div key={index} className="inline-block mr-1">
-					<CompactionBadge compaction={compaction} id={part.id} />
-					<Attachment
-						source={part.source}
-						directory={part.content.type === "directory"}
-						name={part.label}
-					/>
-				</div>
-			);
 		} else if (part.type === "abort") {
 			return (
 				<Alert

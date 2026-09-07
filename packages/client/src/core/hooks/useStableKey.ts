@@ -2,9 +2,12 @@ import type { Capabilities } from "@tiny-chat/core/src/core/types/capability.ts"
 import type { zAgentMessage } from "@tiny-chat/core/src/features/agent/types/agent.ts";
 import type {
 	MessageState,
+	zConfig,
+} from "@tiny-chat/core/src/features/data/types/message.ts";
+import type {
 	zData,
 	zDataPart,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
+} from "@tiny-chat/core/src/features/data/types/part.ts";
 import type { zMCPServers } from "@tiny-chat/core/src/features/data/types/user.ts";
 import type {
 	ProviderState,
@@ -52,6 +55,7 @@ export const useStableKey = ({
 	mcpServers,
 	mcpServerSettings,
 	toolsets,
+	config,
 }: {
 	data?: zData;
 	messages?: (MessageState | zAgentMessage)[];
@@ -60,6 +64,7 @@ export const useStableKey = ({
 	mcpServers?: McpServer[];
 	mcpServerSettings?: zMCPServers;
 	toolsets?: Toolset<any>[];
+	config?: zConfig | null;
 }) => {
 	const dataKey = useMemo(() => {
 		const parts = data?.flat();
@@ -120,6 +125,10 @@ export const useStableKey = ({
 		return key;
 	}, [toolsets]);
 
+	const configKey = useMemo(() => {
+		return config ? `${JSON.stringify(config)};` : "";
+	}, [config]);
+
 	return useMemo(() => {
 		return [
 			dataKey,
@@ -129,6 +138,7 @@ export const useStableKey = ({
 			mcpServersKey,
 			mcpServerSettingsKey,
 			toolsetsKey,
+			configKey,
 		]
 			.filter(Boolean)
 			.join(";");
@@ -140,5 +150,6 @@ export const useStableKey = ({
 		mcpServersKey,
 		mcpServerSettingsKey,
 		toolsetsKey,
+		configKey,
 	]);
 };

@@ -1,10 +1,9 @@
 import type { TextStreamPart } from "ai";
-import { describe, expect, inject, it } from "vitest";
-import { testConfig } from "../../../../tests.ts";
-import type { zDataPart } from "../../../data/types/message.ts";
+import { mockConfig, mockUser } from "../../../../tests.ts";
+import type { zDataPart } from "../../../data/types/part.ts";
 import { AntigravityProvider } from "./AntigravityProvider.ts";
 
-describe("providers - antigravity", () => {
+describe("AntigravityProvider", () => {
 	it("stores signatures", () => {
 		const event: TextStreamPart<any> = {
 			type: "tool-call",
@@ -19,8 +18,8 @@ describe("providers - antigravity", () => {
 		};
 
 		const signature = AntigravityProvider.getPartSignature?.({
-			user: inject("shared_user"),
-			config: testConfig(AntigravityProvider, "gemini-3-flash"),
+			user: mockUser(),
+			config: mockConfig(AntigravityProvider, "gemini-3-flash"),
 			event,
 		});
 		expect(signature?.model).toBe("gemini-3-flash");
@@ -40,15 +39,15 @@ describe("providers - antigravity", () => {
 		};
 
 		const metadata = AntigravityProvider.getPartSignatureReturn?.({
-			user: inject("shared_user"),
-			config: testConfig(AntigravityProvider, "gemini-3-flash"),
+			user: mockUser(),
+			config: mockConfig(AntigravityProvider, "gemini-3-flash"),
 			part,
 		});
 		expect(metadata?.["antigravity-proxy"]?.thoughtSignature).toBe("__TEST__");
 
 		const metadata2 = AntigravityProvider.getPartSignatureReturn?.({
-			user: inject("shared_user"),
-			config: testConfig(AntigravityProvider, "gemini-3-pro"),
+			user: mockUser(),
+			config: mockConfig(AntigravityProvider, "gemini-3-pro"),
 			part,
 		});
 		expect(metadata2?.["antigravity-proxy"]?.thoughtSignature).toBe(

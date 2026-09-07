@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { FileOperationService } from "./FileOperationService.ts";
 import { createShell } from "./FileSearchService.test.ts";
 
@@ -60,61 +59,59 @@ describe("FileOperationService", () => {
 		});
 	});
 
-	describe("readText", () => {
-		const file = Array.from(
-			{ length: 3_000 },
-			(_, index) => `line ${index + 1}`,
-		).join("\n");
+	const file = Array.from(
+		{ length: 3_000 },
+		(_, index) => `line ${index + 1}`,
+	).join("\n");
 
-		it("windows a long file and says how to continue", async () => {
-			const result = await FileOperationService.readText({
-				shell: createShell({ "/project/long.ts": file }),
-				path: "/project/long.ts",
-			});
-
-			expect(result.lines).toBe(1_000);
-			expect(result.total).toBe(3_000);
-			expect(result.text.endsWith("line 1000")).toBe(true);
-			expect(result.notice).toContain("offset 1001");
+	it("windows a long file and says how to continue", async () => {
+		const result = await FileOperationService.readText({
+			shell: createShell({ "/project/long.ts": file }),
+			path: "/project/long.ts",
 		});
 
-		it("reads from an offset", async () => {
-			const result = await FileOperationService.readText({
-				shell: createShell({ "/project/long.ts": file }),
-				path: "/project/long.ts",
-				offset: 2_990,
-				limit: 5,
-			});
+		expect(result.lines).toBe(1_000);
+		expect(result.total).toBe(3_000);
+		expect(result.text.endsWith("line 1000")).toBe(true);
+		expect(result.notice).toContain("offset 1001");
+	});
 
-			expect(result.text.split("\n")).toEqual([
-				"line 2990",
-				"line 2991",
-				"line 2992",
-				"line 2993",
-				"line 2994",
-			]);
+	it("reads from an offset", async () => {
+		const result = await FileOperationService.readText({
+			shell: createShell({ "/project/long.ts": file }),
+			path: "/project/long.ts",
+			offset: 2_990,
+			limit: 5,
 		});
 
-		it("cuts a single enormous line rather than returning it", async () => {
-			const result = await FileOperationService.readText({
-				shell: createShell({ "/project/data.json": "x".repeat(100_000) }),
-				path: "/project/data.json",
-			});
+		expect(result.text.split("\n")).toEqual([
+			"line 2990",
+			"line 2991",
+			"line 2992",
+			"line 2993",
+			"line 2994",
+		]);
+	});
 
-			expect(result.text.length).toBeLessThan(3_000);
-			expect(result.text).toContain("more characters on this line");
+	it("cuts a single enormous line rather than returning it", async () => {
+		const result = await FileOperationService.readText({
+			shell: createShell({ "/project/data.json": "x".repeat(100_000) }),
+			path: "/project/data.json",
 		});
 
-		it("returns a short file whole, with no notice", async () => {
-			const result = await FileOperationService.readText({
-				shell: createShell({ "/project/a.ts": "one\ntwo\n" }),
-				path: "/project/a.ts",
-			});
+		expect(result.text.length).toBeLessThan(3_000);
+		expect(result.text).toContain("more characters on this line");
+	});
 
-			expect(result.text).toBe("one\ntwo\n");
-			expect(result.truncated).toBe(false);
-			expect(result.notice).toBeUndefined();
+	it("returns a short file whole, with no notice", async () => {
+		const result = await FileOperationService.readText({
+			shell: createShell({ "/project/a.ts": "one\ntwo\n" }),
+			path: "/project/a.ts",
 		});
+
+		expect(result.text).toBe("one\ntwo\n");
+		expect(result.truncated).toBe(false);
+		expect(result.notice).toBeUndefined();
 	});
 
 	it("finds files by an approximate name", async () => {

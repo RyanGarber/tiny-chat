@@ -1,13 +1,12 @@
 import type { zAgentMessage } from "@tiny-chat/core/src/features/agent/types/agent.ts";
 import { AgentUtils } from "@tiny-chat/core/src/features/agent/utils/AgentUtils.ts";
 import type { ChatState } from "@tiny-chat/core/src/features/data/types/chat.ts";
-import {
-	Author,
-	type MessageState,
-	type zData,
-	type zDataPart,
-	type zMetadata,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type {
+	zData,
+	zDataPart,
+	zMetadata,
+} from "@tiny-chat/core/src/features/data/types/part.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import type {
@@ -20,6 +19,8 @@ import type { Client } from "../../../client.ts";
 import { AgentStreamService } from "../../../core/services/StreamService.ts";
 import { ChatService } from "../../chat/services/ChatService.ts";
 import { useChatStore } from "../../chat/stores/useChatStore.ts";
+import { useMessageQueueStore } from "../../chat/stores/useMessageQueueStore.ts";
+import { MessageQueryService } from "../../message/services/MessageQueryService.ts";
 import { UserService } from "../../user/services/UserService.ts";
 import { ClientAgentService } from "./ClientAgentService.ts";
 
@@ -30,15 +31,15 @@ export const ClientMessageService = {
 	/**
 	 * Trigger model generation for an existing user message. If `message` is a
 	 * model reply, the seed user message is resolved automatically. When
-	 * `append` is provided (e.g. a user-supplied tool result), it is appended
-	 * to the last data slot of the reply before generation continues.
+	 * `toolResults` are provided, they are inserted into the last data slot
+	 * of the reply before generation continues.
 	 */
 	onMessage: async ({
 		client,
 		user,
 		message,
 		chat,
-		append,
+		toolResults,
 		mcpTools,
 		providers,
 		skills,
@@ -50,14 +51,14 @@ export const ClientMessageService = {
 		providers: ProviderState<ProviderStatus>[];
 		skills: zSkill[];
 		mcpTools: Toolset<any>[];
-		append?: zDataPart[];
+		toolResults?: zDataPart[];
 	}): Promise<void> => {
 		console.log(
 			"[ClientMessageService] handling model message",
 			message,
 			chat,
-			append,
-			message.author === Author.MODEL ? message.id : undefined,
+			toolResults,
+			message.author === "MODEL" ? message.id : undefined,
 		);
 
 		if (!mcpTools) {
@@ -66,7 +67,7 @@ export const ClientMessageService = {
 		}
 
 		let prompt: MessageState | undefined = message;
-		if (message.author === Author.MODEL) {
+		if (message.author === "MODEL") {
 			const { messages } = await client.api.message.getMessages.query({
 				chat,
 				start: message.id,
@@ -81,15 +82,17 @@ export const ClientMessageService = {
 			client,
 			prompt,
 			chat,
-			append,
+			toolResults,
 		);
 
+		useMessageQueueStore.getState().setActive(chat.id, true);
 		if (DataUtils.isMissingToolResult(response)) {
 			// Awaiting more user tool inputs — do not start generation yet.
 			return;
 		}
 
 		void (async () => {
+			let failed = true;
 			try {
 				Object.assign(
 					response,
@@ -114,9 +117,10 @@ export const ClientMessageService = {
 					}),
 				);
 				await ClientMessageService._finalize(client, response);
+				failed = false;
 			} finally {
-				// After persist+refetch so the list still has the live overlay
-				// while the infinite query is in flight.
+				useMessageQueueStore.getState().finish(chat.id, response.data, failed);
+				// Keep the live overlay until persisted content is in the cache.
 				AgentStreamService.clear(response.id);
 			}
 		})();
@@ -127,14 +131,14 @@ export const ClientMessageService = {
 		client: Client,
 		prompt: MessageState,
 		chat: ChatState,
-		append?: zDataPart[],
+		toolResults?: zDataPart[],
 		responseId?: string,
 	): Promise<{ response: MessageState; messages: zAgentMessage[] }> => {
 		console.log(
 			"[ClientMessageService] preparing response",
 			prompt,
 			chat,
-			append,
+			toolResults,
 		);
 		// Fetch full message list once so we can both locate the existing response
 		// and build the generation context from a single source of truth.
@@ -152,10 +156,10 @@ export const ClientMessageService = {
 		if (existing) {
 			let data: zData = [];
 			let metadata: zMetadata = [];
-			if (append) {
+			if (toolResults) {
 				data = existing.data.map((d, i) =>
 					i === existing.data.length - 1
-						? AgentUtils.getToolResultsSorted({ data: [...d, ...append] })
+						? AgentUtils.getToolResultsSorted({ data: [...d, ...toolResults] })
 						: d,
 				);
 				metadata = [...existing.metadata];
@@ -172,7 +176,7 @@ export const ClientMessageService = {
 		} else {
 			const created = await client.api.message.createMessage.mutate({
 				chat: prompt.chatId,
-				author: Author.MODEL,
+				author: "MODEL",
 				config: prompt.config,
 				metadata: [],
 				data: [],
@@ -182,9 +186,7 @@ export const ClientMessageService = {
 			response = { ...created };
 		}
 
-		if (useChatStore.getState().chatId === prompt.chatId)
-			useChatStore.getState().selectBranch(response.previousId, response.id);
-		await ChatService.fetchMessages({ client, chatId: prompt.chatId });
+		await MessageQueryService.write(client, response, true);
 
 		// Re-fetch to ensure the context reflects the inserted/edited reply.
 		const { messages: updatedMessages } =
@@ -193,7 +195,7 @@ export const ClientMessageService = {
 				start: response.id,
 			});
 		const responseIndex = updatedMessages.findIndex(
-			(m) => m.id === response.id,
+			(message) => message.id === response.id,
 		);
 		const responseRef =
 			responseIndex >= 0 ? updatedMessages[responseIndex] : response;
@@ -220,7 +222,7 @@ export const ClientMessageService = {
 	/** Persist the final reply state to the server. */
 	_finalize: async (client: Client, response: MessageState): Promise<void> => {
 		console.log("[ClientMessageService] finalizing", response);
-		await client.api.message.updateMessage.mutate({
+		const saved = await client.api.message.updateMessage.mutate({
 			message: response.id,
 			author: response.author,
 			config: response.config,
@@ -228,9 +230,8 @@ export const ClientMessageService = {
 			metadata: response.metadata,
 			truncate: false,
 		});
-		console.log("[ClientMessageService] saved to chat, refetching");
+		await MessageQueryService.write(client, saved);
 		await ChatService.fetchChatList({ client });
-		await ChatService.fetchMessages({ client, chatId: response.chatId });
 		void UserService.fetchActions({ client });
 		void UserService.fetchMemories({ client });
 		void UserService.fetchNextEmbeddingBatch({ client });

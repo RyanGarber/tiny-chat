@@ -18,11 +18,10 @@ import { useStream } from "@tiny-chat/client/src/features/agent/hooks/useStream.
 import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
 import type { Compaction } from "@tiny-chat/core/src/features/agent/services/AgentTokensService.ts";
 import { type CSSProperties, useMemo } from "react";
-import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import { EditorUtils } from "#app/features/editor/utils/EditorUtils.ts";
 import MessageParts from "#app/features/message/components/MessageParts.tsx";
 import { useMessageSelection } from "#app/features/message/hooks/useMessageSelection.ts";
-import { Author, type MessageState } from "#core/features/data/types/message";
+import type { MessageState } from "#core/features/data/types/message";
 
 export default function MessageBody({
 	message,
@@ -54,18 +53,19 @@ export default function MessageBody({
 
 	const boxProps = useMemo<BoxProps>(() => {
 		switch (streamed.author) {
-			case Author.USER:
+			case "USER":
 				return {
 					px: 20,
 					py: 10,
 					bdrs: 20,
 					style: {
-						boxShadow: StyleUtils.shadow,
 						alignSelf: "flex-end",
-						...StyleUtils.glass,
+						border: "1px solid var(--mantine-color-default-border)",
 					},
+					className: "glass",
+					maw: "100%",
 				};
-			case Author.MODEL:
+			case "MODEL":
 				return {
 					w: "100%",
 				};
@@ -78,7 +78,7 @@ export default function MessageBody({
 		<Group w="100%" justify="end" style={style}>
 			<Box {...boxProps}>
 				<Box display="inline" data-message-id={streamed.id}>
-					{streamed.author === Author.MODEL && isStale && (
+					{streamed.author === "MODEL" && isStale && (
 						<Alert variant="light" mb="lg">
 							<Group justify="space-between">
 								<Group>
@@ -111,16 +111,12 @@ export default function MessageBody({
 							&middot;&middot;&middot;
 						</Box>
 					)}
-					{streamed.author === Author.MODEL && (
+					{streamed.author === "MODEL" && (
 						<Portal target={document.body}>
-							<Transition
-								mounted={isSelected ?? false}
-								transition="fade"
-								duration={100}
-								timingFunction="ease"
-							>
+							<Transition mounted={isSelected ?? false} transition="fade">
 								{(styles) => (
 									<ActionIcon
+										className="glass-shadow"
 										size={32}
 										style={{
 											position: "fixed",
@@ -128,7 +124,6 @@ export default function MessageBody({
 											left: (rect?.left ?? 0) + (rect?.width ?? 0) / 2,
 											transform: "translateX(-50%)",
 											zIndex: "var(--mantine-zindex-app)",
-											boxShadow: StyleUtils.shadow,
 											...styles,
 										}}
 										onMouseDown={captureSelection}

@@ -1,5 +1,6 @@
 import {
 	ActionIcon,
+	Anchor,
 	Box,
 	Burger,
 	Group,
@@ -32,10 +33,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { BundledLanguage } from "streamdown";
 import { client } from "#app/client.ts";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
+import WebSourceCard from "#app/features/chat/components/WebSourceCard.tsx";
 import { useChatFilesStore } from "#app/features/chat/stores/useChatFilesStore.ts";
 import Code from "#app/features/code/components/Code.tsx";
 import Markdown from "#app/features/message/components/Markdown.tsx";
 import Image from "#app/features/part/components/Image.tsx";
+import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
 import FileTag from "#app/features/upload/components/FileTag.tsx";
 import { useFileViewer } from "#app/features/upload/hooks/useFileViewer.ts";
 
@@ -66,6 +69,7 @@ function attachmentFiles(message: Pick<MessageState, "data">): SidebarFile[] {
 		.filter(
 			(part) =>
 				part.type === "attachment" &&
+				part.content.type !== "web" &&
 				!PathUtils.fromMount({ path: part.source }),
 		)
 		.map((part) =>
@@ -231,8 +235,7 @@ export default function ChatFiles() {
 	const viewFile = useChatFilesStore((state) => state.viewFile);
 	const viewedFile = useChatFilesStore((state) => {
 		if (!state.viewedFile) return null;
-		if (state.viewedFile.chatId && chatId && state.viewedFile.chatId !== chatId)
-			return null;
+		if (state.viewedFile.chatId !== chatId) return null;
 		return state.viewedFile;
 	});
 	const tree = useTree();
@@ -308,6 +311,40 @@ export default function ChatFiles() {
 		localEntries,
 		chatId,
 	]);
+	const webSources = useMemo(() => {
+		const sources = [
+			...(messages.data?.pages.flatMap((page) => page.messages) ?? []),
+			{ data: draftData },
+		].flatMap((message) => SourceUtils.find({ message, toolsets }));
+		const byUrl = new Map<
+			string,
+			Extract<(typeof sources)[number], { type: "web" }>["value"]
+		>();
+		for (const source of sources) {
+			if (source.type !== "web") continue;
+			const existing = byUrl.get(source.value.url);
+			if (!existing || source.value.content.length > existing.content.length) {
+				byUrl.set(source.value.url, source.value);
+			}
+		}
+		if (viewedFile?.web && !byUrl.has(viewedFile.web.url)) {
+			byUrl.set(viewedFile.web.url, viewedFile.web);
+		}
+		return [...byUrl.values()];
+	}, [messages.data, draftData, toolsets, viewedFile]);
+	const previewedWeb = viewedFile?.path.startsWith("web:")
+		? (viewedFile.web ??
+			webSources.find((source) => source.url === viewedFile.path.slice(4)))
+		: undefined;
+	const webSelectionRef = useRef<HTMLDivElement>(null);
+	useEffect(() => {
+		if (viewedFile && previewedWeb && isAsideOpen) {
+			webSelectionRef.current?.scrollIntoView({
+				behavior: "smooth",
+				block: "nearest",
+			});
+		}
+	}, [previewedWeb, viewedFile, isAsideOpen]);
 	const treeData = useMemo(() => buildTreeNodes(files), [files]);
 	const previewedFile = useMemo(() => {
 		if (!viewedFile) return null;
@@ -405,14 +442,17 @@ export default function ChatFiles() {
 				size="sm"
 			/>
 			<ScrollArea
-				flex={previewedFile ? 0 : 1}
-				mah={previewedFile ? "45%" : undefined}
+				flex={previewedFile || previewedWeb ? 0 : 1}
+				mah={previewedFile || previewedWeb ? "45%" : undefined}
 				offsetScrollbars
 				viewportRef={treeViewport}
 			>
 				<Group justify="center">
 					{chatFiles.isFetching && <Loader size="xs" />}
 				</Group>
+				<Text size="sm" fw={600} mb="xs">
+					Files
+				</Text>
 				{treeData.length ? (
 					<Tree
 						data={treeData}
@@ -437,7 +477,67 @@ export default function ChatFiles() {
 						No files
 					</Text>
 				)}
+				<Text size="sm" fw={600} mt="md" mb="xs">
+					Web sources
+				</Text>
+				<Stack gap="xs">
+					{webSources.map((source) => (
+						<div
+							key={source.url}
+							ref={
+								previewedWeb?.url === source.url ? webSelectionRef : undefined
+							}
+						>
+							<WebSourceCard
+								source={source}
+								selected={previewedWeb?.url === source.url}
+							/>
+						</div>
+					))}
+					{!webSources.length && (
+						<Text size="sm" c="dimmed">
+							No web sources
+						</Text>
+					)}
+				</Stack>
 			</ScrollArea>
+			{previewedWeb && (
+				<Box flex={1} mih={0}>
+					<Group gap={4} mb="xs" wrap="nowrap">
+						<ActionIcon
+							variant="subtle"
+							aria-label="Close web preview"
+							onClick={() => viewFile(null)}
+						>
+							<CaretLeftIcon size={18} />
+						</ActionIcon>
+						<Text size="xs" fw={600} truncate>
+							{previewedWeb.title || previewedWeb.url}
+						</Text>
+					</Group>
+					<Box
+						h="calc(100% - 24px)"
+						className="markdown-sm"
+						style={{ overflow: "auto" }}
+					>
+						<Anchor
+							size="sm"
+							href={previewedWeb.url}
+							target="_blank"
+							display="block"
+							mb="md"
+							truncate="end"
+							onClick={(event) => {
+								event.preventDefault();
+								void TauriUtils.open(previewedWeb.url);
+							}}
+						>
+							{previewedWeb.url}
+						</Anchor>
+						<Markdown key={previewedWeb.url} source={previewedWeb.content} />
+					</Box>
+				</Box>
+			)}
 			{previewedFile && (
 				<Box flex={1} mih={0}>
 					<Group gap={4} mb="xs">

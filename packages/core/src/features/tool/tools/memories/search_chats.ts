@@ -1,11 +1,12 @@
 import { z } from "zod";
+import { Enum } from "../../../../core/services/PostgresService.ts";
 import type {
 	EmbeddingCapability,
 	MemoriesCapability,
 } from "../../../../core/types/capability.ts";
 import { zId } from "../../../../core/types/common.ts";
+import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
 import { SnippetService } from "../../../data/services/SnippetService.ts";
-import { Author } from "../../../data/types/message.ts";
 import { DataUtils } from "../../../data/utils/DataUtils.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
@@ -19,7 +20,7 @@ export const search_chats = {
 		id: zId,
 		chat_id: zId,
 		chat_title: z.string().nullable(),
-		author: z.enum(Author),
+		author: z.enum(Enum.Author.values),
 		snippet: z.string(),
 		created_at: z.date(),
 	}),
@@ -60,7 +61,7 @@ export const createSearchChatsTool: ToolFactory<
 					query: input.query,
 					maxChars: 250,
 				}),
-				created_at: message.createdAt,
+				created_at: CommonUtils.toDate(message.createdAt),
 			},
 		}));
 	},

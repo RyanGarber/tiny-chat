@@ -12,7 +12,6 @@ import { useClipboard, useDisclosure } from "@mantine/hooks";
 import {
 	ArrowBendDownLeftIcon,
 	CopyIcon,
-	PaperPlaneTiltIcon,
 	PenIcon,
 	TrashIcon,
 	XIcon,
@@ -23,11 +22,10 @@ import type { Compaction } from "@tiny-chat/core/src/features/agent/services/Age
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import type { CSSProperties, ReactNode } from "react";
 import { client } from "#app/client.ts";
-import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import MessageBody from "#app/features/message/components/MessageBody.tsx";
 import { useMessaging } from "#client/src/features/chat/hooks/useMessaging.ts";
 import { useMessagingStore } from "#client/src/features/chat/stores/useMessagingStore.ts";
-import { Author, type MessageState } from "#core/features/data/types/message";
+import type { MessageState } from "#core/features/data/types/message";
 
 export default function Message({
 	message,
@@ -55,7 +53,7 @@ export default function Message({
 	const actions: ReactNode[] = [];
 	if (!isLast) {
 		actions.push(
-			<Tooltip label="Insert Here" position="bottom" color="gray" key="insert">
+			<Tooltip label="Insert Here" key="insert">
 				<ActionIcon
 					variant="subtle"
 					size={32}
@@ -85,23 +83,19 @@ export default function Message({
 			<div
 				style={{
 					display: "flex",
-					justifyContent:
-						message.author === Author.USER ? "flex-end" : "flex-start",
+					justifyContent: message.author === "USER" ? "flex-end" : "flex-start",
 					padding: "10px 0",
 				}}
 			>
-				<Stack
-					align={message.author === Author.USER ? "end" : "start"}
-					w="100%"
-				>
+				<Stack align={message.author === "USER" ? "end" : "start"} w="100%">
 					<MessageBody message={message} style={fade} compaction={compaction} />
 					<Box w="100%">
 						<Group
 							gap={0}
-							justify={message.author === Author.USER ? "end" : "space-between"}
+							justify={message.author === "USER" ? "end" : "space-between"}
 						>
 							<Group gap={0} style={fade}>
-								{message.author === Author.USER && branch.count > 1 && (
+								{message.author === "USER" && branch.count > 1 && (
 									<Group gap={4}>
 										<ActionIcon
 											variant="subtle"
@@ -127,11 +121,7 @@ export default function Message({
 										</Text>
 									</Group>
 								)}
-								<Tooltip
-									label={clipboard.copied ? "Copied" : "Copy"}
-									position="bottom"
-									color="gray"
-								>
+								<Tooltip label={clipboard.copied ? "Copied" : "Copy"}>
 									<ActionIcon
 										variant="subtle"
 										size={30}
@@ -147,8 +137,8 @@ export default function Message({
 										<CopyIcon size={20} />
 									</ActionIcon>
 								</Tooltip>
-								{message.author === Author.USER && (
-									<Tooltip label="Edit" position="bottom" color="gray">
+								{message.author === "USER" && (
+									<Tooltip label="Edit">
 										<ActionIcon
 											variant="subtle"
 											size={30}
@@ -167,7 +157,7 @@ export default function Message({
 										</ActionIcon>
 									</Tooltip>
 								)}
-								<Tooltip label="Delete" position="bottom" color="gray">
+								<Tooltip label="Delete">
 									<ActionIcon
 										variant="subtle"
 										size={30}
@@ -176,7 +166,7 @@ export default function Message({
 										<TrashIcon size={20} />
 									</ActionIcon>
 								</Tooltip>
-								{message.author === Author.MODEL && (
+								{message.author === "MODEL" && (
 									<Text
 										size="xs"
 										c="dimmed"
@@ -192,7 +182,7 @@ export default function Message({
 									</Text>
 								)}
 							</Group>
-							{message.author === Author.MODEL && actions.length !== 0 && (
+							{message.author === "MODEL" && actions.length !== 0 && (
 								<Box
 									opacity={
 										isNodeHovered || insertingAfter?.id === message.id ? 1 : 0.5
@@ -212,10 +202,10 @@ export default function Message({
 				opened={isConfirmingDelete}
 				onClose={onCancelDelete}
 				title="Delete Message"
-				styles={{ content: StyleUtils.glass }}
 				centered
 			>
 				<Button
+					variant="outline"
 					color="red"
 					fullWidth
 					onClick={() => {

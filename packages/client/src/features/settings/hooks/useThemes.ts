@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { ThemeUtils } from "@tiny-chat/core/src/core/utils/ThemeUtils.ts";
+import { SettingsUtils } from "@tiny-chat/core/src/core/utils/SettingsUtils.ts";
 import { useContext, useMemo } from "react";
 import { ClientContext } from "../../../client.ts";
 import { useSettings } from "./useSettings.ts";
@@ -10,7 +10,7 @@ export const useThemes = () => {
 	const { settings, applySettings } = useSettings();
 
 	const theme = useMemo(() => {
-		return settings.data?.theme ?? ThemeUtils.themes[0];
+		return SettingsUtils.defaults({ theme: settings.data?.theme }).theme;
 	}, [settings.data?.theme]);
 
 	const setTheme = useMutation({
@@ -19,20 +19,14 @@ export const useThemes = () => {
 	});
 
 	const codeTheme = useMemo(() => {
-		return settings.data?.codeTheme ?? ThemeUtils.codeThemesByTheme(theme)[0];
-	}, [settings.data?.codeTheme, theme]);
+		return SettingsUtils.defaults({
+			theme: settings.data?.theme,
+			codeTheme: settings.data?.codeTheme,
+		}).codeTheme;
+	}, [settings.data?.theme, settings.data?.codeTheme]);
 
 	const setCodeTheme = useMutation({
 		...client.query.settings.setCodeTheme.mutationOptions(),
-		onSuccess: applySettings,
-	});
-
-	const blackout = useMemo(() => {
-		return settings.data?.blackout ?? false;
-	}, [settings.data?.blackout]);
-
-	const setBlackout = useMutation({
-		...client.query.settings.setBlackout.mutationOptions(),
 		onSuccess: applySettings,
 	});
 
@@ -41,7 +35,5 @@ export const useThemes = () => {
 		setTheme,
 		codeTheme,
 		setCodeTheme,
-		blackout,
-		setBlackout,
 	};
 };

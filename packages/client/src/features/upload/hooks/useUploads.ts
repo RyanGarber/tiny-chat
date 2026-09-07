@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
-import { UploadKind } from "@tiny-chat/core/src/features/file/types/upload.ts";
+import type { Enum } from "@tiny-chat/core/src/core/services/PostgresService.ts";
 import { useContext } from "react";
 import { ClientContext } from "../../../client.ts";
 import { MessagingService } from "../../chat/services/MessagingService.ts";
@@ -13,7 +13,7 @@ export const useUploads = () => {
 
 	const attachmentUploads = useInfiniteQuery({
 		...client.query.upload.getUploads.infiniteQueryOptions(
-			{ kind: UploadKind.ATTACHMENT, limit: 10 },
+			{ kind: "ATTACHMENT", limit: 10 },
 			{
 				getNextPageParam: (lastPage, _pages) => lastPage.nextCursor,
 				select: (data) => ({
@@ -31,7 +31,7 @@ export const useUploads = () => {
 		queryKey: githubUploadsQueryKey,
 		queryFn: async () => {
 			const { uploads } = await client.api.upload.getUploads.query({
-				kind: UploadKind.GITHUB,
+				kind: "GITHUB",
 			});
 			return uploads.flatMap((upload) => {
 				if (!upload.name.includes("@")) {
@@ -54,7 +54,13 @@ export const useUploads = () => {
 
 	const upload = useMutation({
 		mutationKey: uploadMutationKey,
-		mutationFn: async ({ kind, file }: { kind: UploadKind; file: File }) => {
+		mutationFn: async ({
+			kind,
+			file,
+		}: {
+			kind: Enum["UploadKind"];
+			file: File;
+		}) => {
 			const data = new FormData();
 			data.set("kind", kind);
 			data.set("file", file);
@@ -67,7 +73,11 @@ export const useUploads = () => {
 			// A skill is carried by the message's config rather than its text, so
 			// it is the one upload that is not written into the editor.
 			if (variables.kind !== "SKILL") {
-				await MessagingService.attachUpload({ client, upload: result });
+				await MessagingService.attachUpload({
+					client,
+					upload: result,
+					file: variables.file.name,
+				});
 			}
 		},
 	});

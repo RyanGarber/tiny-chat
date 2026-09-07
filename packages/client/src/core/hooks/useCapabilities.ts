@@ -56,6 +56,7 @@ export const useCapabilities = ({
 	const key = useStableKey({
 		messages: sources,
 		providers: providers.data,
+		config: session.data?.user.settings.subagentConfig,
 	});
 
 	const presumedCapabilities = useQuery({

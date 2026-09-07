@@ -1,4 +1,4 @@
-import type { zData } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { zData } from "@tiny-chat/core/src/features/data/types/part.ts";
 import type { Root as HastRoot } from "hast";
 import type { Code, Root as MdastRoot, Nodes } from "mdast";
 import { type JSX, useMemo } from "react";
@@ -13,43 +13,13 @@ import RemarkParse from "remark-parse";
 import RemarkRehype from "remark-rehype";
 import { type PluggableList, type Processor, unified } from "unified";
 import { visit } from "unist-util-visit";
-import { MarkdownPreprocessorUtils } from "../utils/MarkdownPreprocessorUtils.ts";
+import { MarkdownDataUtils } from "../utils/MarkdownDataUtils.ts";
+import { MarkdownUtils } from "../utils/MarkdownUtils.ts";
 
 export type * from "mdast";
 export type * from "mdast-util-to-hast";
 
 export type MarkdownSource = string | zData;
-
-const encodeDirectiveAttribute = (value: string) =>
-	value.replace(/[&"\r\n]/g, (character) => {
-		if (character === "&") return "&amp;";
-		if (character === '"') return "&quot;";
-		if (character === "\r") return "&#13;";
-		return "&#10;";
-	});
-
-export const MarkdownSourceUtils = {
-	/**
-	 * Rebuild the editor's inline Markdown stream from structured message parts.
-	 * No separator is introduced: the surrounding text parts already own every
-	 * intentional space (or lack of one) on either side of an attachment.
-	 */
-	fromData: (data: zData): string =>
-		data
-			.flat()
-			.flatMap((part) => {
-				if (part.type === "text") return [part.value];
-				if (part.type !== "attachment") return [];
-
-				const attributes = [
-					`source="${encodeDirectiveAttribute(part.source)}"`,
-					`name="${encodeDirectiveAttribute(part.label)}"`,
-					...(part.content.type === "directory" ? ['is-directory="true"'] : []),
-				].join(" ");
-				return [`:attachment[]{${attributes}}`];
-			})
-			.join(""),
-} as const;
 
 const allowedTags: Partial<Record<keyof JSX.IntrinsicElements, string[]>> = {
 	blockquote: ["model"],
@@ -268,10 +238,10 @@ export const useMarkdown = ({
 }) => {
 	const content = useMemo(
 		() =>
-			MarkdownPreprocessorUtils.preprocess(
+			MarkdownUtils.normalize(
 				(typeof source === "string"
 					? source
-					: MarkdownSourceUtils.fromData(source)
+					: MarkdownDataUtils.toInlineBlock(source)
 				)
 					.replace(MESSAGE_OPEN, "")
 					.replace(MESSAGE_CLOSE, "")
@@ -286,5 +256,26 @@ export const useMarkdown = ({
 		allowedTags,
 		processor,
 		content,
+	};
+};
+
+export const _useMarkdownTest = () => {
+	type Slim = string | [string, ...Slim[]];
+
+	const slim = (node: {
+		type: string;
+		name?: string | null;
+		tagName?: string | null;
+		value?: string | null;
+		children?: Array<typeof node> | null;
+	}): Slim => {
+		if (node.type === "text") return node.value ?? "";
+		const name = node.tagName ?? node.name ?? node.type;
+		return [name, ...(node.children?.map(slim) ?? [])];
+	};
+
+	return {
+		parse: (source: string) => slim(processor.parse(source)),
+		run: (source: string) => slim(processor.runSync(processor.parse(source))),
 	};
 };

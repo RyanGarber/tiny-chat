@@ -1,13 +1,13 @@
-import { Anchor, Box, Pill, Stack, Text } from "@mantine/core";
+import { Box, Pill, Stack, Text } from "@mantine/core";
+import { ComponentUtils } from "@tiny-chat/client/src/core/utils/ComponentUtils";
 import { StreamContext } from "@tiny-chat/client/src/features/message/components/StreamContext.tsx";
 import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
-import { ComponentUtils } from "@tiny-chat/client/src/features/message/utils/ComponentUtils";
 import type { CodeLanguage } from "@tiny-chat/core/src/core/utils/CodeUtils.ts";
 import { SourceUtils } from "@tiny-chat/core/src/features/data/utils/SourceUtils.ts";
 import { createContext, useContext } from "react";
 import type { Components } from "streamdown";
 import Popup from "#app/core/components/Popup.tsx";
-import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
+import WebSourceCard from "#app/features/chat/components/WebSourceCard.tsx";
 import Code from "#app/features/code/components/Code.tsx";
 import Mermaid from "#app/features/code/components/Mermaid.tsx";
 import { Table } from "#app/features/message/components/MarkdownTable.tsx";
@@ -88,9 +88,10 @@ const MarkComponent: Components["mark"] = ({ children, node }) => {
 	// Read per-citation rather than through the markdown context: sources change
 	// whenever a chat-scoped query settles, and only this component cares.
 	const sources = useMessageStore((s) => s.sources);
-	const keys = ComponentUtils.props(node, { sources: "" }).sources.split(
-		/[\s;,]+/,
-	);
+	const keys = SourceUtils.matchKeys({
+		sources,
+		keys: ComponentUtils.props(node, { sources: "" }).sources,
+	});
 	const text = ComponentUtils.text({ children });
 	return (
 		<span>
@@ -117,52 +118,41 @@ const MarkComponent: Components["mark"] = ({ children, node }) => {
 								{source.emoji}
 							</Pill>
 						</Popup.Target>
-						<Popup.Dropdown
-							style={{ ...StyleUtils.glass, boxShadow: StyleUtils.shadow }}
-							c="var(--mantine-color-text)"
-						>
-							<Stack gap="xs" maw={300}>
-								<Text size="sm" fw={500} lineClamp={2}>
-									{source.title}
-								</Text>
-								<Box c="dimmed">
-									{source?.type !== "file" && (
-										<Text
-											textWrap="pretty"
-											style={{
-												wordBreak: "break-word",
-												whiteSpace: "pre-wrap",
-											}}
-											size="xs"
-										>
-											{source?.type === "web" && (
-												<Anchor
-													lineClamp={1}
-													href={source.value.url}
-													target="_blank"
-													onClick={(e) => {
-														e.preventDefault();
-														void TauriUtils.open(source?.value.url);
-													}}
-												>
-													{source.value.url}
-												</Anchor>
-											)}
-											{source.description}
-										</Text>
-									)}
-									{source?.type === "file" && (
-										<FileTag
-											path={source.value.path}
-											directory={source.value.directory}
-										>
-											<Text flex={1} miw={0} truncate size="xs">
+						<Popup.Dropdown c="var(--mantine-color-text)">
+							{source?.type === "web" && (
+								<WebSourceCard source={source.value} unstyled />
+							)}
+							{source?.type !== "web" && (
+								<Stack gap="xs" maw={300}>
+									<Text size="sm" fw={500} lineClamp={2}>
+										{source.title}
+									</Text>
+									<Box c="dimmed">
+										{source?.type !== "file" && (
+											<Text
+												textWrap="pretty"
+												style={{
+													wordBreak: "break-word",
+													whiteSpace: "pre-wrap",
+												}}
+												size="xs"
+											>
 												{source.description}
 											</Text>
-										</FileTag>
-									)}
-								</Box>
-							</Stack>
+										)}
+										{source?.type === "file" && (
+											<FileTag
+												path={source.value.path}
+												directory={source.value.directory}
+											>
+												<Text flex={1} miw={0} truncate size="xs">
+													{source.description}
+												</Text>
+											</FileTag>
+										)}
+									</Box>
+								</Stack>
+							)}
 						</Popup.Dropdown>
 					</Popup>
 				);
@@ -220,7 +210,7 @@ const DetailsComponent: Components["details"] = ({ node, children }) => {
 const TableComponent: Components["table"] = ({ children }) => {
 	const streaming = useContext(StreamContext);
 	return (
-		<Table withButtons={true} streaming={streaming}>
+		<Table withButtons streaming={streaming}>
 			{children}
 		</Table>
 	);

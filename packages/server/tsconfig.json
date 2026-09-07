@@ -3,11 +3,6 @@
 		"module": "nodenext",
 		"moduleResolution": "nodenext"
 	},
-	"include": [
-		"src",
-		"generated/prisma/**/*.ts",
-		"../core/src/logger.ts",
-		"../core/generated/prisma/**/*.d.ts"
-	],
+	"include": ["src", "generated/prisma/**/*.ts", "vitest.config.ts"],
 	"extends": "../../tsconfig.base.json"
 }

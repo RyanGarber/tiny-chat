@@ -14,19 +14,21 @@ import { useCompletionStore } from "@tiny-chat/client/src/features/editor/stores
 import { AtomUtils } from "@tiny-chat/client/src/features/editor/utils/AtomUtils.ts";
 import { EditorNodeUtils } from "@tiny-chat/client/src/features/editor/utils/EditorNodeUtils.ts";
 import { useMessages } from "@tiny-chat/client/src/features/message/hooks/useMessages.ts";
+import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
 import { useUploads } from "@tiny-chat/client/src/features/upload/hooks/useUploads.ts";
-import { UploadKind } from "@tiny-chat/core/src/features/file/types/upload.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import { useInput, usePaste, useWindowSize } from "ink";
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo } from "react";
 import { client } from "../../../client.ts";
 import Box from "../../../core/components/Box.tsx";
+import Text from "../../../core/components/Text.tsx";
 import type { Color } from "../../../core/hooks/useColor.ts";
+import { useMouseInput } from "../../../core/hooks/useMouseInput.ts";
 import { useWorkingStatus } from "../../../core/hooks/useWorkingStatus.ts";
 import { ClipboardService } from "../../../core/services/ClipboardService.ts";
 import { StdinUtils } from "../../../core/utils/StdinUtils.ts";
 import { useEditorStore } from "../stores/useEditorStore.ts";
-import { type EditorSelection, EditorUtils } from "../utils/EditorUtils.ts";
+import { EditorUtils } from "../utils/EditorUtils.ts";
 import { FilePasteUtils } from "../utils/FilePasteUtils.ts";
 import Attachments from "./Attachments.tsx";
 import Commands from "./Commands.tsx";
@@ -48,7 +50,23 @@ export default function Editor({
 	const { colorScheme } = useContext(ThemeContext);
 	const { columns } = useWindowSize();
 
-	const { disabled } = useDisabled({ disabled: _disabled });
+	const focusedFeedbackId = useEditorStore((s) => s.focusedFeedbackId);
+	const nextFeedbackId = useMessageStore((s) => s.nextFeedbackId);
+	const feedbackFocused =
+		!!nextFeedbackId && focusedFeedbackId === nextFeedbackId;
+	const { disabled } = useDisabled({ disabled: _disabled || feedbackFocused });
+	const { mouseRef: focusRef } = useMouseInput({
+		onClick: () => useEditorStore.setState({ focusedFeedbackId: null }),
+	});
+	useInput(
+		(_, key) => {
+			if (key.tab && nextFeedbackId)
+				useEditorStore.setState({
+					focusedFeedbackId: feedbackFocused ? null : nextFeedbackId,
+				});
+		},
+		{ isActive: !_disabled },
+	);
 	const { config, modelArgs } = useConfig();
 	const { sendMessage } = useMessaging();
 	const { messages } = useMessages();
@@ -66,7 +84,8 @@ export default function Editor({
 	const setCursor = useEditorStore((state) => state.setCursor);
 	const insertAt = useEditorStore((state) => state.insert);
 
-	const [selection, setSelection] = useState<EditorSelection | null>(null);
+	const selection = useEditorStore((state) => state.selection);
+	const setSelection = useEditorStore((state) => state.setSelection);
 
 	const isCompletionsOpen = useCompletionStore(
 		(state) => state.isCompletionsOpen,
@@ -98,7 +117,6 @@ export default function Editor({
 	// biome-ignore lint/correctness/useExhaustiveDependencies: re-read on every change to what the editor holds
 	useEffect(() => {
 		MessagingService.getData({ client });
-		// biome-ignore lint/nursery/useReactCompiler: content and atoms intentionally trigger a re-read from their external stores.
 	}, [content, atoms]);
 
 	const offset = EditorUtils.offset(content, cursor);
@@ -203,7 +221,7 @@ export default function Editor({
 
 				const name = `Pasted-${new Date().toISOString().replace(/[:.]/g, "-")}.png`;
 				upload.mutate({
-					kind: UploadKind.ATTACHMENT,
+					kind: "ATTACHMENT",
 					file: new File([clipboard.data], name, { type: "image/png" }),
 				});
 			})();
@@ -309,6 +327,12 @@ export default function Editor({
 
 	return (
 		<>
+			{nextFeedbackId && (
+				<Text color="textSubtle">
+					{" "}
+					Tab: {feedbackFocused ? "message editor" : "tool feedback"}
+				</Text>
+			)}
 			<Commands
 				content={content}
 				setContent={setContent}
@@ -322,6 +346,7 @@ export default function Editor({
 				setCursor={setCursor}
 			/>
 			<Box
+				ref={(element) => focusRef(element, 0)}
 				alignItems="flex-end"
 				paddingX={2}
 				paddingY={1}

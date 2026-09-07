@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { type DirectiveMatch, DirectiveUtils } from "./DirectiveUtils.ts";
 
 function clean(matches: DirectiveMatch<any>[]) {

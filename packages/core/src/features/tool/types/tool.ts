@@ -5,15 +5,15 @@ import type { Capabilities } from "../../../core/types/capability.ts";
 import type { DistributiveOmit } from "../../../core/types/common.ts";
 import type { StreamMutation } from "../../../core/types/stream.ts";
 import type { zAgentContext } from "../../agent/types/agent.ts";
-import type { zDataBasicPart } from "../../data/types/message.ts";
+import type { zDataSimplePart, zJsonPart } from "../../data/types/part.ts";
 
 export interface ToolDefinition {
 	name: string;
 	description: string;
-	input: z.ZodTypeAny;
-	feedback?: z.ZodTypeAny | void;
-	output: z.ZodTypeAny;
-	stream?: z.ZodTypeAny | void;
+	input: z.ZodType;
+	feedback?: z.ZodType | void;
+	output: z.ZodType;
+	stream?: z.ZodType | void;
 }
 
 export interface ToolValidation {
@@ -21,8 +21,8 @@ export interface ToolValidation {
 }
 
 export type OutputPart<TDefinition extends ToolDefinition> =
-	| Exclude<zDataBasicPart, { type: "json" }>
-	| (Omit<Extract<zDataBasicPart, { type: "json" }>, "value"> & {
+	| Exclude<zDataSimplePart, { type: "json" }>
+	| (Omit<zJsonPart, "value"> & {
 			value: z.infer<TDefinition["output"]>;
 	  });
 

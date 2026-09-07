@@ -1,4 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
+import { SettingsUtils } from "@tiny-chat/core/src/core/utils/SettingsUtils.ts";
 import { useContext, useMemo } from "react";
 import { ClientContext } from "../../../client.ts";
 import { UserService } from "../../user/services/UserService.ts";
@@ -10,7 +11,9 @@ export const useEmbeddingSettings = () => {
 	const { settings, applySettings } = useSettings();
 
 	const embeddingConfig = useMemo(() => {
-		return settings.data?.embeddingConfig;
+		return SettingsUtils.defaults({
+			embeddingConfig: settings.data?.embeddingConfig,
+		}).embeddingConfig;
 	}, [settings.data?.embeddingConfig]);
 
 	const setEmbeddingConfig = useMutation({
@@ -23,7 +26,9 @@ export const useEmbeddingSettings = () => {
 	});
 
 	const useEmbeddingSearch = useMemo(() => {
-		return settings.data?.useEmbeddingSearch ?? false;
+		return SettingsUtils.defaults({
+			useEmbeddingSearch: settings.data?.useEmbeddingSearch,
+		}).useEmbeddingSearch;
 	}, [settings.data?.useEmbeddingSearch]);
 
 	const setUseEmbeddingSearch = useMutation({

@@ -5,6 +5,6 @@
 		"moduleResolution": "nodenext",
 		"jsx": "react-jsx"
 	},
-	"include": ["src"],
+	"include": ["src", "vitest.config.ts"],
 	"extends": "../../tsconfig.base.json"
 }

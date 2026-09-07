@@ -115,13 +115,14 @@ export const FileTypeUtils = {
 		path,
 		fallback = "application/octet-stream",
 	}: {
-		data?: Uint8Array | string;
+		data?: Blob | Uint8Array | string;
 		path?: string[] | string;
 		fallback?: string;
 	}) => {
 		let mime: string | undefined;
 
 		if (data) {
+			if (data instanceof Blob) data = new Uint8Array(await data.arrayBuffer());
 			data = FileUtils.getBufferFromBytes({ data });
 
 			const stream = new ReadableStream({

@@ -1,33 +1,67 @@
+import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeUtils.ts";
 import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
 
-let locks = 0;
-
 export const ControlUtils = {
-	download: ({
-		filename,
-		content,
-		mime,
-	}: {
-		filename: string;
-		content: string | Blob;
-		mime: string;
-	}) => {
+	preprocess: ({ data, mime }: { data: string | Blob; mime: string }) => {
 		// Prepend UTF-8 BOM for CSV so Excel on Windows correctly detects the encoding.
 		// Without it, Excel falls back to the system ANSI codepage and corrupts non-ASCII text.
 		const bom =
-			typeof content === "string" && mime.startsWith("text/csv")
-				? "\uFEFF"
-				: "";
-		const blob =
-			typeof content === "string"
-				? new Blob([bom + content], { type: mime })
-				: content;
-		const url = URL.createObjectURL(blob);
+			typeof data === "string" && mime.startsWith("text/csv") ? "\uFEFF" : "";
+		return typeof data === "string"
+			? new Blob([bom + data], { type: mime })
+			: data;
+	},
+
+	copy: async ({
+		filename,
+		data,
+		mime,
+	}: {
+		filename?: string;
+		data: string | Blob;
+		mime?: string;
+	}) => {
+		mime ??= await FileTypeUtils.getMime({ path: filename, data });
+
+		data = ControlUtils.preprocess({ data, mime });
+
+		await navigator.clipboard.write([
+			new ClipboardItem({
+				...{ [mime]: data },
+			}),
+		]);
+	},
+
+	download: async ({
+		filename,
+		extension,
+		data,
+		mime,
+	}: {
+		filename?: string;
+		extension?: string;
+		mime?: string;
+		data: string | Blob;
+	}) => {
+		let prefix = filename?.split("/").at(-1);
+
+		if (!prefix?.includes("."))
+			prefix = `tiny-chat-${Temporal.Now.zonedDateTimeISO().toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" })}`;
+		else prefix = prefix.replace(/\.[A-Za-z0-9]+$/, "");
+
+		extension ??= FileTypeUtils.getExtension({ name: filename }) ?? "txt";
+		mime ??= await FileTypeUtils.getMime({ path: filename, data });
+
+		data = ControlUtils.preprocess({ data, mime });
+		const url = URL.createObjectURL(data);
+
 		const a = document.createElement("a");
 		a.href = url;
-		a.download = filename;
+		a.download = `${prefix}.${extension}`;
 		document.body.appendChild(a);
+
 		a.click();
+
 		document.body.removeChild(a);
 		URL.revokeObjectURL(url);
 	},
@@ -83,19 +117,5 @@ export const ControlUtils = {
 			img.onerror = () => reject(new Error("Failed to load SVG image"));
 			img.src = encoded;
 		});
-	},
-
-	lockScroll: () => {
-		locks++;
-		if (locks === 1) {
-			document.body.style.overflow = "hidden";
-		}
-	},
-
-	unlockScroll: () => {
-		locks = Math.max(0, locks - 1);
-		if (locks === 0) {
-			document.body.style.overflow = "";
-		}
 	},
 } as const;

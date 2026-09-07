@@ -40,7 +40,7 @@ export const useExperiments = () => {
 							user: session.data.user,
 							message,
 							chat: chat.data,
-							append: [],
+							toolResults: [],
 							providers: providers.data,
 							skills,
 							mcpTools: mcpTools.data ?? [],

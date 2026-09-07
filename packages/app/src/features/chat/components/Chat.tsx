@@ -26,7 +26,6 @@ import Sentinel from "#app/core/components/Sentinel.tsx";
 import { useAutoScroll } from "#app/core/hooks/useAutoScroll.ts";
 import { useSentinel } from "#app/core/hooks/useSentinel.ts";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
-import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import Actions from "#app/features/chat/components/Actions.tsx";
 import ChatEffects from "#app/features/chat/components/ChatEffects.tsx";
 import ChatHeader from "#app/features/chat/components/ChatHeader.tsx";
@@ -310,13 +309,11 @@ export default function Chat() {
 					>
 						{(styles) => (
 							<ActionIcon
+								className="glass-shadow"
 								variant="filled"
 								radius="xl"
 								size="lg"
-								style={{
-									boxShadow: StyleUtils.shadow,
-									...styles,
-								}}
+								style={styles}
 								onClick={() =>
 									chat.data &&
 									void ChatService.fetchChat({ client, id: chat.data.id })
@@ -336,13 +333,11 @@ export default function Chat() {
 					>
 						{(styles) => (
 							<ActionIcon
+								className="glass-shadow"
 								variant="filled"
 								radius="xl"
 								size="lg"
-								style={{
-									boxShadow: StyleUtils.shadow,
-									...styles,
-								}}
+								style={styles}
 								onClick={() => {
 									scrollToBottom("smooth");
 								}}

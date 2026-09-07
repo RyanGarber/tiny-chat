@@ -4,7 +4,6 @@ import {
 	type FileCategory,
 	FileExcludeUtils,
 } from "@tiny-chat/core/src/features/file/utils/FileExcludeUtils.ts";
-import { Prisma } from "../../../../generated/prisma/client.ts";
 
 /**
  * What is worth keeping out of an upload, expressed in terms of the one set of
@@ -41,6 +40,27 @@ export const UploadUtils = {
 		return !category || !getCategories(extras).has(category);
 	},
 
+	excluding: ({
+		column,
+		alternatives,
+		prefix,
+		suffix,
+	}: {
+		column: any;
+		alternatives: string[];
+		prefix: string;
+		suffix: string;
+	}) => {
+		if (!alternatives.length) return [];
+		const pattern = `${prefix}(${alternatives.map(CommonUtils.escapeRegex).join("|")})${suffix}`;
+		return [
+			globalThis.db.raw
+				.sql`array_to_string(${column}, '/') !~* ${pattern}`.returns(
+				"pg/bool@1",
+			),
+		];
+	},
+
 	/**
 	 * The same test in SQL, for choosing which stored files to embed.
 	 *
@@ -53,42 +73,42 @@ export const UploadUtils = {
 	 * enough — the caller pairs it with a size bound and a decodability check,
 	 * and those catch what a path cannot say.
 	 */
-	shouldIncludeFileSql: ({ extras = true }: { extras?: boolean } = {}) => {
+	shouldIncludeFileSql: (
+		column: any,
+		{
+			extras = true,
+		}: {
+			extras?: boolean;
+		} = {},
+	) => {
 		const categories = getCategories(extras);
-		const path = Prisma.sql`array_to_string(path, '/')`;
+		return [
+			...UploadUtils.excluding({
+				column,
+				alternatives: FileExcludeUtils.getNames({
+					categories,
+					directoryOnly: false,
+				}),
 
-		/** One "does not match" clause, or nothing when there is nothing to say. */
-		const excluding = (
-			alternatives: string[],
-			{ prefix, suffix }: { prefix: string; suffix: string },
-		) =>
-			alternatives.length
-				? [
-						Prisma.sql`${path} !~* ${`${prefix}(${alternatives
-							.map(CommonUtils.escapeRegex)
-							.join("|")})${suffix}`}`,
-					]
-				: [];
-
-		const clauses = [
-			...excluding(
-				FileExcludeUtils.getNames({ categories, directoryOnly: false }),
-				{ prefix: "(^|/)", suffix: "(/|$)" },
-			),
-			// Every row here is a file, so a name that only counts as a directory
-			// must be followed by a slash, or a script called `build` would be
-			// dropped along with the directory of the same name.
-			...excluding(
-				FileExcludeUtils.getNames({ categories, directoryOnly: true }),
-				{ prefix: "(^|/)", suffix: "/" },
-			),
-			...excluding(FileExcludeUtils.getExtensions({ categories }), {
+				prefix: "(^|/)",
+				suffix: "(/|$)",
+			}),
+			...UploadUtils.excluding({
+				column,
+				alternatives: FileExcludeUtils.getNames({
+					categories,
+					directoryOnly: true,
+				}),
+				prefix: "(^|/)",
+				suffix: "/",
+			}),
+			...UploadUtils.excluding({
+				column,
+				alternatives: FileExcludeUtils.getExtensions({ categories }),
 				prefix: "\\.",
 				suffix: "$",
 			}),
 		];
-
-		return clauses.length ? Prisma.join(clauses, " AND ") : Prisma.sql`TRUE`;
 	},
 
 	/**
@@ -96,10 +116,14 @@ export const UploadUtils = {
 	 * unpacked before there is any text to read. Such a file never decodes as
 	 * UTF-8, so anything selecting rows on that alone has to ask this too.
 	 */
-	isDocumentSql: () =>
-		Prisma.sql`array_to_string(path, '/') ~* ${`\\.(${[
-			...FileExtractionService.formats,
-		]
+	isDocumentSql: (column: any) => {
+		const extensionPattern = `\\.(${[...FileExtractionService.formats]
 			.map(CommonUtils.escapeRegex)
-			.join("|")})$`}`,
+			.join("|")})$`;
+
+		return globalThis.db.raw
+			.sql`array_to_string(${column}, '/') ~* ${extensionPattern}`.returns(
+			"pg/bool@1",
+		);
+	},
 } as const;

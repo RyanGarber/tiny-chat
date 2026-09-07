@@ -1,7 +1,7 @@
-import "temporal-polyfill/full/global";
-
 import type { Transport } from "@modelcontextprotocol/client";
+import { inferPrismaClient } from "@ryangarber/better-auth-adapter-prisma/client";
 import { QueryClient } from "@tanstack/react-query";
+import type { userFields } from "@tiny-chat/core/prisma/better-auth-adapter.ts";
 import { JsonService } from "@tiny-chat/core/src/core/services/JsonService.ts";
 import type { ShellCapability } from "@tiny-chat/core/src/core/types/capability.ts";
 import { zEnv, type zProviderEnv } from "@tiny-chat/core/src/core/types/env.ts";
@@ -24,6 +24,7 @@ import { createAuthClient } from "better-auth/react";
 import { createContext } from "react";
 import { z } from "zod";
 import type { ClientInput } from "./features/chat/services/MessagingService.ts";
+import { WorkingDirectoryService } from "./features/chat/services/WorkingDirectoryService.ts";
 
 export interface ClientProviders {
 	getModelProviders: (_: {
@@ -66,6 +67,7 @@ export const createClient = ({
 	input,
 	shell,
 	desktop,
+	queryClient = new QueryClient(),
 }: {
 	env: Record<string, string | undefined>;
 	host?: string;
@@ -78,6 +80,7 @@ export const createClient = ({
 	input?: ClientInput;
 	shell?: ClientShell;
 	desktop?: boolean;
+	queryClient?: QueryClient;
 }) => {
 	const env = zEnv.safeParse(_env);
 	if (!env.success) {
@@ -93,17 +96,19 @@ export const createClient = ({
 		? `http://${host}:${env.data.VITE_SERVER_PORT}`
 		: env.data.VITE_SERVER_URL;
 
-	const auth = createAuthClient({
-		baseURL: serverUrl,
-		basePath: CommonUtils.endpoints.auth,
-		fetchOptions: {
-			auth: {
-				type: "Bearer",
-				token: () => getToken() ?? undefined,
+	const auth = inferPrismaClient<typeof userFields>()(
+		createAuthClient({
+			baseURL: serverUrl,
+			basePath: CommonUtils.endpoints.auth,
+			fetchOptions: {
+				auth: {
+					type: "Bearer",
+					token: () => getToken() ?? undefined,
+				},
 			},
-		},
-		plugins: [anonymousClient(), inferAdditionalFields<typeof AuthServer>()],
-	});
+			plugins: [anonymousClient(), inferAdditionalFields<typeof AuthServer>()],
+		}),
+	);
 
 	const api = createTRPCClient<ApiRouter>({
 		links: [
@@ -119,8 +124,6 @@ export const createClient = ({
 		],
 	});
 
-	const queryClient = new QueryClient();
-
 	const query = createTRPCOptionsProxy({
 		client: api,
 		queryClient: queryClient,
@@ -131,7 +134,13 @@ export const createClient = ({
 		PROVIDER_RELAY_URL: serverUrl,
 	};
 
+	const workingDirectory = WorkingDirectoryService.create({
+		shell,
+		activate: (selection) => api.chat.activate.mutate(selection),
+	});
+
 	return {
+		workingDirectory,
 		webUrl,
 		serverUrl,
 		api,

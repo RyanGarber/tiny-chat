@@ -1,4 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
+import { SettingsUtils } from "@tiny-chat/core/src/core/utils/SettingsUtils.ts";
 import { useContext, useMemo } from "react";
 import { ClientContext } from "../../../client.ts";
 import { useProviders } from "../../agent/hooks/useProviders.ts";
@@ -11,7 +12,8 @@ export const useProviderSettings = () => {
 	const { updateProviders } = useProviders();
 
 	const providerSettings = useMemo(() => {
-		return settings.data?.providers ?? {};
+		return SettingsUtils.defaults({ providers: settings.data?.providers })
+			.providers;
 	}, [settings.data?.providers]);
 
 	const setProviderSetting = useMutation({
@@ -20,7 +22,9 @@ export const useProviderSettings = () => {
 	});
 
 	const preferredWebProvider = useMemo(() => {
-		return settings.data?.preferredWebProvider;
+		return SettingsUtils.defaults({
+			preferredWebProvider: settings.data?.preferredWebProvider,
+		}).preferredWebProvider;
 	}, [settings.data?.preferredWebProvider]);
 
 	const setPreferredWebProvider = useMutation({
@@ -29,7 +33,9 @@ export const useProviderSettings = () => {
 	});
 
 	const useProviderCache = useMemo(() => {
-		return settings.data?.useProviderCache ?? false;
+		return SettingsUtils.defaults({
+			useProviderCache: settings.data?.useProviderCache,
+		}).useProviderCache;
 	}, [settings.data?.useProviderCache]);
 
 	const setUseProviderCache = useMutation({
@@ -38,7 +44,9 @@ export const useProviderSettings = () => {
 	});
 
 	const useBrowserModels = useMemo(() => {
-		return settings.data?.useBrowserModels ?? false;
+		return SettingsUtils.defaults({
+			useBrowserModels: settings.data?.useBrowserModels,
+		}).useBrowserModels;
 	}, [settings.data?.useBrowserModels]);
 
 	const setUseBrowserModels = useMutation({

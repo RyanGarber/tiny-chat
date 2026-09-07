@@ -5,9 +5,7 @@ import {
 	zConfig,
 } from "@tiny-chat/core/src/features/data/types/message.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
-import { describe, expect, it } from "vitest";
-import { Author } from "../../../../generated/prisma/enums.ts";
-import { testUser } from "../../../tests.helpers.ts";
+import { testUser } from "../../../tests.ts";
 import { ActionService } from "../../chat/services/ActionService.ts";
 import { ChatService } from "../../chat/services/ChatService.ts";
 import { MessageService } from "../../message/services/MessageService.ts";
@@ -96,11 +94,11 @@ describe("ActionRunnerService", () => {
 		expect(messages.length).toBe(4);
 
 		const [userMessage, modelMessage] = messages.slice(-2);
-		expect(userMessage.author).toBe(Author.USER);
+		expect(userMessage.author).toBe("USER");
 		expect(DataUtils.getText(userMessage)).toEqual(
 			DataUtils.getText(actionData),
 		);
-		expect(modelMessage.author).toBe(Author.MODEL);
+		expect(modelMessage.author).toBe("MODEL");
 		expect(modelMessage.config.model).toBe(config.model);
 		console.log("action response:", inspect(modelMessage, { depth: null }));
 	});

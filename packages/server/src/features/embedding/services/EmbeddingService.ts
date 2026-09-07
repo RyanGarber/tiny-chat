@@ -1,10 +1,35 @@
 import type { MessageLike } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { zData } from "@tiny-chat/core/src/features/data/types/part.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { FileExtractionService } from "@tiny-chat/core/src/features/file/services/FileExtractionService.ts";
 import { FileExcludeUtils } from "@tiny-chat/core/src/features/file/utils/FileExcludeUtils.ts";
-import { Prisma } from "../../../../generated/prisma/client.ts";
 import { UploadUtils } from "../../upload/utils/UploadUtils.ts";
+
+function total() {
+	return globalThis.db.raw.sql`COUNT(*) OVER()`.returns("pg/text@1");
+}
+
+function isNull(column: any) {
+	return globalThis.db.raw.sql`${column} IS NULL`.returns("pg/bool@1");
+}
+
+function isNonEmptyText(column: any) {
+	return globalThis.db.raw.sql`LENGTH(${column}) > 0`.returns("pg/bool@1");
+}
+
+function isNonEmptyData(column: any) {
+	return globalThis.db.raw.sql`LENGTH((
+		SELECT string_agg("dataPart"->>'value', ' ')
+		FROM jsonb_array_elements(${column}) AS "step",
+			 jsonb_array_elements("step") AS "dataPart"
+		WHERE "dataPart"->>'type' = 'text'
+	)) > 0`.returns("pg/bool@1");
+}
+
+function remaining(limit: number, current: number) {
+	return limit ? limit - current : undefined;
+}
 
 /**
  * Embedding management.
@@ -21,115 +46,131 @@ export const EmbeddingService = {
 
 		if (typeof message === "string") message = { id: message };
 
-		const row = await globalThis.db
-			.runtime()
-			.query(
-				globalThis.db.raw
-					.sql`SELECT COALESCE(embedding::text, 'null') AS embedding FROM message WHERE id = ${message.id} AND "userId" = ${user.id}`
-					.returnsRow({ embedding: "pg/text@1" })
-					.build(),
-			)
+		const row = await globalThis.db.orm.public.Message.where({
+			userId: user.id,
+			id: message.id,
+		})
+			.select("embedding")
 			.first();
-		return row ? (JSON.parse(row.embedding) as number[] | null) : null;
+		return row?.embedding ?? null;
 	},
 
 	getMissingEmbeddings: async ({
 		user,
-		limit,
+		limit = 10,
 	}: {
 		user: zUser;
 		limit?: number;
 	}) => {
-		const messages = await globalThis.prisma.$queryRaw<
-			{ id: string; data: any; total: number }[]
-		>`SELECT id, data, COUNT(*) OVER() as total
-        FROM message
-        WHERE "userId" = ${user.id}
-          AND LENGTH((
-            SELECT string_agg("dataPart"->>'value', ' ')
-            FROM jsonb_array_elements("data") AS "step",
-                 jsonb_array_elements("step") AS "dataPart"
-            WHERE "dataPart"->>'type' = 'text'
-          )) > 0
-          AND embedding IS NULL
-        ${limit ? Prisma.sql`LIMIT ${limit}` : Prisma.empty}`;
+		const db = globalThis.db;
+		const runtime = db.runtime();
 
-		let actions: { id: string; data: any; total: number }[] = [];
+		let messagesQuery = db.sql.public.message
+			.select("id", "data")
+			.select("total", total)
+			.where((f, fns) =>
+				fns.and(
+					fns.eq(f.userId, user.id),
+					isNull(f.embedding),
+					isNonEmptyData(f.data),
+				),
+			);
+		const messagesCap = remaining(limit, 0);
+		if (messagesCap !== undefined)
+			messagesQuery = messagesQuery.limit(messagesCap);
+		const messages = await runtime.query(messagesQuery.build());
+
+		let actions: { id: string; data: zData; total: string }[] = [];
 		if (!limit || messages.length < limit) {
-			actions = await globalThis.prisma.$queryRaw<
-				{ id: string; data: any; total: number }[]
-			>`SELECT id, data, COUNT(*) OVER() as total
-        FROM action
-        WHERE "userId" = ${user.id}
-          AND LENGTH((
-            SELECT string_agg("dataPart"->>'value', ' ')
-            FROM jsonb_array_elements("data") AS "step",
-                 jsonb_array_elements("step") AS "dataPart"
-            WHERE "dataPart"->>'type' = 'text'
-          )) > 0
-          AND embedding IS NULL
-        ${limit ? Prisma.sql`LIMIT ${limit - messages.length}` : Prisma.empty}`;
+			let actionsQuery = db.sql.public.action
+				.select("id", "data")
+				.select("total", total)
+				.where((f, fns) =>
+					fns.and(
+						fns.eq(f.userId, user.id),
+						isNull(f.embedding),
+						isNonEmptyData(f.data),
+					),
+				);
+			const actionsCap = remaining(limit, messages.length);
+			if (actionsCap !== undefined)
+				actionsQuery = actionsQuery.limit(actionsCap);
+
+			actions = await runtime.query(actionsQuery.build());
 		}
 
-		let memories: { id: string; fact: string; total: number }[] = [];
+		let memories: { id: string; fact: string; total: string }[] = [];
 		if (!limit || messages.length + actions.length < limit) {
-			memories = await globalThis.prisma.$queryRaw<
-				typeof memories
-			>`SELECT id, fact, COUNT(*) OVER() as total
-          FROM memory
-          WHERE "userId" = ${user.id}
-            AND LENGTH(fact) > 0
-            AND embedding IS NULL
-          ${limit ? Prisma.sql`LIMIT ${limit - messages.length - actions.length}` : Prisma.empty}`;
+			let memoriesQuery = db.sql.public.memory
+				.select("id", "fact")
+				.select("total", total)
+				.where((f, fns) =>
+					fns.and(
+						fns.eq(f.userId, user.id),
+						isNonEmptyText(f.fact),
+						isNull(f.embedding),
+					),
+				);
+			const memoriesCap = remaining(limit, messages.length + actions.length);
+			if (memoriesCap !== undefined)
+				memoriesQuery = memoriesQuery.limit(memoriesCap);
+			memories = await runtime.query(memoriesQuery.build());
 		}
 
 		let files: {
 			id: string;
-			path: string[];
+			path: readonly string[];
 			data: Uint8Array;
-			total: number;
+			total: string;
 		}[] = [];
 		if (!limit || messages.length + actions.length + memories.length < limit) {
-			files = await globalThis.prisma.$queryRaw<
-				typeof files
-			>`SELECT id, path, data, COUNT(*) OVER() as total
-          FROM file
-          WHERE "userId" = ${user.id}
-            AND ${UploadUtils.shouldIncludeFileSql()}
-            AND (
-              (
-                try_decode_utf8(data) IS NOT NULL
-                AND OCTET_LENGTH(data) <= ${FileExcludeUtils.maxFileBytes}
-              ) OR (
-                ${UploadUtils.isDocumentSql()}
-                AND OCTET_LENGTH(data) <= ${FileExtractionService.maxBytes}
-              )
-            )
-            AND embedding IS NULL
-          ${limit ? Prisma.sql`LIMIT ${limit - messages.length - actions.length - memories.length}` : Prisma.empty}`;
+			let filesQuery = db.sql.public.file
+				.select("id", "path", "data")
+				.select("total", total)
+				.where((f, fns) =>
+					fns.and(
+						fns.eq(f.userId, user.id),
+						...UploadUtils.shouldIncludeFileSql(f.path),
+						fns.or(
+							fns.and(
+								fns.raw`try_decode_utf8(${f.data}) IS NOT NULL`.returns(
+									"pg/bool@1",
+								),
+								fns.raw`OCTET_LENGTH(${f.data}) <= ${FileExcludeUtils.maxFileBytes}`.returns(
+									"pg/bool@1",
+								),
+							),
+							fns.and(
+								UploadUtils.isDocumentSql(f.path),
+								fns.raw`OCTET_LENGTH(${f.data}) <= ${FileExtractionService.maxBytes}`.returns(
+									"pg/bool@1",
+								),
+							),
+						),
+						isNull(f.embedding),
+					),
+				);
+			const filesCap = remaining(
+				limit,
+				messages.length + actions.length + memories.length,
+			);
+			if (filesCap !== undefined) filesQuery = filesQuery.limit(filesCap);
+			files = await runtime.query(filesQuery.build());
 		}
 
-		// A document holds its text in a container, so it is unpacked here rather
-		// than decoded. The bytes are dropped either way: the caller embeds the
-		// text and has no use for a PDF over the wire.
-		const embeddable = (
+		const filesWithText = (
 			await Promise.all(
 				files.map(async ({ data, ...file }) => ({
 					...file,
-					text: FileExtractionService.canExtract({ path: file.path })
-						? await FileExtractionService.extract({ data, path: file.path })
+					text: FileExtractionService.canExtract({ path: [...file.path] })
+						? await FileExtractionService.extract({
+								data,
+								path: [...file.path],
+							})
 						: new TextDecoder().decode(data),
 				})),
 			)
 		).filter((file): file is typeof file & { text: string } => !!file.text);
-
-		if (
-			!messages.length &&
-			!actions.length &&
-			!memories.length &&
-			!embeddable.length
-		)
-			return null;
 
 		return {
 			messages: messages.map((message) => ({
@@ -141,7 +182,7 @@ export const EmbeddingService = {
 				text: DataUtils.getText(action),
 			})),
 			memories: memories.map((memory) => ({ ...memory, text: memory.fact })),
-			files: embeddable,
+			files: filesWithText.map((file) => ({ ...file, path: [...file.path] })),
 		};
 	},
 
@@ -156,31 +197,50 @@ export const EmbeddingService = {
 			embedding: number[];
 		}[];
 	}) => {
-		await globalThis.prisma.$transaction(
-			embeddings.map(({ type, id, embedding }) => {
-				return globalThis.prisma.$executeRaw`
-					UPDATE ${Prisma.raw(type)}
-					SET embedding = ${JSON.stringify(embedding)}::vector
-					WHERE id = ${id}
-					AND "userId" = ${user.id}`;
-			}),
+		await globalThis.db.transaction(async (tx) =>
+			Promise.all(
+				embeddings.map(({ type, id, embedding }) => {
+					if (type === "message") {
+						return tx.orm.public.Message.where({
+							userId: user.id,
+							id,
+						}).update({ embedding });
+					} else if (type === "action") {
+						return tx.orm.public.Action.where({ userId: user.id, id }).update({
+							embedding,
+						});
+					} else if (type === "memory") {
+						return tx.orm.public.Memory.where({ userId: user.id, id }).update({
+							embedding,
+						});
+					} else if (type === "file") {
+						return tx.orm.public.File.where({ userId: user.id, id }).update({
+							embedding,
+						});
+					} else {
+						throw new Error("invalid row type");
+					}
+				}),
+			),
 		);
 	},
 
 	resetAllEmbeddings: async ({ user }: { user: zUser }) => {
-		await globalThis.prisma.$transaction([
-			globalThis.prisma.$executeRaw`UPDATE message
-                           SET embedding = NULL
-                           WHERE "userId" = ${user.id}`,
-			globalThis.prisma.$executeRaw`UPDATE action
-                           SET embedding = NULL
-                           WHERE "userId" = ${user.id}`,
-			globalThis.prisma.$executeRaw`UPDATE memory
-                           SET embedding = NULL
-                           WHERE "userId" = ${user.id}`,
-			globalThis.prisma.$executeRaw`UPDATE file
-                           SET embedding = NULL
-                           WHERE "userId" = ${user.id}`,
-		]);
+		await globalThis.db.transaction(async (tx) =>
+			Promise.all([
+				tx.orm.public.Message.where({ userId: user.id }).updateAndCount({
+					embedding: null,
+				}),
+				tx.orm.public.Memory.where({ userId: user.id }).updateAndCount({
+					embedding: null,
+				}),
+				tx.orm.public.Action.where({ userId: user.id }).updateAndCount({
+					embedding: null,
+				}),
+				tx.orm.public.File.where({ userId: user.id }).updateAndCount({
+					embedding: null,
+				}),
+			]),
+		);
 	},
 };

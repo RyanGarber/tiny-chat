@@ -1,10 +1,9 @@
 import type { TextStreamPart } from "ai";
-import { describe, expect, inject, it } from "vitest";
-import { testConfig } from "../../../../tests.ts";
-import type { zDataPart } from "../../../data/types/message.ts";
+import { mockConfig, mockUser } from "../../../../tests.ts";
+import type { zDataPart } from "../../../data/types/part.ts";
 import { AnthropicProvider } from "./AnthropicProvider.ts";
 
-describe("providers - anthropic", () => {
+describe("AnthropicProvider", () => {
 	it("stores signatures", () => {
 		const event: TextStreamPart<any> = {
 			type: "reasoning-delta",
@@ -18,8 +17,8 @@ describe("providers - anthropic", () => {
 		};
 
 		const signature = AnthropicProvider.getPartSignature?.({
-			user: inject("shared_user"),
-			config: testConfig(AnthropicProvider, "claude-sonnet-5"),
+			user: mockUser(),
+			config: mockConfig(AnthropicProvider, "claude-sonnet-5"),
 			event,
 		});
 		expect(signature?.model).toBe("claude-sonnet-5");
@@ -38,15 +37,15 @@ describe("providers - anthropic", () => {
 		};
 
 		const metadata = AnthropicProvider.getPartSignatureReturn?.({
-			user: inject("shared_user"),
-			config: testConfig(AnthropicProvider, "claude-sonnet-5"),
+			user: mockUser(),
+			config: mockConfig(AnthropicProvider, "claude-sonnet-5"),
 			part,
 		});
 		expect(metadata?.anthropic?.signature).toBe("__TEST__");
 
 		const metadata2 = AnthropicProvider.getPartSignatureReturn?.({
-			user: inject("shared_user"),
-			config: testConfig(AnthropicProvider, "claude-sonnet-4"),
+			user: mockUser(),
+			config: mockConfig(AnthropicProvider, "claude-sonnet-4"),
 			part,
 		});
 		expect(metadata2?.anthropic?.signature).toBeUndefined();

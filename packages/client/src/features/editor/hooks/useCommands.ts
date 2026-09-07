@@ -101,21 +101,12 @@ export const useCommands = ({
 							configRef.current.provider === provider.name &&
 							configRef.current.model === model.name,
 						run: () => {
-							console.log(
-								"[useCommands] setting config:",
-								{
-									provider: provider.name,
-									model: model.name,
-									toolsets: configRef.current.toolsets,
-									skills: configRef.current.skills,
-								},
-								zConfig.parse({
-									provider: provider.name,
-									model: model.name,
-									toolsets: configRef.current.toolsets,
-									skills: configRef.current.skills,
-								}),
-							);
+							console.log("[useCommands] setting config:", {
+								provider: provider.name,
+								model: model.name,
+								toolsets: configRef.current.toolsets,
+								skills: configRef.current.skills,
+							});
 							setConfigRef.current(
 								zConfig.parse({
 									provider: provider.name,

@@ -1,4 +1,4 @@
-import type { zData } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { zData } from "@tiny-chat/core/src/features/data/types/part.ts";
 import { create } from "zustand";
 import { getPartsKey } from "../../../core/hooks/useStableKey.ts";
 

@@ -1,12 +1,11 @@
 import { useMutation } from "@tanstack/react-query";
 import type { ChatState } from "@tiny-chat/core/src/features/data/types/chat.ts";
-import {
-	Author,
-	type MessageState,
-	type zData,
-	type zDataBasicPart,
-	type zDataPart,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type {
+	zData,
+	zDataPart,
+	zToolCallPart,
+} from "@tiny-chat/core/src/features/data/types/part.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { ModelProviderService } from "@tiny-chat/core/src/features/provider/services/ModelProviderService.ts";
 import { ToolCallUtils } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
@@ -21,10 +20,13 @@ import { useTools } from "../../agent/hooks/useTools.ts";
 import { ClientAgentService } from "../../agent/services/ClientAgentService.ts";
 import { ClientMessageService } from "../../agent/services/ClientMessageService.ts";
 import { ClientProviderService } from "../../agent/services/ClientProviderService.ts";
+import { useStreamStore } from "../../agent/stores/useStreamStore.ts";
+import { MessageQueryService } from "../../message/services/MessageQueryService.ts";
 import { useEmbeddingSettings } from "../../settings/hooks/useEmbeddingSettings.ts";
 import { ChatService } from "../services/ChatService.ts";
 import { MessagingService } from "../services/MessagingService.ts";
 import { useChatStore } from "../stores/useChatStore.ts";
+import { useMessageQueueStore } from "../stores/useMessageQueueStore.ts";
 import { useMessagingStore } from "../stores/useMessagingStore.ts";
 import { useChat } from "./useChat.ts";
 
@@ -78,6 +80,7 @@ export const useMessaging = () => {
 	const sendMessage = useMutation({
 		mutationKey: sendMessageMutationKey,
 		mutationFn: async () => {
+			sendingData.current = undefined;
 			const { truncating, editing, insertingAfter, activeFolder } =
 				useMessagingStore.getState();
 			const { createTemporary, createIncognito } = useChatStore.getState();
@@ -92,6 +95,28 @@ export const useMessaging = () => {
 
 			if (!session.data) {
 				throw new Error("missing session");
+			}
+
+			const selectedId = useChatStore.getState().chatId;
+			if (
+				selectedId &&
+				(useMessageQueueStore.getState().active[selectedId] ||
+					useStreamStore.getState().chatAgentStreams.has(selectedId) ||
+					(chat.data?.id === selectedId &&
+						DataUtils.isMissingToolResult({
+							data:
+								(
+									await client.api.message.getMessages.query({
+										chat: selectedId,
+										branches: useChatStore.getState().branches,
+										limit: 1,
+									})
+								).messages.at(-1)?.data ?? [],
+						})))
+			) {
+				useMessageQueueStore.getState().enqueue(selectedId, data);
+				MessagingService.reset({ client });
+				return;
 			}
 
 			sendingData.current = {
@@ -128,7 +153,7 @@ export const useMessaging = () => {
 				: await client.api.message.createMessage.mutate({
 						chat: chatId,
 						folderId: chatId ? undefined : activeFolder?.id,
-						author: Author.USER,
+						author: "USER",
 						config: config,
 						data: data,
 						metadata: [],
@@ -137,8 +162,16 @@ export const useMessaging = () => {
 						incognito: createIncognito,
 					});
 
-			if (chatId === useChatStore.getState().chatId)
-				useChatStore.getState().selectBranch(message.previousId, message.id);
+			if (editing && !truncating && chatId === useChatStore.getState().chatId) {
+				await MessageQueryService.write(client, message);
+				await MessageQueryService.selectBranch(
+					client,
+					message.previousId,
+					message.id,
+				);
+			} else {
+				await MessageQueryService.write(client, message, true);
+			}
 
 			const text = DataUtils.getText(message);
 			if (
@@ -184,7 +217,6 @@ export const useMessaging = () => {
 				})();
 				chatData = await client.api.chat.getChat.query(message);
 			} else {
-				void ChatService.fetchMessages({ client, chatId: message.chatId });
 				chatData = chat.data ?? (await client.api.chat.getChat.query(message));
 			}
 
@@ -226,13 +258,11 @@ export const useMessaging = () => {
 			part,
 			feedback,
 			approved,
-			append = [],
 		}: {
 			seed: MessageState;
-			part: Extract<zDataPart, { type: "toolCall" }>;
+			part: zToolCallPart;
 			feedback?: unknown;
 			approved?: boolean;
-			append?: zDataBasicPart[] | zDataBasicPart | null;
 		}) => {
 			console.log(
 				"[useMessaging] applying tool feedback:",
@@ -256,9 +286,6 @@ export const useMessaging = () => {
 			const { tool } = ToolUtils.find({ toolsets, part });
 			if (!tool) throw new Error(`tool ${part.name} not found`);
 
-			if (append && !Array.isArray(append)) append = [append];
-			if (!append?.length) append = null;
-
 			let result: zDataPart;
 
 			if (part.validation?.approval && !approved) {
@@ -268,7 +295,6 @@ export const useMessaging = () => {
 					name: part.name,
 					error: true,
 					output: ToolCallUtils.getRejection(),
-					append: append ?? undefined,
 				};
 			} else {
 				result = {
@@ -284,7 +310,6 @@ export const useMessaging = () => {
 						mcpTools: mcpTools.data ?? [],
 						interactive: true,
 					})),
-					append: append ?? undefined,
 				};
 			}
 
@@ -293,7 +318,7 @@ export const useMessaging = () => {
 				user: session.data.user,
 				message: seed,
 				chat: chat.data,
-				append: [result],
+				toolResults: [result],
 				providers: providers.data,
 				skills,
 				mcpTools: mcpTools.data ?? [],

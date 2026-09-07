@@ -7,8 +7,9 @@ import type { Client } from "../../client.ts";
 export const createShellCapability: CapabilityFactory<
 	{ client: Client },
 	ShellCapability
-> = ({ client }) => {
+> = async ({ client }) => {
 	if (!client.shell) throw new Error("missing client shell");
 
-	return Promise.resolve(client.shell);
+	await client.workingDirectory.ready();
+	return client.shell;
 };

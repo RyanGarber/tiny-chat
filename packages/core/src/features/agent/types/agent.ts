@@ -1,21 +1,18 @@
+import { zPlainDateTime } from "temporal-zod";
 import z from "zod";
+import { Enum } from "../../../core/services/PostgresService.ts";
 import { zId } from "../../../core/types/common.ts";
 import { zChat } from "../../data/types/chat.ts";
-import {
-	Author,
-	zConfig,
-	zData,
-	zDataPart,
-	zMetadata,
-} from "../../data/types/message.ts";
+import { zConfig } from "../../data/types/message.ts";
+import { zData, zDataPart, zMetadata } from "../../data/types/part.ts";
 import { zUser } from "../../data/types/user.ts";
 
 export const zAgentMessage = z.object({
 	id: zId.nullable(),
-	author: z.enum(Author),
+	author: z.enum(Enum.Author.values),
 	data: zData,
 	config: zConfig.nullable(),
-	createdAt: z.date().nullable(),
+	createdAt: zPlainDateTime.nullable(),
 });
 export type zAgentMessage = z.infer<typeof zAgentMessage>;
 

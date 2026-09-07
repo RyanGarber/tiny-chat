@@ -1,3 +1,5 @@
+import "temporal-polyfill/full/global";
+
 import superjson from "superjson";
 
 superjson.registerCustom<Temporal.ZonedDateTime, string>(

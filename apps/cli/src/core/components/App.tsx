@@ -5,6 +5,7 @@ import { Box, useInput, useWindowSize } from "ink";
 import { useContext, useEffect } from "react";
 import Capabilities from "../../features/agent/components/Capabilities.tsx";
 import Chat from "../../features/chat/components/Chat.tsx";
+import ChatEffects from "../../features/chat/components/ChatEffects.tsx";
 import ChatList from "../../features/chat/components/ChatList.tsx";
 import FolderList from "../../features/chat/components/FolderList.tsx";
 import Editor from "../../features/editor/components/Editor.tsx";
@@ -78,6 +79,7 @@ export default function App() {
 				{page === "github" && <GitHub />}
 				{page === "settings" && <Settings />}
 				{(page === "tools" || page === "skills") && <Capabilities />}
+				{page === "chat" && <ChatEffects />}
 				<Editor
 					disabled={
 						page !== "chat" || statuses.some((status) => !status.passive)

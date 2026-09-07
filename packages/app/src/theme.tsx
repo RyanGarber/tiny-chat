@@ -1,6 +1,9 @@
-import { type CSSVariablesResolver, createTheme } from "@mantine/core";
+import {
+	type CSSVariablesResolver,
+	createTheme,
+	type MantineThemeOverride,
+} from "@mantine/core";
 import { palettes } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
-import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 
 export const theme = createTheme({
 	fontFamily: "'Rubik', sans-serif",
@@ -11,57 +14,98 @@ export const theme = createTheme({
 	defaultRadius: "lg",
 	colors: palettes,
 	components: {
+		AppShell: {
+			classNames: {
+				header: "glass",
+				navbar: "glass",
+				aside: "glass",
+				footer: "glass",
+			},
+		},
 		Paper: {
 			defaultProps: {
 				radius: "lg",
+			},
+			classNames: {
+				root: "glass",
 			},
 		},
 		Modal: {
 			defaultProps: {
 				radius: "lg",
 			},
-			styles: {
-				header: {
-					background: "transparent",
-				},
+			classNames: {
+				content: "glass",
+				header: "mb-lg",
 			},
 		},
 		Drawer: {
-			styles: {
-				header: {
-					background: "transparent",
-				},
-				content: {
-					borderRadius: 0,
-					...StyleUtils.glass,
-				},
+			classNames: {
+				content: "glass",
+				header: "mb-lg",
 			},
 		},
 		Dialog: {
 			defaultProps: {
 				radius: "lg",
 			},
+			classNames: {
+				root: "glass",
+			},
 		},
 		Popover: {
 			defaultProps: {
 				radius: "lg",
+				transitionProps: {
+					transition: "fade-up",
+				},
+			},
+			classNames: {
+				dropdown: "glass",
 			},
 		},
 		Menu: {
 			defaultProps: {
 				radius: "lg",
 			},
+			classNames: {
+				dropdown: "glass",
+			},
+		},
+		Combobox: {
+			classNames: {
+				dropdown: "glass",
+			},
+			defaultProps: {
+				transitionProps: {
+					transition: "fade-up",
+				},
+			},
+		},
+		Select: {
+			classNames: {
+				dropdown: "glass",
+				input: "glass",
+			},
+		},
+		TreeSelect: {
+			classNames: {
+				dropdown: "glass",
+			},
 		},
 		NavLink: {
-			styles: {
-				root: {
-					borderRadius: "var(--mantine-radius-lg)",
-				},
+			defaultProps: {
+				bdrs: "lg",
 			},
 		},
 		Tooltip: {
 			defaultProps: {
 				radius: "lg",
+				color: "var(--tc-surface)",
+				position: "bottom",
+			},
+			classNames: {
+				tooltip: "glass",
 			},
 		},
 		Tabs: {
@@ -70,33 +114,33 @@ export const theme = createTheme({
 			},
 		},
 		Spotlight: {
-			styles: {
-				content: {
-					borderRadius: "var(--mantine-radius-lg)",
-				},
+			defaultProps: {
+				radius: "lg",
+			},
+			classNames: {
+				content: "glass",
 			},
 		},
 		Card: {
 			defaultProps: {
 				radius: "lg",
 			},
-		},
-		CheckboxCard: {
-			styles: {
-				card: {
-					background: "var(--tc-surface)",
-				},
+			classNames: {
+				root: "glass",
 			},
 		},
 		Input: {
-			styles: {
-				input: {
-					backgroundColor: "var(--tc-surface)",
-				},
+			classNames: {
+				input: "glass",
+			},
+		},
+		CheckboxCard: {
+			classNames: {
+				card: "glass",
 			},
 		},
 	},
-});
+} satisfies MantineThemeOverride);
 
 export const cssResolver: CSSVariablesResolver = () => ({
 	variables: {
@@ -106,11 +150,15 @@ export const cssResolver: CSSVariablesResolver = () => ({
 		"--tc-exterior": "var(--mantine-color-gray-0)",
 		"--tc-surface": "var(--mantine-color-gray-1)",
 		"--tc-interior": "var(--mantine-color-gray-2)",
+		"--tc-highlight": "rgba(0, 0, 0, 0.05)",
+		"--tc-shadow": "0 10px 40px rgba(0, 0, 0, 0.2)",
 	},
 	dark: {
 		"--tc-exterior": "var(--mantine-color-dark-7)",
 		"--tc-surface": "var(--mantine-color-dark-6)",
 		"--tc-interior": "var(--mantine-color-dark-5)",
+		"--tc-highlight": "rgba(255, 255, 255, 0.05)",
+		"--tc-shadow": "0 10px 40px rgba(0, 0, 0, 0.2)",
 	},
 });
 

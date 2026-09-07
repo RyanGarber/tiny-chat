@@ -1,8 +1,7 @@
 import type { TextStreamPart } from "ai";
-import { describe, expect, inject, it } from "vitest";
-import { testConfig } from "../../../../tests.ts";
+import { mockConfig, mockUser } from "../../../../tests.ts";
 import type { zAgentMessage } from "../../../agent/types/agent.ts";
-import type { zDataPart } from "../../../data/types/message.ts";
+import type { zDataPart } from "../../../data/types/part.ts";
 import { ModelTransformService } from "../../services/ModelTransformService.ts";
 import { GoogleProvider } from "./GoogleProvider.ts";
 
@@ -19,8 +18,8 @@ describe("GoogleProvider", () => {
 			},
 		};
 		const signature = GoogleProvider.getPartSignature?.({
-			user: inject("shared_user"),
-			config: testConfig(GoogleProvider, "gemini-3-flash"),
+			user: mockUser(),
+			config: mockConfig(GoogleProvider, "gemini-3-flash"),
 			event,
 		});
 		expect(signature?.model).toBe("gemini-3-flash");
@@ -39,15 +38,15 @@ describe("GoogleProvider", () => {
 		};
 
 		const metadata = GoogleProvider.getPartSignatureReturn?.({
-			user: inject("shared_user"),
-			config: testConfig(GoogleProvider, "gemini-3-flash"),
+			user: mockUser(),
+			config: mockConfig(GoogleProvider, "gemini-3-flash"),
 			part,
 		});
 		expect(metadata?.google?.thoughtSignature).toBe("__TEST__");
 
 		const metadata2 = GoogleProvider.getPartSignatureReturn?.({
-			user: inject("shared_user"),
-			config: testConfig(GoogleProvider, "gemini-3-pro"),
+			user: mockUser(),
+			config: mockConfig(GoogleProvider, "gemini-3-pro"),
 			part,
 		});
 		expect(metadata2?.google?.thoughtSignature).toBe(
@@ -62,8 +61,8 @@ describe("GoogleProvider", () => {
 			value: "content: https://www.youtube.com/watch?v=___________",
 		};
 		const transformed = await GoogleProvider.getPartTransformed?.({
-			user: inject("shared_user"),
-			config: testConfig(GoogleProvider, "gemini-3-flash"),
+			user: mockUser(),
+			config: mockConfig(GoogleProvider, "gemini-3-flash"),
 			part,
 		});
 		expect.assert(transformed?.[1].type === "file");
@@ -102,21 +101,20 @@ describe("GoogleProvider", () => {
 					},
 				],
 			],
-			config: { ...inject("shared_config"), model: "gemini-3-flash" },
+			config: mockConfig(GoogleProvider, "gemini-3-flash"),
 			createdAt: null,
 		};
 		const transformed = await ModelTransformService.toSdkMessages({
-			user: inject("shared_user"),
-			config: testConfig(GoogleProvider, "gemini-3-flash"),
+			user: mockUser(),
+			config: mockConfig(GoogleProvider, "gemini-3-flash"),
 			provider: GoogleProvider,
 			messages: [message],
 		});
-		console.log(transformed[1].content[0]);
-		expect.assert(Array.isArray(transformed[1].content));
-		expect.assert(transformed[1].content[0].type === "tool-result");
-		expect.assert(transformed[1].content[0].output.type === "content");
+		expect.assert(Array.isArray(transformed[0].content));
+		expect.assert(transformed[0].content[0].type === "tool-result");
+		expect.assert(transformed[0].content[0].output.type === "content");
 
-		const content = transformed[1].content[0].output.value;
+		const content = transformed[0].content[0].output.value;
 
 		expect.assert(content[0].type === "text");
 		expect(content[0].text).toContain("Unsupported");

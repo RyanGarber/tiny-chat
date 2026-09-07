@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 import { zConfig } from "../../data/types/message.ts";
 import { PathUtils } from "../../file/utils/PathUtils.ts";
@@ -36,7 +35,7 @@ const message = (
 	createdAt: null,
 });
 
-describe("AgentUtils.getMounts", () => {
+describe("AgentUtils", () => {
 	it("takes an upload from an attachment part", () => {
 		expect(
 			AgentUtils.getMounts({

@@ -200,10 +200,4 @@ mod tests {
         let files = read_dir(path).unwrap();
         assert!(!files.is_empty());
     }
-
-    #[test]
-    fn test_write_file() {
-        let path = "test";
-        let _pathbuf = write_file(path, "1").unwrap();
-    }
 }

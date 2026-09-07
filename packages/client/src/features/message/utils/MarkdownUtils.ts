@@ -1,6 +1,11 @@
 import type { RootContent } from "mdast";
 import { processor } from "../hooks/useMarkdown.ts";
 
+const BLOCKQUOTE = /^[\t ]{0,3}>/;
+const BLANK = /^[\t ]*$/;
+const BLANK_NEWLINES = /\n[\t ]*\n/;
+const FENCE_OPEN = /^[\t ]{0,3}(`{3,}|~{3,})/;
+
 /**
  * Nodes a renderer cannot read in isolation: a definition sits wherever the
  * author put it but is referenced from anywhere in the document, so splitting
@@ -24,8 +29,6 @@ const RESUMABLE = new Set<RootContent["type"]>([
 	"blockquote",
 	"containerDirective",
 ]);
-
-const BLANK = /\n[ \t]*\n/;
 
 interface Block {
 	type: RootContent["type"];
@@ -76,7 +79,7 @@ const unstable = (content: string, blocks: Block[]) => {
 		const previous = blocks[index - 1];
 		const closed =
 			!RESUMABLE.has(previous.type) &&
-			BLANK.test(content.slice(previous.end, blocks[index].start));
+			BLANK_NEWLINES.test(content.slice(previous.end, blocks[index].start));
 		if (closed) break;
 		index--;
 	}
@@ -143,5 +146,62 @@ export const MarkdownUtils = {
 			index: index > 0 ? kept.length + index : kept.length,
 			split: true,
 		};
+	},
+
+	/**
+	 * End explicitly marked blockquotes before an unmarked line so CommonMark's
+	 * lazy-continuation rule cannot pull that line into the quote.
+	 */
+	normalize: (markdown: string): string => {
+		const lines = markdown.split(/(\r?\n)/);
+		let fence: { marker: "`" | "~"; length: number } | undefined;
+
+		for (let index = 0; index < lines.length; index += 2) {
+			const line = lines[index];
+			const fenceMatch = line.match(FENCE_OPEN);
+
+			if (fence) {
+				if (
+					fenceMatch?.[1][0] === fence.marker &&
+					fenceMatch[1].length >= fence.length &&
+					line.slice((fenceMatch.index ?? 0) + fenceMatch[0].length).trim() ===
+						""
+				) {
+					fence = undefined;
+				}
+				continue;
+			}
+
+			if (fenceMatch) {
+				fence = {
+					marker: fenceMatch[1][0] as "`" | "~",
+					length: fenceMatch[1].length,
+				};
+				continue;
+			}
+
+			const separator = lines[index + 1];
+			const next = lines[index + 2];
+			if (
+				separator &&
+				next !== undefined &&
+				BLOCKQUOTE.test(line) &&
+				!BLOCKQUOTE.test(next) &&
+				!BLANK.test(next)
+			) {
+				lines[index + 1] = separator + separator;
+			}
+		}
+
+		return lines.join("");
+	},
+
+	escape: (value: string) => {
+		return value.replace(/[&"\r\n]/g, (character) => {
+			if (character === "&") return "&amp;";
+			if (character === '"') return "&quot;";
+			if (character === "\r") return "&#13;";
+			return "&#10;";
+		});
 	},
 } as const;

@@ -1,37 +1,20 @@
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import {
-	type MessageState,
-	zConfig,
-	zData,
-	zMetadata,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
-import type { Message } from "../../../../generated/prisma/client.ts";
-
-type Message8 = Awaited<
-	ReturnType<typeof globalThis.db.orm.public.Message.all>
->[number];
-type MessageWithMetadataOptional =
-	| Omit<Message, "metadata">
-	| Omit<Message8, "metadata">;
+import type { Model } from "@tiny-chat/core/src/core/services/PostgresService.ts";
+import type { PartialBy } from "@tiny-chat/core/src/core/types/common.ts";
+import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
 
 export const MessageUtils = {
 	/**
 	 * Wrap a raw message row into a {@link MessageState}.
 	 */
-	toMessageState: (message: MessageWithMetadataOptional): MessageState => {
+	toMessageState: ({
+		embedding,
+		...message
+	}: PartialBy<Model["Message"], "metadata" | "embedding">): MessageState => {
 		return {
 			...message,
-			createdAt:
-				message.createdAt instanceof Date
-					? message.createdAt
-					: CommonUtils.toDate(message.createdAt),
-			config: zConfig.parse(message.config),
-			data: zData.parse(message.data),
-			metadata: zMetadata.parse(
-				("metadata" in message ? message.metadata : undefined) ?? [
-					[{ _omit: true }],
-				],
-			),
+			metadata: ("metadata" in message ? message.metadata : undefined) ?? [
+				[{ _omit: true }],
+			],
 		};
 	},
 
@@ -39,7 +22,7 @@ export const MessageUtils = {
 	 * Parse raw message rows without dropping sibling branches into {@link MessageState MessageStates}.
 	 */
 	toMessageStates: (
-		messages: MessageWithMetadataOptional[],
+		messages: PartialBy<Model["Message"], "metadata" | "embedding">[],
 	): MessageState[] => {
 		return messages.map(MessageUtils.toMessageState);
 	},

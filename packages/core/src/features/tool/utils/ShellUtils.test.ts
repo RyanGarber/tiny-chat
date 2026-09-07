@@ -1,7 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { ShellUtils } from "./ShellUtils.ts";
 
-describe("ShellUtils.isSafe", () => {
+describe("ShellUtils", () => {
 	it.each([
 		"pwd",
 		"cat file | grep needle | wc -l",

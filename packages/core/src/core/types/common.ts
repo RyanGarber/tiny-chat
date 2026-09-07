@@ -20,3 +20,9 @@ export type DistributiveOmit<T, K extends keyof any> = T extends unknown
 export type CleanOmit<T, K extends PropertyKey> = {
 	[P in keyof T as P extends K ? never : P]: T[P];
 };
+
+export type PromiseOr<T, P = void> = T | ((params: P) => PromiseOrValue<T>);
+
+export type PromiseOrValue<T> = Promise<T> | T;
+
+export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;

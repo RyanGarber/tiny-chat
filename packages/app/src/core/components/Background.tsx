@@ -2,16 +2,14 @@ import { Box } from "@mantine/core";
 import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
 import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
 import { useEffect, useMemo, useRef } from "react";
-import { useThemes } from "../../../../client/src/features/settings/hooks/useThemes.ts";
 
 export default function Background() {
 	const createIncognito = useChatStore((s) => s.createIncognito);
 	const { chat } = useChat();
-	const { blackout } = useThemes();
 
 	const black = useMemo(
-		() => blackout || (chat.data?.incognito ?? createIncognito),
-		[blackout, chat.data?.incognito, createIncognito],
+		() => chat.data?.incognito ?? createIncognito,
+		[chat.data?.incognito, createIncognito],
 	);
 
 	const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -69,7 +67,6 @@ export default function Background() {
 
 		animFrameId = requestAnimationFrame(draw);
 		return () => {
-			// biome-ignore lint/nursery/useReactCompiler: animFrameId is local effect state, not a hook dependency.
 			if (animFrameId !== undefined) cancelAnimationFrame(animFrameId);
 			window.removeEventListener("resize", resize);
 		};

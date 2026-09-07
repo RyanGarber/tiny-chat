@@ -4,8 +4,8 @@
 		"module": "nodenext",
 		"moduleResolution": "nodenext",
 		"jsx": "react-jsx",
-		"outDir": "./dist"
+		"noEmit": true
 	},
-	"include": ["src"],
+	"include": ["src", "vitest.config.ts"],
 	"extends": "../../tsconfig.base.json"
 }

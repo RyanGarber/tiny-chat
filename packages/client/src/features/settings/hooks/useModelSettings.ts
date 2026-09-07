@@ -1,4 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
+import { SettingsUtils } from "@tiny-chat/core/src/core/utils/SettingsUtils.ts";
 import { useContext, useMemo } from "react";
 import { ClientContext } from "../../../client.ts";
 import { useSettings } from "./useSettings.ts";
@@ -9,7 +10,9 @@ export const useModelSettings = () => {
 	const { settings, applySettings } = useSettings();
 
 	const subagentConfig = useMemo(() => {
-		return settings.data?.subagentConfig;
+		return SettingsUtils.defaults({
+			subagentConfig: settings.data?.subagentConfig,
+		}).subagentConfig;
 	}, [settings.data?.subagentConfig]);
 
 	const setSubagentConfig = useMutation({
@@ -20,7 +23,8 @@ export const useModelSettings = () => {
 	});
 
 	const dreamConfig = useMemo(() => {
-		return settings.data?.dreamConfig;
+		return SettingsUtils.defaults({ dreamConfig: settings.data?.dreamConfig })
+			.dreamConfig;
 	}, [settings.data?.dreamConfig]);
 
 	const setDreamConfig = useMutation({

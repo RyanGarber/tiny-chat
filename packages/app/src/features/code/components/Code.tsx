@@ -1,7 +1,11 @@
+import { useDisclosure } from "@mantine/hooks";
 import { useCode } from "@tiny-chat/client/src/core/hooks/useCode.ts";
+import { useCallback, useMemo } from "react";
+import Content, {
+	type ContentFormatterFunction,
+} from "#app/core/components/Content.tsx";
 import CodeLines from "#app/features/code/components/CodeLines.tsx";
-import HighlightBody from "#app/features/code/components/HighlightBody.tsx";
-import HighlightContent from "#app/features/code/components/HighlightContent.tsx";
+import Highlight from "#app/features/code/components/Highlight.tsx";
 
 export default function Code({
 	code,
@@ -12,8 +16,10 @@ export default function Code({
 	streaming,
 	fillHeight = false,
 	...props
-}: Omit<Parameters<typeof HighlightBody>[0], "code"> & {
+}: Parameters<typeof Content>[0] & {
 	code: string;
+	language?: string;
+	filename?: string;
 	startLine?: number;
 	lineNumbers?: boolean;
 	streaming?: boolean;
@@ -21,30 +27,45 @@ export default function Code({
 }) {
 	const { highlighted } = useCode({ code, language });
 
+	const disclosure = useDisclosure();
+
+	const formats = useMemo(() => {
+		return ["Original"];
+	}, []);
+
+	const formatter = useCallback<ContentFormatterFunction>(async () => {
+		return {
+			filename,
+			mime: "text/plain",
+			data: code,
+		};
+	}, [code, filename]);
+
 	return (
-		<HighlightBody
-			code={code}
-			highlight={highlighted}
-			language={language}
+		<Content
+			formats={formats}
+			formatter={formatter}
 			streaming={streaming}
-			filename={filename}
-			h={fillHeight ? "100%" : undefined}
+			data-streamdown="code-block"
+			data-language={language}
+			data-incomplete={streaming}
+			disclosure={disclosure}
 			{...props}
 		>
-			<HighlightContent
+			<Highlight
 				language={language ?? ""}
 				filename={filename}
 				lineNumbers={lineNumbers}
 				startLine={startLine}
 				highlight={highlighted}
-				fillHeight={fillHeight}
+				fillHeight={fillHeight || disclosure[0]}
 			>
 				<CodeLines
 					code={highlighted}
 					language={language}
 					lineNumbers={lineNumbers}
 				/>
-			</HighlightContent>
-		</HighlightBody>
+			</Highlight>
+		</Content>
 	);
 }

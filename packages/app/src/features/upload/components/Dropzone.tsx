@@ -12,20 +12,17 @@ import {
 	Dropzone as MantineDropzone,
 } from "@mantine/dropzone";
 import { UploadIcon, XIcon } from "@phosphor-icons/react";
+import type { Enum } from "@tiny-chat/core/src/core/services/PostgresService.ts";
 import { useState } from "react";
-import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import { useUploads } from "#client/src/features/upload/hooks/useUploads.ts";
-import type {
-	UploadKind,
-	zUploadResult,
-} from "#core/features/file/types/upload.ts";
+import type { zUploadResult } from "#core/features/file/types/upload.ts";
 
 export default function Dropzone({
 	kind,
 	options,
 	...props
 }: Partial<DropzoneProps> & {
-	kind: UploadKind;
+	kind: Enum["UploadKind"];
 	options?: Parameters<ReturnType<typeof useUploads>["upload"]["mutate"]>[1];
 }) {
 	const { upload } = useUploads();
@@ -89,7 +86,7 @@ export default function Dropzone({
 				{Array.from(uploads.entries())
 					.filter(([, { result }]) => !result)
 					.map(([file, { progress, error }]) => (
-						<Card key={file.name} style={{ ...StyleUtils.glass }} w="100%">
+						<Card key={file.name} w="100%">
 							<Stack gap="sm">
 								<Group gap={5}>
 									<Box flex={1} miw={0}>

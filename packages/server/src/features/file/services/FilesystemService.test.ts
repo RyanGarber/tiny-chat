@@ -1,15 +1,15 @@
+import type { zAgentContext } from "@tiny-chat/core/src/features/agent/types/agent.ts";
 import type {
 	zData,
 	zDataPart,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
+} from "@tiny-chat/core/src/features/data/types/part.ts";
 import { read_file } from "@tiny-chat/core/src/features/tool/tools/shell/read_file.ts";
 import { shell_exec } from "@tiny-chat/core/src/features/tool/tools/shell/shell_exec.ts";
-import { beforeAll, describe, expect, inject, it } from "vitest";
+import { mockConfig } from "@tiny-chat/core/src/tests.ts";
 import type { z } from "zod";
-import { testAgentContext } from "../../../tests.helpers.ts";
 import { testClient } from "../../../tests.ts";
 
-const { api } = testClient();
+const { user, api } = testClient();
 
 /** The attachment directive that points a message into an upload. */
 const upload = async (name: string, content: string) => {
@@ -33,7 +33,7 @@ describe("FilesystemService", () => {
 	let upload1: Awaited<ReturnType<typeof upload>>;
 	let upload2: Awaited<ReturnType<typeof upload>>;
 	let chatId: string;
-	let context: ReturnType<typeof testAgentContext>;
+	let context: zAgentContext;
 
 	beforeAll(async () => {
 		upload1 = await upload("question space.md", "Files suck. I hate files.");
@@ -43,14 +43,22 @@ describe("FilesystemService", () => {
 		// mounts these two is the attachment directives referencing them.
 		const message = await api.message.createMessage.mutate({
 			author: "USER",
-			config: inject("server_config"),
+			config: mockConfig(),
 			data: [[upload1, upload2]] satisfies zData,
 			metadata: [],
 		});
 		const chat = await api.chat.getChat.query(message);
 		if (!chat) throw new Error("Test chat not found");
 		chatId = chat.id;
-		context = testAgentContext({ chat, messages: [message] });
+		context = {
+			user,
+			chat,
+			messages: [message],
+			interactive: false,
+			timezone: "UTC",
+		};
+		await api.chat.activate.mutate({ chat: chat.id });
+		await exec(`cd /mnt/chat/${chat.id}`);
 	});
 
 	const exec = async (

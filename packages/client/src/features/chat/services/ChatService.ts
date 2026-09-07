@@ -38,7 +38,9 @@ export const ChatService = {
 	}) => {
 		if (chatId) useChatStore.getState().setLastSeen(chatId, Date.now());
 		await client.queryClient.invalidateQueries({
-			queryKey: client.query.message.pathKey(),
+			queryKey: client.query.message.getMessages.infiniteQueryKey({
+				chat: chatId,
+			}),
 		});
 	},
 } as const;

@@ -1,14 +1,14 @@
-import type { FieldOutputTypes } from "@tiny-chat/core/generated/prisma/contract.d.ts";
+import type { Model } from "@tiny-chat/core/src/core/services/PostgresService.ts";
+import type { PartialBy } from "@tiny-chat/core/src/core/types/common.ts";
 import type { MemoryState } from "@tiny-chat/core/src/features/data/types/memory.ts";
-import { zConfig } from "@tiny-chat/core/src/features/data/types/message.ts";
 
 export const MemoryUtils = {
-	toMemoryState: (
-		memory: FieldOutputTypes["public"]["Memory"],
-	): MemoryState => {
+	toMemoryState: ({
+		embedding,
+		...memory
+	}: PartialBy<Model["Memory"], "embedding">): MemoryState => {
 		return {
 			...memory,
-			config: memory.config === null ? null : zConfig.parse(memory.config),
 			evidence: [...memory.evidence],
 		};
 	},

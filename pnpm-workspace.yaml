@@ -23,19 +23,25 @@ allowedDeprecatedVersions:
     'node-domexception': '*'
     'whatwg-encoding': '*'
 minimumReleaseAgeExclude:
-    - diff@8.0.3
-    - '@tootallnate/once@3.0.1'
-    - '@hono/node-server@1.19.13'
-    - '@opentelemetry/sdk-node@0.217.0'
-    - '@opentelemetry/exporter-prometheus@0.217.0'
-    - '@ryangarber/markitdown-ts@0.1.5'
+    - '@ryangarber/*'
+    - '@prisma/*'
+    - '@turbo/linux-64@2.11.1 || 2.11.2'
+    - '@turbo/darwin-64@2.11.2'
+    - '@turbo/darwin-arm64@2.11.2'
+    - '@turbo/linux-arm64@2.11.2'
+    - '@turbo/windows-64@2.11.2'
+    - '@turbo/windows-arm64@2.11.2'
+    - turbo@2.11.2
 peerDependencyRules:
     allowedVersions:
         '@browser-ai/web-llm>ai': '7'
         'capnp-es>typescript': '7'
         'alchemy>mysql2': '3'
+        '@better-fetch/fetch': '1'
+        'vitest': '5'
 overrides:
     'conventional-changelog-writer': '^9.1.1'
+    'effect': '4.0.0-rc.115'
 patchedDependencies:
     '@ai-sdk/google': patches/@ai-sdk__google.patch
     sixel: patches/sixel.patch

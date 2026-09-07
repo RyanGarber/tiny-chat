@@ -178,6 +178,7 @@
             "relations": {
               "user": {
                 "cardinality": "N:1",
+                "nullable": false,
                 "on": {
                   "localFields": [
                     "userId"
@@ -243,7 +244,7 @@
               "config": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "kind": "scalar"
                 }
               },
@@ -260,7 +261,14 @@
               "data": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
+                  "kind": "scalar"
+                }
+              },
+              "embedding": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/vector@1",
                   "kind": "scalar"
                 }
               },
@@ -313,6 +321,7 @@
             "relations": {
               "message": {
                 "cardinality": "N:1",
+                "nullable": false,
                 "on": {
                   "localFields": [
                     "messageId"
@@ -328,6 +337,7 @@
               },
               "user": {
                 "cardinality": "N:1",
+                "nullable": false,
                 "on": {
                   "localFields": [
                     "userId"
@@ -352,6 +362,9 @@
                 },
                 "data": {
                   "column": "data"
+                },
+                "embedding": {
+                  "column": "embedding"
                 },
                 "id": {
                   "column": "id"
@@ -449,6 +462,7 @@
               },
               "folder": {
                 "cardinality": "N:1",
+                "nullable": true,
                 "on": {
                   "localFields": [
                     "folderId"
@@ -507,6 +521,7 @@
               },
               "user": {
                 "cardinality": "N:1",
+                "nullable": false,
                 "on": {
                   "localFields": [
                     "userId"
@@ -569,6 +584,7 @@
             "relations": {
               "chat": {
                 "cardinality": "N:1",
+                "nullable": false,
                 "on": {
                   "localFields": [
                     "chatId"
@@ -584,6 +600,7 @@
               },
               "memory": {
                 "cardinality": "N:1",
+                "nullable": false,
                 "on": {
                   "localFields": [
                     "memoryId"
@@ -616,7 +633,7 @@
               "config": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "kind": "scalar"
                 }
               },
@@ -633,7 +650,7 @@
               "data": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "kind": "scalar"
                 }
               },
@@ -647,7 +664,7 @@
               "metadata": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "kind": "scalar"
                 }
               },
@@ -690,6 +707,7 @@
               },
               "user": {
                 "cardinality": "N:1",
+                "nullable": false,
                 "on": {
                   "localFields": [
                     "userId"
@@ -749,6 +767,7 @@
             "relations": {
               "dream": {
                 "cardinality": "N:1",
+                "nullable": false,
                 "on": {
                   "localFields": [
                     "dreamId"
@@ -764,6 +783,7 @@
               },
               "message": {
                 "cardinality": "N:1",
+                "nullable": false,
                 "on": {
                   "localFields": [
                     "messageId"
@@ -817,6 +837,13 @@
                   "kind": "scalar"
                 }
               },
+              "embedding": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/vector@1",
+                  "kind": "scalar"
+                }
+              },
               "id": {
                 "nullable": false,
                 "type": {
@@ -839,6 +866,16 @@
                   "kind": "scalar"
                 }
               },
+              "updatedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamp-temporal@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
               "uploadId": {
                 "nullable": true,
                 "type": {
@@ -857,6 +894,7 @@
             "relations": {
               "chat": {
                 "cardinality": "N:1",
+                "nullable": true,
                 "on": {
                   "localFields": [
                     "chatId"
@@ -872,6 +910,7 @@
               },
               "upload": {
                 "cardinality": "N:1",
+                "nullable": true,
                 "on": {
                   "localFields": [
                     "uploadId"
@@ -887,6 +926,7 @@
               },
               "user": {
                 "cardinality": "N:1",
+                "nullable": false,
                 "on": {
                   "localFields": [
                     "userId"
@@ -912,6 +952,9 @@
                 "data": {
                   "column": "data"
                 },
+                "embedding": {
+                  "column": "embedding"
+                },
                 "id": {
                   "column": "id"
                 },
@@ -920,6 +963,9 @@
                 },
                 "path": {
                   "column": "path"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
                 },
                 "uploadId": {
                   "column": "uploadId"
@@ -944,10 +990,24 @@
                   }
                 }
               },
+              "cwd": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "id": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "settings": {
+                "nullable": false,
+                "type": {
+                  "codecId": "zod/json@1",
                   "kind": "scalar"
                 }
               },
@@ -984,6 +1044,7 @@
               },
               "user": {
                 "cardinality": "N:1",
+                "nullable": false,
                 "on": {
                   "localFields": [
                     "userId"
@@ -1003,8 +1064,14 @@
                 "createdAt": {
                   "column": "createdAt"
                 },
+                "cwd": {
+                  "column": "cwd"
+                },
                 "id": {
                   "column": "id"
+                },
+                "settings": {
+                  "column": "settings"
                 },
                 "title": {
                   "column": "title"
@@ -1039,7 +1106,7 @@
               "config": {
                 "nullable": true,
                 "type": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "kind": "scalar"
                 }
               },
@@ -1051,6 +1118,13 @@
                   "typeParams": {
                     "precision": 3
                   }
+                }
+              },
+              "embedding": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/vector@1",
+                  "kind": "scalar"
                 }
               },
               "evidence": {
@@ -1089,6 +1163,16 @@
                   "kind": "scalar",
                   "typeParams": {
                     "typeName": "MemoryStability"
+                  }
+                }
+              },
+              "updatedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamp-temporal@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
                   }
                 }
               },
@@ -1131,6 +1215,7 @@
               },
               "message": {
                 "cardinality": "N:1",
+                "nullable": true,
                 "on": {
                   "localFields": [
                     "messageId"
@@ -1146,6 +1231,7 @@
               },
               "user": {
                 "cardinality": "N:1",
+                "nullable": false,
                 "on": {
                   "localFields": [
                     "userId"
@@ -1174,6 +1260,9 @@
                 "createdAt": {
                   "column": "createdAt"
                 },
+                "embedding": {
+                  "column": "embedding"
+                },
                 "evidence": {
                   "column": "evidence"
                 },
@@ -1188,6 +1277,9 @@
                 },
                 "stability": {
                   "column": "stability"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
                 },
                 "userId": {
                   "column": "userId"
@@ -1219,7 +1311,7 @@
               "config": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "kind": "scalar"
                 }
               },
@@ -1236,7 +1328,14 @@
               "data": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
+                  "kind": "scalar"
+                }
+              },
+              "embedding": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/vector@1",
                   "kind": "scalar"
                 }
               },
@@ -1250,7 +1349,7 @@
               "metadata": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "kind": "scalar"
                 }
               },
@@ -1287,6 +1386,7 @@
               },
               "chat": {
                 "cardinality": "N:1",
+                "nullable": false,
                 "on": {
                   "localFields": [
                     "chatId"
@@ -1360,6 +1460,7 @@
               },
               "previous": {
                 "cardinality": "N:1",
+                "nullable": true,
                 "on": {
                   "localFields": [
                     "previousId"
@@ -1390,6 +1491,7 @@
               },
               "user": {
                 "cardinality": "N:1",
+                "nullable": false,
                 "on": {
                   "localFields": [
                     "userId"
@@ -1420,6 +1522,9 @@
                 },
                 "data": {
                   "column": "data"
+                },
+                "embedding": {
+                  "column": "embedding"
                 },
                 "id": {
                   "column": "id"
@@ -1509,6 +1614,7 @@
             "relations": {
               "user": {
                 "cardinality": "N:1",
+                "nullable": false,
                 "on": {
                   "localFields": [
                     "userId"
@@ -1569,7 +1675,7 @@
               "data": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "kind": "scalar"
                 }
               },
@@ -1590,7 +1696,7 @@
               "metadata": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "kind": "scalar"
                 }
               },
@@ -1605,6 +1711,7 @@
             "relations": {
               "message": {
                 "cardinality": "N:1",
+                "nullable": false,
                 "on": {
                   "localFields": [
                     "messageId"
@@ -1620,6 +1727,7 @@
               },
               "user": {
                 "cardinality": "N:1",
+                "nullable": false,
                 "on": {
                   "localFields": [
                     "userId"
@@ -1728,6 +1836,7 @@
               },
               "user": {
                 "cardinality": "N:1",
+                "nullable": false,
                 "on": {
                   "localFields": [
                     "userId"
@@ -1772,7 +1881,7 @@
               "cache": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "kind": "scalar"
                 }
               },
@@ -1838,7 +1947,7 @@
               "settings": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "kind": "scalar"
                 }
               },
@@ -2313,9 +2422,10 @@
             "action": {
               "columns": {
                 "config": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "nativeType": "jsonb",
-                  "nullable": false
+                  "nullable": false,
+                  "typeRef": "zConfig"
                 },
                 "createdAt": {
                   "codecId": "pg/timestamp-temporal@1",
@@ -2330,9 +2440,16 @@
                   }
                 },
                 "data": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "nativeType": "jsonb",
-                  "nullable": false
+                  "nullable": false,
+                  "typeRef": "zData"
+                },
+                "embedding": {
+                  "codecId": "pg/vector@1",
+                  "nativeType": "vector",
+                  "nullable": true,
+                  "typeRef": "Embedding"
                 },
                 "id": {
                   "codecId": "pg/text@1",
@@ -2565,6 +2682,8 @@
               "foreignKeys": [
                 {
                   "name": "chat_memory_chatId_fkey",
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
                   "source": {
                     "columns": [
                       "chatId"
@@ -2582,6 +2701,8 @@
                 },
                 {
                   "name": "chat_memory_memoryId_fkey",
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
                   "source": {
                     "columns": [
                       "memoryId"
@@ -2626,9 +2747,10 @@
             "dream": {
               "columns": {
                 "config": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "nativeType": "jsonb",
-                  "nullable": false
+                  "nullable": false,
+                  "typeRef": "zConfig"
                 },
                 "createdAt": {
                   "codecId": "pg/timestamp-temporal@1",
@@ -2643,9 +2765,10 @@
                   }
                 },
                 "data": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "nativeType": "jsonb",
-                  "nullable": false
+                  "nullable": false,
+                  "typeRef": "zData"
                 },
                 "id": {
                   "codecId": "pg/text@1",
@@ -2653,9 +2776,10 @@
                   "nullable": false
                 },
                 "metadata": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "nativeType": "jsonb",
-                  "nullable": false
+                  "nullable": false,
+                  "typeRef": "zMetadata"
                 },
                 "userId": {
                   "codecId": "pg/text@1",
@@ -2717,6 +2841,8 @@
               "foreignKeys": [
                 {
                   "name": "dream_message_dreamId_fkey",
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
                   "source": {
                     "columns": [
                       "dreamId"
@@ -2734,6 +2860,8 @@
                 },
                 {
                   "name": "dream_message_messageId_fkey",
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
                   "source": {
                     "columns": [
                       "messageId"
@@ -2799,6 +2927,12 @@
                   "nativeType": "bytea",
                   "nullable": false
                 },
+                "embedding": {
+                  "codecId": "pg/vector@1",
+                  "nativeType": "vector",
+                  "nullable": true,
+                  "typeRef": "Embedding"
+                },
                 "id": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
@@ -2817,6 +2951,14 @@
                     "elementNotNull"
                   ],
                   "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamp-temporal@1",
+                  "nativeType": "timestamp",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
                 },
                 "uploadId": {
                   "codecId": "pg/text@1",
@@ -2933,10 +3075,25 @@
                     "precision": 3
                   }
                 },
+                "cwd": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
                 "id": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
                   "nullable": false
+                },
+                "settings": {
+                  "codecId": "zod/json@1",
+                  "default": {
+                    "expression": "'{}'::jsonb",
+                    "kind": "function"
+                  },
+                  "nativeType": "jsonb",
+                  "nullable": false,
+                  "typeRef": "zSettings"
                 },
                 "title": {
                   "codecId": "pg/text@1",
@@ -3009,9 +3166,10 @@
                   "nullable": false
                 },
                 "config": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "nativeType": "jsonb",
-                  "nullable": true
+                  "nullable": true,
+                  "typeRef": "zConfig"
                 },
                 "createdAt": {
                   "codecId": "pg/timestamp-temporal@1",
@@ -3024,6 +3182,12 @@
                   "typeParams": {
                     "precision": 3
                   }
+                },
+                "embedding": {
+                  "codecId": "pg/vector@1",
+                  "nativeType": "vector",
+                  "nullable": true,
+                  "typeRef": "Embedding"
                 },
                 "evidence": {
                   "codecId": "pg/text@1",
@@ -3061,6 +3225,14 @@
                     "entityName": "MemoryStability",
                     "namespaceId": "public",
                     "plane": "storage"
+                  }
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamp-temporal@1",
+                  "nativeType": "timestamp",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
                   }
                 },
                 "userId": {
@@ -3155,9 +3327,10 @@
                   "nullable": false
                 },
                 "config": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "nativeType": "jsonb",
-                  "nullable": false
+                  "nullable": false,
+                  "typeRef": "zConfig"
                 },
                 "createdAt": {
                   "codecId": "pg/timestamp-temporal@1",
@@ -3172,9 +3345,16 @@
                   }
                 },
                 "data": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "nativeType": "jsonb",
-                  "nullable": false
+                  "nullable": false,
+                  "typeRef": "zData"
+                },
+                "embedding": {
+                  "codecId": "pg/vector@1",
+                  "nativeType": "vector",
+                  "nullable": true,
+                  "typeRef": "Embedding"
                 },
                 "id": {
                   "codecId": "pg/text@1",
@@ -3182,9 +3362,10 @@
                   "nullable": false
                 },
                 "metadata": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "nativeType": "jsonb",
-                  "nullable": false
+                  "nullable": false,
+                  "typeRef": "zMetadata"
                 },
                 "previousId": {
                   "codecId": "pg/text@1",
@@ -3403,9 +3584,10 @@
                   }
                 },
                 "data": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "nativeType": "jsonb",
-                  "nullable": false
+                  "nullable": false,
+                  "typeRef": "zData"
                 },
                 "id": {
                   "codecId": "pg/text@1",
@@ -3418,9 +3600,10 @@
                   "nullable": false
                 },
                 "metadata": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "nativeType": "jsonb",
-                  "nullable": false
+                  "nullable": false,
+                  "typeRef": "zMetadata"
                 },
                 "userId": {
                   "codecId": "pg/text@1",
@@ -3582,13 +3765,14 @@
             "user": {
               "columns": {
                 "cache": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "default": {
                     "expression": "'{}'::jsonb",
                     "kind": "function"
                   },
                   "nativeType": "jsonb",
-                  "nullable": false
+                  "nullable": false,
+                  "typeRef": "zCache"
                 },
                 "createdAt": {
                   "codecId": "pg/timestamp-temporal@1",
@@ -3650,13 +3834,14 @@
                   "nullable": false
                 },
                 "settings": {
-                  "codecId": "pg/jsonb@1",
+                  "codecId": "zod/json@1",
                   "default": {
                     "expression": "'{}'::jsonb",
                     "kind": "function"
                   },
                   "nativeType": "jsonb",
-                  "nullable": false
+                  "nullable": false,
+                  "typeRef": "zSettings"
                 },
                 "updatedAt": {
                   "codecId": "pg/timestamp-temporal@1",
@@ -3790,7 +3975,64 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "b5cc905dd543cd5d8752bc2b751088482b6dc67805c150ae8759dd345f06c0bf"
+    "storageHash": "1f7bbf5704cd07502d81d65e27ac60239068cfd0ebbb22f515191bea3636acec",
+    "types": {
+      "Embedding": {
+        "codecId": "pg/vector@1",
+        "kind": "codec-instance",
+        "nativeType": "vector"
+      },
+      "zCache": {
+        "codecId": "zod/json@1",
+        "kind": "codec-instance",
+        "nativeType": "jsonb",
+        "typeParams": {
+          "export": "SchemaTypes",
+          "key": "zCache",
+          "module": "../../prisma/zod-extension.ts"
+        }
+      },
+      "zConfig": {
+        "codecId": "zod/json@1",
+        "kind": "codec-instance",
+        "nativeType": "jsonb",
+        "typeParams": {
+          "export": "SchemaTypes",
+          "key": "zConfig",
+          "module": "../../prisma/zod-extension.ts"
+        }
+      },
+      "zData": {
+        "codecId": "zod/json@1",
+        "kind": "codec-instance",
+        "nativeType": "jsonb",
+        "typeParams": {
+          "export": "SchemaTypes",
+          "key": "zData",
+          "module": "../../prisma/zod-extension.ts"
+        }
+      },
+      "zMetadata": {
+        "codecId": "zod/json@1",
+        "kind": "codec-instance",
+        "nativeType": "jsonb",
+        "typeParams": {
+          "export": "SchemaTypes",
+          "key": "zMetadata",
+          "module": "../../prisma/zod-extension.ts"
+        }
+      },
+      "zSettings": {
+        "codecId": "zod/json@1",
+        "kind": "codec-instance",
+        "nativeType": "jsonb",
+        "typeParams": {
+          "export": "SchemaTypes",
+          "key": "zSettings",
+          "module": "../../prisma/zod-extension.ts"
+        }
+      }
+    }
   },
   "capabilities": {
     "postgres": {
@@ -3799,6 +4041,8 @@
       "lateral": true,
       "limit": true,
       "orderBy": true,
+      "paradedb/bm25": true,
+      "pgvector.cosine": true,
       "returning": true
     },
     "sql": {
@@ -3810,7 +4054,103 @@
       "scalarList": true
     }
   },
-  "extensions": {},
+  "extensions": {
+    "paradedb": {
+      "capabilities": {
+        "postgres": {
+          "paradedb/bm25": true
+        }
+      },
+      "familyId": "sql",
+      "id": "paradedb",
+      "kind": "extension",
+      "targetId": "postgres",
+      "types": {
+        "queryOperationTypes": {
+          "import": {
+            "alias": "ParadeDbQueryOperationTypes",
+            "named": "QueryOperationTypes",
+            "package": "@internal/extension-paradedb/operation-types"
+          }
+        }
+      },
+      "version": "0.0.1"
+    },
+    "pgvector": {
+      "capabilities": {
+        "postgres": {
+          "pgvector.cosine": true
+        }
+      },
+      "familyId": "sql",
+      "id": "pgvector",
+      "kind": "extension",
+      "targetId": "postgres",
+      "types": {
+        "codecTypes": {
+          "import": {
+            "alias": "PgVectorTypes",
+            "named": "CodecTypes",
+            "package": "@internal/extension-pgvector/codec-types"
+          },
+          "typeImports": [
+            {
+              "alias": "Vector",
+              "named": "Vector",
+              "package": "@internal/extension-pgvector/codec-types"
+            }
+          ]
+        },
+        "operationTypes": {
+          "import": {
+            "alias": "PgVectorOperationTypes",
+            "named": "OperationTypes",
+            "package": "@internal/extension-pgvector/operation-types"
+          }
+        },
+        "queryOperationTypes": {
+          "import": {
+            "alias": "PgVectorQueryOperationTypes",
+            "named": "QueryOperationTypes",
+            "package": "@internal/extension-pgvector/operation-types"
+          }
+        },
+        "storage": [
+          {
+            "familyId": "sql",
+            "nativeType": "vector",
+            "targetId": "postgres",
+            "typeId": "pg/vector@1"
+          }
+        ]
+      },
+      "version": "0.0.1"
+    },
+    "zod": {
+      "familyId": "sql",
+      "id": "zod",
+      "kind": "extension",
+      "targetId": "postgres",
+      "types": {
+        "codecTypes": {
+          "import": {
+            "alias": "ZodTypes",
+            "named": "SchemaTypes",
+            "package": "../../prisma/zod-extension.ts"
+          }
+        },
+        "storage": [
+          {
+            "familyId": "sql",
+            "nativeType": "jsonb",
+            "targetId": "postgres",
+            "typeId": "zod/json@1"
+          }
+        ]
+      },
+      "version": "0.1.0"
+    }
+  },
   "meta": {},
   "_generated": {
     "warning": "⚠️  GENERATED FILE - DO NOT EDIT",

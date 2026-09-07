@@ -10,7 +10,6 @@ import type {
 } from "@tiny-chat/client/src/features/editor/hooks/useEstimatedTokens.ts";
 import { Tiptap } from "@tiptap/react";
 import { useLayoutEffect, useRef, useState } from "react";
-import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import Capabilities from "#app/features/editor/components/Capabilities.tsx";
 import LeftSection from "#app/features/editor/components/LeftSection.tsx";
 import RightSection from "#app/features/editor/components/RightSection.tsx";
@@ -59,25 +58,6 @@ export default function Editor({
 	return (
 		<>
 			<InputWrapper bdrs={bdrs}>
-				<style>
-					{`
-          .chat-input {
-            position: relative;
-          }
-          .chat-input::after {
-            position: absolute;
-            content: "";
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            box-shadow: ${StyleUtils.shadow};
-            border-radius: ${bdrs}px;
-            z-index: 10000;
-            pointer-events: none;
-          }
-        `}
-				</style>
 				<InputBase
 					className="chat-input"
 					component="div"
@@ -127,7 +107,6 @@ export default function Editor({
 						input: {
 							padding: 5,
 							wordBreak: "break-word",
-							...StyleUtils.glass,
 						},
 						section: {
 							display: "flex",

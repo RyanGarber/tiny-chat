@@ -4,6 +4,7 @@ import {
 	Burger,
 	Group,
 	NavLink,
+	Stack,
 	Text,
 	Tooltip,
 } from "@mantine/core";
@@ -22,7 +23,7 @@ import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatSe
 import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
 import { useMessagingStore } from "@tiny-chat/client/src/features/chat/stores/useMessagingStore.ts";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
-import SidebarChatList from "#app/features/sidebar/components/SidebarChatList.tsx";
+import SidebarContent from "#app/features/sidebar/components/SidebarContent.tsx";
 import { version } from "../../../../../../apps/tauri/tauri.conf.json";
 
 export default function SidebarExpanded({
@@ -47,7 +48,7 @@ export default function SidebarExpanded({
 	const activeFolder = useMessagingStore((state) => state.activeFolder);
 
 	return (
-		<>
+		<Stack gap={0} h="100%">
 			<Group justify="space-between" p="xs" wrap="nowrap">
 				<ActionIcon variant="transparent" onClick={spotlight.open}>
 					<MagnifyingGlassIcon size={20} color="var(--mantine-color-text)" />
@@ -70,7 +71,7 @@ export default function SidebarExpanded({
 					flex={1}
 					h={40}
 				/>
-				<Tooltip label="Temporary" color="gray" position="right">
+				<Tooltip label="Temporary" position="right">
 					<ActionIcon
 						size={40}
 						variant="subtle"
@@ -87,7 +88,7 @@ export default function SidebarExpanded({
 						<EyeSlashIcon size={20} />
 					</ActionIcon>
 				</Tooltip>
-				<Tooltip label="Anonymous" color="gray" position="right">
+				<Tooltip label="Anonymous" position="right">
 					<ActionIcon
 						size={40}
 						variant="subtle"
@@ -105,7 +106,7 @@ export default function SidebarExpanded({
 					</ActionIcon>
 				</Tooltip>
 			</Group>
-			<SidebarChatList />
+			<SidebarContent />
 			<NavLink
 				mt="lg"
 				c="dimmed"
@@ -140,6 +141,6 @@ export default function SidebarExpanded({
 				h={40}
 				mb={5}
 			/>
-		</>
+		</Stack>
 	);
 }

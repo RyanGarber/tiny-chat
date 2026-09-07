@@ -1,9 +1,12 @@
 import { useCode } from "@tiny-chat/client/src/core/hooks/useCode.ts";
 import { DiffUtils } from "@tiny-chat/core/src/features/file/utils/DiffUtils.ts";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import Content, {
+	type ContentFormats,
+	type ContentFormatterFunction,
+} from "#app/core/components/Content.tsx";
 import DiffLines from "#app/features/code/components/DiffLines.tsx";
-import HighlightBody from "#app/features/code/components/HighlightBody.tsx";
-import HighlightContent from "#app/features/code/components/HighlightContent.tsx";
+import Highlight from "#app/features/code/components/Highlight.tsx";
 
 export default function Diff({
 	before,
@@ -11,9 +14,11 @@ export default function Diff({
 	language,
 	filename,
 	...props
-}: Omit<Parameters<typeof HighlightBody>[0], "code"> & {
+}: Omit<Parameters<typeof Content>[0], "code"> & {
 	before: string;
 	after: string;
+	language?: string;
+	filename?: string;
 }) {
 	const [expanded, setExpanded] = useState<number[]>([]);
 
@@ -24,9 +29,24 @@ export default function Diff({
 		[before, after],
 	);
 
+	const formats = useMemo<ContentFormats>(() => {
+		return ["Before", "After"];
+	}, []);
+
+	const formatter = useCallback<ContentFormatterFunction>(
+		async (format) => {
+			return {
+				filename,
+				mime: "text/plain",
+				data: format === "Before" ? before : after,
+			};
+		},
+		[before, after, filename],
+	);
+
 	return (
-		<HighlightBody highlight={baseHighlight} {...props}>
-			<HighlightContent
+		<Content formats={formats} formatter={formatter} {...props}>
+			<Highlight
 				highlight={baseHighlight}
 				language={language ?? ""}
 				filename={filename}
@@ -38,7 +58,7 @@ export default function Diff({
 					setExpanded={setExpanded}
 					language={language ?? ""}
 				/>
-			</HighlightContent>
-		</HighlightBody>
+			</Highlight>
+		</Content>
 	);
 }

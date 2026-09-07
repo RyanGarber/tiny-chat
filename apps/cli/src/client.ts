@@ -16,6 +16,8 @@ import {
 	useEditorStore,
 } from "./features/editor/stores/useEditorStore.ts";
 
+import { EditorUtils } from "./features/editor/utils/EditorUtils.ts";
+
 export const client = createClient({
 	env: {
 		VITE_SERVER_URL: String(process.env.VITE_SERVER_URL),
@@ -54,10 +56,15 @@ export const client = createClient({
 			);
 		},
 		setData: ({ data }) => {
-			const { setContent } = useEditorStore.getState();
-			setContent(
-				AtomUtils.deserialize(MarkdownDataUtils.toMarkdown(data, true)),
+			const content = AtomUtils.deserialize(
+				MarkdownDataUtils.toMarkdown(data, true),
 			);
+			useEditorStore.setState({
+				content,
+				cursor: EditorUtils.cursor(content, content.length),
+				selection: null,
+				focusedFeedbackId: null,
+			});
 		},
 		insertNode: ({ node }) => insertNode(node),
 	},

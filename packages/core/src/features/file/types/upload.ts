@@ -1,10 +1,8 @@
 import { z } from "zod";
-import type { Upload } from "../../../../../server/generated/prisma/browser.ts";
+import type { Model } from "../../../core/services/PostgresService.ts";
 import { zId } from "../../../core/types/common.ts";
 
-export { UploadKind } from "../../../../../server/generated/prisma/browser.ts";
-
-export type UploadState = Upload;
+export type UploadState = Model["Upload"];
 
 /**
  * An upload as the client learns of it — from creating one, or from cloning a

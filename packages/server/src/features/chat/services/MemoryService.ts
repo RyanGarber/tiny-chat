@@ -1,10 +1,7 @@
+import type { Enum } from "@tiny-chat/core/src/core/services/PostgresService.ts";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import type { MessageLike } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
-import type {
-	MemoryCategory,
-	MemoryStability,
-} from "../../../../generated/prisma/enums.ts";
 import { MemoryUtils } from "../utils/MemoryUtils.ts";
 import { MemoryRetrievalService } from "./MemoryRetrievalService.ts";
 
@@ -12,8 +9,8 @@ type MemoryInput = {
 	user: zUser;
 	message?: MessageLike | null;
 	fact: string;
-	category: MemoryCategory;
-	stability: MemoryStability;
+	category: Enum["MemoryCategory"];
+	stability: Enum["MemoryStability"];
 	evidence: string[];
 	confidence: number;
 };

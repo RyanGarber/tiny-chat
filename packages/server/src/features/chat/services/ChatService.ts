@@ -3,6 +3,7 @@ import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import type {
 	ChatLike,
 	ChatState,
+	FolderLike,
 	FolderState,
 } from "@tiny-chat/core/src/features/data/types/chat.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
@@ -32,22 +33,12 @@ export const ChatService = {
 				),
 			)
 			.include("messages", (message) => message.select("createdAt"))
+			.include("folder", (folder) => folder.select("settings"))
 			.first();
 
 		if (!chat) throw new Error(`no chat or message with id ${chatLike.id}`);
 
 		return ChatUtils.toChatState(chat);
-	},
-
-	/**
-	 * Get a user's chat list.
-	 */
-	createFolder: async ({ user }: { user: zUser }) => {
-		return globalThis.db.orm.public.Folder.create({
-			id: CommonUtils.getRandomId(),
-			userId: user.id,
-			title: null,
-		});
 	},
 
 	getChats: async ({
@@ -70,7 +61,8 @@ export const ChatService = {
 						.include("chats", (chat) =>
 							selectAll(chat, "public", "Chat")
 								.where({ temporary: false })
-								.include("messages", (message) => message.select("createdAt")),
+								.include("messages", (message) => message.select("createdAt"))
+								.include("folder", (folder) => folder.select("settings")),
 						)
 						.orderBy((f) => f.createdAt.desc())
 						.all(),
@@ -80,6 +72,7 @@ export const ChatService = {
 				temporary: false,
 			})
 				.include("messages", (message) => message.select("createdAt"))
+				.include("folder", (folder) => folder.select("settings"))
 				.all(),
 		]);
 
@@ -139,6 +132,28 @@ export const ChatService = {
 		await globalThis.db.orm.public.Chat.where({ id }).update({ title });
 	},
 
+	setChatFolder: async ({
+		user,
+		chat,
+		folderId,
+	}: {
+		user: zUser;
+		chat: ChatLike;
+		folderId: string | null;
+	}) => {
+		const { id } = await ChatService.getChat({ user, chat });
+		if (folderId) {
+			const folder = await globalThis.db.orm.public.Folder.where({
+				id: folderId,
+				userId: user.id,
+			})
+				.select("id")
+				.first();
+			if (!folder) throw new Error(`no folder with id ${folderId}`);
+		}
+		await globalThis.db.orm.public.Chat.where({ id }).update({ folderId });
+	},
+
 	/**
 	 * Delete a chat, preserving its folder.
 	 */
@@ -164,5 +179,82 @@ export const ChatService = {
 				).deleteAll();
 			await tx.orm.public.Chat.where({ userId: user.id, id }).delete();
 		});
+	},
+
+	createFolder: async ({
+		user,
+		title,
+		cwd,
+	}: {
+		user: zUser;
+		title?: string;
+		cwd?: string;
+	}) => {
+		return globalThis.db.orm.public.Folder.create({
+			id: CommonUtils.getRandomId(),
+			userId: user.id,
+			title,
+			cwd,
+		});
+	},
+
+	getWorkingDirectory: async ({
+		user,
+		chat,
+		folder,
+	}: {
+		user: zUser;
+		chat?: string | null;
+		folder?: string | null;
+	}) => {
+		const selected = chat ? await ChatService.getChat({ user, chat }) : null;
+		const id = selected ? selected.folderId : folder;
+		const row = id
+			? await globalThis.db.orm.public.Folder.where({
+					id,
+					userId: user.id,
+				}).first()
+			: null;
+		return { id: row?.id ?? null, cwd: row?.cwd ?? null };
+	},
+
+	setFolderTitle: async ({
+		user,
+		folder,
+		title,
+		cwd,
+	}: {
+		user: zUser;
+		folder: FolderLike;
+		title: string;
+		cwd?: string | null;
+	}) => {
+		if (typeof folder === "string") folder = { id: folder };
+		await globalThis.db.orm.public.Folder.where({
+			userId: user.id,
+			id: folder.id,
+		}).update({ title, ...(cwd !== undefined ? { cwd } : {}) });
+	},
+
+	deleteFolder: async ({
+		user,
+		folder,
+		deleteChats,
+	}: {
+		user: zUser;
+		folder: FolderLike;
+		deleteChats: boolean;
+	}) => {
+		if (typeof folder === "string") folder = { id: folder };
+		if (deleteChats) {
+			await globalThis.db.orm.public.Chat.where({
+				userId: user.id,
+				folderId: folder.id,
+			}).deleteAll();
+		}
+		await globalThis.db.orm.public.Folder.where({
+			userId: user.id,
+			id: folder.id,
+		}).delete();
 	},
 } as const;

@@ -4,10 +4,13 @@
 	"scripts": {
 		"dev": "pnpm --filter @tiny-chat/app run dev",
 		"build": "pnpm --filter @tiny-chat/app run build",
-		"start": "node src/index.ts"
+		"start": "node src/index.ts",
+		"lint": "biome check --write",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run"
 	},
 	"dependencies": {
-		"@fastify/static": "^10.1.3",
-		"fastify": "^5.12.0"
+		"@fastify/static": "^10.1.4",
+		"fastify": "^5.12.5"
 	}
 }

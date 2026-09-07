@@ -11,7 +11,6 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import {
 	type TauriTask,
 	useTauriStore,
@@ -141,7 +140,6 @@ export default function Tauri() {
 					);
 
 					if (t < 1) {
-						// biome-ignore lint/nursery/useReactCompiler: animate is a recursive effect-local callback, not a hook dependency.
 						animFramesRef.current[id] = requestAnimationFrame(animate);
 					} else {
 						delete animFramesRef.current[id];
@@ -217,7 +215,6 @@ export default function Tauri() {
 				return changed ? updated : prev;
 			});
 
-			// biome-ignore lint/nursery/useReactCompiler: tick is a recursive effect-local callback, not a hook dependency.
 			jitterTimerRef.current = setTimeout(tick, 500 + Math.random() * 1500);
 		};
 
@@ -269,7 +266,6 @@ export default function Tauri() {
 		<Dialog
 			opened={taskList.length > 0 || isUpdateShown}
 			withCloseButton={false}
-			style={{ ...StyleUtils.glass, boxShadow: StyleUtils.shadow }}
 			zIndex={10000}
 		>
 			<Stack gap="xs">

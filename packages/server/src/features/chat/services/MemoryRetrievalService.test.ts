@@ -1,13 +1,12 @@
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
+import { SettingsUtils } from "@tiny-chat/core/src/core/utils/SettingsUtils.ts";
 import { zConfig } from "@tiny-chat/core/src/features/data/types/message.ts";
-import { describe, expect, it } from "vitest";
 import { db } from "../../../db.ts";
-import { testUser } from "../../../tests.helpers.ts";
+import { testUser } from "../../../tests.ts";
 import { EmbeddingService } from "../../embedding/services/EmbeddingService.ts";
 import { MessageService } from "../../message/services/MessageService.ts";
 import { ChatService } from "./ChatService.ts";
 import {
-	CHAT_MEMORY_TOKENS,
 	DREAM_MEMORY_TOKENS,
 	MemoryRetrievalService,
 } from "./MemoryRetrievalService.ts";
@@ -38,15 +37,17 @@ const fact = {
 	confidence: 0.9,
 };
 
-describe("Prisma 8 memory retrieval", () => {
+const tokens = SettingsUtils.defaults().memoryBudget;
+
+describe("MemoryRetrievalService", () => {
 	it("selects memories once at chat creation, isolates users, and supports incognito", async () => {
 		const memory = await MemoryService.createMemory({ user, ...fact });
 		await MemoryService.createMemory({ user: other, ...fact });
 		const message = await MessageService.createMessage({ user, ...content });
 		expect(
-			(await MemoryRetrievalService.retrieve({ user, chat: message })).map(
-				(m) => m.id,
-			),
+			(
+				await MemoryRetrievalService.retrieve({ user, chat: message, tokens })
+			).map((m) => m.id),
 		).toEqual([memory.id]);
 		const later = await MemoryService.createMemory({
 			user,
@@ -59,12 +60,16 @@ describe("Prisma 8 memory retrieval", () => {
 			chat: message.chatId,
 		});
 		expect(
-			(await MemoryRetrievalService.retrieve({ user, chat: next })).map(
+			(await MemoryRetrievalService.retrieve({ user, chat: next, tokens })).map(
 				(m) => m.id,
 			),
 		).toEqual([memory.id]);
 		expect(
-			await MemoryRetrievalService.retrieve({ user: other, chat: message }),
+			await MemoryRetrievalService.retrieve({
+				user: other,
+				chat: message,
+				tokens,
+			}),
 		).toEqual([]);
 		const hidden = await MessageService.createMessage({
 			user,
@@ -72,11 +77,11 @@ describe("Prisma 8 memory retrieval", () => {
 			incognito: true,
 		});
 		expect(
-			await MemoryRetrievalService.retrieve({ user, chat: hidden }),
+			await MemoryRetrievalService.retrieve({ user, chat: hidden, tokens }),
 		).toEqual([]);
 		await MemoryService.deleteMemory({ user, id: memory.id });
 		expect(
-			await MemoryRetrievalService.retrieve({ user, chat: message }),
+			await MemoryRetrievalService.retrieve({ user, chat: message, tokens }),
 		).toEqual([]);
 		await MemoryService.updateMemory({
 			user,
@@ -111,14 +116,9 @@ describe("Prisma 8 memory retrieval", () => {
 	it("reuses a stored raw vector and does not retrieve unrelated vectors when no query vector exists", async () => {
 		const message = await MessageService.createMessage({ user, ...content });
 		const vector = [1, 0, 0];
-		await db
-			.runtime()
-			.execute(
-				db.raw
-					.sql`UPDATE message SET embedding = ${JSON.stringify(vector)}::vector WHERE id = ${message.id}`
-					.affectedCount()
-					.build(),
-			);
+		await db.orm.public.Message.where({ id: message.id }).updateAndCount({
+			embedding: vector,
+		});
 		expect(
 			await EmbeddingService.getMessageEmbedding({ user, message }),
 		).toEqual(vector);
@@ -133,14 +133,9 @@ describe("Prisma 8 memory retrieval", () => {
 			...fact,
 			fact: "Sailing is a recurring hobby.",
 		});
-		await db
-			.runtime()
-			.execute(
-				db.raw
-					.sql`UPDATE memory SET embedding = ${JSON.stringify(vector)}::vector WHERE id = ${memory.id}`
-					.affectedCount()
-					.build(),
-			);
+		await db.orm.public.Memory.where({ id: memory.id }).updateAndCount({
+			embedding: vector,
+		});
 		expect(
 			await MemorySearchService.searchMemories({
 				user,
@@ -159,14 +154,19 @@ describe("Prisma 8 memory retrieval", () => {
 	});
 
 	it("bounds a collection larger than the former soft limit and gives dreams more context", () => {
-		const memories = Array.from({ length: 300 }, (_, id) => ({
-			id,
-			fact: "orchids ".repeat(100),
-		}));
-		const normal = MemoryRetrievalService.withinBudget(
-			memories,
-			CHAT_MEMORY_TOKENS,
+		const memories = Array.from(
+			{ length: 300 },
+			(_) =>
+				({
+					fact: "orchids ".repeat(100),
+					category: "IDENTITY",
+					stability: "LONG_TERM",
+					createdAt: Temporal.Now.plainDateTimeISO("UTC"),
+				}) satisfies Parameters<
+					typeof MemoryRetrievalService.withinBudget
+				>[0][number],
 		);
+		const normal = MemoryRetrievalService.withinBudget(memories, tokens);
 		const dream = MemoryRetrievalService.withinBudget(
 			memories,
 			DREAM_MEMORY_TOKENS,
@@ -174,7 +174,16 @@ describe("Prisma 8 memory retrieval", () => {
 		expect(dream.length).toBeGreaterThan(normal.length);
 		expect(dream.length).toBeLessThan(memories.length);
 		expect(
-			normal.reduce((n, m) => n + JSON.stringify(m).length + 200, 0),
-		).toBeLessThanOrEqual(CHAT_MEMORY_TOKENS * 3);
+			normal.reduce(
+				(n, m) =>
+					n +
+					m.fact.length +
+					m.category.length +
+					m.stability.length +
+					"1 month ago".length +
+					"<memory />".length,
+				0,
+			),
+		).toBeLessThanOrEqual(tokens * 3);
 	});
 });

@@ -1,9 +1,4 @@
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import {
-	Author,
-	zConfig,
-	zData,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
 import { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { ChatService } from "../../chat/services/ChatService.ts";
 import { MessageService } from "../../message/services/MessageService.ts";
@@ -27,9 +22,11 @@ export const ActionRunnerService = {
 			const actions = await globalThis.db.orm.public.Action.include("user")
 				.include("message", (m) => m.select("chatId"))
 				.all();
-			const now = new Date();
+			const cutoff = Temporal.Now.plainDateTimeISO("UTC");
 
 			for (const action of actions) {
+				if (action.message === null)
+					throw new Error("TODO TEMP - prisma typing bug");
 				try {
 					if (
 						testUserId ? action.user.id !== testUserId : action.user.isEphemeral
@@ -39,10 +36,14 @@ export const ActionRunnerService = {
 
 					const nextRunAt = CommonUtils.getScheduled({
 						rrule: action,
-						after: CommonUtils.toDate(action.lastRanAt),
+						after: action.lastRanAt,
 					});
 
-					if ((!nextRunAt || nextRunAt > now) && testUserId !== action.userId) {
+					if (
+						(!nextRunAt ||
+							Temporal.PlainDateTime.compare(nextRunAt, cutoff) > 0) &&
+						testUserId !== action.userId
+					) {
 						continue;
 					}
 					console.log(
@@ -53,9 +54,7 @@ export const ActionRunnerService = {
 						id: action.id,
 						userId: action.userId,
 					}).update({
-						lastRanAt: Temporal.Instant.fromEpochMilliseconds(now.getTime())
-							.toZonedDateTimeISO("UTC")
-							.toPlainDateTime(),
+						lastRanAt: cutoff,
 					});
 					const user = zUser.parse(action.user);
 					const chat = await ChatService.getChat({
@@ -72,15 +71,15 @@ export const ActionRunnerService = {
 							const base = {
 								userId: user.id,
 								chatId: chat.id,
-								config: zConfig.parse(action.config),
+								config: action.config,
 								metadata: [],
 							};
 							const userMessage = MessageUtils.toMessageState(
 								await tx.orm.public.Message.create({
 									...base,
 									id: CommonUtils.getRandomId(),
-									author: Author.USER,
-									data: zData.parse(action.data),
+									author: "USER",
+									data: action.data,
 									previousId: messages.at(-1)?.id ?? action.messageId,
 								}),
 							);
@@ -88,7 +87,7 @@ export const ActionRunnerService = {
 								await tx.orm.public.Message.create({
 									...base,
 									id: CommonUtils.getRandomId(),
-									author: Author.MODEL,
+									author: "MODEL",
 									data: [],
 									previousId: userMessage.id,
 								}),

@@ -1,12 +1,15 @@
+import type { Enum } from "@tiny-chat/core/src/core/services/PostgresService.ts";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
+import { SettingsUtils } from "@tiny-chat/core/src/core/utils/SettingsUtils.ts";
 import type { ChatLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
-import {
-	Author,
-	type MessageLike,
-	type zConfig,
-	type zData,
-	type zMetadata,
+import type {
+	MessageLike,
+	zConfig,
 } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type {
+	zData,
+	zMetadata,
+} from "@tiny-chat/core/src/features/data/types/part.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import {
@@ -16,16 +19,15 @@ import {
 import { MemoryRetrievalService } from "../../chat/services/MemoryRetrievalService.ts";
 import { MessageUtils } from "../utils/MessageUtils.ts";
 
-const idOf = (value: MessageLike) =>
-	typeof value === "string" ? value : value.id;
 type Content = {
-	author: Author;
+	author: Enum["Author"];
 	config: zConfig;
 	data: zData;
 	metadata: zMetadata;
 };
+
 const requireRow = <T>(row: T | null | undefined): T => {
-	if (!row) throw new Error("Message or chat not found");
+	if (!row) throw new Error("missing message or chat");
 	return row;
 };
 
@@ -36,15 +38,29 @@ export const MessageService = {
 	}: {
 		user: zUser;
 		message: MessageLike;
-	}) =>
-		MessageUtils.toMessageState(
+	}) => {
+		if (typeof message === "string") message = { id: message };
+
+		return MessageUtils.toMessageState(
 			requireRow(
 				await globalThis.db.orm.public.Message.where({
 					userId: user.id,
-					id: idOf(message),
-				}).first(),
+					id: message.id,
+				})
+					.select(
+						"id",
+						"userId",
+						"chatId",
+						"previousId",
+						"author",
+						"config",
+						"data",
+						"createdAt",
+					)
+					.first(),
 			),
-		),
+		);
+	},
 
 	/** Fetch the topology once, then only the selected page's content. */
 	getMessages: async ({
@@ -64,8 +80,10 @@ export const MessageService = {
 		start?: string;
 		branches?: MessageBranches;
 	}) => {
+		if (typeof chat === "string") chat = { id: chat };
+
 		const query = globalThis.db.orm.public.Message.where({
-			chatId: idOf(chat),
+			chatId: chat.id,
 			userId: user.id,
 		});
 		const topology = (
@@ -126,20 +144,27 @@ export const MessageService = {
 		temporary?: boolean;
 		incognito?: boolean;
 	}) => {
+		if (typeof chat === "string") chat = { id: chat };
+		if (typeof previous === "string") previous = { id: previous };
+
 		const retrieval =
 			!chat && !incognito
 				? await MemoryRetrievalService.build({
 						user,
 						text: DataUtils.getText(content),
+						tokens: SettingsUtils.defaults(user.settings).memoryBudget,
+						more: false,
 					})
 				: { memories: [], embedding: undefined };
-		return globalThis.db.transaction(async (tx) => {
-			let chatId = chat ? idOf(chat) : undefined;
-			let previousId = previous ? idOf(previous) : null;
-			if (chatId) {
+
+		let chatId = chat?.id ?? null;
+		let previousId = previous?.id ?? null;
+
+		return await globalThis.db.transaction(async (tx) => {
+			if (chat?.id) {
 				const existing = requireRow(
 					await tx.orm.public.Chat.where({
-						id: chatId,
+						id: chat.id,
 						userId: user.id,
 					}).first(),
 				);
@@ -151,15 +176,15 @@ export const MessageService = {
 					requireRow(
 						await tx.orm.public.Message.where({
 							id: previousId,
-							chatId,
+							chatId: chat.id,
 							userId: user.id,
 						})
 							.select("id")
 							.first(),
 					);
-				} else if (previous === undefined) {
+				} else {
 					const rows = await tx.orm.public.Message.where({
-						chatId,
+						chatId: chat.id,
 						userId: user.id,
 					})
 						.select("id", "previousId", "createdAt")
@@ -174,6 +199,7 @@ export const MessageService = {
 				}
 			} else {
 				if (previousId) throw new Error("A parent requires a chat");
+
 				chatId = CommonUtils.getRandomId();
 				if (folderId)
 					requireRow(
@@ -197,18 +223,15 @@ export const MessageService = {
 				...content,
 				id: CommonUtils.getRandomId(),
 				userId: user.id,
-				chatId,
+				chatId: chatId ?? undefined,
 				previousId,
 			});
-			if (retrieval.embedding)
-				await tx.execute(
-					globalThis.db.raw.sql`
-				UPDATE message SET embedding = ${JSON.stringify(retrieval.embedding)}::vector
-				WHERE id = ${created.id} AND "userId" = ${user.id}
-			`
-						.affectedCount()
-						.build(),
-				);
+			if (retrieval.embedding) {
+				tx.orm.public.Message.where({
+					id: created.id,
+					userId: user.id,
+				}).updateAndCount({ embedding: retrieval.embedding });
+			}
 			return MessageUtils.toMessageState(created);
 		});
 	},
@@ -223,11 +246,13 @@ export const MessageService = {
 		user: zUser;
 		message: MessageLike;
 		truncate?: boolean;
-	}) =>
-		globalThis.db.transaction(async (tx) => {
+	}) => {
+		if (typeof message === "string") message = { id: message };
+
+		return await globalThis.db.transaction(async (tx) => {
 			const existing = requireRow(
 				await tx.orm.public.Message.where({
-					id: idOf(message),
+					id: message.id,
 					userId: user.id,
 				}).first(),
 			);
@@ -279,7 +304,8 @@ export const MessageService = {
 					);
 			}
 			return MessageUtils.toMessageState(edited);
-		}),
+		});
+	},
 
 	/** In-place writes are reserved for generation/feedback, never user edits. */
 	updateMessage: async ({
@@ -291,26 +317,28 @@ export const MessageService = {
 		user: zUser;
 		message: MessageLike;
 		truncate?: boolean;
-	}) =>
-		globalThis.db.transaction(async (tx) => {
-			const query = tx.orm.public.Message.where({
-				id: idOf(message),
+	}) => {
+		if (typeof message === "string") message = { id: message };
+
+		const existing = requireRow(
+			await globalThis.db.orm.public.Message.where({
+				id: message.id,
 				userId: user.id,
-			});
-			const existing = MessageUtils.toMessageState(
-				requireRow(await query.first()),
-			);
-			const updated = requireRow(await query.update(content));
-			if (DataUtils.getText(existing) !== DataUtils.getText(content)) {
-				await tx.execute(
-					globalThis.db.raw
-						.sql`UPDATE message SET embedding = NULL WHERE id = ${updated.id} AND "userId" = ${user.id}`
-						.affectedCount()
-						.build(),
-				);
-			}
-			return MessageUtils.toMessageState(updated);
-		}),
+			}).first(),
+		);
+		const updated = requireRow(
+			await globalThis.db.orm.public.Message.where({
+				id: message.id,
+				userId: user.id,
+			}).update({
+				...content,
+				...(DataUtils.getText(existing) !== DataUtils.getText(content)
+					? { embedding: null }
+					: {}),
+			}),
+		);
+		return MessageUtils.toMessageState(updated);
+	},
 
 	/** Delete only this turn. Shared prompts and sibling branches survive. */
 	deleteMessage: async ({
@@ -319,11 +347,13 @@ export const MessageService = {
 	}: {
 		user: zUser;
 		message: MessageLike;
-	}) =>
-		globalThis.db.transaction(async (tx) => {
+	}) => {
+		if (typeof message === "string") message = { id: message };
+
+		return await globalThis.db.transaction(async (tx) => {
 			const existing = requireRow(
 				await tx.orm.public.Message.where({
-					id: idOf(message),
+					id: message.id,
 					userId: user.id,
 				}).first(),
 			);
@@ -335,18 +365,18 @@ export const MessageService = {
 				.all();
 			const deleted = new Set([existing.id]);
 			let parentId = existing.previousId;
-			if (existing.author === Author.MODEL && parentId) {
+			if (existing.author === "MODEL" && parentId) {
 				const parent = rows.find((m) => m.id === parentId);
 				if (
-					parent?.author === Author.USER &&
+					parent?.author === "USER" &&
 					rows.filter((m) => m.previousId === parentId).length === 1
 				) {
 					deleted.add(parent.id);
 					parentId = parent.previousId;
 				}
-			} else if (existing.author === Author.USER) {
+			} else if (existing.author === "USER") {
 				for (const child of rows.filter(
-					(m) => m.previousId === existing.id && m.author === Author.MODEL,
+					(m) => m.previousId === existing.id && m.author === "MODEL",
 				))
 					deleted.add(child.id);
 			}
@@ -376,5 +406,6 @@ export const MessageService = {
 				return true;
 			}
 			return false;
-		}),
+		});
+	},
 } as const;

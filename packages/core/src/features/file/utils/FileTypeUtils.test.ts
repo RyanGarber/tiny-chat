@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { FileTypeUtils } from "./FileTypeUtils.ts";
 
 describe("FileTypeUtils", () => {

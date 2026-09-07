@@ -1,4 +1,4 @@
-import type { zDataPart } from "../../data/types/message.ts";
+import type { zDataPart } from "../../data/types/part.ts";
 import { DataUtils } from "../../data/utils/DataUtils.ts";
 import { PathUtils } from "../../file/utils/PathUtils.ts";
 import type { zAgentMessage } from "../types/agent.ts";

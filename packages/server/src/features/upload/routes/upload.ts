@@ -1,8 +1,7 @@
+import { Enum } from "@tiny-chat/core/src/core/services/PostgresService.ts";
 import { zId } from "@tiny-chat/core/src/core/types/common.ts";
 import type { zUploadResult } from "@tiny-chat/core/src/features/file/types/upload.ts";
 import { z } from "zod";
-import { UploadKind } from "../../../../generated/prisma/enums.ts";
-import type { UploadInclude } from "../../../../generated/prisma/models/Upload.ts";
 import { procedure, router } from "../../../index.ts";
 import { GitHubService } from "../services/GitHubService.ts";
 import { UploadService } from "../services/UploadService.ts";
@@ -11,8 +10,7 @@ export const upload = router({
 	getUploads: procedure
 		.input(
 			z.object({
-				kind: z.enum(UploadKind).optional(),
-				files: z.custom<UploadInclude["files"]>().optional(),
+				kind: z.enum(Enum.UploadKind.values).optional(),
 				limit: z.number().optional(),
 				cursor: z.string().optional(),
 			}),
@@ -21,11 +19,14 @@ export const upload = router({
 			return await UploadService.getUploads({
 				user: ctx.session.user,
 				kind: input.kind,
-				files: input.files,
 				limit: input.limit,
 				cursor: input.cursor,
 			});
 		}),
+
+	getSkills: procedure.query(async ({ ctx }) => {
+		return await UploadService.getSkills({ user: ctx.session.user });
+	}),
 
 	createUpload: procedure
 		.input(
@@ -34,7 +35,7 @@ export const upload = router({
 				.transform((fd) => Object.fromEntries(fd.entries()))
 				.pipe(
 					z.object({
-						kind: z.enum(UploadKind),
+						kind: z.enum(Enum.UploadKind.values),
 						file: z.file(),
 					}),
 				),

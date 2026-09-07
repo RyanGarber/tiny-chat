@@ -40,7 +40,7 @@ export default function SidebarCollapsed({
 					onClick={() => setSidebarOpen(!isSidebarOpen)}
 					size={16}
 				/>
-				<Tooltip label="New Chat" position="right" color="gray">
+				<Tooltip label="New Chat" position="right">
 					<ActionIcon
 						size={32}
 						variant="subtle"
@@ -52,7 +52,7 @@ export default function SidebarCollapsed({
 						<PlusCircleIcon size={20} />
 					</ActionIcon>
 				</Tooltip>
-				<Tooltip label="Temporary" color="gray" position="right">
+				<Tooltip label="Temporary" position="right">
 					<ActionIcon
 						size={32}
 						variant="subtle"
@@ -69,7 +69,7 @@ export default function SidebarCollapsed({
 						<EyeSlashIcon size={20} />
 					</ActionIcon>
 				</Tooltip>
-				<Tooltip label="Anonymous" color="gray" position="right">
+				<Tooltip label="Anonymous" position="right">
 					<ActionIcon
 						size={32}
 						variant="subtle"
@@ -95,7 +95,6 @@ export default function SidebarCollapsed({
 							: session.data.user.name.split(" ")[0]
 					}
 					position="right"
-					color="gray"
 				>
 					<ActionIcon
 						size={32}
@@ -111,7 +110,7 @@ export default function SidebarCollapsed({
 						)}
 					</ActionIcon>
 				</Tooltip>
-				<Tooltip label="Settings" position="right" color="gray">
+				<Tooltip label="Settings" position="right">
 					<ActionIcon
 						variant="subtle"
 						size={32}

@@ -63,7 +63,9 @@ export const DreamRunnerService = {
 					.select("id", "name", "settings", "isEphemeral")
 					.all()
 			).map((user) => zUser.parse(user));
+
 			const cutoff = Temporal.Now.plainDateTimeISO("UTC").subtract({ days: 1 });
+
 			for (const user of users) {
 				if (!user.settings.dreamConfig) continue;
 
@@ -90,6 +92,7 @@ export const DreamRunnerService = {
 							.where((m) => m.dreams.none())
 							.select("id"),
 					)
+					.include("folder", (folder) => folder.select("settings"))
 					.orderBy((m) => m.createdAt.asc())
 					.all();
 
@@ -99,7 +102,10 @@ export const DreamRunnerService = {
 							await db.orm.public.Message.where((message) =>
 								message.id.in(chat.messages.map((m) => m.id)),
 							).all(),
-						).toSorted((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+						).toSorted((a, b) =>
+							Temporal.PlainDateTime.compare(a.createdAt, b.createdAt),
+						);
+
 						const messages = MessageBranchUtils.getBranch(sorted, sorted[0].id);
 
 						console.log(
@@ -114,9 +120,10 @@ export const DreamRunnerService = {
 							text: DataUtils.getText(last),
 							message: last,
 							tokens: DREAM_MEMORY_TOKENS,
+							more: true,
 						});
 
-						const now = new Date();
+						const createdAt = Temporal.Now.plainDateTimeISO("UTC");
 
 						const { data, metadata } = await ServerAgentService.runAgent({
 							chat,
@@ -163,20 +170,20 @@ export const DreamRunnerService = {
 													value: {
 														id: message.id,
 														author: message.author,
-														createdAt: message.createdAt.toISOString(),
+														createdAt: message.createdAt.toString(),
 														text: DataUtils.getText(message),
 													},
 												})),
 											],
 										],
-										createdAt: now,
+										createdAt,
 									},
 									{
 										id: null,
 										author: "MODEL",
 										config,
 										data: [],
-										createdAt: now,
+										createdAt,
 									},
 								],
 							},
@@ -203,8 +210,8 @@ export const DreamRunnerService = {
 							config,
 							data,
 							metadata,
-							messages: (Message) =>
-								Message.connect(messages.map((m) => ({ id: m.id }))),
+							messages: (_message) =>
+								_message.connect(messages.map((m) => ({ id: m.id }))),
 						});
 					} catch (error) {
 						console.error(

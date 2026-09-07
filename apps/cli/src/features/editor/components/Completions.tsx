@@ -27,6 +27,7 @@ export type CompletionsProps<
 	selected?: number;
 	setSelected?: (_: (previous?: number) => number) => void;
 	itemRef?: RefObject<T2 | null>;
+	active?: boolean;
 	onInput?: (_: {
 		item?: T2;
 		input: string;
@@ -54,6 +55,7 @@ export default function Completions<
 	setSelected: setControlledSelected,
 	itemRef,
 	onInput,
+	active = true,
 	itemProps,
 	renderItem,
 	renderEmpty,
@@ -87,13 +89,14 @@ export default function Completions<
 	);
 
 	useEffect(() => {
+		if (!active) return;
 		setIsCompletionsOpen(true);
 		setIsCompletionsEmpty(!items.length);
 		return () => {
 			setIsCompletionsOpen(false);
 			setIsCompletionsEmpty(true);
 		};
-	}, [setIsCompletionsOpen, setIsCompletionsEmpty, items.length]);
+	}, [setIsCompletionsOpen, setIsCompletionsEmpty, items.length, active]);
 
 	const pick = useCallback(
 		(offset: number) => {
@@ -104,17 +107,20 @@ export default function Completions<
 		[items.length, setSelected],
 	);
 
-	useInput((input, key) => {
-		if (onInput?.({ item: items[selected], input, key }) === false) {
-			return;
-		}
-		if (key.upArrow) {
-			pick(-1);
-		}
-		if (key.downArrow) {
-			pick(1);
-		}
-	});
+	useInput(
+		(input, key) => {
+			if (onInput?.({ item: items[selected], input, key }) === false) {
+				return;
+			}
+			if (key.upArrow) {
+				pick(-1);
+			}
+			if (key.downArrow) {
+				pick(1);
+			}
+		},
+		{ isActive: active },
+	);
 
 	const [hovered, setHovered] = useState<number | null>(null);
 	const { mouseRef } = useMouseInput({

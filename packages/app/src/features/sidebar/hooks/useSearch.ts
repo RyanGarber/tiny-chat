@@ -66,7 +66,7 @@ export const useSearch = ({
 	const spotlightActions = useInfiniteQuery({
 		...client.query.chat.searchChats.infiniteQueryOptions(
 			{
-				searchText: debouncedSearch?.data?.text,
+				searchText: debouncedSearch?.data?.text ?? "",
 				searchEmbedding: debouncedSearch?.data?.embedding,
 				limit: 5,
 			},

@@ -52,7 +52,7 @@ export default function Uploads() {
 						relative: true,
 					}),
 					attach: () => {
-						MessagingService.attachUpload({ client, upload });
+						void MessagingService.attachUpload({ client, upload });
 						setPage("chat");
 					},
 					remove: () => {

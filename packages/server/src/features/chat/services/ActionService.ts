@@ -1,9 +1,6 @@
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import {
-	type MessageLike,
-	zConfig,
-	type zData,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { MessageLike } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { zData } from "@tiny-chat/core/src/features/data/types/part.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { MessageService } from "../../message/services/MessageService.ts";
 import { ActionUtils } from "../utils/ActionUtils.ts";
@@ -14,9 +11,14 @@ export const ActionService = {
 			await globalThis.db.orm.public.Action.where({ userId: user.id })
 				.include("message", (message) => message.select("chatId"))
 				.all()
-		).map((action) =>
-			ActionUtils.toActionState({ ...action, chatId: action.message.chatId }),
-		);
+		).map((action) => {
+			if (action.message === null)
+				throw new Error("TODO TEMP - prisma typing bug");
+			return ActionUtils.toActionState({
+				...action,
+				chatId: action.message.chatId,
+			});
+		});
 	},
 
 	createAction: async ({
@@ -40,7 +42,7 @@ export const ActionService = {
 				id: CommonUtils.getRandomId(),
 				userId: user.id,
 				messageId: source.id,
-				config: zConfig.parse(source.config),
+				config: source.config,
 				schedule,
 				timezone,
 				data,
@@ -73,7 +75,7 @@ export const ActionService = {
 			userId: user.id,
 		}).update({
 			messageId: source.id,
-			config: zConfig.parse(source.config),
+			config: source.config,
 			schedule,
 			timezone,
 			data,
@@ -90,6 +92,8 @@ export const ActionService = {
 			.include("message", (m) => m.select("chatId"))
 			.first();
 		if (!action) throw new Error("Action not found");
+		if (action.message === null)
+			throw new Error("TODO TEMP - prisma typing bug");
 		await globalThis.db.orm.public.Action.where({
 			id,
 			userId: user.id,

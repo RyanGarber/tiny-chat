@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { SubagentsCapability } from "../../../../core/types/capability.ts";
 import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
-import { Author, zData, zDataPart } from "../../../data/types/message.ts";
+import { zAbortPart, zData } from "../../../data/types/part.ts";
 import { DataUtils } from "../../../data/utils/DataUtils.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
@@ -23,13 +23,11 @@ export const spawn_subagent = {
 	output: z.object({
 		response: z.string(),
 		errors: z.array(
-			zDataPart
-				.refine((part) => part.type === "abort")
-				.transform((part) => ({
-					reason: part.reason,
-					message: part.message,
-					details: part.details,
-				})),
+			zAbortPart.transform((part) => ({
+				reason: part.reason,
+				message: part.message,
+				details: part.details,
+			})),
 		),
 	}),
 	stream: zData,
@@ -51,7 +49,7 @@ export const createSpawnSubagentTool: ToolFactory<
 				messages: [
 					{
 						id: null,
-						author: Author.USER,
+						author: "USER",
 						config: context.user.settings.subagentConfig,
 						data: [
 							[
@@ -62,14 +60,14 @@ export const createSpawnSubagentTool: ToolFactory<
 								},
 							],
 						],
-						createdAt: new Date(),
+						createdAt: Temporal.Now.plainDateTimeISO("UTC"),
 					},
 					{
 						id: null,
-						author: Author.MODEL,
+						author: "MODEL",
 						config: context.user.settings.subagentConfig,
 						data: [],
-						createdAt: new Date(),
+						createdAt: Temporal.Now.plainDateTimeISO("UTC"),
 					},
 				],
 				timezone: context.timezone,

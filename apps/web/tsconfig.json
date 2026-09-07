@@ -3,6 +3,6 @@
 		"module": "nodenext",
 		"moduleResolution": "nodenext"
 	},
-	"include": ["src"],
+	"include": ["src", "vitest.config.ts"],
 	"extends": "../../tsconfig.base.json"
 }

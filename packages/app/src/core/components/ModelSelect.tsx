@@ -6,21 +6,22 @@ import {
 import { useProviders } from "@tiny-chat/client/src/features/agent/hooks/useProviders.ts";
 import { useHiddenModels } from "@tiny-chat/client/src/features/settings/hooks/useHiddenModels.ts";
 import { zConfig } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { zSettings } from "@tiny-chat/core/src/features/data/types/user.ts";
+import type { ModelProviderStatus } from "@tiny-chat/core/src/features/provider/types/model.ts";
 import type {
-	ModelProviderStatus,
-	zModelFeature,
-} from "@tiny-chat/core/src/features/provider/types/model.ts";
-import type { ProviderState } from "@tiny-chat/core/src/features/provider/types/provider.ts";
+	ProviderState,
+	ProviderStatus,
+} from "@tiny-chat/core/src/features/provider/types/provider.ts";
 import { useCallback, useMemo } from "react";
 
 const getData = (
-	feature: zModelFeature,
+	feature: keyof NonNullable<zSettings["hiddenModels"]>,
 	includeHidden: boolean,
-	providers: ReturnType<typeof useProviders>["providers"],
-	hiddenModels: ReturnType<typeof useHiddenModels>["hiddenModels"],
+	hiddenModels: zSettings["hiddenModels"],
+	providers?: ProviderState<ProviderStatus>[],
 ): TreeNodeData[] => {
 	return (
-		providers.data
+		providers
 			?.filter(
 				(provider): provider is ProviderState<ModelProviderStatus> =>
 					provider.type === "model",
@@ -61,7 +62,7 @@ const getData = (
 };
 
 interface ModelSelectProps extends Omit<TreeSelectProps, "data"> {
-	feature: zModelFeature;
+	feature: keyof NonNullable<zSettings["hiddenModels"]>;
 	optional?: boolean;
 	configValue: zConfig | null | undefined;
 	onConfigChange: (value: zConfig | null | undefined) => void;
@@ -78,7 +79,7 @@ export default function ModelSelect({
 }: ModelSelectProps) {
 	const { providers } = useProviders();
 	const { hiddenModels } = useHiddenModels();
-	const data = getData(feature, includeHidden, providers, hiddenModels);
+	const data = getData(feature, includeHidden, hiddenModels, providers.data);
 	return (
 		<TreeSelect
 			required={!optional}
@@ -113,7 +114,7 @@ export default function ModelSelect({
 
 interface ModelMultiSelectProps
 	extends Omit<TreeSelectProps<"checkbox">, "data"> {
-	feature: zModelFeature;
+	feature: keyof NonNullable<zSettings["hiddenModels"]>;
 	configValues: zConfig[];
 	onConfigChange: (value: zConfig[]) => void;
 	includeHidden?: boolean;
@@ -130,7 +131,7 @@ export function ModelMultiSelect({
 }: ModelMultiSelectProps) {
 	const { providers } = useProviders();
 	const { hiddenModels } = useHiddenModels();
-	const data = getData(feature, includeHidden, providers, hiddenModels);
+	const data = getData(feature, includeHidden, hiddenModels, providers.data);
 
 	let values: string[];
 	if (invert) {

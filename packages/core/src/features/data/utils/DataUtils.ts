@@ -1,10 +1,16 @@
-import type { zData, zDataPart } from "../types/message.ts";
+import type {
+	zData,
+	zDataPart,
+	zThoughtPart,
+	zToolCallPart,
+	zToolResultPart,
+} from "../types/part.ts";
 
 export type RenderedPart =
 	| Exclude<zDataPart, { type: "thought" | "toolCall" | "toolResult" }>
-	| (Extract<zDataPart, { type: "thought" }> & { active: boolean })
-	| (Extract<zDataPart, { type: "toolCall" }> & {
-			result?: Extract<zDataPart, { type: "toolResult" }>;
+	| (zThoughtPart & { active: boolean })
+	| (zToolCallPart & {
+			result?: zToolResultPart;
 	  });
 
 export type RenderedPartGroup<T extends RenderedPart["type"][]> = {
@@ -75,7 +81,7 @@ export const DataUtils = {
 				renderedParts.push({
 					...part,
 					result: parts.find(
-						(p): p is Extract<zDataPart, { type: "toolResult" }> =>
+						(p): p is zToolResultPart =>
 							p.type === "toolResult" && p.id === part.id,
 					),
 				});

@@ -17,7 +17,7 @@
 @source "../node_modules/@streamdown/mermaid/dist/*.js";
 @source "../node_modules/@streamdown/code/dist/*.js";
 
-/* Map shadcn tokens used by Streamdown directly to Mantine's theme engine */
+/* Shadcn map */
 @theme inline {
 	/* ── Base ── */
 	--color-background: var(--mantine-color-body);
@@ -178,7 +178,7 @@ body:not(.unselectable) .selectable * {
 [data-mantine-color-scheme="dark"]
 	.nav-link-like:is(:hover, [data-active="true"]),
 [data-mantine-color-scheme="dark"] .chat-input Button:hover {
-	background-color: var(--mantine-color-dark-5);
+	background-color: var(--tc-highlight);
 }
 
 [data-mantine-color-scheme="light"]
@@ -381,16 +381,12 @@ body:not(.unselectable) .selectable * {
 	}
 }
 
-[data-streamdown="table"] {
-	min-width: 300px;
-}
-
-[data-mantine-color-scheme="dark"] [data-streamdown="table"] th {
-	background: color-mix(
-		in srgb,
-		var(--tc-surface) 75%,
-		rgba(255, 255, 255, 0.01) 25%
-	);
+[data-streamdown="table"] table,
+[data-streamdown="table"] thead,
+[data-streamdown="table"] tr,
+[data-streamdown="table"] th,
+[data-streamdown="table"] td {
+	background: transparent;
 }
 
 [data-streamdown="code-block-body"] {
@@ -491,4 +487,83 @@ body:not(.unselectable) .selectable * {
 		background-color: var(--mantine-primary-color-filled);
 		border-radius: 0.2rem;
 	}
+}
+
+.markdown-sm {
+	h1 {
+		font-size: var(--text-1xl);
+	}
+	h2 {
+		font-size: var(--text-lg);
+	}
+	h3 {
+		font-size: var(--text-base);
+	}
+	h4 {
+		font-size: var(--text-base);
+	}
+	h5 {
+		font-size: var(--text-base);
+	}
+	h6 {
+		font-size: var(--text-base);
+	}
+}
+
+:root {
+	--glass: rgba(38, 38, 40, 0.6);
+	--glass-variant: rgb(0, 0, 0, 0.6);
+	--glass-blur: saturate(220%) blur(16px);
+	--glass-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+/* Core styles */
+.glass:not(.backdrop) {
+	backdrop-filter: var(--glass-blur);
+	background-color: var(--glass);
+	box-shadow: var(--glass-shadow);
+}
+
+.glass:not(.backdrop).variant {
+	background-color: var(--glass-variant);
+}
+
+.glass.backdrop {
+	background-color: transparent;
+}
+
+.glass.backdrop:before {
+	backdrop-filter: var(--glass-blur);
+	background-color: var(--glass);
+	box-shadow: var(--glass-shadow);
+	border-radius: inherit;
+	content: "";
+	inset: 0;
+	position: absolute;
+	z-index: inherit;
+}
+
+.glass.backdrop.variant:before {
+	background-color: var(--glass-variant);
+}
+
+.glass-shadow {
+	box-shadow: var(--glass-shadow);
+}
+
+/* Input */
+.chat-input {
+	position: relative;
+}
+
+.chat-input::before {
+	position: absolute;
+	content: "";
+	inset: 0;
+	border-radius: 25px;
+	pointer-events: none;
+	backdrop-filter: var(--glass-blur);
+	background-color: var(--glass);
+	box-shadow: var(--glass-shadow);
+	z-index: inherit;
 }

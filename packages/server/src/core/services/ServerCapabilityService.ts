@@ -2,10 +2,7 @@ import type { Capabilities } from "@tiny-chat/core/src/core/types/capability.ts"
 import type { zAgentMessage } from "@tiny-chat/core/src/features/agent/types/agent.ts";
 import { AgentUtils } from "@tiny-chat/core/src/features/agent/utils/AgentUtils.ts";
 import type { zChat } from "@tiny-chat/core/src/features/data/types/chat.ts";
-import type {
-	MessageState,
-	zConfig,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { WebProviderService } from "@tiny-chat/core/src/features/provider/services/WebProviderService.ts";
 import type {
@@ -13,6 +10,7 @@ import type {
 	ProviderStatus,
 } from "@tiny-chat/core/src/features/provider/types/provider.ts";
 import type { zWebFeature } from "@tiny-chat/core/src/features/provider/types/web.ts";
+import { ProviderUtils } from "@tiny-chat/core/src/features/provider/utils/ProviderUtils.ts";
 import { CacheService } from "../../features/user/services/CacheService.ts";
 import { createActionsCapability } from "../capabilities/createActionsCapability.ts";
 import { createChatShellCapability } from "../capabilities/createChatShellCapability.ts";
@@ -63,18 +61,16 @@ export const ServerCapabilityService = {
 		});
 
 		providers ??= (await CacheService.getCache({ user })).providers;
-		const hasProvider = (config?: zConfig) =>
-			config &&
-			providers.some(
-				(provider) =>
-					provider.name === config.provider && provider.status.valid,
-			);
 
-		if (hasProvider(user.settings.embeddingConfig)) {
+		if (ProviderUtils.isValid(providers, user.settings.embeddingConfig)) {
 			capabilities.embedding = await createEmbeddingCapability({ user });
 		}
 
-		if (chat?.id && message?.id && hasProvider(user.settings.subagentConfig)) {
+		if (
+			chat?.id &&
+			message?.id &&
+			ProviderUtils.isValid(providers, user.settings.subagentConfig)
+		) {
 			capabilities.subagents = await createSubagentsCapability({
 				chat,
 				message,

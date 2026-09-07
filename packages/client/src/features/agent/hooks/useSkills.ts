@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { UploadKind } from "@tiny-chat/core/src/features/file/types/upload.ts";
 import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import type { zSkill } from "@tiny-chat/core/src/features/skill/types/skill.ts";
@@ -87,18 +86,12 @@ export const useSkills = () => {
 		queryFn: async () => {
 			const skills: zSkill[] = [];
 
-			const remoteSkills = await client.api.upload.getUploads.query({
-				kind: UploadKind.SKILL,
-				files: { where: { path: { has: "SKILL.md" } } },
-			});
-			for (const { id, files } of remoteSkills.uploads) {
+			const remoteSkills = await client.api.upload.getSkills.query();
+			for (const { id, files } of remoteSkills) {
 				let skill: zSkill | null = null;
 				try {
 					skill = SkillUtils.buildSkill({
-						files: files.map((file) => ({
-							path: PathUtils.toMount({ mount: "skills", id, path: file.path }),
-							data: file.data,
-						})),
+						files: files.map((file) => ({ path: file.uri, data: file.data })),
 					});
 				} catch (error) {
 					console.warn("failed to build native skill:", error);

@@ -3,23 +3,28 @@
 	"type": "module",
 	"scripts": {
 		"dev": "node --watch --watch-preserve-output src/server.ts -- --dev",
-		"start": "node src/server.ts"
+		"start": "node src/server.ts",
+		"lint": "biome check --write",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run"
 	},
 	"dependencies": {
-		"@prisma/adapter-pg": "^7.9.1",
-		"@prisma/client": "^7.10.0",
+		"@prisma/orm-extension-paradedb": "8.0.0-rc.10",
+		"@prisma/orm-extension-pgvector": "npm:@ryangarber/prisma-orm-extension-pgvector@latest",
+		"@prisma/orm-postgres": "8.0.0-rc.10",
 		"@ryangarber/ai-sdk-antigravity-proxy": "^0.1.4",
 		"@ryangarber/legiscan-ts": "^2.1.2",
+		"@ryangarber/prisma-orm-extension-zod": "0.2.3",
 		"@tiny-chat/core": "workspace:*",
 		"chalk": "^6.0.0",
 		"fflate": "^0.8.3",
 		"internal-ip": "^9.0.0",
 		"just-bash": "^3.4.2",
 		"rrule": "^2.8.1",
-		"sharp": "^0.35.3"
+		"sharp": "^0.35.4"
 	},
 	"devDependencies": {
-		"@prisma/prisma7": "^7.10.0",
+		"prisma": "8.0.0-rc.15",
 		"tsdown": "^0.23.0"
 	}
 }

@@ -2,7 +2,6 @@
 
 import { useMessaging } from "@tiny-chat/client/src/features/chat/hooks/useMessaging.ts";
 import { useToolContents } from "@tiny-chat/client/src/features/message/hooks/useToolContents.ts";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { RenderedPart } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import type { ToolCallDisplayType } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
@@ -14,6 +13,7 @@ import { Code } from "../../code/components/Code.tsx";
 import Diff from "../../code/components/Diff.tsx";
 import Completions from "../../editor/components/Completions.tsx";
 import Textarea from "../../editor/components/Textarea.tsx";
+import { useEditorStore } from "../../editor/stores/useEditorStore.ts";
 import Markdown from "../../message/components/Markdown.tsx";
 
 interface Option {
@@ -25,13 +25,15 @@ export default function ToolFeedback({
 	message,
 	part,
 	display,
-	isFocused = false,
+	isFocused: isNext = false,
 }: {
 	message: MessageState;
 	part: Extract<RenderedPart, { type: "toolCall" }>;
 	display: ToolCallDisplayType;
 	isFocused?: boolean;
 }) {
+	const focusedFeedbackId = useEditorStore((s) => s.focusedFeedbackId);
+	const isFocused = isNext && focusedFeedbackId === part.id;
 	const { contents } = useToolContents({ message, part, display });
 	const { sendToolFeedback } = useMessaging();
 	useWorkingStatus(contents, sendToolFeedback);
@@ -68,6 +70,7 @@ export default function ToolFeedback({
 
 	return (
 		<Completions
+			active={isFocused && !locked}
 			before={
 				<Box flexDirection="column" marginBottom={1}>
 					{(display.name === "write_file" || display.name === "edit_file") && (
@@ -111,7 +114,11 @@ export default function ToolFeedback({
 									},
 								]
 							: []),
-						{ value: "custom" },
+						...(display.name === "ask_question"
+							? [{ value: "custom" }]
+							: display.approval
+								? [{ name: "Approval", value: "approval" }]
+								: []),
 					],
 				},
 			]}
@@ -124,11 +131,7 @@ export default function ToolFeedback({
 							onChange={setCustom}
 							initialLineCount={1}
 							autoNewLineLimit={0}
-							placeholder={
-								display.name === "ask_question"
-									? `something else...`
-									: `optional follow-up...`
-							}
+							placeholder={`something else...`}
 						/>
 					);
 				} else {
@@ -154,7 +157,9 @@ export default function ToolFeedback({
 				</Box>
 			}
 			onInput={({ item, key, pointer }) => {
-				if (locked || !isFocused) return false;
+				if (locked || !isNext) return false;
+				if (pointer) useEditorStore.setState({ focusedFeedbackId: part.id });
+				else if (!isFocused) return false;
 
 				// Shift belongs to the text area, which selects its text by it.
 				if (key.shift) return false;
@@ -177,6 +182,7 @@ export default function ToolFeedback({
 					)
 						return;
 
+					useEditorStore.setState({ focusedFeedbackId: null });
 					sendToolFeedback.mutate({
 						seed: message,
 						part,
@@ -187,16 +193,6 @@ export default function ToolFeedback({
 								: display.name === "spawn_subagent"
 									? JSON.parse(item.value)
 									: undefined,
-						append:
-							display.name !== "ask_question" && custom.length
-								? [
-										{
-											id: CommonUtils.getRandomId(),
-											type: "text",
-											value: custom.trim(),
-										},
-									]
-								: undefined,
 					});
 				}
 			}}

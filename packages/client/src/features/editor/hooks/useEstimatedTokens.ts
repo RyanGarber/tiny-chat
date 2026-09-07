@@ -6,7 +6,7 @@ import {
 	type CompactionResult,
 } from "@tiny-chat/core/src/features/agent/services/AgentTokensService.ts";
 import type { zAgentMessage } from "@tiny-chat/core/src/features/agent/types/agent.ts";
-import type { zData } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { zData } from "@tiny-chat/core/src/features/data/types/part.ts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useCapabilities } from "../../../core/hooks/useCapabilities.ts";
 import { useSession } from "../../../core/hooks/useSession.ts";
@@ -102,7 +102,7 @@ export const useEstimatedTokens = <T>({
 					[{ id: CommonUtils.getRandomId(), type: "text", value: "." }],
 					...debouncedDraft,
 				],
-				createdAt: new Date(),
+				createdAt: Temporal.Now.plainDateTimeISO("UTC"),
 			},
 		],
 		[config, debouncedDraft],
@@ -134,6 +134,8 @@ export const useEstimatedTokens = <T>({
 		queryFn: async (): Promise<CompactionResult> => {
 			if (!session.data) return ZERO;
 
+			console.log(">EST:DATA:", sourceMessages.data?.messages);
+			console.log(">EST:CAPS:", presumedCapabilities.data);
 			return await AgentService.estimate({
 				context: {
 					user: session.data.user,
@@ -148,6 +150,7 @@ export const useEstimatedTokens = <T>({
 				skills,
 			});
 		},
+		throwOnError: true,
 		refetchOnWindowFocus: false,
 		refetchOnReconnect: false,
 		staleTime: Infinity,

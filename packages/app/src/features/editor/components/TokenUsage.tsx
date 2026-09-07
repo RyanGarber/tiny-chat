@@ -11,7 +11,6 @@ import type {
 	Usage,
 } from "@tiny-chat/client/src/features/editor/hooks/useEstimatedTokens.ts";
 import Popup from "#app/core/components/Popup.tsx";
-import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 
 export default function TokenUsage({
 	usage,
@@ -39,10 +38,7 @@ export default function TokenUsage({
 					/>
 				)}
 			</Popup.Target>
-			<Popup.Dropdown
-				style={{ ...StyleUtils.glass, boxShadow: StyleUtils.shadow }}
-				c="var(--mantine-color-text)"
-			>
+			<Popup.Dropdown c="var(--mantine-color-text)">
 				<Stack gap="xs">
 					{categories.map((category) => (
 						<Group key={category.name} justify="space-between">

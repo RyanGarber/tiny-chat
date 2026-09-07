@@ -1,10 +1,16 @@
-import { ActionIcon, Group, ScrollArea, Stack, Text } from "@mantine/core";
+import {
+	ActionIcon,
+	Card,
+	Group,
+	ScrollArea,
+	Stack,
+	Text,
+} from "@mantine/core";
 import { TrashIcon } from "@phosphor-icons/react";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { client } from "#app/client.ts";
 import Sentinel from "#app/core/components/Sentinel.tsx";
 import { useSentinel } from "#app/core/hooks/useSentinel.ts";
-import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import Dropzone from "#app/features/upload/components/Dropzone.tsx";
 import FileTag from "#app/features/upload/components/FileTag.tsx";
 import { MessagingService } from "#client/src/features/chat/services/MessagingService.ts";
@@ -32,67 +38,68 @@ export function AttachmentUploads({ close }: { close: () => void }) {
 					{attachmentUploads.data?.pages
 						.flatMap((page) => page.uploads)
 						.map((upload) => (
-							<Group
+							<Card
 								key={upload.id}
-								justify="space-between"
 								p="xs"
-								bdrs="lg"
-								style={{ ...StyleUtils.glass, cursor: "pointer" }}
+								withBorder
+								style={{ cursor: "pointer" }}
 								onClick={() => {
 									void MessagingService.attachUpload({ client, upload });
 									close();
 								}}
 							>
-								<FileTag
-									path={upload.name}
-									directory={true}
-									thumbnail={upload.thumbnail ?? undefined}
-									size={30}
-									style={{ minWidth: 0, flex: 1 }}
-									gap={10}
-									viewable={false}
-								>
-									<Stack gap={0} style={{ minWidth: 0, flex: 1 }}>
-										<Text
-											size="sm"
-											fw={500}
-											style={{
-												overflow: "hidden",
-												textOverflow: "ellipsis",
-												whiteSpace: "nowrap",
-											}}
-										>
-											{upload.name}
-										</Text>
-										<Text size="xs" c="dimmed">
-											{upload.createdAt
-												? CommonUtils.formatDate({
-														date: upload.createdAt,
-														relative: true,
-													})
-												: ""}
-										</Text>
-									</Stack>
-								</FileTag>
-								<ActionIcon
-									variant="subtle"
-									color="red"
-									onClick={(e) => {
-										e.stopPropagation();
-										void deleteUpload.mutate({ id: upload.id });
-									}}
-									loading={
-										deleteUpload.isPending &&
-										deleteUpload.variables.id === upload.id
-									}
-									disabled={
-										deleteUpload.isPending &&
-										deleteUpload.variables.id === upload.id
-									}
-								>
-									<TrashIcon size={18} />
-								</ActionIcon>
-							</Group>
+								<Group justify="space-between" wrap="nowrap" gap="xs">
+									<FileTag
+										path={upload.name}
+										directory={true}
+										thumbnail={upload.thumbnail ?? undefined}
+										size={30}
+										style={{ minWidth: 0, flex: 1 }}
+										gap={10}
+										viewable={false}
+									>
+										<Stack gap={0} style={{ minWidth: 0, flex: 1 }}>
+											<Text
+												size="sm"
+												fw={500}
+												style={{
+													overflow: "hidden",
+													textOverflow: "ellipsis",
+													whiteSpace: "nowrap",
+												}}
+											>
+												{upload.name}
+											</Text>
+											<Text size="xs" c="dimmed">
+												{upload.createdAt
+													? CommonUtils.formatDate({
+															date: upload.createdAt,
+															relative: true,
+														})
+													: ""}
+											</Text>
+										</Stack>
+									</FileTag>
+									<ActionIcon
+										variant="subtle"
+										color="red"
+										onClick={(e) => {
+											e.stopPropagation();
+											void deleteUpload.mutate({ id: upload.id });
+										}}
+										loading={
+											deleteUpload.isPending &&
+											deleteUpload.variables.id === upload.id
+										}
+										disabled={
+											deleteUpload.isPending &&
+											deleteUpload.variables.id === upload.id
+										}
+									>
+										<TrashIcon size={18} />
+									</ActionIcon>
+								</Group>
+							</Card>
 						))}
 					<Sentinel
 						isFetching={attachmentUploads.isFetching}

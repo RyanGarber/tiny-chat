@@ -4,13 +4,12 @@ import {
 	Button,
 	type DefaultMantineColor,
 	Popover,
-	PopoverDropdown,
-	PopoverTarget,
 	Select,
 	Slider,
 	Stack,
 	Text,
 } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import { GearIcon, PaperPlaneTiltIcon, StopIcon } from "@phosphor-icons/react";
 import { AgentStreamService } from "@tiny-chat/client/src/core/services/StreamService.ts";
 import { useConfig } from "@tiny-chat/client/src/features/agent/hooks/useConfig.ts";
@@ -25,10 +24,10 @@ import type {
 	Usage,
 } from "@tiny-chat/client/src/features/editor/hooks/useEstimatedTokens.ts";
 import { ToolUtils } from "@tiny-chat/core/src/features/tool/utils/ToolUtils.ts";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import ModelSelect from "#app/core/components/ModelSelect.tsx";
 import { AppService } from "#app/core/services/AppService.ts";
-import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
+import { useAppStore } from "#app/core/stores/useAppStore.ts";
 import TokenUsage from "#app/features/editor/components/TokenUsage.tsx";
 import { useEditorStore } from "#app/features/editor/stores/useEditorStore.ts";
 
@@ -46,6 +45,7 @@ export default function RightSection({
 	const { chat } = useChat();
 	const { sendMessage } = useMessaging();
 	const { config, setConfig, modelArgs, setModelArg } = useConfig();
+	const currentModal = useAppStore((state) => state.currentModal);
 
 	const { toolsets } = useTools();
 	const enabledTools = useMemo(
@@ -64,16 +64,34 @@ export default function RightSection({
 		state.chatAgentStreams.get(chat.data?.id ?? ""),
 	);
 
+	const [opened, { toggle, close }] = useDisclosure();
+
 	const isEmpty = useDraftStore((state) => state.isEmpty);
 	const isIncomplete = useEditorStore((state) => state.isIncomplete);
 
 	const modelWidth = width * 0.25;
 
+	useEffect(() => {
+		const onClickOutside = (event: PointerEvent) => {
+			if (!opened) return;
+			if (event.target instanceof HTMLElement) {
+				const isRightSection = event.target.closest(".right-section");
+				if (!isRightSection && !currentModal) {
+					close();
+				}
+				event.preventDefault();
+				event.stopPropagation();
+			}
+		};
+		document.body.addEventListener("click", onClickOutside);
+		return () => document.body.removeEventListener("click", onClickOutside);
+	}, [currentModal, opened, close]);
+
 	return (
 		<>
 			<TokenUsage usage={usage} categories={categories} />
-			<Popover position="top" transitionProps={{ transition: "fade-up" }}>
-				<PopoverTarget>
+			<Popover position="top" opened={opened}>
+				<Popover.Target>
 					{modelWidth < 100 ? (
 						<ActionIcon
 							variant="subtle"
@@ -82,6 +100,8 @@ export default function RightSection({
 							w={30}
 							disabled={disabled}
 							color="var(--mantine-color-dimmed)"
+							onClick={toggle}
+							className="right-section"
 						>
 							<GearIcon size={20} />
 						</ActionIcon>
@@ -94,26 +114,24 @@ export default function RightSection({
 							px={15}
 							disabled={disabled}
 							color="var(--mantine-color-dimmed)"
+							onClick={toggle}
+							className="right-section"
 						>
 							<Text size="sm" truncate="start" maw={modelWidth}>
 								{config.model}
 							</Text>
 						</Button>
 					)}
-				</PopoverTarget>
-				<PopoverDropdown maw={400} style={{ boxShadow: StyleUtils.shadow }}>
+				</Popover.Target>
+				<Popover.Dropdown maw={400} className="right-section">
 					<ModelSelect
 						flex={1}
 						variant="subtle"
 						comboboxProps={{
-							withinPortal: false,
-							transitionProps: { transition: "fade-down" },
 							offset: 0,
 						}}
-						styles={{
-							dropdown: {
-								boxShadow: StyleUtils.shadow,
-							},
+						classNames={{
+							dropdown: "right-section",
 						}}
 						configValue={config}
 						onConfigChange={(value) => value && setConfig(value)}
@@ -147,23 +165,15 @@ export default function RightSection({
 												arg.name
 											] ?? arg.default
 										}
-										variant="unstyled"
-										styles={{
-											input: {
-												padding: "0 10px",
-											},
-											dropdown: {
-												boxShadow: StyleUtils.shadow,
-											},
-										}}
 										comboboxProps={{
-											withinPortal: false,
 											offset: 0,
 											position: "top",
-											transitionProps: { transition: "fade-up" },
 										}}
 										onChange={(value) => setModelArg(arg.name, value)}
 										disabled={disabled}
+										classNames={{
+											dropdown: "right-section",
+										}}
 									/>
 								)}
 								{arg.type === "range" && (
@@ -183,20 +193,26 @@ export default function RightSection({
 							</Box>
 						))}
 					</Stack>
-				</PopoverDropdown>
+				</Popover.Dropdown>
 			</Popover>
 			<ActionIcon
 				variant="filled"
 				size={40}
 				radius={20}
 				onClick={() => {
-					if (chat.data && stream) AgentStreamService.abort(stream);
+					if (chat.data && stream && isEmpty) AgentStreamService.abort(stream);
 					else sendMessage.mutate();
 				}}
 				loading={sendMessage.isPending}
-				disabled={(isEmpty || isIncomplete || disabled) && stream === undefined}
+				disabled={
+					stream && isEmpty ? false : isEmpty || isIncomplete || disabled
+				}
 			>
-				{stream ? <StopIcon size={20} /> : <PaperPlaneTiltIcon size={20} />}
+				{stream && isEmpty ? (
+					<StopIcon size={20} />
+				) : (
+					<PaperPlaneTiltIcon size={20} />
+				)}
 			</ActionIcon>
 		</>
 	);

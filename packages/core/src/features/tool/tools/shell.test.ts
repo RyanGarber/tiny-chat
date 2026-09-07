@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import type { zAgentContext } from "../../agent/types/agent.ts";
 import { createShell } from "../../file/services/FileSearchService.test.ts";
 import { FileUtils } from "../../file/utils/FileUtils.ts";
@@ -11,7 +10,7 @@ import { createShellExecTool } from "./shell/shell_exec.ts";
 
 const context = {} as zAgentContext;
 
-describe("shell tools", () => {
+describe("shell", () => {
 	it("returns a window of a long file and says how to read on", async () => {
 		const shell = createShell({
 			"/project/long.ts": Array.from(

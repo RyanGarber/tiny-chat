@@ -1,10 +1,9 @@
 import type { TextStreamPart } from "ai";
-import { describe, expect, inject, it } from "vitest";
-import { testConfig } from "../../../../tests.ts";
-import type { zDataPart } from "../../../data/types/message.ts";
+import { mockConfig, mockUser } from "../../../../tests.ts";
+import type { zDataPart } from "../../../data/types/part.ts";
 import { OpenAiProvider } from "./OpenAiProvider.ts";
 
-describe("providers - openai", () => {
+describe("OpenAiProvider", () => {
 	it("stores signatures", () => {
 		const event: TextStreamPart<any> = {
 			type: "reasoning-delta",
@@ -18,8 +17,8 @@ describe("providers - openai", () => {
 			},
 		};
 		const signature = OpenAiProvider.getPartSignature?.({
-			user: inject("shared_user"),
-			config: testConfig(OpenAiProvider, "gpt-5"),
+			user: mockUser(),
+			config: mockConfig(OpenAiProvider, "gpt-5"),
 			event,
 		});
 		expect(signature?.model).toBe("gpt-5");
@@ -40,16 +39,16 @@ describe("providers - openai", () => {
 		};
 
 		const metadata = OpenAiProvider.getPartSignatureReturn?.({
-			user: inject("shared_user"),
-			config: testConfig(OpenAiProvider, "gpt-5"),
+			user: mockUser(),
+			config: mockConfig(OpenAiProvider, "gpt-5"),
 			part,
 		});
 		expect(metadata?.openai?.itemId).toBe("__TEST__");
 		expect(metadata?.openai?.reasoningEncryptedContent).toBe("__TEST__");
 
 		const metadata2 = OpenAiProvider.getPartSignatureReturn?.({
-			user: inject("shared_user"),
-			config: testConfig(OpenAiProvider, "gpt-4"),
+			user: mockUser(),
+			config: mockConfig(OpenAiProvider, "gpt-4"),
 			part,
 		});
 		expect(metadata2?.openai?.itemId).toBe("__TEST__");

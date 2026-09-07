@@ -1,18 +1,78 @@
-import HighlightBody from "#app/features/code/components/HighlightBody.tsx";
+import { useCallback, useMemo } from "react";
+import Content, {
+	type ContentFormats,
+	type ContentFormatterFunction,
+} from "#app/core/components/Content.tsx";
+import { ControlUtils } from "#app/core/utils/ControlUtils.ts";
 import MermaidContent from "#app/features/code/components/MermaidContent.tsx";
+import { useMermaid } from "#app/features/code/hooks/useMermaid.ts";
 
 export default function Mermaid({
 	code,
 	streaming,
-}: {
+	...props
+}: Parameters<typeof Content>[0] & {
 	code: string;
 	streaming?: boolean;
 }) {
+	const { mermaid } = useMermaid();
+
+	const formats = useMemo<ContentFormats>(() => {
+		return ["MMD", "SVG", "PNG"];
+	}, []);
+
+	const formatter = useCallback<ContentFormatterFunction>(
+		async (format) => {
+			if (format === "MMD") {
+				return {
+					extension: "mmd",
+					mime: "text/plain",
+					data: code,
+				};
+			} else {
+				// Use a stable ID based on chart content hash and timestamp to ensure uniqueness
+				const chartHash = code.split("").reduce((acc, char) => {
+					return ((acc << 5) - acc + char.charCodeAt(0)) | 0;
+				}, 0);
+				const uniqueId = `mermaid-${Math.abs(chartHash)}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+				const { svg } = await mermaid.render(uniqueId, code);
+				if (!svg) throw new Error("failed to generate svg");
+
+				if (format === "svg") {
+					return {
+						extension: "svg",
+						mime: "image/svg+xml",
+						data: svg,
+					};
+				}
+
+				if (format === "png") {
+					return {
+						extension: "png",
+						mime: "image/png",
+						data: await ControlUtils.rasterize(svg),
+					};
+				}
+			}
+			throw new Error("invalid chart format");
+		},
+		[code, mermaid],
+	);
+
 	return (
-		<HighlightBody chart={code} streaming={streaming}>
+		<Content
+			formats={formats}
+			formatter={formatter}
+			streaming={streaming}
+			data-streamdown="mermaid-block"
+			data-language="mermaid"
+			data-incomplete={streaming}
+			{...props}
+		>
 			<div className="rounded-md border border-(--mantine-color-default-border) p-4 text-sm">
 				<MermaidContent chart={code} />
 			</div>
-		</HighlightBody>
+		</Content>
 	);
 }

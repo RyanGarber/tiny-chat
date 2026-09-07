@@ -1,24 +1,28 @@
 import type { zAgentContext } from "../../features/agent/types/agent.ts";
 import type { ActionState } from "../../features/data/types/action.ts";
-import type { ChatLike } from "../../features/data/types/chat.ts";
+import type { ChatLike, FolderLike } from "../../features/data/types/chat.ts";
 import type {
-	MemoryCategory,
 	MemorySearchResult,
-	MemoryStability,
 	MemoryState,
 } from "../../features/data/types/memory.ts";
 import type {
 	MessageLike,
 	MessageSearchResult,
-	zData,
 } from "../../features/data/types/message.ts";
+import type { zData } from "../../features/data/types/part.ts";
+import type { zSettings } from "../../features/data/types/user.ts";
 import type { FileNode } from "../../features/file/types/file.ts";
 import type { zWebContext } from "../../features/provider/types/web.ts";
+import type { Enum } from "../services/PostgresService.ts";
 
 export interface WebCapability {
 	search: (_: { query: string; maxResults: number }) => Promise<zWebContext[]>;
 
 	view: (_: { url: string }) => Promise<zWebContext>;
+}
+
+export interface SettingsCapability {
+	get: (_: { folder: FolderLike }) => Promise<zSettings>;
 }
 
 export interface EmbeddingCapability {
@@ -56,8 +60,9 @@ export interface ActionsCapability {
 }
 
 export interface MemoriesCapability {
-	retrieveMemories: (_?: {
+	retrieveMemories: (_: {
 		chat?: ChatLike | MessageLike | null;
+		tokens: number;
 	}) => Promise<MemoryState[]>;
 
 	searchMemories: (_: {
@@ -67,8 +72,8 @@ export interface MemoriesCapability {
 
 	createMemory: (_: {
 		fact: string;
-		category: MemoryCategory;
-		stability: MemoryStability;
+		category: Enum["MemoryCategory"];
+		stability: Enum["MemoryStability"];
 		evidence: string[];
 		confidence: number;
 	}) => Promise<MemoryState>;
@@ -76,8 +81,8 @@ export interface MemoriesCapability {
 	updateMemory: (_: {
 		id: string;
 		fact: string;
-		category: MemoryCategory;
-		stability: MemoryStability;
+		category: Enum["MemoryCategory"];
+		stability: Enum["MemoryStability"];
 		evidence: string[];
 		confidence: number;
 	}) => Promise<MemoryState>;
@@ -123,6 +128,7 @@ export interface ShellCapability {
 
 export interface Capabilities {
 	web?: WebCapability;
+	settings?: SettingsCapability;
 	embedding?: EmbeddingCapability;
 	subagents?: SubagentsCapability;
 	actions?: ActionsCapability;

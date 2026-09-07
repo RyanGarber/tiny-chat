@@ -1,14 +1,15 @@
 import type { ProviderV3, ProviderV4 } from "@ai-sdk/provider";
 import type { EmbeddingModel, LanguageModel, TextStreamPart } from "ai";
 import { z } from "zod";
+import { Enum } from "../../../core/services/PostgresService.ts";
+import type { PromiseOrValue } from "../../../core/types/common.ts";
 import type { zProviderEnv } from "../../../core/types/env.ts";
+import type { zConfig } from "../../data/types/message.ts";
 import {
-	Author,
-	type zConfig,
 	zData,
 	type zDataPart,
 	type zSignature,
-} from "../../data/types/message.ts";
+} from "../../data/types/part.ts";
 import type { zUser } from "../../data/types/user.ts";
 import type { Provider, ProviderStatus } from "./provider.ts";
 
@@ -44,7 +45,7 @@ export const zModel = z.object({
 export type zModel = z.infer<typeof zModel>;
 
 export const zModelMessage = z.object({
-	author: z.enum(Author),
+	author: z.enum(Enum.Author.values),
 	data: zData,
 });
 export type zModelMessage = z.infer<typeof zModelMessage>;
@@ -90,7 +91,7 @@ export interface ModelProvider<T extends ProviderV3 | ProviderV4>
 		user: zUser;
 		config: zConfig;
 		part: zDataPart;
-	}) => Promise<zDataPart[] | undefined> | zDataPart[] | undefined;
+	}) => PromiseOrValue<zDataPart[] | undefined>;
 
 	getPartSignature?: (args: {
 		user: zUser;

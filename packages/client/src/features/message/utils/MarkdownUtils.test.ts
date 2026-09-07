@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { type MarkdownBlocks, MarkdownUtils } from "./MarkdownUtils.ts";
 
 const split = (content: string, previous?: MarkdownBlocks) =>
@@ -19,8 +18,8 @@ const documents = {
 	mixed: `## Head\n\n| a | b |\n| - | - |\n| 1 | 2 |\n\n> quote\n\n\`\`\`\ncode\n\`\`\`\n\n- item\n- item\n\nEnd.\n`,
 };
 
-describe("split", () => {
-	it("cuts a document into its top-level blocks", () => {
+describe("MarkdownUtils", () => {
+	it("splits a document into its top-level blocks", () => {
 		expect(split(documents.prose).blocks).toEqual([
 			"# Title",
 			"A paragraph with **bold** text.",
@@ -28,7 +27,7 @@ describe("split", () => {
 		]);
 	});
 
-	it("keeps constructs that span blank lines in one block", () => {
+	it("keeps constructs that span blank lines in one split", () => {
 		expect(split(documents.lists).blocks).toEqual([
 			"1. one\n   - nested\n2. two\n\n   loose item body\n\n3. three",
 			"- [ ] todo",
@@ -71,11 +70,34 @@ describe("split", () => {
 		}
 	});
 
-	it("reuses the blocks it has already cut", () => {
+	it("reuses the splits it has already cut", () => {
 		const first = split("First one.\n\nSecond one.");
 		const second = split("First one.\n\nSecond one. And more.", first);
 
 		expect(second.blocks[0]).toBe(first.blocks[0]);
 		expect(split(second.content, second)).toBe(second);
+	});
+
+	it("ends a blockquote before an unmarked continuation", () => {
+		expect(MarkdownUtils.normalize("> quoted\nnot quoted")).toBe(
+			"> quoted\n\nnot quoted",
+		);
+	});
+
+	it("keeps explicitly marked and already separated lines unchanged", () => {
+		expect(MarkdownUtils.normalize("> one\n> two\n\nthree")).toBe(
+			"> one\n> two\n\nthree",
+		);
+	});
+
+	it("preserves line endings", () => {
+		expect(MarkdownUtils.normalize("> quoted\r\nnot quoted")).toBe(
+			"> quoted\r\n\r\nnot quoted",
+		);
+	});
+
+	it("does not rewrite blockquote-like text in fenced code", () => {
+		const markdown = "```markdown\n> quoted\nnot quoted\n```";
+		expect(MarkdownUtils.normalize(markdown)).toBe(markdown);
 	});
 });

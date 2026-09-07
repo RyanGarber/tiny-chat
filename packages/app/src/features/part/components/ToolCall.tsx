@@ -9,7 +9,7 @@ import { useStream } from "@tiny-chat/client/src/features/agent/hooks/useStream.
 import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
 import type { StreamState } from "@tiny-chat/core/src/core/types/stream.ts";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import type { zDataPart } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { zToolCallPart } from "@tiny-chat/core/src/features/data/types/part.ts";
 import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import type { shell_exec } from "@tiny-chat/core/src/features/tool/tools/shell/shell_exec.ts";
@@ -17,13 +17,13 @@ import type { spawn_subagent } from "@tiny-chat/core/src/features/tool/tools/sub
 import type { ToolCallUtils } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
 import { type ReactNode, useState } from "react";
 import type { BundledLanguage } from "streamdown";
+import WebSourceCard from "#app/features/chat/components/WebSourceCard.tsx";
 import Code from "#app/features/code/components/Code.tsx";
 import Diff from "#app/features/code/components/Diff.tsx";
 import Markdown from "#app/features/message/components/Markdown.tsx";
 import MessageParts from "#app/features/message/components/MessageParts.tsx";
 import Image from "#app/features/part/components/Image.tsx";
 import Quote from "#app/features/part/components/Quote.tsx";
-import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
 
 /**
  * Renders the expanded details content for a tool call.
@@ -34,7 +34,7 @@ function ToolCallDetails({
 	part,
 	details,
 }: {
-	part: Extract<zDataPart, { type: "toolCall" }>;
+	part: zToolCallPart;
 	details: ReturnType<typeof ToolCallUtils.getDisplay>;
 }) {
 	const stream = useStream<ToolStreamEvent<any>>(part.id);
@@ -43,48 +43,10 @@ function ToolCallDetails({
 
 	if (details.name === "search_web" && details.output) {
 		detailsNode = details.output.map((result) => (
-			<Box key={result.url}>
-				{result.title && <Text fw={500}>{result.title}</Text>}
-				<Anchor
-					truncate="end"
-					href={result.url}
-					target="_blank"
-					style={{
-						display: "block",
-					}}
-					onClick={(e) => {
-						e.preventDefault();
-						void TauriUtils.open(result.url);
-					}}
-				>
-					{result.url}
-				</Anchor>
-				<Text truncate="end">{result.content}</Text>
-			</Box>
+			<WebSourceCard key={result.url} source={result} />
 		));
 	} else if (details.name === "view_web" && details.output) {
-		detailsNode = (
-			<Stack>
-				{details.output.title && <Text fw={500}>{details.output.title}</Text>}
-				<Anchor
-					fw={500}
-					target="_blank"
-					href={details.output.url}
-					onClick={(e) => {
-						e.preventDefault();
-						void TauriUtils.open(details.output?.url ?? "");
-					}}
-				>
-					{details.output.url}
-				</Anchor>
-				<Code
-					code={details.output.content}
-					language="markdown"
-					lineNumbers={false}
-					streaming={false}
-				/>
-			</Stack>
-		);
+		detailsNode = <WebSourceCard source={details.output} />;
 	} else if (details.name === "create_action" && details.output) {
 		detailsNode = (
 			<Text>Created action {details.output.created_action_id}.</Text>
@@ -113,7 +75,7 @@ function ToolCallDetails({
 				>
 					Created{" "}
 					{CommonUtils.formatDate({
-						date: new Date(action.created_at),
+						date: action.created_at,
 						relative: true,
 					})}
 					.
@@ -311,7 +273,7 @@ export default function ToolCall({
 	part,
 	display,
 }: {
-	part: Extract<zDataPart, { type: "toolCall" }>;
+	part: zToolCallPart;
 	display: ReturnType<typeof ToolCallUtils.getDisplay>;
 }) {
 	const [expanded, setExpanded] = useState(false);

@@ -1,6 +1,6 @@
 import { distance } from "fastest-levenshtein";
 import { customAlphabet } from "nanoid";
-import type { Temporal } from "temporal-polyfill";
+import { Temporal } from "temporal-polyfill";
 import { format } from "timeago.js";
 import {
 	adjectives,
@@ -10,7 +10,7 @@ import {
 import { RRule } from "../../index.ts";
 import { ID_ALPHABET, ID_LENGTH } from "../types/common.ts";
 
-type MaybeNullish<TIn, TOut> = TIn extends undefined
+export type MaybeNullish<TIn, TOut> = TIn extends undefined
 	? undefined
 	: TIn extends null
 		? null
@@ -64,6 +64,28 @@ export const CommonUtils = {
 		) as MaybeNullish<T, Date>;
 	},
 
+	toPlainDateTime: <T extends Temporal.PlainDateTime | Date | null | undefined>(
+		date?: T,
+	): MaybeNullish<T, Temporal.PlainDateTime> => {
+		if (!date) return date as MaybeNullish<T, Temporal.PlainDateTime>;
+		if (date instanceof Date)
+			return Temporal.Instant.fromEpochMilliseconds(date.getTime())
+				.toZonedDateTimeISO("UTC")
+				.toPlainDateTime() as MaybeNullish<T, Temporal.PlainDateTime>;
+		return date as Temporal.PlainDateTime as MaybeNullish<
+			T,
+			Temporal.PlainDateTime
+		>;
+	},
+
+	parsePlainDateTime: (value: string | number): Temporal.PlainDateTime => {
+		const instant =
+			typeof value === "number"
+				? Temporal.Instant.fromEpochMilliseconds(value)
+				: Temporal.Instant.from(value);
+		return instant.toZonedDateTimeISO("UTC").toPlainDateTime();
+	},
+
 	formatDate: ({
 		date = new Date(),
 		timezone,
@@ -83,7 +105,15 @@ export const CommonUtils = {
 				});
 	},
 
-	formatTimespan: ({ from, to }: { from: Date; to: Date }) => {
+	formatTimespan: ({
+		from,
+		to,
+	}: {
+		from: Temporal.PlainDateTime | Date;
+		to: Temporal.PlainDateTime | Date;
+	}) => {
+		from = CommonUtils.toDate(from);
+		to = CommonUtils.toDate(to);
 		if (from.getTime() > to.getTime()) {
 			[from, to] = [to, from];
 		}
@@ -166,15 +196,15 @@ export const CommonUtils = {
 		after,
 	}: {
 		rrule: { schedule: string } | string;
-		after?: Date | null;
-	}): Date | null => {
+		after?: Temporal.PlainDateTime | null;
+	}): Temporal.PlainDateTime | null => {
 		if (typeof rrule === "string") rrule = { schedule: rrule };
 
 		const schedule = RRule.fromString(rrule.schedule);
-		const startAt = schedule.options.dtstart;
-		const searchFrom = after ?? new Date(startAt.getTime() - 1);
-
-		return schedule.after(searchFrom, false);
+		const startAt = CommonUtils.toPlainDateTime(schedule.options.dtstart);
+		const searchFrom = after ?? startAt.subtract({ milliseconds: 1 });
+		const nextRunAt = schedule.after(CommonUtils.toDate(searchFrom), false);
+		return CommonUtils.toPlainDateTime(nextRunAt);
 	},
 
 	getDistance: (a: string, b: string) => {

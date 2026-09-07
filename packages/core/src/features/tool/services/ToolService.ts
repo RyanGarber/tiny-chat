@@ -58,7 +58,7 @@ ${capabilities.chatShell ? `- Anything INSIDE of \`${PathUtils.mount}\`: the vir
 The virtual chat (\`${PathUtils.mount}\`) filesystem holds three trees:
 - \`${PathUtils.mount}/uploads/<id>\` — files the user uploaded or cloned. Read only.
 - \`${PathUtils.mount}/skills/<id>\` — the skills this message is configured with. Read only.
-- \`${PathUtils.mount}/chat/<id>\` — this chat's own working directory, and the only place you can write. You start here.
+- \`${PathUtils.mount}/chat/<id>\` — this chat's own working directory, and the only place you can write.
 To change a file from an upload or a skill, \`cp\` it into the chat's directory first and work on the copy; the original stays as it is for every other chat that uses it.
 
 Finding things: \`${find_files.name}\` for a glob when you want to see how the tree is laid out, \`${search_files.name}\` when you know what the code does but not what it says, and \`${grep_files.name}\` when you know the exact text or pattern. Searches skip dependency, build, generated, minified and git-ignored files, and report what they left out — when results are truncated, narrow the query or pass \`include\` instead of asking for more results.
@@ -72,7 +72,10 @@ When working in a codebase, look before you act: find the relevant files, read t
 For all file-related tools, the filesystem will be detected automatically from the path provided.
 For \`${shell_exec.name}\` specifically, you MUST specify \`mnt: true\` to run in the virtual \`${PathUtils.mount}\` filesystem, or \`mnt: false\` to run in the user's local filesystem.
 
-Current working directory in the user's local shell: ${(await capabilities.shell?.cwd?.()) ?? "[n/a]"}`,
+Current working directories (each shell resolves relative command paths from its own directory):
+- User shell (\`shell_exec\` with \`mnt: false\`, user's machine): ${(await capabilities.shell?.cwd?.()) ?? "unavailable"}
+- Chat shell (\`shell_exec\` with \`mnt: true\`, virtual \`/mnt\` filesystem): ${(await capabilities.chatShell?.cwd?.()) ?? "unavailable"}
+These are separate filesystems. Changing directory in one does not change the other. Use absolute paths for file tools.`,
 				capabilities: {
 					shell: capabilities.shell ?? (void 0 as never),
 					chatShell: capabilities.chatShell ?? (void 0 as never),

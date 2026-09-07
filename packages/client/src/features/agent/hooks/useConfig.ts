@@ -25,8 +25,13 @@ export const useConfig = () => {
 	const { messages } = useMessages();
 	const lastMessageConfig = useMemo(() => {
 		const messageList = messages.data?.pages.flatMap((p) => p.messages) ?? [];
-		const lastMessage = messageList.reduce((acc, curr) => {
-			return acc.createdAt.getTime() > curr.createdAt.getTime() ? acc : curr;
+		const lastMessage = messageList.reduce((current, candidate) => {
+			return Temporal.PlainDateTime.compare(
+				candidate.createdAt,
+				current.createdAt,
+			) > 0
+				? candidate
+				: current;
 		}, messageList[0]);
 		return lastMessage?.config ?? null;
 	}, [messages]);

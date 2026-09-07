@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { zConfig, type zDataPart } from "../../data/types/message.ts";
+import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
+import { zConfig } from "../../data/types/message.ts";
+import type { zDataPart } from "../../data/types/part.ts";
 import type { zAgentMessage } from "../types/agent.ts";
 import { AgentTokensService } from "./AgentTokensService.ts";
 
@@ -52,9 +53,9 @@ describe("AgentTokensService", () => {
 					},
 				]),
 				config: config(1_000),
-				createdAt: new Date("2026-01-01T00:00:00.000Z"),
+				createdAt: CommonUtils.parsePlainDateTime("2026-01-01T00:00:00.000Z"),
 			},
-		];
+		] satisfies zAgentMessage[];
 
 		const compacted = await AgentTokensService.compactMessages({
 			messages,
@@ -349,13 +350,11 @@ describe("AgentTokensService", () => {
 		expect(messages[0].data.flat()).toEqual(originalParts);
 	});
 
-	it("counts appended tool output in token estimates", () => {
+	it("counts interjection content in token estimates", () => {
 		const part: zDataPart = {
-			type: "toolResult",
-			id: "tool-1",
-			name: "read_file",
-			output: [{ type: "text", id: "output-1", value: "1234567" }],
-			append: [{ type: "text", id: "append-1", value: "1234567" }],
+			type: "interjection",
+			id: "interjection-1",
+			value: [{ type: "text", id: "text-1", value: "12345671234567" }],
 		};
 
 		expect(
@@ -366,7 +365,7 @@ describe("AgentTokensService", () => {
 						author: "MODEL",
 						config: config(1_000),
 						data: [[part]],
-						createdAt: new Date(),
+						createdAt: Temporal.Now.plainDateTimeISO("UTC"),
 					},
 				],
 			}).total,

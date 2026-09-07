@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 import { zConfig } from "../../data/types/message.ts";
 import { FileUtils } from "../../file/utils/FileUtils.ts";
@@ -68,7 +67,7 @@ describe("AgentMessagesService", () => {
 				data: [
 					[{ id: CommonUtils.getRandomId(), type: "text", value: "Hello" }],
 				],
-				createdAt: new Date("2026-01-01T00:00:00Z"),
+				createdAt: CommonUtils.parsePlainDateTime("2026-01-01T00:00:00Z"),
 			},
 			{
 				id: "2",
@@ -77,7 +76,7 @@ describe("AgentMessagesService", () => {
 				data: [
 					[{ id: CommonUtils.getRandomId(), type: "text", value: "Hi there" }],
 				],
-				createdAt: new Date("2026-01-01T00:00:01Z"),
+				createdAt: CommonUtils.parsePlainDateTime("2026-01-01T00:00:01Z"),
 			},
 			{
 				id: "3",
@@ -92,7 +91,7 @@ describe("AgentMessagesService", () => {
 						},
 					],
 				],
-				createdAt: new Date("2026-01-01T00:15:01Z"),
+				createdAt: CommonUtils.parsePlainDateTime("2026-01-01T00:15:01Z"),
 			},
 		];
 

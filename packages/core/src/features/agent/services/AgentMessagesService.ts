@@ -4,7 +4,7 @@ import type {
 } from "../../../core/types/capability.ts";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 import { VERBOSE } from "../../../logger.ts";
-import { Author, type zDataPart } from "../../data/types/message.ts";
+import type { zAttachmentPart, zDataPart } from "../../data/types/part.ts";
 import { DirectiveUtils } from "../../data/utils/DirectiveUtils.ts";
 import { FileOperationService } from "../../file/services/FileOperationService.ts";
 import { FileTypeUtils } from "../../file/utils/FileTypeUtils.ts";
@@ -185,9 +185,7 @@ export const AgentMessagesService = {
 		return { messages, customInstructions };
 	},
 
-	buildAttachmentParts: (
-		attachment: Extract<zDataPart, { type: "attachment" }>,
-	): zDataPart[] => {
+	buildAttachmentParts: (attachment: zAttachmentPart): zDataPart[] => {
 		const source = PathUtils.normalize({ path: attachment.source });
 		let content: zDataPart;
 
@@ -271,10 +269,10 @@ export const AgentMessagesService = {
 		timezone?: string;
 	}): zAgentMessage => {
 		const attributes = {
-			role: message.author === Author.USER ? "user" : "assistant",
+			role: message.author === "USER" ? "user" : "assistant",
 		} as Record<string, string>;
 
-		if (message.author === Author.MODEL) {
+		if (message.author === "MODEL") {
 			const model = message.config?.model;
 			if (model) attributes.model = model;
 		}
@@ -284,7 +282,7 @@ export const AgentMessagesService = {
 				date: message.createdAt,
 				timezone,
 			});
-			if (previous?.createdAt && message.author === Author.USER) {
+			if (previous?.createdAt && message.author === "USER") {
 				attributes.gap = CommonUtils.formatTimespan({
 					from: previous.createdAt,
 					to: message.createdAt,

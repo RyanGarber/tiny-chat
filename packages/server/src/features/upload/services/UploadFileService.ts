@@ -1,13 +1,11 @@
+import type { Enum } from "@tiny-chat/core/src/core/services/PostgresService.ts";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import { unzipSync } from "fflate";
 import sharp from "sharp";
-import {
-	Prisma,
-	type UploadKind,
-} from "../../../../generated/prisma/client.ts";
+import { selectAll } from "../../../db.ts";
 import { UploadUtils } from "../utils/UploadUtils.ts";
 
 /**
@@ -27,7 +25,7 @@ export const UploadFileService = {
 	}: {
 		user: zUser;
 		zip: [string, ArrayBufferLike][] | ArrayBufferLike;
-		kind: UploadKind;
+		kind: Enum["UploadKind"];
 		include?: (path: string) => boolean;
 		skipRoot?: boolean;
 		replaceName?: string;
@@ -68,16 +66,21 @@ export const UploadFileService = {
 	}: {
 		user: zUser;
 		files: [string, ArrayBufferLike][];
-		kind: UploadKind;
+		kind: Enum["UploadKind"];
 		name?: string;
 		include?: (path: string) => boolean;
 		replaceName?: string;
 	}) => {
 		const existing = replaceName
-			? await globalThis.prisma.upload.findFirst({
-					where: { userId: user.id, kind, name: replaceName },
-					include: { files: true },
-				})
+			? (
+					await globalThis.db.orm.public.Upload.where({
+						userId: user.id,
+						kind,
+						name: replaceName,
+					})
+						.include("files", (file) => selectAll(file, "public", "File"))
+						.all()
+				)[0]
 			: null;
 
 		const paths = new Set<string>();
@@ -113,7 +116,7 @@ export const UploadFileService = {
 			paths.add(path);
 
 			const existingFile = existing?.files.find((file) =>
-				PathUtils.equals(file.path, path),
+				PathUtils.equals([...file.path], path),
 			);
 
 			const preprocessed = await UploadFileService._preprocess({
@@ -158,17 +161,19 @@ export const UploadFileService = {
 		);
 
 		const uploadId = existing?.id ?? CommonUtils.getRandomId();
-		const upload = await globalThis.prisma.upload.upsert({
-			where: { id: uploadId },
+
+		const upload = await globalThis.db.orm.public.Upload.where({
+			id: uploadId,
+		}).upsert({
 			create: {
 				id: uploadId,
-				user: { connect: { id: user.id } },
+				userId: user.id,
 				name: replaceName ?? name ?? "",
 				thumbnail,
 				kind,
 			},
 			update: {
-				createdAt: new Date(),
+				createdAt: Temporal.Now.plainDateTimeISO("UTC"),
 				kind,
 			},
 		});
@@ -176,37 +181,29 @@ export const UploadFileService = {
 		// TODO - no transaction due to timeouts
 		await Promise.all([
 			...toCreate.map((file) =>
-				globalThis.prisma.file.create({
-					data: {
-						id: CommonUtils.getRandomId(),
-						user: { connect: { id: user.id } },
-						upload: { connect: { id: upload.id } },
-						path: file.path,
-						mime: file.mime,
-						data: new Uint8Array(file.data),
-					},
+				globalThis.db.orm.public.File.create({
+					id: CommonUtils.getRandomId(),
+					user: (_user) => _user.connect({ id: user.id }),
+					upload: (_upload) => _upload.connect({ id: uploadId }),
+					path: file.path,
+					mime: file.mime,
+					data: new Uint8Array(file.data),
 				}),
 			),
 			...toUpdate.map((file) =>
-				globalThis.prisma.file.update({
-					where: { id: file.id },
-					data: {
-						data: new Uint8Array(file.data),
-						mime: file.mime,
-					},
+				globalThis.db.orm.public.File.where({ id: file.id }).update({
+					data: new Uint8Array(file.data),
+					mime: file.mime,
 				}),
 			),
 			...toDelete.map((id) =>
-				globalThis.prisma.file.delete({
-					where: { id },
-				}),
+				globalThis.db.orm.public.File.where({ id }).delete(),
 			),
 		]);
 
-		if (toUpdate.length > 0) {
-			await globalThis.prisma
-				.$executeRaw`UPDATE file SET embedding = NULL WHERE id IN (${Prisma.join(toUpdate.map((file) => file.id))})`;
-		}
+		await globalThis.db.orm.public.File.where((file) =>
+			file.id.in(toUpdate.map((f) => f.id)),
+		).updateAndCount({ embedding: null });
 
 		return upload;
 	},

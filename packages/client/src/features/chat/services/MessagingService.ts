@@ -1,7 +1,5 @@
-import type {
-	MessageState,
-	zData,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { zData } from "@tiny-chat/core/src/features/data/types/part.ts";
 import type { Client } from "../../../client.ts";
 import { useConfigStore } from "../../agent/stores/useConfigStore.ts";
 import { AttachmentService } from "../../editor/services/AttachmentService.ts";
@@ -69,15 +67,17 @@ export const MessagingService = {
 	attachUpload: async ({
 		client,
 		upload,
+		file,
 	}: {
 		client: Client;
 		upload: { id: string; name: string };
+		file?: string;
 	}) => {
 		if (!client.input) throw new Error("missing client input");
 
 		await MessagingService.insertAttachment({
 			client,
-			item: AttachmentUtils.forUpload({ upload }),
+			item: AttachmentUtils.forUpload({ upload, file }),
 		});
 	},
 

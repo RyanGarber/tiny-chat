@@ -3,7 +3,6 @@ import { ClockIcon } from "@phosphor-icons/react";
 import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
 import { useActions } from "@tiny-chat/client/src/features/user/hooks/useActions.ts";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import { zData } from "@tiny-chat/core/src/features/data/types/message.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { useEffect, useMemo, useState } from "react";
 
@@ -17,7 +16,10 @@ export default function Actions() {
 				(a) =>
 					a.chatId === chat.data?.id &&
 					a.nextRunAt !== null &&
-					a.nextRunAt > new Date(),
+					Temporal.PlainDateTime.compare(
+						a.nextRunAt,
+						Temporal.Now.plainDateTimeISO("UTC"),
+					) > 0,
 			) ?? [],
 		[actions.data, chat.data],
 	);
@@ -53,9 +55,7 @@ export default function Actions() {
 										textOverflow: "ellipsis",
 									}}
 								>
-									{DataUtils.getTextCleaned({
-										data: zData.parse(action.data),
-									})}
+									{DataUtils.getTextCleaned(action)}
 								</Text>
 								<Text size="sm" style={{ whiteSpace: "nowrap" }}>
 									{action.nextRunAt &&

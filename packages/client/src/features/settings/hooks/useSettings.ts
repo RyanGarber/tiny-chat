@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import type { FolderLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
 import { zSettings } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { useCallback, useContext } from "react";
 import { ClientContext } from "../../../client.ts";
@@ -6,17 +7,25 @@ import { useSession } from "../../../core/hooks/useSession.ts";
 
 export const settingsQueryKey = ["useSettings", "settings"] as const;
 
-export const useSettings = () => {
+export const useSettings = ({
+	folder,
+}: {
+	folder?: FolderLike | null;
+} = {}) => {
 	const client = useContext(ClientContext);
 
 	const { session } = useSession();
 
+	const folderId = folder && typeof folder === "object" ? folder.id : folder;
+
 	const settings = useQuery({
-		queryKey: settingsQueryKey,
+		queryKey: [...settingsQueryKey, folderId],
 		queryFn: async () => {
-			return client.api.settings.get.query();
+			return await client.api.settings.get.query({ folder: folderId });
 		},
-		placeholderData: zSettings.safeParse(session.data?.user?.settings).data,
+		initialData: !folderId
+			? zSettings.safeParse(session.data?.user?.settings).data
+			: undefined,
 		refetchOnWindowFocus: false,
 		refetchOnReconnect: false,
 		staleTime: Infinity,
@@ -24,10 +33,10 @@ export const useSettings = () => {
 
 	const applySettings = useCallback(
 		(settings: zSettings) => {
-			client.queryClient.setQueryData(settingsQueryKey, settings);
+			client.queryClient.setQueryData([...settingsQueryKey, folder], settings);
 			return true;
 		},
-		[client.queryClient],
+		[client.queryClient, folder],
 	);
 
 	return { settings, applySettings };

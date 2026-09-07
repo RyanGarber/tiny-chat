@@ -1,5 +1,5 @@
+import { ComponentUtils } from "@tiny-chat/client/src/core/utils/ComponentUtils.ts";
 import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
-import { ComponentUtils } from "@tiny-chat/client/src/features/message/utils/ComponentUtils.ts";
 import { SourceUtils } from "@tiny-chat/core/src/features/data/utils/SourceUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import type { ExtraProps } from "hast-util-to-jsx-runtime";
@@ -336,9 +336,10 @@ const MarkComponent: Components["mark"] = ({ children, node }) => {
 	// Read per-citation rather than through the markdown context: sources change
 	// whenever a chat-scoped query settles, and only this component cares.
 	const sources = useMessageStore((s) => s.sources);
-	const keys = ComponentUtils.props(node, { sources: "" }).sources.split(
-		/[\s;,]+/,
-	);
+	const keys = SourceUtils.matchKeys({
+		sources,
+		keys: ComponentUtils.props(node, { sources: "" }).sources,
+	});
 	const text = ComponentUtils.text({ children });
 	return (
 		<Text>

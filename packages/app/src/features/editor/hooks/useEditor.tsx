@@ -1,5 +1,6 @@
 import { useHotkeys } from "@mantine/hooks";
 import { MarkdownDataUtils } from "@tiny-chat/client/src/features/message/utils/MarkdownDataUtils.ts";
+import { MarkdownUtils } from "@tiny-chat/client/src/features/message/utils/MarkdownUtils.ts";
 import { Markdown } from "@tiptap/markdown";
 import type { Slice } from "@tiptap/pm/model";
 import { Selection } from "@tiptap/pm/state";
@@ -18,9 +19,7 @@ import {
 	useState,
 } from "react";
 import { useMessaging } from "#client/src/features/chat/hooks/useMessaging.ts";
-import { MarkdownPreprocessorUtils } from "#client/src/features/message/utils/MarkdownPreprocessorUtils.ts";
 import { useUploads } from "#client/src/features/upload/hooks/useUploads.ts";
-import { UploadKind } from "#core/features/file/types/upload";
 import { useAttachment } from "../hooks/useAttachment.tsx";
 import { useBlockquote } from "../hooks/useBlockquote.tsx";
 import { useCodeBlock } from "../hooks/useCodeBlock.tsx";
@@ -140,7 +139,7 @@ export const useEditor = ({
 					if (item.kind === "file") {
 						const file = item.getAsFile();
 						if (file) {
-							upload.mutate({ kind: UploadKind.ATTACHMENT, file });
+							upload.mutate({ kind: "ATTACHMENT", file });
 							uploaded = true;
 						}
 					}
@@ -198,7 +197,7 @@ export const useEditor = ({
 			};
 			const parseMarkdown = markdown.parse.bind(markdown);
 			markdown.parse = (source) =>
-				parseMarkdown(MarkdownPreprocessorUtils.preprocess(source));
+				parseMarkdown(MarkdownUtils.normalize(source));
 
 			markdown.encodeTextForMarkdown = function (
 				text: string,

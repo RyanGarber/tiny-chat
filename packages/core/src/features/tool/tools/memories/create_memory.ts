@@ -1,7 +1,7 @@
 import { z } from "zod";
+import { Enum } from "../../../../core/services/PostgresService.ts";
 import type { MemoriesCapability } from "../../../../core/types/capability.ts";
 import { zId } from "../../../../core/types/common.ts";
-import { MemoryCategory, MemoryStability } from "../../../data/types/memory.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
 export const create_memory = {
@@ -10,10 +10,10 @@ export const create_memory = {
 	input: z.object({
 		fact: z.string().describe("The fact about the user."),
 		category: z
-			.enum(MemoryCategory)
+			.enum(Enum.MemoryCategory.values)
 			.describe("The category the fact belongs to."),
 		stability: z
-			.enum(MemoryStability)
+			.enum(Enum.MemoryStability.values)
 			.describe("How long the fact is expected to remain true."),
 		evidence: z
 			.union([z.string(), z.array(z.string())])

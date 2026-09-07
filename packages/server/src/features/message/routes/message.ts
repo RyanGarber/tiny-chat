@@ -1,12 +1,14 @@
+import { Enum } from "@tiny-chat/core/src/core/services/PostgresService.ts";
 import { zId } from "@tiny-chat/core/src/core/types/common.ts";
 import { ChatLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
 import {
-	Author,
 	MessageLike,
 	zConfig,
+} from "@tiny-chat/core/src/features/data/types/message.ts";
+import {
 	zData,
 	zMetadata,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
+} from "@tiny-chat/core/src/features/data/types/part.ts";
 import { z } from "zod";
 import { procedure, router } from "../../../index.ts";
 import { MessageService } from "../services/MessageService.ts";
@@ -49,7 +51,7 @@ export const message = router({
 			z.object({
 				chat: ChatLike.nullish(),
 				folderId: z.string().nullish(),
-				author: z.enum(Author),
+				author: z.enum(Enum.Author.values),
 				config: zConfig,
 				data: zData,
 				metadata: zMetadata,
@@ -77,7 +79,7 @@ export const message = router({
 		.input(
 			z.object({
 				message: MessageLike,
-				author: z.enum(Author),
+				author: z.enum(Enum.Author.values),
 				config: zConfig,
 				data: zData,
 				metadata: zMetadata,
@@ -100,7 +102,7 @@ export const message = router({
 		.input(
 			z.object({
 				message: MessageLike,
-				author: z.enum(Author),
+				author: z.enum(Enum.Author.values),
 				config: zConfig,
 				data: zData,
 				metadata: zMetadata,

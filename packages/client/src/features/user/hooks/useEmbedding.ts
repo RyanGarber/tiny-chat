@@ -9,7 +9,7 @@ import { useEmbeddingSettings } from "../../settings/hooks/useEmbeddingSettings.
 export type EmbeddingStatus = {
 	batch: Awaited<
 		ReturnType<Client["api"]["embedding"]["getMissingEmbeddings"]["query"]>
-	>;
+	> | null;
 	batchCount: number;
 	totalCount: number;
 };
@@ -35,6 +35,15 @@ export const useEmbedding = () => {
 			const missing = await client.api.embedding.getMissingEmbeddings.query({
 				limit: 4,
 			});
+			const total = Object.values(missing).reduce(
+				(sum, arr) => sum + arr.length,
+				0,
+			);
+			if (total === 0) {
+				console.log("[useEmbedding] no missing embeddings");
+				return null;
+			}
+
 			console.log("[useEmbedding] incoming batch:", missing);
 
 			return missing;
@@ -47,10 +56,8 @@ export const useEmbedding = () => {
 	const runEmbeddingBatch = useMutation({
 		mutationKey: runEmbeddingBatchMutationKey,
 		mutationFn: async (
-			batch: NonNullable<
-				Awaited<
-					ReturnType<typeof client.api.embedding.getMissingEmbeddings.query>
-				>
+			batch: Awaited<
+				ReturnType<typeof client.api.embedding.getMissingEmbeddings.query>
 			>,
 		) => {
 			if (!session.data || !embeddingConfig) return;

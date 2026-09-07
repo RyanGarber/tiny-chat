@@ -1,10 +1,11 @@
 import { z } from "zod";
+import { Enum } from "../../../../core/services/PostgresService.ts";
 import type {
 	EmbeddingCapability,
 	MemoriesCapability,
 } from "../../../../core/types/capability.ts";
 import { zId } from "../../../../core/types/common.ts";
-import { MemoryCategory, MemoryStability } from "../../../data/types/memory.ts";
+import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
 export const search_memories = {
@@ -16,8 +17,8 @@ export const search_memories = {
 	output: z.object({
 		id: zId,
 		fact: z.string(),
-		category: z.enum(MemoryCategory),
-		stability: z.enum(MemoryStability),
+		category: z.enum(Enum.MemoryCategory.values),
+		stability: z.enum(Enum.MemoryStability.values),
 		created_at: z.date(),
 		evidence: z.array(z.string()),
 		confidence: z.number(),
@@ -54,8 +55,8 @@ export const createSearchMemoriesTool: ToolFactory<
 				fact: memory.fact,
 				category: memory.category,
 				stability: memory.stability,
-				created_at: memory.createdAt,
-				evidence: memory.evidence,
+				created_at: CommonUtils.toDate(memory.createdAt),
+				evidence: [...memory.evidence],
 				confidence: memory.confidence,
 			},
 		}));

@@ -1,7 +1,7 @@
 import {
 	ActionIcon,
 	Badge,
-	Box,
+	Card,
 	Center,
 	Group,
 	ScrollArea,
@@ -20,7 +20,6 @@ import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { useState } from "react";
 import { client } from "#app/client.ts";
 import Sentinel from "#app/core/components/Sentinel.tsx";
-import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 import { MessagingService } from "#client/src/features/chat/services/MessagingService.ts";
 import { useUploads } from "#client/src/features/upload/hooks/useUploads.ts";
 
@@ -86,12 +85,11 @@ export function GitHubUploads({ close }: { close: () => void }) {
 								: undefined;
 
 							return (
-								<Box
+								<Card
 									key={repo.id}
 									p="xs"
-									bdrs="lg"
+									withBorder
 									style={{
-										...StyleUtils.glass,
 										cursor: existing ? "pointer" : "default",
 									}}
 									onClick={() => {
@@ -190,7 +188,7 @@ export function GitHubUploads({ close }: { close: () => void }) {
 											)}
 										</Stack>
 									</Group>
-								</Box>
+								</Card>
 							);
 						})}
 						<Sentinel isFetching={repos.isFetching} />

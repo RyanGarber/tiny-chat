@@ -1,6 +1,8 @@
-import type { FilesystemSpec } from "../types/file.ts";
+import type { Model } from "../../../core/services/PostgresService.ts";
+import type { PartialBy } from "../../../core/types/common.ts";
+import type { FileState, FilesystemSpec } from "../types/file.ts";
 import { FileTypeUtils } from "./FileTypeUtils.ts";
-import type { FileMount } from "./PathUtils.ts";
+import { type FileMount, PathUtils } from "./PathUtils.ts";
 
 export interface Descendent<T> {
 	children: Map<string, Descendent<T>>;
@@ -8,6 +10,29 @@ export interface Descendent<T> {
 }
 
 export const FileUtils = {
+	toFileState: (
+		{ embedding, ...file }: PartialBy<Model["File"], "embedding">,
+		mount?: FileMount,
+		root = PathUtils.mount,
+	): FileState => {
+		return {
+			...file,
+			uri: PathUtils.toMount({
+				mount: mount ?? (file.chatId ? "chat" : "uploads"),
+				id: file.chatId ?? file.uploadId,
+				path: file.path,
+				root,
+			}),
+		};
+	},
+
+	toFileStates: (
+		files: PartialBy<Model["File"], "embedding">[],
+		mount?: FileMount,
+	) => {
+		return files.map((file) => FileUtils.toFileState(file, mount));
+	},
+
 	/**
 	 * The same mount with one more upload or skill in it.
 	 *

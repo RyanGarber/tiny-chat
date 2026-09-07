@@ -81,20 +81,24 @@ export const AttachmentUtils = {
 	 */
 	forUpload: ({
 		upload,
+		file,
 	}: {
 		upload: { id: string; name: string };
-	}): AttachmentItem => ({
-		name: upload.name,
-		// A directive's attributes are read back out of a quoted, braced run, so
-		// a name carrying either of those would cut the directive short.
-		label: upload.name.replace(/["}]/g, ""),
-		value: PathUtils.toMount({ mount: "uploads", id: upload.id }),
-		// An upload stands on its own, so it can be walked into whether or not
-		// anything points at it yet — under its id, which is where it lives.
-		path: ["uploads", upload.id].join("/"),
-		directory: true,
-		traversable: true,
-	}),
+		file?: string;
+	}): AttachmentItem => {
+		return {
+			name: upload.name,
+			// A directive's attributes are read back out of a quoted, braced run, so
+			// a name carrying either of those would cut the directive short.
+			label: upload.name.replace(/["}]/g, ""),
+			value: PathUtils.toMount({ mount: "uploads", id: upload.id, path: file }),
+			// An upload stands on its own, so it can be walked into whether or not
+			// anything points at it yet — under its id, which is where it lives.
+			path: ["uploads", upload.id, ...(file ? [file] : [])].join("/"),
+			directory: !file,
+			traversable: !file,
+		};
+	},
 
 	/**
 	 * Write the chosen attachment into a plain text buffer as an atom standing

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { ActionsCapability } from "../../../../core/types/capability.ts";
 import { zId } from "../../../../core/types/common.ts";
-import { zData } from "../../../data/types/message.ts";
+import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
 import { DataUtils } from "../../../data/utils/DataUtils.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
@@ -30,9 +30,9 @@ export const createListActionsTool: ToolFactory<
 			value: {
 				id: action.id,
 				chat_id: action.chatId,
-				prompt: DataUtils.getText({ data: zData.parse(action.data) }),
-				created_at: action.createdAt,
-				next_run_at: action.nextRunAt,
+				prompt: DataUtils.getText(action),
+				created_at: CommonUtils.toDate(action.createdAt),
+				next_run_at: CommonUtils.toDate(action.nextRunAt),
 			},
 		}));
 	},

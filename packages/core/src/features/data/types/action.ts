@@ -1,6 +1,9 @@
-import type { Action } from "../../../../../server/generated/prisma/browser.ts";
-import type { zData } from "./message.ts";
+import type { Model } from "../../../core/services/PostgresService.ts";
+import type { zData } from "./part.ts";
 
-export type ActionState = Action & { chatId: string; data: zData } & {
-	nextRunAt: Date | null;
+export type ActionState = Omit<Model["Action"], "embedding"> & {
+	chatId: string;
+	data: zData;
+} & {
+	nextRunAt: Temporal.PlainDateTime | null;
 };

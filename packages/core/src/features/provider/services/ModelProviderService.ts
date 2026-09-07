@@ -78,7 +78,7 @@ export const ModelProviderService = {
 		if (!model || !sdkModel)
 			throw new Error(`model not found: ${config.model}`);
 
-		config = ModelProviderUtils.getConfigDefaults({ config, args: model.args });
+		config = ModelProviderUtils.applyDefaultArgs({ config, args: model.args });
 
 		const events: TextStreamPart<any>[] = [];
 

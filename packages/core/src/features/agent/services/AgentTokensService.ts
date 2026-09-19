@@ -8,6 +8,7 @@ import type {
 	zTextPart,
 	zToolResultPart,
 } from "../../data/types/part.ts";
+import { EditorPartUtils } from "../../data/utils/EditorPartUtils.ts";
 import { FileUtils } from "../../file/utils/FileUtils.ts";
 import type { zAgentMessage } from "../types/agent.ts";
 
@@ -65,7 +66,7 @@ export type TokenizationResult = {
 	total: number;
 };
 
-export type CompactionType = "trimmed" | "dropped";
+type CompactionType = "trimmed" | "dropped";
 export type Compaction = Map<string, CompactionType>;
 
 export type CompactionResult = {
@@ -104,6 +105,8 @@ const getPartLength = (part: zDataPart | zDataSimplePart): number => {
 	if (part.type === "file") return part.data.length * (2 / 3);
 	if (part.type === "json") return getSerializedLength(part.value);
 	if (part.type === "attachment") return getSerializedLength(part.content);
+	if (part.type === "quote" || part.type === "paste") return part.text.length;
+	if (part.type === "command") return EditorPartUtils.toMarkdown(part).length;
 	return 0;
 };
 

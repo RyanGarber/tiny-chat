@@ -18,10 +18,10 @@ const WEB = "web:";
  * Only `chat` is writable. An upload or a skill is the same file for every chat
  * that points at it, so a chat that wants to change one copies it across first.
  */
-export const FileMounts = ["uploads", "skills", "chat"] as const;
+const FileMounts = ["uploads", "skills", "chat"] as const;
 export type FileMount = (typeof FileMounts)[number];
 
-export const HOSTNAME_REGEX = /^https?:\/\/?(?:www\.)?([^/]+)/i;
+const HOSTNAME_REGEX = /^https?:\/\/?(?:www\.)?([^/]+)/i;
 
 export const PathUtils = {
 	mount: MOUNT,

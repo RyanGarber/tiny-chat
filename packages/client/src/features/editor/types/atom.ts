@@ -1,23 +1,25 @@
+import type { EditorPartType } from "@tiny-chat/core/src/features/data/utils/EditorPartUtils.ts";
+
 /**
  * The kinds of run a plain text buffer only ever handles whole. Each one is
  * also the label the run is painted under.
  */
-export type AtomKind = "command" | "attachment" | "paste" | "quote";
+export type AtomKind = EditorPartType;
 
 /**
  * A run of a plain text buffer that stands in for something longer.
  *
- * Commands, attachments and long pastes all travel with a message as Markdown
- * directives — which are far too long to type against. The buffer holds
- * {@link Atom.text} in its place, and the Markdown is written back in at
- * serialization.
+ * Commands, attachments and long pastes all travel with a message as parts —
+ * which cannot be typed against at all. The buffer holds {@link Atom.text} in
+ * their place, and the part is looked up by {@link Atom.id} whenever the run
+ * has to be read as what it stands for.
  */
 export interface Atom {
 	kind: AtomKind;
 	/** What stands in the buffer, which is also what identifies the atom. */
 	text: string;
-	/** The Markdown the atom is written back out as. */
-	markdown: string;
+	/** The part in the editor registry this run stands for. */
+	id: string;
 }
 
 /**

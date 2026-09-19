@@ -7,21 +7,21 @@
 		"test": "vitest run"
 	},
 	"dependencies": {
-		"@ai-sdk/amazon-bedrock": "^5.0.87",
-		"@ai-sdk/anthropic": "^4.0.57",
-		"@ai-sdk/azure": "^4.0.74",
-		"@ai-sdk/google": "^4.0.75",
-		"@ai-sdk/openai": "^4.0.70",
-		"@ai-sdk/openai-compatible": "^3.0.52",
+		"@ai-sdk/amazon-bedrock": "^5.0.88",
+		"@ai-sdk/anthropic": "^4.0.58",
+		"@ai-sdk/azure": "^4.0.75",
+		"@ai-sdk/google": "^4.0.76",
+		"@ai-sdk/openai": "^4.0.71",
+		"@ai-sdk/openai-compatible": "^3.0.53",
 		"@ai-sdk/provider": "^4.0.17",
 		"@anthropic-ai/sdk": "^0.127.0",
-		"@prisma/orm-extension-paradedb": "8.0.0-rc.10",
+		"@prisma/orm-extension-paradedb": "8.0.0-rc.11",
 		"@prisma/orm-extension-pgvector": "npm:@ryangarber/prisma-orm-extension-pgvector@latest",
-		"@prisma/orm-postgres": "8.0.0-rc.10",
+		"@prisma/orm-postgres": "8.0.0-rc.11",
 		"@ryangarber/ai-sdk-antigravity-proxy": "^0.1.4",
 		"@ryangarber/legiscan-ts": "^2.1.2",
 		"@ryangarber/markitdown-ts": "^0.1.5",
-		"@ryangarber/prisma-orm-extension-zod": "0.2.3",
+		"@ryangarber/prisma-orm-extension-zod": "^0.2.4",
 		"diff": "^9.0.0",
 		"fastest-levenshtein": "^1.0.16",
 		"file-type": "^22.1.1",
@@ -30,7 +30,7 @@
 		"fuzzysort": "^4.0.2",
 		"mime": "^4.1.0",
 		"nanoid": "^6.0.1",
-		"openai": "^7.18.0",
+		"openai": "^7.19.0",
 		"rrule": "^2.8.1",
 		"shiki": "^4.4.3",
 		"timeago.js": "^4.0.2",
@@ -39,7 +39,6 @@
 		"voyage-ai-provider": "^5.0.0"
 	},
 	"devDependencies": {
-		"chalk": "^6.0.0",
-		"prisma": "8.0.0-rc.15"
+		"chalk": "^6.0.0"
 	}
 }

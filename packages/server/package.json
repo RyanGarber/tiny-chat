@@ -9,22 +9,18 @@
 		"test": "vitest run"
 	},
 	"dependencies": {
-		"@prisma/orm-extension-paradedb": "8.0.0-rc.10",
+		"@prisma/orm-extension-paradedb": "8.0.0-rc.11",
 		"@prisma/orm-extension-pgvector": "npm:@ryangarber/prisma-orm-extension-pgvector@latest",
-		"@prisma/orm-postgres": "8.0.0-rc.10",
+		"@prisma/orm-postgres": "8.0.0-rc.11",
 		"@ryangarber/ai-sdk-antigravity-proxy": "^0.1.4",
-		"@ryangarber/legiscan-ts": "^2.1.2",
-		"@ryangarber/prisma-orm-extension-zod": "0.2.3",
 		"@tiny-chat/core": "workspace:*",
 		"chalk": "^6.0.0",
 		"fflate": "^0.8.3",
 		"internal-ip": "^9.0.0",
 		"just-bash": "^3.4.2",
-		"rrule": "^2.8.1",
 		"sharp": "^0.35.4"
 	},
 	"devDependencies": {
-		"prisma": "8.0.0-rc.15",
-		"tsdown": "^0.23.0"
+		"prisma": "8.0.0-rc.15"
 	}
 }

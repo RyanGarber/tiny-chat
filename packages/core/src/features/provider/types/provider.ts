@@ -1,12 +1,12 @@
 import { z } from "zod";
 import type { zUser } from "../../data/types/user.ts";
 
-export const zProvider = z.object({
+const zProvider = z.object({
 	name: z.string(),
 	type: z.enum(["model", "web", "other"]),
 	settings: z.array(z.string()),
 });
-export type zProvider = z.infer<typeof zProvider>;
+type zProvider = z.infer<typeof zProvider>;
 
 export interface ProviderStatus {
 	valid: boolean;

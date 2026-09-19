@@ -1,8 +1,10 @@
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { AgentService } from "@tiny-chat/core/src/features/agent/services/AgentService.ts";
-import type { zAgentContext } from "@tiny-chat/core/src/features/agent/types/agent.ts";
+import type {
+	zAgentChat,
+	zAgentContext,
+} from "@tiny-chat/core/src/features/agent/types/agent.ts";
 import { AgentUtils } from "@tiny-chat/core/src/features/agent/utils/AgentUtils.ts";
-import type { ChatState } from "@tiny-chat/core/src/features/data/types/chat.ts";
 import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type {
 	zData,
@@ -50,7 +52,7 @@ export const ClientAgentService = {
 		context: zAgentContext;
 		data?: zData;
 		metadata?: zMetadata;
-		chat: ChatState;
+		chat: zAgentChat;
 		prompt: MessageState;
 		skills: zSkill[];
 		mcpTools: Toolset<any>[];
@@ -185,7 +187,7 @@ export const ClientAgentService = {
 	}: {
 		client: Client;
 		user: zUser;
-		chat: ChatState;
+		chat: zAgentChat;
 		part: zToolCallPart;
 		feedback: unknown;
 		message: MessageState;

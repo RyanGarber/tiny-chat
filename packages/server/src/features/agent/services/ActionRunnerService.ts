@@ -1,5 +1,4 @@
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { ChatService } from "../../chat/services/ChatService.ts";
 import { MessageService } from "../../message/services/MessageService.ts";
 import { MessageUtils } from "../../message/utils/MessageUtils.ts";
@@ -56,7 +55,7 @@ export const ActionRunnerService = {
 					}).update({
 						lastRanAt: cutoff,
 					});
-					const user = zUser.parse(action.user);
+					const user = action.user;
 					const chat = await ChatService.getChat({
 						user,
 						chat: action.message.chatId,

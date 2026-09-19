@@ -2,9 +2,9 @@ import { Text } from "@mantine/core";
 import { ClientContext } from "@tiny-chat/client/src/client.ts";
 import { useAttachments } from "@tiny-chat/client/src/features/editor/hooks/useAttachments.ts";
 import { AttachmentService } from "@tiny-chat/client/src/features/editor/services/AttachmentService.ts";
+import { useEditorPartStore } from "@tiny-chat/client/src/features/editor/stores/useEditorPartStore.ts";
 import type { AttachmentItem } from "@tiny-chat/client/src/features/editor/types/attachment.ts";
 import { AttachmentUtils } from "@tiny-chat/client/src/features/editor/utils/AttachmentUtils.ts";
-import { useMarkdownDataStore } from "@tiny-chat/client/src/features/message/stores/useMarkdownDataStore.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import { PluginKey } from "@tiptap/pm/state";
 import { Node, NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
@@ -74,7 +74,7 @@ const Attachment = Node.create({
 			{ as: "attachment", attrs: ({ node }) => node.attrs },
 		);
 	},
-	...NodeUtils.createInlineDirective({
+	...NodeUtils.createPointerDirective({
 		nodeName: "attachment",
 	}),
 	addProseMirrorPlugins() {
@@ -192,8 +192,8 @@ export const useAttachment = () => {
 };
 
 function AttachmentNodeView({ id }: { id: string }) {
-	const attachment = useMarkdownDataStore((state) => state.attachments[id]);
-	if (!attachment) return null;
+	const attachment = useEditorPartStore((state) => state.parts[id]);
+	if (attachment?.type !== "attachment") return null;
 	return (
 		<NodeViewWrapper as="span" contentEditable={false} data-drag-handle>
 			<AttachmentView

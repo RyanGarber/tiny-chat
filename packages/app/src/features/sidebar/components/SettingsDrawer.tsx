@@ -1,4 +1,4 @@
-import { ActionIcon, Drawer, Group, Tabs } from "@mantine/core";
+import { ActionIcon, Drawer, Group, ScrollArea, Tabs } from "@mantine/core";
 import {
 	ChatCircleIcon,
 	KeyIcon,
@@ -7,10 +7,10 @@ import {
 } from "@phosphor-icons/react";
 import type { EmbeddingStatus } from "@tiny-chat/client/src/features/user/hooks/useEmbedding.ts";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
+import scrollable from "#app/core/styles/scrollable.module.css";
 import AppSettings from "#app/features/sidebar/components/AppSettings.tsx";
 import ChatSettings from "#app/features/sidebar/components/ChatSettings.tsx";
 import KeysSettings from "#app/features/sidebar/components/KeysSettings.tsx";
-
 export default function SettingsDrawer({
 	opened,
 	onClose,
@@ -38,8 +38,16 @@ export default function SettingsDrawer({
 					</ActionIcon>
 				</Group>
 			}
+			classNames={scrollable}
 		>
-			<Tabs defaultValue="app" variant="pills">
+			<Tabs
+				defaultValue="app"
+				variant="pills"
+				display="flex"
+				flex={1}
+				mih={0}
+				style={{ flexDirection: "column" }}
+			>
 				<Tabs.List mb="lg">
 					<Tabs.Tab
 						value="app"
@@ -54,14 +62,20 @@ export default function SettingsDrawer({
 						Keys
 					</Tabs.Tab>
 				</Tabs.List>
-				<Tabs.Panel value="app">
-					<AppSettings />
+				<Tabs.Panel value="app" flex={1} mih={0} h={0}>
+					<ScrollArea h="100%" offsetScrollbars>
+						<AppSettings />
+					</ScrollArea>
 				</Tabs.Panel>
-				<Tabs.Panel value="chat">
-					<ChatSettings embeddingStatus={embeddingStatus} />
+				<Tabs.Panel value="chat" flex={1} mih={0} h={0}>
+					<ScrollArea h="100%" offsetScrollbars>
+						<ChatSettings embeddingStatus={embeddingStatus} />
+					</ScrollArea>
 				</Tabs.Panel>
-				<Tabs.Panel value="keys">
-					<KeysSettings />
+				<Tabs.Panel value="keys" flex={1} mih={0} h={0}>
+					<ScrollArea h="100%" offsetScrollbars>
+						<KeysSettings />
+					</ScrollArea>
 				</Tabs.Panel>
 			</Tabs>
 		</Drawer>

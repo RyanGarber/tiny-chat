@@ -154,21 +154,36 @@ describe("AgentMessagesService", () => {
 	});
 
 	it("builds a file tree from a directory", () => {
+		const tree = FileUtils.toTree({
+			nodes: [
+				{
+					path: ["README.md"],
+					uri: "/mnt/uploads/UPLOAD_ID/README.md",
+				},
+				{
+					path: ["src", "gen", "lib", "main.so"],
+					uri: "/mnt/uploads/UPLOAD_ID/src/gen/lib/main.so",
+				},
+			],
+		});
+
 		expect(
 			AgentMessagesService.buildTree({
-				tree: FileUtils.toTree({
-					nodes: [
-						{
-							path: ["README.md"],
-							uri: "/mnt/uploads/UPLOAD_ID/README.md",
-						},
-						{
-							path: ["src", "gen", "lib", "main.so"],
-							uri: "/mnt/uploads/UPLOAD_ID/src/gen/lib/main.so",
-						},
-					],
-				}),
+				tree,
 				depth: 1,
+			}),
+		).toEqual(
+			`  <file name="README.md" path="${PathUtils.toMount({ mount: "uploads", id: "UPLOAD_ID", path: ["README.md"] })}" />
+  <folder name="src">
+    <folder name="gen" />
+  </folder>`,
+		);
+
+		expect(
+			AgentMessagesService.buildTree({
+				tree,
+				depth: 1,
+				maxDepth: 4,
 			}),
 		).toEqual(
 			`  <file name="README.md" path="${PathUtils.toMount({ mount: "uploads", id: "UPLOAD_ID", path: ["README.md"] })}" />

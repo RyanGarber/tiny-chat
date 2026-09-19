@@ -1,20 +1,18 @@
 import { and } from "@prisma/orm-postgres/orm-client";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
 import { MessageBranchUtils } from "@tiny-chat/core/src/features/data/utils/MessageBranchUtils.ts";
 import { search_chats } from "@tiny-chat/core/src/features/tool/tools/memories/search_chats.ts";
 import { search_memories } from "@tiny-chat/core/src/features/tool/tools/memories/search_memories.ts";
-import {
-	DREAM_MEMORY_TOKENS,
-	MemoryRetrievalService,
-} from "../../chat/services/MemoryRetrievalService.ts";
+import { MemoryRetrievalService } from "../../chat/services/MemoryRetrievalService.ts";
 import { MessageUtils } from "../../message/utils/MessageUtils.ts";
 import { ServerAgentService } from "./ServerAgentService.ts";
 
 let running = false;
 
-export const DREAM_INSTRUCTIONS = `
+const DREAM_MEMORY_TOKENS = 12_000;
+
+const DREAM_INSTRUCTIONS = `
 You are a memory curator. Maintain a small, durable, high-signal profile of the user for use in future conversations. Your job is not to summarize the transcript.
 
 Use the memory mutation tools to make every warranted change. If no change is warranted, make no tool calls. Do not merely recommend changes in prose.
@@ -56,13 +54,11 @@ export const DreamRunnerService = {
 		if (running) return;
 		running = true;
 		try {
-			const users = (
-				await globalThis.db.orm.public.User.where(
-					testUserId ? { id: testUserId } : { isEphemeral: false },
-				)
-					.select("id", "name", "settings", "isEphemeral")
-					.all()
-			).map((user) => zUser.parse(user));
+			const users = await globalThis.db.orm.public.User.where(
+				testUserId ? { id: testUserId } : { isEphemeral: false },
+			)
+				.select("id", "name", "settings", "isEphemeral")
+				.all();
 
 			const cutoff = Temporal.Now.plainDateTimeISO("UTC").subtract({ days: 1 });
 

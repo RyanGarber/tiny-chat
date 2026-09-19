@@ -7,7 +7,6 @@ import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { createClient } from "@tiny-chat/client/src/client.ts";
 import { AtomUtils } from "@tiny-chat/client/src/features/editor/utils/AtomUtils.ts";
 import { MarkdownDataUtils } from "@tiny-chat/client/src/features/message/utils/MarkdownDataUtils.ts";
-import type { zEnv } from "@tiny-chat/core/src/core/types/env.ts";
 import { KeyringService } from "./core/services/KeyringService.ts";
 import { StorageService } from "./core/services/StorageService.ts";
 import { CliUtils } from "./core/utils/CliUtils.ts";
@@ -25,7 +24,7 @@ export const client = createClient({
 		VITE_WEB_URL: String(process.env.VITE_WEB_URL),
 		VITE_WEB_PORT: String(process.env.VITE_WEB_PORT),
 		DEV: String(process.env.DEV),
-	} satisfies zEnv,
+	},
 	getToken: () => KeyringService.getSessionToken(),
 	setToken: (token) => KeyringService.setSessionToken(token ?? ""),
 	getStorage: (key) => StorageService.get(key),

@@ -8,6 +8,7 @@ import { ApiService } from "./core/services/ApiService.ts";
 import { AuthService } from "./core/services/AuthService.ts";
 import { ActionRunnerService } from "./features/agent/services/ActionRunnerService.ts";
 import { DreamRunnerService } from "./features/agent/services/DreamRunnerService.ts";
+import { EmbeddingRunnerService } from "./features/embedding/services/EmbeddingRunnerService.ts";
 import { AntigravityService } from "./features/proxy/services/AntigravityService.ts";
 import { McpService } from "./features/proxy/services/McpService.ts";
 
@@ -57,6 +58,7 @@ if (import.meta.main) {
 		const work = async () => {
 			await ActionRunnerService.next();
 			await DreamRunnerService.next();
+			await EmbeddingRunnerService.next();
 			setTimeout(() => void work(), 5 * 1000);
 		};
 		void work();

@@ -36,7 +36,7 @@ export const useCommands = ({
 
 	const { providers, updateProviders } = useProviders();
 	const { skills, localSkills } = useSkills();
-	const { mcpTools } = useTools();
+	const { refreshMcpServers } = useTools();
 	const { config, setConfig, modelArgs, setModelArg } = useConfig();
 	const { presets, setPreset, unsetPreset } = usePresets();
 
@@ -82,8 +82,8 @@ export const useCommands = ({
 	const localSkillsRef = useRef(localSkills);
 	localSkillsRef.current = localSkills;
 
-	const mcpToolsRef = useRef(mcpTools);
-	mcpToolsRef.current = mcpTools;
+	const refreshMcpServersRef = useRef(refreshMcpServers);
+	refreshMcpServersRef.current = refreshMcpServers;
 
 	const getCommands = useCallback((): CommandGroup[] => {
 		const models: CommandChoiceGroup[] =
@@ -234,9 +234,9 @@ export const useCommands = ({
 						name: "reload",
 						value: "reload",
 						run: () => {
-							updateProvidersRef.current.mutate();
+							updateProvidersRef.current.mutate({});
 							void localSkillsRef.current.refetch();
-							void mcpToolsRef.current.refetch();
+							refreshMcpServersRef.current.mutate({});
 						},
 					},
 					{

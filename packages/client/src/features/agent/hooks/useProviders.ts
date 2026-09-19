@@ -1,5 +1,5 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useContext } from "react";
+import { useMutation, useMutationState, useQuery } from "@tanstack/react-query";
+import { useCallback, useContext } from "react";
 import { ClientContext } from "../../../client.ts";
 import { useSession } from "../../../core/hooks/useSession.ts";
 import { ClientProviderService } from "../services/ClientProviderService.ts";
@@ -7,13 +7,20 @@ import { ClientProviderService } from "../services/ClientProviderService.ts";
 const providerCacheQueryKey = ["cache", "providers"] as const;
 export const providerCacheMutationKey = ["cache", "providers"] as const;
 
+interface UpdateProvidersVariables {
+	/** Only recheck these providers, leaving the rest of the cache alone. */
+	providers?: string[];
+}
+
 export const useProviders = () => {
 	const client = useContext(ClientContext);
 
 	const { session } = useSession();
 
+	const queryKey = [...providerCacheQueryKey, session.data?.user.id];
+
 	const providers = useQuery({
-		queryKey: [...providerCacheQueryKey, session.data?.user.id],
+		queryKey,
 		queryFn: () => {
 			if (!session.data) return [];
 			return ClientProviderService.getProviderStates({
@@ -28,18 +35,36 @@ export const useProviders = () => {
 
 	const updateProviders = useMutation({
 		mutationKey: providerCacheMutationKey,
-		mutationFn: async () => {
+		mutationFn: async ({ providers: names }: UpdateProvidersVariables) => {
 			if (!session.data) throw new Error("missing session");
-			console.log("[useProviders] updating providers...");
-			await ClientProviderService.getProviderStates({
+			console.log("[useProviders] updating providers:", names ?? "all");
+			const states = await ClientProviderService.getProviderStates({
 				client,
 				user: session.data.user,
 				update: true,
+				providers: names,
 			});
-			await providers.refetch();
-			console.log("[useProviders] updated:", providers.data);
+			client.queryClient.setQueryData(queryKey, states);
+			console.log("[useProviders] updated:", states);
+			return states;
 		},
 	});
 
-	return { providers, updateProviders };
+	const pendingUpdates = useMutationState({
+		filters: { mutationKey: providerCacheMutationKey, status: "pending" },
+		select: (mutation) =>
+			mutation.state.variables as UpdateProvidersVariables | undefined,
+	});
+
+	/** Whether any update, or one covering `name`, is in flight. */
+	const isUpdating = useCallback(
+		(name?: string) =>
+			pendingUpdates.some(
+				(variables) =>
+					!name || !variables?.providers || variables.providers.includes(name),
+			),
+		[pendingUpdates],
+	);
+
+	return { providers, updateProviders, isUpdating };
 };

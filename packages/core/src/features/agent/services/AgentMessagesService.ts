@@ -5,12 +5,15 @@ import type {
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 import { VERBOSE } from "../../../logger.ts";
 import type { zAttachmentPart, zDataPart } from "../../data/types/part.ts";
-import { DirectiveUtils } from "../../data/utils/DirectiveUtils.ts";
+import { EditorPartUtils } from "../../data/utils/EditorPartUtils.ts";
 import { FileOperationService } from "../../file/services/FileOperationService.ts";
 import { FileTypeUtils } from "../../file/utils/FileTypeUtils.ts";
 import { type Descendent, FileUtils } from "../../file/utils/FileUtils.ts";
 import { PathUtils } from "../../file/utils/PathUtils.ts";
 import type { zAgentContext, zAgentMessage } from "../types/agent.ts";
+
+/** Directory levels shown in an attached folder's XML tree. */
+const MAX_ATTACHMENT_TREE_DEPTH = 2;
 
 export const AgentMessagesService = {
 	buildMessages: async ({
@@ -31,139 +34,51 @@ export const AgentMessagesService = {
 			const transformedParts: zDataPart[] = [];
 
 			for (const part of parts) {
-				if (part.type === "text") {
-					const directives = DirectiveUtils.extractFromMarkdown(
-						part.value,
-						"command",
-						"quote",
-						// Keep the synthesized skill attachment typed below without
-						// recognizing persisted attachment directives at runtime.
-						...([] as "attachment"[]),
-					);
-					for (const { text, directive } of directives) {
-						// convert skill command to attached SKILL.md
-						if (
-							directive?.tag === "command" &&
-							directive.attributes.value?.startsWith("skill:")
-						) {
-							directive.tag = "attachment";
-							directive.attributes = {
-								source: directive.attributes.value.slice(6),
-								"is-directory": "false",
-							};
-						}
-
-						if (directive?.tag === "quote") {
-							transformedParts.push({
-								id: part.id,
-								type: "text",
-								value: DirectiveUtils.convertToHtml(
-									[{ text, directive }],
-									"quote",
-								),
-							});
-						} else if (directive?.tag === "command") {
-							if (directive.attributes.name === "system-prompt") {
-								customInstructions = directive.textContent;
-								console.log(
-									"[AgentMessagesService] using custom instructions:",
-									directive.textContent,
-								);
-							} else {
-								console.warn(
-									"[AgentMessagesService] ignoring unknown command:",
-									directive.attributes.name,
-									":",
-									text,
-								);
-								transformedParts.push({ ...part, value: text });
-							}
-						} else if (directive?.tag === "attachment") {
-							let attachment: zDataPart | undefined;
-							try {
-								const chat = !!PathUtils.fromMount({
-									path: directive.attributes.source,
-								});
-								const shell = chat
-									? capabilities.chatShell
-									: capabilities.shell;
-								if (directive.attributes.source?.startsWith("web:")) {
-									const web = await capabilities.web?.view({
-										url: directive.attributes.source.slice(4),
-									});
-									if (web) {
-										attachment = {
-											id: part.id,
-											type: "text",
-											value: web.content,
-										};
-									}
-								} else if (directive.attributes["is-directory"] === "true") {
-									const xml = await AgentMessagesService.buildDirectoryBlock({
-										shell,
-										path: directive.attributes.source,
-									});
-									if (xml) {
-										attachment = {
-											id: part.id,
-											type: "text",
-											value: xml,
-										};
-									}
-								} else {
-									const file = await shell?.readFile({
-										path: directive.attributes.source,
-									});
-									if (file) {
-										attachment = {
-											id: CommonUtils.getRandomId(),
-											type: "file",
-											name: PathUtils.name(file),
-											data: FileUtils.getBase64FromBytes(file),
-											mime:
-												(await FileTypeUtils.getMime(file)) ??
-												"application/octet-stream",
-										};
-									}
-								}
-							} catch (error: any) {
-								console.error(
-									"[AgentMessagesService] error reading attachment:",
-									error,
-								);
-							}
-							// An upload is mounted under its id, which says nothing about
-							// what it holds, so the name it was attached under is carried
-							// through to stand in for the path.
-							const name = directive.attributes.name
-								? ` name="${directive.attributes.name}"`
-								: "";
-
-							transformedParts.push(
-								{
-									...part,
-									id: CommonUtils.getRandomId(),
-									value: `<attachment source="${PathUtils.normalize({ path: directive.attributes.source })}"${name}>`,
-								},
-								attachment ?? {
-									id: part.id,
-									type: "text",
-									value: "<!-- content unavailable -->",
-								},
-								{
-									...part,
-									id: CommonUtils.getRandomId(),
-									value: "</attachment>",
-								},
-							);
-						} else {
-							transformedParts.push({ ...part, value: text });
-						}
-					}
-				} else if (part.type === "attachment") {
+				if (part.type === "attachment") {
 					transformedParts.push(
 						...AgentMessagesService.buildAttachmentParts(part),
 					);
+				} else if (part.type === "quote") {
+					const model = part.model ? ` model="${part.model}"` : "";
+					transformedParts.push({
+						id: part.id,
+						type: "text",
+						value: `<quote${model}>\n${part.text}\n</quote>`,
+					});
+				} else if (part.type === "paste") {
+					transformedParts.push({
+						id: part.id,
+						type: "text",
+						value: EditorPartUtils.fence(part.text, part.language),
+					});
+				} else if (part.type === "command") {
+					// A skill is written as a command but read as its SKILL.md, which
+					// is the only thing about it the model ever sees.
+					if (part.value?.startsWith("skill:")) {
+						transformedParts.push(
+							...(await AgentMessagesService.buildSourceParts({
+								capabilities,
+								id: part.id,
+								source: part.value.slice(6),
+							})),
+						);
+					} else if (part.name === "system-prompt") {
+						customInstructions = part.argument;
+						console.log(
+							"[AgentMessagesService] using custom instructions:",
+							part.argument,
+						);
+					} else {
+						console.warn(
+							"[AgentMessagesService] ignoring unknown command:",
+							part.name,
+						);
+						transformedParts.push({
+							id: part.id,
+							type: "text",
+							value: EditorPartUtils.toMarkdown(part),
+						});
+					}
 				} else {
 					transformedParts.push(part);
 				}
@@ -183,6 +98,77 @@ export const AgentMessagesService = {
 			console.log("[AgentMessagesService] built messages:", messages);
 
 		return { messages, customInstructions };
+	},
+
+	/**
+	 * A path on the host, read now and wrapped the way a stored attachment is.
+	 *
+	 * Used for the things a message references rather than captures — a skill,
+	 * which is named by the command that enabled it and read as its `SKILL.md`.
+	 */
+	buildSourceParts: async ({
+		capabilities,
+		id,
+		source,
+		name,
+		directory,
+	}: {
+		capabilities: Capabilities;
+		id: string;
+		source: string;
+		name?: string;
+		directory?: boolean;
+	}): Promise<zDataPart[]> => {
+		let content: zDataPart | undefined;
+
+		try {
+			const shell = PathUtils.fromMount({ path: source })
+				? capabilities.chatShell
+				: capabilities.shell;
+
+			if (source.startsWith("web:")) {
+				const web = await capabilities.web?.view({ url: source.slice(4) });
+				if (web) content = { id, type: "text", value: web.content };
+			} else if (directory) {
+				const xml = await AgentMessagesService.buildDirectoryBlock({
+					shell,
+					path: source,
+				});
+				if (xml) content = { id, type: "text", value: xml };
+			} else {
+				const file = await shell?.readFile({ path: source });
+				if (file) {
+					content = {
+						id: CommonUtils.getRandomId(),
+						type: "file",
+						name: PathUtils.name(file),
+						data: FileUtils.getBase64FromBytes(file),
+						mime:
+							(await FileTypeUtils.getMime(file)) ?? "application/octet-stream",
+					};
+				}
+			}
+		} catch (error: any) {
+			console.error("[AgentMessagesService] error reading attachment:", error);
+		}
+
+		// An upload is mounted under its id, which says nothing about what it
+		// holds, so the name it was attached under stands in for the path.
+		const label = name ? ` name="${name}"` : "";
+
+		return [
+			{
+				id: CommonUtils.getRandomId(),
+				type: "text",
+				value: `<attachment source="${PathUtils.normalize({ path: source })}"${label}>`,
+			},
+			content ?? { id, type: "text", value: "<!-- content unavailable -->" },
+			{
+				id: CommonUtils.getRandomId(),
+				type: "text",
+				value: "</attachment>",
+			},
+		];
 	},
 
 	buildAttachmentParts: (attachment: zAttachmentPart): zDataPart[] => {
@@ -347,10 +333,13 @@ export const AgentMessagesService = {
 	buildTree: <T extends { uri?: string; is_dir?: boolean }>({
 		tree,
 		depth = 0,
+		maxDepth = MAX_ATTACHMENT_TREE_DEPTH,
 	}: {
 		tree: Descendent<T>;
 		depth?: number;
+		maxDepth?: number;
 	}): string => {
+		if (maxDepth <= 0) return "";
 		const nodes: string[] = [];
 		for (const [segment, child] of tree.children) {
 			const isDirectory = child.node
@@ -362,7 +351,11 @@ export const AgentMessagesService = {
 					uri: child.node && !isDirectory ? (child.node as T).uri : undefined,
 					directory: isDirectory,
 					content: isDirectory
-						? AgentMessagesService.buildTree({ tree: child, depth: depth + 1 })
+						? AgentMessagesService.buildTree({
+								tree: child,
+								depth: depth + 1,
+								maxDepth: maxDepth - 1,
+							})
 						: undefined,
 					depth,
 				}),

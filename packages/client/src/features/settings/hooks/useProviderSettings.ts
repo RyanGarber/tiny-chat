@@ -18,7 +18,9 @@ export const useProviderSettings = () => {
 
 	const setProviderSetting = useMutation({
 		...client.query.settings.setProviderSetting.mutationOptions(),
-		onSuccess: (data) => applySettings(data) && updateProviders.mutate(),
+		onSuccess: (data, variables) =>
+			applySettings(data) &&
+			updateProviders.mutate({ providers: [variables.provider] }),
 	});
 
 	const preferredWebProvider = useMemo(() => {

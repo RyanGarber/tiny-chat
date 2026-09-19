@@ -4,13 +4,10 @@ import { type ReactNode, useState } from "react";
 
 export default function Paste({
 	lines,
-	mounted = false,
 	grabbable,
 	children,
 }: {
 	lines?: string;
-	/** Keep children mounted while collapsed, as a node view must. */
-	mounted?: boolean;
 	grabbable?: boolean;
 	children: ReactNode;
 }) {
@@ -31,9 +28,8 @@ export default function Paste({
 				<Text truncate="end">{label}</Text>
 			</Group>
 			<Collapse expanded={expanded}>
-				{(expanded || mounted) && (
+				{expanded && (
 					<Box
-						hidden={!expanded}
 						style={{
 							borderLeft: "2px solid var(--mantine-color-default-border)",
 						}}

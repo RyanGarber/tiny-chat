@@ -6,6 +6,7 @@ import CliBoxes, { type Boxes } from "cli-boxes";
 import { useContext, useMemo } from "react";
 import { type ColorString, getColor } from "./useColor.ts";
 
+/** @lintignore */
 export type BorderString = ColorString | keyof Boxes | "none" | string;
 export type BorderObject = { color?: ColorString; style?: keyof Boxes };
 export type Border = BorderString | BorderObject;
@@ -13,6 +14,7 @@ export type Border = BorderString | BorderObject;
 /**
  * Parses a border string, approximating transparency based on the theme.
  */
+/** @lintignore */
 export const getBorder = (
 	border: Border | undefined,
 	colorScheme: ColorScheme,

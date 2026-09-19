@@ -1,60 +1,26 @@
+import { useEditorPartStore } from "@tiny-chat/client/src/features/editor/stores/useEditorPartStore.ts";
 import {
 	Node,
-	NodeViewContent,
 	NodeViewWrapper,
 	type ReactNodeViewProps,
 	ReactNodeViewRenderer,
 } from "@tiptap/react";
-import { useEffect, useRef } from "react";
+import Code from "#app/features/code/components/Code.tsx";
 import { NodeUtils } from "#app/features/editor/utils/NodeUtils.ts";
 import PasteView from "#app/features/part/components/Paste.tsx";
 
 function PasteNodeView({ node }: ReactNodeViewProps) {
-	const wrapperRef = useRef<HTMLDivElement>(null);
-
-	useEffect(() => {
-		let cancelled = false;
-
-		// ReactRenderer flushes the first node-view render before ReactNodeView has
-		// created its ProseMirror contentDOM. Tiptap therefore appends contentDOM
-		// beside the wrapper, and the initial NodeViewContent ref cannot move it
-		// because it ran too early. Move it after that constructor completes.
-		queueMicrotask(() => {
-			const wrapper = wrapperRef.current;
-			if (cancelled || !wrapper) return;
-			const root = wrapper.parentElement;
-			if (!root) return;
-
-			const target = wrapper.querySelector<HTMLElement>(
-				"[data-node-view-content]",
-			);
-			const content = Array.from(root.children).find(
-				(child): child is HTMLElement =>
-					child instanceof HTMLElement &&
-					child.hasAttribute("data-node-view-content-react"),
-			);
-			if (target && content && content.parentElement !== target) {
-				target.appendChild(content);
-			}
-		});
-
-		return () => {
-			cancelled = true;
-		};
-	}, []);
+	const paste = useEditorPartStore((state) => state.parts[node.attrs.id]);
+	if (paste?.type !== "paste") return null;
 
 	return (
 		<NodeViewWrapper
-			ref={wrapperRef}
 			className="paste-node-view"
 			contentEditable={false}
+			data-drag-handle
 		>
-			<PasteView
-				lines={node.attrs.lines as string | undefined}
-				mounted
-				grabbable
-			>
-				<NodeViewContent contentEditable={false} />
+			<PasteView lines={String(paste.lines)} grabbable>
+				<Code code={paste.text} language={paste.language ?? undefined} />
 			</PasteView>
 		</NodeViewWrapper>
 	);
@@ -63,7 +29,6 @@ function PasteNodeView({ node }: ReactNodeViewProps) {
 const Paste = Node.create({
 	name: "pasteBlock",
 	group: "block",
-	content: "block+",
 	atom: true,
 	isolating: true,
 	draggable: true,
@@ -72,13 +37,13 @@ const Paste = Node.create({
 	},
 	addAttributes() {
 		return {
-			lines: {
+			id: {
 				default: null,
 				parseHTML(element) {
-					return element.getAttribute("lines");
+					return element.getAttribute("id");
 				},
 				renderHTML(attributes) {
-					return attributes.lines ? { lines: attributes.lines } : {};
+					return { id: attributes.id };
 				},
 			},
 		};
@@ -87,12 +52,11 @@ const Paste = Node.create({
 		return [{ tag: "paste" }];
 	},
 	renderHTML({ HTMLAttributes }) {
-		return ["paste", HTMLAttributes, 0];
+		return ["paste", HTMLAttributes];
 	},
-	...NodeUtils.createContainerDirective({
+	...NodeUtils.createPointerDirective({
 		nodeName: "pasteBlock",
 		name: "paste",
-		content: "block",
 	}),
 	addNodeView() {
 		return ReactNodeViewRenderer(PasteNodeView);

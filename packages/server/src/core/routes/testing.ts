@@ -30,7 +30,7 @@ export const testing = router({
 
 			const capabilities = await ServerCapabilityService.getCapabilities({
 				user: ctx.session.user,
-				chat: input.context.chat
+				chat: input.context.chat?.id
 					? await ChatService.getChat({
 							user: ctx.session.user,
 							chat: input.context.chat.id,

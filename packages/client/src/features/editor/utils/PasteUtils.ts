@@ -1,4 +1,5 @@
 import { CodeUtils } from "@tiny-chat/core/src/core/utils/CodeUtils.ts";
+import { EditorPartUtils } from "@tiny-chat/core/src/features/data/utils/EditorPartUtils.ts";
 
 /** Genuine newline characters a paste may contain before it is collapsed. */
 export const PASTE_NEWLINE_LIMIT = 10;
@@ -39,16 +40,7 @@ export const PasteUtils = {
 	 * not fenced, so a paste of source that happens to contain fences is left
 	 * alone.
 	 */
-	unwrapFence: (
-		text: string,
-	): { language: string | null; text: string } | null => {
-		const trimmed = PasteUtils.normalize(text).replace(/^\n+|\n+$/g, "");
-		const match = trimmed.match(/^(`{3,}|~{3,})([^\n`]*)\n([\s\S]*)\n\1$/);
-		if (!match) return null;
-
-		const language = match[2].trim().split(/\s+/)[0] || null;
-		return { language, text: match[3] };
-	},
+	unwrapFence: (text: string) => EditorPartUtils.unwrapFence(text),
 
 	/**
 	 * Language to highlight a paste as, or null when it should not be wrapped
@@ -100,21 +92,6 @@ export const PasteUtils = {
 	},
 
 	/** A fenced block long enough that fences inside the text stay literal. */
-	fence: (text: string, language?: string | null) => {
-		const pasted = PasteUtils.normalize(text);
-		const ticks = Math.max(
-			3,
-			...[...pasted.matchAll(/^`+/gm)].map((match) => match[0].length + 1),
-		);
-		const mark = "`".repeat(ticks);
-		return `${mark}${language ?? ""}\n${pasted}\n${mark}`;
-	},
-
-	/** The Markdown a long paste travels as. */
-	markdown: (text: string) => {
-		const pasted = PasteUtils.normalize(text);
-		const lines = pasted.split("\n");
-		const language = PasteUtils.detectCode(pasted)?.language ?? null;
-		return `:::paste{lines="${lines.length}"}\n${PasteUtils.fence(pasted, language)}\n:::`;
-	},
+	fence: (text: string, language?: string | null) =>
+		EditorPartUtils.fence(PasteUtils.normalize(text), language),
 } as const;

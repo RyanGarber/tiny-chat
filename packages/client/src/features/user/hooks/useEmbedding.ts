@@ -1,18 +1,12 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { ModelProviderService } from "@tiny-chat/core/src/features/provider/services/ModelProviderService.ts";
+import { EmbeddingUtils } from "@tiny-chat/core/src/features/provider/utils/EmbeddingUtils.ts";
 import { useContext, useEffect, useMemo, useRef } from "react";
-import { type Client, ClientContext } from "../../../client.ts";
+import { ClientContext } from "../../../client.ts";
 import { useSession } from "../../../core/hooks/useSession.ts";
 import { ClientProviderService } from "../../agent/services/ClientProviderService.ts";
 import { useEmbeddingSettings } from "../../settings/hooks/useEmbeddingSettings.ts";
 
-export type EmbeddingStatus = {
-	batch: Awaited<
-		ReturnType<Client["api"]["embedding"]["getMissingEmbeddings"]["query"]>
-	> | null;
-	batchCount: number;
-	totalCount: number;
-};
+export type EmbeddingStatus = ReturnType<typeof EmbeddingUtils.getStatus>;
 
 export const nextEmbeddingBatchQueryKey = ["embedding", "next"] as const;
 export const runEmbeddingBatchMutationKey = ["embedding", "run"] as const;
@@ -21,6 +15,10 @@ export const useEmbedding = () => {
 	const client = useContext(ClientContext);
 	const { session } = useSession();
 	const { embeddingConfig } = useEmbeddingSettings();
+
+	const serverHandlesHydration =
+		!!embeddingConfig &&
+		EmbeddingUtils.isServerProvider(embeddingConfig.provider);
 
 	const nextEmbeddingBatch = useQuery({
 		queryKey: [
@@ -33,12 +31,9 @@ export const useEmbedding = () => {
 			if (!session.data || !embeddingConfig) return null;
 
 			const missing = await client.api.embedding.getMissingEmbeddings.query({
-				limit: 4,
+				limit: EmbeddingUtils.BATCH_LIMIT,
 			});
-			const total = Object.values(missing).reduce(
-				(sum, arr) => sum + arr.length,
-				0,
-			);
+			const total = EmbeddingUtils.count(missing);
 			if (total === 0) {
 				console.log("[useEmbedding] no missing embeddings");
 				return null;
@@ -51,6 +46,8 @@ export const useEmbedding = () => {
 		staleTime: Infinity,
 		refetchOnWindowFocus: false,
 		refetchOnReconnect: false,
+		// Server runner drains the backlog; poll so the status UI stays current.
+		refetchInterval: serverHandlesHydration ? 2000 : false,
 	});
 
 	const runEmbeddingBatch = useMutation({
@@ -62,31 +59,7 @@ export const useEmbedding = () => {
 		) => {
 			if (!session.data || !embeddingConfig) return;
 
-			const { messages, actions, memories, files } = batch;
 			console.log("[useEmbedding] starting batch:", batch);
-
-			const input = [
-				...messages.map((message) => ({
-					type: "message" as const,
-					id: message.id,
-					text: message.text,
-				})),
-				...actions.map((action) => ({
-					type: "action" as const,
-					id: action.id,
-					text: action.text,
-				})),
-				...memories.map((memory) => ({
-					type: "memory" as const,
-					id: memory.id,
-					text: memory.text,
-				})),
-				...files.map((file) => ({
-					type: "file" as const,
-					id: file.id,
-					text: file.text,
-				})),
-			];
 
 			const modelProviders = await ClientProviderService.getModelProviders({
 				client,
@@ -100,19 +73,14 @@ export const useEmbedding = () => {
 			if (!modelProvider)
 				throw new Error(`provider "${embeddingConfig.provider}" not found`);
 
-			const result = await ModelProviderService.runEmbeddingModel({
+			const output = await EmbeddingUtils.runBatch({
 				user: session.data.user,
 				provider: modelProvider,
-				values: input.map((item) => item.text),
 				config: embeddingConfig,
 				env: client.providerEnv,
+				batch,
 			});
-			console.log("[useEmbedding] saving embeddings:", result);
-
-			const output = input.map(({ text: _, ...rest }, index) => ({
-				...rest,
-				embedding: result[index],
-			}));
+			console.log("[useEmbedding] saving embeddings:", output);
 
 			await client.api.embedding.setEmbeddings.mutate(output);
 		},
@@ -136,6 +104,9 @@ export const useEmbedding = () => {
 	const isPendingRef = useRef(false);
 
 	useEffect(() => {
+		// Server-capable providers are hydrated by EmbeddingRunnerService.
+		if (serverHandlesHydration) return;
+
 		const hasPendingMutation =
 			isPendingRef.current ||
 			client.queryClient.getMutationCache().findAll({
@@ -156,24 +127,16 @@ export const useEmbedding = () => {
 			});
 		}
 	}, [
+		serverHandlesHydration,
 		nextEmbeddingBatch.data,
 		nextEmbeddingBatch.isFetching,
 		client.queryClient.getMutationCache,
 	]);
 
-	const embeddingStatus = useMemo<EmbeddingStatus>(() => {
-		return {
-			batch: nextEmbeddingBatch.data ?? null,
-			batchCount:
-				(nextEmbeddingBatch.data?.messages.length ?? 0) +
-				(nextEmbeddingBatch.data?.memories.length ?? 0) +
-				(nextEmbeddingBatch.data?.files.length ?? 0),
-			totalCount:
-				Number(nextEmbeddingBatch.data?.messages[0]?.total ?? 0) +
-				Number(nextEmbeddingBatch.data?.memories[0]?.total ?? 0) +
-				Number(nextEmbeddingBatch.data?.files[0]?.total ?? 0),
-		};
-	}, [nextEmbeddingBatch.data]);
+	const embeddingStatus = useMemo<EmbeddingStatus>(
+		() => EmbeddingUtils.getStatus(nextEmbeddingBatch.data),
+		[nextEmbeddingBatch.data],
+	);
 
 	return { embeddingStatus, nextEmbeddingBatch, runEmbeddingBatch };
 };

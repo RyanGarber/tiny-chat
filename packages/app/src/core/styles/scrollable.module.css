@@ -1,0 +1,15 @@
+.content {
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+.header {
+	flex-shrink: 0;
+}
+.body {
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+}

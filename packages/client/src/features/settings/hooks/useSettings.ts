@@ -33,10 +33,13 @@ export const useSettings = ({
 
 	const applySettings = useCallback(
 		(settings: zSettings) => {
-			client.queryClient.setQueryData([...settingsQueryKey, folder], settings);
+			client.queryClient.setQueryData(
+				[...settingsQueryKey, folderId],
+				settings,
+			);
 			return true;
 		},
-		[client.queryClient, folder],
+		[client.queryClient, folderId],
 	);
 
 	return { settings, applySettings };

@@ -1,5 +1,9 @@
 import { useCommands } from "@tiny-chat/client/src/features/editor/hooks/useCommands.ts";
 import { useCompletionStore } from "@tiny-chat/client/src/features/editor/stores/useCompletionStore.ts";
+import {
+	getEditorPart,
+	useEditorPartStore,
+} from "@tiny-chat/client/src/features/editor/stores/useEditorPartStore.ts";
 import type {
 	CommandChoiceGroup,
 	CommandChoiceItem,
@@ -47,40 +51,13 @@ const Command = Node.create({
 	},
 	addAttributes() {
 		return {
-			name: {
+			id: {
 				default: null,
 				parseHTML(element) {
-					return element.getAttribute("name");
+					return element.getAttribute("id");
 				},
 				renderHTML(attributes) {
-					return { name: attributes.name };
-				},
-			},
-			value: {
-				default: null,
-				parseHTML(element) {
-					return element.getAttribute("value");
-				},
-				renderHTML(attributes) {
-					return { value: attributes.value };
-				},
-			},
-			"accepts-content": {
-				default: null,
-				parseHTML(element) {
-					return element.getAttribute("accepts-content");
-				},
-				renderHTML(attributes) {
-					return { "accepts-content": attributes["accepts-content"] };
-				},
-			},
-			"needs-run": {
-				default: null,
-				parseHTML(element) {
-					return element.getAttribute("needs-run");
-				},
-				renderHTML(attributes) {
-					return { "needs-run": attributes["needs-run"] };
+					return { id: attributes.id };
 				},
 			},
 		};
@@ -93,43 +70,56 @@ const Command = Node.create({
 	},
 	addNodeView() {
 		return ReactNodeViewRenderer(
-			({ node }) => {
-				return (
-					<NodeViewWrapper as="span">
-						<CommandView
-							name={node.attrs.name}
-							content={
-								node.attrs["accepts-content"] === "true" ? (
-									<NodeViewContent />
-								) : undefined
-							}
-						/>
-					</NodeViewWrapper>
-				);
-			},
+			({ node, editor }) => (
+				<CommandNodeView id={node.attrs.id} editor={editor} />
+			),
 			{ as: "command", attrs: ({ node }) => node.attrs },
 		);
 	},
-	...NodeUtils.createInlineDirective({
-		nodeName: nodeName,
+	...NodeUtils.createPointerDirective({
+		nodeName,
+		getContent: (id) => getEditorPart("command", id)?.argument,
 	}),
 	addProseMirrorPlugins() {
 		return [
 			new Plugin({
-				key: new PluginKey("command-fix"),
+				key: new PluginKey("command-sync"),
+				// The chip's content is where an argument is typed, but the part is
+				// where it is kept: the document only ever carries the pointer, so
+				// what was typed has to be written back after every change.
 				appendTransaction: (transactions, _oldState, newState) => {
 					const docChanged = transactions.some(
 						(transaction) => transaction.docChanged,
 					);
 					if (!docChanged) return null;
 
+					const { addPart } = useEditorPartStore.getState();
+					const groups = (this.options as CommandOptions).getCommands();
+
 					let tr: Transaction | null = null;
 					newState.doc.descendants((node, pos) => {
-						if (node.type.name !== "command") return true;
-						if (node.attrs["accepts-content"] !== "true") return true;
-						if (node.textContent.length > 1) return true;
-						if (!tr) tr = newState.tr;
-						tr.deleteRange(pos, pos + node.nodeSize);
+						if (node.type.name !== nodeName) return true;
+
+						const part = getEditorPart("command", node.attrs.id);
+						if (!part) return true;
+
+						const command = CommandUtils.find({ groups, name: part.name });
+						if (command && CommandUtils.acceptsContent(command)) {
+							// Emptied down to the zero-width padding, which is the chip
+							// having been deleted rather than an empty argument.
+							if (node.textContent.length <= 1) {
+								if (!tr) tr = newState.tr;
+								tr.deleteRange(pos, pos + node.nodeSize);
+								return true;
+							}
+
+							const argument = node.textContent.replace(/\u200B/g, "");
+							if ((part.argument ?? "") !== argument) {
+								addPart({ ...part, argument: argument || undefined });
+							}
+						}
+
+						return true;
 					});
 
 					return tr;
@@ -151,7 +141,10 @@ const Command = Node.create({
 					CommandUtils.filter({
 						groups: (this.options as CommandOptions).getCommands(),
 						query,
-						used: getCommandNodes(editor).map(({ node }) => node.attrs.value),
+						used: getCommandNodes(editor).flatMap(({ node }) => {
+							const value = getEditorPart("command", node.attrs.id)?.value;
+							return value ? [value] : [];
+						}),
 					}),
 				render: renderCompletions({
 					renderEmpty: () => "No matches",
@@ -285,6 +278,32 @@ export const useCommand = () => {
 	);
 };
 
+function CommandNodeView({ id, editor }: { id: string; editor: Editor }) {
+	const part = useEditorPartStore((state) => state.parts[id]);
+	const command =
+		part?.type === "command"
+			? CommandUtils.find({
+					groups: getCommandOptions(editor)?.getCommands() ?? [],
+					name: part.name,
+				})
+			: null;
+
+	if (part?.type !== "command") return null;
+
+	return (
+		<NodeViewWrapper as="span">
+			<CommandView
+				name={part.name}
+				content={
+					command && CommandUtils.acceptsContent(command) ? (
+						<NodeViewContent />
+					) : undefined
+				}
+			/>
+		</NodeViewWrapper>
+	);
+}
+
 function applyCommand(editor: Editor, command: CommandItem, range: Range) {
 	const nodes = getCommandNodes(editor);
 	const end = nodes.at(-1)?.range.to ?? 0;
@@ -296,6 +315,8 @@ function applyCommand(editor: Editor, command: CommandItem, range: Range) {
 		return;
 	}
 
+	const node = CommandUtils.toNode({ command });
+
 	editor
 		.chain()
 		.focus()
@@ -303,12 +324,7 @@ function applyCommand(editor: Editor, command: CommandItem, range: Range) {
 		.insertContentAt(end + 1, [
 			{
 				type: nodeName,
-				attrs: {
-					name: command.name,
-					value: command.value,
-					"accepts-content": acceptsContent ? "true" : "false",
-					"needs-run": CommandUtils.needsRun(command) ? "true" : "false",
-				},
+				attrs: { id: node.id },
 				// awful hidden zero-width hack to fix prosemirror fuckery
 				content: [{ type: "text", text: "\u200B\u200B" }],
 			},
@@ -316,6 +332,13 @@ function applyCommand(editor: Editor, command: CommandItem, range: Range) {
 		])
 		.setTextSelection({ from: focus, to: focus })
 		.run();
+}
+
+/** The command extension's own options, which carry the command catalog. */
+function getCommandOptions(editor: Editor) {
+	return editor.extensionManager.extensions.find(
+		(extension) => extension.name === nodeName,
+	)?.options as CommandOptions | undefined;
 }
 
 function getCommandNodes(editor: Editor) {
@@ -347,12 +370,23 @@ function getSelectedCommandNode(editor: Editor, groups: CommandGroup[]) {
 	}
 	const command = CommandUtils.find({
 		groups,
-		name: commandNode?.attrs.name,
+		name: commandNode
+			? (getEditorPart("command", commandNode.attrs.id)?.name ?? undefined)
+			: undefined,
 	});
 	return { command, commandNode };
 }
 
+/**
+ * Whether a command that acts on the client is still sitting in the editor
+ * waiting to be run, which a message must not be sent over the top of.
+ */
 export function hasPendingCommandNode(editor: Editor) {
-	const nodes = getCommandNodes(editor);
-	return nodes.some(({ node }) => node.attrs["needs-run"] === "true");
+	const groups = getCommandOptions(editor)?.getCommands() ?? [];
+
+	return getCommandNodes(editor).some(({ node }) => {
+		const part = getEditorPart("command", node.attrs.id);
+		const command = CommandUtils.find({ groups, name: part?.name });
+		return !!command && CommandUtils.needsRun(command);
+	});
 }

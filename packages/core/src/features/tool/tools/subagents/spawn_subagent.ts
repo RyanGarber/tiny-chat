@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { SubagentsCapability } from "../../../../core/types/capability.ts";
 import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
+import { SettingsUtils } from "../../../../core/utils/SettingsUtils.ts";
 import { zAbortPart, zData } from "../../../data/types/part.ts";
 import { DataUtils } from "../../../data/utils/DataUtils.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
@@ -39,8 +40,11 @@ export const createSpawnSubagentTool: ToolFactory<
 	...spawn_subagent,
 	...options,
 	execute: async ({ input, stream, abort, context }) => {
-		if (!context.user.settings.subagentConfig)
-			throw new Error("missing subagent config");
+		const { subagentConfig } = SettingsUtils.of(
+			context.user,
+			context.chat?.folder,
+		);
+		if (!subagentConfig) throw new Error("missing subagent config");
 
 		const data = await options.capabilities.subagents.runSubagent({
 			context: {
@@ -50,7 +54,7 @@ export const createSpawnSubagentTool: ToolFactory<
 					{
 						id: null,
 						author: "USER",
-						config: context.user.settings.subagentConfig,
+						config: subagentConfig,
 						data: [
 							[
 								{
@@ -65,7 +69,7 @@ export const createSpawnSubagentTool: ToolFactory<
 					{
 						id: null,
 						author: "MODEL",
-						config: context.user.settings.subagentConfig,
+						config: subagentConfig,
 						data: [],
 						createdAt: Temporal.Now.plainDateTimeISO("UTC"),
 					},

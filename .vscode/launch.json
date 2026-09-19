@@ -1,0 +1,36 @@
+{
+	// Use IntelliSense to learn about possible attributes.
+	// Hover to view descriptions of existing attributes.
+	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "dev:cli",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "pnpm run dev:cli",
+			"cwd": "${workspaceFolder}"
+		},
+		{
+			"name": "dev:server",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "pnpm run dev:server",
+			"cwd": "${workspaceFolder}"
+		},
+		{
+			"name": "dev:tauri",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "pnpm run dev:tauri",
+			"cwd": "${workspaceFolder}"
+		},
+		{
+			"name": "dev:web",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "pnpm run dev:web",
+			"cwd": "${workspaceFolder}"
+		}
+	]
+}

@@ -2,8 +2,9 @@ import z from "zod";
 import type { Model } from "../../../core/services/PostgresService.ts";
 import type { zData, zMetadata } from "./part.ts";
 
-export const DEFAULT_TOOLSETS = [
+const DEFAULT_TOOLSETS = [
 	"questions",
+	"github",
 	"actions",
 	"memories",
 	"web",
@@ -11,7 +12,7 @@ export const DEFAULT_TOOLSETS = [
 	"shell",
 ];
 
-export const DEFAULT_SKILLS: string[] = [];
+const DEFAULT_SKILLS: string[] = [];
 
 export type MessageState = Omit<Model["Message"], "embedding"> & {
 	config: zConfig;

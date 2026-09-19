@@ -8,7 +8,15 @@ import { ProviderService } from "@tiny-chat/core/src/features/provider/services/
  * Cache management for heavy operations like model discovery.
  */
 export const CacheService = {
-	getCache: async ({ user, update }: { user: zUser; update?: boolean }) => {
+	getCache: async ({
+		user,
+		update,
+		providers,
+	}: {
+		user: zUser;
+		update?: boolean;
+		providers?: string[];
+	}) => {
 		const existing = await globalThis.db.orm.public.User.where({
 			id: user.id,
 		})
@@ -16,7 +24,9 @@ export const CacheService = {
 			.first();
 		if (!existing) throw new Error("missing user");
 
-		return update ? await CacheService.updateCache({ user }) : existing.cache;
+		return update
+			? await CacheService.updateCache({ user, providers })
+			: existing.cache;
 	},
 
 	setCache: async ({
@@ -33,16 +43,40 @@ export const CacheService = {
 		});
 	},
 
-	updateCache: async ({ user }: { user: zUser }): Promise<zCache> => {
+	/**
+	 * Recheck provider states, or only the named ones, keeping the rest cached.
+	 */
+	updateCache: async ({
+		user,
+		providers,
+	}: {
+		user: zUser;
+		providers?: string[];
+	}): Promise<zCache> => {
 		const cache: zCache = (
 			await globalThis.db.orm.public.User.where({ id: user.id })
 				.select("cache")
 				.first()
 		)?.cache ?? { providers: [] };
 
-		cache.providers = JSON.parse(
-			JSON.stringify(await ProviderService.getProviderStates({ user })),
+		const updated: zCache["providers"] = JSON.parse(
+			JSON.stringify(
+				await ProviderService.getProviderStates({ user, names: providers }),
+			),
 		);
+
+		cache.providers = providers
+			? [
+					...cache.providers.map(
+						(provider) =>
+							updated.find((state) => state.name === provider.name) ?? provider,
+					),
+					...updated.filter(
+						(state) =>
+							!cache.providers.some((provider) => provider.name === state.name),
+					),
+				]
+			: updated;
 
 		await globalThis.db.orm.public.User.where({ id: user.id }).update({
 			cache: cache as any,

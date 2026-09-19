@@ -1,4 +1,5 @@
 import type {
+	EmbeddingModelV4,
 	LanguageModelV4,
 	LanguageModelV4StreamPart,
 	LanguageModelV4ToolResultPart,
@@ -357,7 +358,7 @@ async function runSub({
 	}
 }
 
-export function createTestProvider(): ProviderV4 {
+function createTestProvider(): ProviderV4 {
 	return {
 		specificationVersion: "v4",
 		languageModel(modelId: string): LanguageModelV4 {
@@ -445,8 +446,22 @@ export function createTestProvider(): ProviderV4 {
 				},
 			};
 		},
-		embeddingModel() {
-			throw new Error("Only language models are supported.");
+		embeddingModel(modelId: string): EmbeddingModelV4 {
+			return {
+				specificationVersion: "v4",
+				provider: "test",
+				modelId,
+				maxEmbeddingsPerCall: 100,
+				supportsParallelCalls: true,
+				async doEmbed({ values }) {
+					return {
+						embeddings: values.map((value) =>
+							Array.from({ length: 8 }, (_, i) => (value.length + i) / 100),
+						),
+						warnings: [],
+					};
+				},
+			};
 		},
 		imageModel() {
 			throw new Error("Only language models are supported.");

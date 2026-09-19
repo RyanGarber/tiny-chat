@@ -1,4 +1,3 @@
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import type {
 	CommandChoiceGroup,
 	CommandChoiceItem,
@@ -8,6 +7,7 @@ import type {
 	CommandQuery,
 } from "../types/command.ts";
 import { AtomUtils } from "./AtomUtils.ts";
+import { EditorNodeUtils } from "./EditorNodeUtils.ts";
 
 /** `/name` optionally followed by an argument, at the end of a line */
 const QUERY_REGEX = /(?:^|\s)\/(\S*)(?:[ \t]+([^\n]*))?$/;
@@ -208,26 +208,19 @@ export const CommandUtils = {
 	},
 
 	/**
-	 * A command directive, used for commands that are read from the message
-	 * they were written in instead of being run.
+	 * The part a command travels as, for the commands that are read from the
+	 * message they were written in instead of being run.
 	 */
-	toDirective: ({
-		command,
-		value,
-	}: {
-		command: CommandItem;
-		value?: string;
-	}) => {
-		const attributes = CommonUtils.toAttributesString({
-			name: command.name,
+	toNode: ({ command, value }: { command: CommandItem; value?: string }) =>
+		EditorNodeUtils.command({
+			name: command.name ?? "",
 			value: command.value,
-		});
-		return `:command[${value ?? ""}]{${attributes}}`;
-	},
+			argument: value,
+		}),
 
 	/**
 	 * The atom a command is written into a plain text buffer as: the command as
-	 * it was typed, standing for the directive it travels as.
+	 * it was typed, standing for the part it travels as.
 	 */
 	toAtom: ({
 		content,
@@ -238,11 +231,9 @@ export const CommandUtils = {
 		command: CommandItem;
 		value?: string;
 	}) =>
-		AtomUtils.command({
+		AtomUtils.fromNode({
 			content,
-			name: command.name,
-			value,
-			markdown: CommandUtils.toDirective({ command, value }),
+			node: CommandUtils.toNode({ command, value }),
 		}),
 
 	/**

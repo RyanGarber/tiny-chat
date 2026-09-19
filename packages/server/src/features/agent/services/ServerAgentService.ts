@@ -1,8 +1,10 @@
 import { zProviderEnv } from "@tiny-chat/core/src/core/types/env.ts";
 import { AgentService } from "@tiny-chat/core/src/features/agent/services/AgentService.ts";
-import type { zAgentContext } from "@tiny-chat/core/src/features/agent/types/agent.ts";
+import type {
+	zAgentChat,
+	zAgentContext,
+} from "@tiny-chat/core/src/features/agent/types/agent.ts";
 import { AgentUtils } from "@tiny-chat/core/src/features/agent/utils/AgentUtils.ts";
-import type { zChat } from "@tiny-chat/core/src/features/data/types/chat.ts";
 import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type {
 	zData,
@@ -23,7 +25,7 @@ export const ServerAgentService = {
 		instructions,
 		toolNames,
 	}: {
-		chat: zChat | null;
+		chat: zAgentChat | null;
 		prompt: MessageState | null;
 		context: zAgentContext;
 		/** Override normal chat instructions for a specialized agent run. */

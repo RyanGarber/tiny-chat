@@ -2,10 +2,22 @@ import { zPlainDateTime } from "temporal-zod";
 import z from "zod";
 import { Enum } from "../../../core/services/PostgresService.ts";
 import { zId } from "../../../core/types/common.ts";
-import { zChat } from "../../data/types/chat.ts";
 import { zConfig } from "../../data/types/message.ts";
 import { zData, zDataPart, zMetadata } from "../../data/types/part.ts";
-import { zUser } from "../../data/types/user.ts";
+import { zSettings, zUser } from "../../data/types/user.ts";
+
+/**
+ * The chat a generation belongs to. `id` is null while the chat is still a
+ * draft — nothing has been saved, but the folder it is aimed at already decides
+ * the settings, so an estimate can be built before the row exists.
+ */
+export const zAgentChat = z.object({
+	id: zId.nullish(),
+	folder: z.object({ settings: zSettings }).nullable(),
+	incognito: z.boolean(),
+	temporary: z.boolean(),
+});
+export type zAgentChat = z.infer<typeof zAgentChat>;
 
 export const zAgentMessage = z.object({
 	id: zId.nullable(),
@@ -18,7 +30,7 @@ export type zAgentMessage = z.infer<typeof zAgentMessage>;
 
 export const zAgentContext = z.object({
 	user: zUser,
-	chat: zChat.nullish(),
+	chat: zAgentChat.nullish(),
 	messages: z.array(zAgentMessage),
 	timezone: z.string(),
 	interactive: z.boolean(),

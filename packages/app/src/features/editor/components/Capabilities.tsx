@@ -29,9 +29,9 @@ import {
 } from "@phosphor-icons/react";
 import { useIsFetching } from "@tanstack/react-query";
 import { useConfig } from "@tiny-chat/client/src/features/agent/hooks/useConfig.ts";
+import { mcpServerQueryKey } from "@tiny-chat/client/src/features/agent/hooks/useMcp.ts";
 import {
 	type McpToolset,
-	mcpToolsQueryKey,
 	useTools,
 } from "@tiny-chat/client/src/features/agent/hooks/useTools.ts";
 import { useMcpServerSettings } from "@tiny-chat/client/src/features/settings/hooks/useMcpServerSettings.ts";
@@ -41,6 +41,7 @@ import {
 	type CapabilitiesType,
 	useAppStore,
 } from "#app/core/stores/useAppStore.ts";
+import scrollable from "#app/core/styles/scrollable.module.css";
 import { useTauri } from "#app/features/tauri/hooks/useTauri.ts";
 import Dropzone from "#app/features/upload/components/Dropzone.tsx";
 import {
@@ -57,7 +58,7 @@ import { ToolUtils } from "#core/features/tool/utils/ToolUtils.ts";
 
 const SHELL_TOOLSET = "shell";
 type McpServers = NonNullable<zMCPServers>;
-type McpServerSetting = McpServers[string];
+type McpServerSetting = McpServers[keyof McpServers];
 
 const getMcpToolsetName = (name: string) =>
 	name.replace("-", "_").toLowerCase();
@@ -174,41 +175,29 @@ function McpServerCard({
 	name,
 	server,
 	toolset,
-	existingNames,
 	disabled,
 	onUpdate,
 	onDelete,
+	onRefresh,
 }: {
 	name: string;
 	server: McpServerSetting;
 	toolset?: McpToolset;
-	existingNames: string[];
 	disabled: boolean;
 	onUpdate: (name: string, nextName: string, server: McpServerSetting) => void;
 	onDelete: (name: string) => void;
+	onRefresh: (name: string) => void;
 }) {
 	const { config, setConfig } = useConfig();
 	const [expanded, setExpanded] = useState(false);
+	const isConnecting =
+		useIsFetching({ queryKey: [...mcpServerQueryKey, name] }) > 0;
 	const [draftName, setDraftName] = useState(name);
 	const [draft, setDraft] = useState(server);
 	const toolsetName = getMcpToolsetName(name);
 	const status = toolset?.status;
-	const nameTaken = draftName !== name && existingNames.includes(draftName);
-	const nameError = nameTaken
-		? "A server with this name already exists"
-		: !/^[a-z0-9-_]+$/.test(draftName)
-			? "Use lowercase letters, numbers, hyphens, and underscores"
-			: null;
 
 	const save = (nextDraft = draft, nextName = draftName) => {
-		if (!/^[a-z0-9-_]+$/.test(nextName) || nameTaken) return;
-		if ("url" in nextDraft) {
-			try {
-				new URL(nextDraft.url);
-			} catch {
-				return;
-			}
-		}
 		if (nextName !== name && config.toolsets.includes(toolsetName)) {
 			setConfig({
 				...config,
@@ -219,18 +208,6 @@ function McpServerCard({
 		}
 		onUpdate(name, nextName, nextDraft);
 	};
-	const urlError =
-		"url" in draft
-			? (() => {
-					if (!draft.url) return "URL is required";
-					try {
-						new URL(draft.url);
-						return null;
-					} catch {
-						return "Enter a valid URL";
-					}
-				})()
-			: null;
 
 	return (
 		<Card withBorder padding={0}>
@@ -273,18 +250,31 @@ function McpServerCard({
 					<Stack gap={5} miw={0} flex={1}>
 						<Text size="xs">{name}</Text>
 						<Text size="xs" c="dimmed">
-							{toolset
-								? toolset.tools.map((tool) => tool.name).join(", ") ||
-									"No tools"
-								: "Connecting…"}
+							{isConnecting || !toolset
+								? "Connecting…"
+								: toolset.tools.map((tool) => tool.name).join(", ") ||
+									"No tools"}
 						</Text>
-						{!!status?.error && (
+						{!isConnecting && !!status?.error && (
 							<Group gap="xs" c="red">
 								<WarningCircleIcon size={14} />
 								<Text size="xs">{CommonUtils.formatError(status)}</Text>
 							</Group>
 						)}
 					</Stack>
+					<ActionIcon
+						variant="transparent"
+						c="dimmed"
+						aria-label={`Reconnect ${name}`}
+						loading={isConnecting}
+						disabled={disabled}
+						onClick={(event) => {
+							event.stopPropagation();
+							onRefresh(name);
+						}}
+					>
+						<ArrowClockwiseIcon size={18} />
+					</ActionIcon>
 				</Group>
 			</Box>
 			<Collapse expanded={expanded}>
@@ -292,7 +282,6 @@ function McpServerCard({
 					<TextInput
 						label="Name"
 						value={draftName}
-						error={nameError}
 						disabled={disabled}
 						onChange={(event) => setDraftName(event.currentTarget.value)}
 						onBlur={() => save()}
@@ -346,7 +335,6 @@ function McpServerCard({
 								label="URL"
 								placeholder="https://example.com/mcp"
 								value={draft.url}
-								error={urlError}
 								disabled={disabled}
 								onChange={(event) =>
 									setDraft({ ...draft, url: event.currentTarget.value })
@@ -513,7 +501,7 @@ function SkillView({ skills, native }: { skills: zSkill[]; native?: boolean }) {
 
 export default function Capabilities() {
 	const { isTauriDesktop } = useTauri();
-	const { nativeTools, mcpTools } = useTools();
+	const { nativeTools, mcpTools, refreshMcpServers } = useTools();
 	const { localSkills, nativeSkills } = useSkills();
 	const { mcpServerSettingsUnparsed, setMcpServerSettings } =
 		useMcpServerSettings();
@@ -528,13 +516,12 @@ export default function Capabilities() {
 
 	const mcpServers = mcpServerSettingsUnparsed.data ?? {};
 
-	const areMcpToolsUpdating = useIsFetching({ queryKey: mcpToolsQueryKey }) > 0;
+	const areMcpServersConnecting =
+		useIsFetching({ queryKey: mcpServerQueryKey }) > 0;
 	const areLocalSkillsUpdating =
 		useIsFetching({ queryKey: localSkillsQueryKey }) > 0;
 	const mcpSettingsDisabled =
-		mcpServerSettingsUnparsed.isPending ||
-		setMcpServerSettings.isPending ||
-		areMcpToolsUpdating;
+		mcpServerSettingsUnparsed.isPending || setMcpServerSettings.isPending;
 	const updateMcpServers = (next: McpServers) => {
 		setMcpServerSettings.mutate({ mcpServers: next });
 	};
@@ -547,6 +534,7 @@ export default function Capabilities() {
 			zIndex={1000}
 			size="lg"
 			centered
+			classNames={scrollable}
 		>
 			<Tabs
 				value={currentCapabilities}
@@ -605,9 +593,9 @@ export default function Capabilities() {
 								</Button>
 								<ActionIcon
 									variant="transparent"
-									loading={areMcpToolsUpdating}
+									loading={areMcpServersConnecting}
 									aria-label="Refresh MCP servers"
-									onClick={() => void mcpTools.refetch()}
+									onClick={() => refreshMcpServers.mutate({})}
 								>
 									<ArrowClockwiseIcon size={18} />
 								</ActionIcon>
@@ -620,19 +608,21 @@ export default function Capabilities() {
 									toolset={mcpTools.data?.find(
 										(toolset) => toolset.name === getMcpToolsetName(name),
 									)}
-									existingNames={Object.keys(mcpServers)}
 									disabled={mcpSettingsDisabled}
-									onUpdate={(oldName, nextName, nextServer) => {
-										const next = { ...mcpServers };
-										delete next[oldName];
-										next[nextName] = nextServer;
-										updateMcpServers(next);
+									onUpdate={(oldName, nextName, value) => {
+										const servers = { ...mcpServers };
+										delete servers[oldName];
+										servers[nextName] = value;
+										updateMcpServers(servers);
 									}}
 									onDelete={(serverName) => {
-										const next = { ...mcpServers };
-										delete next[serverName];
-										updateMcpServers(next);
+										const servers = { ...mcpServers };
+										delete servers[serverName];
+										updateMcpServers(servers);
 									}}
+									onRefresh={(serverName) =>
+										refreshMcpServers.mutate({ name: serverName })
+									}
 								/>
 							))}
 						</Stack>

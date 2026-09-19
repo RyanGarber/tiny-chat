@@ -1,5 +1,8 @@
 import type { Capabilities } from "@tiny-chat/core/src/core/types/capability.ts";
-import type { zAgentMessage } from "@tiny-chat/core/src/features/agent/types/agent.ts";
+import type {
+	zAgentChat,
+	zAgentMessage,
+} from "@tiny-chat/core/src/features/agent/types/agent.ts";
 import type {
 	MessageState,
 	zConfig,
@@ -24,7 +27,7 @@ export function getPartsKey(parts?: zDataPart[]) {
 	return `${getPartKey(first)}:${parts.length}:${getPartKey(last)}`;
 }
 
-export function getPartKey(part?: zDataPart) {
+function getPartKey(part?: zDataPart) {
 	if (!part) return "";
 	let keys = "";
 	let value = "";
@@ -56,6 +59,7 @@ export const useStableKey = ({
 	mcpServerSettings,
 	toolsets,
 	config,
+	chat,
 }: {
 	data?: zData;
 	messages?: (MessageState | zAgentMessage)[];
@@ -65,6 +69,7 @@ export const useStableKey = ({
 	mcpServerSettings?: zMCPServers;
 	toolsets?: Toolset<any>[];
 	config?: zConfig | null;
+	chat?: zAgentChat | null;
 }) => {
 	const dataKey = useMemo(() => {
 		const parts = data?.flat();
@@ -99,7 +104,7 @@ export const useStableKey = ({
 	const mcpServersKey = useMemo(() => {
 		let key = "";
 		for (const server of mcpServers ?? []) {
-			key += `${server.name}:${server.tools.length}:${server.error};`;
+			key += `${server.name}:${server.id}:${server.tools.length}:${server.error};`;
 		}
 		return key;
 	}, [mcpServers]);
@@ -129,6 +134,11 @@ export const useStableKey = ({
 		return config ? `${JSON.stringify(config)};` : "";
 	}, [config]);
 
+	const chatKey = useMemo(() => {
+		if (!chat) return "";
+		return `${chat.id}:${chat.incognito}:${chat.temporary}:${JSON.stringify(chat.folder?.settings)};`;
+	}, [chat]);
+
 	return useMemo(() => {
 		return [
 			dataKey,
@@ -139,6 +149,7 @@ export const useStableKey = ({
 			mcpServerSettingsKey,
 			toolsetsKey,
 			configKey,
+			chatKey,
 		]
 			.filter(Boolean)
 			.join(";");
@@ -151,5 +162,6 @@ export const useStableKey = ({
 		mcpServerSettingsKey,
 		toolsetsKey,
 		configKey,
+		chatKey,
 	]);
 };

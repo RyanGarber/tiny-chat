@@ -20,13 +20,16 @@ export const ClientProviderService = {
 		client,
 		user,
 		update,
+		providers,
 	}: {
 		client: Client;
 		user: zUser;
 		update?: boolean;
+		providers?: string[];
 	}) => {
 		return [
-			...(await client.api.user.getCache.query({ update })).providers,
+			...(await client.api.user.getCache.query({ update, providers }))
+				.providers,
 			...((await client.providers?.getProviderStates({
 				client,
 				user,

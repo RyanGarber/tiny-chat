@@ -1,13 +1,11 @@
+import type { zAttachmentPart } from "@tiny-chat/core/src/features/data/types/part.ts";
+import { useEditorPartStore } from "../../editor/stores/useEditorPartStore.ts";
 import { _useMarkdownTest } from "../hooks/useMarkdown.ts";
-import {
-	type AttachmentPart,
-	useMarkdownDataStore,
-} from "../stores/useMarkdownDataStore.ts";
 import { MarkdownDataUtils } from "./MarkdownDataUtils.ts";
 
 const { run } = _useMarkdownTest();
 
-const attachment: AttachmentPart = {
+const attachment: zAttachmentPart = {
 	id: "attachment-1",
 	type: "attachment",
 	source: "/notes.txt",
@@ -16,10 +14,10 @@ const attachment: AttachmentPart = {
 };
 
 describe("MarkdownDataUtils", () => {
-	beforeEach(() => useMarkdownDataStore.getState().setAttachments([]));
+	beforeEach(() => useEditorPartStore.getState().setParts([]));
 
-	it("replaces an inline editor node with its attachment part", () => {
-		useMarkdownDataStore.getState().addAttachment(attachment);
+	it("replaces an inline pointer with the part it stands for", () => {
+		useEditorPartStore.getState().addPart(attachment);
 		expect(
 			MarkdownDataUtils.fromMarkdown(
 				'look :attachment[]{id="attachment-1"} here',
@@ -34,7 +32,21 @@ describe("MarkdownDataUtils", () => {
 		]);
 	});
 
-	it("restores attachment nodes inline with one separating space", () => {
+	it("leaves a pointer with nothing behind it as the text it was written as", () => {
+		expect(
+			MarkdownDataUtils.fromMarkdown('look :attachment[]{id="gone"}', true),
+		).toEqual([
+			[
+				expect.objectContaining({ type: "text", value: "look " }),
+				expect.objectContaining({
+					type: "text",
+					value: ':attachment[]{id="gone"}',
+				}),
+			],
+		]);
+	});
+
+	it("restores pointers inline and refills the registry", () => {
 		const markdown = MarkdownDataUtils.toMarkdown(
 			[
 				[
@@ -46,9 +58,22 @@ describe("MarkdownDataUtils", () => {
 			true,
 		);
 		expect(markdown).toBe('look :attachment[]{id="attachment-1"} here');
-		expect(useMarkdownDataStore.getState().attachments).toEqual({
+		expect(useEditorPartStore.getState().parts).toEqual({
 			"attachment-1": attachment,
 		});
+	});
+
+	it("writes a block part onto a line of its own", () => {
+		const markdown = MarkdownDataUtils.toMarkdown(
+			[
+				[
+					{ id: "text-1", type: "text", value: "see" },
+					{ id: "quote-1", type: "quote", model: "gpt", text: "quoted" },
+				],
+			],
+			true,
+		);
+		expect(markdown).toBe('see\n::quote{id="quote-1"}\n');
 	});
 
 	it("keeps inline runs together and stops at non-Markdown parts", () => {
@@ -114,5 +139,22 @@ describe("MarkdownDataUtils", () => {
 			"root",
 			["p", "before  ", ["link"], "  after"],
 		]);
+	});
+
+	it("renders a command and a quote part as the directives they display as", () => {
+		expect(
+			MarkdownDataUtils.toInlineBlock([
+				[
+					{ id: "text", type: "text", value: "run " },
+					{ id: "command", type: "command", name: "model", argument: "opus" },
+				],
+			]),
+		).toBe('run :command[opus]{name="model"}');
+
+		expect(
+			MarkdownDataUtils.toInlineBlock([
+				[{ id: "quote", type: "quote", model: "gpt", text: "quoted" }],
+			]),
+		).toBe('\n\n:::quote{model="gpt"}\nquoted\n:::\n\n');
 	});
 });

@@ -1,5 +1,5 @@
 /** How closely `old_string` had to be matched to be found in the file. */
-export type FileEditStrategy = "exact" | "trimmed" | "whitespace" | "anchor";
+type FileEditStrategy = "exact" | "trimmed" | "whitespace" | "anchor";
 
 export interface FileEdit {
 	content: string;

@@ -22,7 +22,7 @@ export interface MessageStore {
 	publish: (next: MessageStoreValues) => void;
 }
 
-export type MessageStoreValues = Omit<MessageStore, "publish">;
+type MessageStoreValues = Omit<MessageStore, "publish">;
 
 const sameArray = (a: readonly unknown[], b: readonly unknown[]) =>
 	a === b || (a.length === b.length && a.every((value, i) => value === b[i]));

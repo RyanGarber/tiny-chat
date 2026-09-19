@@ -6,7 +6,8 @@ export default mergeConfig(
 	defineConfig({
 		test: {
 			include: ["**/*.test.tsx"],
-			setupFiles: ["./src/tests.tsx"],
+			globalSetup: ["../../scripts/setup-test.ts"],
+			setupFiles: ["./src/tests.ts"],
 		},
 	}),
 );

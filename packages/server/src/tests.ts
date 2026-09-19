@@ -1,3 +1,5 @@
+/// <reference types="../../../vitest.context.d.ts" />
+
 import "./db.ts";
 
 import { inferPrismaClient } from "@ryangarber/better-auth-adapter-prisma/client";

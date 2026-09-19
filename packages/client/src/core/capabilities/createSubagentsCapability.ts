@@ -2,7 +2,8 @@ import type {
 	CapabilityFactory,
 	SubagentsCapability,
 } from "@tiny-chat/core/src/core/types/capability.ts";
-import type { ChatState } from "@tiny-chat/core/src/features/data/types/chat.ts";
+import { CapabilityUtils } from "@tiny-chat/core/src/core/utils/CapabilityUtils.ts";
+import type { zAgentChat } from "@tiny-chat/core/src/features/agent/types/agent.ts";
 import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type {
 	ProviderState,
@@ -17,8 +18,8 @@ import { AgentStreamService } from "../services/StreamService.ts";
 export const createSubagentsCapability: CapabilityFactory<
 	{
 		client: Client;
-		chat: ChatState;
-		message: MessageState;
+		chat?: zAgentChat | null;
+		message?: MessageState | null;
 		providers: ProviderState<ProviderStatus>[];
 		skills: zSkill[];
 		mcpTools: Toolset<any>[];
@@ -36,8 +37,8 @@ export const createSubagentsCapability: CapabilityFactory<
 				const { data } = await ClientAgentService.runAgent({
 					client,
 					context,
-					chat,
-					prompt: message,
+					chat: CapabilityUtils.require(chat?.id ? chat : null, "subagents"),
+					prompt: CapabilityUtils.require(message, "subagents"),
 					skills,
 					mcpTools,
 					providers,

@@ -1,12 +1,27 @@
+import { useEditorPartStore } from "@tiny-chat/client/src/features/editor/stores/useEditorPartStore.ts";
 import { Blockquote as _Blockquote } from "@tiptap/extension-blockquote";
 import {
 	Node,
 	NodeViewContent,
 	NodeViewWrapper,
+	type ReactNodeViewProps,
 	ReactNodeViewRenderer,
 } from "@tiptap/react";
 import { NodeUtils } from "#app/features/editor/utils/NodeUtils.ts";
 import Quote from "#app/features/part/components/Quote.tsx";
+
+function QuoteNodeView({ node }: ReactNodeViewProps) {
+	const quote = useEditorPartStore((state) => state.parts[node.attrs.id]);
+	if (quote?.type !== "quote") return null;
+
+	return (
+		<NodeViewWrapper contentEditable={false} data-drag-handle>
+			<Quote model={quote.model} className="cursor-grab">
+				{quote.text}
+			</Quote>
+		</NodeViewWrapper>
+	);
+}
 
 const Blockquote = _Blockquote.extend({
 	addNodeView() {
@@ -23,7 +38,6 @@ const Blockquote = _Blockquote.extend({
 			Node.create({
 				name: "quote",
 				group: "block",
-				content: "block+",
 				atom: true,
 				isolating: true,
 				draggable: true,
@@ -32,13 +46,13 @@ const Blockquote = _Blockquote.extend({
 				},
 				addAttributes() {
 					return {
-						model: {
+						id: {
 							default: null,
 							parseHTML(element) {
-								return element.getAttribute("model");
+								return element.getAttribute("id");
 							},
 							renderHTML(attributes) {
-								return { model: attributes.model };
+								return { id: attributes.id };
 							},
 						},
 					};
@@ -47,20 +61,11 @@ const Blockquote = _Blockquote.extend({
 					return [{ tag: "quote" }];
 				},
 				renderHTML({ HTMLAttributes }) {
-					return ["quote", HTMLAttributes, 0];
+					return ["quote", HTMLAttributes];
 				},
-				...NodeUtils.createContainerDirective({
-					nodeName: "quote",
-					content: "block",
-				}),
+				...NodeUtils.createPointerDirective({ nodeName: "quote" }),
 				addNodeView() {
-					return ReactNodeViewRenderer(({ node }) => (
-						<NodeViewWrapper contentEditable={false} data-drag-handle>
-							<Quote model={node.attrs.model as string} className="cursor-grab">
-								<NodeViewContent contentEditable={false} />
-							</Quote>
-						</NodeViewWrapper>
-					));
+					return ReactNodeViewRenderer(QuoteNodeView);
 				},
 			}),
 		];

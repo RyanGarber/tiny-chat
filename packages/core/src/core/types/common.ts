@@ -17,6 +17,7 @@ export type DistributiveOmit<T, K extends keyof any> = T extends unknown
 	? Omit<T, K>
 	: never;
 
+/** @lintignore */
 export type CleanOmit<T, K extends PropertyKey> = {
 	[P in keyof T as P extends K ? never : P]: T[P];
 };

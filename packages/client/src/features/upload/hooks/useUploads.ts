@@ -50,6 +50,7 @@ export const useUploads = () => {
 		refetchOnWindowFocus: false,
 		refetchOnReconnect: false,
 		staleTime: Infinity,
+		retry: false,
 	});
 
 	const upload = useMutation({

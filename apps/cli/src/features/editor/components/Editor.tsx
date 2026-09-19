@@ -30,6 +30,7 @@ import { StdinUtils } from "../../../core/utils/StdinUtils.ts";
 import { useEditorStore } from "../stores/useEditorStore.ts";
 import { EditorUtils } from "../utils/EditorUtils.ts";
 import { FilePasteUtils } from "../utils/FilePasteUtils.ts";
+import { MarkdownUtils, type MarkdownWrite } from "../utils/MarkdownUtils.ts";
 import Attachments from "./Attachments.tsx";
 import Commands from "./Commands.tsx";
 import Textarea from "./Textarea.tsx";
@@ -109,7 +110,22 @@ export default function Editor({
 			.slice(0, columns - 10);
 	}, [config, modelArgs, columns, activeFolder]);
 
-	const labels = useMemo(() => EditorUtils.tokenLabels({ atoms }), [atoms]);
+	// The atoms are painted before the markdown, so a command or an attachment
+	// standing in the value keeps its own style whatever punctuation it carries.
+	const labels = useMemo(
+		() => [...EditorUtils.tokenLabels({ atoms }), ...MarkdownUtils.labels()],
+		[atoms],
+	);
+
+	const styles = useMemo(
+		() => ({
+			...MarkdownUtils.styles(colorScheme),
+			command: { color: colorScheme.primary, bold: true },
+			attachment: { color: colorScheme.primary, bold: true },
+			paste: { color: colorScheme.textSubtle, bold: true },
+		}),
+		[colorScheme],
+	);
 
 	// The content and its atoms are what the editor holds, but the message
 	// being written is what every other reader wants — so it is kept in step
@@ -154,6 +170,30 @@ export default function Editor({
 	const remove = ([start, end]: [start: number, end: number]) => {
 		setContent(content.slice(0, start) + content.slice(end));
 		setCursor(EditorUtils.cursor(content, start));
+	};
+
+	/** Writes content in whole, with the cursor left where the write leaves it. */
+	const write = ({ content: next, offset: to }: MarkdownWrite) => {
+		setContent(next);
+		setCursor(EditorUtils.cursor(next, to));
+	};
+
+	// A markdown marker closes itself as it is opened, which the text area knows
+	// nothing of: it writes the one character it was handed, and the write that
+	// should have been made in its place is put in here instead.
+	const handleChange = (next: string) => {
+		const isTyped =
+			!selection &&
+			next.length === content.length + 1 &&
+			next.slice(0, offset) === content.slice(0, offset) &&
+			next.slice(offset + 1) === content.slice(offset);
+
+		const marked = isTyped
+			? MarkdownUtils.marked({ value: content, offset, marker: next[offset] })
+			: null;
+
+		if (marked) write(marked);
+		else setContent(next);
 	};
 
 	/** Writes text in at the cursor, over whatever is selected. */
@@ -355,7 +395,7 @@ export default function Editor({
 				<Textarea
 					focus={!disabled}
 					value={content}
-					onChange={setContent}
+					onChange={handleChange}
 					cursor={cursor}
 					onCursorChange={setCursor}
 					selection={selection}
@@ -369,8 +409,16 @@ export default function Editor({
 					}
 					// Word motion and word deletion are answered above, where an atom
 					// is stepped over and taken whole.
+					//
+					// A newline carries the block it was pressed in on — a list keeps
+					// its bullet, a quote its marker — rather than starting a bare line.
 					onSubmit={() => {
-						insert("\n");
+						const broken = selection
+							? null
+							: MarkdownUtils.broken({ value: content, offset });
+
+						if (broken) write(broken);
+						else insert("\n");
 					}}
 					keybindings={{
 						Enter: !isCompletionsOpen,
@@ -386,11 +434,7 @@ export default function Editor({
 					autoNewLineLimit={0}
 					highlightActiveLine={true}
 					labels={labels}
-					styles={{
-						command: { color: colorScheme.primary, bold: true },
-						attachment: { color: colorScheme.primary, bold: true },
-						paste: { color: colorScheme.textSubtle, bold: true },
-					}}
+					styles={styles}
 					placeholder={placeholder}
 				/>
 				<TokenUsage usage={usage} categories={categories} />

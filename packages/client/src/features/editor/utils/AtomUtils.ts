@@ -1,27 +1,28 @@
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { DirectiveUtils } from "@tiny-chat/core/src/features/data/utils/DirectiveUtils.ts";
+import {
+	EDITOR_PART_TYPES,
+	EditorPartUtils,
+} from "@tiny-chat/core/src/features/data/utils/EditorPartUtils.ts";
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
-import { useMarkdownDataStore } from "../../message/stores/useMarkdownDataStore.ts";
 import { useAtomStore } from "../stores/useAtomStore.ts";
+import {
+	type EditorPart,
+	useEditorPartStore,
+} from "../stores/useEditorPartStore.ts";
 import type { Atom, AtomKind, AtomText, AtomToken } from "../types/atom.ts";
 import type { EditorNode } from "../types/node.ts";
-import { EditorNodeUtils } from "./EditorNodeUtils.ts";
-import { PASTE_LINE_LIMIT, PasteUtils } from "./PasteUtils.ts";
-
-/** The directives a message carries that an atom can be read back out of. */
-const DIRECTIVES = ["command", "attachment", "paste", "quote"] as const;
 
 /**
- * Atoms: the runs of a plain text buffer that stand in for the Markdown a
- * message travels as.
+ * Atoms: the runs of a plain text buffer that stand in for the parts a message
+ * carries.
  *
  * A command, an attachment and a long paste all read badly in an input — a
  * directive is unreadable, and a pasted file is unusable — so the buffer holds
- * a short stand-in for each of them and the Markdown is kept alongside, in
- * {@link useAtomStore}. {@link AtomUtils.serialize} puts the Markdown back
+ * a short stand-in for each of them and the part itself is kept alongside, in
+ * {@link useEditorPartStore}. {@link AtomUtils.serialize} puts the pointer back
  * before the message is sent, and {@link AtomUtils.deserialize} takes it back
- * out when a message is loaded for editing. A long paste travels as
- * `:::paste`.
+ * out when a message is loaded for editing.
  */
 export const AtomUtils = {
 	/** Every atom currently standing in the input. */
@@ -31,7 +32,7 @@ export const AtomUtils = {
 	 * Take an atom into the registry and report the text that stands for it in
 	 * the buffer.
 	 *
-	 * The same Markdown always comes back as the same atom, and two atoms never
+	 * The same part always comes back as the same atom, and two atoms never
 	 * share the text they stand as — otherwise one would be serialized as the
 	 * other. Pass `content` to drop the atoms it no longer holds.
 	 */
@@ -39,12 +40,12 @@ export const AtomUtils = {
 		content,
 		kind,
 		text,
-		markdown,
+		id,
 	}: {
 		content?: string;
 		kind: AtomKind;
 		text: AtomText;
-		markdown: string;
+		id: string;
 	}): string => {
 		const { setAtoms } = useAtomStore.getState();
 
@@ -52,9 +53,7 @@ export const AtomUtils = {
 			(atom) => content === undefined || content.includes(atom.text),
 		);
 
-		const existing = atoms.find(
-			(atom) => atom.kind === kind && atom.markdown === markdown,
-		);
+		const existing = atoms.find((atom) => atom.kind === kind && atom.id === id);
 		if (existing) {
 			setAtoms(atoms);
 			return existing.text;
@@ -66,7 +65,7 @@ export const AtomUtils = {
 			if (!atoms.some((atom) => atom.text === candidate)) unique = candidate;
 		}
 
-		setAtoms([...atoms, { kind, text: unique, markdown }]);
+		setAtoms([...atoms, { kind, text: unique, id }]);
 
 		return unique;
 	},
@@ -124,7 +123,7 @@ export const AtomUtils = {
 		return content.replace(pattern, (match) => match.replace(/[^\n]/g, " "));
 	},
 
-	/** The buffer with every atom put back as the Markdown it stands for. */
+	/** The buffer with every atom put back as the pointer it stands for. */
 	serialize: ({
 		content,
 		atoms: given,
@@ -140,219 +139,108 @@ export const AtomUtils = {
 		return content.replace(pattern, (match) => {
 			const atom = AtomUtils.find({ atoms, text: match });
 			if (!atom) return match;
-			// A paste is a container directive, which only parses as a block.
-			if (atom.kind === "paste" || atom.kind === "quote") {
-				return `\n${atom.markdown}\n`;
-			}
-			return atom.markdown;
+
+			const pointer = EditorPartUtils.toPointer({
+				type: atom.kind,
+				id: atom.id,
+			});
+			// A quote and a paste are block directives, which only parse on a line
+			// of their own.
+			return EditorPartUtils.isInline(atom.kind) ? pointer : `\n${pointer}\n`;
 		});
 	},
 
 	/** Adapt a shared editor node to the short stand-in used by a plain buffer. */
 	fromNode: ({ content, node }: { content: string; node: EditorNode }) => {
-		const markdown = EditorNodeUtils.toMarkdown(node);
-		if (node.type === "attachment") {
-			const attachment = useMarkdownDataStore.getState().attachments[node.id];
-			if (!attachment) return "";
-			return AtomUtils.attachment({
-				content,
-				id: node.id,
-				source: attachment.source,
-				directory: attachment.content.type === "directory",
-				label: attachment.label,
-				markdown,
-			});
-		}
-		if (node.type === "command") {
-			return AtomUtils.command({
-				content,
-				name: node.name,
-				value: node.value,
-				markdown,
-			});
-		}
-		if (node.type === "paste") {
-			return (
-				AtomUtils.paste({
-					content,
-					text: node.text,
-					markdown,
-					lines: node.lines,
-				}) ?? node.text
-			);
-		}
-		return AtomUtils.quote({
-			content,
-			model: node.model,
-			markdown,
-		});
+		const part = useEditorPartStore.getState().parts[node.id];
+		if (part?.type !== node.type) return "";
+		return AtomUtils.fromPart({ content, part });
 	},
 
 	/**
-	 * The inverse: a message's Markdown as a buffer, with every directive in it
-	 * taken back into an atom. Replaces the registry, since the atoms that were
-	 * standing in the buffer this one takes over from are gone with it.
+	 * The inverse of {@link AtomUtils.serialize}: a message's Markdown as a
+	 * buffer, with every pointer in it taken back into an atom. Replaces the
+	 * registry, since the atoms that were standing in the buffer this one takes
+	 * over from are gone with it.
 	 */
 	deserialize: (markdown: string) => {
 		useAtomStore.getState().setAtoms([]);
 
-		return DirectiveUtils.extractFromMarkdown(markdown, ...DIRECTIVES)
+		return DirectiveUtils.extractFromMarkdown(markdown, ...EDITOR_PART_TYPES)
 			.map(({ text, directive }) => {
-				if (directive?.tag === "command") {
-					return AtomUtils.command({
-						name: directive.attributes.name,
-						value: directive.textContent,
-						markdown: text,
-					});
-				}
-				if (directive?.tag === "attachment") {
-					const id = directive.attributes.id;
-					const attachment = useMarkdownDataStore.getState().attachments[id];
-					if (!attachment) return text;
-					return AtomUtils.attachment({
-						id,
-						source: attachment.source,
-						directory: attachment.content.type === "directory",
-						label: attachment.label,
-						markdown: text,
-					});
-				}
-				if (directive?.tag === "paste") {
-					const parsed = Number(directive.attributes.lines);
-					return (
-						AtomUtils.paste({
-							markdown: text,
-							text: "",
-							lines: Number.isFinite(parsed) && parsed > 0 ? parsed : undefined,
-						}) ?? text
-					);
-				}
-				if (directive?.tag === "quote") {
-					return AtomUtils.quote({
-						model: directive.attributes.model,
-						markdown: text,
-					});
-				}
-				return text;
+				if (!directive) return text;
+
+				const part =
+					useEditorPartStore.getState().parts[directive.attributes.id];
+				if (part?.type !== directive.tag) return text;
+
+				return AtomUtils.fromPart({ part });
 			})
 			.join("");
 	},
 
 	/**
-	 * An atom for a command, which stands as the command was typed: its name,
-	 * and the argument it was given.
+	 * The stand-in a part reads as in a plain buffer: an attachment as its name,
+	 * a command as it was typed, a quote and a paste as what they hold.
 	 */
-	command: ({
+	fromPart: ({
 		content,
-		name,
-		value,
-		markdown,
+		part,
 	}: {
 		content?: string;
-		name?: string;
-		value?: string;
-		markdown: string;
-	}) => {
-		const written = `/${name ?? ""}${value ? ` ${value}` : ""}`;
+		part: EditorPart;
+	}): string => {
+		if (part.type === "attachment") {
+			// An upload is mounted under its id, which reads as nothing at all, so
+			// one carries a label and stands as that instead of as its path.
+			const path = part.label
+				? [part.label]
+				: part.source.split(/[\\/]+/).filter(Boolean);
+			const trailing = part.content.type === "directory" ? "/" : "";
 
-		return AtomUtils.register({
-			content,
-			kind: "command",
-			text: (index) => (index ? `${written} #${index + 1}` : written),
-			markdown,
-		});
-	},
+			return AtomUtils.register({
+				content,
+				kind: "attachment",
+				id: part.id,
+				// Two files of the same name are told apart by as much of their
+				// path as it takes.
+				text: (index) => {
+					if (index < path.length) {
+						return `@${path.slice(path.length - index - 1).join("/")}${trailing}`;
+					}
+					return `@${PathUtils.name({ path })}${trailing} #${index - path.length + 2}`;
+				},
+			});
+		}
 
-	/** A quote atom is supported by plain buffers even when their UI does not expose it. */
-	quote: ({
-		content,
-		model,
-		markdown,
-	}: {
-		content?: string;
-		model?: string;
-		markdown: string;
-	}) =>
-		AtomUtils.register({
-			content,
-			kind: "quote",
-			text: (index) =>
-				index
-					? `[Quoted ${model ?? "message"} #${index + 1}]`
-					: `[Quoted ${model ?? "message"}]`,
-			markdown,
-		}),
+		if (part.type === "command") {
+			const written = `/${part.name}${part.argument ? ` ${part.argument}` : ""}`;
+			return AtomUtils.register({
+				content,
+				kind: "command",
+				id: part.id,
+				text: (index) => (index ? `${written} #${index + 1}` : written),
+			});
+		}
 
-	/**
-	 * An atom for an attachment, which stands as its name alone. Two files of
-	 * the same name are told apart by as much of their path as it takes.
-	 *
-	 * An upload is mounted under its id, which reads as nothing at all, so one
-	 * carries a `label` and stands as that instead of as its path.
-	 */
-	attachment: ({
-		content,
-		id,
-		source,
-		directory,
-		label,
-		markdown,
-	}: {
-		content?: string;
-		id: string;
-		source?: string;
-		directory?: boolean;
-		label?: string;
-		markdown: string;
-	}) => {
-		const path = label
-			? [label]
-			: (source ?? "").split(/[\\/]+/).filter(Boolean);
-		const trailing = directory ? "/" : "";
+		if (part.type === "quote") {
+			const model = part.model ?? "message";
+			return AtomUtils.register({
+				content,
+				kind: "quote",
+				id: part.id,
+				text: (index) =>
+					index ? `[Quoted ${model} #${index + 1}]` : `[Quoted ${model}]`,
+			});
+		}
 
-		return AtomUtils.register({
-			content,
-			kind: "attachment",
-			text: (index) => {
-				if (index < path.length) {
-					return `@${path.slice(path.length - index - 1).join("/")}${trailing}`;
-				}
-				return `@${PathUtils.name({ path })}${trailing} #${index - path.length + 2}`;
-			},
-			markdown: markdown || `:attachment[]{id="${id}"}`,
-		});
-	},
-
-	/**
-	 * An atom for a paste too long to read in an input, which stands as the
-	 * lines it spans. Null when the paste is short enough to go in as it is.
-	 *
-	 * Pass `markdown` when the paste is already a `:::paste` directive, so it
-	 * is not wrapped again.
-	 */
-	paste: ({
-		content,
-		text,
-		markdown,
-		lines,
-	}: {
-		content?: string;
-		text: string;
-		markdown?: string;
-		lines?: number;
-	}) => {
-		const pasted = PasteUtils.normalize(text);
-		const count = lines ?? pasted.split("\n").length;
-		if (!markdown && count < PASTE_LINE_LIMIT) return null;
-
-		const written = `[${count} pasted lines]`;
-
+		const written = `[${part.lines} pasted lines]`;
 		return AtomUtils.register({
 			content,
 			kind: "paste",
+			id: part.id,
 			text: (index) =>
-				index ? `[${count} pasted lines #${index + 1}]` : written,
-			markdown: markdown ?? PasteUtils.markdown(pasted),
+				index ? `[${part.lines} pasted lines #${index + 1}]` : written,
 		});
 	},
 } as const;

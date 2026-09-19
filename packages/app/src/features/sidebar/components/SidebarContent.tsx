@@ -34,6 +34,7 @@ import {
 import { client } from "#app/client.ts";
 import { useSentinel } from "#app/core/hooks/useSentinel.ts";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
+import scrollable from "#app/core/styles/scrollable.module.css";
 import ContextSettings from "#app/features/sidebar/components/ContextSettings.tsx";
 import Sentinel from "../../../core/components/Sentinel.tsx";
 
@@ -222,52 +223,55 @@ function FolderEditor({ editing }: { editing: FolderState }) {
 			opened={currentModal === "edit-folder"}
 			onClose={() => setCurrentModal(null)}
 			centered
+			classNames={scrollable}
 		>
-			<Stack>
-				<TextInput
-					label="Title"
-					value={title}
-					disabled={renameFolder.isPending}
-					onChange={(e) => setTitle(e.target.value)}
-					data-autofocus
-				/>
-				<TextInput
-					label="Working directory"
-					value={cwd}
-					error={cwdError}
-					disabled={!client.desktop || renameFolder.isPending || validating}
-					onChange={(event) => {
-						setCwd(event.target.value);
-						setCwdError(null);
-					}}
-				/>
-				<ContextSettings folder={editing.id} />
-				<Button.Group mt="lg">
-					<Button
-						variant="default"
-						fullWidth
-						onClick={save}
-						loading={renameFolder.isPending}
-						disabled={renameFolder.isPending || validating || !title}
-					>
-						Save
-					</Button>
-					<Button
-						variant="outline"
-						color="red"
-						onClick={() =>
-							deleteFolder.mutate(
-								{ folder: editing, deleteChats: true },
-								{ onSuccess: () => setCurrentModal(null) },
-							)
-						}
-						loading={deleteFolder.isPending}
-						disabled={deleteFolder.isPending}
-					>
-						<TrashIcon size={20} />
-					</Button>
-				</Button.Group>
-			</Stack>
+			<ScrollArea.Autosize offsetScrollbars>
+				<Stack>
+					<TextInput
+						label="Title"
+						value={title}
+						disabled={renameFolder.isPending}
+						onChange={(e) => setTitle(e.target.value)}
+						data-autofocus
+					/>
+					<TextInput
+						label="Working directory"
+						value={cwd}
+						error={cwdError}
+						disabled={!client.desktop || renameFolder.isPending || validating}
+						onChange={(event) => {
+							setCwd(event.target.value);
+							setCwdError(null);
+						}}
+					/>
+					<ContextSettings folder={editing.id} />
+					<Button.Group mt="lg">
+						<Button
+							variant="default"
+							fullWidth
+							onClick={save}
+							loading={renameFolder.isPending}
+							disabled={renameFolder.isPending || validating || !title}
+						>
+							Save
+						</Button>
+						<Button
+							variant="outline"
+							color="red"
+							onClick={() =>
+								deleteFolder.mutate(
+									{ folder: editing, deleteChats: true },
+									{ onSuccess: () => setCurrentModal(null) },
+								)
+							}
+							loading={deleteFolder.isPending}
+							disabled={deleteFolder.isPending}
+						>
+							<TrashIcon size={20} />
+						</Button>
+					</Button.Group>
+				</Stack>
+			</ScrollArea.Autosize>
 		</Modal>
 	);
 }

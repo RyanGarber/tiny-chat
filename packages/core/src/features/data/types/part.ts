@@ -38,6 +38,7 @@ export const zJsonPart = _zDataPart.extend({
 });
 export type zJsonPart = z.infer<typeof zJsonPart>;
 
+/** @lintignore */
 export const zDirectoryPart = _zDataPart.extend({
 	type: z.literal("directory"),
 	items: z.array(
@@ -46,6 +47,7 @@ export const zDirectoryPart = _zDataPart.extend({
 });
 export type zDirectoryPart = z.infer<typeof zDirectoryPart>;
 
+/** @lintignore */
 export const zWebPart = _zDataPart.extend({
 	type: z.literal("web"),
 	title: z.string().optional(),
@@ -98,6 +100,39 @@ export const zAttachmentPart = _zDataPart.extend({
 });
 export type zAttachmentPart = z.infer<typeof zAttachmentPart>;
 
+/**
+ * A slash command written into a message rather than run on the client.
+ *
+ * Only the commands that travel reach here: `/clear` and `/model` act on the
+ * client and are taken out of the editor as they are run.
+ */
+export const zCommandPart = _zDataPart.extend({
+	type: z.literal("command"),
+	name: z.string(),
+	/** What the command is, where that is not its name — `skill:<path>`. */
+	value: z.string().optional(),
+	/** The argument it was given, for a command that takes one. */
+	argument: z.string().optional(),
+});
+export type zCommandPart = z.infer<typeof zCommandPart>;
+
+export const zQuotePart = _zDataPart.extend({
+	type: z.literal("quote"),
+	model: z.string().optional(),
+	text: z.string(),
+});
+export type zQuotePart = z.infer<typeof zQuotePart>;
+
+export const zPastePart = _zDataPart.extend({
+	type: z.literal("paste"),
+	text: z.string(),
+	lines: z.number(),
+	language: z.string().nullish(),
+	/** Whether it is long enough to be shown folded rather than as a block. */
+	collapsed: z.boolean().optional(),
+});
+export type zPastePart = z.infer<typeof zPastePart>;
+
 export const zInterjectionPart = _zDataPart.extend({
 	type: z.literal("interjection"),
 	get value() {
@@ -112,6 +147,9 @@ export const zDataPart = z.discriminatedUnion("type", [
 	zJsonPart,
 	zFilePart,
 	zAttachmentPart,
+	zCommandPart,
+	zQuotePart,
+	zPastePart,
 	zToolCallPart,
 	zToolResultPart,
 	zAbortPart,

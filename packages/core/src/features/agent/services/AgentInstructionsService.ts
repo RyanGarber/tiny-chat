@@ -32,7 +32,7 @@ export const AgentInstructionsService = {
 		);
 		const memories = (
 			await capabilities.memories?.retrieveMemories({
-				chat: context.chat,
+				chat: context.chat?.id ? { id: context.chat.id } : null,
 				tokens: settings.memoryBudget,
 			})
 		)?.sort((a, b) => a.id.localeCompare(b.id));

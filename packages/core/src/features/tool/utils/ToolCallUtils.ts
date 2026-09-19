@@ -37,10 +37,7 @@ const UNKNOWN = {
 	output: z.unknown(),
 } satisfies ToolDefinition;
 
-export type ToolCallDisplay<
-	T extends ToolDefinition,
-	U extends boolean = false,
-> = {
+type ToolCallDisplay<T extends ToolDefinition, U extends boolean = false> = {
 	name: T["name"];
 	status: (string | { subject: string })[];
 	approval?: "pending" | "approved" | "rejected";

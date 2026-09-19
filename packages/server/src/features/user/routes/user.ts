@@ -14,11 +14,17 @@ export const user = router({
 	}),
 
 	getCache: procedure
-		.input(z.object({ update: z.boolean().optional() }))
+		.input(
+			z.object({
+				update: z.boolean().optional(),
+				providers: z.array(z.string()).optional(),
+			}),
+		)
 		.query(async ({ ctx, input }) => {
 			return CacheService.getCache({
 				user: ctx.session.user,
 				update: !ctx.session.user.settings.useProviderCache || input.update,
+				providers: input.providers,
 			});
 		}),
 

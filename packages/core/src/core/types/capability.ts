@@ -1,6 +1,6 @@
 import type { zAgentContext } from "../../features/agent/types/agent.ts";
 import type { ActionState } from "../../features/data/types/action.ts";
-import type { ChatLike, FolderLike } from "../../features/data/types/chat.ts";
+import type { ChatLike } from "../../features/data/types/chat.ts";
 import type {
 	MemorySearchResult,
 	MemoryState,
@@ -10,7 +10,6 @@ import type {
 	MessageSearchResult,
 } from "../../features/data/types/message.ts";
 import type { zData } from "../../features/data/types/part.ts";
-import type { zSettings } from "../../features/data/types/user.ts";
 import type { FileNode } from "../../features/file/types/file.ts";
 import type { zWebContext } from "../../features/provider/types/web.ts";
 import type { Enum } from "../services/PostgresService.ts";
@@ -21,8 +20,11 @@ export interface WebCapability {
 	view: (_: { url: string }) => Promise<zWebContext>;
 }
 
-export interface SettingsCapability {
-	get: (_: { folder: FolderLike }) => Promise<zSettings>;
+export interface GitHubCapability {
+	request: (_: {
+		path: string;
+		query?: Record<string, string | number | boolean | undefined>;
+	}) => Promise<unknown>;
 }
 
 export interface EmbeddingCapability {
@@ -128,7 +130,7 @@ export interface ShellCapability {
 
 export interface Capabilities {
 	web?: WebCapability;
-	settings?: SettingsCapability;
+	github?: GitHubCapability;
 	embedding?: EmbeddingCapability;
 	subagents?: SubagentsCapability;
 	actions?: ActionsCapability;

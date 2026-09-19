@@ -69,7 +69,7 @@ export const createClient = ({
 	desktop,
 	queryClient = new QueryClient(),
 }: {
-	env: Record<string, string | undefined>;
+	env: zEnv;
 	host?: string;
 	getToken: () => string | null | undefined;
 	setToken: (token: string | null | undefined) => void;

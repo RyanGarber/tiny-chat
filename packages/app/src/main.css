@@ -510,11 +510,18 @@ body:not(.unselectable) .selectable * {
 	}
 }
 
-:root {
+[data-mantine-color-scheme="dark"] {
 	--glass: rgba(38, 38, 40, 0.6);
-	--glass-variant: rgb(0, 0, 0, 0.6);
-	--glass-blur: saturate(220%) blur(16px);
+	--glass-variant: rgb(0, 0, 0, 0.2);
 	--glass-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+	--glass-blur: saturate(220%) blur(16px);
+}
+
+[data-mantine-color-scheme="light"] {
+	--glass: rgba(255, 255, 255, 0.6);
+	--glass-variant: rgb(255, 255, 255, 0.1);
+	--glass-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+	--glass-blur: saturate(220%) blur(16px);
 }
 
 /* Core styles */

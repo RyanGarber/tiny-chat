@@ -5,6 +5,7 @@ import type {
 	AttachmentQuery,
 } from "../types/attachment.ts";
 import type { CommandEdit } from "../types/command.ts";
+import type { EditorNode } from "../types/node.ts";
 import { AtomUtils } from "./AtomUtils.ts";
 import { CommandUtils } from "./CommandUtils.ts";
 
@@ -102,27 +103,18 @@ export const AttachmentUtils = {
 
 	/**
 	 * Write the chosen attachment into a plain text buffer as an atom standing
-	 * for its directive, which is the file's name alone.
+	 * for its part, which is the file's name alone.
 	 */
 	apply: ({
 		content,
 		query,
-		item,
-		id,
+		node,
 	}: {
 		content: string;
 		query: AttachmentQuery;
-		item: AttachmentItem;
-		id: string;
+		node: EditorNode;
 	}): CommandEdit => {
-		const text = AtomUtils.attachment({
-			content,
-			id,
-			source: item.value,
-			directory: item.directory,
-			label: item.label,
-			markdown: `:attachment[]{id="${id}"}`,
-		});
+		const text = AtomUtils.fromNode({ content, node });
 
 		return CommandUtils.edit({
 			content,

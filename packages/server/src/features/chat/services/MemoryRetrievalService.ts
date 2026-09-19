@@ -12,8 +12,7 @@ import { EmbeddingService } from "../../embedding/services/EmbeddingService.ts";
 import { MemoryUtils } from "../utils/MemoryUtils.ts";
 import { MemorySearchService } from "./MemorySearchService.ts";
 
-export const DREAM_MEMORY_TOKENS = 12_000;
-export const MEMORY_BOILERPLATE = `<memory id="" category="" stability="" learned="">\n\n</memory>`;
+const MEMORY_BOILERPLATE = `<memory id="" category="" stability="" learned="">\n\n</memory>`;
 
 export const MemoryRetrievalService = {
 	withinBudget: <

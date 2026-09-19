@@ -230,14 +230,14 @@ Root scripts run under `dotenv --`.
 
 All root scripts use the repo-root `.env`.
 
-|                      |                                                                                      |
-|----------------------|--------------------------------------------------------------------------------------|
-| Web (Vite + server)  | `pnpm dev:web`                                                                       |
-| Desktop              | `pnpm dev:tauri`                                                                     |
-| iOS / Android        | `pnpm dev:tauri:ios` / `dev:tauri:android`                                           |
-| CLI                  | `pnpm dev:cli`                                                                       |
-| Server only          | `pnpm dev:server` (`node --watch`)                                                   |
-| Lint / types / tests | `pnpm lint`, `pnpm check`, `pnpm test` (per-package `lint:*` / `check:*` / `test:*`) |
+|                      |                                                                                                 |
+|----------------------|-------------------------------------------------------------------------------------------------|
+| Web (Vite + server)  | `pnpm dev:web`                                                                                  |
+| Desktop              | `pnpm dev:tauri`                                                                                |
+| iOS / Android        | `pnpm dev:tauri:ios` / `dev:tauri:android`                                                      |
+| CLI                  | `pnpm dev:cli`                                                                                  |
+| Server only          | `pnpm dev:server` (`node --watch`)                                                              |
+| Lint / types / tests | `turbo lint`, `turbo typecheck`, `turbo test` (per-package `*#lint` / `*#typecheck` / `*#test`) |
 
 `scripts/use-server.ts` starts or waits on the backend before web/tauri.
 

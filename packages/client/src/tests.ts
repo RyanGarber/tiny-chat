@@ -1,21 +1,21 @@
 // biome-ignore-all lint/correctness/noChildrenProp: fixture
-// biome-ignore-all lint/correctness/useHookAtTopLevel: fixture
+/// <reference types="../../../vitest.context.d.ts" />
 
 import "temporal-polyfill/full/global";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { zEnv } from "@tiny-chat/core/src/core/types/env.ts";
 import { createElement, type ReactNode } from "react";
-import { useServerProcess } from "../../../scripts/use-server.ts";
+import { inject } from "vitest";
 import { type Client, ClientContext, createClient } from "./client.ts";
 
 let client: Client;
 let token: string | null | undefined;
 
-export async function onBeforeAll() {
-	await useServerProcess();
-
+export async function onBeforeAll({ env }: { env: zEnv }) {
 	client = createClient({
-		env: { ...process.env },
+		env,
+		host: inject("serverUrl"),
 		getToken: () => token,
 		setToken: (value) => (token = value),
 		getStorage: () => null,

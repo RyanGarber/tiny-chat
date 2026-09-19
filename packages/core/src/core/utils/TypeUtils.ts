@@ -1,3 +1,5 @@
+import "temporal-polyfill/full/global";
+
 const TEMPORAL_CTORS = {
 	"Temporal.PlainDateTime": Temporal.PlainDateTime,
 	"Temporal.PlainDate": Temporal.PlainDate,

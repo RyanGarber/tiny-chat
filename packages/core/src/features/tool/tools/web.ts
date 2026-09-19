@@ -4,9 +4,7 @@ import { createSearchWebTool } from "./web/search_web.ts";
 import { createViewWebTool } from "./web/view_web.ts";
 
 export const createWebToolset: ToolsetFactory<
-	Toolset<{
-		provider: WebCapability;
-	}>
+	Toolset<{ web: WebCapability }>
 > = async (options) => ({
 	name: "web",
 	tools: [await createSearchWebTool(options), await createViewWebTool(options)],

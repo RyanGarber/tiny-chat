@@ -6,10 +6,7 @@ import { testUser } from "../../../tests.ts";
 import { EmbeddingService } from "../../embedding/services/EmbeddingService.ts";
 import { MessageService } from "../../message/services/MessageService.ts";
 import { ChatService } from "./ChatService.ts";
-import {
-	DREAM_MEMORY_TOKENS,
-	MemoryRetrievalService,
-} from "./MemoryRetrievalService.ts";
+import { MemoryRetrievalService } from "./MemoryRetrievalService.ts";
 import { MemorySearchService } from "./MemorySearchService.ts";
 import { MemoryService } from "./MemoryService.ts";
 
@@ -167,10 +164,7 @@ describe("MemoryRetrievalService", () => {
 				>[0][number],
 		);
 		const normal = MemoryRetrievalService.withinBudget(memories, tokens);
-		const dream = MemoryRetrievalService.withinBudget(
-			memories,
-			DREAM_MEMORY_TOKENS,
-		);
+		const dream = MemoryRetrievalService.withinBudget(memories, 12_000);
 		expect(dream.length).toBeGreaterThan(normal.length);
 		expect(dream.length).toBeLessThan(memories.length);
 		expect(

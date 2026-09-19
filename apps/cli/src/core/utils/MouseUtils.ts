@@ -12,7 +12,7 @@ export type MouseBounds = MousePoint & {
 	height: number;
 };
 
-export type MouseButton = "left" | "middle" | "right" | "none";
+type MouseButton = "left" | "middle" | "right" | "none";
 
 export type MouseEvent = MousePoint & {
 	type: "down" | "up" | "move" | "wheel";

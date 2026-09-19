@@ -1,6 +1,6 @@
 import type { EditorNode } from "@tiny-chat/client/src/features/editor/types/node.ts";
 import { EditorNodeUtils } from "@tiny-chat/client/src/features/editor/utils/EditorNodeUtils.ts";
-import { useMarkdownDataStore } from "@tiny-chat/client/src/features/message/stores/useMarkdownDataStore.ts";
+import { EditorPartUtils } from "@tiny-chat/core/src/features/data/utils/EditorPartUtils.ts";
 import type { Fragment, Node } from "@tiptap/pm/model";
 import { Selection } from "@tiptap/pm/state";
 import type { Content } from "@tiptap/react";
@@ -29,40 +29,33 @@ export const EditorUtils = {
 		return node ? EditorUtils.insertNode(node) : false;
 	},
 
+	/**
+	 * Write a pointer to an already-registered part in wherever the cursor is.
+	 *
+	 * Every kind goes in the same way — the node carries the id and the node
+	 * view reads the part — apart from a paste short enough to read, which is
+	 * the code block it stands for rather than anything to fold away.
+	 */
 	insertNode: (node: EditorNode) => {
-		if (node.type === "quote") {
+		const part = EditorNodeUtils.part(node);
+		if (!part) return false;
+
+		if (part.type === "paste" && !part.collapsed) {
 			return EditorUtils.insert({
-				type: "quote",
-				attrs: { model: node.model },
-				content: [
-					{ type: "paragraph", content: [{ type: "text", text: node.text }] },
-				],
+				type: "codeBlock",
+				attrs: { language: part.language },
+				content: part.text ? [{ type: "text", text: part.text }] : [],
 			});
 		}
-		if (node.type === "attachment") {
-			if (!useMarkdownDataStore.getState().attachments[node.id]) return false;
-			return EditorUtils.insert([
-				{
-					type: "attachment",
-					attrs: { id: node.id },
-				},
-				{ type: "text", text: " " },
-			]);
-		}
-		if (node.type === "command") return false;
-		const codeBlock = {
-			type: "codeBlock",
-			attrs: { language: node.language },
-			content: node.text ? [{ type: "text", text: node.text }] : [],
-		};
+
+		const type = part.type === "paste" ? "pasteBlock" : part.type;
+		const pointer = { type, attrs: { id: node.id } };
+
+		// An inline chip is typed on past, so it is given somewhere to land.
 		return EditorUtils.insert(
-			node.collapsed
-				? {
-						type: "pasteBlock",
-						attrs: { lines: String(node.lines) },
-						content: [codeBlock],
-					}
-				: codeBlock,
+			EditorPartUtils.isInline(part.type)
+				? [pointer, { type: "text", text: " " }]
+				: pointer,
 		);
 	},
 

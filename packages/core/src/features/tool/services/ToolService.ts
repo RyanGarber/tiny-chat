@@ -1,6 +1,7 @@
 import type { Capabilities } from "../../../core/types/capability.ts";
 import { PathUtils } from "../../file/utils/PathUtils.ts";
 import { createActionsToolset } from "../tools/actions.ts";
+import { createGitHubToolset } from "../tools/github.ts";
 import { createMemoriesToolset } from "../tools/memories.ts";
 import { createQuestionsToolset } from "../tools/questions.ts";
 import { edit_file } from "../tools/shell/edit_file.ts";
@@ -15,6 +16,29 @@ import { createSubagentsToolset } from "../tools/subagents.ts";
 import { createWebToolset } from "../tools/web.ts";
 import type { Toolset } from "../types/tool.ts";
 
+/**
+ * The options a toolset factory is built from, worked out from the capabilities
+ * the message actually has.
+ *
+ * `needs` are the capabilities the toolset cannot work without — one of them is
+ * enough, so the shell toolset, happy with either shell, names both. Tools are
+ * typed against what they need and only ever run inside a valid toolset, so a
+ * missing capability is passed along as the nothing it is rather than faked.
+ */
+const forToolset = <TNeeds extends keyof Capabilities>({
+	capabilities,
+	needs,
+	instructions,
+}: {
+	capabilities: Capabilities;
+	needs: readonly TNeeds[];
+	instructions: string;
+}) => ({
+	instructions,
+	capabilities: capabilities as Required<Pick<Capabilities, TNeeds>>,
+	status: { valid: needs.some((need) => !!capabilities[need]) },
+});
+
 export const ToolService = {
 	getTools: async ({
 		capabilities,
@@ -22,36 +46,48 @@ export const ToolService = {
 		capabilities: Capabilities;
 	}): Promise<Toolset<any>[]> => {
 		return await Promise.all([
-			await createActionsToolset({
-				instructions:
-					"Actions are recurring prompts, good for reminders and regular updates on topics. When a topic would benefit from such updates, ask the user if they'd like an action.",
-				capabilities: {
-					actions: capabilities.actions ?? (void 0 as never),
-				},
-				status: { valid: !!capabilities.actions },
-			}),
+			await createGitHubToolset(
+				forToolset({
+					capabilities,
+					needs: ["github"],
+					instructions:
+						"Use GitHub tools for focused repository exploration: inspect repository metadata and releases, read remote files, review commit diffs, and investigate issues or pull requests. Prefer them over general web tools for GitHub repository content. All GitHub tools are read-only.",
+				}),
+			),
 
-			await createMemoriesToolset({
-				instructions:
-					"Use these tools to manage memories about the user or to search prior memories/chats when it would improve a response.",
-				capabilities: {
-					memories: capabilities.memories ?? (void 0 as never),
-					embedding: capabilities.embedding ?? (void 0 as never),
-				},
-				status: { valid: !!capabilities.memories },
-			}),
+			await createActionsToolset(
+				forToolset({
+					capabilities,
+					needs: ["actions"],
+					instructions:
+						"Actions are recurring prompts, good for reminders and regular updates on topics. When a topic would benefit from such updates, ask the user if they'd like an action.",
+				}),
+			),
 
-			await createWebToolset({
-				instructions:
-					"You have full access to the web. While you should rely training knowledge for basic, historical, and static facts, always search when a topic could benefit from a more well-rounded or up-to-date answer.",
-				capabilities: {
-					provider: capabilities.web ?? (void 0 as never),
-				},
-				status: { valid: !!capabilities.web },
-			}),
+			await createMemoriesToolset(
+				forToolset({
+					capabilities,
+					// Embeddings only sharpen the search, so they are not required.
+					needs: ["memories"],
+					instructions:
+						"Use these tools to manage memories about the user or to search prior memories/chats when it would improve a response.",
+				}),
+			),
 
-			await createShellToolset({
-				instructions: `You have access to filesystem and shell tools in the following contexts:
+			await createWebToolset(
+				forToolset({
+					capabilities,
+					needs: ["web"],
+					instructions:
+						"You have full access to the web. While you should rely training knowledge for basic, historical, and static facts, always search when a topic could benefit from a more well-rounded or up-to-date answer.",
+				}),
+			),
+
+			await createShellToolset(
+				forToolset({
+					capabilities,
+					needs: ["shell", "chatShell"],
+					instructions: `You have access to filesystem and shell tools in the following contexts:
 ${capabilities.shell ? `- Anything OUTSIDE of \`${PathUtils.mount}\`: the user's local shell. Use this any time you need to work with the user's local files or system.` : ""}
 ${capabilities.chatShell ? `- Anything INSIDE of \`${PathUtils.mount}\`: the virtual chat shell. Use this any time you need a scratch pad or to access the user's uploads.` : ""}
 
@@ -76,13 +112,10 @@ Current working directories (each shell resolves relative command paths from its
 - User shell (\`shell_exec\` with \`mnt: false\`, user's machine): ${(await capabilities.shell?.cwd?.()) ?? "unavailable"}
 - Chat shell (\`shell_exec\` with \`mnt: true\`, virtual \`/mnt\` filesystem): ${(await capabilities.chatShell?.cwd?.()) ?? "unavailable"}
 These are separate filesystems. Changing directory in one does not change the other. Use absolute paths for file tools.`,
-				capabilities: {
-					shell: capabilities.shell ?? (void 0 as never),
-					chatShell: capabilities.chatShell ?? (void 0 as never),
-				},
-				status: { valid: !!capabilities.shell || !!capabilities.chatShell },
-			}),
+				}),
+			),
 
+			// Asking the user something needs nothing of the host.
 			await createQuestionsToolset({
 				instructions:
 					"You can ask the user questions mid-response, best used for getting more information or clarifying their intent before continuing.",
@@ -90,14 +123,14 @@ These are separate filesystems. Changing directory in one does not change the ot
 				status: { valid: true },
 			}),
 
-			await createSubagentsToolset({
-				instructions:
-					"You can spawn subagents to do work for you and come back with a result. Use this for tasks that require a lot of context, such as exploring a codebase, to keep your context clean so you can focus on reasoning.",
-				capabilities: {
-					subagents: capabilities.subagents ?? (void 0 as never),
-				},
-				status: { valid: !!capabilities.subagents },
-			}),
+			await createSubagentsToolset(
+				forToolset({
+					capabilities,
+					needs: ["subagents"],
+					instructions:
+						"You can spawn subagents to do work for you and come back with a result. Use this for tasks that require a lot of context, such as exploring a codebase, to keep your context clean so you can focus on reasoning.",
+				}),
+			),
 		]);
 	},
 } as const;

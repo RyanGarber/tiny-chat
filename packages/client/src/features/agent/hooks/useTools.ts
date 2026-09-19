@@ -22,16 +22,14 @@ export const nativeToolsQueryKey = ["useTools", "nativeTools"] as const;
 export const mcpToolsQueryKey = ["useTools", "mcpTools"] as const;
 
 export const useTools = () => {
-	const { presumedCapabilities } = useCapabilities({
-		future: true,
-	});
-	const { mcpServers } = useMcp();
+	const { capabilities } = useCapabilities({ future: true });
+	const { mcpServers, refreshMcpServers } = useMcp();
 
 	const nativeTools = useQuery({
-		queryKey: [...nativeToolsQueryKey, presumedCapabilities.data],
+		queryKey: [...nativeToolsQueryKey, capabilities.data],
 		queryFn: async () => {
 			return await ToolService.getTools({
-				capabilities: presumedCapabilities.data ?? {},
+				capabilities: capabilities.data ?? {},
 			});
 		},
 		staleTime: Infinity,
@@ -124,5 +122,13 @@ export const useTools = () => {
 		return { tools, toolsets };
 	}, [nativeTools.data, mcpTools.data]);
 
-	return { nativeTools, mcpTools, tools, toolsets, presumedCapabilities };
+	return {
+		nativeTools,
+		mcpTools,
+		mcpServers,
+		refreshMcpServers,
+		tools,
+		toolsets,
+		capabilities,
+	};
 };

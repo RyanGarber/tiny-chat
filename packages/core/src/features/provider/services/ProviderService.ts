@@ -12,17 +12,21 @@ export const ProviderService = {
 
 	getProviderStates: async ({
 		user,
+		names,
 	}: {
 		user: zUser;
+		names?: string[];
 	}): Promise<ProviderState<ProviderStatus>[]> => {
 		return Promise.all(
-			ProviderService.providers.map(
-				async (provider) =>
-					({
-						...provider,
-						status: await provider.getStatus({ user }),
-					}) satisfies ProviderState<ProviderStatus>,
-			),
+			ProviderService.providers
+				.filter((provider) => !names || names.includes(provider.name))
+				.map(
+					async (provider) =>
+						({
+							...provider,
+							status: await provider.getStatus({ user }),
+						}) satisfies ProviderState<ProviderStatus>,
+				),
 		);
 	},
 } as const;

@@ -1,5 +1,5 @@
 import Text from "../../../core/components/Text.tsx";
-import render from "../../../tests.tsx";
+import render from "../../../tests.ts";
 import Quote from "./Quote.tsx";
 
 describe("Quote", () => {

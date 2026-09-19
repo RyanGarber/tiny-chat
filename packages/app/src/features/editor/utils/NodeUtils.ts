@@ -1,4 +1,8 @@
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
+import {
+	type EditorPartType,
+	EditorPartUtils,
+} from "@tiny-chat/core/src/features/data/utils/EditorPartUtils.ts";
 import type { MarkdownToken, NodeConfig } from "@tiptap/react";
 
 export const NodeUtils = {
@@ -48,13 +52,6 @@ export const NodeUtils = {
 						match[2]?.trim() ?? "",
 					);
 
-					console.log(`[createInlineDirective] tokenize:`, {
-						src,
-						match,
-						content,
-						attributes,
-						tokens,
-					});
 					return {
 						type: nodeName,
 						attributes,
@@ -72,6 +69,83 @@ export const NodeUtils = {
 				if (attributes) attributes = `{${attributes}}`;
 
 				return `:${name}[${content}]${attributes}`;
+			},
+		};
+	},
+
+	/**
+	 * Create the directive an editor document holds an editor part as.
+	 *
+	 * A pointer carries an id and nothing else: the part it names is where the
+	 * attachment's bytes, the paste's body and the command's argument actually
+	 * live, so nothing about the node is written into the document twice. A
+	 * node may still hold content — a command's argument is typed into the
+	 * chip — but that content is an editing surface, not the record of it, and
+	 * is never serialized.
+	 *
+	 * @param getContent The part's own text, put back as the node's content
+	 * 	when a message is loaded for editing.
+	 * @example
+	 * :attachment[]{id="…"}
+	 * ::paste{id="…"}
+	 */
+	createPointerDirective: ({
+		nodeName,
+		name = nodeName,
+		getContent,
+	}: {
+		nodeName: string;
+		name?: string;
+		getContent?: (id: string) => string | undefined;
+	}): Partial<NodeConfig<any, any>> => {
+		const inline = EditorPartUtils.isInline(name as EditorPartType);
+
+		return {
+			parseMarkdown(token, helpers) {
+				return helpers.createNode(
+					nodeName,
+					{ id: token.attributes?.id },
+					helpers.parseInline(token.tokens ?? []),
+				);
+			},
+
+			markdownTokenizer: {
+				name: nodeName,
+				level: inline ? "inline" : "block",
+				start(src) {
+					const regex = inline
+						? new RegExp(`:${name}\\[]{[^}]*}`)
+						: new RegExp(`^::${name}{[^}]*}`, "m");
+					const match = src.match(regex);
+					if (match?.index === undefined) return -1;
+
+					return match.index;
+				},
+				tokenize(src, _tokens, lexer) {
+					const regex = inline
+						? new RegExp(`^:${name}\\[]{([^}]*)}`)
+						: new RegExp(`^::${name}{([^}]*)}`);
+					const match = src.match(regex);
+					if (!match) return undefined;
+
+					const attributes = CommonUtils.toAttributesObject(match[1]?.trim());
+					const content = getContent?.(attributes.id) ?? "";
+
+					return {
+						type: nodeName,
+						attributes,
+						content,
+						tokens: content ? lexer.inlineTokens(content) : [],
+						raw: match[0],
+					};
+				},
+			},
+
+			renderMarkdown(node) {
+				return EditorPartUtils.toPointer({
+					type: name as EditorPartType,
+					id: node.attrs?.id,
+				});
 			},
 		};
 	},

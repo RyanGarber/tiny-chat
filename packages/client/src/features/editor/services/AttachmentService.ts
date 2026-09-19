@@ -2,9 +2,9 @@ import { AttachmentService as CoreAttachmentService } from "@tiny-chat/core/src/
 import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
 import type { Client } from "../../../client.ts";
 import { createChatShellCapability } from "../../../core/capabilities/createChatShellCapability.ts";
-import { useMarkdownDataStore } from "../../message/stores/useMarkdownDataStore.ts";
 import type { AttachmentItem } from "../types/attachment.ts";
 import type { EditorNode } from "../types/node.ts";
+import { EditorNodeUtils } from "../utils/EditorNodeUtils.ts";
 
 export const AttachmentService = {
 	create: async ({
@@ -13,7 +13,7 @@ export const AttachmentService = {
 	}: {
 		client: Client;
 		item: AttachmentItem;
-	}): Promise<Extract<EditorNode, { type: "attachment" }>> => {
+	}): Promise<EditorNode> => {
 		const source = item.value;
 		const mounted = PathUtils.fromMount({ path: source });
 		const shell =
@@ -35,7 +35,6 @@ export const AttachmentService = {
 				view: async ({ url }) => await client.api.web.view.query({ url }),
 			},
 		});
-		useMarkdownDataStore.getState().addAttachment(attachment);
-		return { type: "attachment", id: attachment.id };
+		return EditorNodeUtils.create(attachment);
 	},
 } as const;

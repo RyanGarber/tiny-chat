@@ -5,7 +5,7 @@ export default mergeConfig(
 	baseConfig,
 	defineConfig({
 		test: {
-			globalSetup: ["./src/tests.global.ts"],
+			globalSetup: ["../../scripts/setup-test.ts"],
 			setupFiles: ["./src/tests.ts"],
 		},
 	}),

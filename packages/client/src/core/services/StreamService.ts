@@ -50,7 +50,7 @@ const notify = (key: string) => {
  * The `chat` parameter that `AgentStreamService` required on `clear` and `abort`
  * is now stored at `start` time and applied automatically.
  */
-export class StreamService<T> {
+class StreamService<T> {
 	// ── Read ──────────────────────────────────────────────────────────────────
 
 	get(key: string): StreamState<T> | undefined {

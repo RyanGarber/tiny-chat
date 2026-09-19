@@ -20,7 +20,7 @@ export type ScrollAlign =
 	/** Moves by the least amount that brings the child fully into view. */
 	"auto" | "top" | "bottom" | "center";
 
-export interface ScrollViewRef {
+interface ScrollViewRef {
 	/** Rows between the top of the content and the top of the viewport. */
 	getScrollOffset: () => number;
 	getContentHeight: () => number;

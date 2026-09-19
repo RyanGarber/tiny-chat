@@ -65,14 +65,10 @@ export const MemoryService = {
 						userId: user.id,
 					});
 			if (!memory) throw new Error("Memory not found");
-			await tx.execute(
-				globalThis.db.raw.sql`
-				UPDATE memory SET embedding = NULLIF(${embedding ? JSON.stringify(embedding) : ""}, '')::vector
-				WHERE id = ${memory.id} AND "userId" = ${user.id}
-			`
-					.affectedCount()
-					.build(),
-			);
+			await tx.orm.public.Memory.where({
+				id: memory.id,
+				userId: user.id,
+			}).update({ embedding: embedding ?? null });
 			return MemoryUtils.toMemoryState(memory);
 		});
 	},

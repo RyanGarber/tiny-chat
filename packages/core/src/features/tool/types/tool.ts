@@ -16,7 +16,7 @@ export interface ToolDefinition {
 	stream?: z.ZodType | void;
 }
 
-export interface ToolValidation {
+interface ToolValidation {
 	approval?: boolean;
 }
 
@@ -68,7 +68,7 @@ export type ToolFactory<T extends Tool<any, any>> = (options: {
 	capabilities: T["capabilities"];
 }) => T | Promise<T>;
 
-export interface ToolsetStatus {
+interface ToolsetStatus {
 	valid: boolean;
 	error?: unknown;
 }

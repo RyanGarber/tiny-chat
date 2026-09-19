@@ -6,7 +6,7 @@ type PossibleRef<T> = Ref<T> | undefined;
 
 type RefCleanup<T> = ReturnType<RefCallback<T>>;
 
-export function assignRef<T>(ref: PossibleRef<T>, value: T): RefCleanup<T> {
+function assignRef<T>(ref: PossibleRef<T>, value: T): RefCleanup<T> {
 	if (typeof ref === "function") {
 		return ref(value);
 	} else if (typeof ref === "object" && ref !== null && "current" in ref) {
@@ -14,7 +14,7 @@ export function assignRef<T>(ref: PossibleRef<T>, value: T): RefCleanup<T> {
 	}
 }
 
-export function mergeRefs<T>(...refs: PossibleRef<T>[]): RefCallback<T> {
+function mergeRefs<T>(...refs: PossibleRef<T>[]): RefCallback<T> {
 	const cleanupMap = new Map<PossibleRef<T>, Exclude<RefCleanup<T>, void>>();
 
 	return (node: T | null) => {

@@ -2,7 +2,7 @@ import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatSe
 import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
 import { useEffect, useRef } from "react";
 
-export const getHashbang = (): {
+const getHashbang = (): {
 	hash: string;
 	query: Record<string, string>;
 } => {
@@ -17,7 +17,7 @@ export const getHashbang = (): {
 	};
 };
 
-export const setHashbang = (
+const setHashbang = (
 	hash: string | null,
 	query?: Record<string, string | undefined>,
 ) => {

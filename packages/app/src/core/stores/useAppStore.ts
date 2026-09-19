@@ -1,8 +1,8 @@
 import { create } from "zustand";
 
-export type DrawerType = "settings" | "account";
+type DrawerType = "settings" | "account";
 
-export type ModalType =
+type ModalType =
 	| "embedding-config"
 	| "delete-account"
 	| "edit-chat"

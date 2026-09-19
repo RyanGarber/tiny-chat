@@ -1,5 +1,5 @@
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
-import { AuthServer } from "../../../core/utils/AuthServer.ts";
+import { GitHubAccountService } from "../../user/services/GitHubAccountService.ts";
 import { UploadUtils } from "../utils/UploadUtils.ts";
 import { UploadFileService } from "./UploadFileService.ts";
 
@@ -22,20 +22,9 @@ export const GitHubService = {
 	 * Get an up-to-date access token for a user's GitHub.
 	 */
 	getToken: async ({ user }: { user: zUser }) => {
-		const account = await globalThis.db.orm.public.Account.where({
-			userId: user.id,
-			providerId: "github",
-		}).first();
-		if (!account) throw new Error("missing account");
-
-		const result = await AuthServer.api.getAccessToken({
-			body: {
-				accountId: account.id,
-				userId: user.id,
-			},
-		});
-
-		return result?.accessToken;
+		const token = await GitHubAccountService.getToken({ user });
+		if (!token) throw new Error("No GitHub account linked.");
+		return token;
 	},
 
 	/**

@@ -5,18 +5,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 /**
  * Default debounce delay in milliseconds before checking if element is still in view
  */
-export const DEFERRED_RENDER_DEBOUNCE_DELAY = 300;
+const DEFERRED_RENDER_DEBOUNCE_DELAY = 300;
 
 /**
  * Default root margin for Intersection Observer
  * Starts rendering when element is 200px away from viewport
  */
-export const DEFERRED_RENDER_ROOT_MARGIN = "300px";
+const DEFERRED_RENDER_ROOT_MARGIN = "300px";
 
 /**
  * Default timeout for requestIdleCallback in milliseconds
  */
-export const DEFERRED_RENDER_IDLE_TIMEOUT = 500;
+const DEFERRED_RENDER_IDLE_TIMEOUT = 500;
 
 export interface UseDeferredRenderOptions {
 	/**

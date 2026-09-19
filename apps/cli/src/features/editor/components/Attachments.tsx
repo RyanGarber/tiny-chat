@@ -85,9 +85,7 @@ export default function Attachments({
 				if (key.return && item) {
 					void AttachmentService.create({ client, item })
 						.then((node) =>
-							apply(
-								AttachmentUtils.apply({ content, query, item, id: node.id }),
-							),
+							apply(AttachmentUtils.apply({ content, query, node })),
 						)
 						.catch((error) => console.warn("Failed to attach item", error));
 				}

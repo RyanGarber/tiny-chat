@@ -1,51 +1,69 @@
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import type {
-	zAttachmentPart,
 	zData,
 	zDataPart,
 	zTextPart,
 } from "@tiny-chat/core/src/features/data/types/part.ts";
 import { DirectiveUtils } from "@tiny-chat/core/src/features/data/utils/DirectiveUtils.ts";
-import { useMarkdownDataStore } from "../stores/useMarkdownDataStore.ts";
-import { MarkdownUtils } from "./MarkdownUtils.ts";
+import {
+	EDITOR_PART_TYPES,
+	EditorPartUtils,
+	type zEditorPart,
+} from "@tiny-chat/core/src/features/data/utils/EditorPartUtils.ts";
+import { useEditorPartStore } from "../../editor/stores/useEditorPartStore.ts";
 
+const text = (value: string): zTextPart => ({
+	id: CommonUtils.getRandomId(),
+	type: "text",
+	value,
+});
+
+/**
+ * Markdown and `zData`, which are two views of the same message: a document
+ * the editor can be typed into, and the parts it is carried and read as.
+ *
+ * The editor only ever holds `:tag[]{id}` for a part; `store` swaps those
+ * pointers for the parts themselves on the way out, and refills the registry
+ * on the way back in.
+ */
 export const MarkdownDataUtils = {
 	fromMarkdown: (markdown: string, store = false): zData => {
 		const parts = DirectiveUtils.extractFromMarkdown(
 			markdown,
-			"attachment",
-		).flatMap(({ text, directive }): zDataPart[] => {
-			if (!directive) {
-				return text
-					? [{ id: CommonUtils.getRandomId(), type: "text", value: text }]
-					: [];
-			}
+			...EDITOR_PART_TYPES,
+		).flatMap(({ text: raw, directive }): zDataPart[] => {
+			if (!directive) return raw ? [text(raw)] : [];
+
 			if (store) {
-				const id = directive.attributes.id;
-				const attachment = useMarkdownDataStore.getState().attachments[id];
-				if (attachment) return [attachment];
+				const part =
+					useEditorPartStore.getState().parts[directive.attributes.id];
+				if (part?.type === directive.tag) return [part];
 			}
-			return [{ id: CommonUtils.getRandomId(), type: "text", value: text }];
+
+			// A pointer with nothing behind it says nothing on its own, so it is
+			// left as the text it was written as rather than dropped silently.
+			return [text(raw)];
 		});
+
 		return [parts.filter((part) => part.type !== "text" || part.value.length)];
 	},
 
 	toMarkdown: (data: zData, store = false): string => {
+		const parts = data.flat();
+
 		if (store) {
-			const attachments = data
-				.flat()
-				.filter((part): part is zAttachmentPart => part.type === "attachment");
-			useMarkdownDataStore.getState().setAttachments(attachments);
+			useEditorPartStore.getState().setParts(parts.filter(EditorPartUtils.is));
 		}
 
-		return data
-			.flat()
+		return parts
 			.flatMap((part) => {
 				if (part.type === "text") return [part.value];
-				if (part.type === "attachment") {
-					return [`:attachment[]{id="${part.id}"}`];
-				}
-				return [];
+				if (!EditorPartUtils.is(part)) return [];
+
+				const pointer = EditorPartUtils.toPointer(part);
+				return [
+					EditorPartUtils.isInline(part.type) ? pointer : `\n${pointer}\n`,
+				];
 			})
 			.join("");
 	},
@@ -54,9 +72,10 @@ export const MarkdownDataUtils = {
 	 * Collect a run of inline data parts to render in a single Markdown block.
 	 */
 	toInlineParts: (parts: readonly (zDataPart | { type: "group" })[]) => {
-		const run: (zTextPart | zAttachmentPart)[] = [];
+		const run: (zTextPart | zEditorPart)[] = [];
 		for (const part of parts) {
-			if (part.type !== "text" && part.type !== "attachment") break;
+			if (part.type === "group") break;
+			if (part.type !== "text" && !EditorPartUtils.is(part)) break;
 			run.push(part);
 		}
 		return run;
@@ -64,22 +83,23 @@ export const MarkdownDataUtils = {
 
 	/**
 	 * Rebuild the editor's inline Markdown stream from structured message parts.
-	 * No separator is introduced: the surrounding text parts already own every
-	 * intentional space (or lack of one) on either side of an attachment.
+	 * No separator is introduced around an inline part: the surrounding text
+	 * parts already own every intentional space (or lack of one) on either side
+	 * of one. A block part is given the lines it needs to parse as a block.
 	 */
 	toInlineBlock: (data: zData): string =>
 		data
 			.flat()
 			.flatMap((part) => {
 				if (part.type === "text") return [part.value];
-				if (part.type !== "attachment") return [];
+				if (!EditorPartUtils.is(part)) return [];
 
-				const attributes = [
-					`source="${MarkdownUtils.escape(part.source)}"`,
-					`name="${MarkdownUtils.escape(part.label)}"`,
-					...(part.content.type === "directory" ? ['is-directory="true"'] : []),
-				].join(" ");
-				return [`:attachment[]{${attributes}}`];
+				const markdown = EditorPartUtils.toMarkdown(part);
+				return [
+					EditorPartUtils.isInline(part.type)
+						? markdown
+						: `\n\n${markdown}\n\n`,
+				];
 			})
 			.join(""),
 } as const;

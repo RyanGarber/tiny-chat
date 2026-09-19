@@ -5,7 +5,7 @@ import {
 } from "@mantine/core";
 import { palettes } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
 
-export const theme = createTheme({
+export default createTheme({
 	fontFamily: "'Rubik', sans-serif",
 	primaryColor: "blue",
 	lineHeights: {
@@ -36,13 +36,13 @@ export const theme = createTheme({
 			},
 			classNames: {
 				content: "glass",
-				header: "mb-lg",
+				header: "glass variant mb-lg",
 			},
 		},
 		Drawer: {
 			classNames: {
 				content: "glass",
-				header: "mb-lg",
+				header: "glass variant mb-lg",
 			},
 		},
 		Dialog: {
@@ -85,7 +85,6 @@ export const theme = createTheme({
 		Select: {
 			classNames: {
 				dropdown: "glass",
-				input: "glass",
 			},
 		},
 		TreeSelect: {
@@ -101,8 +100,8 @@ export const theme = createTheme({
 		Tooltip: {
 			defaultProps: {
 				radius: "lg",
-				color: "var(--tc-surface)",
 				position: "bottom",
+				c: "var(--mantine-color-dimmed)",
 			},
 			classNames: {
 				tooltip: "glass",
@@ -126,17 +125,32 @@ export const theme = createTheme({
 				radius: "lg",
 			},
 			classNames: {
-				root: "glass",
+				root: "glass", // TODO - card or root?
+			},
+			styles: {
+				root: {
+					background: "transparent",
+				},
+			},
+		},
+		CheckboxCard: {
+			classNames: {
+				card: "glass",
+			},
+			styles: {
+				card: {
+					background: "transparent",
+				},
 			},
 		},
 		Input: {
 			classNames: {
 				input: "glass",
 			},
-		},
-		CheckboxCard: {
-			classNames: {
-				card: "glass",
+			styles: {
+				input: {
+					background: "transparent",
+				},
 			},
 		},
 	},
@@ -161,6 +175,3 @@ export const cssResolver: CSSVariablesResolver = () => ({
 		"--tc-shadow": "0 10px 40px rgba(0, 0, 0, 0.2)",
 	},
 });
-
-/** @lintignore */
-export default theme;

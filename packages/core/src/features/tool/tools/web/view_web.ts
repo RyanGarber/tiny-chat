@@ -13,7 +13,7 @@ export const view_web = {
 } as const satisfies ToolDefinition;
 
 export const createViewWebTool: ToolFactory<
-	Tool<typeof view_web, { provider: WebCapability }>
+	Tool<typeof view_web, { web: WebCapability }>
 > = (options) => ({
 	...view_web,
 	...options,
@@ -21,7 +21,7 @@ export const createViewWebTool: ToolFactory<
 		return [
 			{
 				type: "json",
-				value: await options.capabilities.provider.view({ url: input.url }),
+				value: await options.capabilities.web.view({ url: input.url }),
 			},
 		];
 	},

@@ -42,7 +42,7 @@ export type ContentFormatterFunction<T extends string = string> = Exclude<
 	ContentFormatted
 >;
 
-export type ContentFormatted = {
+type ContentFormatted = {
 	filename?: string;
 	extension?: string;
 	mime?: string;

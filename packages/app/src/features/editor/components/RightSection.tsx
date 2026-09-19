@@ -73,10 +73,10 @@ export default function RightSection({
 
 	useEffect(() => {
 		const onClickOutside = (event: PointerEvent) => {
-			if (!opened) return;
+			if (!opened || currentModal) return;
 			if (event.target instanceof HTMLElement) {
 				const isRightSection = event.target.closest(".right-section");
-				if (!isRightSection && !currentModal) {
+				if (!isRightSection) {
 					close();
 				}
 				event.preventDefault();

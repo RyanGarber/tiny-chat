@@ -6,6 +6,7 @@ import type {
 	zInterjectionPart,
 } from "@tiny-chat/core/src/features/data/types/part.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
+import { EditorPartUtils } from "@tiny-chat/core/src/features/data/utils/EditorPartUtils.ts";
 import { create } from "zustand";
 
 interface MessageQueueStore {
@@ -34,18 +35,29 @@ export const useMessageQueueStore = create<MessageQueueStore>((set, get) => ({
 		set((state) => ({ active: { ...state.active, [chatId]: active } })),
 	queues: {},
 	enqueue: (chatId, data) => {
-		const value = data
-			.flat()
-			.flatMap((part): zDataSimplePart[] =>
-				part.type === "interjection"
-					? part.value
-					: part.type === "text" ||
-							part.type === "json" ||
-							part.type === "file" ||
-							part.type === "attachment"
-						? [part]
-						: [],
-			);
+		const value = data.flat().flatMap((part): zDataSimplePart[] => {
+			if (part.type === "interjection") return part.value;
+			if (
+				part.type === "text" ||
+				part.type === "json" ||
+				part.type === "file" ||
+				part.type === "attachment"
+			) {
+				return [part];
+			}
+			// An interjection only carries the simple parts, so the ones that
+			// are not go in as the Markdown they read as.
+			if (EditorPartUtils.is(part)) {
+				return [
+					{
+						id: part.id,
+						type: "text",
+						value: EditorPartUtils.toMarkdown(part),
+					},
+				];
+			}
+			return [];
+		});
 		if (!value.length) return;
 		const part: zInterjectionPart = {
 			id: CommonUtils.getRandomId(),

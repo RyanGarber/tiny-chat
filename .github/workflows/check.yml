@@ -36,7 +36,7 @@ jobs:
                 run: pnpm ci
 
             -   name: Lint
-                run: pnpm lint
+                run: pnpm turbo lint
 
             -   name: Check
-                run: pnpm check
+                run: pnpm turbo typecheck

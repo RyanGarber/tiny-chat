@@ -15,7 +15,6 @@ import { useConfig } from "../../agent/hooks/useConfig.ts";
 import { useSkills } from "../../agent/hooks/useSkills.ts";
 import { useTools } from "../../agent/hooks/useTools.ts";
 import { useChat } from "../../chat/hooks/useChat.ts";
-import { useChatStore } from "../../chat/stores/useChatStore.ts";
 
 export type UsageLevel = "low" | "moderate" | "high";
 
@@ -50,7 +49,7 @@ export const useEstimatedTokens = <T>({
 	colors?: Partial<Record<UsageLevel, T>>;
 }) => {
 	const { session } = useSession();
-	const { chat } = useChat();
+	const { nextChat } = useChat();
 	const { config: baseConfig, modelArgs } = useConfig();
 	const { toolsets } = useTools();
 	const { skills } = useSkills();
@@ -67,7 +66,6 @@ export const useEstimatedTokens = <T>({
 		};
 	}, [baseConfig, modelArgs]);
 
-	const createIncognito = useChatStore((state) => state.createIncognito);
 	const [debouncedDraft, setDebouncedDraft] = useState(draft);
 	const debouncedTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -108,7 +106,7 @@ export const useEstimatedTokens = <T>({
 		[config, debouncedDraft],
 	);
 
-	const { presumedCapabilities, sourceMessages } = useCapabilities({
+	const { capabilities, sourceMessages } = useCapabilities({
 		future: false,
 		draft: draftMessage,
 	});
@@ -125,27 +123,24 @@ export const useEstimatedTokens = <T>({
 		queryKey: [
 			...chatTokensQueryKey,
 			session.data?.user.id,
-			presumedCapabilities.data,
-			chat.data?.id,
+			capabilities.data,
+			nextChat,
 			messagesKey,
-			createIncognito,
 			config,
 		],
 		queryFn: async (): Promise<CompactionResult> => {
 			if (!session.data) return ZERO;
 
-			console.log(">EST:DATA:", sourceMessages.data?.messages);
-			console.log(">EST:CAPS:", presumedCapabilities.data);
 			return await AgentService.estimate({
 				context: {
 					user: session.data.user,
-					chat: chat.data,
+					chat: nextChat,
 					messages: sourceMessages.data?.messages ?? [],
 					timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 					interactive: true,
 				},
 				config,
-				capabilities: presumedCapabilities.data ?? {},
+				capabilities: capabilities.data ?? {},
 				toolsets,
 				skills,
 			});
@@ -162,7 +157,9 @@ export const useEstimatedTokens = <T>({
 		queryKey: [
 			...editorTokensQueryKey,
 			session.data?.user.id,
-			presumedCapabilities.data,
+			capabilities.data,
+			nextChat,
+			config,
 			draftKey,
 			messagesEmpty,
 		],
@@ -172,13 +169,13 @@ export const useEstimatedTokens = <T>({
 			return await AgentService.estimate({
 				context: {
 					user: session.data.user,
-					chat: chat.data,
+					chat: nextChat,
 					messages: draftMessage,
 					timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 					interactive: true,
 				},
 				config,
-				capabilities: presumedCapabilities.data ?? {},
+				capabilities: capabilities.data ?? {},
 				toolsets,
 				skills,
 			});

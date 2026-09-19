@@ -2,7 +2,7 @@ import { homedir } from "node:os";
 import { resolve } from "node:path";
 
 /** Columns a tab is expanded to when rendering text. */
-export const TAB_SIZE = 2;
+const TAB_SIZE = 2;
 
 /** Escape sequences and control characters, except tab and newline. */
 const CONTROL_REGEX =

@@ -11,6 +11,7 @@ import { useContext, useMemo } from "react";
 import type { LiteralUnion } from "type-fest";
 
 export type ColorString = LiteralUnion<ColorName | keyof ColorScheme, string>;
+/** @lintignore */
 export type ColorObject = Rgba;
 export type Color = ColorString | ColorObject;
 

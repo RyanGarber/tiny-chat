@@ -54,7 +54,7 @@ const MAX_TOTAL_CHARS = 8_000;
 /** Share of the best result's score a file must reach to be worth reporting. */
 const RELEVANCE_FLOOR = 0.25;
 
-export interface FileSearchResult {
+interface FileSearchResult {
 	path: string;
 	/** Rendered, line-numbered excerpt. Always within the result budget. */
 	snippet: string;

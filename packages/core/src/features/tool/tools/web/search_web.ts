@@ -14,13 +14,13 @@ export const search_web = {
 } as const satisfies ToolDefinition;
 
 export const createSearchWebTool: ToolFactory<
-	Tool<typeof search_web, { provider: WebCapability }>
+	Tool<typeof search_web, { web: WebCapability }>
 > = (options) => ({
 	...search_web,
 	...options,
 	execute: async ({ input }) => {
 		return (
-			await options.capabilities.provider.search({
+			await options.capabilities.web.search({
 				query: input.query,
 				maxResults: input.maxResults,
 			})

@@ -109,7 +109,7 @@ export const AntigravityProvider: ModelProvider<ProviderV4> = {
 	},
 };
 
-export function createAntigravityProxyRelayProvider(
+function createAntigravityProxyRelayProvider(
 	url: string,
 	account: AntigravityAccount,
 ): ProviderV4 {

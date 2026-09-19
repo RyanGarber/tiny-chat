@@ -8,6 +8,7 @@ import type { Compaction } from "@tiny-chat/core/src/features/agent/services/Age
 import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { zData } from "@tiny-chat/core/src/features/data/types/part.ts";
 import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
+import { EditorPartUtils } from "@tiny-chat/core/src/features/data/utils/EditorPartUtils.ts";
 import { ToolCallUtils } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
 import { MediaPlayer, MediaProvider } from "@vidstack/react";
 import {
@@ -63,9 +64,12 @@ export default function MessageParts({
 	);
 
 	return parts.map((part, index) => {
-		if (part.type === "text" || part.type === "attachment") {
+		if (part.type === "text" || EditorPartUtils.is(part)) {
 			const previous = parts[index - 1];
-			if (previous?.type === "text" || previous?.type === "attachment")
+			if (
+				previous &&
+				(previous.type === "text" || EditorPartUtils.is(previous))
+			)
 				return null;
 			const run = MarkdownDataUtils.toInlineParts(parts.slice(index));
 			return (

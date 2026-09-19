@@ -1,13 +1,28 @@
-import { useMarkdownDataStore } from "../../message/stores/useMarkdownDataStore.ts";
+import type { zAttachmentPart } from "@tiny-chat/core/src/features/data/types/part.ts";
 import { useAtomStore } from "../stores/useAtomStore.ts";
+import {
+	type EditorPart,
+	useEditorPartStore,
+} from "../stores/useEditorPartStore.ts";
 import { AtomUtils } from "./AtomUtils.ts";
-import { PASTE_LINE_LIMIT, PasteUtils } from "./PasteUtils.ts";
+import { PASTE_LINE_LIMIT } from "./PasteUtils.ts";
 
-const attachment = (source: string) =>
-	AtomUtils.attachment({
-		id: source,
+let next = 0;
+
+/** Register a part and report the atom standing for it. */
+const stand = (part: EditorPart) => {
+	useEditorPartStore.getState().addPart(part);
+	return AtomUtils.fromPart({ part });
+};
+
+const attachment = (source: string, rest: Partial<zAttachmentPart> = {}) =>
+	stand({
+		id: `part-${next++}`,
+		type: "attachment",
 		source,
-		markdown: `:attachment[]{id="${source}"}`,
+		label: "",
+		content: { type: "file", mime: "", data: "" },
+		...rest,
 	});
 
 const longPaste = Array.from(
@@ -15,10 +30,21 @@ const longPaste = Array.from(
 	(_, index) => `line ${index}`,
 ).join("\n");
 
+const paste = (id = `part-${next++}`) =>
+	stand({
+		id,
+		type: "paste",
+		text: longPaste,
+		lines: PASTE_LINE_LIMIT,
+		language: null,
+		collapsed: true,
+	});
+
 describe("AtomUtils", () => {
 	beforeEach(() => {
+		next = 0;
 		useAtomStore.getState().setAtoms([]);
-		useMarkdownDataStore.getState().setAttachments([]);
+		useEditorPartStore.getState().setParts([]);
 	});
 
 	it("stands an attachment as its name alone", () => {
@@ -30,93 +56,93 @@ describe("AtomUtils", () => {
 		expect(attachment("src/b/index.ts")).toBe("@b/index.ts");
 	});
 
-	it("gives the same Markdown the same atom", () => {
-		expect(attachment("src/a/index.ts")).toBe(attachment("src/a/index.ts"));
+	it("gives the same part the same atom", () => {
+		expect(attachment("src/a/index.ts", { id: "one" })).toBe(
+			attachment("src/a/index.ts", { id: "one" }),
+		);
 		expect(useAtomStore.getState().atoms).toHaveLength(1);
 	});
 
 	it("stands an upload as its name rather than its id", () => {
 		expect(
-			AtomUtils.attachment({
-				id: "upload",
-				source: "/mnt/chat/aaaaaaaaaaaaaaaaaaaaaaaa",
-				directory: true,
+			attachment("/mnt/chat/aaaaaaaaaaaaaaaaaaaaaaaa", {
 				label: "tiny-chat @ main",
-				markdown: "",
+				content: { type: "directory", items: [] },
 			}),
 		).toBe("@tiny-chat @ main/");
 	});
 
-	it("takes an upload's name back out of its attachment id", () => {
-		useMarkdownDataStore.getState().addAttachment({
-			id: "upload",
-			type: "attachment",
-			source: "/mnt/chat/aaaaaaaaaaaaaaaaaaaaaaaa",
-			label: "notes.pdf",
-			content: { type: "directory", items: [] },
-		});
-		expect(AtomUtils.deserialize('see :attachment[]{id="upload"}')).toBe(
-			"see @notes.pdf/",
-		);
-	});
-
 	it("stands a command as it was typed", () => {
 		expect(
-			AtomUtils.command({
-				name: "model",
-				value: "opus",
-				markdown: ':command[opus]{name="model" value="model"}',
-			}),
+			stand({ id: "cmd", type: "command", name: "model", argument: "opus" }),
 		).toBe("/model opus");
 	});
 
-	it("leaves a short paste alone and collapses a long one", () => {
-		expect(AtomUtils.paste({ text: "one\ntwo\nthree" })).toBeNull();
-		expect(AtomUtils.paste({ text: longPaste })).toBe(
-			`[${PASTE_LINE_LIMIT} pasted lines]`,
-		);
+	it("stands a paste as the lines it spans", () => {
+		expect(paste()).toBe(`[${PASTE_LINE_LIMIT} pasted lines]`);
 	});
 
-	it("writes every atom back out as its Markdown", () => {
-		const file = attachment("src/index.ts");
-		const pasted = AtomUtils.paste({ text: longPaste });
+	it("writes every atom back out as the pointer it stands for", () => {
+		const file = attachment("src/index.ts", { id: "file" });
+		const pasted = paste("pasted");
 
 		expect(
 			AtomUtils.serialize({ content: `look at ${file} and ${pasted}` }),
-		).toBe(
-			`look at :attachment[]{id="src/index.ts"} and \n${PasteUtils.markdown(longPaste)}\n`,
-		);
+		).toBe('look at :attachment[]{id="file"} and \n::paste{id="pasted"}\n');
 	});
 
-	it("takes the directives of a message back into atoms", () => {
-		useMarkdownDataStore.getState().addAttachment({
-			id: "file",
-			type: "attachment",
-			source: "src/index.ts",
-			label: "index.ts",
-			content: { type: "file", mime: "", data: "" },
-		});
-		const markdown =
-			'run :command[opus]{name="model" value="model"} on ' +
-			':attachment[]{id="file"}';
+	it("takes the pointers of a message back into atoms", () => {
+		useEditorPartStore.getState().setParts([
+			{
+				id: "file",
+				type: "attachment",
+				source: "src/index.ts",
+				label: "index.ts",
+				content: { type: "file", mime: "", data: "" },
+			},
+			{ id: "cmd", type: "command", name: "model", argument: "opus" },
+		]);
 
+		const markdown = 'run :command[]{id="cmd"} on :attachment[]{id="file"}';
 		const content = AtomUtils.deserialize(markdown);
 
 		expect(content).toBe("run /model opus on @index.ts");
 		expect(AtomUtils.serialize({ content })).toBe(markdown);
 	});
 
-	it("takes a paste directive back into an atom", () => {
-		const markdown = PasteUtils.markdown(longPaste);
-		const content = AtomUtils.deserialize(`see\n${markdown}`);
+	it("takes an upload's name back out of its attachment pointer", () => {
+		useEditorPartStore.getState().setParts([
+			{
+				id: "upload",
+				type: "attachment",
+				source: "/mnt/chat/aaaaaaaaaaaaaaaaaaaaaaaa",
+				label: "notes.pdf",
+				content: { type: "directory", items: [] },
+			},
+		]);
+		expect(AtomUtils.deserialize('see :attachment[]{id="upload"}')).toBe(
+			"see @notes.pdf/",
+		);
+	});
 
-		expect(content).toBe(`see\n[${PASTE_LINE_LIMIT} pasted lines]`);
-		expect(AtomUtils.serialize({ content })).toBe(`see\n\n${markdown}\n`);
+	it("leaves a pointer with nothing behind it as it was written", () => {
+		expect(AtomUtils.deserialize('see :attachment[]{id="gone"}')).toBe(
+			'see :attachment[]{id="gone"}',
+		);
 	});
 
 	it("drops the atoms the buffer no longer holds", () => {
 		const file = attachment("src/index.ts");
-		AtomUtils.paste({ content: file, text: longPaste });
+		AtomUtils.fromPart({
+			content: file,
+			part: {
+				id: "pasted",
+				type: "paste",
+				text: longPaste,
+				lines: PASTE_LINE_LIMIT,
+				collapsed: true,
+			},
+		});
 
 		expect(useAtomStore.getState().atoms.map((atom) => atom.kind)).toEqual([
 			"attachment",
@@ -132,11 +158,15 @@ describe("AtomUtils", () => {
 		]);
 
 		// The buffer has been emptied since, so nothing stands in it any more.
-		AtomUtils.attachment({
+		AtomUtils.fromPart({
 			content: "",
-			id: "last",
-			source: "src/last.ts",
-			markdown: ':attachment[]{id="last"}',
+			part: {
+				id: "last",
+				type: "attachment",
+				source: "src/last.ts",
+				label: "",
+				content: { type: "file", mime: "", data: "" },
+			},
 		});
 
 		expect(useAtomStore.getState().atoms.map((atom) => atom.text)).toEqual([

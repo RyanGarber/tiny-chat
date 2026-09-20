@@ -1,3 +1,29 @@
+## [0.8.4](https://github.com/RyanGarber/tiny-chat/compare/0.8.3...0.8.4) (2026-09-20)
+
+### Features
+
+* app redesign ([84642b0](https://github.com/RyanGarber/tiny-chat/commit/84642b01c4a281c14269b30e61bcbc36f28ec14d-1))
+* dreaming-based memory ([22645b9](https://github.com/RyanGarber/tiny-chat/commit/22645b9602315990ac9c3fec589397928faf1f2b))
+* embedding workers ([e8d6353](https://github.com/RyanGarber/tiny-chat/commit/e8d6353c88ec0042ca25bf533324f990c39aa7cf-3))
+* folders/projects ([84642b0](https://github.com/RyanGarber/tiny-chat/commit/84642b01c4a281c14269b30e61bcbc36f28ec14d))
+* github research toolset ([e8d6353](https://github.com/RyanGarber/tiny-chat/commit/e8d6353c88ec0042ca25bf533324f990c39aa7cf-1))
+* per-provider, per-mcp cache and refresh ([e8d6353](https://github.com/RyanGarber/tiny-chat/commit/e8d6353c88ec0042ca25bf533324f990c39aa7cf-2))
+* revamped file list ([22645b9](https://github.com/RyanGarber/tiny-chat/commit/22645b9602315990ac9c3fec589397928faf1f2b-1))
+* revamped paste handling ([22645b9](https://github.com/RyanGarber/tiny-chat/commit/22645b9602315990ac9c3fec589397928faf1f2b-2))
+* rich cli markdown editor ([e8d6353](https://github.com/RyanGarber/tiny-chat/commit/e8d6353c88ec0042ca25bf533324f990c39aa7cf))
+
+### Bug Fixes
+
+* various fixes and improvements ([e8d6353](https://github.com/RyanGarber/tiny-chat/commit/e8d6353c88ec0042ca25bf533324f990c39aa7cf-8))
+* various ui improvements ([22645b9](https://github.com/RyanGarber/tiny-chat/commit/22645b9602315990ac9c3fec589397928faf1f2b-3))
+
+### Performance Improvements
+
+* bounded folder attachment context ([e8d6353](https://github.com/RyanGarber/tiny-chat/commit/e8d6353c88ec0042ca25bf533324f990c39aa7cf-7))
+* enable anthropic cache control ([22645b9](https://github.com/RyanGarber/tiny-chat/commit/22645b9602315990ac9c3fec589397928faf1f2b-6))
+* enable react compiler ([22645b9](https://github.com/RyanGarber/tiny-chat/commit/22645b9602315990ac9c3fec589397928faf1f2b-5))
+
+
 ## [0.8.3](https://github.com/RyanGarber/tiny-chat/compare/0.8.2...0.8.3) (2026-08-25)
 
 ### Features

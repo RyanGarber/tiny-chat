@@ -29,25 +29,21 @@ export function getPartsKey(parts?: zDataPart[]) {
 
 function getPartKey(part?: zDataPart) {
 	if (!part) return "";
-	let keys = "";
 	let value = "";
 	if (part.type === "text" || part.type === "thought") {
 		value = part.value;
 	} else if (part.type === "json") {
 		value = JSON.stringify(part.value);
 	} else if (part.type === "file") {
-		keys = `${part.name}:${part.mime}`;
-		value = part.data;
+		value = `${part.name}:${part.data}:${part.mime}`;
 	} else if (part.type === "toolCall") {
-		keys = part.name;
 		value = `${part.name}:${JSON.stringify(part.input)}`;
 	} else if (part.type === "toolResult") {
-		keys = `${part.name}:${part.error}:${getPartsKey(part.output)}`;
+		value = `${part.name}:${part.error}:${getPartsKey(part.output)}`;
 	} else if (part.type === "abort") {
-		keys = `${part.reason}:${part.message}`;
-		value = JSON.stringify(part.details);
+		value = `${part.reason}:${part.message}:${JSON.stringify(part.details)}`;
 	}
-	return `${part.type}:${keys}:${value.at(0)}:${value.length}:${value.at(-1)}`;
+	return `${part.type}:${part.id}:${value.at(0)}:${value.length}:${value.at(-1)}`;
 }
 
 export const useStableKey = ({

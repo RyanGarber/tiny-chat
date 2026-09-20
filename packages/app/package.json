@@ -7,7 +7,8 @@
 		"preview": "vite preview",
 		"lint": "biome check --write",
 		"typecheck": "tsc --noEmit",
-		"test": "vitest run"
+		"test": "vitest run",
+		"postinstall": "playwright install --with-deps --no-shell chromium"
 	},
 	"imports": {
 		"#app/*": "./src/*",
@@ -53,6 +54,7 @@
 		"@use-gesture/react": "^10.3.1",
 		"@vidstack/react": "^1.15.6",
 		"dayjs": "^1.11.23",
+		"events": "^3.3.0",
 		"katex": "^0.18.7",
 		"react": "^19.3.0",
 		"react-dom": "^19.3.0",

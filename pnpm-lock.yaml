@@ -111,6 +111,7 @@ overrides:
 
 patchedDependencies:
   '@ai-sdk/google': a0446705ebffd418cc9856c2dfdacc9fcf6425e6879ad520aa3aa75f4bd507c1
+  just-bash@3.4.2: e7027a62cb72072798388c6b5ef131570c59001d1ddc7f86018907ad290e31ff
   sixel: 82ef8593faeafb27c38cbc1d3e4ce9a0aacb8b4c654807e830059fcc0b670c81
 
 importers:
@@ -243,19 +244,19 @@ importers:
         version: 2.3.6(supports-color@10.2.2)
       ink:
         specifier: ^7.1.1
-        version: 7.1.1(@types/react@19.3.0)(react@19.3.0)
+        version: 7.1.1(@types/react@19.3.0)(react-devtools-core@8.0.0)(react@19.3.0)
       ink-picture:
         specifier: ^2.1.0
-        version: 2.1.0(ink@7.1.1(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
+        version: 2.1.0(ink@7.1.1(@types/react@19.3.0)(react-devtools-core@8.0.0)(react@19.3.0))(react@19.3.0)
       ink-spinner:
         specifier: ^5.0.0
-        version: 5.0.0(ink@7.1.1(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
+        version: 5.0.0(ink@7.1.1(@types/react@19.3.0)(react-devtools-core@8.0.0)(react@19.3.0))(react@19.3.0)
       react:
         specifier: ^19.3.0
         version: 19.3.0
       react-ink-textarea:
         specifier: ^0.4.0
-        version: 0.4.0(ink@7.1.1(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
+        version: 0.4.0(ink@7.1.1(@types/react@19.3.0)(react-devtools-core@8.0.0)(react@19.3.0))(react@19.3.0)
       string-width:
         specifier: ^8.2.2
         version: 8.2.2
@@ -281,6 +282,9 @@ importers:
       ink-testing-library:
         specifier: ^4.0.0
         version: 4.0.0(@types/react@19.3.0)
+      react-devtools-core:
+        specifier: ^8.0.0
+        version: 8.0.0
       type-fest:
         specifier: ^5.10.0
         version: 5.10.0
@@ -413,6 +417,9 @@ importers:
       dayjs:
         specifier: ^1.11.23
         version: 1.11.23
+      events:
+        specifier: ^3.3.0
+        version: 3.3.0
       katex:
         specifier: ^0.18.7
         version: 0.18.7
@@ -667,14 +674,14 @@ importers:
         version: 9.0.0
       just-bash:
         specifier: ^3.4.2
-        version: 3.4.2(supports-color@10.2.2)
+        version: 3.4.2(patch_hash=e7027a62cb72072798388c6b5ef131570c59001d1ddc7f86018907ad290e31ff)(supports-color@10.2.2)
       sharp:
         specifier: ^0.35.4
         version: 0.35.4(@types/node@26.6.2)
     devDependencies:
       prisma:
         specifier: 8.0.0-rc.15
-        version: 8.0.0-rc.15(@types/node@26.6.2)(@types/react@19.3.0)(@vercel/nft@1.11.0(supports-color@10.2.2))(magicast@0.5.5)(pg@8.22.0)(supports-color@10.2.2)(typanion@3.14.0)(typescript@7.0.2)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.1))(vitest@5.0.1)(ws@8.21.3)
+        version: 8.0.0-rc.15(@types/node@26.6.2)(@types/react@19.3.0)(@vercel/nft@1.11.0(supports-color@10.2.2))(magicast@0.5.5)(pg@8.22.0)(react-devtools-core@8.0.0)(supports-color@10.2.2)(typanion@3.14.0)(typescript@7.0.2)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.1))(vitest@5.0.1)(ws@8.21.3)
 
 packages:
 
@@ -5264,6 +5271,10 @@ packages:
   events-universal@1.0.1:
     resolution: {integrity: sha512-LUd5euvbMLpwOF8m6ivPCbhQeSiYVNb8Vs0fQ8QjXo0JTkEHpz8pxdQf0gStltaPpw0Cca8b39KxvK9cfKRiAw==}
 
+  events@3.3.0:
+    resolution: {integrity: sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==}
+    engines: {node: '>=0.8.x'}
+
   eventsource-parser@3.1.1:
     resolution: {integrity: sha512-EKN1vKAMcZ8MlYMpaNuxN6R9yakzH6uajHcHVTqWJzvu5pWw9DyhbP35HH8MVBQ+dZjAfDxk+A8NiR9KWaXiyQ==}
     engines: {node: '>=18.0.0'}
@@ -7257,6 +7268,9 @@ packages:
   re2js@1.3.3:
     resolution: {integrity: sha512-s/I5zEAo79SUK0Qw4dpZKpiMwbQ6Gz0KU2NRr7eaO4x/p2g7Vvmn3hdeXDg8VsaUjfj/ora+e9oi27LX/C9+mw==}
 
+  react-devtools-core@8.0.0:
+    resolution: {integrity: sha512-DGXJX+sCn2zC3ZalHoJhmZJsvP4QTpERlmCQAOgExc4Vp74ywB9ZnO8992cKw5ZcOS5u8GtpchTUPbjTiu5zaw==}
+
   react-dom@19.3.0:
     resolution: {integrity: sha512-JDk8dgif51OjFoDE70+OT9ICyYr+69HlmihNwp1+Nsfbna3t5sIiCa9ZJktDmQ4/1b/rn26hIAR2uYXDMr5r0Q==}
     peerDependencies:
@@ -8473,6 +8487,18 @@ packages:
 
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
+
+  ws@7.5.13:
+    resolution: {integrity: sha512-rsKI6xDBFVf4r/x8XyChGK04QR/XHroxs/jUcoWvtEZM8TPU/X/uIY9B1CsSzYws9ZJb/6bbBu7dPhFW00CAoA==}
+    engines: {node: '>=8.3.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: ^5.0.2
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
 
   ws@8.21.3:
     resolution: {integrity: sha512-201TZ/kPWxoPr/OKWjquZR1SWKXcvxdH+e1xrx89b3YbmzLMFCLfnaG1HFIgWzJOEWZ7MvpK++odZufgYR50Rw==}
@@ -10517,11 +10543,11 @@ snapshots:
     transitivePeerDependencies:
       - magicast
 
-  '@prisma/composer-cli@0.20.0(@prisma/cli-engine@0.4.0(@prisma/management-api-sdk@1.69.0)(magicast@0.5.5))(@types/node@26.6.2)(@types/react@19.3.0)(@vercel/nft@1.11.0(supports-color@10.2.2))(magicast@0.5.5)(pg@8.22.0)(typescript@7.0.2)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.1))(vitest@5.0.1)(ws@8.21.3)':
+  '@prisma/composer-cli@0.20.0(@prisma/cli-engine@0.4.0(@prisma/management-api-sdk@1.69.0)(magicast@0.5.5))(@types/node@26.6.2)(@types/react@19.3.0)(@vercel/nft@1.11.0(supports-color@10.2.2))(magicast@0.5.5)(pg@8.22.0)(react-devtools-core@8.0.0)(typescript@7.0.2)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.1))(vitest@5.0.1)(ws@8.21.3)':
     dependencies:
       '@prisma/cli-engine': 0.4.0(@prisma/management-api-sdk@1.69.0)(magicast@0.5.5)
-      '@prisma/composer': 0.20.0(@types/node@26.6.2)(@types/react@19.3.0)(@vercel/nft@1.11.0(supports-color@10.2.2))(magicast@0.5.5)(pg@8.22.0)(typescript@7.0.2)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.1))(vitest@5.0.1)(ws@8.21.3)
-      alchemy: 2.0.0-beta.74(@types/node@26.6.2)(@types/react@19.3.0)(@vercel/nft@1.11.0(supports-color@10.2.2))(effect@4.0.0-rc.115)(pg@8.22.0)(typescript@7.0.2)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.1))(vitest@5.0.1)(ws@8.21.3)
+      '@prisma/composer': 0.20.0(@types/node@26.6.2)(@types/react@19.3.0)(@vercel/nft@1.11.0(supports-color@10.2.2))(magicast@0.5.5)(pg@8.22.0)(react-devtools-core@8.0.0)(typescript@7.0.2)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.1))(vitest@5.0.1)(ws@8.21.3)
+      alchemy: 2.0.0-beta.74(@types/node@26.6.2)(@types/react@19.3.0)(@vercel/nft@1.11.0(supports-color@10.2.2))(effect@4.0.0-rc.115)(pg@8.22.0)(react-devtools-core@8.0.0)(typescript@7.0.2)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.1))(vitest@5.0.1)(ws@8.21.3)
       c12: 3.3.4(magicast@0.5.5)
       cross-spawn: 7.0.6
       effect: 4.0.0-rc.115
@@ -10551,14 +10577,14 @@ snapshots:
       - vitest
       - ws
 
-  '@prisma/composer@0.20.0(@types/node@26.6.2)(@types/react@19.3.0)(@vercel/nft@1.11.0(supports-color@10.2.2))(magicast@0.5.5)(pg@8.22.0)(typescript@7.0.2)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.1))(vitest@5.0.1)(ws@8.21.3)':
+  '@prisma/composer@0.20.0(@types/node@26.6.2)(@types/react@19.3.0)(@vercel/nft@1.11.0(supports-color@10.2.2))(magicast@0.5.5)(pg@8.22.0)(react-devtools-core@8.0.0)(typescript@7.0.2)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.1))(vitest@5.0.1)(ws@8.21.3)':
     dependencies:
       '@effect/sql-d1': 4.0.0-rc.112(effect@4.0.0-rc.115)
       '@effect/sql-sqlite-do': 4.0.0-rc.112(effect@4.0.0-rc.115)
       '@effect/vitest': 4.0.0-rc.112(effect@4.0.0-rc.115)(vitest@5.0.1)
       '@prisma/management-api-sdk': 1.69.0
       '@standard-schema/spec': 1.1.0
-      alchemy: 2.0.0-beta.74(@types/node@26.6.2)(@types/react@19.3.0)(@vercel/nft@1.11.0(supports-color@10.2.2))(effect@4.0.0-rc.115)(pg@8.22.0)(typescript@7.0.2)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.1))(vitest@5.0.1)(ws@8.21.3)
+      alchemy: 2.0.0-beta.74(@types/node@26.6.2)(@types/react@19.3.0)(@vercel/nft@1.11.0(supports-color@10.2.2))(effect@4.0.0-rc.115)(pg@8.22.0)(react-devtools-core@8.0.0)(typescript@7.0.2)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.1))(vitest@5.0.1)(ws@8.21.3)
       arktype: 2.2.3
       c12: 3.3.4(magicast@0.5.5)
       cross-spawn: 7.0.6
@@ -12137,7 +12163,7 @@ snapshots:
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
 
-  alchemy@2.0.0-beta.74(@types/node@26.6.2)(@types/react@19.3.0)(@vercel/nft@1.11.0(supports-color@10.2.2))(effect@4.0.0-rc.115)(pg@8.22.0)(typescript@7.0.2)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.1))(vitest@5.0.1)(ws@8.21.3):
+  alchemy@2.0.0-beta.74(@types/node@26.6.2)(@types/react@19.3.0)(@vercel/nft@1.11.0(supports-color@10.2.2))(effect@4.0.0-rc.115)(pg@8.22.0)(react-devtools-core@8.0.0)(typescript@7.0.2)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.1))(vitest@5.0.1)(ws@8.21.3):
     dependencies:
       '@alchemy.run/cloudflare-runtime': 2.0.0-beta.74(@distilled.cloud/cloudflare@1.0.0-rc.6(effect@4.0.0-rc.115))(@types/node@26.6.2)(effect@4.0.0-rc.115)(rolldown@1.1.5)(typescript@7.0.2)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.1))
       '@alchemy.run/floci': 2.0.0-beta.74(effect@4.0.0-rc.115)
@@ -12168,7 +12194,7 @@ snapshots:
       effect: 4.0.0-rc.115
       fast-glob: 3.3.3
       fast-xml-parser: 5.11.1
-      ink: 6.8.0(@types/react@19.3.0)(react@19.3.0)
+      ink: 6.8.0(@types/react@19.3.0)(react-devtools-core@8.0.0)(react@19.3.0)
       jszip: 3.10.2
       libsodium-wrappers: 0.8.4
       pathe: 2.0.3
@@ -13193,6 +13219,8 @@ snapshots:
     transitivePeerDependencies:
       - bare-abort-controller
 
+  events@3.3.0: {}
+
   eventsource-parser@3.1.1: {}
 
   eventsource@3.0.7:
@@ -13823,10 +13851,10 @@ snapshots:
 
   ini@6.0.0: {}
 
-  ink-picture@2.1.0(ink@7.1.1(@types/react@19.3.0)(react@19.3.0))(react@19.3.0):
+  ink-picture@2.1.0(ink@7.1.1(@types/react@19.3.0)(react-devtools-core@8.0.0)(react@19.3.0))(react@19.3.0):
     dependencies:
       chalk: 5.6.2
-      ink: 7.1.1(@types/react@19.3.0)(react@19.3.0)
+      ink: 7.1.1(@types/react@19.3.0)(react-devtools-core@8.0.0)(react@19.3.0)
       is-unicode-supported: 2.1.0
       iterm2-version: 6.0.0
       jimp: 1.6.1(supports-color@10.2.2)
@@ -13835,17 +13863,17 @@ snapshots:
       sixel: 0.16.0(patch_hash=82ef8593faeafb27c38cbc1d3e4ce9a0aacb8b4c654807e830059fcc0b670c81)
       supports-color: 10.2.2
 
-  ink-spinner@5.0.0(ink@7.1.1(@types/react@19.3.0)(react@19.3.0))(react@19.3.0):
+  ink-spinner@5.0.0(ink@7.1.1(@types/react@19.3.0)(react-devtools-core@8.0.0)(react@19.3.0))(react@19.3.0):
     dependencies:
       cli-spinners: 2.9.2
-      ink: 7.1.1(@types/react@19.3.0)(react@19.3.0)
+      ink: 7.1.1(@types/react@19.3.0)(react-devtools-core@8.0.0)(react@19.3.0)
       react: 19.3.0
 
   ink-testing-library@4.0.0(@types/react@19.3.0):
     optionalDependencies:
       '@types/react': 19.3.0
 
-  ink@6.8.0(@types/react@19.3.0)(react@19.3.0):
+  ink@6.8.0(@types/react@19.3.0)(react-devtools-core@8.0.0)(react@19.3.0):
     dependencies:
       '@alcalzone/ansi-tokenize': 0.2.5
       ansi-escapes: 7.3.0
@@ -13875,11 +13903,12 @@ snapshots:
       yoga-layout: 3.2.1
     optionalDependencies:
       '@types/react': 19.3.0
+      react-devtools-core: 8.0.0
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  ink@7.1.1(@types/react@19.3.0)(react@19.3.0):
+  ink@7.1.1(@types/react@19.3.0)(react-devtools-core@8.0.0)(react@19.3.0):
     dependencies:
       '@alcalzone/ansi-tokenize': 0.3.1
       ansi-escapes: 7.3.0
@@ -13909,6 +13938,7 @@ snapshots:
       yoga-layout: 3.2.1
     optionalDependencies:
       '@types/react': 19.3.0
+      react-devtools-core: 8.0.0
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -14113,7 +14143,7 @@ snapshots:
       readable-stream: 2.3.8
       setimmediate: 1.0.5
 
-  just-bash@3.4.2(supports-color@10.2.2):
+  just-bash@3.4.2(patch_hash=e7027a62cb72072798388c6b5ef131570c59001d1ddc7f86018907ad290e31ff)(supports-color@10.2.2):
     dependencies:
       diff: 8.0.4
       fast-xml-parser: 5.11.1
@@ -15386,11 +15416,11 @@ snapshots:
     dependencies:
       parse-ms: 4.0.0
 
-  prisma@8.0.0-rc.15(@types/node@26.6.2)(@types/react@19.3.0)(@vercel/nft@1.11.0(supports-color@10.2.2))(magicast@0.5.5)(pg@8.22.0)(supports-color@10.2.2)(typanion@3.14.0)(typescript@7.0.2)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.1))(vitest@5.0.1)(ws@8.21.3):
+  prisma@8.0.0-rc.15(@types/node@26.6.2)(@types/react@19.3.0)(@vercel/nft@1.11.0(supports-color@10.2.2))(magicast@0.5.5)(pg@8.22.0)(react-devtools-core@8.0.0)(supports-color@10.2.2)(typanion@3.14.0)(typescript@7.0.2)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.1))(vitest@5.0.1)(ws@8.21.3):
     dependencies:
       '@manypkg/tools': 2.1.2
       '@prisma/cli-engine': 0.4.0(@prisma/management-api-sdk@1.69.0)(magicast@0.5.5)
-      '@prisma/composer-cli': 0.20.0(@prisma/cli-engine@0.4.0(@prisma/management-api-sdk@1.69.0)(magicast@0.5.5))(@types/node@26.6.2)(@types/react@19.3.0)(@vercel/nft@1.11.0(supports-color@10.2.2))(magicast@0.5.5)(pg@8.22.0)(typescript@7.0.2)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.1))(vitest@5.0.1)(ws@8.21.3)
+      '@prisma/composer-cli': 0.20.0(@prisma/cli-engine@0.4.0(@prisma/management-api-sdk@1.69.0)(magicast@0.5.5))(@types/node@26.6.2)(@types/react@19.3.0)(@vercel/nft@1.11.0(supports-color@10.2.2))(magicast@0.5.5)(pg@8.22.0)(react-devtools-core@8.0.0)(typescript@7.0.2)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.1))(vitest@5.0.1)(ws@8.21.3)
       '@prisma/compute-sdk': 0.42.0(@prisma/management-api-sdk@1.69.0)(supports-color@10.2.2)
       '@prisma/management-api-sdk': 1.69.0
       '@prisma/orm-toolchain': 8.0.0-rc.11(@prisma/cli-engine@0.4.0(@prisma/management-api-sdk@1.69.0)(magicast@0.5.5))(magicast@0.5.5)(typanion@3.14.0)(typescript@7.0.2)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.1))
@@ -15566,6 +15596,14 @@ snapshots:
 
   re2js@1.3.3: {}
 
+  react-devtools-core@8.0.0:
+    dependencies:
+      shell-quote: 1.9.0
+      ws: 7.5.13
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
   react-dom@19.3.0(react@19.3.0):
     dependencies:
       react: 19.3.0
@@ -15579,10 +15617,10 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.3.0
 
-  react-ink-textarea@0.4.0(ink@7.1.1(@types/react@19.3.0)(react@19.3.0))(react@19.3.0):
+  react-ink-textarea@0.4.0(ink@7.1.1(@types/react@19.3.0)(react-devtools-core@8.0.0)(react@19.3.0))(react@19.3.0):
     dependencies:
       ansi-styles: 6.2.3
-      ink: 7.1.1(@types/react@19.3.0)(react@19.3.0)
+      ink: 7.1.1(@types/react@19.3.0)(react-devtools-core@8.0.0)(react@19.3.0)
       react: 19.3.0
       string-width: 8.2.2
 
@@ -16865,6 +16903,8 @@ snapshots:
 
   wrappy@1.0.2:
     optional: true
+
+  ws@7.5.13: {}
 
   ws@8.21.3: {}
 

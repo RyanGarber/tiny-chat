@@ -37,4 +37,5 @@ overrides:
     'effect': '4.0.0-rc.115'
 patchedDependencies:
     '@ai-sdk/google': patches/@ai-sdk__google.patch
+    just-bash@3.4.2: patches/just-bash@3.4.2.patch
     sixel: patches/sixel.patch

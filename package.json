@@ -19,8 +19,7 @@
 		"build:cli": "dotenv run -- pnpm --filter @tiny-chat/cli run build",
 		"install:cli": "dotenv run -- pnpm --filter @tiny-chat/cli build && cp apps/cli/dist/tiny-chat ~/.local/bin/tiny-chat",
 		"test": "turbo test",
-		"knip": "knip",
-		"postinstall": "playwright install --with-deps --no-shell chromium"
+		"knip": "knip"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.5.14",

@@ -1,3 +1,11 @@
+## [0.8.5](https://github.com/RyanGarber/tiny-chat/compare/0.8.4...0.8.5) (2026-09-20)
+
+### Bug Fixes
+
+* add missing peer deps ([f76b17f](https://github.com/RyanGarber/tiny-chat/commit/f76b17fd08bf66c9b90ef1a3555422ce13cb4f74-1))
+* just-bash fails under bun ([f76b17f](https://github.com/RyanGarber/tiny-chat/commit/f76b17fd08bf66c9b90ef1a3555422ce13cb4f74))
+
+
 ## [0.8.4](https://github.com/RyanGarber/tiny-chat/compare/0.8.3...0.8.4) (2026-09-20)
 
 ### Features

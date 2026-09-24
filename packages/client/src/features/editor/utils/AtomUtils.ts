@@ -1,10 +1,10 @@
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import { DirectiveUtils } from "@tiny-chat/core/src/features/data/utils/DirectiveUtils.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import { DirectiveUtils } from "@tiny-chat/core/features/data/utils/DirectiveUtils.ts";
 import {
 	EDITOR_PART_TYPES,
 	EditorPartUtils,
-} from "@tiny-chat/core/src/features/data/utils/EditorPartUtils.ts";
-import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
+} from "@tiny-chat/core/features/data/utils/EditorPartUtils.ts";
+import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import { useAtomStore } from "../stores/useAtomStore.ts";
 import {
 	type EditorPart,

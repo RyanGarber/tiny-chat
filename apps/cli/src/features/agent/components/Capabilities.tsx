@@ -1,15 +1,15 @@
-import { useConfig } from "@tiny-chat/client/src/features/agent/hooks/useConfig.ts";
-import { useSkills } from "@tiny-chat/client/src/features/agent/hooks/useSkills.ts";
-import { useTools } from "@tiny-chat/client/src/features/agent/hooks/useTools.ts";
+import { useConfig } from "@tiny-chat/client/features/agent/hooks/useConfig.ts";
+import { useSkills } from "@tiny-chat/client/features/agent/hooks/useSkills.ts";
+import { useTools } from "@tiny-chat/client/features/agent/hooks/useTools.ts";
 import type {
 	CompletionGroup,
 	CompletionItem,
-} from "@tiny-chat/client/src/features/editor/types/completion.ts";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
-import type { zSkill } from "@tiny-chat/core/src/features/skill/types/skill.ts";
-import type { Toolset } from "@tiny-chat/core/src/features/tool/types/tool.ts";
-import { ToolUtils } from "@tiny-chat/core/src/features/tool/utils/ToolUtils.ts";
+} from "@tiny-chat/client/features/editor/types/completion.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
+import type { zSkill } from "@tiny-chat/core/features/skill/types/skill.ts";
+import type { Toolset } from "@tiny-chat/core/features/tool/types/tool.ts";
+import { ToolUtils } from "@tiny-chat/core/features/tool/utils/ToolUtils.ts";
 import chalk from "chalk";
 import { useMemo } from "react";
 import Text from "../../../core/components/Text.tsx";

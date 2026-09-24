@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { Capabilities } from "../../../../core/types/capability.ts";
 import { FileOperationService } from "../../../file/services/FileOperationService.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
+import { FileToolUtils } from "../../utils/FileToolUtils.ts";
 import { ShellUtils } from "../../utils/ShellUtils.ts";
 
 export const edit_file = {
@@ -40,7 +41,7 @@ export const createEditFileTool: ToolFactory<
 > = (options) => ({
 	...edit_file,
 	...options,
-	validate: async ({ input }) => {
+	validate: async ({ input, context }) => {
 		const shell = ShellUtils.detect(input.path, options.capabilities);
 
 		await FileOperationService.resolveEdit({
@@ -50,7 +51,9 @@ export const createEditFileTool: ToolFactory<
 			new_string: input.new_string,
 			replace_all: input.replace_all,
 		});
-		return { approval: true };
+		return {
+			approval: FileToolUtils.requiresApproval({ path: input.path, context }),
+		};
 	},
 	execute: async ({ input }) => {
 		const shell = ShellUtils.detect(input.path, options.capabilities);

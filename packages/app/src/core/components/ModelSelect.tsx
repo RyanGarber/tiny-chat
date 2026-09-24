@@ -3,15 +3,15 @@ import {
 	TreeSelect,
 	type TreeSelectProps,
 } from "@mantine/core";
-import { useProviders } from "@tiny-chat/client/src/features/agent/hooks/useProviders.ts";
-import { useHiddenModels } from "@tiny-chat/client/src/features/settings/hooks/useHiddenModels.ts";
-import { zConfig } from "@tiny-chat/core/src/features/data/types/message.ts";
-import type { zSettings } from "@tiny-chat/core/src/features/data/types/user.ts";
-import type { ModelProviderStatus } from "@tiny-chat/core/src/features/provider/types/model.ts";
+import { useProviders } from "@tiny-chat/client/features/agent/hooks/useProviders.ts";
+import { useHiddenModels } from "@tiny-chat/client/features/settings/hooks/useHiddenModels.ts";
+import { zConfig } from "@tiny-chat/core/features/data/types/message.ts";
+import type { zSettings } from "@tiny-chat/core/features/data/types/user.ts";
+import type { ModelProviderStatus } from "@tiny-chat/core/features/provider/types/model.ts";
 import type {
 	ProviderState,
 	ProviderStatus,
-} from "@tiny-chat/core/src/features/provider/types/provider.ts";
+} from "@tiny-chat/core/features/provider/types/provider.ts";
 import { useCallback, useMemo } from "react";
 
 const getData = (

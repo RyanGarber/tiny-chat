@@ -1,6 +1,6 @@
 # Tiny Chat
 
-A lightweight chat app with all the features you want and more.
+A lightweight chat app that can do code, work, and conversation all in one place.
 Seamlessly supporting everything from Claude and GPT to Grok and DeepSeek in one unified interface.
 Improving on the chat experience with intuitive features like in-place editing, conversation branching, and transparent reasoning and tool calls.
 

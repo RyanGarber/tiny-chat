@@ -1,7 +1,7 @@
 #!/usr/bin/env -S node
 import type { Contract as End } from '../../snapshots/c6afbbcc3ec78b8ca539b47dca3518e835206642d2abfe2f67eee2283eff0cb0/contract';
 import endContract from '../../snapshots/c6afbbcc3ec78b8ca539b47dca3518e835206642d2abfe2f67eee2283eff0cb0/contract.json' with { type: 'json' };
-import { Migration, MigrationCLI, col, fn, lit, primaryKey } from '@prisma/orm-postgres/migration';
+import { Migration, MigrationCLI, col, fn, lit, primaryKey, rawSql } from '@prisma/orm-postgres/migration';
 
 export default class M extends Migration<never, End> {
   override readonly endContractJson = endContract;
@@ -890,6 +890,71 @@ export default class M extends Migration<never, End> {
           onDelete: 'cascade',
           onUpdate: 'cascade',
         },
+      }),
+      rawSql({
+        id: 'try_decode_utf8',
+        label: 'Create function "try_decode_utf8"',
+        operationClass: 'additive',
+        target: {id: 'postgres'},
+        precheck: [],
+        execute: [
+          {
+            description: 'create or replace function public.try_decode_utf8',
+            sql: `
+              create or replace function public.try_decode_utf8(b bytea)
+                  returns text
+                  language plpgsql
+                  immutable
+                  parallel safe
+              as
+              $$
+              DECLARE decoded text;
+              BEGIN
+                  decoded := convert_from(b, 'UTF8');
+                  IF LENGTH(decoded) > 0 THEN
+                      RETURN decoded;
+                  END IF;
+                  RETURN NULL;
+              EXCEPTION WHEN OTHERS THEN
+                  RETURN NULL;
+              END;
+              $$;
+            `,
+          },
+        ],
+        postcheck: [],
+      }),
+      rawSql({
+        id: 'try_extract_text',
+        label: 'Create function "try_extract_text"',
+        operationClass: 'additive',
+        target: {id: 'postgres'},
+        precheck: [],
+        execute: [
+          {
+            description: 'create or replace function public.try_extract_text',
+            sql: `
+              create or replace function public.try_extract_text(j jsonb)
+                  returns text
+                  language plpgsql
+                  immutable
+                  parallel safe
+              as
+              $$
+              DECLARE extracted text;
+              BEGIN
+                  SELECT string_agg("dataPart"->>'value', ' ')
+                  INTO extracted
+                  FROM jsonb_array_elements(j) AS "step",
+                      jsonb_array_elements("step") AS "dataPart"
+                  WHERE "dataPart"->>'type' = 'text';
+                  return extracted;
+              END;
+              $$;
+              `,
+          }
+        ],
+        postcheck: [],
       }),
     ];
   }

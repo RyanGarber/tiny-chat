@@ -1,5 +1,5 @@
-import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
-import { EmbeddingUtils } from "@tiny-chat/core/src/features/provider/utils/EmbeddingUtils.ts";
+import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
+import { EmbeddingUtils } from "@tiny-chat/core/features/provider/utils/EmbeddingUtils.ts";
 import { EmbeddingService } from "./EmbeddingService.ts";
 
 let running = false;

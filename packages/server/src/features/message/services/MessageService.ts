@@ -1,21 +1,24 @@
-import type { Enum } from "@tiny-chat/core/src/core/services/PostgresService.ts";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import { SettingsUtils } from "@tiny-chat/core/src/core/utils/SettingsUtils.ts";
-import type { ChatLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
+import type {
+	Enum,
+	Model,
+} from "@tiny-chat/core/core/services/PostgresService.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import { SettingsUtils } from "@tiny-chat/core/core/utils/SettingsUtils.ts";
+import type { ChatLike } from "@tiny-chat/core/features/data/types/chat.ts";
 import type {
 	MessageLike,
 	zConfig,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
+} from "@tiny-chat/core/features/data/types/message.ts";
 import type {
 	zData,
 	zMetadata,
-} from "@tiny-chat/core/src/features/data/types/part.ts";
-import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
-import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
+} from "@tiny-chat/core/features/data/types/part.ts";
+import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
+import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
 import {
 	type MessageBranches,
 	MessageBranchUtils,
-} from "@tiny-chat/core/src/features/data/utils/MessageBranchUtils.ts";
+} from "@tiny-chat/core/features/data/utils/MessageBranchUtils.ts";
 import { MemoryRetrievalService } from "../../chat/services/MemoryRetrievalService.ts";
 import { MessageUtils } from "../utils/MessageUtils.ts";
 
@@ -147,11 +150,22 @@ export const MessageService = {
 		if (typeof chat === "string") chat = { id: chat };
 		if (typeof previous === "string") previous = { id: previous };
 
+		let folder: Pick<Model["Folder"], "settings"> | undefined;
+		if (folderId)
+			folder = requireRow(
+				await globalThis.db.orm.public.Folder.where({
+					id: folderId,
+					userId: user.id,
+				})
+					.select("settings")
+					.first(),
+			);
+
 		const retrieval = !incognito
 			? await MemoryRetrievalService.build({
 					user,
 					text: DataUtils.getText(content),
-					tokens: SettingsUtils.defaults(user.settings).memoryBudget,
+					tokens: SettingsUtils.of(user, folder).memoryBudget,
 					more: false,
 				})
 			: { memories: [], embedding: undefined };
@@ -200,13 +214,7 @@ export const MessageService = {
 				if (previousId) throw new Error("A parent requires a chat");
 
 				chatId = CommonUtils.getRandomId();
-				if (folderId)
-					requireRow(
-						await tx.orm.public.Folder.where({
-							id: folderId,
-							userId: user.id,
-						}).first(),
-					);
+
 				await tx.orm.public.Chat.create({
 					id: chatId,
 					userId: user.id,
@@ -253,7 +261,11 @@ export const MessageService = {
 				id: message.id,
 				userId: user.id,
 			})
-				.include("chat", (chat) => chat.select("incognito"))
+				.include("chat", (chat) =>
+					chat
+						.select("incognito")
+						.include("folder", (folder) => folder.select("settings")),
+				)
 				.first(),
 		);
 
@@ -261,7 +273,7 @@ export const MessageService = {
 			? await MemoryRetrievalService.build({
 					user,
 					text: DataUtils.getText(content),
-					tokens: SettingsUtils.defaults(user.settings).memoryBudget,
+					tokens: SettingsUtils.of(user, existing.chat?.folder).memoryBudget,
 					more: false,
 				})
 			: { memories: [], embedding: undefined };

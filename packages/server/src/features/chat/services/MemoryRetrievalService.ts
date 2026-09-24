@@ -1,11 +1,11 @@
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
 import type {
 	MemorySearchResult,
 	MemorySource,
 	MemoryState,
-} from "@tiny-chat/core/src/features/data/types/memory.ts";
-import type { MessageLike } from "@tiny-chat/core/src/features/data/types/message.ts";
-import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
+} from "@tiny-chat/core/features/data/types/memory.ts";
+import type { MessageLike } from "@tiny-chat/core/features/data/types/message.ts";
+import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
 import { createEmbeddingCapability } from "../../../core/capabilities/createEmbeddingCapability.ts";
 import { EmbeddingService } from "../../embedding/services/EmbeddingService.ts";
 import { MemorySearchService } from "./MemorySearchService.ts";
@@ -140,7 +140,7 @@ export const MemoryRetrievalService = {
 			if ("text" in source) {
 				const { memories } = await MemoryRetrievalService.build({
 					user,
-					text: source.text,
+					text: source.text.trim().length > 0 ? source.text : "a",
 					tokens,
 					embed: false,
 					more: true,

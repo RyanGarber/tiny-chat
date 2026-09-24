@@ -1,7 +1,7 @@
 import { Spotlight } from "@mantine/spotlight";
-import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
-import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
-import { useEmbedding } from "@tiny-chat/client/src/features/user/hooks/useEmbedding.ts";
+import { useChat } from "@tiny-chat/client/features/chat/hooks/useChat.ts";
+import { useChatStore } from "@tiny-chat/client/features/chat/stores/useChatStore.ts";
+import { useEmbedding } from "@tiny-chat/client/features/user/hooks/useEmbedding.ts";
 import { type CSSProperties, useCallback, useState } from "react";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
 import AccountDrawer from "#app/features/sidebar/components/AccountDrawer.tsx";
@@ -9,7 +9,7 @@ import SettingsDrawer from "#app/features/sidebar/components/SettingsDrawer.tsx"
 import SidebarCollapsed from "#app/features/sidebar/components/SidebarCollapsed.tsx";
 import SidebarExpanded from "#app/features/sidebar/components/SidebarExpanded.tsx";
 import { useSearch } from "#app/features/sidebar/hooks/useSearch.ts";
-import { useSession } from "#client/src/core/hooks/useSession.ts";
+import { useSession } from "#client/core/hooks/useSession.ts";
 
 export default function Sidebar() {
 	const { session } = useSession();

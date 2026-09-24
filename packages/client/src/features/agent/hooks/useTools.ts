@@ -1,14 +1,15 @@
 import type { Client } from "@modelcontextprotocol/client";
 import { useQuery } from "@tanstack/react-query";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import type { zDataSimplePart } from "@tiny-chat/core/src/features/data/types/part.ts";
-import type { zMCPServers } from "@tiny-chat/core/src/features/data/types/user.ts";
-import { ToolService } from "@tiny-chat/core/src/features/tool/services/ToolService.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import type { zDataSimplePart } from "@tiny-chat/core/features/data/types/part.ts";
+import type { zMCPServers } from "@tiny-chat/core/features/data/types/user.ts";
+import { ToolService } from "@tiny-chat/core/features/tool/services/ToolService.ts";
 import type {
 	Tool,
 	Toolset,
-} from "@tiny-chat/core/src/features/tool/types/tool.ts";
+} from "@tiny-chat/core/features/tool/types/tool.ts";
 import { useMemo } from "react";
+import { z } from "zod";
 import { useCapabilities } from "../../../core/hooks/useCapabilities.ts";
 import { useStableKey } from "../../../core/hooks/useStableKey.ts";
 import { useMcp } from "./useMcp.ts";
@@ -24,9 +25,10 @@ export const mcpToolsQueryKey = ["useTools", "mcpTools"] as const;
 export const useTools = () => {
 	const { capabilities } = useCapabilities({ future: true });
 	const { mcpServers, refreshMcpServers } = useMcp();
+	const capabilitiesKey = useStableKey({ capabilities: capabilities.data });
 
 	const nativeTools = useQuery({
-		queryKey: [...nativeToolsQueryKey, capabilities.data],
+		queryKey: [...nativeToolsQueryKey, capabilitiesKey],
 		queryFn: async () => {
 			return await ToolService.getTools({
 				capabilities: capabilities.data ?? {},
@@ -58,8 +60,16 @@ export const useTools = () => {
 								name: tool.name,
 								description: tool.description ?? "",
 
-								input: tool.inputSchema,
-								output: tool.outputSchema,
+								input: z.fromJSONSchema(
+									tool.inputSchema as Parameters<typeof z.fromJSONSchema>[0],
+								),
+								output: tool.outputSchema
+									? z.fromJSONSchema(
+											tool.outputSchema as Parameters<
+												typeof z.fromJSONSchema
+											>[0],
+										)
+									: z.unknown(),
 
 								execute: async ({
 									input,

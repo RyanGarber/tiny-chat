@@ -1,12 +1,12 @@
-import { useAttachments } from "@tiny-chat/client/src/features/editor/hooks/useAttachments.ts";
-import { AttachmentService } from "@tiny-chat/client/src/features/editor/services/AttachmentService.ts";
+import { useAttachments } from "@tiny-chat/client/features/editor/hooks/useAttachments.ts";
+import { AttachmentService } from "@tiny-chat/client/features/editor/services/AttachmentService.ts";
 import type {
 	AttachmentGroup,
 	AttachmentItem,
-} from "@tiny-chat/client/src/features/editor/types/attachment.ts";
-import type { CommandEdit } from "@tiny-chat/client/src/features/editor/types/command.ts";
-import { AttachmentUtils } from "@tiny-chat/client/src/features/editor/utils/AttachmentUtils.ts";
-import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
+} from "@tiny-chat/client/features/editor/types/attachment.ts";
+import type { CommandEdit } from "@tiny-chat/client/features/editor/types/command.ts";
+import { AttachmentUtils } from "@tiny-chat/client/features/editor/utils/AttachmentUtils.ts";
+import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import { useCallback, useEffect, useState } from "react";
 import { client } from "../../../client.ts";
 import Completions from "./Completions.tsx";

@@ -20,7 +20,7 @@ jobs:
 
         steps:
             -   name: Checkout
-                uses: actions/checkout@v6
+                uses: actions/checkout@v7
                 with:
                     ref: ${{ inputs.version || github.ref }}
 
@@ -28,10 +28,17 @@ jobs:
                 uses: pnpm/action-setup@v6
 
             -   name: Install Node
-                uses: actions/setup-node@v6
+                uses: actions/setup-node@v7
                 with:
                     node-version: lts/*
                     cache: pnpm
+
+            -   name: Cache Turbo
+                uses: actions/cache@v6
+                with:
+                    path: .turbo
+                    key: ${{ runner.os }}-${{ runner.arch }}-turbo-deploy-${{ github.sha }}
+                    restore-keys: ${{ runner.os }}-${{ runner.arch }}-turbo-deploy-
 
             -   name: Create .env
                 run: |
@@ -67,6 +74,7 @@ jobs:
                     cp package.json deploy/
                     cp pnpm-lock.yaml deploy/
                     cp pnpm-workspace.yaml deploy/
+                    cp -r scripts deploy/scripts
                     cp -r patches deploy/patches
                     mkdir deploy/packages
                     cp -r packages/core deploy/packages/core
@@ -76,7 +84,7 @@ jobs:
                     tar -czf deploy.tar.gz deploy
 
             -   name: Upload deployment
-                uses: actions/upload-artifact@v6
+                uses: actions/upload-artifact@v7
                 with:
                     name: deploy
                     path: deploy.tar.gz

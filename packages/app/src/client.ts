@@ -1,11 +1,11 @@
-import { createClient } from "@tiny-chat/client/src/client.ts";
-import { MarkdownDataUtils } from "@tiny-chat/client/src/features/message/utils/MarkdownDataUtils.ts";
-import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
+import { createClient } from "@tiny-chat/client/client.ts";
+import { MarkdownDataUtils } from "@tiny-chat/client/features/message/utils/MarkdownDataUtils.ts";
+import { FileUtils } from "@tiny-chat/core/features/file/utils/FileUtils.ts";
 import type {
 	ModelProvider,
 	ModelProviderStatus,
-} from "@tiny-chat/core/src/features/provider/types/model.ts";
-import type { ProviderState } from "@tiny-chat/core/src/features/provider/types/provider.ts";
+} from "@tiny-chat/core/features/provider/types/model.ts";
+import type { ProviderState } from "@tiny-chat/core/features/provider/types/provider.ts";
 import { useEditorStore } from "#app/features/editor/stores/useEditorStore.ts";
 import { EditorUtils } from "#app/features/editor/utils/EditorUtils.ts";
 import { TauriHttpTransport } from "#app/features/tauri/services/TauriHttpTransport.ts";

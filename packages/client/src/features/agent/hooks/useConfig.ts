@@ -1,6 +1,6 @@
-import { zConfig } from "@tiny-chat/core/src/features/data/types/message.ts";
-import type { ModelProviderStatus } from "@tiny-chat/core/src/features/provider/types/model.ts";
-import type { ProviderState } from "@tiny-chat/core/src/features/provider/types/provider.ts";
+import { zConfig } from "@tiny-chat/core/features/data/types/message.ts";
+import type { ModelProviderStatus } from "@tiny-chat/core/features/provider/types/model.ts";
+import type { ProviderState } from "@tiny-chat/core/features/provider/types/provider.ts";
 import { useCallback, useContext, useMemo } from "react";
 import { ClientContext } from "../../../client.ts";
 import { useMessages } from "../../message/hooks/useMessages.ts";
@@ -73,17 +73,16 @@ export const useConfig = () => {
 		[setOverrideConfig, client.setStorage],
 	);
 
-	const modelArgs = useMemo(() => {
-		return (
-			providers.data
-				?.filter(
-					(provider): provider is ProviderState<ModelProviderStatus> =>
-						provider.type === "model",
-				)
-				.find((s) => s.name === config.provider)
-				?.status.models.find((m) => m.name === config.model)?.args ?? []
-		);
+	const model = useMemo(() => {
+		return providers.data
+			?.filter(
+				(provider): provider is ProviderState<ModelProviderStatus> =>
+					provider.type === "model",
+			)
+			.find((s) => s.name === config.provider)
+			?.status.models.find((m) => m.name === config.model);
 	}, [config.provider, config.model, providers.data]);
+	const modelArgs = useMemo(() => model?.args ?? [], [model]);
 
 	const setModelArg = useCallback(
 		(name: string, value: unknown) => {
@@ -97,5 +96,5 @@ export const useConfig = () => {
 		[config, setConfig],
 	);
 
-	return { config, setConfig, modelArgs, setModelArg };
+	return { config, setConfig, model, modelArgs, providers, setModelArg };
 };

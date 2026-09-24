@@ -1,6 +1,6 @@
 import { prisma8Adapter } from "@ryangarber/better-auth-adapter-prisma";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
 import { userFields } from "@tiny-chat/core/prisma/better-auth-adapter.ts";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
 import { betterAuth } from "better-auth";
 import { anonymous, bearer } from "better-auth/plugins";
 import { internalIpV4 } from "internal-ip";

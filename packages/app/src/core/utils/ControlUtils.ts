@@ -1,5 +1,5 @@
-import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeUtils.ts";
-import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
+import { FileTypeUtils } from "@tiny-chat/core/features/file/utils/FileTypeUtils.ts";
+import { FileUtils } from "@tiny-chat/core/features/file/utils/FileUtils.ts";
 
 export const ControlUtils = {
 	preprocess: ({ data, mime }: { data: string | Blob; mime: string }) => {

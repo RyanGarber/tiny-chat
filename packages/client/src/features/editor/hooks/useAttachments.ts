@@ -1,6 +1,6 @@
-import { FileOperationService } from "@tiny-chat/core/src/features/file/services/FileOperationService.ts";
-import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
-import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
+import { FileOperationService } from "@tiny-chat/core/features/file/services/FileOperationService.ts";
+import { FileUtils } from "@tiny-chat/core/features/file/utils/FileUtils.ts";
+import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import { useCallback, useContext, useMemo, useRef } from "react";
 import { ClientContext } from "../../../client.ts";
 import { useChatFiles } from "../../chat/hooks/useChatFiles.ts";

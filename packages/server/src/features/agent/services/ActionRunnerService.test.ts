@@ -1,10 +1,10 @@
 import { inspect } from "node:util";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
 import {
 	type MessageState,
 	zConfig,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
-import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
+} from "@tiny-chat/core/features/data/types/message.ts";
+import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
 import { testUser } from "../../../tests.ts";
 import { ActionService } from "../../chat/services/ActionService.ts";
 import { ChatService } from "../../chat/services/ChatService.ts";

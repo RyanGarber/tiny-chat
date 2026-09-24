@@ -1,8 +1,8 @@
 import { ActionIcon, Burger, Group, Tooltip } from "@mantine/core";
 import { EyeSlashIcon, GhostIcon, PlusCircleIcon } from "@phosphor-icons/react";
-import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
-import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
-import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
+import { useChat } from "@tiny-chat/client/features/chat/hooks/useChat.ts";
+import { ChatService } from "@tiny-chat/client/features/chat/services/ChatService.ts";
+import { useChatStore } from "@tiny-chat/client/features/chat/stores/useChatStore.ts";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
 
 export default function ChatHeader({ fixed }: { fixed: boolean }) {
@@ -30,6 +30,9 @@ export default function ChatHeader({ fixed }: { fixed: boolean }) {
 			display={isMobile ? undefined : "none"}
 			className="glass"
 			style={{
+				paddingTop: "calc(10px + env(safe-area-inset-top, 0px))",
+				paddingLeft: "calc(10px + env(safe-area-inset-left, 0px))",
+				paddingRight: "calc(10px + env(safe-area-inset-right, 0px))",
 				zIndex: "calc(var(--mantine-z-index-app) + 1)",
 				borderBottom: "1px solid var(--mantine-color-default-border)",
 			}}

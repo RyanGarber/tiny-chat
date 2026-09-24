@@ -1,8 +1,8 @@
-import { zId } from "@tiny-chat/core/src/core/types/common.ts";
+import { zId } from "@tiny-chat/core/core/types/common.ts";
 import {
 	ChatLike,
 	FolderLike,
-} from "@tiny-chat/core/src/features/data/types/chat.ts";
+} from "@tiny-chat/core/features/data/types/chat.ts";
 import { z } from "zod";
 import { procedure, router } from "../../../index.ts";
 import { FileService } from "../../file/services/FileService.ts";
@@ -94,20 +94,22 @@ export const chat = router({
 		});
 	}),
 
-	setFolderTitle: procedure
+	updateFolder: procedure
 		.input(
 			z.object({
 				folder: FolderLike,
 				title: z.string(),
 				cwd: z.string().nullable().optional(),
+				cwdWritable: z.boolean().optional(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
-			return await ChatService.setFolderTitle({
+			return await ChatService.updateFolder({
 				user: ctx.session.user,
 				folder: input.folder,
 				title: input.title,
 				cwd: input.cwd,
+				cwdWritable: input.cwdWritable,
 			});
 		}),
 

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { Capabilities } from "../../../../core/types/capability.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
+import { FileToolUtils } from "../../utils/FileToolUtils.ts";
 import { ShellUtils } from "../../utils/ShellUtils.ts";
 
 export const write_file = {
@@ -21,8 +22,10 @@ export const createWriteFileTool: ToolFactory<
 > = (options) => ({
 	...write_file,
 	...options,
-	validate: async () => {
-		return { approval: true };
+	validate: async ({ input, context }) => {
+		return {
+			approval: FileToolUtils.requiresApproval({ path: input.path, context }),
+		};
 	},
 	execute: async ({ input }) => {
 		const shell = ShellUtils.detect(input.path, options.capabilities);

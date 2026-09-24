@@ -1,4 +1,4 @@
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
 import { ChatService } from "../../chat/services/ChatService.ts";
 import { MessageService } from "../../message/services/MessageService.ts";
 import { MessageUtils } from "../../message/utils/MessageUtils.ts";

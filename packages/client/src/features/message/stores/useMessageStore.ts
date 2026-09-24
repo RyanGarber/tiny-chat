@@ -1,6 +1,6 @@
-import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
-import type { Source } from "@tiny-chat/core/src/features/data/utils/SourceUtils.ts";
-import type { Toolset } from "@tiny-chat/core/src/features/tool/types/tool.ts";
+import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
+import type { Source } from "@tiny-chat/core/features/data/utils/SourceUtils.ts";
+import type { Toolset } from "@tiny-chat/core/features/tool/types/tool.ts";
 import { createContext, useContext } from "react";
 import { useStore } from "zustand";
 import { createStore, type StoreApi } from "zustand/vanilla";

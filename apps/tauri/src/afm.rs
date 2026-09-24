@@ -1,4 +1,4 @@
-#[cfg(all(any(target_os = "macos", target_os = "ios"), feature = "afm"))]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 mod afm_real {
     use std::ffi::{CStr, CString, c_char, c_void};
     use tauri::ipc::Channel;
@@ -60,7 +60,7 @@ mod afm_real {
     }
 }
 
-#[cfg(not(all(any(target_os = "macos", target_os = "ios"), feature = "afm")))]
+#[cfg(not(any(target_os = "macos", target_os = "ios")))]
 mod afm_shims {
     #[tauri::command]
     pub fn afm_enabled() -> bool {
@@ -77,7 +77,7 @@ mod afm_shims {
     pub fn afm_cancel() {}
 }
 
-#[cfg(all(any(target_os = "macos", target_os = "ios"), feature = "afm"))]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 pub use afm_real::*;
-#[cfg(not(all(any(target_os = "macos", target_os = "ios"), feature = "afm")))]
+#[cfg(not(any(target_os = "macos", target_os = "ios")))]
 pub use afm_shims::*;

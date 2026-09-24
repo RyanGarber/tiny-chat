@@ -9,7 +9,7 @@ import {
 	useMantineTheme,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	type TauriTask,

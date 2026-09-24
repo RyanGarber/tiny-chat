@@ -1,4 +1,4 @@
-import type { zConfig } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { zConfig } from "@tiny-chat/core/features/data/types/message.ts";
 import { create } from "zustand";
 
 interface ConfigStore {

@@ -1,8 +1,8 @@
 import type {
 	FileNode,
 	FileState,
-} from "@tiny-chat/core/src/features/file/types/file.ts";
-import { PathLike } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
+} from "@tiny-chat/core/features/file/types/file.ts";
+import { PathLike } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import { z } from "zod";
 import { procedure, router } from "../../../index.ts";
 import { FileService } from "../../file/services/FileService.ts";

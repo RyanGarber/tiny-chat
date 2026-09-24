@@ -5,7 +5,7 @@ import {
 	SlidersHorizontalIcon,
 	TerminalWindowIcon,
 } from "@phosphor-icons/react";
-import type { EmbeddingStatus } from "@tiny-chat/client/src/features/user/hooks/useEmbedding.ts";
+import type { EmbeddingStatus } from "@tiny-chat/client/features/user/hooks/useEmbedding.ts";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
 import scrollable from "#app/core/styles/scrollable.module.css";
 import AppSettings from "#app/features/sidebar/components/AppSettings.tsx";

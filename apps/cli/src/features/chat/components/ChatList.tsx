@@ -1,6 +1,6 @@
-import { useChatList } from "@tiny-chat/client/src/features/chat/hooks/useChatList.ts";
-import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
-import { useMessagingStore } from "@tiny-chat/client/src/features/chat/stores/useMessagingStore.ts";
+import { useChatList } from "@tiny-chat/client/features/chat/hooks/useChatList.ts";
+import { ChatService } from "@tiny-chat/client/features/chat/services/ChatService.ts";
+import { useMessagingStore } from "@tiny-chat/client/features/chat/stores/useMessagingStore.ts";
 import { usePage } from "../../../core/hooks/usePage.ts";
 import { useSentinel } from "../../../core/hooks/useSentinel.ts";
 import { useWorkingStatus } from "../../../core/hooks/useWorkingStatus.ts";

@@ -1,6 +1,6 @@
-import type { EditorNode } from "@tiny-chat/client/src/features/editor/types/node.ts";
-import { EditorNodeUtils } from "@tiny-chat/client/src/features/editor/utils/EditorNodeUtils.ts";
-import { EditorPartUtils } from "@tiny-chat/core/src/features/data/utils/EditorPartUtils.ts";
+import type { EditorNode } from "@tiny-chat/client/features/editor/types/node.ts";
+import { EditorNodeUtils } from "@tiny-chat/client/features/editor/utils/EditorNodeUtils.ts";
+import { EditorPartUtils } from "@tiny-chat/core/features/data/utils/EditorPartUtils.ts";
 import type { Fragment, Node } from "@tiptap/pm/model";
 import { Selection } from "@tiptap/pm/state";
 import type { Content } from "@tiptap/react";

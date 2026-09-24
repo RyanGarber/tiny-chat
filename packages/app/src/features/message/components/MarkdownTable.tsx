@@ -1,4 +1,5 @@
-import { type ComponentProps, useCallback, useMemo, useRef } from "react";
+import { Box, type BoxProps } from "@mantine/core";
+import { type HTMLAttributes, useCallback, useMemo, useRef } from "react";
 import {
 	extractTableDataFromElement,
 	tableDataToCSV,
@@ -18,11 +19,12 @@ export const Table = ({
 	withButtons,
 	streaming,
 	...props
-}: ComponentProps<"table"> & {
-	with?: boolean;
-	withButtons?: boolean;
-	streaming?: boolean;
-}) => {
+}: HTMLAttributes<HTMLDivElement> &
+	BoxProps & {
+		with?: boolean;
+		withButtons?: boolean;
+		streaming?: boolean;
+	}) => {
 	const insideRef = useRef<HTMLDivElement>(null);
 
 	const formats = useMemo<ContentFormats<TableFormats>>(() => {
@@ -83,15 +85,17 @@ export const Table = ({
 			streaming={streaming}
 			data-streamdown="table-wrapper"
 		>
-			<div className="border-collapse overflow-x-auto overflow-y-auto rounded-md border border-border">
+			<Box
+				className="border-collapse overflow-x-auto overflow-y-auto rounded-md border border-border"
+				{...props}
+			>
 				<table
 					className="w-full *:divide-none [&_th]:first:ps-6 [&_th]:last:pe-6 [&_td]:first:ps-6 [&_td]:last:pe-6 [&_th]:py-3 [&_td]:py-4"
 					data-streamdown="table"
-					{...props}
 				>
 					{children}
 				</table>
-			</div>
+			</Box>
 		</Content>
 	);
 };

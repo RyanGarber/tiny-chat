@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
 import { useContext } from "react";
 import { ClientContext } from "../../../client.ts";
 import { useMessagingStore } from "../../chat/stores/useMessagingStore.ts";

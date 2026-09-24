@@ -9,11 +9,11 @@ import {
 	Text,
 	Tooltip,
 } from "@mantine/core";
-import { useHiddenModels } from "@tiny-chat/client/src/features/settings/hooks/useHiddenModels.ts";
-import { useProviderSettings } from "@tiny-chat/client/src/features/settings/hooks/useProviderSettings.ts";
-import { useThemes } from "@tiny-chat/client/src/features/settings/hooks/useThemes.ts";
-import { ThemeUtils } from "@tiny-chat/core/src/core/utils/ThemeUtils.ts";
-import { zConfig } from "@tiny-chat/core/src/features/data/types/message.ts";
+import { useHiddenModels } from "@tiny-chat/client/features/settings/hooks/useHiddenModels.ts";
+import { useProviderSettings } from "@tiny-chat/client/features/settings/hooks/useProviderSettings.ts";
+import { useThemes } from "@tiny-chat/client/features/settings/hooks/useThemes.ts";
+import { ThemeUtils } from "@tiny-chat/core/core/utils/ThemeUtils.ts";
+import { zConfig } from "@tiny-chat/core/features/data/types/message.ts";
 import { ModelMultiSelect } from "#app/core/components/ModelSelect.tsx";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 
@@ -55,7 +55,7 @@ export default function AppSettings() {
 					label="Code Theme"
 					styles={StyleUtils.input}
 					allowDeselect={false}
-					data={ThemeUtils.codeThemesByTheme(theme)}
+					data={ThemeUtils.codeThemesByTheme[theme]}
 					value={codeTheme}
 					onChange={(value) => {
 						if (!value) return;

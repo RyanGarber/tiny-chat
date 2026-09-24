@@ -1,8 +1,8 @@
 import type {
 	Atom,
 	AtomToken,
-} from "@tiny-chat/client/src/features/editor/types/atom.ts";
-import { AtomUtils } from "@tiny-chat/client/src/features/editor/utils/AtomUtils.ts";
+} from "@tiny-chat/client/features/editor/types/atom.ts";
+import { AtomUtils } from "@tiny-chat/client/features/editor/utils/AtomUtils.ts";
 import type { TLabels } from "react-ink-textarea";
 import stringWidth from "string-width";
 

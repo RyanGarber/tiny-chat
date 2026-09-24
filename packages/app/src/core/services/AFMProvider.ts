@@ -11,8 +11,8 @@ import type {
 	ModelProvider,
 	zModel,
 	zModelArg,
-} from "@tiny-chat/core/src/features/provider/types/model.ts";
-import { ModelProviderUtils } from "@tiny-chat/core/src/features/provider/utils/ModelProviderUtils.ts";
+} from "@tiny-chat/core/features/provider/types/model.ts";
+import { ModelProviderUtils } from "@tiny-chat/core/features/provider/utils/ModelProviderUtils.ts";
 import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
 
 interface AfmProviderOptions {

@@ -97,6 +97,11 @@ ${citeExamples.map((r) => `- ${r}`).join("\n")}`;
 			instructions += `\n
 ## Context`;
 
+			if (context.chat?.folder?.title || context.chat?.folder?.cwd) {
+				instructions += `\n
+<workspace name="${context.chat.folder.title ?? "unnamed"}">${context.chat.folder.cwd}</workspace>`;
+			}
+
 			if (actions?.length) {
 				instructions += `\n
 <actions>

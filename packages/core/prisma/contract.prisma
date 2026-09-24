@@ -59,14 +59,15 @@ namespace public {
   }
 
   model Folder {
-    id        String       @id(map: "folder_pkey")
-    userId    String
-    title     String?
-    createdAt Timestamp(3) @default(now())
-    chats     Chat[]
-    user      User         @relation(fields:[userId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "folder_userId_fkey")
-    cwd       String?
-    settings  zSettings    @default(dbgenerated("'{}'::jsonb"))
+    id          String       @id(map: "folder_pkey")
+    userId      String
+    title       String?
+    createdAt   Timestamp(3) @default(now())
+    chats       Chat[]
+    user        User         @relation(fields:[userId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "folder_userId_fkey")
+    cwd         String?
+    cwdWritable Boolean      @default(false)
+    settings    zSettings    @default(dbgenerated("'{}'::jsonb"))
 
     @@index([userId], map: "folder_userId_idx")
     @@map("folder")

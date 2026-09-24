@@ -11,19 +11,19 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { GearIcon, PaperPlaneTiltIcon, StopIcon } from "@phosphor-icons/react";
-import { AgentStreamService } from "@tiny-chat/client/src/core/services/StreamService.ts";
-import { useConfig } from "@tiny-chat/client/src/features/agent/hooks/useConfig.ts";
-import { useSkills } from "@tiny-chat/client/src/features/agent/hooks/useSkills.ts";
-import { useTools } from "@tiny-chat/client/src/features/agent/hooks/useTools.ts";
-import { useStreamStore } from "@tiny-chat/client/src/features/agent/stores/useStreamStore.ts";
-import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
-import { useMessaging } from "@tiny-chat/client/src/features/chat/hooks/useMessaging.ts";
-import { useDraftStore } from "@tiny-chat/client/src/features/chat/stores/useDraftStore.ts";
+import { AgentStreamService } from "@tiny-chat/client/core/services/StreamService.ts";
+import { useConfig } from "@tiny-chat/client/features/agent/hooks/useConfig.ts";
+import { useSkills } from "@tiny-chat/client/features/agent/hooks/useSkills.ts";
+import { useTools } from "@tiny-chat/client/features/agent/hooks/useTools.ts";
+import { useStreamStore } from "@tiny-chat/client/features/agent/stores/useStreamStore.ts";
+import { useChat } from "@tiny-chat/client/features/chat/hooks/useChat.ts";
+import { useMessaging } from "@tiny-chat/client/features/chat/hooks/useMessaging.ts";
+import { useDraftStore } from "@tiny-chat/client/features/chat/stores/useDraftStore.ts";
 import type {
 	Categories,
 	Usage,
-} from "@tiny-chat/client/src/features/editor/hooks/useEstimatedTokens.ts";
-import { ToolUtils } from "@tiny-chat/core/src/features/tool/utils/ToolUtils.ts";
+} from "@tiny-chat/client/features/editor/hooks/useEstimatedTokens.ts";
+import { ToolUtils } from "@tiny-chat/core/features/tool/utils/ToolUtils.ts";
 import { useEffect, useMemo } from "react";
 import ModelSelect from "#app/core/components/ModelSelect.tsx";
 import { AppService } from "#app/core/services/AppService.ts";

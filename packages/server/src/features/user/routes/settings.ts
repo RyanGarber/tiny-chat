@@ -1,10 +1,10 @@
-import { ThemeUtils } from "@tiny-chat/core/src/core/utils/ThemeUtils.ts";
-import { FolderLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
-import { zConfig } from "@tiny-chat/core/src/features/data/types/message.ts";
+import { ThemeUtils } from "@tiny-chat/core/core/utils/ThemeUtils.ts";
+import { FolderLike } from "@tiny-chat/core/features/data/types/chat.ts";
+import { zConfig } from "@tiny-chat/core/features/data/types/message.ts";
 import {
 	zMCPServers,
 	zSettings,
-} from "@tiny-chat/core/src/features/data/types/user.ts";
+} from "@tiny-chat/core/features/data/types/user.ts";
 import { z } from "zod";
 import { procedure, router } from "../../../index.ts";
 import { SettingsService } from "../services/SettingsService.ts";
@@ -33,11 +33,11 @@ export const settings = router({
 				})
 				.default({}),
 		)
-		.query(async ({ ctx, input }) => {
-			return await SettingsService.getSettingsRaw({
+		.query(async ({ ctx, input }): Promise<Record<string, unknown>> => {
+			return (await SettingsService.getSettingsRaw({
 				user: ctx.session.user,
 				folder: input.folder,
-			});
+			})) as Record<string, unknown>;
 		}),
 
 	setTheme: procedure
@@ -54,13 +54,6 @@ export const settings = router({
 				update: (settings) => ({
 					...settings,
 					theme: input.theme,
-					codeTheme:
-						settings.codeTheme &&
-						ThemeUtils.codeThemesByTheme(input.theme).includes(
-							settings.codeTheme,
-						)
-							? settings.codeTheme
-							: undefined,
 				}),
 			});
 		}),

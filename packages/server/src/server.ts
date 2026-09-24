@@ -1,8 +1,8 @@
 import "./env.ts";
 
 import { createServer } from "node:http";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import { createLogger } from "@tiny-chat/core/src/logger.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import { createLogger } from "@tiny-chat/core/logger.ts";
 import { internalIpV4 } from "internal-ip";
 import { create, print } from "../../../scripts/use-stdout.ts";
 import { ApiService } from "./core/services/ApiService.ts";

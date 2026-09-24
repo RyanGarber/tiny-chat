@@ -110,6 +110,7 @@ type ExitHandler = (isCtrlD: boolean) => boolean;
 let exitHandler: ExitHandler | undefined;
 
 export function setExitHandler(value: ExitHandler) {
+	setupTerminal();
 	exitHandler = value;
 }
 
@@ -119,7 +120,13 @@ export function setPassthrough(value: boolean) {
 	else process.stdin.resume();
 }
 
-if (process.stdin.isTTY) {
+let terminalConfigured = false;
+
+// Logging alone must not take over stdin or bypass a caller's signal cleanup.
+// Only the interactive CLI opts into raw key handling via setExitHandler.
+function setupTerminal() {
+	if (!process.stdin.isTTY || terminalConfigured) return;
+	terminalConfigured = true;
 	readline.emitKeypressEvents(process.stdin);
 	process.stdin.setRawMode(true);
 	process.stdout.write(`\u001B[?25l`, () => {});

@@ -65,7 +65,7 @@ export const zGitHubReviewComment = z.object({
 	start_line: z.number().nullable().optional(),
 });
 
-export const zGitHubPullRequestFile = z.object({
+export const zGitHubFileDiff = z.object({
 	filename: z.string(),
 	status: z.string(),
 	additions: z.number(),
@@ -76,8 +76,6 @@ export const zGitHubPullRequestFile = z.object({
 	previous_filename: z.string().optional(),
 	patch: z.string().optional(),
 });
-
-export const zGitHubDiffFile = zGitHubPullRequestFile;
 
 export const zGitHubIssueSummaryOutput = z.object({
 	kind: z.enum(["issue", "pull_request"]),

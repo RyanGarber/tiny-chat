@@ -9,7 +9,7 @@ import {
 import type {
 	Categories,
 	Usage,
-} from "@tiny-chat/client/src/features/editor/hooks/useEstimatedTokens.ts";
+} from "@tiny-chat/client/features/editor/hooks/useEstimatedTokens.ts";
 import Popup from "#app/core/components/Popup.tsx";
 
 export default function TokenUsage({

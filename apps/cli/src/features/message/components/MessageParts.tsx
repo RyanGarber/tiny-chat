@@ -1,12 +1,12 @@
-import type { AgentStreamEvent } from "@tiny-chat/client/src/core/services/StreamService.ts";
-import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
-import { MarkdownDataUtils } from "@tiny-chat/client/src/features/message/utils/MarkdownDataUtils.ts";
-import type { Compaction } from "@tiny-chat/core/src/features/agent/services/AgentTokensService.ts";
-import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
-import type { zData } from "@tiny-chat/core/src/features/data/types/part.ts";
-import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
-import { EditorPartUtils } from "@tiny-chat/core/src/features/data/utils/EditorPartUtils.ts";
-import { ToolCallUtils } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
+import type { AgentStreamEvent } from "@tiny-chat/client/core/services/StreamService.ts";
+import { useMessageStore } from "@tiny-chat/client/features/message/stores/useMessageStore.ts";
+import { MarkdownDataUtils } from "@tiny-chat/client/features/message/utils/MarkdownDataUtils.ts";
+import type { Compaction } from "@tiny-chat/core/features/agent/services/AgentTokensService.ts";
+import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
+import type { zData } from "@tiny-chat/core/features/data/types/part.ts";
+import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
+import { EditorPartUtils } from "@tiny-chat/core/features/data/utils/EditorPartUtils.ts";
+import { ToolCallUtils } from "@tiny-chat/core/features/tool/utils/ToolCallUtils.ts";
 import Box from "../../../core/components/Box.tsx";
 import Text from "../../../core/components/Text.tsx";
 import Task from "../../part/components/Task.tsx";
@@ -144,12 +144,15 @@ export default function MessageParts({
 				<Box
 					key={index}
 					backgroundColor={part.reason === "error" ? "#872323" : "interior"}
+					color={part.reason === "error" ? "white" : undefined}
 					flexDirection="column"
 					paddingX={2}
 					paddingY={1}
 				>
-					<Text bold>{part.reason === "error" ? "Failed" : "Stopped"}</Text>
-					<Text>{part.message ?? `Response ended due to ${part.reason}.`}</Text>
+					<Text bold>
+						{part.reason === "error" ? "Failed" : "Stopped"}: {part.reason}
+					</Text>
+					<Text>{part.message ?? JSON.stringify(part.details)}</Text>
 				</Box>
 			);
 		}

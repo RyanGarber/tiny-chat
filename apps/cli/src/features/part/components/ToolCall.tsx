@@ -1,20 +1,20 @@
 import type {
 	AgentStreamEvent,
 	ToolStreamEvent,
-} from "@tiny-chat/client/src/core/services/StreamService.ts";
-import { useStream } from "@tiny-chat/client/src/features/agent/hooks/useStream.ts";
-import type { StreamState } from "@tiny-chat/core/src/core/types/stream.ts";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
-import type { zToolCallPart } from "@tiny-chat/core/src/features/data/types/part.ts";
-import type { RenderedPart } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
-import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
-import type { shell_exec } from "@tiny-chat/core/src/features/tool/tools/shell/shell_exec.ts";
-import type { spawn_subagent } from "@tiny-chat/core/src/features/tool/tools/subagents/spawn_subagent.ts";
+} from "@tiny-chat/client/core/services/StreamService.ts";
+import { useStream } from "@tiny-chat/client/features/agent/hooks/useStream.ts";
+import type { StreamState } from "@tiny-chat/core/core/types/stream.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
+import type { zToolCallPart } from "@tiny-chat/core/features/data/types/part.ts";
+import type { RenderedPart } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
+import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
+import type { shell_exec } from "@tiny-chat/core/features/tool/tools/shell/shell_exec.ts";
+import type { spawn_subagent } from "@tiny-chat/core/features/tool/tools/subagents/spawn_subagent.ts";
 import type {
 	ToolCallDisplayType,
 	ToolCallUtils,
-} from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
+} from "@tiny-chat/core/features/tool/utils/ToolCallUtils.ts";
 import chalk from "chalk";
 import Image from "ink-picture";
 import type { ReactNode } from "react";
@@ -40,7 +40,19 @@ function ToolCallDetails({
 
 	let detailsNode: ReactNode | undefined;
 
-	if (details.name === "search_web") {
+	if (
+		details.name.startsWith("github_") &&
+		details.result === "success" &&
+		details.sources?.length
+	) {
+		detailsNode = details.sources.map((source) => (
+			<Box key={source.url} flexDirection="column">
+				<Text bold>{source.title}</Text>
+				<Anchor href={source.url} wrap="truncate-end" />
+				<Code code={source.content} language="markdown" lineNumbers={false} />
+			</Box>
+		));
+	} else if (details.name === "search_web") {
 		detailsNode = details.output?.map((result) => (
 			<Box key={result.url} flexDirection="column">
 				<Text bold>{result.title}</Text>

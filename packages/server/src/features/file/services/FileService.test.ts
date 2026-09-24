@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import { mockConfig } from "@tiny-chat/core/src/tests.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import { mockConfig } from "@tiny-chat/core/tests.ts";
 import { testUser } from "../../../tests.ts";
 import { ChatService } from "../../chat/services/ChatService.ts";
 import { MessageService } from "../../message/services/MessageService.ts";
@@ -37,7 +37,7 @@ it("preserves chat cwd, refreshes files, and resets on activation with isolated 
 	assert.equal((await exec("pwd")).stdout.trim(), `/mnt/chat/${chat.id}`);
 	await exec("echo hello > sample.txt");
 	assert.equal((await exec("cat sample.txt")).stdout.trim(), "hello");
-	await ChatService.setFolderTitle({
+	await ChatService.updateFolder({
 		user,
 		folder,
 		title: "cwd test",
@@ -47,7 +47,7 @@ it("preserves chat cwd, refreshes files, and resets on activation with isolated 
 	assert.equal((await exec("pwd")).stdout.trim(), `/mnt/chat/${chat.id}`);
 	await exec("cd /mnt");
 	assert.equal(await FileService.cwd({ user, chat: chat.id }), "/mnt");
-	await ChatService.setFolderTitle({
+	await ChatService.updateFolder({
 		user,
 		folder,
 		title: "cwd test",

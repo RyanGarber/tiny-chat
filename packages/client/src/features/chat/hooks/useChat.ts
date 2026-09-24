@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import type { zAgentChat } from "@tiny-chat/core/src/features/agent/types/agent.ts";
-import { ChatUtils } from "@tiny-chat/core/src/features/data/utils/ChatUtils.ts";
+import type { zAgentChat } from "@tiny-chat/core/features/agent/types/agent.ts";
+import { ChatUtils } from "@tiny-chat/core/features/data/utils/ChatUtils.ts";
 import { useContext, useMemo } from "react";
 import { ClientContext } from "../../../client.ts";
 import { useSettings } from "../../settings/hooks/useSettings.ts";
@@ -60,7 +60,14 @@ export const useChat = () => {
 		if (chat.data) return chat.data;
 		return {
 			id: null,
-			folder: activeFolder ? { settings: folderSettings.data ?? {} } : null,
+			folder: activeFolder
+				? {
+						title: null,
+						cwd: null,
+						cwdWritable: false,
+						settings: folderSettings.data ?? {},
+					}
+				: null,
 			incognito: createIncognito,
 			temporary: createTemporary,
 		};

@@ -8,7 +8,7 @@ import {
 import { useIsMutating } from "@tanstack/react-query";
 import { AppService } from "#app/core/services/AppService.ts";
 import { useScreenshot } from "#app/features/upload/hooks/useScreenshot.ts";
-import { uploadMutationKey } from "#client/src/features/upload/hooks/useUploads.ts";
+import { uploadMutationKey } from "#client/features/upload/hooks/useUploads.ts";
 
 export default function LeftSection({ disabled }: { disabled: boolean }) {
 	const { isScreenshotSupported, uploadScreenshot } = useScreenshot();

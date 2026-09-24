@@ -1,9 +1,9 @@
 import type {
 	CompletionGroup,
 	CompletionItem,
-} from "@tiny-chat/client/src/features/editor/types/completion.ts";
-import { useThemes } from "@tiny-chat/client/src/features/settings/hooks/useThemes.ts";
-import { ThemeUtils } from "@tiny-chat/core/src/core/utils/ThemeUtils.ts";
+} from "@tiny-chat/client/features/editor/types/completion.ts";
+import { useThemes } from "@tiny-chat/client/features/settings/hooks/useThemes.ts";
+import { ThemeUtils } from "@tiny-chat/core/core/utils/ThemeUtils.ts";
 import chalk from "chalk";
 import { useMemo, useState } from "react";
 import Text from "../../../core/components/Text.tsx";
@@ -43,7 +43,7 @@ export default function Settings() {
 					{
 						name: "code-theme",
 						value: "code-theme",
-						choices: ThemeUtils.codeThemesByTheme(theme),
+						choices: [...ThemeUtils.codeThemesByTheme[theme]],
 						current: codeTheme,
 						set: (codeTheme) => setCodeTheme.mutate({ codeTheme }),
 					} satisfies SettingsItem<(typeof ThemeUtils.codeThemes)[number][]>,

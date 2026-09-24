@@ -1,11 +1,11 @@
 import {
 	type ColorScheme,
 	ThemeContext,
-} from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
+} from "@tiny-chat/client/core/components/ThemeContext.tsx";
 import {
 	ColorUtils,
 	type Rgba,
-} from "@tiny-chat/core/src/core/utils/ColorUtils.ts";
+} from "@tiny-chat/core/core/utils/ColorUtils.ts";
 import { type ColorName, colorNames } from "chalk";
 import { useContext, useMemo } from "react";
 import type { LiteralUnion } from "type-fest";

@@ -18,7 +18,7 @@ import { client } from "#app/client.ts";
 import { useAccounts } from "#app/core/hooks/useAccounts.ts";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
 import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
-import { useSession } from "#client/src/core/hooks/useSession.ts";
+import { useSession } from "#client/core/hooks/useSession.ts";
 
 function Account({
 	providerId,

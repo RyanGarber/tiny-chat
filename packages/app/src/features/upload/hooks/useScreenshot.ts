@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { useUploads } from "@tiny-chat/client/src/features/upload/hooks/useUploads.ts";
+import { useUploads } from "@tiny-chat/client/features/upload/hooks/useUploads.ts";
 import { useState } from "react";
 import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
 

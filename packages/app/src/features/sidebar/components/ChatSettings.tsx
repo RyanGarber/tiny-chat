@@ -13,16 +13,16 @@ import {
 	Tooltip,
 } from "@mantine/core";
 import { useMutationState } from "@tanstack/react-query";
-import { useProviders } from "@tiny-chat/client/src/features/agent/hooks/useProviders.ts";
-import { useMessagingStore } from "@tiny-chat/client/src/features/chat/stores/useMessagingStore.ts";
-import { useEmbeddingSettings } from "@tiny-chat/client/src/features/settings/hooks/useEmbeddingSettings.ts";
-import { useModelSettings } from "@tiny-chat/client/src/features/settings/hooks/useModelSettings.ts";
-import { useProviderSettings } from "@tiny-chat/client/src/features/settings/hooks/useProviderSettings.ts";
+import { useProviders } from "@tiny-chat/client/features/agent/hooks/useProviders.ts";
+import { useMessagingStore } from "@tiny-chat/client/features/chat/stores/useMessagingStore.ts";
+import { useEmbeddingSettings } from "@tiny-chat/client/features/settings/hooks/useEmbeddingSettings.ts";
+import { useModelSettings } from "@tiny-chat/client/features/settings/hooks/useModelSettings.ts";
+import { useProviderSettings } from "@tiny-chat/client/features/settings/hooks/useProviderSettings.ts";
 import {
 	type EmbeddingStatus,
 	runEmbeddingBatchMutationKey,
-} from "@tiny-chat/client/src/features/user/hooks/useEmbedding.ts";
-import type { zConfig } from "@tiny-chat/core/src/features/data/types/message.ts";
+} from "@tiny-chat/client/features/user/hooks/useEmbedding.ts";
+import type { zConfig } from "@tiny-chat/core/features/data/types/message.ts";
 import { useState } from "react";
 import ModelSelect from "#app/core/components/ModelSelect.tsx";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";

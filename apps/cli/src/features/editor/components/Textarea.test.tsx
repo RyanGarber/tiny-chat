@@ -1,4 +1,4 @@
-import { ThemeContext } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
+import { ThemeContext } from "@tiny-chat/client/core/components/ThemeContext.tsx";
 import { useContext } from "react";
 import render from "../../../tests.ts";
 import { MarkdownUtils } from "../utils/MarkdownUtils.ts";

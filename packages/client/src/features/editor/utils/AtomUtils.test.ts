@@ -1,4 +1,4 @@
-import type { zAttachmentPart } from "@tiny-chat/core/src/features/data/types/part.ts";
+import type { zAttachmentPart } from "@tiny-chat/core/features/data/types/part.ts";
 import { useAtomStore } from "../stores/useAtomStore.ts";
 import {
 	type EditorPart,

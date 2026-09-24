@@ -1,5 +1,5 @@
-import { ThemeContext } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
-import type { CodeResult } from "@tiny-chat/core/src/core/utils/CodeUtils.ts";
+import { ThemeContext } from "@tiny-chat/client/core/components/ThemeContext.tsx";
+import type { CodeResult } from "@tiny-chat/core/core/utils/CodeUtils.ts";
 import { type BoxProps as _BoxProps, Box, Text } from "ink";
 import { type ReactNode, useContext } from "react";
 

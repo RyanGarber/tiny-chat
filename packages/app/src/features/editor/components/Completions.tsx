@@ -7,11 +7,11 @@ import {
 	Text,
 	useCombobox,
 } from "@mantine/core";
-import { useCompletionStore } from "@tiny-chat/client/src/features/editor/stores/useCompletionStore.ts";
+import { useCompletionStore } from "@tiny-chat/client/features/editor/stores/useCompletionStore.ts";
 import type {
 	CompletionGroup,
 	CompletionItem,
-} from "@tiny-chat/client/src/features/editor/types/completion.ts";
+} from "@tiny-chat/client/features/editor/types/completion.ts";
 import { type Editor, type Range, ReactRenderer } from "@tiptap/react";
 import type { SuggestionOptions, SuggestionProps } from "@tiptap/suggestion";
 import {
@@ -39,6 +39,7 @@ export interface CompletionProps<
 		item: T2;
 		editor: Editor;
 		range: Range;
+		query: string;
 		select: () => void;
 	}) => boolean | undefined;
 }
@@ -54,6 +55,7 @@ function Completions<
 				command,
 				editor,
 				range,
+				query,
 				renderEmpty,
 				renderItem,
 				onTab,
@@ -103,6 +105,7 @@ function Completions<
 									item,
 									editor,
 									range,
+									query,
 									select: () => select(item.value),
 								});
 								if (handled !== false) return true;
@@ -114,7 +117,7 @@ function Completions<
 						return false;
 					},
 				}),
-				[combobox, editor, items, onTab, range, select],
+				[combobox, editor, items, onTab, query, range, select],
 			);
 
 			// biome-ignore lint/correctness/useExhaustiveDependencies: auto select

@@ -16,16 +16,16 @@ import {
 	TrashIcon,
 	XIcon,
 } from "@phosphor-icons/react";
-import { MessagingService } from "@tiny-chat/client/src/features/chat/services/MessagingService.ts";
-import { useMessageBranches } from "@tiny-chat/client/src/features/message/hooks/useMessageBranches.ts";
-import type { Compaction } from "@tiny-chat/core/src/features/agent/services/AgentTokensService.ts";
-import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
+import { MessagingService } from "@tiny-chat/client/features/chat/services/MessagingService.ts";
+import { useMessageBranches } from "@tiny-chat/client/features/message/hooks/useMessageBranches.ts";
+import type { Compaction } from "@tiny-chat/core/features/agent/services/AgentTokensService.ts";
+import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
 import type { CSSProperties, ReactNode } from "react";
 import { client } from "#app/client.ts";
 import MessageBody from "#app/features/message/components/MessageBody.tsx";
-import { useMessaging } from "#client/src/features/chat/hooks/useMessaging.ts";
-import { useMessagingStore } from "#client/src/features/chat/stores/useMessagingStore.ts";
-import type { MessageState } from "#core/features/data/types/message";
+import { useMessaging } from "#client/features/chat/hooks/useMessaging.ts";
+import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
+import type { MessageState } from "#core/features/data/types/message.ts";
 
 export default function Message({
 	message,

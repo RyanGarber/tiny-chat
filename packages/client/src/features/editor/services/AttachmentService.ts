@@ -1,5 +1,5 @@
-import { AttachmentService as CoreAttachmentService } from "@tiny-chat/core/src/features/file/services/AttachmentService.ts";
-import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
+import { AttachmentService as CoreAttachmentService } from "@tiny-chat/core/features/file/services/AttachmentService.ts";
+import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import type { Client } from "../../../client.ts";
 import { createChatShellCapability } from "../../../core/capabilities/createChatShellCapability.ts";
 import type { AttachmentItem } from "../types/attachment.ts";

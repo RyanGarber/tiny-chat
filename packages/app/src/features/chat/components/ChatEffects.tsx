@@ -1,14 +1,14 @@
 import { ActionIcon, Box, Group } from "@mantine/core";
 import { XIcon } from "@phosphor-icons/react";
-import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
+import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
 import type { ReactNode, Ref } from "react";
 import { client } from "#app/client.ts";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
-import { MessagingService } from "#client/src/features/chat/services/MessagingService.ts";
-import { useChatStore } from "#client/src/features/chat/stores/useChatStore.ts";
+import { MessagingService } from "#client/features/chat/services/MessagingService.ts";
+import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
 
-import { useMessageQueueStore } from "#client/src/features/chat/stores/useMessageQueueStore.ts";
-import { useMessagingStore } from "#client/src/features/chat/stores/useMessagingStore.ts";
+import { useMessageQueueStore } from "#client/features/chat/stores/useMessageQueueStore.ts";
+import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
 
 function Effect({
 	content,
@@ -54,10 +54,12 @@ function Effect({
 export default function ChatEffects({
 	inputEffectsRef,
 	inputMaxWidth,
+	bottom,
 	disabled,
 }: {
 	inputEffectsRef: Ref<HTMLDivElement>;
 	inputMaxWidth: number;
+	bottom: number;
 	disabled: boolean;
 }) {
 	const chatId = useChatStore((s) => s.chatId);
@@ -69,7 +71,7 @@ export default function ChatEffects({
 	return (
 		<Group
 			pos="absolute"
-			bottom={0}
+			bottom={bottom}
 			left={isMobile ? 10 : 20}
 			right={isMobile ? 10 : 20}
 			justify="center"

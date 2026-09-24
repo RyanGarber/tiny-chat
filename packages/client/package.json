@@ -6,8 +6,11 @@
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run"
 	},
+	"exports": {
+		"./*": "./src/*"
+	},
 	"dependencies": {
-		"@tanstack/react-query": "^5.103.1",
+		"@tanstack/react-query": "^5.104.0",
 		"@tiny-chat/core": "workspace:*",
 		"@tiny-chat/server": "workspace:*",
 		"@trpc/client": "^11.19.0",

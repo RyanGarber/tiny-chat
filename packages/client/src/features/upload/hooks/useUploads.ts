@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
-import type { Enum } from "@tiny-chat/core/src/core/services/PostgresService.ts";
+import type { Enum } from "@tiny-chat/core/core/services/PostgresService.ts";
 import { useContext } from "react";
 import { ClientContext } from "../../../client.ts";
 import { MessagingService } from "../../chat/services/MessagingService.ts";

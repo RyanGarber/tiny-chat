@@ -1,6 +1,6 @@
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
-import { mockConfig } from "@tiny-chat/core/src/tests.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
+import { mockConfig } from "@tiny-chat/core/tests.ts";
 import { testUser } from "../../../tests.ts";
 import { EmbeddingService } from "../../embedding/services/EmbeddingService.ts";
 import { MessageService } from "../../message/services/MessageService.ts";

@@ -2,8 +2,8 @@ import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
 import type {
 	ChatState,
 	FolderLike,
-} from "@tiny-chat/core/src/features/data/types/chat.ts";
-import { ChatUtils } from "@tiny-chat/core/src/features/data/utils/ChatUtils.ts";
+} from "@tiny-chat/core/features/data/types/chat.ts";
+import { ChatUtils } from "@tiny-chat/core/features/data/utils/ChatUtils.ts";
 import { useContext } from "react";
 import { ClientContext } from "../../../client.ts";
 import { ChatService } from "../services/ChatService.ts";
@@ -87,16 +87,19 @@ export const useChatList = () => {
 		onSuccess: () => ChatService.fetchChatList({ client }),
 	});
 
-	const renameFolder = useMutation({
+	const updateFolder = useMutation({
 		mutationFn: ({
 			folder,
 			title,
 			cwd,
+			cwdWritable,
 		}: {
 			folder: FolderLike;
 			title: string;
 			cwd?: string | null;
-		}) => client.api.chat.setFolderTitle.mutate({ folder, title, cwd }),
+			cwdWritable?: boolean;
+		}) =>
+			client.api.chat.updateFolder.mutate({ folder, title, cwd, cwdWritable }),
 		onSuccess: () => {
 			client.workingDirectory.refresh();
 			return ChatService.fetchChatList({ client });
@@ -123,7 +126,7 @@ export const useChatList = () => {
 		moveChat,
 		deleteChat,
 		createFolder,
-		renameFolder,
+		updateFolder,
 		deleteFolder,
 	};
 };

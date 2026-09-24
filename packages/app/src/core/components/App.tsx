@@ -13,7 +13,7 @@ import Chat from "#app/features/chat/components/Chat.tsx";
 import ChatFiles from "#app/features/chat/components/ChatFiles.tsx";
 import Sidebar from "#app/features/sidebar/components/Sidebar.tsx";
 import mantineTheme, { cssResolver } from "#app/theme.tsx";
-import { useSession } from "#client/src/core/hooks/useSession.ts";
+import { useSession } from "#client/core/hooks/useSession.ts";
 import { useThemes } from "../../../../client/src/features/settings/hooks/useThemes.ts";
 import { setHashbangQuery, useHashbang } from "../hooks/useHashbang";
 
@@ -36,6 +36,8 @@ export default function App() {
 	const isMobile = useAppStore((s) => s.isMobile);
 	const isSidebarOpen = useAppStore((s) => s.isSidebarOpen);
 	const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
+	const sidebarWidth = useAppStore((s) => s.sidebarWidth);
+	const setSidebarWidth = useAppStore((s) => s.setSidebarWidth);
 	const isAsideOpen = useAppStore((s) => s.isAsideOpen);
 	const setAsideOpen = useAppStore((s) => s.setAsideOpen);
 	const asideWidth = useAppStore((s) => s.asideWidth);
@@ -57,10 +59,13 @@ export default function App() {
 				setSidebarOpen(true);
 			}
 			const closedWidth = isMobile ? 0 : 60;
-			const width = Math.min(300, Math.max(closedWidth, pointerX));
-			const expandedOpacity = Math.max(
-				0,
-				(width - closedWidth) / (300 - closedWidth),
+			const width = Math.min(
+				window.innerWidth,
+				Math.max(closedWidth, pointerX),
+			);
+			const expandedOpacity = Math.min(
+				1,
+				Math.max(0, (width - closedWidth) / (300 - closedWidth)),
 			);
 			if (sidebarContentRef.current && isMobile) {
 				sidebarContentRef.current.style.opacity = `${Math.max(
@@ -75,11 +80,10 @@ export default function App() {
 					"--app-shell-navbar-width",
 					`${width}px`,
 				);
-				if (!isMobile)
-					appShellRef.current.style.setProperty(
-						"--app-shell-navbar-offset",
-						`${width}px`,
-					);
+				appShellRef.current.style.setProperty(
+					"--app-shell-navbar-offset",
+					isMobile ? "0px" : `${width}px`,
+				);
 				if (!isMobile) {
 					appShellRef.current.style.setProperty(
 						"--sidebar-expanded-opacity",
@@ -105,7 +109,9 @@ export default function App() {
 			}
 
 			if (last) {
-				setSidebarOpen(width > 150);
+				const staysOpen = width > 300;
+				if (staysOpen) setSidebarWidth(width);
+				setSidebarOpen(staysOpen);
 				setIsResizingSidebar(false);
 			}
 		},
@@ -132,7 +138,7 @@ export default function App() {
 				);
 				appShellRef.current.style.setProperty(
 					"--app-shell-aside-offset",
-					`${width}px`,
+					isMobile ? "0px" : `${width}px`,
 				);
 			}
 
@@ -179,12 +185,14 @@ export default function App() {
 			sidebarContentRef.current.style.opacity = "1";
 		if (sidebarResizeHandleRef.current) {
 			sidebarResizeHandleRef.current.style.left = isSidebarOpen
-				? "293px"
+				? isMobile
+					? "calc(100% - 7px)"
+					: `${sidebarWidth - 7}px`
 				: isMobile
 					? "0px"
 					: "53px";
 		}
-	}, [isMobile, isResizingSidebar, isSidebarOpen]);
+	}, [isMobile, isResizingSidebar, isSidebarOpen, sidebarWidth]);
 	useLayoutEffect(() => {
 		if (isResizingAside) return;
 		appShellRef.current?.style.removeProperty("--app-shell-aside-width");
@@ -217,7 +225,7 @@ export default function App() {
 						ref={appShellRef}
 						withBorder={false}
 						navbar={{
-							width: isMobile ? 300 : isSidebarOpen ? 300 : 60,
+							width: isMobile ? "100%" : isSidebarOpen ? sidebarWidth : 60,
 							breakpoint: AppService.breakpoint,
 							collapsed: { desktop: false, mobile: !isSidebarOpen },
 						}}
@@ -260,7 +268,13 @@ export default function App() {
 								style={{
 									position: "absolute",
 									top: 0,
-									left: isSidebarOpen ? 293 : isMobile ? 0 : 53,
+									left: isSidebarOpen
+										? isMobile
+											? "calc(100% - 7px)"
+											: sidebarWidth - 7
+										: isMobile
+											? 0
+											: 53,
 									bottom: 0,
 									width: 15,
 									zIndex: "var(--mantine-z-index-max)",
@@ -293,6 +307,9 @@ export default function App() {
 							{...dragSidebarClose()}
 							p={10}
 							style={{
+								paddingTop: "calc(10px + env(safe-area-inset-top, 0px))",
+								paddingBottom: "calc(10px + env(safe-area-inset-bottom, 0px))",
+								paddingLeft: "calc(10px + env(safe-area-inset-left, 0px))",
 								touchAction: "pan-y",
 								fontWeight: 450,
 							}}
@@ -308,6 +325,15 @@ export default function App() {
 								maxHeight: `${viewportHeight}px`,
 								minHeight: 0,
 								overflow: "hidden",
+								// The header paints behind the notch; keep chat content in the safe area.
+								paddingTop: "env(safe-area-inset-top, 0px)",
+								paddingBottom: "env(safe-area-inset-bottom, 0px)",
+								paddingLeft: isMobile
+									? "env(safe-area-inset-left, 0px)"
+									: "calc(var(--app-shell-navbar-offset, 0px) + env(safe-area-inset-left, 0px))",
+								paddingRight: isMobile
+									? "env(safe-area-inset-right, 0px)"
+									: "calc(var(--app-shell-aside-offset, 0px) + env(safe-area-inset-right, 0px))",
 							}}
 						>
 							<Chat />
@@ -316,6 +342,10 @@ export default function App() {
 							{...dragAsideClose()}
 							p={10}
 							style={{
+								paddingTop: "calc(10px + env(safe-area-inset-top, 0px))",
+								paddingBottom: "calc(10px + env(safe-area-inset-bottom, 0px))",
+								paddingLeft: "calc(10px + env(safe-area-inset-left, 0px))",
+								paddingRight: "calc(10px + env(safe-area-inset-right, 0px))",
 								touchAction: "pan-y",
 								fontWeight: 450,
 							}}

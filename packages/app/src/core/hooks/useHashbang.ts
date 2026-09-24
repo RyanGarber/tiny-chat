@@ -1,5 +1,5 @@
-import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
-import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
+import { ChatService } from "@tiny-chat/client/features/chat/services/ChatService.ts";
+import { useChatStore } from "@tiny-chat/client/features/chat/stores/useChatStore.ts";
 import { useEffect, useRef } from "react";
 
 const getHashbang = (): {

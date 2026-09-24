@@ -7,8 +7,13 @@ import { createGrepFilesTool } from "./shell/grep_files.ts";
 import { createReadDirTool } from "./shell/read_dir.ts";
 import { createReadFileTool } from "./shell/read_file.ts";
 import { createShellExecTool } from "./shell/shell_exec.ts";
+import { createWriteFileTool } from "./shell/write_file.ts";
 
 const context = {} as zAgentContext;
+const contextWithFolder = (cwd: string | null, cwdWritable: boolean = true) =>
+	({
+		chat: { folder: cwd === null ? null : { cwd, cwdWritable } },
+	}) as zAgentContext;
 
 describe("shell", () => {
 	it("returns a window of a long file and says how to read on", async () => {
@@ -236,6 +241,94 @@ describe("shell", () => {
 
 		const after = await shell.readFile({ path: "/project/a.ts" });
 		expect(FileUtils.getTextFromBytes(after)).toBe("const a = 2;\n");
+	});
+
+	it("skips approval for file writes inside the active folder when enabled", async () => {
+		const tool = await createWriteFileTool({
+			capabilities: { shell: createShell({}) },
+		});
+
+		await expect(
+			tool.validate?.({
+				input: { path: "/project/src/new.ts", content: "new" },
+				context: contextWithFolder("/project", true),
+			}),
+		).resolves.toEqual({ approval: false });
+
+		await expect(
+			tool.validate?.({
+				input: { path: "/project/src/new.ts", content: "new" },
+				context: contextWithFolder("/project", false),
+			}),
+		).resolves.toEqual({ approval: true });
+	});
+
+	it("treats filesystem roots as active folders", async () => {
+		const tool = await createWriteFileTool({
+			capabilities: { shell: createShell({}) },
+		});
+
+		await expect(
+			tool.validate?.({
+				input: { path: "/new.ts", content: "new" },
+				context: contextWithFolder("/"),
+			}),
+		).resolves.toEqual({ approval: false });
+		await expect(
+			tool.validate?.({
+				input: { path: "c:\\project\\new.ts", content: "new" },
+				context: contextWithFolder("C:\\PROJECT"),
+			}),
+		).resolves.toEqual({ approval: false });
+	});
+
+	it("skips approval for file edits inside the active folder", async () => {
+		const tool = await createEditFileTool({
+			capabilities: {
+				shell: createShell({ "/project/src/a.ts": "const a = 1;\n" }),
+			},
+		});
+
+		await expect(
+			tool.validate?.({
+				input: {
+					path: "/project/src/a.ts",
+					old_string: "const a = 1;",
+					new_string: "const a = 2;",
+				},
+				context: contextWithFolder("/project"),
+			}),
+		).resolves.toEqual({ approval: false });
+	});
+
+	it("requires approval for file writes outside the active folder", async () => {
+		const tool = await createWriteFileTool({
+			capabilities: { shell: createShell({}) },
+		});
+		const input = { path: "/project-other/new.ts", content: "new" };
+
+		await expect(
+			tool.validate?.({ input, context: contextWithFolder("/project") }),
+		).resolves.toEqual({ approval: true });
+		await expect(
+			tool.validate?.({ input, context: contextWithFolder(null) }),
+		).resolves.toEqual({ approval: true });
+	});
+
+	it("requires approval when a file path escapes the active folder", async () => {
+		const tool = await createWriteFileTool({
+			capabilities: { shell: createShell({}) },
+		});
+
+		await expect(
+			tool.validate?.({
+				input: {
+					path: "/project/src/../../outside.ts",
+					content: "outside",
+				},
+				context: contextWithFolder("/project"),
+			}),
+		).resolves.toEqual({ approval: true });
 	});
 
 	it("skips approval for a whitelisted command", async () => {

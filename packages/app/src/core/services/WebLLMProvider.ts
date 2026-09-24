@@ -7,8 +7,8 @@ import { ModelType, prebuiltAppConfig } from "@mlc-ai/web-llm";
 import type {
 	ModelProvider,
 	zModel,
-} from "@tiny-chat/core/src/features/provider/types/model.ts";
-import { ModelProviderUtils } from "@tiny-chat/core/src/features/provider/utils/ModelProviderUtils.ts";
+} from "@tiny-chat/core/features/provider/types/model.ts";
+import { ModelProviderUtils } from "@tiny-chat/core/features/provider/utils/ModelProviderUtils.ts";
 
 const WebLLMConfig: AppConfig = {
 	...prebuiltAppConfig,

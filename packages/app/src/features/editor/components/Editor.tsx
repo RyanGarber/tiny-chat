@@ -7,7 +7,7 @@ import {
 import type {
 	Categories,
 	Usage,
-} from "@tiny-chat/client/src/features/editor/hooks/useEstimatedTokens.ts";
+} from "@tiny-chat/client/features/editor/hooks/useEstimatedTokens.ts";
 import { Tiptap } from "@tiptap/react";
 import { useLayoutEffect, useRef, useState } from "react";
 import Capabilities from "#app/features/editor/components/Capabilities.tsx";

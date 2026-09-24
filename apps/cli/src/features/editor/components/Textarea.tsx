@@ -1,5 +1,5 @@
-import { ThemeContext } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
-import { useMergedRef } from "@tiny-chat/client/src/core/hooks/useMergedRef.ts";
+import { ThemeContext } from "@tiny-chat/client/core/components/ThemeContext.tsx";
+import { useMergedRef } from "@tiny-chat/client/core/hooks/useMergedRef.ts";
 import { type DOMElement, useBoxMetrics, useInput } from "ink";
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { TextArea, type TextAreaProps, type TStyles } from "react-ink-textarea";

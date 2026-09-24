@@ -1,5 +1,5 @@
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import { zConfig } from "@tiny-chat/core/src/features/data/types/message.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import { zConfig } from "@tiny-chat/core/features/data/types/message.ts";
 import { db } from "../../../db.ts";
 import { ActionService } from "../../chat/services/ActionService.ts";
 import { MessageService } from "./MessageService.ts";

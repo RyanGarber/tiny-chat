@@ -1,9 +1,9 @@
 import { and } from "@prisma/orm-postgres/orm-client";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
-import { MessageBranchUtils } from "@tiny-chat/core/src/features/data/utils/MessageBranchUtils.ts";
-import { search_chats } from "@tiny-chat/core/src/features/tool/tools/memories/search_chats.ts";
-import { search_memories } from "@tiny-chat/core/src/features/tool/tools/memories/search_memories.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
+import { MessageBranchUtils } from "@tiny-chat/core/features/data/utils/MessageBranchUtils.ts";
+import { search_chats } from "@tiny-chat/core/features/tool/tools/memories/search_chats.ts";
+import { search_memories } from "@tiny-chat/core/features/tool/tools/memories/search_memories.ts";
 import { MemoryRetrievalService } from "../../chat/services/MemoryRetrievalService.ts";
 import { MessageUtils } from "../../message/utils/MessageUtils.ts";
 import { ServerAgentService } from "./ServerAgentService.ts";
@@ -88,7 +88,9 @@ export const DreamRunnerService = {
 							.where((m) => m.dreams.none())
 							.select("id"),
 					)
-					.include("folder", (folder) => folder.select("settings"))
+					.include("folder", (folder) =>
+						folder.select("title", "cwd", "cwdWritable", "settings"),
+					)
 					.orderBy((m) => m.createdAt.asc())
 					.all();
 

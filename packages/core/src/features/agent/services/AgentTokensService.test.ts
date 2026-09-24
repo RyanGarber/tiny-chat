@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 import { zConfig } from "../../data/types/message.ts";
 import type { zDataPart } from "../../data/types/part.ts";
@@ -346,7 +347,10 @@ describe("AgentTokensService", () => {
 		expect(result.output[0].signature).toEqual({
 			reasoning: "encrypted-result",
 		});
-		expect(AgentTokensService.tokenizeMessages(compacted).total).toBe(0);
+		expect(AgentTokensService.tokenizeMessages(compacted).total).toBe(
+			compacted.after.total,
+		);
+		expect(compacted.after.total).toBeGreaterThan(0);
 		expect(messages[0].data.flat()).toEqual(originalParts);
 	});
 
@@ -370,5 +374,37 @@ describe("AgentTokensService", () => {
 				],
 			}).total,
 		).toBe(4);
+	});
+
+	it("counts enabled tool definitions even before a tool is called", () => {
+		const result = AgentTokensService.tokenizeMessages({
+			tools: [
+				{
+					name: "search_files",
+					description: "Search files by a text query.",
+					input: z.object({ query: z.string(), path: z.string().optional() }),
+					output: z.unknown(),
+				},
+			],
+		});
+
+		expect(result.tools).toBeGreaterThan(0);
+		expect(result.total).toBe(result.tools);
+	});
+
+	it("classifies every memory context without stateful regex misses", () => {
+		const contexts = ["first", "second"].map(
+			(value, index): zDataPart => ({
+				type: "text",
+				id: `context-${index}`,
+				value: `<context>${value}</context>`,
+			}),
+		);
+		const result = AgentTokensService.tokenizeMessages({
+			messages: [message("USER", contexts)],
+		});
+
+		expect(result.memories).toBeGreaterThan(0);
+		expect(result.text).toBe(0);
 	});
 });

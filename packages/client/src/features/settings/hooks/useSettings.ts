@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import type { FolderLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
-import { zSettings } from "@tiny-chat/core/src/features/data/types/user.ts";
+import type { FolderLike } from "@tiny-chat/core/features/data/types/chat.ts";
+import { zSettings } from "@tiny-chat/core/features/data/types/user.ts";
 import { useCallback, useContext } from "react";
 import { ClientContext } from "../../../client.ts";
 import { useSession } from "../../../core/hooks/useSession.ts";

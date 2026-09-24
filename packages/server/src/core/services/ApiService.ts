@@ -1,4 +1,4 @@
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
 import { createHTTPHandler } from "@trpc/server/adapters/standalone";
 import { ApiContext } from "../utils/ApiContext.ts";
 import { ApiRouter } from "../utils/ApiRouter.ts";

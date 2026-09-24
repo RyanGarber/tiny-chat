@@ -1,14 +1,14 @@
 import { dirname } from "node:path";
-import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
+import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
 import type {
 	FileNode,
 	FileState,
 	FilesystemSpec,
-} from "@tiny-chat/core/src/features/file/types/file.ts";
+} from "@tiny-chat/core/features/file/types/file.ts";
 import {
 	type PathLike,
 	PathUtils,
-} from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
+} from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import { Bash, InMemoryFs, MountableFs } from "just-bash";
 import { ChatService } from "../../chat/services/ChatService.ts";
 import { FilesystemService } from "./FilesystemService.ts";
@@ -198,7 +198,7 @@ export const FileService = {
 					});
 					current.env = result.env;
 					if (result.env.PWD) current.cwd = result.env.PWD;
-					return result;
+					return { ...result, code: result.exitCode };
 				} catch (error) {
 					// A filesystem error the shell could not turn into output of its own —
 					// a redirect into a read-only tree, most often, since it writes the

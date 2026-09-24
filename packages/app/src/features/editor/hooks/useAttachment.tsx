@@ -1,11 +1,11 @@
 import { Text } from "@mantine/core";
-import { ClientContext } from "@tiny-chat/client/src/client.ts";
-import { useAttachments } from "@tiny-chat/client/src/features/editor/hooks/useAttachments.ts";
-import { AttachmentService } from "@tiny-chat/client/src/features/editor/services/AttachmentService.ts";
-import { useEditorPartStore } from "@tiny-chat/client/src/features/editor/stores/useEditorPartStore.ts";
-import type { AttachmentItem } from "@tiny-chat/client/src/features/editor/types/attachment.ts";
-import { AttachmentUtils } from "@tiny-chat/client/src/features/editor/utils/AttachmentUtils.ts";
-import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
+import { ClientContext } from "@tiny-chat/client/client.ts";
+import { useAttachments } from "@tiny-chat/client/features/editor/hooks/useAttachments.ts";
+import { AttachmentService } from "@tiny-chat/client/features/editor/services/AttachmentService.ts";
+import { useEditorPartStore } from "@tiny-chat/client/features/editor/stores/useEditorPartStore.ts";
+import type { AttachmentItem } from "@tiny-chat/client/features/editor/types/attachment.ts";
+import { AttachmentUtils } from "@tiny-chat/client/features/editor/utils/AttachmentUtils.ts";
+import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import { PluginKey } from "@tiptap/pm/state";
 import { Node, NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import { Suggestion } from "@tiptap/suggestion";
@@ -84,6 +84,24 @@ const Attachment = Node.create({
 				char: "@",
 				pluginKey,
 				allowToIncludeChar: true,
+				findSuggestionMatch: ({ $position }) => {
+					const text =
+						$position.nodeBefore?.isText && $position.nodeBefore.text;
+					if (!text) return null;
+
+					const match = AttachmentUtils.match(text);
+					if (!match) return null;
+
+					const textFrom = $position.pos - text.length;
+					return {
+						range: {
+							from: textFrom + match.from,
+							to: textFrom + match.to,
+						},
+						query: match.text,
+						text: text.slice(match.from, match.to),
+					};
+				},
 				placement: "top-start",
 				items: async ({ query, signal }) => {
 					const items = await (
@@ -101,22 +119,7 @@ const Attachment = Node.create({
 						});
 					}
 
-					const search = query.split("/").at(-1)?.trim().toLowerCase();
-
-					const include = (item: AttachmentItem) => {
-						return (
-							(!search || item.name?.toLowerCase().includes(search)) &&
-							(!query.includes("/") || item.traversable)
-						);
-					};
-
-					return [
-						...items.map((group) => ({
-							...group,
-							items: group.items.filter(include),
-						})),
-						other,
-					];
+					return [...AttachmentUtils.filter({ groups: items, query }), other];
 				},
 				command: ({ editor, range, props }) => {
 					void (this.options as AttachmentOptions).attach(props).then((id) => {
@@ -153,16 +156,13 @@ const Attachment = Node.create({
 							</FileTag>
 						);
 					},
-					onTab: ({ item, editor, range }) => {
-						const existing = editor.$doc.content
-							.textBetween(range.from, range.to, "\n", "\n")
-							.replace(/^@/, "");
+					onTab: ({ item, editor, range, query }) => {
 						editor
 							.chain()
 							.focus()
 							.insertContentAt(
 								range,
-								`@${AttachmentUtils.continued({ query: existing, item })}`,
+								`@${AttachmentUtils.continued({ query, item })}`,
 							)
 							.run();
 					},

@@ -1,4 +1,4 @@
-import type { zData } from "@tiny-chat/core/src/features/data/types/part.ts";
+import type { zData } from "@tiny-chat/core/features/data/types/part.ts";
 import type { Root as HastRoot } from "hast";
 import type { Code, Root as MdastRoot, Nodes } from "mdast";
 import { type JSX, useMemo } from "react";

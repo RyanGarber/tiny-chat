@@ -18,7 +18,7 @@ import {
 	FrameCornersIcon,
 	XIcon,
 } from "@phosphor-icons/react";
-import type { PromiseOr } from "@tiny-chat/core/src/core/types/common.ts";
+import type { PromiseOr } from "@tiny-chat/core/core/types/common.ts";
 import {
 	type HTMLAttributes,
 	type RefAttributes,

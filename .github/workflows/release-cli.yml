@@ -42,7 +42,7 @@ jobs:
 
         steps:
             -   name: Checkout
-                uses: actions/checkout@v6
+                uses: actions/checkout@v7
                 with:
                     ref: ${{ inputs.version || github.ref }}
 
@@ -50,10 +50,17 @@ jobs:
                 uses: pnpm/action-setup@v6
 
             -   name: Install Node
-                uses: actions/setup-node@v6
+                uses: actions/setup-node@v7
                 with:
                     node-version: lts/*
                     cache: pnpm
+
+            -   name: Cache Turbo
+                uses: actions/cache@v6
+                with:
+                    path: .turbo
+                    key: ${{ runner.os }}-${{ runner.arch }}-turbo-release-cli-${{ github.sha }}
+                    restore-keys: ${{ runner.os }}-${{ runner.arch }}-turbo-release-cli-
 
             -   name: Create .env
                 shell: bash
@@ -97,7 +104,7 @@ jobs:
                     if [ -z "$VERSION" ]; then
                       VERSION=$(node -pe "require('./apps/tauri/tauri.conf.json').version")
                     fi
-                    echo "version=$VERSION" >> $GITHUB_OUTPUT
+                    echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
             -   name: Upload release asset
                 shell: bash

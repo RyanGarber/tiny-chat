@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/suspicious/noArrayIndexKey: nodes stay in order */
 
-import { useCode } from "@tiny-chat/client/src/core/hooks/useCode.ts";
+import { useCode } from "@tiny-chat/client/core/hooks/useCode.ts";
 import { Text } from "ink";
 import { useMemo } from "react";
 import { CliUtils } from "../../../core/utils/CliUtils.ts";

@@ -1,20 +1,20 @@
-import type { zAgentMessage } from "@tiny-chat/core/src/features/agent/types/agent.ts";
-import { AgentUtils } from "@tiny-chat/core/src/features/agent/utils/AgentUtils.ts";
-import type { ChatState } from "@tiny-chat/core/src/features/data/types/chat.ts";
-import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { zAgentMessage } from "@tiny-chat/core/features/agent/types/agent.ts";
+import { AgentUtils } from "@tiny-chat/core/features/agent/utils/AgentUtils.ts";
+import type { ChatState } from "@tiny-chat/core/features/data/types/chat.ts";
+import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
 import type {
 	zData,
 	zDataPart,
 	zMetadata,
-} from "@tiny-chat/core/src/features/data/types/part.ts";
-import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
-import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
+} from "@tiny-chat/core/features/data/types/part.ts";
+import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
+import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
 import type {
 	ProviderState,
 	ProviderStatus,
-} from "@tiny-chat/core/src/features/provider/types/provider.ts";
-import type { zSkill } from "@tiny-chat/core/src/features/skill/types/skill.ts";
-import type { Toolset } from "@tiny-chat/core/src/features/tool/types/tool.ts";
+} from "@tiny-chat/core/features/provider/types/provider.ts";
+import type { zSkill } from "@tiny-chat/core/features/skill/types/skill.ts";
+import type { Toolset } from "@tiny-chat/core/features/tool/types/tool.ts";
 import type { Client } from "../../../client.ts";
 import { AgentStreamService } from "../../../core/services/StreamService.ts";
 import { ChatService } from "../../chat/services/ChatService.ts";

@@ -1,12 +1,12 @@
 import { or } from "@prisma/orm-postgres/orm-client";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
 import type {
 	ChatLike,
 	ChatState,
 	FolderLike,
 	FolderState,
-} from "@tiny-chat/core/src/features/data/types/chat.ts";
-import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
+} from "@tiny-chat/core/features/data/types/chat.ts";
+import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
 import { selectAll } from "../../../db.ts";
 import { ChatUtils } from "../utils/ChatUtils.ts";
 
@@ -33,7 +33,9 @@ export const ChatService = {
 				),
 			)
 			.include("messages", (message) => message.select("createdAt"))
-			.include("folder", (folder) => folder.select("settings"))
+			.include("folder", (folder) =>
+				folder.select("title", "cwd", "cwdWritable", "settings"),
+			)
 			.first();
 
 		if (!chat) throw new Error(`no chat or message with id ${chatLike.id}`);
@@ -62,7 +64,9 @@ export const ChatService = {
 							selectAll(chat, "public", "Chat")
 								.where({ temporary: false })
 								.include("messages", (message) => message.select("createdAt"))
-								.include("folder", (folder) => folder.select("settings")),
+								.include("folder", (folder) =>
+									folder.select("title", "cwd", "cwdWritable", "settings"),
+								),
 						)
 						.orderBy((f) => f.createdAt.desc())
 						.all(),
@@ -72,7 +76,9 @@ export const ChatService = {
 				temporary: false,
 			})
 				.include("messages", (message) => message.select("createdAt"))
-				.include("folder", (folder) => folder.select("settings"))
+				.include("folder", (folder) =>
+					folder.select("title", "cwd", "cwdWritable", "settings"),
+				)
 				.all(),
 		]);
 
@@ -221,22 +227,28 @@ export const ChatService = {
 		return { id: row?.id ?? null, cwd: row?.cwd ?? null };
 	},
 
-	setFolderTitle: async ({
+	updateFolder: async ({
 		user,
 		folder,
 		title,
 		cwd,
+		cwdWritable,
 	}: {
 		user: zUser;
 		folder: FolderLike;
 		title: string;
 		cwd?: string | null;
+		cwdWritable?: boolean;
 	}) => {
 		if (typeof folder === "string") folder = { id: folder };
 		await globalThis.db.orm.public.Folder.where({
 			userId: user.id,
 			id: folder.id,
-		}).update({ title, ...(cwd !== undefined ? { cwd } : {}) });
+		}).update({
+			title,
+			...(cwd !== undefined ? { cwd } : {}),
+			...(cwdWritable !== undefined ? { cwdWritable } : {}),
+		});
 	},
 
 	deleteFolder: async ({

@@ -3,9 +3,9 @@ import type {
 	StreamMutation,
 	StreamOptions,
 	StreamState,
-} from "@tiny-chat/core/src/core/types/stream.ts";
-import type { zData } from "@tiny-chat/core/src/features/data/types/part.ts";
-import type { ToolDefinition } from "@tiny-chat/core/src/features/tool/types/tool.ts";
+} from "@tiny-chat/core/core/types/stream.ts";
+import type { zData } from "@tiny-chat/core/features/data/types/part.ts";
+import type { ToolDefinition } from "@tiny-chat/core/features/tool/types/tool.ts";
 import type { z } from "zod";
 import { useStreamStore } from "../../features/agent/stores/useStreamStore.ts";
 

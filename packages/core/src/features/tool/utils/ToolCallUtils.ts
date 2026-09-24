@@ -6,10 +6,18 @@ import type { RenderedPart } from "../../data/utils/DataUtils.ts";
 import { FileTypeUtils } from "../../file/utils/FileTypeUtils.ts";
 import { FileUtils } from "../../file/utils/FileUtils.ts";
 import { PathUtils } from "../../file/utils/PathUtils.ts";
+import type { zWebContext } from "../../provider/types/web.ts";
 import { create_action } from "../tools/actions/create_action.ts";
 import { delete_action } from "../tools/actions/delete_action.ts";
 import { list_actions } from "../tools/actions/list_actions.ts";
 import { update_action } from "../tools/actions/update_action.ts";
+import { github_compare } from "../tools/github/compare.ts";
+import { github_list_commits } from "../tools/github/list_commits.ts";
+import { github_list_issues } from "../tools/github/list_issues.ts";
+import { github_view_commit } from "../tools/github/view_commit.ts";
+import { github_view_file } from "../tools/github/view_file.ts";
+import { github_view_issue } from "../tools/github/view_issue.ts";
+import { github_view_repository } from "../tools/github/view_repository.ts";
 import { create_memory } from "../tools/memories/create_memory.ts";
 import { delete_memory } from "../tools/memories/delete_memory.ts";
 import { search_chats } from "../tools/memories/search_chats.ts";
@@ -28,6 +36,7 @@ import { spawn_subagent } from "../tools/subagents/spawn_subagent.ts";
 import { search_web } from "../tools/web/search_web.ts";
 import { view_web } from "../tools/web/view_web.ts";
 import type { ToolDefinition, Toolset } from "../types/tool.ts";
+import { GitHubSourceUtils } from "./GitHubSourceUtils.ts";
 import { type ToolCall, ToolUtils } from "./ToolUtils.ts";
 
 const UNKNOWN = {
@@ -39,6 +48,7 @@ const UNKNOWN = {
 
 type ToolCallDisplay<T extends ToolDefinition, U extends boolean = false> = {
 	name: T["name"];
+	sources?: zWebContext[];
 	status: (string | { subject: string })[];
 	approval?: "pending" | "approved" | "rejected";
 	feedback?: "pending" | "complete";
@@ -49,6 +59,13 @@ type ToolCallDisplay<T extends ToolDefinition, U extends boolean = false> = {
 };
 
 export type ToolCallDisplayType =
+	| ToolCallDisplay<typeof github_view_repository>
+	| ToolCallDisplay<typeof github_view_file>
+	| ToolCallDisplay<typeof github_list_commits, true>
+	| ToolCallDisplay<typeof github_view_commit>
+	| ToolCallDisplay<typeof github_compare>
+	| ToolCallDisplay<typeof github_list_issues, true>
+	| ToolCallDisplay<typeof github_view_issue>
 	| ToolCallDisplay<typeof search_web, true>
 	| ToolCallDisplay<typeof view_web>
 	| ToolCallDisplay<typeof create_action>
@@ -175,6 +192,14 @@ export const ToolCallUtils = {
 		) =>
 			({
 				name: definition.name as T["name"],
+				sources: !definition.name.startsWith("github_")
+					? undefined
+					: part.result?.error
+						? []
+						: GitHubSourceUtils.parse(
+								definition.name,
+								ToolUtils.json(part.result, true),
+							),
 				status: status.map((piece) =>
 					Array.isArray(piece) ? piece[part.result ? 1 : 0] : piece,
 				),
@@ -204,6 +229,69 @@ export const ToolCallUtils = {
 					: z.infer<T["output"]>,
 			}) satisfies ToolCallDisplay<any>;
 
+		if (ToolUtils.is(toolsets, part, github_view_repository)) {
+			return base(github_view_repository, [
+				["Reading repository", "Read repository"],
+				{ subject: `${part.input.owner}/${part.input.repository}` },
+			]);
+		}
+		if (ToolUtils.is(toolsets, part, github_view_file)) {
+			return base(github_view_file, [
+				["Reading GitHub path", "Read GitHub path"],
+				{
+					subject: `${part.input.owner}/${part.input.repository}/${part.input.path ?? ""}${part.input.ref ? ` @ ${part.input.ref}` : ""}`,
+				},
+			]);
+		}
+		if (ToolUtils.is(toolsets, part, github_list_commits)) {
+			return base(
+				github_list_commits,
+				[
+					["Listing commits in", "Listed commits in"],
+					{
+						subject: `${part.input.owner}/${part.input.repository}${part.input.ref ? ` @ ${part.input.ref}` : ""}${part.input.path ? `/${part.input.path}` : ""}`,
+					},
+				],
+				true,
+			);
+		}
+		if (ToolUtils.is(toolsets, part, github_view_commit)) {
+			return base(github_view_commit, [
+				["Reading commit", "Read commit"],
+				{
+					subject: `${part.input.owner}/${part.input.repository}@${part.input.ref}`,
+				},
+			]);
+		}
+		if (ToolUtils.is(toolsets, part, github_compare)) {
+			return base(github_compare, [
+				["Comparing", "Compared"],
+				{
+					subject: `${part.input.owner}/${part.input.repository}: ${part.input.base}...${part.input.head}`,
+				},
+			]);
+		}
+		if (ToolUtils.is(toolsets, part, github_list_issues)) {
+			return base(
+				github_list_issues,
+				[
+					["Listing", "Listed"],
+					{
+						subject: `${part.input.kind === "pull_requests" ? "pull requests" : "issues"} in ${part.input.owner}/${part.input.repository}`,
+					},
+				],
+				true,
+			);
+		}
+		if (ToolUtils.is(toolsets, part, github_view_issue)) {
+			return base(github_view_issue, [
+				["Reading issue or pull request", "Read issue or pull request"],
+				{
+					subject: `${part.input.owner}/${part.input.repository}#${part.input.number}`,
+				},
+			]);
+		}
+
 		if (ToolUtils.is(toolsets, part, search_web)) {
 			return {
 				...base(
@@ -218,7 +306,7 @@ export const ToolCallUtils = {
 		} else if (ToolUtils.is(toolsets, part, view_web)) {
 			return {
 				...base(view_web, [
-					["Viewing link", "Viewed link"],
+					["Reading page at", "Read page at"],
 					{ subject: PathUtils.name(part.input.url) },
 				]),
 			};

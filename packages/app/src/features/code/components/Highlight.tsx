@@ -1,8 +1,8 @@
 /** biome-ignore-all lint/suspicious/noArrayIndexKey: code stays in order */
 
 import { Text } from "@mantine/core";
-import type { CodeResult } from "@tiny-chat/core/src/core/utils/CodeUtils.ts";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
+import type { CodeResult } from "@tiny-chat/core/core/utils/CodeUtils.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
 import { type ReactNode, useMemo } from "react";
 
 export default function Highlight({

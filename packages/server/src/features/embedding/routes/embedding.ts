@@ -1,5 +1,5 @@
-import { zId } from "@tiny-chat/core/src/core/types/common.ts";
-import { MessageLike } from "@tiny-chat/core/src/features/data/types/message.ts";
+import { zId } from "@tiny-chat/core/core/types/common.ts";
+import { MessageLike } from "@tiny-chat/core/features/data/types/message.ts";
 import { z } from "zod";
 import { procedure, router } from "../../../index.ts";
 import { EmbeddingService } from "../services/EmbeddingService.ts";

@@ -1,5 +1,5 @@
 import { useDisclosure } from "@mantine/hooks";
-import { useCode } from "@tiny-chat/client/src/core/hooks/useCode.ts";
+import { useCode } from "@tiny-chat/client/core/hooks/useCode.ts";
 import { useCallback, useMemo } from "react";
 import Content, {
 	type ContentFormatterFunction,

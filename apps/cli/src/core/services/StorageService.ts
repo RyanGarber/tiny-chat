@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { zConfig } from "@tiny-chat/core/src/features/data/types/message.ts";
+import { zConfig } from "@tiny-chat/core/features/data/types/message.ts";
 import { z } from "zod";
 
 export const zStorage = z.looseObject({

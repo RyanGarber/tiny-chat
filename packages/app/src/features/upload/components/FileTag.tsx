@@ -1,8 +1,8 @@
 import { Group, type GroupProps, Image } from "@mantine/core";
 import { BrowserIcon } from "@phosphor-icons/react";
-import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
-import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
-import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
+import { useChatStore } from "@tiny-chat/client/features/chat/stores/useChatStore.ts";
+import { FileUtils } from "@tiny-chat/core/features/file/utils/FileUtils.ts";
+import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import { type HTMLAttributes, type ReactNode, useMemo } from "react";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
 import { useChatFilesStore } from "#app/features/chat/stores/useChatFilesStore.ts";

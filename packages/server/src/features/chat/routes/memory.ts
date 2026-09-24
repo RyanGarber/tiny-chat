@@ -1,7 +1,7 @@
-import { Enum } from "@tiny-chat/core/src/core/services/PostgresService.ts";
-import { zId } from "@tiny-chat/core/src/core/types/common.ts";
-import { MemorySource } from "@tiny-chat/core/src/features/data/types/memory.ts";
-import { MessageLike } from "@tiny-chat/core/src/features/data/types/message.ts";
+import { Enum } from "@tiny-chat/core/core/services/PostgresService.ts";
+import { zId } from "@tiny-chat/core/core/types/common.ts";
+import { MemorySource } from "@tiny-chat/core/features/data/types/memory.ts";
+import { MessageLike } from "@tiny-chat/core/features/data/types/message.ts";
 import { z } from "zod";
 import { procedure, router } from "../../../index.ts";
 import { MemoryRetrievalService } from "../services/MemoryRetrievalService.ts";

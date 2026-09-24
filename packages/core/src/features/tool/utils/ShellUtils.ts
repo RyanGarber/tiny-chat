@@ -31,6 +31,40 @@ const GIT_BRANCH_WRITE_OPTIONS = new Set([
 	"--set-upstream-to",
 	"--unset-upstream",
 ]);
+const GIT_BRANCH_READ_OPTIONS_WITH_VALUES = new Set([
+	"--contains",
+	"--format",
+	"--merged",
+	"--no-contains",
+	"--no-merged",
+	"--points-at",
+	"--sort",
+]);
+const GIT_GLOBAL_OPTIONS = new Set([
+	"--bare",
+	"--glob-pathspecs",
+	"--icase-pathspecs",
+	"--literal-pathspecs",
+	"--no-advice",
+	"--no-lazy-fetch",
+	"--no-optional-locks",
+	"--no-pager",
+	"--no-replace-objects",
+	"--noglob-pathspecs",
+	"--paginate",
+	"-P",
+	"-p",
+]);
+const GIT_INFO_OPTIONS = new Set([
+	"--exec-path",
+	"--help",
+	"--html-path",
+	"--info-path",
+	"--man-path",
+	"--version",
+	"-h",
+	"-v",
+]);
 const GIT_REMOTE_WRITE_SUBCOMMANDS = new Set([
 	"add",
 	"prune",
@@ -40,6 +74,41 @@ const GIT_REMOTE_WRITE_SUBCOMMANDS = new Set([
 	"set-head",
 	"set-url",
 	"update",
+]);
+const GIT_CONFIG_WRITE_OPTIONS = new Set([
+	"--add",
+	"--edit",
+	"--remove-section",
+	"--rename-section",
+	"--replace-all",
+	"--unset",
+	"--unset-all",
+	"-e",
+]);
+const GIT_CONFIG_WRITE_ACTIONS = new Set([
+	"edit",
+	"remove-section",
+	"rename-section",
+	"set",
+	"unset",
+]);
+const GIT_CONFIG_READ_ACTIONS = new Set(["get", "list"]);
+const GIT_CONFIG_READ_OPTIONS = new Set([
+	"--get",
+	"--get-all",
+	"--get-color",
+	"--get-colorbool",
+	"--get-regexp",
+	"--get-urlmatch",
+	"--list",
+	"-l",
+]);
+const GIT_CONFIG_OPTIONS_WITH_VALUES = new Set([
+	"--blob",
+	"--default",
+	"--file",
+	"--type",
+	"-f",
 ]);
 
 const isStaticWord = (word: Word): boolean =>
@@ -59,19 +128,136 @@ const isStaticWord = (word: Word): boolean =>
 
 const hasWriteRedirect = (redirect: Redirect): boolean => {
 	if (WRITE_REDIRECTS.has(redirect.operator)) {
-		return redirect.target?.value !== "/dev/null";
+		return ![
+			"/dev/fd/1",
+			"/dev/fd/2",
+			"/dev/null",
+			"/dev/stderr",
+			"/dev/stdout",
+		].includes(redirect.target?.value ?? "");
 	}
 	if (redirect.operator !== ">&") return false;
 	return !redirect.target || !/^(?:[0-9]+|-)$/.test(redirect.target.value);
 };
 
+const getOptionArgs = (args: string[]): string[] => {
+	const end = args.indexOf("--");
+	return end === -1 ? args : args.slice(0, end);
+};
+
+const getGitSubcommand = (
+	args: string[],
+): { args: string[]; name: string } | "info" | undefined => {
+	let hasInfoOption = false;
+	for (let index = 0; index < args.length; index++) {
+		const arg = args[index];
+		if (arg === "--") {
+			const name = args[index + 1];
+			return name ? { name, args: args.slice(index + 2) } : undefined;
+		}
+		if (arg === "-C" || arg === "-c") {
+			if (!args[++index]) return undefined;
+			continue;
+		}
+		if (GIT_GLOBAL_OPTIONS.has(arg)) continue;
+		if (
+			GIT_INFO_OPTIONS.has(arg) ||
+			arg.startsWith("--exec-path=") ||
+			arg.startsWith("--list-cmds=")
+		) {
+			hasInfoOption = true;
+			continue;
+		}
+		if (
+			arg.startsWith("--config-env=") ||
+			arg.startsWith("--git-dir=") ||
+			arg.startsWith("--namespace=") ||
+			arg.startsWith("--work-tree=")
+		) {
+			continue;
+		}
+		if (arg.startsWith("-")) return undefined;
+		return { name: arg, args: args.slice(index + 1) };
+	}
+	return hasInfoOption ? "info" : undefined;
+};
+
+const isGitBranchSafe = (args: string[]): boolean => {
+	let list = false;
+	let positional = 0;
+	for (let index = 0; index < args.length; index++) {
+		const arg = args[index];
+		if (
+			[...GIT_BRANCH_WRITE_OPTIONS].some(
+				(option) =>
+					arg === option ||
+					(option.startsWith("--")
+						? arg.startsWith(`${option}=`)
+						: arg.startsWith(option)),
+			)
+		) {
+			return false;
+		}
+		if (arg === "--list" || arg === "-l") {
+			list = true;
+			continue;
+		}
+		if (GIT_BRANCH_READ_OPTIONS_WITH_VALUES.has(arg)) {
+			if (!args[++index]) return false;
+			continue;
+		}
+		if (arg === "--") {
+			positional += args.length - index - 1;
+			break;
+		}
+		if (!arg.startsWith("-")) positional++;
+	}
+	return positional === 0 || list;
+};
+
+const isGitConfigSafe = (args: string[]): boolean => {
+	let readAction = false;
+	let positional = 0;
+	for (let index = 0; index < args.length; index++) {
+		const arg = args[index];
+		if (
+			GIT_CONFIG_WRITE_OPTIONS.has(arg) ||
+			[...GIT_CONFIG_WRITE_OPTIONS].some(
+				(option) => option.startsWith("--") && arg.startsWith(`${option}=`),
+			)
+		) {
+			return false;
+		}
+		if (GIT_CONFIG_READ_OPTIONS.has(arg)) {
+			readAction = true;
+			continue;
+		}
+		if (GIT_CONFIG_OPTIONS_WITH_VALUES.has(arg)) {
+			if (!args[++index]) return false;
+			continue;
+		}
+		if (arg === "--") {
+			positional += args.length - index - 1;
+			break;
+		}
+		if (!arg.startsWith("-")) {
+			if (positional === 0 && GIT_CONFIG_WRITE_ACTIONS.has(arg)) return false;
+			if (positional === 0 && GIT_CONFIG_READ_ACTIONS.has(arg)) {
+				readAction = true;
+			}
+			positional++;
+		}
+	}
+	return readAction || positional <= 1;
+};
+
 const isGitSafe = (args: string[]): boolean => {
-	const subcommandIndex = args.findIndex((arg) => !arg.startsWith("-"));
-	if (subcommandIndex === -1) return false;
-	const subcommand = args[subcommandIndex];
-	const subcommandArgs = args.slice(subcommandIndex + 1);
+	const invocation = getGitSubcommand(args);
+	if (!invocation) return false;
+	if (invocation === "info") return true;
+	const { args: subcommandArgs, name: subcommand } = invocation;
 	if (
-		subcommandArgs.some(
+		getOptionArgs(subcommandArgs).some(
 			(arg) => arg === "--output" || arg.startsWith("--output="),
 		)
 	) {
@@ -79,38 +265,119 @@ const isGitSafe = (args: string[]): boolean => {
 	}
 
 	if (ShellUtils.safeCommandsGit.has(subcommand)) return true;
-	if (subcommand === "branch") {
-		if (subcommandArgs.some((arg) => GIT_BRANCH_WRITE_OPTIONS.has(arg))) {
-			return false;
-		}
-		const positional = subcommandArgs.filter((arg) => !arg.startsWith("-"));
-		return positional.length === 0 || subcommandArgs.includes("--list");
-	}
+	if (subcommand === "branch") return isGitBranchSafe(subcommandArgs);
+	if (subcommand === "config") return isGitConfigSafe(subcommandArgs);
 	if (subcommand === "remote") {
-		return !subcommandArgs.some((arg) => GIT_REMOTE_WRITE_SUBCOMMANDS.has(arg));
+		const remoteSubcommand = subcommandArgs.find((arg) => !arg.startsWith("-"));
+		return (
+			!remoteSubcommand || !GIT_REMOTE_WRITE_SUBCOMMANDS.has(remoteSubcommand)
+		);
 	}
 	return false;
+};
+
+const uniqWrites = (args: string[]): boolean => {
+	let positional = 0;
+	for (let index = 0; index < args.length; index++) {
+		const arg = args[index];
+		if (arg === "--") return positional + args.length - index - 1 > 1;
+		if (
+			[
+				"-f",
+				"-s",
+				"-w",
+				"--check-chars",
+				"--skip-chars",
+				"--skip-fields",
+			].includes(arg)
+		) {
+			index++;
+			continue;
+		}
+		if (!arg.startsWith("-")) positional++;
+	}
+	return positional > 1;
 };
 
 const commandWrites = (command: string, args: string[]): boolean => {
 	if (command === "find") {
 		return args.some((arg) => FIND_WRITE_ACTIONS.has(arg));
 	}
+	const optionArgs = getOptionArgs(args);
 	if (command === "sort") {
-		return args.some((arg) => arg === "-o" || arg.startsWith("--output="));
+		return optionArgs.some(
+			(arg) =>
+				arg === "-o" ||
+				arg.startsWith("-o") ||
+				arg === "--output" ||
+				arg.startsWith("--output="),
+		);
 	}
 	if (command === "uniq") {
-		return args.filter((arg) => !arg.startsWith("-")).length > 1;
+		return uniqWrites(args);
 	}
 	if (command === "diff") {
-		return args.some(
+		return optionArgs.some(
 			(arg) => arg === "--output" || arg.startsWith("--output="),
 		);
 	}
 	if (command === "tree") {
-		return args.some((arg) => arg === "-o" || arg.startsWith("--output="));
+		return optionArgs.some(
+			(arg) =>
+				arg === "-o" ||
+				arg.startsWith("-o") ||
+				arg === "--output" ||
+				arg.startsWith("--output="),
+		);
+	}
+	if (command === "sed") {
+		return optionArgs.some(
+			(arg) => arg.startsWith("-i") || arg.startsWith("--in-place"),
+		);
+	}
+	if (command === "rg") {
+		return optionArgs.some(
+			(arg) => arg === "--pre" || arg.startsWith("--pre="),
+		);
+	}
+	if (command === "fd") {
+		return optionArgs.some(
+			(arg) =>
+				["--exec", "--exec-batch", "-X", "-x"].includes(arg) ||
+				arg.startsWith("-X") ||
+				arg.startsWith("-x") ||
+				arg.startsWith("--exec=") ||
+				arg.startsWith("--exec-batch="),
+		);
 	}
 	return false;
+};
+
+const isCommandBuiltinSafe = (args: string[]): boolean => {
+	let inspectsCommands = false;
+	let index = 0;
+	for (; index < args.length; index++) {
+		const arg = args[index];
+		if (arg === "--") {
+			index++;
+			break;
+		}
+		if (arg === "--help") return true;
+		if (!arg.startsWith("-") || arg === "-") break;
+		if (!/^-[pVv]+$/.test(arg)) return false;
+		if (/[Vv]/.test(arg)) inspectsCommands = true;
+	}
+	if (inspectsCommands || index === args.length) return true;
+	const command = args[index];
+	return command ? isInvocationSafe(command, args.slice(index + 1)) : true;
+};
+
+const isInvocationSafe = (command: string, args: string[]): boolean => {
+	if (command === "command") return isCommandBuiltinSafe(args);
+	return (
+		(ShellUtils.safeCommands.has(command) && !commandWrites(command, args)) ||
+		(command === "git" && isGitSafe(args))
+	);
 };
 
 const isScriptSafe = (script: ParsedScript): boolean => {
@@ -141,11 +408,7 @@ const isScriptSafe = (script: ParsedScript): boolean => {
 			}
 			if (!isStaticWord(node.name)) return false;
 			const args = node.suffix.map((word) => word.value);
-			const allowed =
-				ShellUtils.safeCommands.has(node.name.value) &&
-				!commandWrites(node.name.value, args);
-			if (!allowed && !(node.name.value === "git" && isGitSafe(args)))
-				return false;
+			if (!isInvocationSafe(node.name.value, args)) return false;
 		}
 
 		// unbash exposes Word.parts via a lazy, non-enumerable getter.
@@ -189,10 +452,38 @@ export const ShellUtils = {
 		"uniq",
 		"cut",
 		"diff",
+		"cmp",
+		"column",
+		"comm",
 		"basename",
+		"cksum",
 		"dirname",
+		"expand",
+		"fd",
+		"fmt",
+		"fold",
+		"groups",
+		"id",
+		"join",
+		"jq",
+		"md5sum",
+		"nl",
+		"od",
+		"paste",
+		"printf",
+		"readlink",
 		"realpath",
+		"rev",
+		"rg",
+		"sed",
+		"sha1sum",
+		"sha256sum",
+		"sha512sum",
+		"strings",
+		"tr",
 		"true",
+		"type",
+		"unexpand",
 		"false",
 		"test",
 		"[",
@@ -211,8 +502,19 @@ export const ShellUtils = {
 		"ls-files",
 		"ls-tree",
 		"cat-file",
+		"check-attr",
+		"check-ignore",
+		"count-objects",
 		"name-rev",
+		"for-each-ref",
+		"merge-base",
+		"range-diff",
 		"shortlog",
+		"show-index",
+		"show-ref",
+		"verify-commit",
+		"verify-pack",
+		"verify-tag",
 	]),
 
 	/** Parses the full Bash syntax tree and rejects commands that may write to disk. */

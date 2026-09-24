@@ -1,6 +1,6 @@
 import { useHotkeys } from "@mantine/hooks";
-import { MarkdownDataUtils } from "@tiny-chat/client/src/features/message/utils/MarkdownDataUtils.ts";
-import { MarkdownUtils } from "@tiny-chat/client/src/features/message/utils/MarkdownUtils.ts";
+import { MarkdownDataUtils } from "@tiny-chat/client/features/message/utils/MarkdownDataUtils.ts";
+import { MarkdownUtils } from "@tiny-chat/client/features/message/utils/MarkdownUtils.ts";
 import { Markdown } from "@tiptap/markdown";
 import type { Slice } from "@tiptap/pm/model";
 import { Selection } from "@tiptap/pm/state";
@@ -11,15 +11,9 @@ import {
 	type JSONContent,
 } from "@tiptap/react";
 import { StarterKit } from "@tiptap/starter-kit";
-import {
-	type RefObject,
-	useEffect,
-	useLayoutEffect,
-	useRef,
-	useState,
-} from "react";
-import { useMessaging } from "#client/src/features/chat/hooks/useMessaging.ts";
-import { useUploads } from "#client/src/features/upload/hooks/useUploads.ts";
+import { type RefObject, useEffect, useLayoutEffect, useState } from "react";
+import { useMessaging } from "#client/features/chat/hooks/useMessaging.ts";
+import { useUploads } from "#client/features/upload/hooks/useUploads.ts";
 import { useAttachment } from "../hooks/useAttachment.tsx";
 import { useBlockquote } from "../hooks/useBlockquote.tsx";
 import { useCodeBlock } from "../hooks/useCodeBlock.tsx";
@@ -128,7 +122,6 @@ export const useEditor = ({
 	const { sendMessage } = useMessaging();
 
 	const [isMultiline, setMultiline] = useState(false);
-	const wasEmpty = useRef(true);
 
 	const editor = _useEditor({
 		editorProps: {
@@ -218,9 +211,7 @@ export const useEditor = ({
 			};
 		},
 		onUpdate: ({ editor }) => {
-			const _isNowEmpty = editor.isEmpty && !wasEmpty.current;
-			if (_isNowEmpty) setMultiline(false);
-			wasEmpty.current = editor.isEmpty;
+			if (editor.isEmpty) setMultiline(false);
 			useEditorStore.getState().update();
 		},
 	});

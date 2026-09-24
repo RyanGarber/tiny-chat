@@ -1,6 +1,6 @@
-import type { MessageSearchResult } from "@tiny-chat/core/src/features/data/types/message.ts";
-import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
-import { VERBOSE } from "@tiny-chat/core/src/logger.ts";
+import type { MessageSearchResult } from "@tiny-chat/core/features/data/types/message.ts";
+import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
+import { VERBOSE } from "@tiny-chat/core/logger.ts";
 import { SearchUtils } from "../utils/SearchUtils.ts";
 
 /**

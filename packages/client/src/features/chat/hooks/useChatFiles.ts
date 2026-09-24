@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { zAgentMessage } from "@tiny-chat/core/src/features/agent/types/agent.ts";
-import { AgentUtils } from "@tiny-chat/core/src/features/agent/utils/AgentUtils.ts";
+import type { zAgentMessage } from "@tiny-chat/core/features/agent/types/agent.ts";
+import { AgentUtils } from "@tiny-chat/core/features/agent/utils/AgentUtils.ts";
 import { useContext, useMemo } from "react";
 import { ClientContext } from "../../../client.ts";
 import { useConfig } from "../../agent/hooks/useConfig.ts";

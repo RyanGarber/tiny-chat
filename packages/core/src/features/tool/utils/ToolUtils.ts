@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import { z } from "zod";
 import type { DistributiveOmit } from "../../../core/types/common.ts";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 import type { zConfig } from "../../data/types/message.ts";
@@ -60,7 +60,72 @@ const getIndex = (toolsets: Toolset<any>[]) => {
 	return index;
 };
 
+const addAdditionalProperties = (schema: unknown): unknown => {
+	if (!schema || typeof schema !== "object") return schema;
+	const result = { ...(schema as Record<string, any>) };
+	const types = Array.isArray(result.type) ? result.type : [result.type];
+	if (types.includes("object")) {
+		result.additionalProperties =
+			result.additionalProperties &&
+			typeof result.additionalProperties === "object"
+				? addAdditionalProperties(result.additionalProperties)
+				: false;
+		if (result.properties) {
+			result.properties = Object.fromEntries(
+				Object.entries(result.properties).map(([key, value]) => [
+					key,
+					addAdditionalProperties(value),
+				]),
+			);
+		}
+	}
+	if (result.items)
+		result.items = Array.isArray(result.items)
+			? result.items.map(addAdditionalProperties)
+			: addAdditionalProperties(result.items);
+	for (const key of ["anyOf", "allOf", "oneOf"] as const) {
+		if (result[key]) result[key] = result[key].map(addAdditionalProperties);
+	}
+	if (result.definitions) {
+		result.definitions = Object.fromEntries(
+			Object.entries(result.definitions).map(([key, value]) => [
+				key,
+				addAdditionalProperties(value),
+			]),
+		);
+	}
+	return result;
+};
+
+/**
+ * The function-tool shape the AI SDK prepares for providers. Keeping this in
+ * core gives token estimation and cache keys the same serialized definition
+ * that generation uses instead of the opaque Zod object identity.
+ */
+const getPromptDefinition = (tool: ToolDefinition) => {
+	const input = tool.input as unknown;
+	let inputSchema = input;
+	if (input && typeof input === "object" && "_zod" in input) {
+		inputSchema = addAdditionalProperties(
+			z.toJSONSchema(input as z.ZodType, {
+				target: "draft-7",
+				io: "input",
+				reused: "inline",
+			}),
+		);
+	}
+
+	return {
+		type: "function" as const,
+		name: tool.name,
+		description: tool.description,
+		inputSchema,
+	};
+};
+
 export const ToolUtils = {
+	getPromptDefinition,
+
 	name: ({
 		toolset,
 		tool,

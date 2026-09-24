@@ -1,9 +1,5 @@
 import { MantineProvider } from "@mantine/core";
-import {
-	create,
-	onAfterAll,
-	onBeforeAll,
-} from "@tiny-chat/client/src/tests.ts";
+import { create, onAfterAll, onBeforeAll } from "@tiny-chat/client/tests.ts";
 import { createElement, type ReactNode } from "react";
 import { render as _render } from "vitest-browser-react";
 import mantineTheme, { cssResolver } from "#app/theme.tsx";

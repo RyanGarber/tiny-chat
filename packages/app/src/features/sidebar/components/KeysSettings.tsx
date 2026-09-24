@@ -16,12 +16,12 @@ import {
 	CaretRightIcon,
 	WarningCircleIcon,
 } from "@phosphor-icons/react";
-import { useProviders } from "@tiny-chat/client/src/features/agent/hooks/useProviders.ts";
-import { useProviderSettings } from "@tiny-chat/client/src/features/settings/hooks/useProviderSettings.ts";
+import { useProviders } from "@tiny-chat/client/features/agent/hooks/useProviders.ts";
+import { useProviderSettings } from "@tiny-chat/client/features/settings/hooks/useProviderSettings.ts";
 import type {
 	ProviderState,
 	ProviderStatus,
-} from "@tiny-chat/core/src/features/provider/types/provider.ts";
+} from "@tiny-chat/core/features/provider/types/provider.ts";
 import { useState } from "react";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 

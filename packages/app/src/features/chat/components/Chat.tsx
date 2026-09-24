@@ -11,15 +11,15 @@ import {
 import { useElementSize, useMergedRef } from "@mantine/hooks";
 import { ArrowClockwiseIcon, CaretDoubleDownIcon } from "@phosphor-icons/react";
 import { useIsMutating } from "@tanstack/react-query";
-import { useGreeting } from "@tiny-chat/client/src/core/hooks/useGreeting.ts";
-import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
-import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
-import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
-import { useDraftStore } from "@tiny-chat/client/src/features/chat/stores/useDraftStore.ts";
-import { useDisabled } from "@tiny-chat/client/src/features/editor/hooks/useDisabled.ts";
-import { useEstimatedTokens } from "@tiny-chat/client/src/features/editor/hooks/useEstimatedTokens.ts";
-import { MessageProvider } from "@tiny-chat/client/src/features/message/components/MessageProvider.tsx";
-import { useMessages } from "@tiny-chat/client/src/features/message/hooks/useMessages.ts";
+import { useGreeting } from "@tiny-chat/client/core/hooks/useGreeting.ts";
+import { useChat } from "@tiny-chat/client/features/chat/hooks/useChat.ts";
+import { ChatService } from "@tiny-chat/client/features/chat/services/ChatService.ts";
+import { useChatStore } from "@tiny-chat/client/features/chat/stores/useChatStore.ts";
+import { useDraftStore } from "@tiny-chat/client/features/chat/stores/useDraftStore.ts";
+import { useDisabled } from "@tiny-chat/client/features/editor/hooks/useDisabled.ts";
+import { useEstimatedTokens } from "@tiny-chat/client/features/editor/hooks/useEstimatedTokens.ts";
+import { MessageProvider } from "@tiny-chat/client/features/message/components/MessageProvider.tsx";
+import { useMessages } from "@tiny-chat/client/features/message/hooks/useMessages.ts";
 import { useEffect, useLayoutEffect, useMemo } from "react";
 import { client } from "#app/client.ts";
 import Sentinel from "#app/core/components/Sentinel.tsx";
@@ -32,8 +32,8 @@ import ChatHeader from "#app/features/chat/components/ChatHeader.tsx";
 import Editor from "#app/features/editor/components/Editor.tsx";
 import { useEditorStore } from "#app/features/editor/stores/useEditorStore.ts";
 import Message from "#app/features/message/components/Message.tsx";
-import { useMessagingStore } from "#client/src/features/chat/stores/useMessagingStore.ts";
-import { uploadMutationKey } from "#client/src/features/upload/hooks/useUploads.ts";
+import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
+import { uploadMutationKey } from "#client/features/upload/hooks/useUploads.ts";
 
 export default function Chat() {
 	const { chat } = useChat();
@@ -115,7 +115,11 @@ export default function Chat() {
 	}, [messageList, editing, insertingAfter, truncating]);
 
 	const inputMaxWidth = 860;
-	const { ref: inputRef, width: inputWidth } = useElementSize();
+	const {
+		ref: inputRef,
+		width: inputWidth,
+		height: inputHeight,
+	} = useElementSize();
 	const { ref: inputEffectsRef, height: inputEffectsHeight } = useElementSize();
 	const { ref: chatContainerRef } = useElementSize();
 
@@ -135,7 +139,7 @@ export default function Chat() {
 				flex={1}
 				pos="relative"
 				mih={0}
-				style={{ overflow: "hidden" }}
+				style={{ overflow: "hidden", isolation: "isolate" }}
 				ref={chatContainerRef}
 			>
 				{/* New chat hero overlay */}
@@ -249,6 +253,7 @@ export default function Chat() {
 					}}
 					viewportRef={viewportRef}
 					style={{
+						zIndex: 0,
 						opacity: isNewChat ? 0 : 1,
 						transition: "opacity 400ms ease",
 						pointerEvents: isNewChat ? "none" : "auto",
@@ -256,7 +261,14 @@ export default function Chat() {
 					flex={1}
 					inset={0}
 				>
-					<Stack pt={isMobile ? 40 : 10} px={20} m="0 auto" maw={860} gap={10}>
+					<Stack
+						pt={isMobile ? 40 : 10}
+						px={20}
+						m="0 auto"
+						maw={860}
+						gap={10}
+						style={{ paddingBottom: inputHeight }}
+					>
 						<Sentinel
 							isFetching={messages.isFetchingNextPage || messages.isLoading}
 							ref={sentinelRef}
@@ -284,9 +296,8 @@ export default function Chat() {
 						pointerEvents: "none",
 						maskImage:
 							isMobile || chat.data
-								? `linear-gradient(black 0px, transparent 40px ${chat.data ? `, transparent calc(100% - ${40 + inputEffectsHeight}px), black 100%` : ""})`
+								? "linear-gradient(black 0px, transparent 40px)"
 								: undefined,
-						//maskImage: `linear-gradient(black ${isMobile ? 55 : 0}px, transparent ${isMobile ? 95 : 40}px, transparent calc(100% - ${40 + inputEffectsHeight}px), black 100%)`, // TODO - continue to refine
 						background:
 							isMobile || chat.data ? "var(--mantine-color-body)" : undefined,
 					}}
@@ -296,7 +307,7 @@ export default function Chat() {
 					gap={5}
 					style={{
 						position: "absolute",
-						bottom: inputEffectsHeight + 16,
+						bottom: inputHeight + inputEffectsHeight + 16,
 						right: 20,
 						zIndex: "calc(var(--mantine-z-index-app) + 1)",
 					}}
@@ -351,22 +362,24 @@ export default function Chat() {
 				<ChatEffects
 					inputEffectsRef={inputEffectsRef}
 					inputMaxWidth={inputMaxWidth}
+					bottom={inputHeight}
 					disabled={disabled}
 				/>
-			</Box>
 
-			{/* Input area */}
-			<Box
-				style={{
-					background: chat.data ? "var(--mantine-color-body)" : "transparent",
-				}}
-			>
+				{/* Input area */}
 				<Box
 					w="100%"
 					maw={inputMaxWidth}
 					m="0 auto"
 					p={isMobile ? "0 10px 10px 10px" : "0 20px 20px 20px"}
 					ref={inputRef}
+					style={{
+						position: "absolute",
+						left: 0,
+						right: 0,
+						bottom: 0,
+						zIndex: "calc(var(--mantine-z-index-app) + 1)",
+					}}
 				>
 					<Editor
 						key={_key}

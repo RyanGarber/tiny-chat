@@ -1,7 +1,7 @@
 import type {
 	Categories,
 	Usage,
-} from "@tiny-chat/client/src/features/editor/hooks/useEstimatedTokens.ts";
+} from "@tiny-chat/client/features/editor/hooks/useEstimatedTokens.ts";
 import Spinner from "ink-spinner";
 import { useState } from "react";
 import Box from "../../../core/components/Box.tsx";

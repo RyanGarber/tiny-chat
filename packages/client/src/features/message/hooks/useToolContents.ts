@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
-import type { RenderedPart } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
-import { FileEditUtils } from "@tiny-chat/core/src/features/file/utils/FileEditUtils.ts";
-import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeUtils.ts";
-import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
-import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
-import type { ToolCallDisplayType } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
+import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
+import type { RenderedPart } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
+import { FileEditUtils } from "@tiny-chat/core/features/file/utils/FileEditUtils.ts";
+import { FileTypeUtils } from "@tiny-chat/core/features/file/utils/FileTypeUtils.ts";
+import { FileUtils } from "@tiny-chat/core/features/file/utils/FileUtils.ts";
+import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
+import type { ToolCallDisplayType } from "@tiny-chat/core/features/tool/utils/ToolCallUtils.ts";
 import { useContext } from "react";
 import { ClientContext } from "../../../client.ts";
 import { useChatFiles } from "../../chat/hooks/useChatFiles.ts";

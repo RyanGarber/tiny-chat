@@ -5,19 +5,37 @@
 			"dependsOn": ["^lint"]
 		},
 		"@tiny-chat/tauri#lint": {
-			"inputs": ["src/**/*.rs", "Cargo.toml", "Cargo.lock", "tauri.conf.json"]
+			"inputs": [
+				"src/**/*.rs",
+				"build.rs",
+				"Cargo.toml",
+				"Cargo.lock",
+				"tauri.conf.json"
+			]
 		},
 		"typecheck": {
 			"dependsOn": ["^typecheck"]
 		},
 		"@tiny-chat/tauri#typecheck": {
-			"inputs": ["src/**/*.rs", "Cargo.toml", "Cargo.lock", "tauri.conf.json"]
+			"inputs": [
+				"src/**/*.rs",
+				"build.rs",
+				"Cargo.toml",
+				"Cargo.lock",
+				"tauri.conf.json"
+			]
 		},
 		"test": {
 			"dependsOn": ["^test"]
 		},
 		"@tiny-chat/tauri#test": {
-			"inputs": ["src/**/*.rs", "Cargo.toml", "Cargo.lock", "tauri.conf.json"]
+			"inputs": [
+				"src/**/*.rs",
+				"build.rs",
+				"Cargo.toml",
+				"Cargo.lock",
+				"tauri.conf.json"
+			]
 		},
 		"smoketest": {
 			"dependsOn": ["^smoketest"]

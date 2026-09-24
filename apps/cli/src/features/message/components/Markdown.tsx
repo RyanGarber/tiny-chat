@@ -1,10 +1,10 @@
-import { StreamContext } from "@tiny-chat/client/src/features/message/components/StreamContext.tsx";
+import { StreamContext } from "@tiny-chat/client/features/message/components/StreamContext.tsx";
 import {
 	type MarkdownSource,
 	processor,
 	useMarkdown,
-} from "@tiny-chat/client/src/features/message/hooks/useMarkdown.ts";
-import { useMarkdownBlocks } from "@tiny-chat/client/src/features/message/hooks/useMarkdownBlocks.ts";
+} from "@tiny-chat/client/features/message/hooks/useMarkdown.ts";
+import { useMarkdownBlocks } from "@tiny-chat/client/features/message/hooks/useMarkdownBlocks.ts";
 import { toJsxRuntime } from "hast-util-to-jsx-runtime";
 import { Fragment } from "react";
 import { jsx, jsxs } from "react/jsx-runtime";

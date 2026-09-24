@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
-import { SettingsUtils } from "@tiny-chat/core/src/core/utils/SettingsUtils.ts";
-import type { FolderLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
+import { SettingsUtils } from "@tiny-chat/core/core/utils/SettingsUtils.ts";
+import type { FolderLike } from "@tiny-chat/core/features/data/types/chat.ts";
 import { useContext, useMemo } from "react";
 import { ClientContext } from "../../../client.ts";
 import { useSettings } from "./useSettings.ts";

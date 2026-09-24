@@ -1,7 +1,7 @@
 import {
 	type CodeResult,
 	CodeUtils,
-} from "@tiny-chat/core/src/core/utils/CodeUtils.ts";
+} from "@tiny-chat/core/core/utils/CodeUtils.ts";
 import { useEffect, useMemo, useState } from "react";
 import { useThemes } from "../../features/settings/hooks/useThemes.ts";
 

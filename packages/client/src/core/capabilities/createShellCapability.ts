@@ -1,7 +1,7 @@
 import type {
 	CapabilityFactory,
 	ShellCapability,
-} from "@tiny-chat/core/src/core/types/capability.ts";
+} from "@tiny-chat/core/core/types/capability.ts";
 import type { Client } from "../../client.ts";
 
 export const createShellCapability: CapabilityFactory<

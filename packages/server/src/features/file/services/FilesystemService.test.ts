@@ -1,11 +1,11 @@
-import type { zAgentContext } from "@tiny-chat/core/src/features/agent/types/agent.ts";
+import type { zAgentContext } from "@tiny-chat/core/features/agent/types/agent.ts";
 import type {
 	zData,
 	zDataPart,
-} from "@tiny-chat/core/src/features/data/types/part.ts";
-import { read_file } from "@tiny-chat/core/src/features/tool/tools/shell/read_file.ts";
-import { shell_exec } from "@tiny-chat/core/src/features/tool/tools/shell/shell_exec.ts";
-import { mockConfig } from "@tiny-chat/core/src/tests.ts";
+} from "@tiny-chat/core/features/data/types/part.ts";
+import { read_file } from "@tiny-chat/core/features/tool/tools/shell/read_file.ts";
+import { shell_exec } from "@tiny-chat/core/features/tool/tools/shell/shell_exec.ts";
+import { mockConfig } from "@tiny-chat/core/tests.ts";
 import type { z } from "zod";
 import { testClient } from "../../../tests.ts";
 
@@ -121,13 +121,17 @@ describe("FilesystemService", () => {
 	});
 
 	it("writes a file to the chat using python", async () => {
-		let output = await exec(
-			"python3 -c \"import os; print(os.getcwd()); f = open('hello.txt', 'w'); f.write('Hello, world!'); f.close()\"",
+		const output = await exec(
+			"python3 -c \"import os; print(os.getcwd()); f = open('python.txt', 'w'); f.write('Written by Python'); f.close()\"",
 		);
-		expect(output.stdout).toContain(`/mnt/chat/${chatId}`);
-		output = await exec(`cat /mnt/chat/${chatId}/hello.txt`);
-		expect(output.stdout).toContain("Hello, world!");
-	});
+		expect(output.stderr).toBe("");
+		expect(output.code).toBe(0);
+		expect(output.stdout.trim()).toBe(`/mnt/chat/${chatId}`);
+		const written = await exec(`cat /mnt/chat/${chatId}/python.txt`);
+		expect(written.stdout).toBe("Written by Python");
+		// Python itself has a 30s execution limit; allow time for HTTP/DB work and
+		// worker cleanup so a Python failure reaches the assertions above.
+	}, 60_000);
 
 	it("refuses to write over an upload", async () => {
 		const output = await exec(

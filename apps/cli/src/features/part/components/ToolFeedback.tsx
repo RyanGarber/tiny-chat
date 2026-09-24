@@ -1,10 +1,10 @@
 /** biome-ignore-all lint/suspicious/noArrayIndexKey: parts stay in order */
 
-import { useMessaging } from "@tiny-chat/client/src/features/chat/hooks/useMessaging.ts";
-import { useToolContents } from "@tiny-chat/client/src/features/message/hooks/useToolContents.ts";
-import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
-import type { RenderedPart } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
-import type { ToolCallDisplayType } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
+import { useMessaging } from "@tiny-chat/client/features/chat/hooks/useMessaging.ts";
+import { useToolContents } from "@tiny-chat/client/features/message/hooks/useToolContents.ts";
+import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
+import type { RenderedPart } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
+import type { ToolCallDisplayType } from "@tiny-chat/core/features/tool/utils/ToolCallUtils.ts";
 import { useCallback, useMemo, useState } from "react";
 import Box from "../../../core/components/Box.tsx";
 import Text from "../../../core/components/Text.tsx";

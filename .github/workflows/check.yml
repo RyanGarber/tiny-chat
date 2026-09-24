@@ -8,6 +8,22 @@ jobs:
     check:
         runs-on: ubuntu-latest
 
+        services:
+            postgres:
+                image: paradedb/paradedb:latest
+                env:
+                    POSTGRES_USER: postgres
+                    POSTGRES_PASSWORD: postgres
+                    POSTGRES_DB: tiny_chat
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd "pg_isready -U postgres -d tiny_chat"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 10
+                    --shm-size=1g
+
         steps:
             -   name: Checkout
                 uses: actions/checkout@v7
@@ -32,11 +48,38 @@ jobs:
                     node-version: lts/*
                     cache: pnpm
 
+            -   name: Create .env
+                run: |
+                    cat << EOF > .env
+                    PG_HOST=localhost
+                    PG_PORT=5432
+                    PG_USER=postgres
+                    PG_PASSWORD=postgres
+                    PG_DATABASE=tiny_chat
+                    VITE_SERVER_URL=http://localhost:8009
+                    VITE_SERVER_PORT=8009
+                    VITE_WEB_URL=http://localhost:8010
+                    VITE_WEB_PORT=8010
+                    DEV=true
+                    AUTH_GITHUB_CLIENT=dummy
+                    AUTH_GITHUB_SECRET=dummy
+                    AUTH_GOOGLE_CLIENT=dummy
+                    AUTH_GOOGLE_SECRET=dummy
+                    AUTH_HUGGINGFACE_CLIENT=dummy
+                    AUTH_HUGGINGFACE_SECRET=dummy
+                    EOF
+
             -   name: Install dependencies
                 run: pnpm ci
+
+            -   name: Migrate database
+                run: pnpm --filter @tiny-chat/server exec prisma db migrate --yes
 
             -   name: Lint
                 run: pnpm turbo lint
 
             -   name: Check
                 run: pnpm turbo typecheck
+
+            -   name: Test
+                run: pnpm test

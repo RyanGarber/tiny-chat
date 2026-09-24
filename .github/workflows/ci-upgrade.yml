@@ -1,0 +1,200 @@
+name: ci-upgrade
+
+on:
+    workflow_dispatch:
+
+jobs:
+    build:
+        name: ${{ matrix.name }}
+        runs-on: xcode-27
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    -   name: macos
+                        rust_targets: aarch64-apple-darwin
+                    -   name: ios
+                        rust_targets: aarch64-apple-ios
+        environment: production
+
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v7
+
+            -   name: Install Rust
+                uses: dtolnay/rust-toolchain@stable
+                with:
+                    targets: ${{ matrix.rust_targets }}
+                    toolchain: stable
+
+            -   name: Install pnpm
+                uses: pnpm/action-setup@v6
+
+            -   name: Install Node
+                uses: actions/setup-node@v7
+                with:
+                    node-version: lts/*
+                    cache: pnpm
+
+            -   name: Create .env
+                shell: bash
+                run: |
+                    cat << EOF > .env
+                    PG_HOST=${{ secrets.PG_HOST }}
+                    PG_PORT=${{ secrets.PG_PORT }}
+                    PG_USER=${{ secrets.PG_USER }}
+                    PG_PASSWORD=${{ secrets.PG_PASSWORD }}
+                    PG_DATABASE=${{ secrets.PG_DATABASE }}
+                    VITE_SERVER_URL=${{ secrets.VITE_SERVER_URL }}
+                    VITE_SERVER_PORT=${{ secrets.VITE_SERVER_PORT }}
+                    VITE_WEB_URL=${{ secrets.VITE_WEB_URL }}
+                    VITE_WEB_PORT=${{ secrets.VITE_WEB_PORT }}
+                    AUTH_GITHUB_CLIENT=${{ secrets.AUTH_GITHUB_CLIENT }}
+                    AUTH_GITHUB_SECRET=${{ secrets.AUTH_GITHUB_SECRET }}
+                    AUTH_GOOGLE_CLIENT=${{ secrets.AUTH_GOOGLE_CLIENT }}
+                    AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}
+                    AUTH_HUGGINGFACE_CLIENT=${{ secrets.AUTH_HUGGINGFACE_CLIENT }}
+                    AUTH_HUGGINGFACE_SECRET=${{ secrets.AUTH_HUGGINGFACE_SECRET }}
+                    EOF
+
+            -   name: Install dependencies
+                run: pnpm ci
+
+            -   name: Build macOS
+                if: matrix.name == 'macos'
+                run: |
+                    pnpm --filter @tiny-chat/tauri exec tauri build \
+                      --features afm \
+                      --target aarch64-apple-darwin \
+                      --no-sign \
+                      --ci \
+                      -vv \
+                      --config '{"bundle":{"createUpdaterArtifacts":false}}'
+
+            -   name: Check macOS link
+                if: matrix.name == 'macos'
+                run: |
+                    APP=$(find apps/tauri/target/aarch64-apple-darwin/release/bundle/macos -maxdepth 1 -name "*.app" | head -1)
+                    EXEC=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Contents/Info.plist")
+                    BIN="$APP/Contents/MacOS/$EXEC"
+                    echo "Binary: $BIN"
+                    echo "=== load commands ==="
+                    otool -L "$BIN"
+                    echo "=== rpaths ==="
+                    otool -l "$BIN" | awk '/LC_RPATH/{show=1} show && /path /{print; show=0}'
+                    echo "=== afmize ==="
+                    nm -gU "$BIN" | grep afmize || true
+                    nm -gU "$BIN" | grep -q afmize_availability
+                    otool -L "$BIN" | grep -q FoundationModels
+                    otool -l "$BIN" | grep -q "lib/swift/macosx"
+
+            -   name: Upload macOS artifact
+                if: matrix.name == 'macos'
+                uses: actions/upload-artifact@v5
+                with:
+                    name: tiny-chat-macos
+                    retention-days: 14
+                    if-no-files-found: error
+                    path: apps/tauri/target/aarch64-apple-darwin/release/bundle
+
+            -   name: Prepare iOS project
+                if: matrix.name == 'ios'
+                run: |
+                    echo "Mocking open command..."
+                    mkdir -p /tmp/mock-open
+                    echo '#!/bin/bash' > /tmp/mock-open/open
+                    echo 'exit 0' >> /tmp/mock-open/open
+                    chmod +x /tmp/mock-open/open
+                    export PATH="/tmp/mock-open:$PATH"
+                    LOG_FILE="/tmp/tauri_build.log"
+                    pnpm --filter @tiny-chat/tauri exec tauri ios build \
+                      --features afm \
+                      --target aarch64 \
+                      --ci \
+                      --open \
+                      -vv \
+                      --config '{"bundle":{"createUpdaterArtifacts":false,"iOS":{"minimumSystemVersion":"27.0","frameworks":["FoundationModels"]}}}' \
+                      > "$LOG_FILE" 2>&1 &
+                    TAURI_PID=$!
+                    echo "TAURI_PID=$TAURI_PID" >> "$GITHUB_ENV"
+                    TIMEOUT=300
+                    ELAPSED=0
+                    while ! grep -q "Opening Xcode" "$LOG_FILE"; do
+                      sleep 10
+                      ELAPSED=$((ELAPSED + 10))
+                      echo "Still waiting for Tauri project setup (${ELAPSED}s)..."
+                      if [ "$ELAPSED" -ge "$TIMEOUT" ]; then
+                        echo "Timed out waiting for build"
+                        echo "=== BEGIN OUTPUT ==="
+                        cat "$LOG_FILE"
+                        kill "$TAURI_PID" || true
+                        exit 1
+                      fi
+                    done
+                    echo "Tauri project ready"
+                    echo "=== BEGIN OUTPUT ==="
+                    cat "$LOG_FILE"
+
+            -   name: Compile iOS
+                if: matrix.name == 'ios'
+                run: |
+                    cd apps/tauri/gen/apple
+                    xcodebuild \
+                      -scheme tiny-chat_iOS \
+                      -workspace tiny-chat.xcodeproj/project.xcworkspace \
+                      -sdk iphoneos \
+                      -configuration release \
+                      -archivePath "$RUNNER_TEMP/tiny-chat_iOS.xcarchive" \
+                      archive \
+                      CODE_SIGN_IDENTITY="" \
+                      CODE_SIGNING_REQUIRED=NO \
+                      CODE_SIGNING_ALLOWED=NO \
+                      AD_HOC_CODE_SIGNING_ALLOWED=YES \
+                      ONLY_ACTIVE_ARCH=NO \
+                      DEVELOPMENT_TEAM="" \
+                      IPHONEOS_DEPLOYMENT_TARGET=27.0 \
+                      'OTHER_LDFLAGS=$(inherited) -framework FoundationModels'
+                    kill "$TAURI_PID" || true
+
+            -   name: Check iOS link
+                if: matrix.name == 'ios'
+                run: |
+                    APP=$(find "$RUNNER_TEMP/tiny-chat_iOS.xcarchive/Products/Applications" -maxdepth 1 -name "*.app" | head -1)
+                    EXEC=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Info.plist")
+                    BIN="$APP/$EXEC"
+                    echo "Binary: $BIN"
+                    echo "=== load commands ==="
+                    otool -L "$BIN"
+                    echo "=== rpaths ==="
+                    otool -l "$BIN" | awk '/LC_RPATH/{show=1} show && /path /{print; show=0}'
+                    echo "=== afmize ==="
+                    nm -gU "$BIN" | grep afmize || true
+                    nm -gU "$BIN" | grep -q afmize_availability
+                    otool -L "$BIN" | grep -q FoundationModels
+                    # Device builds must not record the macOS toolchain slice.
+                    if otool -l "$BIN" | grep -q "lib/swift/macosx"; then
+                      echo "iOS binary has a macOS Swift rpath"
+                      exit 1
+                    fi
+                    otool -L "$BIN" | grep -q "libswift"
+
+            -   name: Package iOS
+                if: matrix.name == 'ios'
+                run: |
+                    APP_PATH=$(find "$RUNNER_TEMP/tiny-chat_iOS.xcarchive/Products/Applications" \
+                      -maxdepth 1 -name "*.app" | head -1)
+                    echo "Packaging: $APP_PATH"
+                    mkdir -p "$RUNNER_TEMP/Payload"
+                    cp -r "$APP_PATH" "$RUNNER_TEMP/Payload/"
+                    cd "$RUNNER_TEMP"
+                    zip -9 -r "Tiny.Chat_iOS.ipa" Payload/
+                    echo "IPA size: $(du -sh Tiny.Chat_iOS.ipa | cut -f1)"
+
+            -   name: Upload iOS artifact
+                if: matrix.name == 'ios'
+                uses: actions/upload-artifact@v5
+                with:
+                    name: tiny-chat-ios
+                    retention-days: 14
+                    if-no-files-found: error
+                    path: ${{ runner.temp }}/Tiny.Chat_iOS.ipa

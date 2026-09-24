@@ -10,7 +10,7 @@ fn main() {
 }
 
 #[cfg(feature = "afm")]
-fn link_afmize(with_ios: bool) {
+fn link_afmize(for_ios: bool) {
     use std::path::PathBuf;
     use swift_rs::SwiftLinker;
 
@@ -27,30 +27,103 @@ fn link_afmize(with_ios: bool) {
         out_dir, profile
     );
 
+    // swift-rs adds `-L` for the target's Swift runtime, not an rpath.
+    // macOS: rustc links the app, and dyld will not search the toolchain
+    // `lib/swift/macosx` directory unless that rpath is injected.
+    // iOS: Xcode links a staticlib (`cargo:rustc-link-arg` does not apply to
+    // it). The generated project already searches
+    // `$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)` (`iphoneos` or
+    // `iphonesimulator`), embeds the stdlib, and uses
+    // `@executable_path/Frameworks`. Reusing the macOS rpath would point the
+    // iOS cdylib at the wrong slice; the cargo link only needs `-L` for
+    // `lib/swift/iphoneos` (or the simulator equivalent). FoundationModels is
+    // not in that list — Xcode has to be given `-framework FoundationModels`
+    // itself, because a framework search path is not stored in the staticlib.
+    let platform = swift_platform_dir(for_ios);
+    let swift_lib = toolchain_swift_lib(platform);
+    if std::path::Path::new(&swift_lib).is_dir() {
+        println!("cargo:warning=afmize swift runtime ({platform}): {swift_lib}");
+    } else {
+        println!("cargo:warning=afmize swift runtime directory missing ({platform}): {swift_lib}");
+    }
+
+    if for_ios {
+        println!("cargo:rustc-link-search=native={swift_lib}");
+        if let Some(frameworks) = sdk_frameworks_dir(platform) {
+            println!("cargo:warning=afmize SDK frameworks: {frameworks}");
+            println!("cargo:rustc-link-search=framework={frameworks}");
+        }
+    } else {
+        println!("cargo:rustc-link-arg=-rpath");
+        println!("cargo:rustc-link-arg={swift_lib}");
+        println!("cargo:rustc-link-arg=-rpath");
+        println!("cargo:rustc-link-arg=/usr/lib/swift");
+    }
+
+    let mut linker = SwiftLinker::new("27.0").with_package("afmize", afmize_path.to_str().unwrap());
+
+    if for_ios {
+        linker = linker.with_ios("27.0");
+    }
+
+    linker.link();
+}
+
+#[cfg(feature = "afm")]
+fn swift_platform_dir(for_ios: bool) -> &'static str {
+    if !for_ios {
+        return "macosx";
+    }
+    let target = std::env::var("TARGET").unwrap_or_default();
+    let simulator =
+        target.contains("ios-sim") || (target.starts_with("x86_64") && target.contains("ios"));
+    if simulator {
+        "iphonesimulator"
+    } else {
+        "iphoneos"
+    }
+}
+
+#[cfg(feature = "afm")]
+fn toolchain_swift_lib(platform: &str) -> String {
     let swift = std::process::Command::new("xcrun")
         .args(["--find", "swiftc"])
         .output()
         .expect("xcrun --find swiftc failed — is Xcode installed?");
     let swift_out = String::from_utf8(swift.stdout).unwrap();
-    let swift_path = std::path::Path::new(swift_out.trim())
+    std::path::Path::new(swift_out.trim())
         .parent()
         .unwrap()
         .parent()
         .unwrap()
-        .join("lib/swift/macosx")
+        .join("lib/swift")
+        .join(platform)
         .to_string_lossy()
-        .to_string();
-    println!("cargo:rustc-link-arg=-rpath");
-    println!("cargo:rustc-link-arg={}", swift_path);
+        .to_string()
+}
 
-    println!("cargo:rustc-link-arg=-rpath");
-    println!("cargo:rustc-link-arg=/usr/lib/swift");
-
-    let mut linker = SwiftLinker::new("27.0").with_package("afmize", afmize_path.to_str().unwrap());
-
-    if with_ios {
-        linker = linker.with_ios("27.0");
+/// Framework search path for the cargo link of the iOS cdylib. The app itself
+/// is linked later by Xcode, which needs `-framework FoundationModels` on its
+/// own link line — this path is not forwarded out of the staticlib.
+#[cfg(feature = "afm")]
+fn sdk_frameworks_dir(platform: &str) -> Option<String> {
+    let sdk = match platform {
+        "iphoneos" => "iphoneos",
+        "iphonesimulator" => "iphonesimulator",
+        _ => return None,
+    };
+    let output = std::process::Command::new("xcrun")
+        .args(["--sdk", sdk, "--show-sdk-path"])
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
     }
-
-    linker.link();
+    let sdk_path = String::from_utf8(output.stdout).ok()?;
+    Some(
+        std::path::Path::new(sdk_path.trim())
+            .join("System/Library/Frameworks")
+            .to_string_lossy()
+            .to_string(),
+    )
 }

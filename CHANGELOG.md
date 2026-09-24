@@ -1,3 +1,14 @@
+## [0.8.6](https://github.com/RyanGarber/tiny-chat/compare/0.8.5...0.8.6) (2026-09-24)
+
+### Features
+
+* dynamic per-message context ([33088d8](https://github.com/RyanGarber/tiny-chat/commit/33088d873b5af56b91fa433dc841c2ee4c13c97d))
+
+### Bug Fixes
+
+* thinking blocks can be rejected by anthropic ([33088d8](https://github.com/RyanGarber/tiny-chat/commit/33088d873b5af56b91fa433dc841c2ee4c13c97d-1))
+
+
 ## [0.8.5](https://github.com/RyanGarber/tiny-chat/compare/0.8.4...0.8.5) (2026-09-20)
 
 ### Bug Fixes

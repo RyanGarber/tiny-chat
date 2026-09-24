@@ -67,6 +67,7 @@ jobs:
                     cp package.json deploy/
                     cp pnpm-lock.yaml deploy/
                     cp pnpm-workspace.yaml deploy/
+                    cp -r scripts deploy/scripts
                     cp -r patches deploy/patches
                     mkdir deploy/packages
                     cp -r packages/core deploy/packages/core

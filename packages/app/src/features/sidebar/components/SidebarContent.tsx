@@ -235,7 +235,7 @@ function FolderEditor({ editing }: { editing: FolderState }) {
 						data-autofocus
 					/>
 					<TextInput
-						label="Working directory"
+						label="Path"
 						value={cwd}
 						error={cwdError}
 						disabled={!client.desktop || renameFolder.isPending || validating}

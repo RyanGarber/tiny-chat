@@ -80,7 +80,7 @@ export const MemoryService = {
 				userId: user.id,
 			}).first();
 			if (!memory) throw new Error("Memory not found");
-			await tx.orm.public.ChatMemory.where({ memoryId: id }).deleteAll();
+			await tx.orm.public.MessageContext.where({ memoryId: id }).deleteAll();
 			await tx.orm.public.Memory.where({ id, userId: user.id }).delete();
 			return MemoryUtils.toMemoryState(memory);
 		}),

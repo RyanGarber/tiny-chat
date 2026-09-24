@@ -1,3 +1,4 @@
+import type { DistributiveOmit } from "../../../core/types/common.ts";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 import { zConfig } from "../../data/types/message.ts";
 import { FileUtils } from "../../file/utils/FileUtils.ts";
@@ -5,9 +6,8 @@ import { PathUtils } from "../../file/utils/PathUtils.ts";
 import type { zAgentMessage } from "../types/agent.ts";
 import { AgentMessagesService } from "./AgentMessagesService.ts";
 
-type NoId<T, K extends keyof any> = T extends any ? Omit<T, K> : never;
 type zAgentMessageNoPartIds = Omit<zAgentMessage, "data"> & {
-	data: (NoId<zAgentMessage["data"][number][number], "id"> & {
+	data: (DistributiveOmit<zAgentMessage["data"][number][number], "id"> & {
 		id?: string;
 	})[][];
 };

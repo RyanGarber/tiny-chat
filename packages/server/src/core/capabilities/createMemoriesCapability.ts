@@ -2,7 +2,7 @@ import type {
 	CapabilityFactory,
 	MemoriesCapability,
 } from "@tiny-chat/core/src/core/types/capability.ts";
-import type { ChatLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
+import type { MemorySource } from "@tiny-chat/core/src/features/data/types/memory.ts";
 import type { MessageLike } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { ChatSearchService } from "../../features/chat/services/ChatSearchService.ts";
@@ -15,15 +15,15 @@ export const createMemoriesCapability: CapabilityFactory<
 	MemoriesCapability
 > = async ({ user, message }) => ({
 	retrieveMemories: async ({
-		chat,
+		messages,
 		tokens,
 	}: {
-		chat?: ChatLike | MessageLike | null;
+		messages: MemorySource[];
 		tokens: number;
 	}) => {
 		return await MemoryRetrievalService.retrieve({
 			user,
-			chat,
+			messages,
 			tokens,
 		});
 	},

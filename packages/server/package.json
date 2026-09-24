@@ -6,7 +6,8 @@
 		"start": "node src/server.ts",
 		"lint": "biome check --write",
 		"typecheck": "tsc --noEmit",
-		"test": "vitest run"
+		"test": "vitest run",
+		"smoketest": "node scripts/smoketest.ts"
 	},
 	"dependencies": {
 		"@prisma/orm-extension-paradedb": "8.0.0-rc.11",

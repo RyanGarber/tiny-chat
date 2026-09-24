@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { zEnv } from "../packages/core/src/core/types/env.ts";
+import { create, print } from "./use-stdout.ts";
 
 config({ path: resolve(import.meta.dirname, "../.env"), quiet: true });
 try {
@@ -19,26 +20,26 @@ import waitOn from "wait-on";
 export const serverUrl = `http://localhost:${process.env.VITE_SERVER_PORT}`;
 
 export async function isServerLive() {
+	const update = create(`trying server at ${serverUrl}`);
 	try {
-		console.log(`trying server at ${serverUrl}...`);
 		const result = await fetch(serverUrl);
+		update(`server is ${result.ok ? "live" : "not live"}`);
 		return result.ok;
 	} catch {
+		update("server is not live");
 		return false;
 	}
 }
 
 export async function isServerNeeded(start: boolean | null | undefined) {
 	if (start !== false) {
-		console.log(`checking server availability...`);
 		const isLive = await isServerLive();
-		console.log(`server is ${isLive ? "live" : "not live"}`);
 		if (start === true || !isLive) {
-			console.log(`starting server...`);
+			print({ message: "starting server..." });
 			return true;
 		}
 	} else {
-		console.log("waiting for a server...");
+		print({ message: "waiting for a server..." });
 	}
 	return false;
 }
@@ -47,15 +48,14 @@ export async function useServer(
 	then: string[],
 	{ start, host }: { start?: boolean | null; host?: true } = {},
 ) {
-	console.log("starting...");
+	print({ message: "starting..." });
 
 	const doStart = await isServerNeeded(start);
 
 	if (then.length !== 0) {
-		console.log(
-			`running ${then.length} command${then.length !== 1 ? "s" : ""}...`,
-		);
-
+		print({
+			message: `running ${then.length} command${then.length !== 1 ? "s" : ""}...`,
+		});
 		try {
 			await concurrently(
 				[
@@ -91,7 +91,7 @@ export async function useServerProcess({
 	start?: boolean | null;
 	host?: true;
 } = {}) {
-	console.log("starting...");
+	print({ message: "starting..." });
 
 	let child: ChildProcess | undefined;
 	const doStart = await isServerNeeded(start);
@@ -102,7 +102,7 @@ export async function useServerProcess({
 		});
 
 		child.on("exit", (code) => {
-			console.log(`server exited with code ${code}`);
+			print({ message: `server exited with code ${code}`, level: "warning" });
 			process.exit(code);
 		});
 

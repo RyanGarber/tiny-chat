@@ -147,15 +147,14 @@ export const MessageService = {
 		if (typeof chat === "string") chat = { id: chat };
 		if (typeof previous === "string") previous = { id: previous };
 
-		const retrieval =
-			!chat && !incognito
-				? await MemoryRetrievalService.build({
-						user,
-						text: DataUtils.getText(content),
-						tokens: SettingsUtils.defaults(user.settings).memoryBudget,
-						more: false,
-					})
-				: { memories: [], embedding: undefined };
+		const retrieval = !incognito
+			? await MemoryRetrievalService.build({
+					user,
+					text: DataUtils.getText(content),
+					tokens: SettingsUtils.defaults(user.settings).memoryBudget,
+					more: false,
+				})
+			: { memories: [], embedding: undefined };
 
 		let chatId = chat?.id ?? null;
 		let previousId = previous?.id ?? null;
@@ -215,8 +214,6 @@ export const MessageService = {
 					title: null,
 					temporary: temporary ?? false,
 					incognito: incognito ?? false,
-					memories: (Memory) =>
-						Memory.connect(retrieval.memories.map(({ id }) => ({ id }))),
 				});
 			}
 			const created = await tx.orm.public.Message.create({
@@ -225,9 +222,11 @@ export const MessageService = {
 				userId: user.id,
 				chatId: chatId ?? undefined,
 				previousId,
+				context: (context) =>
+					context.connect(retrieval.memories.map((m) => ({ id: m.id }))),
 			});
 			if (retrieval.embedding) {
-				tx.orm.public.Message.where({
+				await tx.orm.public.Message.where({
 					id: created.id,
 					userId: user.id,
 				}).updateAndCount({ embedding: retrieval.embedding });
@@ -249,19 +248,33 @@ export const MessageService = {
 	}) => {
 		if (typeof message === "string") message = { id: message };
 
+		const existing = requireRow(
+			await globalThis.db.orm.public.Message.where({
+				id: message.id,
+				userId: user.id,
+			})
+				.include("chat", (chat) => chat.select("incognito"))
+				.first(),
+		);
+
+		const retrieval = !existing.chat?.incognito
+			? await MemoryRetrievalService.build({
+					user,
+					text: DataUtils.getText(content),
+					tokens: SettingsUtils.defaults(user.settings).memoryBudget,
+					more: false,
+				})
+			: { memories: [], embedding: undefined };
+
 		return await globalThis.db.transaction(async (tx) => {
-			const existing = requireRow(
-				await tx.orm.public.Message.where({
-					id: message.id,
-					userId: user.id,
-				}).first(),
-			);
 			const edited = await tx.orm.public.Message.create({
 				...content,
 				id: CommonUtils.getRandomId(),
 				userId: user.id,
 				chatId: existing.chatId,
 				previousId: existing.previousId,
+				context: (context) =>
+					context.connect(retrieval.memories.map((m) => ({ id: m.id }))),
 			});
 			if (!truncate) {
 				const query = tx.orm.public.Message.where({
@@ -386,9 +399,15 @@ export const MessageService = {
 			})
 				.where((m) => m.previousId.in([...deleted]))
 				.updateAll({ previousId: parentId });
+
+			// TODO - confirm relations delete and remove this
 			await tx.orm.public.DreamMessage.where((link) =>
 				link.messageId.in([...deleted]),
 			).deleteAll();
+			await tx.orm.public.MessageContext.where((link) =>
+				link.messageId.in([...deleted]),
+			).deleteAll();
+
 			await tx.orm.public.Message.where({
 				userId: user.id,
 				chatId: existing.chatId,
@@ -396,9 +415,6 @@ export const MessageService = {
 				.where((m) => m.id.in([...deleted]))
 				.deleteAll();
 			if (rows.length === deleted.size) {
-				await tx.orm.public.ChatMemory.where({
-					chatId: existing.chatId,
-				}).deleteAll();
 				await tx.orm.public.Chat.where({
 					id: existing.chatId,
 					userId: user.id,

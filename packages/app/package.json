@@ -8,6 +8,7 @@
 		"lint": "biome check --write",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
+		"smoketest": "node scripts/smoketest.ts",
 		"postinstall": "playwright install --with-deps --no-shell chromium"
 	},
 	"imports": {

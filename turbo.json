@@ -18,6 +18,9 @@
 		},
 		"@tiny-chat/tauri#test": {
 			"inputs": ["src/**/*.rs", "Cargo.toml", "Cargo.lock", "tauri.conf.json"]
+		},
+		"smoketest": {
+			"dependsOn": ["^smoketest"]
 		}
 	}
 }

@@ -27,7 +27,11 @@ export const AnthropicProvider: ModelProvider<_AnthropicProvider> = {
 				thinking:
 					config.args?.thinking === "adaptive" ||
 					config.args?.thinking === "disabled"
-						? { type: config.args.thinking, display: "summarized" }
+						? {
+								type: config.args.thinking,
+								display: "summarized",
+								blockBinding: { prefixMismatchBehavior: "drop_block" },
+							}
 						: config.args?.thinking
 							? {
 									type: "enabled",

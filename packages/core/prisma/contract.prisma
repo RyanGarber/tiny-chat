@@ -84,23 +84,22 @@ namespace public {
     messages  Message[]
     folder    Folder?      @relation(fields:[folderId], references:[id], onDelete: SetNull, onUpdate: Cascade, map: "chat_folderId_fkey")
     user      User         @relation(fields:[userId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "chat_userId_fkey")
-    memories  Memory[]
 
     @@index([folderId], map: "chat_folderId_idx")
     @@index([userId], map: "chat_userId_idx")
     @@map("chat")
   }
 
-  model ChatMemory {
-    chatId   String
-    memoryId String
-    chat     Chat   @relation(fields:[chatId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "chat_memory_chatId_fkey")
-    memory   Memory @relation(fields:[memoryId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "chat_memory_memoryId_fkey")
+  model MessageContext {
+    messageId String
+    memoryId  String
+    message   Message @relation(name: "MessageContext", fields:[messageId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "message_context_messageId_fkey")
+    memory    Memory  @relation(name: "MessageContext", fields:[memoryId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "message_context_memoryId_fkey")
 
-    @@id([chatId, memoryId], map: "chat_memory_pkey")
-    @@index([chatId], map: "chat_memory_chatId_idx")
-    @@index([memoryId], map: "chat_memory_memoryId_idx")
-    @@map("chat_memory")
+    @@id([messageId, memoryId], map: "message_context_pkey")
+    @@index([messageId], map: "message_context_messageId_idx")
+    @@index([memoryId], map: "message_context_memoryId_idx")
+    @@map("message_context")
   }
 
   model Message {
@@ -122,6 +121,7 @@ namespace public {
     previous   Message?        @relation(name: "message_previousId_fkey", fields:[previousId], references:[id], onDelete: SetNull, onUpdate: Cascade, map: "message_previousId_fkey")
     next       Message[]       @relation(name: "message_previousId_fkey")
     user       User            @relation(fields:[userId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "message_userId_fkey")
+    context    Memory[]        @relation("MessageContext")
 
     @@index([chatId], map: "message_chatId_idx")
     @@index([previousId], map: "message_previousId_key")
@@ -189,19 +189,19 @@ namespace public {
   }
 
   model File {
-    id        String       @id(map: "file_pkey")
+    id        String        @id(map: "file_pkey")
     userId    String
     uploadId  String?
-    path      String[]     @noCheck(elementNotNull)
+    path      String[]      @noCheck(elementNotNull)
     mime      String
     data      Bytes
     embedding Embedding?
-    createdAt Timestamp(3) @default(now())
-	updatedAt  Timestamp(3)?
+    createdAt Timestamp(3)  @default(now())
+    updatedAt Timestamp(3)?
     chatId    String?
-    chat      Chat?        @relation(fields:[chatId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "file_chatId_fkey")
-    upload    Upload?      @relation(fields:[uploadId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "file_uploadId_fkey")
-    user      User         @relation(fields:[userId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "file_userId_fkey")
+    chat      Chat?         @relation(fields:[chatId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "file_chatId_fkey")
+    upload    Upload?       @relation(fields:[uploadId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "file_uploadId_fkey")
+    user      User          @relation(fields:[userId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "file_userId_fkey")
 
     @@index([chatId], map: "file_chatId_idx")
     @@index([uploadId], map: "file_uploadId_idx")
@@ -224,7 +224,7 @@ namespace public {
     messageId  String?
     message    Message?                 @relation(fields:[messageId], references:[id], onDelete: SetNull, onUpdate: Cascade, map: "memory_messageId_fkey")
     user       User                     @relation(fields:[userId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "memory_userId_fkey")
-    chats      Chat[]
+    contexts   Message[]                @relation("MessageContext")
 
     @@index([messageId], map: "memory_messageId_idx")
     @@index([userId], map: "memory_userId_idx")

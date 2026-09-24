@@ -11,7 +11,11 @@ export default {
 		"**/pm2.config.mjs",
 		"**/prisma/**",
 	],
-	ignoreDependencies: ["conventional-changelog-conventionalcommits"],
+	ignoreDependencies: [
+		"conventional-changelog-conventionalcommits",
+		"events",
+		"react-devtools-core",
+	],
 	ignoreBinaries: ["run"],
 	preprocessor: ["./scripts/setup-knip.ts"],
 } satisfies KnipConfig;

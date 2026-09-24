@@ -1,6 +1,15 @@
 import * as readline from "node:readline";
 import chalk, { type ChalkInstance } from "chalk";
 
+type Level = "verbose" | "debug" | "info" | "warning" | "error";
+const color: Record<Level, ChalkInstance> = {
+	debug: chalk.dim,
+	verbose: chalk.dim,
+	info: chalk.blueBright,
+	warning: chalk.yellowBright,
+	error: chalk.redBright,
+};
+
 export function create(text: string) {
 	let progress: number = -1;
 	let tick = 0;
@@ -45,16 +54,15 @@ export function create(text: string) {
 
 	setProgress(progress);
 
-	return (_progress: string | number, error?: boolean) => {
+	return (_progress: string | number, level?: Level) => {
 		if (typeof _progress === "string") {
-			const color = error ? chalk.redBright : chalk.blueBright;
 			setProgress(null);
 			let status = `${_progress}`;
 			if (time) {
 				status += ` · ${Math.round(performance.now() - time)}ms`;
 			}
 			process.stdout.write(
-				`\r\x1b[K${chalk.dim("::")} ${color(status)}\n`,
+				`\r\x1b[K${chalk.dim("::")} ${color[level ?? "info"](status)}\n`,
 				() => {},
 			);
 		} else {
@@ -63,24 +71,28 @@ export function create(text: string) {
 	};
 }
 
+export function printout({
+	stdout,
+	stderr,
+}: {
+	stdout: string;
+	stderr: string;
+}) {
+	print({ message: "stdout", details: stdout, level: "verbose" });
+	print({ message: "stderr", details: stderr, level: "verbose" });
+}
+
 export function print({
 	message,
 	details,
-	level = "info",
+	level,
 }: {
 	message?: string;
 	details?: unknown;
-	level?: "verbose" | "debug" | "info" | "warning" | "error";
+	level?: Level;
 }) {
-	const color: Record<typeof level, ChalkInstance> = {
-		debug: chalk.dim,
-		verbose: chalk.dim,
-		info: chalk.blueBright,
-		warning: chalk.yellowBright,
-		error: chalk.redBright,
-	};
 	if (message !== undefined) {
-		console.log(`\n${chalk.dim("::")} ${color[level](message)}`);
+		console.log(`\n${chalk.dim("::")} ${color[level ?? "info"](message)}`);
 	}
 	if (details !== undefined) {
 		const parts = Array.isArray(details) ? details : [details];

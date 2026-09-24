@@ -2,6 +2,7 @@ import { resolve } from "node:path";
 import FastifyStatic from "@fastify/static";
 import { config } from "dotenv";
 import Fastify from "fastify";
+import { create } from "../../../scripts/use-stdout.ts";
 
 config({ path: "../../.env", quiet: true });
 
@@ -10,6 +11,8 @@ const fastify = Fastify();
 fastify.register(FastifyStatic, {
 	root: resolve(import.meta.dirname, "../dist"),
 });
+
+const update = create("starting web");
 
 export const server = {
 	fastify,
@@ -22,7 +25,7 @@ export const server = {
 					fastify.log.error(err);
 					process.exit(1);
 				}
-				console.log(`web live at:`, address);
+				update(`web live at: ${address}`);
 			},
 		);
 	},

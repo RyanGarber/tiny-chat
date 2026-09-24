@@ -165,18 +165,21 @@ export const ChatService = {
 				.select("id")
 				.first();
 			if (!existing) return;
-			// TODO - confirm relations delete and remove this
-			await tx.orm.public.ChatMemory.where({ chatId: id }).deleteAll();
 			const messages = await tx.orm.public.Message.where({
 				chatId: id,
 				userId: user.id,
 			})
 				.select("id")
 				.all();
-			if (messages.length)
+			if (messages.length) {
+				// TODO - confirm relations delete and remove this
+				await tx.orm.public.MessageContext.where((link) =>
+					link.messageId.in(messages.map((message) => message.id)),
+				).deleteAll();
 				await tx.orm.public.DreamMessage.where((link) =>
 					link.messageId.in(messages.map((message) => message.id)),
 				).deleteAll();
+			}
 			await tx.orm.public.Chat.where({ userId: user.id, id }).delete();
 		});
 	},

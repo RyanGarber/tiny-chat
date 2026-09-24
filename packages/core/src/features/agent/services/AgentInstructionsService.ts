@@ -1,14 +1,11 @@
 import type { Capabilities } from "../../../core/types/capability.ts";
-import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 import { SettingsUtils } from "../../../core/utils/SettingsUtils.ts";
-import { VERBOSE } from "../../../logger.ts";
 import type { zConfig } from "../../data/types/message.ts";
 import { DataUtils } from "../../data/utils/DataUtils.ts";
 import type { zSkill } from "../../skill/types/skill.ts";
 import type { Toolset } from "../../tool/types/tool.ts";
 import { ToolUtils } from "../../tool/utils/ToolUtils.ts";
 import type { zAgentContext } from "../types/agent.ts";
-import { AgentUtils } from "../utils/AgentUtils.ts";
 
 export const AgentInstructionsService = {
 	buildInstructions: async ({
@@ -25,22 +22,6 @@ export const AgentInstructionsService = {
 		enabledSkills: zSkill[];
 	}) => {
 		const settings = SettingsUtils.of(context.user, context.chat?.folder);
-
-		console.log(
-			`[AgentInstructionsService] retrieving memories for prompt:`,
-			AgentUtils.getLastPrompt({ messages: context.messages, withText: true }),
-		);
-		const memories = (
-			await capabilities.memories?.retrieveMemories({
-				chat: context.chat?.id ? { id: context.chat.id } : null,
-				tokens: settings.memoryBudget,
-			})
-		)?.sort((a, b) => a.id.localeCompare(b.id));
-		if (VERBOSE)
-			console.log(
-				`[AgentInstructionsService] retrieved ${memories?.length ?? 0} memories`,
-				memories?.map((memory) => memory.fact),
-			);
 
 		const actions = !context.chat?.incognito
 			? await capabilities.actions?.getActions()
@@ -109,7 +90,6 @@ ${citeExamples.map((r) => `- ${r}`).join("\n")}`;
 
 		if (
 			actions?.length ||
-			memories?.length ||
 			enabledToolsets.length ||
 			enabledSkills.length ||
 			cwd
@@ -122,13 +102,6 @@ ${citeExamples.map((r) => `- ${r}`).join("\n")}`;
 <actions>
 ${actions?.map((action) => `<action id="${action.id}" schedule="${action.schedule}">\n${DataUtils.getText(action)}\n</action>`).join("\n")}
 </actions>`;
-			}
-
-			if (memories?.length) {
-				instructions += `\n
-<memories>
-${memories.map((memory) => `<memory id="${memory.id}" category="${memory.category}" stability="${memory.stability}" learned="${CommonUtils.formatDate({ date: memory.createdAt, timezone: context.timezone })}">\n${memory.fact}\n</memory>`).join("\n")}
-</memories>`;
 			}
 
 			if (enabledToolsets.length) {

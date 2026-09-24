@@ -45,25 +45,27 @@ export function testUser(overrides: Partial<zUser> = {}): zUser {
 	});
 
 	afterAll(async () => {
-		// TODO - confirm that these relations are cascading and remove
-
+		// TODO - confirm relations delete and remove this
 		const dreams = await globalThis.db.orm.public.Dream.where({
 			userId: user.id,
 		})
 			.select("id")
 			.all();
+
 		for (const dream of dreams) {
 			await globalThis.db.orm.public.DreamMessage.where({
 				dreamId: dream.id,
 			}).deleteAll();
 		}
 
-		const chats = await globalThis.db.orm.public.Chat.where({ userId: user.id })
+		const messages = await globalThis.db.orm.public.Message.where({
+			userId: user.id,
+		})
 			.select("id")
 			.all();
-		for (const chat of chats) {
-			await globalThis.db.orm.public.ChatMemory.where({
-				chatId: chat.id,
+		for (const message of messages) {
+			await globalThis.db.orm.public.MessageContext.where({
+				messageId: message.id,
 			}).deleteAll();
 		}
 

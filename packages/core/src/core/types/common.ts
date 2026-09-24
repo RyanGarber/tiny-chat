@@ -13,7 +13,7 @@ export const zStringify = z
 	.transform((value) => String(value));
 export type zStringify = z.infer<typeof zStringify>;
 
-export type DistributiveOmit<T, K extends keyof any> = T extends unknown
+export type DistributiveOmit<T, K extends keyof any> = T extends any
 	? Omit<T, K>
 	: never;
 

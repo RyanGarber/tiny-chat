@@ -1,15 +1,13 @@
-import { or } from "@prisma/orm-postgres/orm-client";
 import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import type { ChatLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
 import type {
 	MemorySearchResult,
+	MemorySource,
 	MemoryState,
 } from "@tiny-chat/core/src/features/data/types/memory.ts";
 import type { MessageLike } from "@tiny-chat/core/src/features/data/types/message.ts";
 import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { createEmbeddingCapability } from "../../../core/capabilities/createEmbeddingCapability.ts";
 import { EmbeddingService } from "../../embedding/services/EmbeddingService.ts";
-import { MemoryUtils } from "../utils/MemoryUtils.ts";
 import { MemorySearchService } from "./MemorySearchService.ts";
 
 const MEMORY_BOILERPLATE = `<memory id="" category="" stability="" learned="">\n\n</memory>`;
@@ -53,10 +51,13 @@ export const MemoryRetrievalService = {
 			message,
 		});
 		if (stored) return stored;
+
 		if (!text.trim() || !user.settings.embeddingConfig) return undefined;
+
 		try {
 			const capability = await createEmbeddingCapability({ user });
 			const embedding = await capability.runEmbedding({ text });
+
 			if (message) {
 				const id = typeof message === "string" ? message : message.id;
 				await globalThis.db.orm.public.Message.where({
@@ -66,6 +67,7 @@ export const MemoryRetrievalService = {
 					.where((message) => message.embedding.isNull())
 					.updateAndCount({ embedding });
 			}
+
 			return embedding;
 		} catch (error) {
 			console.warn(
@@ -81,20 +83,25 @@ export const MemoryRetrievalService = {
 		text,
 		message,
 		tokens,
+		embed = true,
 		more,
 	}: {
 		user: zUser;
 		text: string;
 		message?: MessageLike;
 		tokens: number;
+		embed?: boolean;
 		more: boolean;
 	}): Promise<{ memories: MemorySearchResult[]; embedding?: number[] }> => {
-		if (!text.trim()) return { memories: [] };
-		const embedding = await MemoryRetrievalService.embed({
-			user,
-			text,
-			message,
-		});
+		const embedding =
+			embed && text.trim()
+				? await MemoryRetrievalService.embed({
+						user,
+						text,
+						message,
+					})
+				: undefined;
+
 		const memories = await MemorySearchService.searchMemories({
 			user,
 			searchText: text,
@@ -103,6 +110,7 @@ export const MemoryRetrievalService = {
 			minConfidence: more ? 0 : 0.5,
 			tokens,
 		});
+
 		return {
 			memories: MemoryRetrievalService.withinBudget(memories, tokens),
 			embedding,
@@ -111,72 +119,85 @@ export const MemoryRetrievalService = {
 
 	retrieve: async ({
 		user,
-		chat: chatId,
+		messages,
 		tokens,
 	}: {
 		user: zUser;
-		chat?: ChatLike | MessageLike | null;
+		messages: MemorySource[];
 		tokens: number;
-	}): Promise<MemoryState[]> => {
-		if (typeof chatId === "object") chatId = chatId?.id;
+	}): Promise<MemorySearchResult[][]> => {
+		const result: MemorySearchResult[][] = [];
 
-		if (!chatId) {
-			const memories = await globalThis.db.orm.public.Memory.select(
-				"userId",
-				"id",
-				"fact",
-				"category",
-				"config",
-				"messageId",
-				"stability",
-				"evidence",
-				"confidence",
-				"createdAt",
-				"updatedAt",
-			)
-				.where({
-					userId: user.id,
-				})
-				.where((memory) => memory.confidence.gt(0.5))
-				.orderBy([(memory) => memory.createdAt.desc()])
-				.limit(50)
-				.all();
+		console.log(
+			">> messages",
+			messages.map((m) => ({
+				text: "text" in m ? m.text : undefined,
+				id: "id" in m ? m.id : undefined,
+			})),
+		);
 
-			return MemoryRetrievalService.withinBudget(memories, tokens);
+		for (const source of messages) {
+			if ("text" in source) {
+				const { memories } = await MemoryRetrievalService.build({
+					user,
+					text: source.text,
+					tokens,
+					embed: false,
+					more: true,
+				});
+
+				console.log(
+					">> from text",
+					{ text: source.text },
+					memories.map((m) => ({ id: m.id, fact: m.fact })),
+				);
+				result.push(memories);
+				continue;
+			}
+
+			const message = await globalThis.db.orm.public.Message.where({
+				id: source.id,
+				userId: user.id,
+				author: "USER",
+			})
+				.include("context", (memory) =>
+					memory.select(
+						"id",
+						"fact",
+						"category",
+						"stability",
+						"evidence",
+						"confidence",
+						"createdAt",
+					),
+				)
+				.first();
+
+			console.log(
+				">> from message",
+				{
+					text: "text" in source ? source.text : undefined,
+					id: "id" in source ? source.id : undefined,
+				},
+				message?.context.map((m) => ({ id: m.id, fact: m.fact })),
+			);
+
+			if (!message) {
+				result.push([]);
+				continue;
+			}
+
+			result.push(MemoryRetrievalService.withinBudget(message.context, tokens));
 		}
 
-		const chat = await globalThis.db.orm.public.Chat.where({
-			userId: user.id,
-			incognito: false,
-		})
-			.where((chat) =>
-				or(
-					chat.id.eq(chatId),
-					chat.messages.some((message) => message.id.eq(chatId)),
-				),
-			)
-			.include("memories", (memory) =>
-				memory.select(
-					"userId",
-					"id",
-					"fact",
-					"category",
-					"config",
-					"messageId",
-					"stability",
-					"evidence",
-					"confidence",
-					"createdAt",
-					"updatedAt",
-				),
-			)
-			.first();
-
-		if (!chat) return [];
-
-		return MemoryRetrievalService.withinBudget(
-			chat.memories.map(MemoryUtils.toMemoryState),
-			tokens,
+		const seen = new Set<string>();
+		console.log(">> result", result);
+		return result.map((memories) =>
+			memories.filter((memory) => {
+				if (seen.has(memory.id)) return false;
+				seen.add(memory.id);
+				return true;
+			}),
 		);
 	},
 } as const;

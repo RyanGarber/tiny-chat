@@ -3,8 +3,11 @@ import type {
 	ShellCapability,
 } from "../../../core/types/capability.ts";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
+import { SettingsUtils } from "../../../core/utils/SettingsUtils.ts";
 import { VERBOSE } from "../../../logger.ts";
+import type { MemorySearchResult } from "../../data/types/memory.ts";
 import type { zAttachmentPart, zDataPart } from "../../data/types/part.ts";
+import { DataUtils } from "../../data/utils/DataUtils.ts";
 import { EditorPartUtils } from "../../data/utils/EditorPartUtils.ts";
 import { FileOperationService } from "../../file/services/FileOperationService.ts";
 import { FileTypeUtils } from "../../file/utils/FileTypeUtils.ts";
@@ -24,6 +27,23 @@ export const AgentMessagesService = {
 		capabilities: Capabilities;
 	}): Promise<{ messages: zAgentMessage[]; customInstructions?: string }> => {
 		const messages: zAgentMessage[] = [];
+
+		const memoryBudget = SettingsUtils.of(
+			context.user,
+			context.chat?.folder,
+		)?.memoryBudget;
+		console.log("[AgentMessagesService] memory budget:", memoryBudget);
+		const memories = !context.chat?.incognito
+			? await capabilities.memories?.retrieveMemories({
+					messages: context.messages.map((message) =>
+						message.id
+							? { id: message.id }
+							: { text: DataUtils.getTextCleaned(message) },
+					),
+					tokens: memoryBudget,
+				})
+			: undefined;
+
 		let customInstructions: string | undefined;
 
 		for (let i = 0; i < context.messages.length; i++) {
@@ -90,6 +110,7 @@ export const AgentMessagesService = {
 					previous,
 					parts: transformedParts,
 					timezone: context.timezone,
+					memories: memories?.at(i),
 				}),
 			);
 		}
@@ -248,11 +269,13 @@ export const AgentMessagesService = {
 		previous,
 		parts,
 		timezone,
+		memories,
 	}: {
 		message: zAgentMessage;
 		previous?: zAgentMessage;
 		parts: zDataPart[];
 		timezone?: string;
+		memories?: MemorySearchResult[];
 	}): zAgentMessage => {
 		const attributes = {
 			role: message.author === "USER" ? "user" : "assistant",
@@ -276,10 +299,30 @@ export const AgentMessagesService = {
 			}
 		}
 
+		let contextText = "";
+		if (memories && memories.length > 0) {
+			contextText += [...memories]
+				.sort((a, b) => a.id.localeCompare(b.id))
+				.map(
+					(memory) =>
+						`<memory id="${memory.id}" category="${memory.category}" stability="${memory.stability}" learned="${CommonUtils.formatDate({ date: memory.createdAt, timezone })}">\n${memory.fact}\n</memory>`,
+				)
+				.join("\n");
+		}
+
 		return {
 			...message,
 			data: [
 				[
+					...(contextText.length > 0
+						? [
+								{
+									id: CommonUtils.getRandomId(),
+									type: "text" as const,
+									value: `<context>\n${contextText}\n</context>`,
+								},
+							]
+						: []),
 					{
 						id: CommonUtils.getRandomId(),
 						type: "text",

@@ -5,6 +5,7 @@
 	"scripts": {
 		"dev:server": "dotenv run -- pnpm --filter @tiny-chat/server run dev",
 		"start:server": "dotenv run -- pnpm --filter @tiny-chat/server run start",
+		"start:web": "dotenv run -- pnpm --filter @tiny-chat/web run start",
 		"dev:web": "dotenv run -- node scripts/use-server.ts \"[web] pnpm --filter @tiny-chat/web run dev\"",
 		"dev:cli": "dotenv run -- node scripts/use-server.ts \"[cli] pnpm --filter @tiny-chat/cli run dev\"",
 		"dev:tauri": "dotenv run -- node scripts/use-server.ts \"[tauri] pnpm --filter @tiny-chat/tauri run tauri dev\"",
@@ -18,7 +19,10 @@
 		"build:app": "dotenv run -- pnpm --filter @tiny-chat/app run build",
 		"build:cli": "dotenv run -- pnpm --filter @tiny-chat/cli run build",
 		"install:cli": "dotenv run -- pnpm --filter @tiny-chat/cli build && cp apps/cli/dist/tiny-chat ~/.local/bin/tiny-chat",
-		"test": "turbo test",
+		"typecheck": "dotenv run -- turbo typecheck",
+		"lint": "dotenv run -- turbo lint",
+		"test": "dotenv run -- turbo test",
+		"smoketest": "dotenv run -- turbo smoketest",
 		"knip": "knip"
 	},
 	"devDependencies": {
@@ -29,6 +33,7 @@
 		"@semantic-release/release-notes-generator": "^14.1.1",
 		"@types/node": "^26.6.2",
 		"@types/wait-on": "^5.3.4",
+		"chalk": "^6.0.0",
 		"concurrently": "^10.0.5",
 		"conventional-changelog-conventionalcommits": "^10.4.0",
 		"dotenv-cli": "^11.0.0",
@@ -36,7 +41,7 @@
 		"playwright": "^1.63.0",
 		"semantic-release": "^25.0.9",
 		"tsx": "^4.23.13",
-		"turbo": "^2.11.2",
+		"turbo": "^2.11.3",
 		"typescript": "^7.0.2",
 		"vite": "^8.3.0",
 		"vitest": "^5.0.1",

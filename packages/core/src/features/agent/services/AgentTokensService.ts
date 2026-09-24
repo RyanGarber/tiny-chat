@@ -181,6 +181,9 @@ const getArgumentSummary = (args: unknown): string => {
 	return value.length > 80 ? `${value.slice(0, 80)}…` : value;
 };
 
+const CONTEXT_PATTERN =
+	/^\s*<context>(?:.|\s)*memory(?:.|\s)*<\/context>\s*$/gm;
+
 const replaceIfSmaller = (
 	parts: zDataPart[],
 	index: number,
@@ -806,21 +809,27 @@ export const AgentTokensService = {
 		instructions?: string;
 		messages?: zAgentMessage[];
 	}): TokenizationResult => {
-		const memories =
-			/^<memories>$(.*)^<\/memories>$/ms.exec(instructions)?.[1]?.length ?? 0;
 		const tokens = (part: zDataPart) => getPartLength(part) / CHARS_PER_TOKEN;
 		const categories: Omit<TokenizationResult, "total"> = {
 			...AgentTokensService.zero,
-			memories: memories / CHARS_PER_TOKEN,
-			instructions: (instructions.length - memories) / CHARS_PER_TOKEN,
+			instructions: instructions.length / CHARS_PER_TOKEN,
 		};
 		for (const part of messages.flatMap((message) => message.data.flat())) {
-			if (part.type === "text") categories.text += tokens(part);
-			else if (part.type === "thought") categories.thoughts += tokens(part);
-			else if (part.type === "file") categories.files += tokens(part);
-			else if (part.type === "toolCall" || part.type === "toolResult")
+			if (part.type === "text") {
+				if (CONTEXT_PATTERN.test(part.value)) {
+					categories.memories += tokens(part);
+				} else {
+					categories.text += tokens(part);
+				}
+			} else if (part.type === "thought") {
+				categories.thoughts += tokens(part);
+			} else if (part.type === "file") {
+				categories.files += tokens(part);
+			} else if (part.type === "toolCall" || part.type === "toolResult") {
 				categories.tools += tokens(part);
-			else categories.other += tokens(part);
+			} else {
+				categories.other += tokens(part);
+			}
 		}
 		return {
 			...categories,

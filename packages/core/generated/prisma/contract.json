@@ -16,10 +16,6 @@
       "model": "Chat",
       "namespace": "public"
     },
-    "chat_memory": {
-      "model": "ChatMemory",
-      "namespace": "public"
-    },
     "dream": {
       "model": "Dream",
       "namespace": "public"
@@ -42,6 +38,10 @@
     },
     "message": {
       "model": "Message",
+      "namespace": "public"
+    },
+    "message_context": {
+      "model": "MessageContext",
       "namespace": "public"
     },
     "session": {
@@ -476,34 +476,6 @@
                   "namespace": "public"
                 }
               },
-              "memories": {
-                "cardinality": "N:M",
-                "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "chatId"
-                  ]
-                },
-                "through": {
-                  "childColumns": [
-                    "memoryId"
-                  ],
-                  "namespaceId": "public",
-                  "parentColumns": [
-                    "chatId"
-                  ],
-                  "table": "chat_memory",
-                  "targetColumns": [
-                    "id"
-                  ]
-                },
-                "to": {
-                  "model": "Memory",
-                  "namespace": "public"
-                }
-              },
               "messages": {
                 "cardinality": "1:N",
                 "on": {
@@ -562,70 +534,6 @@
               },
               "namespaceId": "public",
               "table": "chat"
-            }
-          },
-          "ChatMemory": {
-            "fields": {
-              "chatId": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "memoryId": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              }
-            },
-            "relations": {
-              "chat": {
-                "cardinality": "N:1",
-                "nullable": false,
-                "on": {
-                  "localFields": [
-                    "chatId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
-                },
-                "to": {
-                  "model": "Chat",
-                  "namespace": "public"
-                }
-              },
-              "memory": {
-                "cardinality": "N:1",
-                "nullable": false,
-                "on": {
-                  "localFields": [
-                    "memoryId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
-                },
-                "to": {
-                  "model": "Memory",
-                  "namespace": "public"
-                }
-              }
-            },
-            "storage": {
-              "fields": {
-                "chatId": {
-                  "column": "chatId"
-                },
-                "memoryId": {
-                  "column": "memoryId"
-                }
-              },
-              "namespaceId": "public",
-              "table": "chat_memory"
             }
           },
           "Dream": {
@@ -1185,7 +1093,7 @@
               }
             },
             "relations": {
-              "chats": {
+              "contexts": {
                 "cardinality": "N:M",
                 "on": {
                   "localFields": [
@@ -1197,19 +1105,19 @@
                 },
                 "through": {
                   "childColumns": [
-                    "chatId"
+                    "messageId"
                   ],
                   "namespaceId": "public",
                   "parentColumns": [
                     "memoryId"
                   ],
-                  "table": "chat_memory",
+                  "table": "message_context",
                   "targetColumns": [
                     "id"
                   ]
                 },
                 "to": {
-                  "model": "Chat",
+                  "model": "Message",
                   "namespace": "public"
                 }
               },
@@ -1400,6 +1308,34 @@
                   "namespace": "public"
                 }
               },
+              "context": {
+                "cardinality": "N:M",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "messageId"
+                  ]
+                },
+                "through": {
+                  "childColumns": [
+                    "memoryId"
+                  ],
+                  "namespaceId": "public",
+                  "parentColumns": [
+                    "messageId"
+                  ],
+                  "table": "message_context",
+                  "targetColumns": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Memory",
+                  "namespace": "public"
+                }
+              },
               "dreams": {
                 "cardinality": "N:M",
                 "on": {
@@ -1541,6 +1477,70 @@
               },
               "namespaceId": "public",
               "table": "message"
+            }
+          },
+          "MessageContext": {
+            "fields": {
+              "memoryId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "messageId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "memory": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "memoryId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Memory",
+                  "namespace": "public"
+                }
+              },
+              "message": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "messageId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Message",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "memoryId": {
+                  "column": "memoryId"
+                },
+                "messageId": {
+                  "column": "messageId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "message_context"
             }
           },
           "Session": {
@@ -2666,84 +2666,6 @@
               },
               "uniques": []
             },
-            "chat_memory": {
-              "columns": {
-                "chatId": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": false
-                },
-                "memoryId": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": false
-                }
-              },
-              "foreignKeys": [
-                {
-                  "name": "chat_memory_chatId_fkey",
-                  "onDelete": "cascade",
-                  "onUpdate": "cascade",
-                  "source": {
-                    "columns": [
-                      "chatId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "chat_memory"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "chat"
-                  }
-                },
-                {
-                  "name": "chat_memory_memoryId_fkey",
-                  "onDelete": "cascade",
-                  "onUpdate": "cascade",
-                  "source": {
-                    "columns": [
-                      "memoryId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "chat_memory"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "memory"
-                  }
-                }
-              ],
-              "indexes": [
-                {
-                  "columns": [
-                    "chatId"
-                  ],
-                  "name": "chat_memory_chatId_idx",
-                  "unique": false
-                },
-                {
-                  "columns": [
-                    "memoryId"
-                  ],
-                  "name": "chat_memory_memoryId_idx",
-                  "unique": false
-                }
-              ],
-              "primaryKey": {
-                "columns": [
-                  "chatId",
-                  "memoryId"
-                ],
-                "name": "chat_memory_pkey"
-              },
-              "uniques": []
-            },
             "dream": {
               "columns": {
                 "config": {
@@ -3468,6 +3390,84 @@
               },
               "uniques": []
             },
+            "message_context": {
+              "columns": {
+                "memoryId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "messageId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "name": "message_context_messageId_fkey",
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "messageId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "message_context"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "message"
+                  }
+                },
+                {
+                  "name": "message_context_memoryId_fkey",
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "memoryId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "message_context"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "memory"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "memoryId"
+                  ],
+                  "name": "message_context_memoryId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "messageId"
+                  ],
+                  "name": "message_context_messageId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "messageId",
+                  "memoryId"
+                ],
+                "name": "message_context_pkey"
+              },
+              "uniques": []
+            },
             "session": {
               "columns": {
                 "createdAt": {
@@ -3975,7 +3975,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "1f7bbf5704cd07502d81d65e27ac60239068cfd0ebbb22f515191bea3636acec",
+    "storageHash": "d68206c7c8ea6202887694ac928d59e127555b0fb5d78c46fafbc7cc860b305c",
     "types": {
       "Embedding": {
         "codecId": "pg/vector@1",

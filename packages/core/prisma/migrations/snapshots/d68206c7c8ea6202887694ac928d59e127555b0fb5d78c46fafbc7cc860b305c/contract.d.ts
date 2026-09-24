@@ -3255,17 +3255,10 @@ type ContractBase = Omit<
                   readonly namespace: 'public' & NamespaceId;
                   readonly model: 'Memory';
                 };
-                readonly cardinality: 'N:M';
+                readonly cardinality: '1:N';
                 readonly on: {
                   readonly localFields: readonly ['id'];
                   readonly targetFields: readonly ['messageId'];
-                };
-                readonly through: {
-                  readonly table: 'message_context';
-                  readonly namespaceId: 'public';
-                  readonly parentColumns: readonly ['messageId'];
-                  readonly childColumns: readonly ['memoryId'];
-                  readonly targetColumns: readonly ['id'];
                 };
               };
               readonly dreams: {

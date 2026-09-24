@@ -94,10 +94,10 @@ export const useEstimatedTokens = <T>({
 				id: null,
 				author: "USER",
 				config,
-				// TODO: empty data gets dropped, preventing token count, so we add a '.' here
-				//       this won't meaningfully change the result but should be fixed another way eventually
+				// TODO: empty data gets dropped, preventing token count, so we add 'user' here
+				//       this should get generic enough results but should be fixed another way eventually
 				data: [
-					[{ id: CommonUtils.getRandomId(), type: "text", value: "." }],
+					[{ id: CommonUtils.getRandomId(), type: "text", value: "user" }],
 					...debouncedDraft,
 				],
 				createdAt: Temporal.Now.plainDateTimeISO("UTC"),

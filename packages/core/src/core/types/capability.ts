@@ -1,8 +1,8 @@
 import type { zAgentContext } from "../../features/agent/types/agent.ts";
 import type { ActionState } from "../../features/data/types/action.ts";
-import type { ChatLike } from "../../features/data/types/chat.ts";
 import type {
 	MemorySearchResult,
+	MemorySource,
 	MemoryState,
 } from "../../features/data/types/memory.ts";
 import type {
@@ -63,9 +63,9 @@ export interface ActionsCapability {
 
 export interface MemoriesCapability {
 	retrieveMemories: (_: {
-		chat?: ChatLike | MessageLike | null;
+		messages: MemorySource[];
 		tokens: number;
-	}) => Promise<MemoryState[]>;
+	}) => Promise<MemorySearchResult[][]>;
 
 	searchMemories: (_: {
 		searchText: string;

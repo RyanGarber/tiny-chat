@@ -37,55 +37,82 @@ const fact = {
 const tokens = SettingsUtils.defaults().memoryBudget;
 
 describe("MemoryRetrievalService", () => {
-	it("selects memories once at chat creation, isolates users, and supports incognito", async () => {
+	it("selects memories once at message creation, isolates users, and supports incognito", async () => {
 		const memory = await MemoryService.createMemory({ user, ...fact });
 		await MemoryService.createMemory({ user: other, ...fact });
+
 		const message = await MessageService.createMessage({ user, ...content });
 		expect(
 			(
-				await MemoryRetrievalService.retrieve({ user, chat: message, tokens })
-			).map((m) => m.id),
-		).toEqual([memory.id]);
+				await MemoryRetrievalService.retrieve({
+					user,
+					messages: [message],
+					tokens,
+				})
+			).map((m) => m.map((c) => c.id)),
+		).toEqual([[memory.id]]);
+
 		const later = await MemoryService.createMemory({
 			user,
 			...fact,
 			fact: "Orchids need the user's automated greenhouse irrigation.",
 		});
+
 		const next = await MessageService.createMessage({
 			user,
 			...content,
 			chat: message.chatId,
 		});
+
 		expect(
-			(await MemoryRetrievalService.retrieve({ user, chat: next, tokens })).map(
-				(m) => m.id,
-			),
-		).toEqual([memory.id]);
+			(
+				await MemoryRetrievalService.retrieve({
+					user,
+					messages: [message, next],
+					tokens,
+				})
+			).map((m) => m.map((c) => c.id)),
+		).toEqual([[memory.id], [later.id]]);
+
 		expect(
 			await MemoryRetrievalService.retrieve({
 				user: other,
-				chat: message,
+				messages: [message],
 				tokens,
 			}),
-		).toEqual([]);
+		).toEqual([[]]);
+
 		const hidden = await MessageService.createMessage({
 			user,
 			...content,
 			incognito: true,
 		});
+
 		expect(
-			await MemoryRetrievalService.retrieve({ user, chat: hidden, tokens }),
-		).toEqual([]);
+			await MemoryRetrievalService.retrieve({
+				user,
+				messages: [hidden],
+				tokens,
+			}),
+		).toEqual([[]]);
+
 		await MemoryService.deleteMemory({ user, id: memory.id });
+
 		expect(
-			await MemoryRetrievalService.retrieve({ user, chat: message, tokens }),
-		).toEqual([]);
+			await MemoryRetrievalService.retrieve({
+				user,
+				messages: [message],
+				tokens,
+			}),
+		).toEqual([[]]);
+
 		await MemoryService.updateMemory({
 			user,
 			id: later.id,
 			...fact,
 			fact: "The user now studies astronomy.",
 		});
+
 		expect(
 			(
 				await MemorySearchService.searchMemories({
@@ -101,12 +128,14 @@ describe("MemoryRetrievalService", () => {
 		const chat = await MessageService.createMessage({ user, ...content });
 		await ChatService.deleteChat({ user, chat: chat.chatId });
 		expect(
-			await db.orm.public.ChatMemory.where({ chatId: chat.chatId }).all(),
+			await db.orm.public.MessageContext.where((link) =>
+				link.messageId.eq(chat.id),
+			).all(),
 		).toEqual([]);
 		const message = await MessageService.createMessage({ user, ...content });
 		expect(await MessageService.deleteMessage({ user, message })).toBe(true);
 		expect(
-			await db.orm.public.ChatMemory.where({ chatId: message.chatId }).all(),
+			await db.orm.public.MessageContext.where({ messageId: message.id }).all(),
 		).toEqual([]);
 	});
 

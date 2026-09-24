@@ -1,7 +1,9 @@
+import "../src/env.ts";
+
 import * as Babel from "@babel/core";
 import { zEnv } from "@tiny-chat/core/src/core/types/env.ts";
 import chalk from "chalk";
-import { create, print } from "./stdout.ts";
+import { create, print } from "../../../scripts/use-stdout.ts";
 
 export const environment = Object.fromEntries(
 	Object.entries(zEnv.parse(process.env)).map(([key, value]) => [
@@ -87,7 +89,7 @@ export async function compile({
 	} finally {
 		update(
 			result?.success ? "compiled" : "failed to compile",
-			!result?.success,
+			!result?.success ? "error" : undefined,
 		);
 		if (result) {
 			print({

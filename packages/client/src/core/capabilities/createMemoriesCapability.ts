@@ -9,8 +9,8 @@ export const createMemoriesCapability: CapabilityFactory<
 	{ client: Client; message?: MessageLike | null },
 	MemoriesCapability
 > = async ({ client, message }) => ({
-	retrieveMemories: async ({ chat, tokens }) => {
-		return await client.api.memory.retrieveMemories.query({ chat, tokens });
+	retrieveMemories: async ({ messages, tokens }) => {
+		return await client.api.memory.retrieveMemories.query({ messages, tokens });
 	},
 
 	createMemory: async ({ fact, category, stability, evidence, confidence }) => {

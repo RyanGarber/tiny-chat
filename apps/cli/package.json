@@ -6,7 +6,8 @@
 		"build": "bun scripts/build.ts",
 		"lint": "biome check --write",
 		"typecheck": "tsc --noEmit",
-		"test": "vitest run"
+		"test": "vitest run",
+		"smoketest": "bun scripts/smoketest.ts"
 	},
 	"dependencies": {
 		"@babel/core": "^8.0.6",

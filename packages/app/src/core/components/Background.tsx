@@ -79,7 +79,7 @@ export default function Background() {
 			style={{
 				zIndex: -1,
 				maskImage: `linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%)`,
-				opacity: chat.data ? 0.125 : 0.5,
+				opacity: chat.data ? 0.125 : 0.25,
 				transition: "opacity 0.3s ease",
 			}}
 		>

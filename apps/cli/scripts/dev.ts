@@ -2,8 +2,12 @@
 
 import { type ChildProcess, spawn } from "node:child_process";
 import { watch } from "node:fs/promises";
+import {
+	print,
+	setExitHandler,
+	setPassthrough,
+} from "../../../scripts/use-stdout.ts";
 import { compile } from "./compile.ts";
-import { print, setExitHandler, setPassthrough } from "./stdout.ts";
 
 let child: ChildProcess | undefined;
 

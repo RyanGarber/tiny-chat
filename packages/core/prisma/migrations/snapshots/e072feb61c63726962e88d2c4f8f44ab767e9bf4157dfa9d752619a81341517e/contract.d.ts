@@ -41,7 +41,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'d68206c7c8ea6202887694ac928d59e127555b0fb5d78c46fafbc7cc860b305c'>;
+  StorageHashBase<'e072feb61c63726962e88d2c4f8f44ab767e9bf4157dfa9d752619a81341517e'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -286,6 +286,10 @@ export type FieldOutputTypes = {
       readonly temporary: CodecTypes['pg/bool@1']['output'];
       readonly incognito: CodecTypes['pg/bool@1']['output'];
     };
+    readonly ChatMemory: {
+      readonly chatId: CodecTypes['pg/text@1']['output'];
+      readonly memoryId: CodecTypes['pg/text@1']['output'];
+    };
     readonly Dream: {
       readonly id: CodecTypes['pg/text@1']['output'];
       readonly userId: CodecTypes['pg/text@1']['output'];
@@ -434,6 +438,10 @@ export type FieldInputTypes = {
       readonly createdAt: CodecTypes['pg/timestamp-temporal@1']['input'];
       readonly temporary: CodecTypes['pg/bool@1']['input'];
       readonly incognito: CodecTypes['pg/bool@1']['input'];
+    };
+    readonly ChatMemory: {
+      readonly chatId: CodecTypes['pg/text@1']['input'];
+      readonly memoryId: CodecTypes['pg/text@1']['input'];
     };
     readonly Dream: {
       readonly id: CodecTypes['pg/text@1']['input'];
@@ -584,6 +592,10 @@ export type StorageColumnTypes = {
       readonly title: CodecTypes['pg/text@1']['output'] | null;
       readonly userId: CodecTypes['pg/text@1']['output'];
     };
+    readonly chat_memory: {
+      readonly chatId: CodecTypes['pg/text@1']['output'];
+      readonly memoryId: CodecTypes['pg/text@1']['output'];
+    };
     readonly dream: {
       readonly config: ZodTypes['zod/json@1']['schemas']['zConfig']['output'];
       readonly createdAt: CodecTypes['pg/timestamp-temporal@1']['output'];
@@ -732,6 +744,10 @@ export type StorageColumnInputTypes = {
       readonly temporary: CodecTypes['pg/bool@1']['input'];
       readonly title: CodecTypes['pg/text@1']['input'] | null;
       readonly userId: CodecTypes['pg/text@1']['input'];
+    };
+    readonly chat_memory: {
+      readonly chatId: CodecTypes['pg/text@1']['input'];
+      readonly memoryId: CodecTypes['pg/text@1']['input'];
     };
     readonly dream: {
       readonly config: ZodTypes['zod/json@1']['schemas']['zConfig']['input'];
@@ -920,9 +936,17 @@ export namespace Models {
     incognito: CodecTypes['pg/bool@1']['output'];
     files: public_File[];
     folder: public_Folder | null;
+    memories: public_Memory[];
     messages: public_Message[];
     user: public_User;
-    readonly [RelationKeys]?: 'files' | 'folder' | 'messages' | 'user';
+    readonly [RelationKeys]?: 'files' | 'folder' | 'memories' | 'messages' | 'user';
+  };
+  export type public_ChatMemory = {
+    chatId: CodecTypes['pg/text@1']['output'];
+    memoryId: CodecTypes['pg/text@1']['output'];
+    chat: public_Chat;
+    memory: public_Memory;
+    readonly [RelationKeys]?: 'chat' | 'memory';
   };
   export type public_MessageContext = {
     messageId: CodecTypes['pg/text@1']['output'];
@@ -1035,10 +1059,11 @@ export namespace Models {
     createdAt: CodecTypes['pg/timestamp-temporal@1']['output'];
     updatedAt: CodecTypes['pg/timestamp-temporal@1']['output'] | null;
     messageId: CodecTypes['pg/text@1']['output'] | null;
+    chats: public_Chat[];
     contexts: public_Message[];
     message: public_Message | null;
     user: public_User;
-    readonly [RelationKeys]?: 'contexts' | 'message' | 'user';
+    readonly [RelationKeys]?: 'chats' | 'contexts' | 'message' | 'user';
   };
   export type public_Session = {
     id: CodecTypes['pg/text@1']['output'];
@@ -1080,6 +1105,7 @@ export declare const models: {
     Account: Models.public_Account;
     Folder: Models.public_Folder;
     Chat: Models.public_Chat;
+    ChatMemory: Models.public_ChatMemory;
     MessageContext: Models.public_MessageContext;
     Message: Models.public_Message;
     Action: Models.public_Action;
@@ -1400,6 +1426,65 @@ type ContractBase = Omit<
                     readonly columns: readonly ['id'];
                   };
                   readonly name: 'chat_userId_fkey';
+                },
+              ];
+            };
+            readonly chat_memory: {
+              columns: {
+                readonly chatId: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly memoryId: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+              };
+              primaryKey: {
+                readonly columns: readonly ['chatId', 'memoryId'];
+                readonly name: 'chat_memory_pkey';
+              };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'chat_memory_chatId_idx';
+                  readonly columns: readonly ['chatId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'chat_memory_memoryId_idx';
+                  readonly columns: readonly ['memoryId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'chat_memory';
+                    readonly columns: readonly ['chatId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'chat';
+                    readonly columns: readonly ['id'];
+                  };
+                  readonly name: 'chat_memory_chatId_fkey';
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'chat_memory';
+                    readonly columns: readonly ['memoryId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'memory';
+                    readonly columns: readonly ['id'];
+                  };
+                  readonly name: 'chat_memory_memoryId_fkey';
                 },
               ];
             };
@@ -2458,6 +2543,10 @@ type ContractBase = Omit<
     readonly account: { readonly namespace: 'public' & NamespaceId; readonly model: 'Account' };
     readonly folder: { readonly namespace: 'public' & NamespaceId; readonly model: 'Folder' };
     readonly chat: { readonly namespace: 'public' & NamespaceId; readonly model: 'Chat' };
+    readonly chat_memory: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'ChatMemory';
+    };
     readonly message_context: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'MessageContext';
@@ -2732,6 +2821,24 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['id'];
                 };
               };
+              readonly memories: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Memory';
+                };
+                readonly cardinality: 'N:M';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['chatId'];
+                };
+                readonly through: {
+                  readonly table: 'chat_memory';
+                  readonly namespaceId: 'public';
+                  readonly parentColumns: readonly ['chatId'];
+                  readonly childColumns: readonly ['memoryId'];
+                  readonly targetColumns: readonly ['id'];
+                };
+              };
               readonly messages: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -2764,6 +2871,49 @@ type ContractBase = Omit<
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly temporary: { readonly column: 'temporary' };
                 readonly incognito: { readonly column: 'incognito' };
+              };
+            };
+          };
+          readonly ChatMemory: {
+            readonly fields: {
+              readonly chatId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly memoryId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly chat: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Chat' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['chatId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly memory: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Memory';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['memoryId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'chat_memory';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly chatId: { readonly column: 'chatId' };
+                readonly memoryId: { readonly column: 'memoryId' };
               };
             };
           };
@@ -3119,6 +3269,21 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
+              readonly chats: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Chat' };
+                readonly cardinality: 'N:M';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['memoryId'];
+                };
+                readonly through: {
+                  readonly table: 'chat_memory';
+                  readonly namespaceId: 'public';
+                  readonly parentColumns: readonly ['memoryId'];
+                  readonly childColumns: readonly ['chatId'];
+                  readonly targetColumns: readonly ['id'];
+                };
+              };
               readonly contexts: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -3255,17 +3420,10 @@ type ContractBase = Omit<
                   readonly namespace: 'public' & NamespaceId;
                   readonly model: 'Memory';
                 };
-                readonly cardinality: 'N:M';
+                readonly cardinality: '1:N';
                 readonly on: {
                   readonly localFields: readonly ['id'];
                   readonly targetFields: readonly ['messageId'];
-                };
-                readonly through: {
-                  readonly table: 'message_context';
-                  readonly namespaceId: 'public';
-                  readonly parentColumns: readonly ['messageId'];
-                  readonly childColumns: readonly ['memoryId'];
-                  readonly targetColumns: readonly ['id'];
                 };
               };
               readonly dreams: {

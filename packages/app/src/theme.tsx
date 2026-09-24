@@ -36,13 +36,13 @@ export default createTheme({
 			},
 			classNames: {
 				content: "glass",
-				header: "glass variant mb-lg",
+				header: "mb-lg",
 			},
 		},
 		Drawer: {
 			classNames: {
 				content: "glass",
-				header: "glass variant mb-lg",
+				header: "mb-lg",
 			},
 		},
 		Dialog: {

@@ -1,6 +1,6 @@
 import { Enum } from "@tiny-chat/core/src/core/services/PostgresService.ts";
 import { zId } from "@tiny-chat/core/src/core/types/common.ts";
-import { ChatLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
+import { MemorySource } from "@tiny-chat/core/src/features/data/types/memory.ts";
 import { MessageLike } from "@tiny-chat/core/src/features/data/types/message.ts";
 import { z } from "zod";
 import { procedure, router } from "../../../index.ts";
@@ -12,14 +12,14 @@ export const memory = router({
 	retrieveMemories: procedure
 		.input(
 			z.object({
-				chat: z.union([ChatLike, MessageLike]).nullish(),
+				messages: z.array(MemorySource),
 				tokens: z.number(),
 			}),
 		)
 		.query(async ({ ctx, input }) => {
 			return await MemoryRetrievalService.retrieve({
 				user: ctx.session.user,
-				chat: input.chat,
+				messages: input.messages,
 				tokens: input.tokens,
 			});
 		}),

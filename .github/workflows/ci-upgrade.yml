@@ -9,6 +9,7 @@ jobs:
     build:
         name: ${{ matrix.name }}
         runs-on: xcode-27
+        timeout-minutes: 45
         strategy:
             fail-fast: false
             matrix:
@@ -25,6 +26,29 @@ jobs:
                 with:
                     submodules: recursive
 
+            -   name: Install Rust
+                uses: dtolnay/rust-toolchain@stable
+                with:
+                    targets: ${{ matrix.rust_targets }}
+                    toolchain: stable
+                    components: llvm-tools
+
+            -   name: Check Apple toolchain
+                id: toolchain
+                run: |
+                    xcodebuild -version
+                    xcrun --sdk macosx --show-sdk-version
+                    xcrun --sdk iphoneos --show-sdk-version
+                    xcrun swift --version
+                    rustc -Vv
+                    fingerprint=$({
+                      xcodebuild -version
+                      xcrun --find swiftc
+                      xcrun swift --version
+                      rustc -Vv
+                    } | shasum -a 256 | cut -d ' ' -f 1)
+                    echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+
             -   name: Cache Cargo
                 uses: actions/cache@v4
                 with:
@@ -32,8 +56,8 @@ jobs:
                         ~/.cargo/registry
                         ~/.cargo/git
                         apps/tauri/target
-                    key: ${{ runner.os }}-cargo-${{ hashFiles('apps/tauri/**/Cargo.lock') }}
-                    restore-keys: ${{ runner.os }}-cargo-
+                    key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.fingerprint }}-${{ matrix.name }}-cargo-v2-${{ hashFiles('apps/tauri/Cargo.lock', 'apps/tauri/build.rs', 'apps/tauri/build_support/**', 'apps/tauri/lib/afmize/Package.resolved') }}
+                    restore-keys: ${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.fingerprint }}-${{ matrix.name }}-cargo-v2-
 
             -   name: Cache Turbo
                 uses: actions/cache@v4
@@ -41,13 +65,6 @@ jobs:
                     path: .turbo
                     key: ${{ runner.os }}-turbo-${{ github.sha }}
                     restore-keys: ${{ runner.os }}-turbo-
-
-            -   name: Install Rust
-                uses: dtolnay/rust-toolchain@stable
-                with:
-                    targets: ${{ matrix.rust_targets }}
-                    toolchain: stable
-                    components: llvm-tools
 
             -   name: Install pnpm
                 uses: pnpm/action-setup@v6
@@ -82,6 +99,11 @@ jobs:
             -   name: Install dependencies
                 run: pnpm ci
 
+            -   name: Test Swift archive handling
+                run: |
+                    rustc --edition 2024 --test apps/tauri/build_support/swift_archive.rs -o "$RUNNER_TEMP/swift-archive-tests"
+                    "$RUNNER_TEMP/swift-archive-tests" --include-ignored
+
             -   name: Build macOS
                 if: matrix.name == 'macos'
                 run: |
@@ -106,9 +128,9 @@ jobs:
                     otool -l "$BIN" | awk '/LC_RPATH/{show=1} show && /path /{print; show=0}'
                     echo "=== afmize ==="
                     nm -gU "$BIN" | grep afmize || true
-                    nm -gU "$BIN" | grep -q afmize_availability
-                    otool -L "$BIN" | grep -q FoundationModels
-                    otool -l "$BIN" | grep -q "lib/swift/macosx"
+                    nm -gU "$BIN" | grep afmize_availability > /dev/null
+                    otool -L "$BIN" | grep FoundationModels > /dev/null
+                    otool -l "$BIN" | grep "lib/swift/macosx" > /dev/null
 
             -   name: Upload macOS artifact
                 if: matrix.name == 'macos'
@@ -119,64 +141,9 @@ jobs:
                     if-no-files-found: error
                     path: apps/tauri/target/aarch64-apple-darwin/release/bundle
 
-            -   name: Prepare iOS project
+            -   name: Build iOS archive
                 if: matrix.name == 'ios'
-                run: |
-                    echo "Mocking open command..."
-                    mkdir -p /tmp/mock-open
-                    echo '#!/bin/bash' > /tmp/mock-open/open
-                    echo 'exit 0' >> /tmp/mock-open/open
-                    chmod +x /tmp/mock-open/open
-                    export PATH="/tmp/mock-open:$PATH"
-                    LOG_FILE="/tmp/tauri_build.log"
-                    pnpm --filter @tiny-chat/tauri exec tauri ios build \
-                      --features afm \
-                      --target aarch64 \
-                      --ci \
-                      --open \
-                      -vv \
-                      --config '{"bundle":{"createUpdaterArtifacts":false,"iOS":{"minimumSystemVersion":"27.0","frameworks":["FoundationModels"]}}}' \
-                      > "$LOG_FILE" 2>&1 &
-                    TAURI_PID=$!
-                    echo "TAURI_PID=$TAURI_PID" >> "$GITHUB_ENV"
-                    TIMEOUT=300
-                    ELAPSED=0
-                    while ! grep -q "Opening Xcode" "$LOG_FILE"; do
-                      sleep 10
-                      ELAPSED=$((ELAPSED + 10))
-                      echo "Still waiting for Tauri project setup (${ELAPSED}s)..."
-                      if [ "$ELAPSED" -ge "$TIMEOUT" ]; then
-                        echo "Timed out waiting for build"
-                        echo "=== BEGIN OUTPUT ==="
-                        cat "$LOG_FILE"
-                        kill "$TAURI_PID" || true
-                        exit 1
-                      fi
-                    done
-                    echo "Tauri project ready"
-                    echo "=== BEGIN OUTPUT ==="
-                    cat "$LOG_FILE"
-
-            -   name: Compile iOS
-                if: matrix.name == 'ios'
-                run: |
-                    cd apps/tauri/gen/apple
-                    xcodebuild \
-                      -scheme tiny-chat_iOS \
-                      -workspace tiny-chat.xcodeproj/project.xcworkspace \
-                      -sdk iphoneos \
-                      -configuration release \
-                      -archivePath "$RUNNER_TEMP/tiny-chat_iOS.xcarchive" \
-                      archive \
-                      CODE_SIGN_IDENTITY="" \
-                      CODE_SIGNING_REQUIRED=NO \
-                      CODE_SIGNING_ALLOWED=NO \
-                      AD_HOC_CODE_SIGNING_ALLOWED=YES \
-                      ONLY_ACTIVE_ARCH=NO \
-                      DEVELOPMENT_TEAM="" \
-                      IPHONEOS_DEPLOYMENT_TARGET=27.0 \
-                      'OTHER_LDFLAGS=$(inherited) -framework FoundationModels'
-                    kill "$TAURI_PID" || true
+                run: bash scripts/build-ios-ci.sh
 
             -   name: Check iOS link
                 if: matrix.name == 'ios'
@@ -191,14 +158,14 @@ jobs:
                     otool -l "$BIN" | awk '/LC_RPATH/{show=1} show && /path /{print; show=0}'
                     echo "=== afmize ==="
                     nm -gU "$BIN" | grep afmize || true
-                    nm -gU "$BIN" | grep -q afmize_availability
-                    otool -L "$BIN" | grep -q FoundationModels
+                    nm -gU "$BIN" | grep afmize_availability > /dev/null
+                    otool -L "$BIN" | grep FoundationModels > /dev/null
                     # Device builds must not record the macOS toolchain slice.
-                    if otool -l "$BIN" | grep -q "lib/swift/macosx"; then
+                    if otool -l "$BIN" | grep "lib/swift/macosx" > /dev/null; then
                       echo "iOS binary has a macOS Swift rpath"
                       exit 1
                     fi
-                    otool -L "$BIN" | grep -q "libswift"
+                    otool -L "$BIN" | grep "libswift" > /dev/null
 
             -   name: Package iOS
                 if: matrix.name == 'ios'

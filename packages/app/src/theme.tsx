@@ -36,13 +36,13 @@ export default createTheme({
 			},
 			classNames: {
 				content: "glass",
-				header: "mb-lg",
+				header: "mb-lg bg-transparent",
 			},
 		},
 		Drawer: {
 			classNames: {
 				content: "glass",
-				header: "mb-lg",
+				header: "mb-lg bg-transparent",
 			},
 		},
 		Dialog: {

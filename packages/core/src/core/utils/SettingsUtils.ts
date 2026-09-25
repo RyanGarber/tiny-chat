@@ -49,9 +49,9 @@ export const SettingsUtils = {
 		return {
 			...from,
 			theme: from?.theme ?? ThemeUtils.themes[0],
-			codeTheme: ThemeUtils.codeThemesByTheme(
-				from?.theme ?? ThemeUtils.themes[0],
-			)[0],
+			codeTheme:
+				from?.codeTheme ??
+				ThemeUtils.codeThemesByTheme(from?.theme ?? ThemeUtils.themes[0])[0],
 			instructions: from?.instructions ?? [],
 			memoryBudget: from?.memoryBudget ?? 2500,
 			embeddingConfig: from?.embeddingConfig ?? null,

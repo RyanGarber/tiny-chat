@@ -7,7 +7,7 @@
 		"test": "vitest run"
 	},
 	"dependencies": {
-		"@tanstack/react-query": "^5.103.1",
+		"@tanstack/react-query": "^5.103.2",
 		"@tiny-chat/core": "workspace:*",
 		"@tiny-chat/server": "workspace:*",
 		"@trpc/client": "^11.19.0",

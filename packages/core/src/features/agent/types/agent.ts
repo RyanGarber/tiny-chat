@@ -13,7 +13,13 @@ import { zSettings, zUser } from "../../data/types/user.ts";
  */
 export const zAgentChat = z.object({
 	id: zId.nullish(),
-	folder: z.object({ settings: zSettings }).nullable(),
+	folder: z
+		.object({
+			title: z.string().nullable(),
+			cwd: z.string().nullable(),
+			settings: zSettings,
+		})
+		.nullable(),
 	incognito: z.boolean(),
 	temporary: z.boolean(),
 });

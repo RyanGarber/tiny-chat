@@ -77,11 +77,14 @@ export async function useServer(
 				],
 				{
 					killOthersOn: ["success", "failure"],
+					killTimeout: 5_000,
 					prefixColors: "auto",
 				},
 			).result;
 		} catch (object) {
 			if (object instanceof Error) throw object;
+			// concurrently rejects with exit events when a command fails.
+			process.exitCode = 1;
 		}
 	}
 }

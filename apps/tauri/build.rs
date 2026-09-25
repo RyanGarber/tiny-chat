@@ -88,6 +88,13 @@ fn link_afmize(for_ios: bool) {
     )
     .unwrap_or_else(|error| panic!("{error}"));
     swift_archive::ensure_exports(&archive).unwrap_or_else(|error| panic!("{error}"));
+    // SwiftLinker detects full Xcode, so Command Line Tools can make it emit
+    // the legacy layout even when SwiftPM uses Products/Debug. Always forward
+    // the directory of the archive we actually located and verified.
+    println!(
+        "cargo:rustc-link-search=native={}",
+        archive.parent().unwrap().display()
+    );
     if let Some(root) = sdk_root {
         unsafe { std::env::set_var("SDKROOT", root) };
     }

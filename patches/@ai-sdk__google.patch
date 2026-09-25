@@ -1,5 +1,5 @@
 diff --git a/dist/index.d.ts b/dist/index.d.ts
-index 8a8d6fa2134ceee1cdfbc719aef2d500a64d90aa..57af9a0a93e0c84e52c05b34421d19184f13609b 100644
+index d8a8e219bea1c0636a6902f3d650a37adc52fc5f..55f73d4ccb9344b58a4e48aa92f4b52dc438cb3a 100644
 --- a/dist/index.d.ts
 +++ b/dist/index.d.ts
 @@ -16,7 +16,7 @@ type GoogleErrorData = InferSchema<typeof googleErrorDataSchema>;
@@ -12,23 +12,23 @@ index 8a8d6fa2134ceee1cdfbc719aef2d500a64d90aa..57af9a0a93e0c84e52c05b34421d1918
          thinkingBudget?: number | undefined;
          includeThoughts?: boolean | undefined;
 diff --git a/dist/index.js b/dist/index.js
-index d1487955cba43e31bebd76d8e532eeaa784626d3..9472e53132e56d0d3bca0c9a9a1ee2d5058842bf 100644
+index 3537b15715f783b6177bb11419f9cded9d341890..98043e4f8525e80d38c209893f96973596b69bfc 100644
 --- a/dist/index.js
 +++ b/dist/index.js
-@@ -921,7 +921,7 @@ import { z as z4 } from "zod/v4";
+@@ -983,7 +983,7 @@ import { z as z5 } from "zod/v4";
  var googleLanguageModelOptions = lazySchema4(
    () => zodSchema4(
-     z4.object({
--      responseModalities: z4.array(z4.enum(["TEXT", "IMAGE"])).optional(),
-+      responseModalities: z4.array(z4.enum(["TEXT", "IMAGE", "AUDIO"])).optional(),
-       thinkingConfig: z4.object({
-         thinkingBudget: z4.number().optional(),
-         includeThoughts: z4.boolean().optional(),
+     z5.object({
+-      responseModalities: z5.array(z5.enum(["TEXT", "IMAGE"])).optional(),
++      responseModalities: z5.array(z5.enum(["TEXT", "IMAGE", "AUDIO"])).optional(),
+       thinkingConfig: z5.object({
+         thinkingBudget: z5.number().optional(),
+         includeThoughts: z5.boolean().optional(),
 diff --git a/dist/internal/index.d.ts b/dist/internal/index.d.ts
-index f4587144cb5061c286f0fc259954321ed5dd1789..6aaaaf5b25e6cfc9ca0ec56c3aa0086082aeb8e5 100644
+index 5dbc20968ebee3bdca99bd8c32627c9f19a042bb..1a310e403bbd1fe464d7b823b362ae9f9801fbf4 100644
 --- a/dist/internal/index.d.ts
 +++ b/dist/internal/index.d.ts
-@@ -121,7 +121,7 @@ declare class GoogleLanguageModel implements LanguageModelV4 {
+@@ -131,7 +131,7 @@ declare class GoogleLanguageModel implements LanguageModelV4 {
                      } | undefined;
                  } | undefined;
                  mediaResolution?: "MEDIA_RESOLUTION_UNSPECIFIED" | "MEDIA_RESOLUTION_LOW" | "MEDIA_RESOLUTION_MEDIUM" | "MEDIA_RESOLUTION_HIGH" | undefined;
@@ -38,15 +38,15 @@ index f4587144cb5061c286f0fc259954321ed5dd1789..6aaaaf5b25e6cfc9ca0ec56c3aa00860
                      thinkingBudget?: number | undefined;
                      includeThoughts?: boolean | undefined;
 diff --git a/dist/internal/index.js b/dist/internal/index.js
-index 71e1c99d9a6c9838d3b7c0f784919b631cb261f3..460f090612ace730a5c98e24bf8d602dae941129 100644
+index b31ee31680baa23596af6b06627bd3902b8c81a1..12455565a144e38d917972b7cd045128b3539ca5 100644
 --- a/dist/internal/index.js
 +++ b/dist/internal/index.js
-@@ -667,7 +667,7 @@ import { z as z2 } from "zod/v4";
+@@ -702,7 +702,7 @@ import { z as z3 } from "zod/v4";
  var googleLanguageModelOptions = lazySchema2(
    () => zodSchema2(
-     z2.object({
--      responseModalities: z2.array(z2.enum(["TEXT", "IMAGE"])).optional(),
-+      responseModalities: z2.array(z2.enum(["TEXT", "IMAGE", "AUDIO"])).optional(),
-       thinkingConfig: z2.object({
-         thinkingBudget: z2.number().optional(),
-         includeThoughts: z2.boolean().optional(),
+     z3.object({
+-      responseModalities: z3.array(z3.enum(["TEXT", "IMAGE"])).optional(),
++      responseModalities: z3.array(z3.enum(["TEXT", "IMAGE", "AUDIO"])).optional(),
+       thinkingConfig: z3.object({
+         thinkingBudget: z3.number().optional(),
+         includeThoughts: z3.boolean().optional(),

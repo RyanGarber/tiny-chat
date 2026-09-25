@@ -140,7 +140,7 @@ export const MemoryRetrievalService = {
 			if ("text" in source) {
 				const { memories } = await MemoryRetrievalService.build({
 					user,
-					text: source.text,
+					text: source.text.trim().length > 0 ? source.text : "a",
 					tokens,
 					embed: false,
 					more: true,

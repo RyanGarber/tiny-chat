@@ -179,11 +179,11 @@ export default function MessageParts({
 					mb={10}
 					color={part.reason === "error" ? "red" : "gray"}
 					variant="light"
-					title={part.reason === "error" ? "Failed" : "Stopped"}
+					title={`${part.reason === "error" ? "Failed" : "Stopped"}: ${part.reason}`}
 				>
 					<Stack align="flex-end">
-						<Text fz="15px" w="100%">
-							{part.message ?? `Response ended due to ${part.reason}.`}
+						<Text size="sm" w="100%">
+							{part.message ?? JSON.stringify(part.details)}
 						</Text>
 						{message && regenerate && (
 							<Button

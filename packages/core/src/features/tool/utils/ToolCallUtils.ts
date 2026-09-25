@@ -218,7 +218,7 @@ export const ToolCallUtils = {
 		} else if (ToolUtils.is(toolsets, part, view_web)) {
 			return {
 				...base(view_web, [
-					["Viewing link", "Viewed link"],
+					["Reading page at", "Read page at"],
 					{ subject: PathUtils.name(part.input.url) },
 				]),
 			};

@@ -15,6 +15,7 @@ import { useConfig } from "../../agent/hooks/useConfig.ts";
 import { useSkills } from "../../agent/hooks/useSkills.ts";
 import { useTools } from "../../agent/hooks/useTools.ts";
 import { useChat } from "../../chat/hooks/useChat.ts";
+import { useMessagingStore } from "../../chat/stores/useMessagingStore.ts";
 
 export type UsageLevel = "low" | "moderate" | "high";
 
@@ -53,6 +54,7 @@ export const useEstimatedTokens = <T>({
 	const { config: baseConfig, modelArgs } = useConfig();
 	const { toolsets } = useTools();
 	const { skills } = useSkills();
+	const editing = useMessagingStore((state) => state.editing);
 
 	const config = useMemo(() => {
 		return {
@@ -94,12 +96,7 @@ export const useEstimatedTokens = <T>({
 				id: null,
 				author: "USER",
 				config,
-				// TODO: empty data gets dropped, preventing token count, so we add 'user' here
-				//       this should get generic enough results but should be fixed another way eventually
-				data: [
-					[{ id: CommonUtils.getRandomId(), type: "text", value: "user" }],
-					...debouncedDraft,
-				],
+				data: debouncedDraft,
 				createdAt: Temporal.Now.plainDateTimeISO("UTC"),
 			},
 		],
@@ -135,7 +132,10 @@ export const useEstimatedTokens = <T>({
 				context: {
 					user: session.data.user,
 					chat: nextChat,
-					messages: sourceMessages.data?.messages ?? [],
+					messages:
+						sourceMessages.data?.messages.filter(
+							(message) => message.id !== editing?.id,
+						) ?? [],
 					timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 					interactive: true,
 				},

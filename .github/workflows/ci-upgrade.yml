@@ -128,7 +128,8 @@ jobs:
                     otool -l "$BIN" | awk '/LC_RPATH/{show=1} show && /path /{print; show=0}'
                     echo "=== afmize ==="
                     nm -gU "$BIN" | grep afmize || true
-                    nm -gU "$BIN" | grep afmize_availability > /dev/null
+                    # Release executables may strip these symbol names. build.rs
+                    # verifies the required exports in libafmize.a before linking.
                     otool -L "$BIN" | grep FoundationModels > /dev/null
                     otool -l "$BIN" | grep "lib/swift/macosx" > /dev/null
 
@@ -158,7 +159,8 @@ jobs:
                     otool -l "$BIN" | awk '/LC_RPATH/{show=1} show && /path /{print; show=0}'
                     echo "=== afmize ==="
                     nm -gU "$BIN" | grep afmize || true
-                    nm -gU "$BIN" | grep afmize_availability > /dev/null
+                    # Release executables may strip these symbol names. build.rs
+                    # verifies the required exports in libafmize.a before linking.
                     otool -L "$BIN" | grep FoundationModels > /dev/null
                     # Device builds must not record the macOS toolchain slice.
                     if otool -l "$BIN" | grep "lib/swift/macosx" > /dev/null; then

@@ -9,7 +9,7 @@ name = "tinychat_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [features]
-default = []
+default = ["afm"]
 afm = ["dep:swift-rs"]
 
 [build-dependencies]

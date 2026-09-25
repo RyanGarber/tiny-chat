@@ -181,8 +181,7 @@ const getArgumentSummary = (args: unknown): string => {
 	return value.length > 80 ? `${value.slice(0, 80)}…` : value;
 };
 
-const CONTEXT_PATTERN =
-	/^\s*<context>(?:.|\s)*memory(?:.|\s)*<\/context>\s*$/gm;
+const CONTEXT_PATTERN = /^\s*<context>(?:.|\s)*<\/context>\s*$/gm;
 
 const replaceIfSmaller = (
 	parts: zDataPart[],

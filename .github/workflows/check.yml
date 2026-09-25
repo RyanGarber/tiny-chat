@@ -7,6 +7,7 @@ on:
 jobs:
     check:
         runs-on: ubuntu-latest
+        timeout-minutes: 30
 
         services:
             postgres:
@@ -27,6 +28,25 @@ jobs:
         steps:
             -   name: Checkout
                 uses: actions/checkout@v7
+                with:
+                    submodules: recursive
+
+            -   name: Cache Cargo
+                uses: actions/cache@v4
+                with:
+                    path: |
+                        ~/.cargo/registry
+                        ~/.cargo/git
+                        apps/tauri/target
+                    key: ${{ runner.os }}-cargo-${{ hashFiles('apps/tauri/**/Cargo.lock') }}
+                    restore-keys: ${{ runner.os }}-cargo-
+
+            -   name: Cache Turbo
+                uses: actions/cache@v4
+                with:
+                    path: .turbo
+                    key: ${{ runner.os }}-turbo-${{ github.sha }}
+                    restore-keys: ${{ runner.os }}-turbo-
 
             -   name: Install packages
                 run: |
@@ -72,14 +92,20 @@ jobs:
             -   name: Install dependencies
                 run: pnpm ci
 
-            -   name: Migrate database
+            -   name: Setup database
                 run: pnpm --filter @tiny-chat/server exec prisma db migrate --yes
 
             -   name: Lint
                 run: pnpm turbo lint
 
-            -   name: Check
+            -   name: Typecheck
                 run: pnpm turbo typecheck
 
-            -   name: Test
-                run: unset GITHUB_ACTIONS && pnpm test
+            -   name: Run tests
+                timeout-minutes: 15
+                run: |
+                    node --env-file=.env packages/server/src/server.ts &
+                    server_pid=$!
+                    trap 'kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true' EXIT
+                    pnpm exec wait-on --timeout 60000 http://localhost:8009
+                    pnpm turbo test --log-order=stream

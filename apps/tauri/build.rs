@@ -72,9 +72,150 @@ fn link_afmize(for_ios: bool) {
     let sdk_root = std::env::var_os("SDKROOT");
     unsafe { std::env::remove_var("SDKROOT") };
     linker.link();
+    if for_ios {
+        // afmize's static archive does not absorb its SwiftRs dependency.
+        // The Rust crate calls `release_object`, `retain_object`, and
+        // `string_from_bytes`, which live only in libSwiftRs.a. Xcode 27
+        // also emits those @_cdecl symbols as local, so the cdylib link
+        // cannot see them until they are globalized.
+        link_swift_rs_runtime(&out_dir);
+    }
     if let Some(root) = sdk_root {
         unsafe { std::env::set_var("SDKROOT", root) };
     }
+}
+
+#[cfg(feature = "afm")]
+fn link_swift_rs_runtime(out_dir: &str) {
+    use std::path::{Path, PathBuf};
+
+    let root = PathBuf::from(out_dir).join("swift-rs/afmize");
+    let Some(archive) = find_static_lib(&root, "libSwiftRs.a") else {
+        println!(
+            "cargo:warning=afmize: libSwiftRs.a not found under {}",
+            root.display()
+        );
+        return;
+    };
+    println!("cargo:warning=afmize linking {}", archive.display());
+    globalize_swift_rs_exports(&archive);
+    println!(
+        "cargo:rustc-link-search=native={}",
+        archive.parent().unwrap_or(Path::new(".")).display()
+    );
+    println!("cargo:rustc-link-lib=static=SwiftRs");
+}
+
+#[cfg(feature = "afm")]
+fn find_static_lib(dir: &std::path::Path, name: &str) -> Option<std::path::PathBuf> {
+    let mut stack = vec![dir.to_path_buf()];
+    let mut found = None;
+    while let Some(dir) = stack.pop() {
+        let Ok(entries) = std::fs::read_dir(&dir) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                stack.push(path);
+                continue;
+            }
+            if path.file_name().and_then(|file| file.to_str()) != Some(name) {
+                continue;
+            }
+            let in_release = path
+                .parent()
+                .and_then(|parent| parent.file_name())
+                .and_then(|file| file.to_str())
+                .is_some_and(|file| file.eq_ignore_ascii_case("release"));
+            if found.is_none() || in_release {
+                found = Some(path);
+            }
+        }
+    }
+    found
+}
+
+/// Promote local `@_cdecl` symbols in `SwiftRs.o` so ld can resolve them from
+/// the Rust crate. Only this archive is rewritten, so the copies SPM embeds in
+/// `libafmize.a` stay local and do not collide.
+#[cfg(feature = "afm")]
+fn globalize_swift_rs_exports(archive: &std::path::Path) {
+    let Ok(nm) = std::process::Command::new("nm").arg(archive).output() else {
+        return;
+    };
+    let mut in_swift_rs = false;
+    let mut symbols = Vec::new();
+    for line in String::from_utf8_lossy(&nm.stdout).lines() {
+        if line.ends_with(':') {
+            let header = line.trim_end_matches(':').trim_end_matches(')');
+            let member = header.rsplit(['/', '(']).next().unwrap_or(header);
+            in_swift_rs = member == "SwiftRs.o" || member == "lib.swift.o";
+            continue;
+        }
+        if !in_swift_rs {
+            continue;
+        }
+        let mut parts = line.split_whitespace();
+        let (Some(_addr), Some(kind), Some(name)) = (parts.next(), parts.next(), parts.next())
+        else {
+            continue;
+        };
+        if kind != "t" || parts.next().is_some() {
+            continue;
+        }
+        let Some(bare) = name.strip_prefix('_') else {
+            continue;
+        };
+        if bare.is_empty()
+            || bare.starts_with('_')
+            || !bare.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+        {
+            continue;
+        }
+        if !symbols.iter().any(|existing: &String| existing == name) {
+            symbols.push(name.to_string());
+        }
+    }
+    if symbols.is_empty() {
+        return;
+    }
+    let Some(objcopy) = rustup_llvm_objcopy() else {
+        println!(
+            "cargo:warning=afmize: llvm-objcopy not found; SwiftRs @_cdecl symbols stay local"
+        );
+        return;
+    };
+    println!(
+        "cargo:warning=afmize globalizing SwiftRs exports: {}",
+        symbols.join(", ")
+    );
+    let mut cmd = std::process::Command::new(objcopy);
+    for symbol in &symbols {
+        cmd.arg(format!("--globalize-symbol={symbol}"));
+    }
+    let status = cmd.arg(archive).status();
+    if !status.is_ok_and(|status| status.success()) {
+        println!(
+            "cargo:warning=afmize: llvm-objcopy failed for {}",
+            archive.display()
+        );
+    }
+}
+
+#[cfg(feature = "afm")]
+fn rustup_llvm_objcopy() -> Option<std::path::PathBuf> {
+    let sysroot = std::process::Command::new("rustc")
+        .args(["--print", "sysroot"])
+        .output()
+        .ok()?;
+    let sysroot = String::from_utf8(sysroot.stdout).ok()?;
+    let host = format!("{}-apple-darwin", std::env::consts::ARCH);
+    let path = std::path::Path::new(sysroot.trim())
+        .join("lib/rustlib")
+        .join(host)
+        .join("bin/llvm-objcopy");
+    path.exists().then_some(path)
 }
 
 #[cfg(feature = "afm")]

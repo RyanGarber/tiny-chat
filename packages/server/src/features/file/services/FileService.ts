@@ -198,7 +198,7 @@ export const FileService = {
 					});
 					current.env = result.env;
 					if (result.env.PWD) current.cwd = result.env.PWD;
-					return result;
+					return { ...result, code: result.exitCode };
 				} catch (error) {
 					// A filesystem error the shell could not turn into output of its own —
 					// a redirect into a read-only tree, most often, since it writes the

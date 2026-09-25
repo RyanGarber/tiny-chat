@@ -22,7 +22,9 @@ export const serverUrl = `http://localhost:${process.env.VITE_SERVER_PORT}`;
 export async function isServerLive() {
 	const update = create(`trying server at ${serverUrl}`);
 	try {
-		const result = await fetch(serverUrl);
+		const result = await fetch(serverUrl, {
+			signal: AbortSignal.timeout(5_000),
+		});
 		update(`server is ${result.ok ? "live" : "not live"}`);
 		return result.ok;
 	} catch {
@@ -96,24 +98,61 @@ export async function useServerProcess({
 	let child: ChildProcess | undefined;
 	const doStart = await isServerNeeded(start);
 
+	let stopping = false;
+	const cleanup = async () => {
+		stopping = true;
+		process.off("exit", onExit);
+		if (!child || child.exitCode !== null || child.signalCode !== null) return;
+		const exited = new Promise<void>((resolve) =>
+			child?.once("exit", () => resolve()),
+		);
+		child.kill();
+		const timer = setTimeout(() => child?.kill("SIGKILL"), 5_000);
+		try {
+			await exited;
+		} finally {
+			clearTimeout(timer);
+		}
+	};
+	const onExit = () => child?.kill();
+
 	if (doStart) {
-		child = spawn(`pnpm`, ["-w", "dev:server", ...(host ? ["--host"] : [])], {
-			stdio: "inherit",
-		});
-
-		child.on("exit", (code) => {
-			print({ message: `server exited with code ${code}`, level: "warning" });
-			process.exit(code);
-		});
-
-		process.on("exit", () => {
-			child?.kill();
-		});
+		// Own the actual server process, without pnpm wrappers or a file watcher.
+		child = spawn(
+			process.execPath,
+			[
+				resolve(import.meta.dirname, "../packages/server/src/server.ts"),
+				...(host ? ["--host"] : []),
+			],
+			{
+				stdio: "inherit",
+				env: process.env,
+			},
+		);
+		process.once("exit", onExit);
 	}
 
-	await waitOn({ resources: [serverUrl], timeout: 30000 });
+	try {
+		await Promise.race([
+			waitOn({ resources: [serverUrl], timeout: 30_000 }),
+			...(child
+				? [
+						new Promise<never>((_resolve, reject) => {
+							child?.once("error", reject);
+							child?.once("exit", (code, signal) => {
+								if (!stopping)
+									reject(new Error(`Server exited with ${signal ?? code}`));
+							});
+						}),
+					]
+				: []),
+		]);
+	} catch (error) {
+		await cleanup();
+		throw error;
+	}
 
-	return () => child?.kill();
+	return cleanup;
 }
 
 if (import.meta.main) {

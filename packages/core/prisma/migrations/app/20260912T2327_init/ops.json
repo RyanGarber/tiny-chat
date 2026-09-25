@@ -2668,5 +2668,37 @@
         ]
       }
     ]
+  },
+  {
+    "id": "try_decode_utf8",
+    "label": "Create function \"try_decode_utf8\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create or replace function public.try_decode_utf8",
+        "sql": "\n              create or replace function public.try_decode_utf8(b bytea)\n                  returns text\n                  language plpgsql\n                  immutable\n                  parallel safe\n              as\n              $$\n              DECLARE decoded text;\n              BEGIN\n                  decoded := convert_from(b, 'UTF8');\n                  IF LENGTH(decoded) > 0 THEN\n                      RETURN decoded;\n                  END IF;\n                  RETURN NULL;\n              EXCEPTION WHEN OTHERS THEN\n                  RETURN NULL;\n              END;\n              $$;\n            "
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "try_extract_text",
+    "label": "Create function \"try_extract_text\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create or replace function public.try_extract_text",
+        "sql": "\n              create or replace function public.try_extract_text(j jsonb)\n                  returns text\n                  language plpgsql\n                  immutable\n                  parallel safe\n              as\n              $$\n              DECLARE extracted text;\n              BEGIN\n                  SELECT string_agg(\"dataPart\"->>'value', ' ')\n                  INTO extracted\n                  FROM jsonb_array_elements(j) AS \"step\",\n                      jsonb_array_elements(\"step\") AS \"dataPart\"\n                  WHERE \"dataPart\"->>'type' = 'text';\n                  return extracted;\n              END;\n              $$;\n              "
+      }
+    ],
+    "postcheck": []
   }
 ]

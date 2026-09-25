@@ -37,3 +37,10 @@ swift-rs = { version = "1", features = ["build"], optional = true }
 
 [target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
 swift-rs = { version = "1", optional = true }
+
+# 1.0.7's `swift build --arch` leaves Xcode 27 appending the host macOS
+# -sdk/-target after the iOS -Xswiftc overrides, so the link is "building
+# for macOS, but linking in object file built for iOS". 1.0.8 passes
+# --triple for cross builds and restores @_cdecl visibility.
+[patch.crates-io]
+swift-rs = { git = "https://github.com/Brendonovich/swift-rs", rev = "fd82965ee1a55b2777122a9ac42a581c613327ac" }

@@ -66,7 +66,14 @@ fn link_afmize(for_ios: bool) {
         linker = linker.with_ios("27.0");
     }
 
+    // Xcode exports SDKROOT as the target SDK. swift-rs selects the SDK itself;
+    // leaving SDKROOT set makes SwiftPM mix that sysroot with the host triple.
+    let sdk_root = std::env::var_os("SDKROOT");
+    std::env::remove_var("SDKROOT");
     linker.link();
+    if let Some(root) = sdk_root {
+        std::env::set_var("SDKROOT", root);
+    }
 }
 
 #[cfg(feature = "afm")]

@@ -50,7 +50,7 @@ jobs:
                     echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
 
             -   name: Cache Cargo
-                uses: actions/cache@v4
+                uses: actions/cache@v6
                 with:
                     path: |
                         ~/.cargo/registry
@@ -60,7 +60,7 @@ jobs:
                     restore-keys: ${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.fingerprint }}-${{ matrix.name }}-cargo-v2-
 
             -   name: Cache Turbo
-                uses: actions/cache@v4
+                uses: actions/cache@v6
                 with:
                     path: .turbo
                     key: ${{ runner.os }}-turbo-${{ github.sha }}
@@ -108,7 +108,6 @@ jobs:
                 if: matrix.name == 'macos'
                 run: |
                     pnpm --filter @tiny-chat/tauri exec tauri build \
-                      --features afm \
                       --target aarch64-apple-darwin \
                       --no-sign \
                       --ci \

@@ -24,7 +24,7 @@ chmod +x "$scratch/open"
 export PATH="$scratch:$PATH"
 log_file="$scratch/tauri.log"
 pnpm --filter @tiny-chat/tauri exec tauri ios build \
-    --features afm --target aarch64 --ci --open -vv \
+    --target aarch64 --ci --open -vv \
     --config '{"bundle":{"createUpdaterArtifacts":false,"iOS":{"minimumSystemVersion":"27.0","frameworks":["FoundationModels"]}}}' \
     > "$log_file" 2>&1 &
 tauri_pid=$!

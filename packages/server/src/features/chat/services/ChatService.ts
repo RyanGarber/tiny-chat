@@ -33,7 +33,7 @@ export const ChatService = {
 				),
 			)
 			.include("messages", (message) => message.select("createdAt"))
-			.include("folder", (folder) => folder.select("settings"))
+			.include("folder", (folder) => folder.select("title", "cwd", "settings"))
 			.first();
 
 		if (!chat) throw new Error(`no chat or message with id ${chatLike.id}`);
@@ -62,7 +62,9 @@ export const ChatService = {
 							selectAll(chat, "public", "Chat")
 								.where({ temporary: false })
 								.include("messages", (message) => message.select("createdAt"))
-								.include("folder", (folder) => folder.select("settings")),
+								.include("folder", (folder) =>
+									folder.select("title", "cwd", "settings"),
+								),
 						)
 						.orderBy((f) => f.createdAt.desc())
 						.all(),
@@ -72,7 +74,9 @@ export const ChatService = {
 				temporary: false,
 			})
 				.include("messages", (message) => message.select("createdAt"))
-				.include("folder", (folder) => folder.select("settings"))
+				.include("folder", (folder) =>
+					folder.select("title", "cwd", "settings"),
+				)
 				.all(),
 		]);
 

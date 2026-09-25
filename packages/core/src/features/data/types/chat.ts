@@ -11,7 +11,7 @@ export const FolderLike = z.custom<FolderLike>();
 
 export type ChatState = Model["Chat"] & {
 	messages: Pick<Model["Message"], "createdAt">[];
-	folder: Pick<Model["Folder"], "settings"> | null;
+	folder: Pick<Model["Folder"], "title" | "cwd" | "settings"> | null;
 	unseen: boolean;
 };
 

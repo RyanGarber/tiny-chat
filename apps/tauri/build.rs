@@ -1,19 +1,15 @@
-#[cfg(feature = "afm")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 #[path = "build_support/swift_archive.rs"]
 mod swift_archive;
 
 fn main() {
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
-    if matches!(target_os.as_str(), "macos" | "ios") {
-        #[cfg(feature = "afm")]
-        link_afmize(target_os == "ios");
-        #[cfg(not(feature = "afm"))]
-        println!("cargo:warning=building without apple foundation model support");
-    }
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
+    link_afmize(matches!(target_os.as_str(), "ios"));
     tauri_build::build()
 }
 
-#[cfg(feature = "afm")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 fn link_afmize(for_ios: bool) {
     use std::path::PathBuf;
     use swift_rs::SwiftLinker;
@@ -44,7 +40,7 @@ fn link_afmize(for_ios: bool) {
     let platform = swift_platform_dir(for_ios);
     let swift_lib = toolchain_swift_lib(platform);
     if std::path::Path::new(&swift_lib).is_dir() {
-        println!("cargo:warning=afmize swift runtime ({platform}): {swift_lib}");
+        println!("using afmize swift runtime ({platform}): {swift_lib}");
     } else {
         panic!("afmize swift runtime directory missing ({platform}): {swift_lib}");
     }
@@ -100,7 +96,7 @@ fn link_afmize(for_ios: bool) {
     }
 }
 
-#[cfg(feature = "afm")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 fn swift_platform_dir(for_ios: bool) -> &'static str {
     if !for_ios {
         return "macosx";
@@ -115,7 +111,7 @@ fn swift_platform_dir(for_ios: bool) -> &'static str {
     }
 }
 
-#[cfg(feature = "afm")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 fn toolchain_swift_lib(platform: &str) -> String {
     let swift = std::process::Command::new("xcrun")
         .args(["--find", "swiftc"])
@@ -141,7 +137,7 @@ fn toolchain_swift_lib(platform: &str) -> String {
 /// Framework search path for the cargo link of the iOS cdylib. The app itself
 /// is linked later by Xcode, which needs `-framework FoundationModels` on its
 /// own link line — this path is not forwarded out of the staticlib.
-#[cfg(feature = "afm")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 fn sdk_frameworks_dir(platform: &str) -> Option<String> {
     let sdk = match platform {
         "iphoneos" => "iphoneos",

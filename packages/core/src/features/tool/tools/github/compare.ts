@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { GitHubCapability } from "../../../../core/types/capability.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 import { GitHubToolUtils } from "../../utils/GitHubToolUtils.ts";
-import { zGitHubDiffFile } from "./schemas.ts";
+import { zGitHubFileDiff } from "./schemas.ts";
 
 const zComparedCommit = z.object({
 	sha: z.string(),
@@ -22,7 +22,7 @@ const zComparison = z.object({
 	base_commit: z.object({ sha: z.string() }),
 	merge_base_commit: z.object({ sha: z.string() }),
 	commits: z.array(zComparedCommit),
-	files: z.array(zGitHubDiffFile).optional().default([]),
+	files: z.array(zGitHubFileDiff).optional().default([]),
 });
 
 export const github_compare = {
@@ -62,7 +62,7 @@ export const github_compare = {
 				date: z.string(),
 			}),
 		),
-		files: z.array(zGitHubDiffFile),
+		files: z.array(zGitHubFileDiff),
 	}),
 } as const satisfies ToolDefinition;
 

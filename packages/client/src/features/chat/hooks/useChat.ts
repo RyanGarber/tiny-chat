@@ -60,7 +60,9 @@ export const useChat = () => {
 		if (chat.data) return chat.data;
 		return {
 			id: null,
-			folder: activeFolder ? { settings: folderSettings.data ?? {} } : null,
+			folder: activeFolder
+				? { title: null, cwd: null, settings: folderSettings.data ?? {} }
+				: null,
 			incognito: createIncognito,
 			temporary: createTemporary,
 		};

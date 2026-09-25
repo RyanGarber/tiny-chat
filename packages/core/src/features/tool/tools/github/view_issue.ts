@@ -4,10 +4,10 @@ import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 import { GitHubToolUtils } from "../../utils/GitHubToolUtils.ts";
 import {
 	zGitHubComment,
+	zGitHubFileDiff,
 	zGitHubIssue,
 	zGitHubIssueSummaryOutput,
 	zGitHubPullRequest,
-	zGitHubPullRequestFile,
 	zGitHubReviewComment,
 } from "./schemas.ts";
 
@@ -49,7 +49,7 @@ export const github_view_issue = {
 		state_reason: z.string().nullable().optional(),
 		comments: z.array(zCommentOutput),
 		pull_request: zGitHubPullRequest.optional(),
-		files: z.array(zGitHubPullRequestFile).optional(),
+		files: z.array(zGitHubFileDiff).optional(),
 		review_comments: z.array(zReviewCommentOutput).optional(),
 		comment_page: z.number(),
 		file_page: z.number().optional(),
@@ -130,7 +130,7 @@ export const createGitHubViewIssueTool: ToolFactory<
 					page: filePage,
 					per_page: GitHubToolUtils.limit(input.max_files, 30),
 				},
-				schema: z.array(zGitHubPullRequestFile),
+				schema: z.array(zGitHubFileDiff),
 			}),
 			GitHubToolUtils.request({
 				github: options.capabilities.github,

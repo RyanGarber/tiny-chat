@@ -68,11 +68,12 @@ fn link_afmize(for_ios: bool) {
 
     // Xcode exports SDKROOT as the target SDK. swift-rs selects the SDK itself;
     // leaving SDKROOT set makes SwiftPM mix that sysroot with the host triple.
+    // SAFETY: this build script has not spawned threads that read the environment.
     let sdk_root = std::env::var_os("SDKROOT");
-    std::env::remove_var("SDKROOT");
+    unsafe { std::env::remove_var("SDKROOT") };
     linker.link();
     if let Some(root) = sdk_root {
-        std::env::set_var("SDKROOT", root);
+        unsafe { std::env::set_var("SDKROOT", root) };
     }
 }
 

@@ -24,7 +24,7 @@ on:
 
 jobs:
     release:
-        runs-on: macos-latest
+        runs-on: xcode-27
         environment: production
         permissions:
             contents: write
@@ -42,7 +42,7 @@ jobs:
                     targets: aarch64-apple-ios
                     toolchain: stable
 
-            -   name: Fingerprint Apple toolchain
+            -   name: Create cache key
                 id: toolchain
                 run: |
                     fingerprint=$({

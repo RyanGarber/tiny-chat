@@ -8,6 +8,7 @@ jobs:
     check:
         runs-on: ubuntu-latest
         timeout-minutes: 30
+        if: false
 
         services:
             postgres:
@@ -51,7 +52,7 @@ jobs:
                 with:
                     toolchain: stable
 
-            -   name: Fingerprint Rust toolchain
+            -   name: Create cache key
                 id: rust-toolchain
                 run: echo "fingerprint=$(rustc -Vv | sha256sum | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
 

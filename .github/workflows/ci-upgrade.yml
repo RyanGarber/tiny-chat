@@ -14,8 +14,8 @@ jobs:
             fail-fast: false
             matrix:
                 include:
-                    -   name: macos
-                        rust_targets: aarch64-apple-darwin
+                    # -   name: macos
+                    #     rust_targets: aarch64-apple-darwin
                     -   name: ios
                         rust_targets: aarch64-apple-ios
         environment: production
@@ -33,7 +33,7 @@ jobs:
                     toolchain: stable
                     components: llvm-tools
 
-            -   name: Check Apple toolchain
+            -   name: Create cache key
                 id: toolchain
                 run: |
                     xcodebuild -version

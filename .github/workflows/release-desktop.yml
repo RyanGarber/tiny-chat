@@ -30,10 +30,10 @@ jobs:
             fail-fast: false
             matrix:
                 include:
-                    -   platform: 'macos-latest'
+                    -   platform: 'xcode-27'
                         cache_target: aarch64-apple-darwin
                         args: '--target aarch64-apple-darwin'
-                    -   platform: 'macos-latest'
+                    -   platform: 'xcode-27'
                         cache_target: x86_64-apple-darwin
                         args: '--target x86_64-apple-darwin'
                     -   platform: 'ubuntu-latest'
@@ -65,7 +65,7 @@ jobs:
                     targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
                     toolchain: stable
 
-            -   name: Fingerprint build toolchain
+            -   name: Create cache key
                 id: rust-toolchain
                 shell: bash
                 run: |

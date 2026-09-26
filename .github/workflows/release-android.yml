@@ -47,7 +47,7 @@ jobs:
                     targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
                     toolchain: stable
 
-            -   name: Fingerprint Rust toolchain
+            -   name: Create cache key
                 id: rust-toolchain
                 run: echo "fingerprint=$(rustc -Vv | sha256sum | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
 

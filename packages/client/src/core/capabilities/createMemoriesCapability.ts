@@ -1,8 +1,8 @@
 import type {
 	CapabilityFactory,
 	MemoriesCapability,
-} from "@tiny-chat/core/src/core/types/capability.ts";
-import type { MessageLike } from "@tiny-chat/core/src/features/data/types/message.ts";
+} from "@tiny-chat/core/core/types/capability.ts";
+import type { MessageLike } from "@tiny-chat/core/features/data/types/message.ts";
 import type { Client } from "../../client.ts";
 
 export const createMemoriesCapability: CapabilityFactory<

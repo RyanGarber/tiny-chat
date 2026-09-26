@@ -8,8 +8,8 @@ import {
 	Tooltip,
 } from "@mantine/core";
 import { TrashIcon } from "@phosphor-icons/react";
-import { useInstructions } from "@tiny-chat/client/src/features/settings/hooks/useInstructions.ts";
-import type { FolderLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
+import { useInstructions } from "@tiny-chat/client/features/settings/hooks/useInstructions.ts";
+import type { FolderLike } from "@tiny-chat/core/features/data/types/chat.ts";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 
 export default function ContextSettings({

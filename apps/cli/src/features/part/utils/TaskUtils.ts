@@ -1,4 +1,4 @@
-import { ColorUtils } from "@tiny-chat/core/src/core/utils/ColorUtils.ts";
+import { ColorUtils } from "@tiny-chat/core/core/utils/ColorUtils.ts";
 import chalk, { type ChalkInstance } from "chalk";
 
 const SHIMMER_BASE = "#666666";

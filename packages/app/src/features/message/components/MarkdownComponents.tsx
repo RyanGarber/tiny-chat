@@ -1,9 +1,9 @@
 import { Box, Pill, Stack, Text } from "@mantine/core";
-import { ComponentUtils } from "@tiny-chat/client/src/core/utils/ComponentUtils";
-import { StreamContext } from "@tiny-chat/client/src/features/message/components/StreamContext.tsx";
-import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
-import type { CodeLanguage } from "@tiny-chat/core/src/core/utils/CodeUtils.ts";
-import { SourceUtils } from "@tiny-chat/core/src/features/data/utils/SourceUtils.ts";
+import { ComponentUtils } from "@tiny-chat/client/core/utils/ComponentUtils.ts";
+import { StreamContext } from "@tiny-chat/client/features/message/components/StreamContext.tsx";
+import { useMessageStore } from "@tiny-chat/client/features/message/stores/useMessageStore.ts";
+import type { CodeLanguage } from "@tiny-chat/core/core/utils/CodeUtils.ts";
+import { SourceUtils } from "@tiny-chat/core/features/data/utils/SourceUtils.ts";
 import { createContext, useContext } from "react";
 import type { Components } from "streamdown";
 import Popup from "#app/core/components/Popup.tsx";

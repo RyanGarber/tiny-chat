@@ -1,13 +1,13 @@
 import type { Client } from "@modelcontextprotocol/client";
 import { useQuery } from "@tanstack/react-query";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import type { zDataSimplePart } from "@tiny-chat/core/src/features/data/types/part.ts";
-import type { zMCPServers } from "@tiny-chat/core/src/features/data/types/user.ts";
-import { ToolService } from "@tiny-chat/core/src/features/tool/services/ToolService.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import type { zDataSimplePart } from "@tiny-chat/core/features/data/types/part.ts";
+import type { zMCPServers } from "@tiny-chat/core/features/data/types/user.ts";
+import { ToolService } from "@tiny-chat/core/features/tool/services/ToolService.ts";
 import type {
 	Tool,
 	Toolset,
-} from "@tiny-chat/core/src/features/tool/types/tool.ts";
+} from "@tiny-chat/core/features/tool/types/tool.ts";
 import { useMemo } from "react";
 import { useCapabilities } from "../../../core/hooks/useCapabilities.ts";
 import { useStableKey } from "../../../core/hooks/useStableKey.ts";

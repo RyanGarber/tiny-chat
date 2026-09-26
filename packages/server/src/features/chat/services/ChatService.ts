@@ -1,12 +1,12 @@
 import { or } from "@prisma/orm-postgres/orm-client";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
 import type {
 	ChatLike,
 	ChatState,
 	FolderLike,
 	FolderState,
-} from "@tiny-chat/core/src/features/data/types/chat.ts";
-import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
+} from "@tiny-chat/core/features/data/types/chat.ts";
+import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
 import { selectAll } from "../../../db.ts";
 import { ChatUtils } from "../utils/ChatUtils.ts";
 

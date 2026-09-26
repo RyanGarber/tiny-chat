@@ -1,8 +1,8 @@
 import type {
 	CapabilityFactory,
 	GitHubCapability,
-} from "@tiny-chat/core/src/core/types/capability.ts";
-import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
+} from "@tiny-chat/core/core/types/capability.ts";
+import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
 import { GitHubApiService } from "../../features/proxy/services/GitHubApiService.ts";
 
 export const createGitHubCapability: CapabilityFactory<

@@ -1,5 +1,5 @@
-import type { EditorNode } from "@tiny-chat/client/src/features/editor/types/node.ts";
-import { AtomUtils } from "@tiny-chat/client/src/features/editor/utils/AtomUtils.ts";
+import type { EditorNode } from "@tiny-chat/client/features/editor/types/node.ts";
+import { AtomUtils } from "@tiny-chat/client/features/editor/utils/AtomUtils.ts";
 import type { TextAreaHandle } from "react-ink-textarea";
 import { create } from "zustand";
 import { type EditorSelection, EditorUtils } from "../utils/EditorUtils.ts";

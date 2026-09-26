@@ -1,5 +1,5 @@
-import { useCode } from "@tiny-chat/client/src/core/hooks/useCode.ts";
-import { DiffUtils } from "@tiny-chat/core/src/features/file/utils/DiffUtils.ts";
+import { useCode } from "@tiny-chat/client/core/hooks/useCode.ts";
+import { DiffUtils } from "@tiny-chat/core/features/file/utils/DiffUtils.ts";
 import { useCallback, useMemo, useState } from "react";
 import Content, {
 	type ContentFormats,

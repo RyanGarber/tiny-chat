@@ -1,7 +1,7 @@
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import type { MessageLike } from "@tiny-chat/core/src/features/data/types/message.ts";
-import type { zData } from "@tiny-chat/core/src/features/data/types/part.ts";
-import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import type { MessageLike } from "@tiny-chat/core/features/data/types/message.ts";
+import type { zData } from "@tiny-chat/core/features/data/types/part.ts";
+import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
 import { MessageService } from "../../message/services/MessageService.ts";
 import { ActionUtils } from "../utils/ActionUtils.ts";
 

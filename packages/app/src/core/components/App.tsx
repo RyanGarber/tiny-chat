@@ -13,7 +13,7 @@ import Chat from "#app/features/chat/components/Chat.tsx";
 import ChatFiles from "#app/features/chat/components/ChatFiles.tsx";
 import Sidebar from "#app/features/sidebar/components/Sidebar.tsx";
 import mantineTheme, { cssResolver } from "#app/theme.tsx";
-import { useSession } from "#client/src/core/hooks/useSession.ts";
+import { useSession } from "#client/core/hooks/useSession.ts";
 import { useThemes } from "../../../../client/src/features/settings/hooks/useThemes.ts";
 import { setHashbangQuery, useHashbang } from "../hooks/useHashbang";
 

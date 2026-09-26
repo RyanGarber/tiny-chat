@@ -1,5 +1,5 @@
 import type { InfiniteData } from "@tanstack/react-query";
-import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
 import type { Client } from "../../../client.ts";
 import { useChatStore } from "../../chat/stores/useChatStore.ts";
 

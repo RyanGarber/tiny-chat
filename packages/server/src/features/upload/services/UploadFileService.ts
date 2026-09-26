@@ -1,8 +1,8 @@
-import type { Enum } from "@tiny-chat/core/src/core/services/PostgresService.ts";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
-import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeUtils.ts";
-import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
+import type { Enum } from "@tiny-chat/core/core/services/PostgresService.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
+import { FileTypeUtils } from "@tiny-chat/core/features/file/utils/FileTypeUtils.ts";
+import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import { unzipSync } from "fflate";
 import sharp from "sharp";
 import { selectAll } from "../../../db.ts";

@@ -1,9 +1,9 @@
-import { ClientContext } from "@tiny-chat/client/src/client.ts";
-import { MessagingService } from "@tiny-chat/client/src/features/chat/services/MessagingService.ts";
-import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
-import { useMessageQueueStore } from "@tiny-chat/client/src/features/chat/stores/useMessageQueueStore.ts";
-import { useMessagingStore } from "@tiny-chat/client/src/features/chat/stores/useMessagingStore.ts";
-import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
+import { ClientContext } from "@tiny-chat/client/client.ts";
+import { MessagingService } from "@tiny-chat/client/features/chat/services/MessagingService.ts";
+import { useChatStore } from "@tiny-chat/client/features/chat/stores/useChatStore.ts";
+import { useMessageQueueStore } from "@tiny-chat/client/features/chat/stores/useMessageQueueStore.ts";
+import { useMessagingStore } from "@tiny-chat/client/features/chat/stores/useMessagingStore.ts";
+import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
 import { useContext } from "react";
 import Box from "../../../core/components/Box.tsx";
 import Text from "../../../core/components/Text.tsx";

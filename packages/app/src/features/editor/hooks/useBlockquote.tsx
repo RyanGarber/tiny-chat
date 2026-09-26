@@ -1,4 +1,4 @@
-import { useEditorPartStore } from "@tiny-chat/client/src/features/editor/stores/useEditorPartStore.ts";
+import { useEditorPartStore } from "@tiny-chat/client/features/editor/stores/useEditorPartStore.ts";
 import { Blockquote as _Blockquote } from "@tiptap/extension-blockquote";
 import {
 	Node,

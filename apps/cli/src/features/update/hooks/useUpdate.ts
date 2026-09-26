@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
 import { useAppStore } from "../../../core/stores/useAppStore.ts";
 import { UpdateService } from "../services/UpdateService.ts";
 

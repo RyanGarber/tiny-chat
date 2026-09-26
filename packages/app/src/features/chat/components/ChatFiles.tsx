@@ -19,16 +19,16 @@ import {
 	CaretLeftIcon,
 	CaretRightIcon,
 } from "@phosphor-icons/react";
-import { useTools } from "@tiny-chat/client/src/features/agent/hooks/useTools.ts";
-import { useChatFiles } from "@tiny-chat/client/src/features/chat/hooks/useChatFiles.ts";
-import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
-import { useDraftStore } from "@tiny-chat/client/src/features/chat/stores/useDraftStore.ts";
-import { useMessages } from "@tiny-chat/client/src/features/message/hooks/useMessages.ts";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
-import { SourceUtils } from "@tiny-chat/core/src/features/data/utils/SourceUtils.ts";
-import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeUtils.ts";
-import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
+import { useTools } from "@tiny-chat/client/features/agent/hooks/useTools.ts";
+import { useChatFiles } from "@tiny-chat/client/features/chat/hooks/useChatFiles.ts";
+import { useChatStore } from "@tiny-chat/client/features/chat/stores/useChatStore.ts";
+import { useDraftStore } from "@tiny-chat/client/features/chat/stores/useDraftStore.ts";
+import { useMessages } from "@tiny-chat/client/features/message/hooks/useMessages.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
+import { SourceUtils } from "@tiny-chat/core/features/data/utils/SourceUtils.ts";
+import { FileTypeUtils } from "@tiny-chat/core/features/file/utils/FileTypeUtils.ts";
+import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { BundledLanguage } from "streamdown";
 import { client } from "#app/client.ts";

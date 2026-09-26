@@ -1,9 +1,9 @@
 import { Box, Card, Divider, Group, Stack, Text } from "@mantine/core";
 import { ClockIcon } from "@phosphor-icons/react";
-import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
-import { useActions } from "@tiny-chat/client/src/features/user/hooks/useActions.ts";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
+import { useChat } from "@tiny-chat/client/features/chat/hooks/useChat.ts";
+import { useActions } from "@tiny-chat/client/features/user/hooks/useActions.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
 import { useEffect, useMemo, useState } from "react";
 
 export default function Actions() {

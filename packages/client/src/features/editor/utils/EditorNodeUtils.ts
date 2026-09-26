@@ -1,6 +1,6 @@
-import { CodeUtils } from "@tiny-chat/core/src/core/utils/CodeUtils.ts";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import { EditorPartUtils } from "@tiny-chat/core/src/features/data/utils/EditorPartUtils.ts";
+import { CodeUtils } from "@tiny-chat/core/core/utils/CodeUtils.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import { EditorPartUtils } from "@tiny-chat/core/features/data/utils/EditorPartUtils.ts";
 import {
 	type EditorPart,
 	useEditorPartStore,

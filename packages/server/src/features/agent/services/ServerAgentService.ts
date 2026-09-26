@@ -1,19 +1,19 @@
-import { zProviderEnv } from "@tiny-chat/core/src/core/types/env.ts";
-import { AgentService } from "@tiny-chat/core/src/features/agent/services/AgentService.ts";
+import { zProviderEnv } from "@tiny-chat/core/core/types/env.ts";
+import { AgentService } from "@tiny-chat/core/features/agent/services/AgentService.ts";
 import type {
 	zAgentChat,
 	zAgentContext,
-} from "@tiny-chat/core/src/features/agent/types/agent.ts";
-import { AgentUtils } from "@tiny-chat/core/src/features/agent/utils/AgentUtils.ts";
-import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
+} from "@tiny-chat/core/features/agent/types/agent.ts";
+import { AgentUtils } from "@tiny-chat/core/features/agent/utils/AgentUtils.ts";
+import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
 import type {
 	zData,
 	zMetadata,
-} from "@tiny-chat/core/src/features/data/types/part.ts";
-import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
-import { ModelProviderService } from "@tiny-chat/core/src/features/provider/services/ModelProviderService.ts";
-import { SkillUtils } from "@tiny-chat/core/src/features/skill/utils/SkillUtils.ts";
-import { ToolService } from "@tiny-chat/core/src/features/tool/services/ToolService.ts";
+} from "@tiny-chat/core/features/data/types/part.ts";
+import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
+import { ModelProviderService } from "@tiny-chat/core/features/provider/services/ModelProviderService.ts";
+import { SkillUtils } from "@tiny-chat/core/features/skill/utils/SkillUtils.ts";
+import { ToolService } from "@tiny-chat/core/features/tool/services/ToolService.ts";
 import chalk from "chalk";
 import { ServerCapabilityService } from "../../../core/services/ServerCapabilityService.ts";
 

@@ -1,4 +1,4 @@
-import type { zWebContext } from "@tiny-chat/core/src/features/provider/types/web.ts";
+import type { zWebContext } from "@tiny-chat/core/features/provider/types/web.ts";
 import { create } from "zustand";
 
 interface ViewedFile {

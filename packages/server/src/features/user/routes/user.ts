@@ -1,4 +1,4 @@
-import { zId } from "@tiny-chat/core/src/core/types/common.ts";
+import { zId } from "@tiny-chat/core/core/types/common.ts";
 import { z } from "zod";
 import { AuthService } from "../../../core/services/AuthService.ts";
 import { AuthServer } from "../../../core/utils/AuthServer.ts";

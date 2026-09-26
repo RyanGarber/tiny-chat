@@ -1,4 +1,4 @@
-import type { shell_exec } from "@tiny-chat/core/src/features/tool/tools/shell/shell_exec.ts";
+import type { shell_exec } from "@tiny-chat/core/features/tool/tools/shell/shell_exec.ts";
 import type { z } from "zod";
 import { ToolStreamService } from "./StreamService.ts";
 

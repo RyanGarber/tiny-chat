@@ -1,8 +1,8 @@
-import { useGreeting } from "@tiny-chat/client/src/core/hooks/useGreeting.ts";
-import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
-import { MessageProvider } from "@tiny-chat/client/src/features/message/components/MessageProvider.tsx";
-import { useMessages } from "@tiny-chat/client/src/features/message/hooks/useMessages.ts";
-import type { Compaction } from "@tiny-chat/core/src/features/agent/services/AgentTokensService.ts";
+import { useGreeting } from "@tiny-chat/client/core/hooks/useGreeting.ts";
+import { useChat } from "@tiny-chat/client/features/chat/hooks/useChat.ts";
+import { MessageProvider } from "@tiny-chat/client/features/message/components/MessageProvider.tsx";
+import { useMessages } from "@tiny-chat/client/features/message/hooks/useMessages.ts";
+import type { Compaction } from "@tiny-chat/core/features/agent/services/AgentTokensService.ts";
 import { useMemo } from "react";
 import Box from "../../../core/components/Box.tsx";
 import ScrollView from "../../../core/components/ScrollView.tsx";

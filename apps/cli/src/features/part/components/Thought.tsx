@@ -1,4 +1,4 @@
-import type { RenderedPart } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
+import type { RenderedPart } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
 import Markdown from "../../message/components/Markdown.tsx";
 import Task from "./Task.tsx";
 

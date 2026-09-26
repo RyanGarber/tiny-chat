@@ -1,13 +1,13 @@
 import { useDebouncedValue } from "@mantine/hooks";
 import type { SpotlightActionData } from "@mantine/spotlight";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { useSession } from "@tiny-chat/client/src/core/hooks/useSession.ts";
-import { ClientProviderService } from "@tiny-chat/client/src/features/agent/services/ClientProviderService.ts";
-import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
-import { useEmbeddingSettings } from "@tiny-chat/client/src/features/settings/hooks/useEmbeddingSettings.ts";
-import { SnippetService } from "@tiny-chat/core/src/features/data/services/SnippetService.ts";
-import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
-import { ModelProviderService } from "@tiny-chat/core/src/features/provider/services/ModelProviderService.ts";
+import { useSession } from "@tiny-chat/client/core/hooks/useSession.ts";
+import { ClientProviderService } from "@tiny-chat/client/features/agent/services/ClientProviderService.ts";
+import { ChatService } from "@tiny-chat/client/features/chat/services/ChatService.ts";
+import { useEmbeddingSettings } from "@tiny-chat/client/features/settings/hooks/useEmbeddingSettings.ts";
+import { SnippetService } from "@tiny-chat/core/features/data/services/SnippetService.ts";
+import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
+import { ModelProviderService } from "@tiny-chat/core/features/provider/services/ModelProviderService.ts";
 import { useRef } from "react";
 import { client } from "#app/client.ts";
 

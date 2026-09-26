@@ -1,5 +1,5 @@
-import { CodeUtils } from "@tiny-chat/core/src/core/utils/CodeUtils.ts";
-import { EditorPartUtils } from "@tiny-chat/core/src/features/data/utils/EditorPartUtils.ts";
+import { CodeUtils } from "@tiny-chat/core/core/utils/CodeUtils.ts";
+import { EditorPartUtils } from "@tiny-chat/core/features/data/utils/EditorPartUtils.ts";
 
 /** Genuine newline characters a paste may contain before it is collapsed. */
 export const PASTE_NEWLINE_LIMIT = 10;

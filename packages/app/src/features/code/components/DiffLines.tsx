@@ -1,9 +1,9 @@
 /** biome-ignore-all lint/suspicious/noArrayIndexKey: code stays in order */
 
 import { Box, Button, Group } from "@mantine/core";
-import { useCode } from "@tiny-chat/client/src/core/hooks/useCode.ts";
-import { CodeUtils } from "@tiny-chat/core/src/core/utils/CodeUtils.ts";
-import { DiffUtils } from "@tiny-chat/core/src/features/file/utils/DiffUtils.ts";
+import { useCode } from "@tiny-chat/client/core/hooks/useCode.ts";
+import { CodeUtils } from "@tiny-chat/core/core/utils/CodeUtils.ts";
+import { DiffUtils } from "@tiny-chat/core/features/file/utils/DiffUtils.ts";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import CodeLines from "#app/features/code/components/CodeLines.tsx";
 

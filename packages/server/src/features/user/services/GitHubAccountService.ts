@@ -1,4 +1,4 @@
-import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
+import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
 import { AuthServer } from "../../../core/utils/AuthServer.ts";
 
 export const GitHubAccountService = {

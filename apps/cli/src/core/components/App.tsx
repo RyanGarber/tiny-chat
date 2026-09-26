@@ -1,6 +1,6 @@
-import { ThemeContext } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
-import { useDraftStore } from "@tiny-chat/client/src/features/chat/stores/useDraftStore.ts";
-import { useEstimatedTokens } from "@tiny-chat/client/src/features/editor/hooks/useEstimatedTokens.ts";
+import { ThemeContext } from "@tiny-chat/client/core/components/ThemeContext.tsx";
+import { useDraftStore } from "@tiny-chat/client/features/chat/stores/useDraftStore.ts";
+import { useEstimatedTokens } from "@tiny-chat/client/features/editor/hooks/useEstimatedTokens.ts";
 import { Box, useInput, useWindowSize } from "ink";
 import { useContext, useEffect } from "react";
 import Capabilities from "../../features/agent/components/Capabilities.tsx";

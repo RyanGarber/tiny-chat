@@ -7,14 +7,14 @@ import {
 	Text,
 } from "@mantine/core";
 import { TrashIcon } from "@phosphor-icons/react";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
 import { client } from "#app/client.ts";
 import Sentinel from "#app/core/components/Sentinel.tsx";
 import { useSentinel } from "#app/core/hooks/useSentinel.ts";
 import Dropzone from "#app/features/upload/components/Dropzone.tsx";
 import FileTag from "#app/features/upload/components/FileTag.tsx";
-import { MessagingService } from "#client/src/features/chat/services/MessagingService.ts";
-import { useUploads } from "#client/src/features/upload/hooks/useUploads.ts";
+import { MessagingService } from "#client/features/chat/services/MessagingService.ts";
+import { useUploads } from "#client/features/upload/hooks/useUploads.ts";
 
 export function AttachmentUploads({ close }: { close: () => void }) {
 	const { attachmentUploads, deleteUpload } = useUploads();

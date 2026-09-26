@@ -13,7 +13,7 @@ import { type UploadsType, useAppStore } from "#app/core/stores/useAppStore.ts";
 import { AttachmentUploads } from "#app/features/upload/components/AttachmentUploads.tsx";
 import { GitHubUploads } from "#app/features/upload/components/GitHubUploads.tsx";
 import { useFileDrag } from "#app/features/upload/hooks/useFileDrag.ts";
-import { useUploads } from "#client/src/features/upload/hooks/useUploads.ts";
+import { useUploads } from "#client/features/upload/hooks/useUploads.ts";
 
 export default function Uploads() {
 	const { upload } = useUploads();

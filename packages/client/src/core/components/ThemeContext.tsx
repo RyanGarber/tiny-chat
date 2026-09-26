@@ -1,4 +1,4 @@
-import type { ThemeUtils } from "@tiny-chat/core/src/core/utils/ThemeUtils.ts";
+import type { ThemeUtils } from "@tiny-chat/core/core/utils/ThemeUtils.ts";
 import { createContext, createElement, type ReactNode, useMemo } from "react";
 import { useThemes } from "../../features/settings/hooks/useThemes.ts";
 

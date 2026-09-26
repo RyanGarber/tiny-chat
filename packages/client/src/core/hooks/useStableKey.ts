@@ -1,22 +1,22 @@
-import type { Capabilities } from "@tiny-chat/core/src/core/types/capability.ts";
+import type { Capabilities } from "@tiny-chat/core/core/types/capability.ts";
 import type {
 	zAgentChat,
 	zAgentMessage,
-} from "@tiny-chat/core/src/features/agent/types/agent.ts";
+} from "@tiny-chat/core/features/agent/types/agent.ts";
 import type {
 	MessageState,
 	zConfig,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
+} from "@tiny-chat/core/features/data/types/message.ts";
 import type {
 	zData,
 	zDataPart,
-} from "@tiny-chat/core/src/features/data/types/part.ts";
-import type { zMCPServers } from "@tiny-chat/core/src/features/data/types/user.ts";
+} from "@tiny-chat/core/features/data/types/part.ts";
+import type { zMCPServers } from "@tiny-chat/core/features/data/types/user.ts";
 import type {
 	ProviderState,
 	ProviderStatus,
-} from "@tiny-chat/core/src/features/provider/types/provider.ts";
-import type { Toolset } from "@tiny-chat/core/src/features/tool/types/tool.ts";
+} from "@tiny-chat/core/features/provider/types/provider.ts";
+import type { Toolset } from "@tiny-chat/core/features/tool/types/tool.ts";
 import { useMemo } from "react";
 import type { McpServer } from "../../features/agent/hooks/useMcp.ts";
 

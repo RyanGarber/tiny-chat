@@ -1,26 +1,26 @@
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import { AgentService } from "@tiny-chat/core/src/features/agent/services/AgentService.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import { AgentService } from "@tiny-chat/core/features/agent/services/AgentService.ts";
 import type {
 	zAgentChat,
 	zAgentContext,
-} from "@tiny-chat/core/src/features/agent/types/agent.ts";
-import { AgentUtils } from "@tiny-chat/core/src/features/agent/utils/AgentUtils.ts";
-import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
+} from "@tiny-chat/core/features/agent/types/agent.ts";
+import { AgentUtils } from "@tiny-chat/core/features/agent/utils/AgentUtils.ts";
+import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
 import type {
 	zData,
 	zMetadata,
 	zToolCallPart,
 	zToolResultPart,
-} from "@tiny-chat/core/src/features/data/types/part.ts";
-import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
+} from "@tiny-chat/core/features/data/types/part.ts";
+import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
 import type {
 	ProviderState,
 	ProviderStatus,
-} from "@tiny-chat/core/src/features/provider/types/provider.ts";
-import type { zSkill } from "@tiny-chat/core/src/features/skill/types/skill.ts";
-import { ToolService } from "@tiny-chat/core/src/features/tool/services/ToolService.ts";
-import type { Toolset } from "@tiny-chat/core/src/features/tool/types/tool.ts";
-import { ToolUtils } from "@tiny-chat/core/src/features/tool/utils/ToolUtils.ts";
+} from "@tiny-chat/core/features/provider/types/provider.ts";
+import type { zSkill } from "@tiny-chat/core/features/skill/types/skill.ts";
+import { ToolService } from "@tiny-chat/core/features/tool/services/ToolService.ts";
+import type { Toolset } from "@tiny-chat/core/features/tool/types/tool.ts";
+import { ToolUtils } from "@tiny-chat/core/features/tool/utils/ToolUtils.ts";
 import { smoothStream } from "ai";
 import type { Client } from "../../../client.ts";
 import { ClientCapabilityService } from "../../../core/services/ClientCapabilityService.ts";

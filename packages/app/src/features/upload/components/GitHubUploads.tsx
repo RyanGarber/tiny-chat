@@ -16,12 +16,12 @@ import {
 	TrashIcon,
 } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
 import { useState } from "react";
 import { client } from "#app/client.ts";
 import Sentinel from "#app/core/components/Sentinel.tsx";
-import { MessagingService } from "#client/src/features/chat/services/MessagingService.ts";
-import { useUploads } from "#client/src/features/upload/hooks/useUploads.ts";
+import { MessagingService } from "#client/features/chat/services/MessagingService.ts";
+import { useUploads } from "#client/features/upload/hooks/useUploads.ts";
 
 export function GitHubUploads({ close }: { close: () => void }) {
 	// Logic from GitHub.tsx

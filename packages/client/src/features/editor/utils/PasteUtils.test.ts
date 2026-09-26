@@ -1,4 +1,4 @@
-import { EditorPartUtils } from "@tiny-chat/core/src/features/data/utils/EditorPartUtils.ts";
+import { EditorPartUtils } from "@tiny-chat/core/features/data/utils/EditorPartUtils.ts";
 import {
 	PASTE_LINE_LIMIT,
 	PASTE_NEWLINE_LIMIT,

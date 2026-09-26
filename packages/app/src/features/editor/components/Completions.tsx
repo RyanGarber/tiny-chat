@@ -7,11 +7,11 @@ import {
 	Text,
 	useCombobox,
 } from "@mantine/core";
-import { useCompletionStore } from "@tiny-chat/client/src/features/editor/stores/useCompletionStore.ts";
+import { useCompletionStore } from "@tiny-chat/client/features/editor/stores/useCompletionStore.ts";
 import type {
 	CompletionGroup,
 	CompletionItem,
-} from "@tiny-chat/client/src/features/editor/types/completion.ts";
+} from "@tiny-chat/client/features/editor/types/completion.ts";
 import { type Editor, type Range, ReactRenderer } from "@tiptap/react";
 import type { SuggestionOptions, SuggestionProps } from "@tiptap/suggestion";
 import {

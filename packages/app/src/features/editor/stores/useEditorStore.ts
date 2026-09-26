@@ -1,4 +1,4 @@
-import { MessagingService } from "@tiny-chat/client/src/features/chat/services/MessagingService.ts";
+import { MessagingService } from "@tiny-chat/client/features/chat/services/MessagingService.ts";
 import type { Editor } from "@tiptap/react";
 import { create } from "zustand";
 import { client } from "#app/client.ts";

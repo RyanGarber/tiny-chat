@@ -13,9 +13,8 @@
 	},
 	"imports": {
 		"#app/*": "./src/*",
-		"#server/*": "@tiny-chat/server/*",
 		"#client/*": "@tiny-chat/client/*",
-		"#core/*": "@tiny-chat/core/src/*"
+		"#core/*": "@tiny-chat/core/*"
 	},
 	"dependencies": {
 		"@ai-sdk/provider": "^4.0.18",
@@ -42,7 +41,6 @@
 		"@tauri-apps/plugin-updater": "^2.12.0",
 		"@tiny-chat/client": "workspace:*",
 		"@tiny-chat/core": "workspace:*",
-		"@tiny-chat/server": "workspace:*",
 		"@tiptap/extension-blockquote": "^3.31.3",
 		"@tiptap/extension-code-block": "^3.31.3",
 		"@tiptap/extension-document": "^3.31.3",

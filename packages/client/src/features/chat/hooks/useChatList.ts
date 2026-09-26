@@ -2,8 +2,8 @@ import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
 import type {
 	ChatState,
 	FolderLike,
-} from "@tiny-chat/core/src/features/data/types/chat.ts";
-import { ChatUtils } from "@tiny-chat/core/src/features/data/utils/ChatUtils.ts";
+} from "@tiny-chat/core/features/data/types/chat.ts";
+import { ChatUtils } from "@tiny-chat/core/features/data/utils/ChatUtils.ts";
 import { useContext } from "react";
 import { ClientContext } from "../../../client.ts";
 import { ChatService } from "../services/ChatService.ts";

@@ -1,6 +1,6 @@
-import { zConfig } from "@tiny-chat/core/src/features/data/types/message.ts";
-import type { ModelProviderStatus } from "@tiny-chat/core/src/features/provider/types/model.ts";
-import type { ProviderState } from "@tiny-chat/core/src/features/provider/types/provider.ts";
+import { zConfig } from "@tiny-chat/core/features/data/types/message.ts";
+import type { ModelProviderStatus } from "@tiny-chat/core/features/provider/types/model.ts";
+import type { ProviderState } from "@tiny-chat/core/features/provider/types/provider.ts";
 import { useCallback, useContext, useMemo } from "react";
 import { ClientContext } from "../../../client.ts";
 import { useMessages } from "../../message/hooks/useMessages.ts";

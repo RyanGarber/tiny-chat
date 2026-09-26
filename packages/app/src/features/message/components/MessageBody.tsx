@@ -13,15 +13,15 @@ import {
 	ChatCircleIcon,
 	WarningCircleIcon,
 } from "@phosphor-icons/react";
-import type { AgentStreamEvent } from "@tiny-chat/client/src/core/services/StreamService.ts";
-import { useStream } from "@tiny-chat/client/src/features/agent/hooks/useStream.ts";
-import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
-import type { Compaction } from "@tiny-chat/core/src/features/agent/services/AgentTokensService.ts";
+import type { AgentStreamEvent } from "@tiny-chat/client/core/services/StreamService.ts";
+import { useStream } from "@tiny-chat/client/features/agent/hooks/useStream.ts";
+import { useMessageStore } from "@tiny-chat/client/features/message/stores/useMessageStore.ts";
+import type { Compaction } from "@tiny-chat/core/features/agent/services/AgentTokensService.ts";
 import { type CSSProperties, useMemo } from "react";
 import { EditorUtils } from "#app/features/editor/utils/EditorUtils.ts";
 import MessageParts from "#app/features/message/components/MessageParts.tsx";
 import { useMessageSelection } from "#app/features/message/hooks/useMessageSelection.ts";
-import type { MessageState } from "#core/features/data/types/message";
+import type { MessageState } from "#core/features/data/types/message.ts";
 
 export default function MessageBody({
 	message,

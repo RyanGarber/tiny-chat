@@ -1,9 +1,9 @@
-import { TypeUtils } from "@tiny-chat/core/src/core/utils/TypeUtils.ts";
-import type { FolderLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
+import { TypeUtils } from "@tiny-chat/core/core/utils/TypeUtils.ts";
+import type { FolderLike } from "@tiny-chat/core/features/data/types/chat.ts";
 import type {
 	zSettings,
 	zUser,
-} from "@tiny-chat/core/src/features/data/types/user.ts";
+} from "@tiny-chat/core/features/data/types/user.ts";
 
 export const SettingsService = {
 	getSettings: async ({

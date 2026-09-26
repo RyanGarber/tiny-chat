@@ -1,19 +1,19 @@
 import type { Transport } from "@modelcontextprotocol/client";
 import { inferPrismaClient } from "@ryangarber/better-auth-adapter-prisma/client";
 import { QueryClient } from "@tanstack/react-query";
-import type { userFields } from "@tiny-chat/core/prisma/better-auth-adapter.ts";
-import { JsonService } from "@tiny-chat/core/src/core/services/JsonService.ts";
-import type { ShellCapability } from "@tiny-chat/core/src/core/types/capability.ts";
-import { zEnv, type zProviderEnv } from "@tiny-chat/core/src/core/types/env.ts";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
-import type { ModelProvider } from "@tiny-chat/core/src/features/provider/types/model.ts";
+import { JsonService } from "@tiny-chat/core/core/services/JsonService.ts";
+import type { ShellCapability } from "@tiny-chat/core/core/types/capability.ts";
+import { zEnv, type zProviderEnv } from "@tiny-chat/core/core/types/env.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
+import type { ModelProvider } from "@tiny-chat/core/features/provider/types/model.ts";
 import type {
 	ProviderState,
 	ProviderStatus,
-} from "@tiny-chat/core/src/features/provider/types/provider.ts";
-import type { ApiRouter } from "@tiny-chat/server/src/core/utils/ApiRouter.ts";
-import type { AuthServer } from "@tiny-chat/server/src/core/utils/AuthServer.ts";
+} from "@tiny-chat/core/features/provider/types/provider.ts";
+import type { userFields } from "@tiny-chat/core/prisma/better-auth-adapter.ts";
+import type { ApiRouter } from "@tiny-chat/server/core/utils/ApiRouter.ts";
+import type { AuthServer } from "@tiny-chat/server/core/utils/AuthServer.ts";
 import { createTRPCClient, httpLink } from "@trpc/client";
 import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query";
 import {

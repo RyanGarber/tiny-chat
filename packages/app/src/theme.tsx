@@ -3,7 +3,7 @@ import {
 	createTheme,
 	type MantineThemeOverride,
 } from "@mantine/core";
-import { palettes } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
+import { palettes } from "@tiny-chat/client/core/components/ThemeContext.tsx";
 
 export default createTheme({
 	fontFamily: "'Rubik', sans-serif",

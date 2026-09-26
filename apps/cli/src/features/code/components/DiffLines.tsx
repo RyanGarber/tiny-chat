@@ -1,14 +1,14 @@
 /** biome-ignore-all lint/suspicious/noArrayIndexKey: lines stay in order */
 
-import { useCode } from "@tiny-chat/client/src/core/hooks/useCode.ts";
+import { useCode } from "@tiny-chat/client/core/hooks/useCode.ts";
 import {
 	type CodeResult,
 	CodeUtils,
-} from "@tiny-chat/core/src/core/utils/CodeUtils.ts";
+} from "@tiny-chat/core/core/utils/CodeUtils.ts";
 import {
 	type DiffContext,
 	DiffUtils,
-} from "@tiny-chat/core/src/features/file/utils/DiffUtils.ts";
+} from "@tiny-chat/core/features/file/utils/DiffUtils.ts";
 import chalk from "chalk";
 import { Text } from "ink";
 import type { ReactNode } from "react";

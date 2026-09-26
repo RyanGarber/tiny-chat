@@ -1,10 +1,6 @@
 /// <reference types="../../../vitest.context.d.ts" />
 
-import {
-	create,
-	onAfterAll,
-	onBeforeAll,
-} from "@tiny-chat/client/src/tests.ts";
+import { create, onAfterAll, onBeforeAll } from "@tiny-chat/client/tests.ts";
 import { render as _render } from "ink-testing-library";
 import type { ReactNode } from "react";
 import { afterAll, beforeAll } from "vitest";

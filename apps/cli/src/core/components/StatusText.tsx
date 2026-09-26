@@ -1,4 +1,4 @@
-import { useEmbedding } from "@tiny-chat/client/src/features/user/hooks/useEmbedding.ts";
+import { useEmbedding } from "@tiny-chat/client/features/user/hooks/useEmbedding.ts";
 import Spinner from "ink-spinner";
 import { useShallow } from "zustand/react/shallow";
 import { type Status, useAppStore } from "../stores/useAppStore.ts";

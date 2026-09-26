@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { SettingsUtils } from "@tiny-chat/core/src/core/utils/SettingsUtils.ts";
+import { SettingsUtils } from "@tiny-chat/core/core/utils/SettingsUtils.ts";
 import { useContext, useMemo } from "react";
 import { ClientContext } from "../../../client.ts";
 import { useSettings } from "./useSettings.ts";

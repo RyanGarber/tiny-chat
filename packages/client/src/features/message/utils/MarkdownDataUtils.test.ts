@@ -1,4 +1,4 @@
-import type { zAttachmentPart } from "@tiny-chat/core/src/features/data/types/part.ts";
+import type { zAttachmentPart } from "@tiny-chat/core/features/data/types/part.ts";
 import { useEditorPartStore } from "../../editor/stores/useEditorPartStore.ts";
 import { _useMarkdownTest } from "../hooks/useMarkdown.ts";
 import { MarkdownDataUtils } from "./MarkdownDataUtils.ts";

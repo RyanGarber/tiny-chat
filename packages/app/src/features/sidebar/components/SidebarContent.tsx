@@ -17,14 +17,14 @@ import {
 	PlusCircleIcon,
 	TrashIcon,
 } from "@phosphor-icons/react";
-import { useChatList } from "@tiny-chat/client/src/features/chat/hooks/useChatList.ts";
-import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
-import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
-import { useMessagingStore } from "@tiny-chat/client/src/features/chat/stores/useMessagingStore.ts";
+import { useChatList } from "@tiny-chat/client/features/chat/hooks/useChatList.ts";
+import { ChatService } from "@tiny-chat/client/features/chat/services/ChatService.ts";
+import { useChatStore } from "@tiny-chat/client/features/chat/stores/useChatStore.ts";
+import { useMessagingStore } from "@tiny-chat/client/features/chat/stores/useMessagingStore.ts";
 import type {
 	ChatState,
 	FolderState,
-} from "@tiny-chat/core/src/features/data/types/chat.ts";
+} from "@tiny-chat/core/features/data/types/chat.ts";
 import {
 	type Dispatch,
 	type DragEvent,

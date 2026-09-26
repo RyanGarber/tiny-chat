@@ -3,10 +3,10 @@
 import "./db.ts";
 
 import { inferPrismaClient } from "@ryangarber/better-auth-adapter-prisma/client";
+import { JsonService } from "@tiny-chat/core/core/services/JsonService.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
 import type { userFields } from "@tiny-chat/core/prisma/better-auth-adapter.ts";
-import { JsonService } from "@tiny-chat/core/src/core/services/JsonService.ts";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
 import { createTRPCClient, httpLink } from "@trpc/client";
 import { createAuthClient } from "better-auth/client";
 import {

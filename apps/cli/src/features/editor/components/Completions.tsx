@@ -1,8 +1,8 @@
-import { useCompletionStore } from "@tiny-chat/client/src/features/editor/stores/useCompletionStore.ts";
+import { useCompletionStore } from "@tiny-chat/client/features/editor/stores/useCompletionStore.ts";
 import type {
 	CompletionGroup,
 	CompletionItem,
-} from "@tiny-chat/client/src/features/editor/types/completion.ts";
+} from "@tiny-chat/client/features/editor/types/completion.ts";
 import { type Key, useInput, useWindowSize } from "ink";
 import {
 	type ReactNode,

@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/suspicious/noArrayIndexKey: code stays in order */
 
-import { useCode } from "@tiny-chat/client/src/core/hooks/useCode.ts";
-import type { CodeResult } from "@tiny-chat/core/src/core/utils/CodeUtils.ts";
+import { useCode } from "@tiny-chat/client/core/hooks/useCode.ts";
+import type { CodeResult } from "@tiny-chat/core/core/utils/CodeUtils.ts";
 
 export default function CodeLines({
 	code,

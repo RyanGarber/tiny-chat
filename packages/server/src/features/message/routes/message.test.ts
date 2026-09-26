@@ -1,5 +1,5 @@
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import { mockConfig } from "@tiny-chat/core/src/tests.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import { mockConfig } from "@tiny-chat/core/tests.ts";
 import { testClient } from "../../../tests.ts";
 
 describe("message", () => {

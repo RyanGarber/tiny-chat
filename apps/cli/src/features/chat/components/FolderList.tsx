@@ -1,5 +1,5 @@
-import { useChatList } from "@tiny-chat/client/src/features/chat/hooks/useChatList.ts";
-import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
+import { useChatList } from "@tiny-chat/client/features/chat/hooks/useChatList.ts";
+import { ChatService } from "@tiny-chat/client/features/chat/services/ChatService.ts";
 import { usePage } from "../../../core/hooks/usePage.ts";
 import { useWorkingStatus } from "../../../core/hooks/useWorkingStatus.ts";
 import Completions from "../../editor/components/Completions.tsx";

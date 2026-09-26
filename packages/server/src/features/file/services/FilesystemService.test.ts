@@ -1,11 +1,11 @@
-import type { zAgentContext } from "@tiny-chat/core/src/features/agent/types/agent.ts";
+import type { zAgentContext } from "@tiny-chat/core/features/agent/types/agent.ts";
 import type {
 	zData,
 	zDataPart,
-} from "@tiny-chat/core/src/features/data/types/part.ts";
-import { read_file } from "@tiny-chat/core/src/features/tool/tools/shell/read_file.ts";
-import { shell_exec } from "@tiny-chat/core/src/features/tool/tools/shell/shell_exec.ts";
-import { mockConfig } from "@tiny-chat/core/src/tests.ts";
+} from "@tiny-chat/core/features/data/types/part.ts";
+import { read_file } from "@tiny-chat/core/features/tool/tools/shell/read_file.ts";
+import { shell_exec } from "@tiny-chat/core/features/tool/tools/shell/shell_exec.ts";
+import { mockConfig } from "@tiny-chat/core/tests.ts";
 import type { z } from "zod";
 import { testClient } from "../../../tests.ts";
 

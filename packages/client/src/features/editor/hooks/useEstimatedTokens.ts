@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { AgentService } from "@tiny-chat/core/src/features/agent/services/AgentService.ts";
+import { AgentService } from "@tiny-chat/core/features/agent/services/AgentService.ts";
 import {
 	AgentTokensService,
 	type CompactionResult,
-} from "@tiny-chat/core/src/features/agent/services/AgentTokensService.ts";
-import type { zAgentMessage } from "@tiny-chat/core/src/features/agent/types/agent.ts";
-import type { zData } from "@tiny-chat/core/src/features/data/types/part.ts";
+} from "@tiny-chat/core/features/agent/services/AgentTokensService.ts";
+import type { zAgentMessage } from "@tiny-chat/core/features/agent/types/agent.ts";
+import type { zData } from "@tiny-chat/core/features/data/types/part.ts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useCapabilities } from "../../../core/hooks/useCapabilities.ts";
 import { useSession } from "../../../core/hooks/useSession.ts";

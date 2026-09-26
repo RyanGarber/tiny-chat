@@ -1,8 +1,8 @@
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
 import {
 	type EditorPartType,
 	EditorPartUtils,
-} from "@tiny-chat/core/src/features/data/utils/EditorPartUtils.ts";
+} from "@tiny-chat/core/features/data/utils/EditorPartUtils.ts";
 import type { MarkdownToken, NodeConfig } from "@tiptap/react";
 
 export const NodeUtils = {

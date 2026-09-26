@@ -1,4 +1,4 @@
-import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
+import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import FileTag from "#app/features/upload/components/FileTag.tsx";
 
 export default function Attachment({

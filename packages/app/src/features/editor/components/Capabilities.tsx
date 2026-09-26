@@ -28,14 +28,14 @@ import {
 	WrenchIcon,
 } from "@phosphor-icons/react";
 import { useIsFetching } from "@tanstack/react-query";
-import { useConfig } from "@tiny-chat/client/src/features/agent/hooks/useConfig.ts";
-import { mcpServerQueryKey } from "@tiny-chat/client/src/features/agent/hooks/useMcp.ts";
+import { useConfig } from "@tiny-chat/client/features/agent/hooks/useConfig.ts";
+import { mcpServerQueryKey } from "@tiny-chat/client/features/agent/hooks/useMcp.ts";
 import {
 	type McpToolset,
 	useTools,
-} from "@tiny-chat/client/src/features/agent/hooks/useTools.ts";
-import { useMcpServerSettings } from "@tiny-chat/client/src/features/settings/hooks/useMcpServerSettings.ts";
-import { read_file } from "@tiny-chat/core/src/features/tool/tools/shell/read_file.ts";
+} from "@tiny-chat/client/features/agent/hooks/useTools.ts";
+import { useMcpServerSettings } from "@tiny-chat/client/features/settings/hooks/useMcpServerSettings.ts";
+import { read_file } from "@tiny-chat/core/features/tool/tools/shell/read_file.ts";
 import { useState } from "react";
 import {
 	type CapabilitiesType,
@@ -47,7 +47,7 @@ import Dropzone from "#app/features/upload/components/Dropzone.tsx";
 import {
 	localSkillsQueryKey,
 	useSkills,
-} from "#client/src/features/agent/hooks/useSkills.ts";
+} from "#client/features/agent/hooks/useSkills.ts";
 import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
 import type { zMCPServers } from "#core/features/data/types/user.ts";
 import { DataUtils } from "#core/features/data/utils/DataUtils.ts";

@@ -1,8 +1,8 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
-import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
-import type { zSkill } from "@tiny-chat/core/src/features/skill/types/skill.ts";
-import { SkillUtils } from "@tiny-chat/core/src/features/skill/utils/SkillUtils.ts";
+import { FileUtils } from "@tiny-chat/core/features/file/utils/FileUtils.ts";
+import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
+import type { zSkill } from "@tiny-chat/core/features/skill/types/skill.ts";
+import { SkillUtils } from "@tiny-chat/core/features/skill/utils/SkillUtils.ts";
 import { useContext, useMemo } from "react";
 import { ClientContext } from "../../../client.ts";
 

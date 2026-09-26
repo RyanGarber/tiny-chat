@@ -1,15 +1,15 @@
 import { Alert, Button, Stack, Text } from "@mantine/core";
 import { ArrowClockwiseIcon } from "@phosphor-icons/react";
-import type { AgentStreamEvent } from "@tiny-chat/client/src/core/services/StreamService.ts";
-import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
-import { MarkdownDataUtils } from "@tiny-chat/client/src/features/message/utils/MarkdownDataUtils.ts";
-import { useThemes } from "@tiny-chat/client/src/features/settings/hooks/useThemes.ts";
-import type { Compaction } from "@tiny-chat/core/src/features/agent/services/AgentTokensService.ts";
-import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
-import type { zData } from "@tiny-chat/core/src/features/data/types/part.ts";
-import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
-import { EditorPartUtils } from "@tiny-chat/core/src/features/data/utils/EditorPartUtils.ts";
-import { ToolCallUtils } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
+import type { AgentStreamEvent } from "@tiny-chat/client/core/services/StreamService.ts";
+import { useMessageStore } from "@tiny-chat/client/features/message/stores/useMessageStore.ts";
+import { MarkdownDataUtils } from "@tiny-chat/client/features/message/utils/MarkdownDataUtils.ts";
+import { useThemes } from "@tiny-chat/client/features/settings/hooks/useThemes.ts";
+import type { Compaction } from "@tiny-chat/core/features/agent/services/AgentTokensService.ts";
+import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
+import type { zData } from "@tiny-chat/core/features/data/types/part.ts";
+import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
+import { EditorPartUtils } from "@tiny-chat/core/features/data/utils/EditorPartUtils.ts";
+import { ToolCallUtils } from "@tiny-chat/core/features/tool/utils/ToolCallUtils.ts";
 import { MediaPlayer, MediaProvider } from "@vidstack/react";
 import {
 	DefaultAudioLayout,

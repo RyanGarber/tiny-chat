@@ -1,9 +1,9 @@
 import { Box } from "@mantine/core";
-import { StreamContext } from "@tiny-chat/client/src/features/message/components/StreamContext.tsx";
+import { StreamContext } from "@tiny-chat/client/features/message/components/StreamContext.tsx";
 import {
 	type MarkdownSource,
 	useMarkdown,
-} from "@tiny-chat/client/src/features/message/hooks/useMarkdown.ts";
+} from "@tiny-chat/client/features/message/hooks/useMarkdown.ts";
 import type { ComponentProps } from "react";
 import {
 	type AnimateOptions,

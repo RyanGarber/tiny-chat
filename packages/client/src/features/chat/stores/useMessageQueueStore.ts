@@ -1,12 +1,12 @@
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import { TypeUtils } from "@tiny-chat/core/src/core/utils/TypeUtils.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import { TypeUtils } from "@tiny-chat/core/core/utils/TypeUtils.ts";
 import type {
 	zData,
 	zDataSimplePart,
 	zInterjectionPart,
-} from "@tiny-chat/core/src/features/data/types/part.ts";
-import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
-import { EditorPartUtils } from "@tiny-chat/core/src/features/data/utils/EditorPartUtils.ts";
+} from "@tiny-chat/core/features/data/types/part.ts";
+import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
+import { EditorPartUtils } from "@tiny-chat/core/features/data/utils/EditorPartUtils.ts";
 import { create } from "zustand";
 
 interface MessageQueueStore {

@@ -1,7 +1,7 @@
-import { ComponentUtils } from "@tiny-chat/client/src/core/utils/ComponentUtils.ts";
-import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
-import { SourceUtils } from "@tiny-chat/core/src/features/data/utils/SourceUtils.ts";
-import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
+import { ComponentUtils } from "@tiny-chat/client/core/utils/ComponentUtils.ts";
+import { useMessageStore } from "@tiny-chat/client/features/message/stores/useMessageStore.ts";
+import { SourceUtils } from "@tiny-chat/core/features/data/utils/SourceUtils.ts";
+import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import type { ExtraProps } from "hast-util-to-jsx-runtime";
 import { useWindowSize } from "ink";
 import Image from "ink-picture";

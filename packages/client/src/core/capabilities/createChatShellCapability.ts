@@ -1,8 +1,8 @@
 import type {
 	CapabilityFactory,
 	ShellCapability,
-} from "@tiny-chat/core/src/core/types/capability.ts";
-import type { FilesystemSpec } from "@tiny-chat/core/src/features/file/types/file.ts";
+} from "@tiny-chat/core/core/types/capability.ts";
+import type { FilesystemSpec } from "@tiny-chat/core/features/file/types/file.ts";
 import type { Client } from "../../client.ts";
 
 export const createChatShellCapability: CapabilityFactory<

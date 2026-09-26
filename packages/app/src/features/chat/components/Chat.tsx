@@ -11,15 +11,15 @@ import {
 import { useElementSize, useMergedRef } from "@mantine/hooks";
 import { ArrowClockwiseIcon, CaretDoubleDownIcon } from "@phosphor-icons/react";
 import { useIsMutating } from "@tanstack/react-query";
-import { useGreeting } from "@tiny-chat/client/src/core/hooks/useGreeting.ts";
-import { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
-import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
-import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
-import { useDraftStore } from "@tiny-chat/client/src/features/chat/stores/useDraftStore.ts";
-import { useDisabled } from "@tiny-chat/client/src/features/editor/hooks/useDisabled.ts";
-import { useEstimatedTokens } from "@tiny-chat/client/src/features/editor/hooks/useEstimatedTokens.ts";
-import { MessageProvider } from "@tiny-chat/client/src/features/message/components/MessageProvider.tsx";
-import { useMessages } from "@tiny-chat/client/src/features/message/hooks/useMessages.ts";
+import { useGreeting } from "@tiny-chat/client/core/hooks/useGreeting.ts";
+import { useChat } from "@tiny-chat/client/features/chat/hooks/useChat.ts";
+import { ChatService } from "@tiny-chat/client/features/chat/services/ChatService.ts";
+import { useChatStore } from "@tiny-chat/client/features/chat/stores/useChatStore.ts";
+import { useDraftStore } from "@tiny-chat/client/features/chat/stores/useDraftStore.ts";
+import { useDisabled } from "@tiny-chat/client/features/editor/hooks/useDisabled.ts";
+import { useEstimatedTokens } from "@tiny-chat/client/features/editor/hooks/useEstimatedTokens.ts";
+import { MessageProvider } from "@tiny-chat/client/features/message/components/MessageProvider.tsx";
+import { useMessages } from "@tiny-chat/client/features/message/hooks/useMessages.ts";
 import { useEffect, useLayoutEffect, useMemo } from "react";
 import { client } from "#app/client.ts";
 import Sentinel from "#app/core/components/Sentinel.tsx";
@@ -32,8 +32,8 @@ import ChatHeader from "#app/features/chat/components/ChatHeader.tsx";
 import Editor from "#app/features/editor/components/Editor.tsx";
 import { useEditorStore } from "#app/features/editor/stores/useEditorStore.ts";
 import Message from "#app/features/message/components/Message.tsx";
-import { useMessagingStore } from "#client/src/features/chat/stores/useMessagingStore.ts";
-import { uploadMutationKey } from "#client/src/features/upload/hooks/useUploads.ts";
+import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
+import { uploadMutationKey } from "#client/features/upload/hooks/useUploads.ts";
 
 export default function Chat() {
 	const { chat } = useChat();

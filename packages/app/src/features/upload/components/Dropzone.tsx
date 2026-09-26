@@ -12,9 +12,9 @@ import {
 	Dropzone as MantineDropzone,
 } from "@mantine/dropzone";
 import { UploadIcon, XIcon } from "@phosphor-icons/react";
-import type { Enum } from "@tiny-chat/core/src/core/services/PostgresService.ts";
+import type { Enum } from "@tiny-chat/core/core/services/PostgresService.ts";
 import { useState } from "react";
-import { useUploads } from "#client/src/features/upload/hooks/useUploads.ts";
+import { useUploads } from "#client/features/upload/hooks/useUploads.ts";
 import type { zUploadResult } from "#core/features/file/types/upload.ts";
 
 export default function Dropzone({

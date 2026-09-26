@@ -1,6 +1,6 @@
 import { useHotkeys } from "@mantine/hooks";
-import { MarkdownDataUtils } from "@tiny-chat/client/src/features/message/utils/MarkdownDataUtils.ts";
-import { MarkdownUtils } from "@tiny-chat/client/src/features/message/utils/MarkdownUtils.ts";
+import { MarkdownDataUtils } from "@tiny-chat/client/features/message/utils/MarkdownDataUtils.ts";
+import { MarkdownUtils } from "@tiny-chat/client/features/message/utils/MarkdownUtils.ts";
 import { Markdown } from "@tiptap/markdown";
 import type { Slice } from "@tiptap/pm/model";
 import { Selection } from "@tiptap/pm/state";
@@ -18,8 +18,8 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { useMessaging } from "#client/src/features/chat/hooks/useMessaging.ts";
-import { useUploads } from "#client/src/features/upload/hooks/useUploads.ts";
+import { useMessaging } from "#client/features/chat/hooks/useMessaging.ts";
+import { useUploads } from "#client/features/upload/hooks/useUploads.ts";
 import { useAttachment } from "../hooks/useAttachment.tsx";
 import { useBlockquote } from "../hooks/useBlockquote.tsx";
 import { useCodeBlock } from "../hooks/useCodeBlock.tsx";

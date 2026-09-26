@@ -1,15 +1,15 @@
 import { useMutation } from "@tanstack/react-query";
-import type { ChatState } from "@tiny-chat/core/src/features/data/types/chat.ts";
-import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
+import type { ChatState } from "@tiny-chat/core/features/data/types/chat.ts";
+import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
 import type {
 	zData,
 	zDataPart,
 	zToolCallPart,
-} from "@tiny-chat/core/src/features/data/types/part.ts";
-import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
-import { ModelProviderService } from "@tiny-chat/core/src/features/provider/services/ModelProviderService.ts";
-import { ToolCallUtils } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
-import { ToolUtils } from "@tiny-chat/core/src/features/tool/utils/ToolUtils.ts";
+} from "@tiny-chat/core/features/data/types/part.ts";
+import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
+import { ModelProviderService } from "@tiny-chat/core/features/provider/services/ModelProviderService.ts";
+import { ToolCallUtils } from "@tiny-chat/core/features/tool/utils/ToolCallUtils.ts";
+import { ToolUtils } from "@tiny-chat/core/features/tool/utils/ToolUtils.ts";
 import { useContext, useRef } from "react";
 import { ClientContext } from "../../../client.ts";
 import { useSession } from "../../../core/hooks/useSession.ts";

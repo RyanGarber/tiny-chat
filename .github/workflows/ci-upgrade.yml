@@ -56,15 +56,17 @@ jobs:
                         ~/.cargo/registry
                         ~/.cargo/git
                         apps/tauri/target
-                    key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.fingerprint }}-${{ matrix.name }}-cargo-v2-${{ hashFiles('apps/tauri/Cargo.lock', 'apps/tauri/build.rs', 'apps/tauri/build_support/**', 'apps/tauri/lib/afmize/Package.resolved') }}
-                    restore-keys: ${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.fingerprint }}-${{ matrix.name }}-cargo-v2-
+                    key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.fingerprint }}-${{ matrix.name }}-cargo-v2-${{ hashFiles('apps/tauri/Cargo.lock', 'apps/tauri/build.rs', 'apps/tauri/build_support/**', 'apps/tauri/lib/afmize/Package.resolved') }}-${{ github.sha }}
+                    restore-keys: |
+                        ${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.fingerprint }}-${{ matrix.name }}-cargo-v2-${{ hashFiles('apps/tauri/Cargo.lock', 'apps/tauri/build.rs', 'apps/tauri/build_support/**', 'apps/tauri/lib/afmize/Package.resolved') }}-
+                        ${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.fingerprint }}-${{ matrix.name }}-cargo-v2-
 
             -   name: Cache Turbo
                 uses: actions/cache@v6
                 with:
                     path: .turbo
-                    key: ${{ runner.os }}-turbo-${{ github.sha }}
-                    restore-keys: ${{ runner.os }}-turbo-
+                    key: ${{ runner.os }}-${{ runner.arch }}-turbo-ci-upgrade-${{ matrix.name }}-${{ github.sha }}
+                    restore-keys: ${{ runner.os }}-${{ runner.arch }}-turbo-ci-upgrade-${{ matrix.name }}-
 
             -   name: Install pnpm
                 uses: pnpm/action-setup@v6
@@ -134,7 +136,7 @@ jobs:
 
             -   name: Upload macOS artifact
                 if: matrix.name == 'macos'
-                uses: actions/upload-artifact@v5
+                uses: actions/upload-artifact@v7
                 with:
                     name: tiny-chat-macos
                     retention-days: 14
@@ -182,7 +184,7 @@ jobs:
 
             -   name: Upload iOS artifact
                 if: matrix.name == 'ios'
-                uses: actions/upload-artifact@v5
+                uses: actions/upload-artifact@v7
                 with:
                     name: tiny-chat-ios
                     retention-days: 14

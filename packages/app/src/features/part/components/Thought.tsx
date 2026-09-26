@@ -1,6 +1,6 @@
 import { Box, Collapse, Group, Text } from "@mantine/core";
 import { BrainIcon } from "@phosphor-icons/react";
-import type { RenderedPart } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
+import type { RenderedPart } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
 import { useState } from "react";
 import Markdown from "../../message/components/Markdown.tsx";
 

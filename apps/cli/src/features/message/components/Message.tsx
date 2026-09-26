@@ -1,10 +1,10 @@
-import { ClientContext } from "@tiny-chat/client/src/client.ts";
-import type { AgentStreamEvent } from "@tiny-chat/client/src/core/services/StreamService.ts";
-import { useStream } from "@tiny-chat/client/src/features/agent/hooks/useStream.ts";
-import { MessagingService } from "@tiny-chat/client/src/features/chat/services/MessagingService.ts";
-import { useMessageBranches } from "@tiny-chat/client/src/features/message/hooks/useMessageBranches.ts";
-import type { Compaction } from "@tiny-chat/core/src/features/agent/services/AgentTokensService.ts";
-import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
+import { ClientContext } from "@tiny-chat/client/client.ts";
+import type { AgentStreamEvent } from "@tiny-chat/client/core/services/StreamService.ts";
+import { useStream } from "@tiny-chat/client/features/agent/hooks/useStream.ts";
+import { MessagingService } from "@tiny-chat/client/features/chat/services/MessagingService.ts";
+import { useMessageBranches } from "@tiny-chat/client/features/message/hooks/useMessageBranches.ts";
+import type { Compaction } from "@tiny-chat/core/features/agent/services/AgentTokensService.ts";
+import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
 import { useWindowSize } from "ink";
 import Spinner from "ink-spinner";
 import { useContext } from "react";

@@ -1,24 +1,24 @@
 import type {
 	Enum,
 	Model,
-} from "@tiny-chat/core/src/core/services/PostgresService.ts";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import { SettingsUtils } from "@tiny-chat/core/src/core/utils/SettingsUtils.ts";
-import type { ChatLike } from "@tiny-chat/core/src/features/data/types/chat.ts";
+} from "@tiny-chat/core/core/services/PostgresService.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import { SettingsUtils } from "@tiny-chat/core/core/utils/SettingsUtils.ts";
+import type { ChatLike } from "@tiny-chat/core/features/data/types/chat.ts";
 import type {
 	MessageLike,
 	zConfig,
-} from "@tiny-chat/core/src/features/data/types/message.ts";
+} from "@tiny-chat/core/features/data/types/message.ts";
 import type {
 	zData,
 	zMetadata,
-} from "@tiny-chat/core/src/features/data/types/part.ts";
-import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
-import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
+} from "@tiny-chat/core/features/data/types/part.ts";
+import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
+import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
 import {
 	type MessageBranches,
 	MessageBranchUtils,
-} from "@tiny-chat/core/src/features/data/utils/MessageBranchUtils.ts";
+} from "@tiny-chat/core/features/data/utils/MessageBranchUtils.ts";
 import { MemoryRetrievalService } from "../../chat/services/MemoryRetrievalService.ts";
 import { MessageUtils } from "../utils/MessageUtils.ts";
 

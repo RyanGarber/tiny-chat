@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { MessagingService } from "@tiny-chat/client/src/features/chat/services/MessagingService.ts";
+import { MessagingService } from "@tiny-chat/client/features/chat/services/MessagingService.ts";
 import type {
 	CompletionGroup,
 	CompletionItem,
-} from "@tiny-chat/client/src/features/editor/types/completion.ts";
-import { useUploads } from "@tiny-chat/client/src/features/upload/hooks/useUploads.ts";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
+} from "@tiny-chat/client/features/editor/types/completion.ts";
+import { useUploads } from "@tiny-chat/client/features/upload/hooks/useUploads.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
 import { useMemo } from "react";
 import { client } from "../../../client.ts";
 import Text from "../../../core/components/Text.tsx";

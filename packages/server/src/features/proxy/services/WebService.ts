@@ -1,9 +1,9 @@
-import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
-import { WebProviderService } from "@tiny-chat/core/src/features/provider/services/WebProviderService.ts";
+import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
+import { WebProviderService } from "@tiny-chat/core/features/provider/services/WebProviderService.ts";
 import type {
 	ProviderState,
 	ProviderStatus,
-} from "@tiny-chat/core/src/features/provider/types/provider.ts";
+} from "@tiny-chat/core/features/provider/types/provider.ts";
 import { CacheService } from "../../user/services/CacheService.ts";
 
 export const WebService = {

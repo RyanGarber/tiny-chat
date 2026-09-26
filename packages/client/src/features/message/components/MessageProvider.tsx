@@ -1,9 +1,9 @@
-import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
-import { DataUtils } from "@tiny-chat/core/src/features/data/utils/DataUtils.ts";
+import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
+import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
 import {
 	type Source,
 	SourceUtils,
-} from "@tiny-chat/core/src/features/data/utils/SourceUtils.ts";
+} from "@tiny-chat/core/features/data/utils/SourceUtils.ts";
 import {
 	createElement,
 	type ReactNode,

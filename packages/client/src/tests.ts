@@ -4,7 +4,7 @@
 import "temporal-polyfill/full/global";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { zEnv } from "@tiny-chat/core/src/core/types/env.ts";
+import type { zEnv } from "@tiny-chat/core/core/types/env.ts";
 import { createElement, type ReactNode } from "react";
 import { inject } from "vitest";
 import { type Client, ClientContext, createClient } from "./client.ts";

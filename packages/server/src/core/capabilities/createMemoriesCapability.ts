@@ -1,10 +1,10 @@
 import type {
 	CapabilityFactory,
 	MemoriesCapability,
-} from "@tiny-chat/core/src/core/types/capability.ts";
-import type { MemorySource } from "@tiny-chat/core/src/features/data/types/memory.ts";
-import type { MessageLike } from "@tiny-chat/core/src/features/data/types/message.ts";
-import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
+} from "@tiny-chat/core/core/types/capability.ts";
+import type { MemorySource } from "@tiny-chat/core/features/data/types/memory.ts";
+import type { MessageLike } from "@tiny-chat/core/features/data/types/message.ts";
+import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
 import { ChatSearchService } from "../../features/chat/services/ChatSearchService.ts";
 import { MemoryRetrievalService } from "../../features/chat/services/MemoryRetrievalService.ts";
 import { MemorySearchService } from "../../features/chat/services/MemorySearchService.ts";

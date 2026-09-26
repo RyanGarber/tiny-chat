@@ -1,15 +1,15 @@
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
 import type {
 	zData,
 	zDataPart,
 	zTextPart,
-} from "@tiny-chat/core/src/features/data/types/part.ts";
-import { DirectiveUtils } from "@tiny-chat/core/src/features/data/utils/DirectiveUtils.ts";
+} from "@tiny-chat/core/features/data/types/part.ts";
+import { DirectiveUtils } from "@tiny-chat/core/features/data/utils/DirectiveUtils.ts";
 import {
 	EDITOR_PART_TYPES,
 	EditorPartUtils,
 	type zEditorPart,
-} from "@tiny-chat/core/src/features/data/utils/EditorPartUtils.ts";
+} from "@tiny-chat/core/features/data/utils/EditorPartUtils.ts";
 import { useEditorPartStore } from "../../editor/stores/useEditorPartStore.ts";
 
 const text = (value: string): zTextPart => ({

@@ -1,14 +1,14 @@
-import { useSession } from "@tiny-chat/client/src/core/hooks/useSession.ts";
-import { useCommands } from "@tiny-chat/client/src/features/editor/hooks/useCommands.ts";
+import { useSession } from "@tiny-chat/client/core/hooks/useSession.ts";
+import { useCommands } from "@tiny-chat/client/features/editor/hooks/useCommands.ts";
 import type {
 	CommandChoiceGroup,
 	CommandChoiceItem,
 	CommandEdit,
 	CommandGroup,
 	CommandItem,
-} from "@tiny-chat/client/src/features/editor/types/command.ts";
-import type { CompletionGroup } from "@tiny-chat/client/src/features/editor/types/completion.ts";
-import { CommandUtils } from "@tiny-chat/client/src/features/editor/utils/CommandUtils.ts";
+} from "@tiny-chat/client/features/editor/types/command.ts";
+import type { CompletionGroup } from "@tiny-chat/client/features/editor/types/completion.ts";
+import { CommandUtils } from "@tiny-chat/client/features/editor/utils/CommandUtils.ts";
 import { useCallback, useMemo } from "react";
 import { client } from "../../../client.ts";
 import { ClipboardService } from "../../../core/services/ClipboardService.ts";

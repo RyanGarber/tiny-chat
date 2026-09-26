@@ -1,6 +1,6 @@
 import { Stack, Text, UnstyledButton } from "@mantine/core";
-import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
-import type { zWebContext } from "@tiny-chat/core/src/features/provider/types/web.ts";
+import { useChatStore } from "@tiny-chat/client/features/chat/stores/useChatStore.ts";
+import type { zWebContext } from "@tiny-chat/core/features/provider/types/web.ts";
 import { useMemo } from "react";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
 import { useChatFilesStore } from "#app/features/chat/stores/useChatFilesStore.ts";

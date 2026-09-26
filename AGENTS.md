@@ -7,12 +7,11 @@ in a repo.
 
 ## Layers — put the change in the right package
 
-pnpm workspace (`apps/*`, `packages/*`). No package `exports` field. Imports are deep paths with `.ts` / `.tsx`
-suffixes:
+pnpm workspace (`apps/*`, `packages/*`). Imports are deep paths with `.ts` / `.tsx` suffixes:
 
-`@tiny-chat/core/src/...`, `@tiny-chat/client/src/...`, `@tiny-chat/server/src/...`
+`@tiny-chat/core/...`, `@tiny-chat/client/...`, `@tiny-chat/server/...`
 
-`packages/app` also has `#app/*`, `#client/*`, `#core/*`, `#server/*`.
+`packages/app` also has `#app/*`, `#client/*`, `#core/*`.
 
 ```
 core  ←  server
@@ -207,11 +206,11 @@ tRPC client for product work.
 Scratch files and test harnesses:
 
 - **Server / data / FS / worker:** import the real `prisma` from
-  `@tiny-chat/server/src/db.ts`. That module loads `prisma7.config.ts` →
+  `@tiny-chat/server/db.ts`. That module loads `prisma7.config.ts` →
   `env.ts` → the repo-root `.env`.
 - **Client / hooks / generation / UI:** `createClient` + wrap with the real
   `QueryClientProvider` (`client.queryClient`) and `ClientContext` from
-  `@tiny-chat/client/src/client.ts` — the same wrapping as
+  `@tiny-chat/client/client.ts` — the same wrapping as
   `packages/app/src/main.tsx` and `apps/cli/src/main.tsx`.
   `createClient` parses `zEnv` from that same `.env`.
 

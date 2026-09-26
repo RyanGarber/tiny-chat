@@ -1,16 +1,16 @@
-import { useCommands } from "@tiny-chat/client/src/features/editor/hooks/useCommands.ts";
-import { useCompletionStore } from "@tiny-chat/client/src/features/editor/stores/useCompletionStore.ts";
+import { useCommands } from "@tiny-chat/client/features/editor/hooks/useCommands.ts";
+import { useCompletionStore } from "@tiny-chat/client/features/editor/stores/useCompletionStore.ts";
 import {
 	getEditorPart,
 	useEditorPartStore,
-} from "@tiny-chat/client/src/features/editor/stores/useEditorPartStore.ts";
+} from "@tiny-chat/client/features/editor/stores/useEditorPartStore.ts";
 import type {
 	CommandChoiceGroup,
 	CommandChoiceItem,
 	CommandGroup,
 	CommandItem,
-} from "@tiny-chat/client/src/features/editor/types/command.ts";
-import { CommandUtils } from "@tiny-chat/client/src/features/editor/utils/CommandUtils.ts";
+} from "@tiny-chat/client/features/editor/types/command.ts";
+import { CommandUtils } from "@tiny-chat/client/features/editor/utils/CommandUtils.ts";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { Plugin, PluginKey, type Transaction } from "@tiptap/pm/state";
 import {

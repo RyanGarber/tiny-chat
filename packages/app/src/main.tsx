@@ -2,7 +2,7 @@ import "#app/main.css";
 import "streamdown/styles.css";
 
 import { QueryClientProvider } from "@tanstack/react-query";
-import { ClientContext } from "@tiny-chat/client/src/client.ts";
+import { ClientContext } from "@tiny-chat/client/client.ts";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { client } from "#app/client.ts";

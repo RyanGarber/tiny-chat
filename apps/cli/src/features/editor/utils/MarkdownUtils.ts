@@ -1,4 +1,4 @@
-import type { ColorScheme } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
+import type { ColorScheme } from "@tiny-chat/client/core/components/ThemeContext.tsx";
 import type { TLabels, TStyles } from "react-ink-textarea";
 
 /**

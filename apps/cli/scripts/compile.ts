@@ -1,7 +1,7 @@
 import "../src/env.ts";
 
 import * as Babel from "@babel/core";
-import { zEnv } from "@tiny-chat/core/src/core/types/env.ts";
+import { zEnv } from "@tiny-chat/core/core/types/env.ts";
 import chalk from "chalk";
 import { create, print } from "../../../scripts/use-stdout.ts";
 

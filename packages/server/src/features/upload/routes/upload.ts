@@ -1,6 +1,6 @@
-import { Enum } from "@tiny-chat/core/src/core/services/PostgresService.ts";
-import { zId } from "@tiny-chat/core/src/core/types/common.ts";
-import type { zUploadResult } from "@tiny-chat/core/src/features/file/types/upload.ts";
+import { Enum } from "@tiny-chat/core/core/services/PostgresService.ts";
+import { zId } from "@tiny-chat/core/core/types/common.ts";
+import type { zUploadResult } from "@tiny-chat/core/features/file/types/upload.ts";
 import { z } from "zod";
 import { procedure, router } from "../../../index.ts";
 import { GitHubService } from "../services/GitHubService.ts";

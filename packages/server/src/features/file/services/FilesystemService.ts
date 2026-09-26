@@ -1,16 +1,16 @@
-import type { Model } from "@tiny-chat/core/src/core/services/PostgresService.ts";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import { TypeUtils } from "@tiny-chat/core/src/core/utils/TypeUtils.ts";
-import type { zUser } from "@tiny-chat/core/src/features/data/types/user.ts";
+import type { Model } from "@tiny-chat/core/core/services/PostgresService.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import { TypeUtils } from "@tiny-chat/core/core/utils/TypeUtils.ts";
+import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
 import type {
 	FileNode,
 	FilesystemSpec,
-} from "@tiny-chat/core/src/features/file/types/file.ts";
-import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeUtils.ts";
+} from "@tiny-chat/core/features/file/types/file.ts";
+import { FileTypeUtils } from "@tiny-chat/core/features/file/utils/FileTypeUtils.ts";
 import {
 	type FileMount,
 	PathUtils,
-} from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
+} from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import type { ByteString, FileContent, FsStat, IFileSystem } from "just-bash";
 
 /**

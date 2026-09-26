@@ -6,6 +6,11 @@
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run"
 	},
+	"exports": {
+		"./*": "./src/*",
+		"./prisma/*": "./prisma/*",
+		"./generated/*": "./generated/*"
+	},
 	"dependencies": {
 		"@ai-sdk/amazon-bedrock": "^5.0.93",
 		"@ai-sdk/anthropic": "^4.0.62",

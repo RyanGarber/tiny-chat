@@ -1,22 +1,22 @@
-import { ThemeContext } from "@tiny-chat/client/src/core/components/ThemeContext.tsx";
-import { useConfig } from "@tiny-chat/client/src/features/agent/hooks/useConfig.ts";
-import { useMessaging } from "@tiny-chat/client/src/features/chat/hooks/useMessaging.ts";
-import { MessagingService } from "@tiny-chat/client/src/features/chat/services/MessagingService.ts";
-import { useMessagingStore } from "@tiny-chat/client/src/features/chat/stores/useMessagingStore.ts";
-import { useDisabled } from "@tiny-chat/client/src/features/editor/hooks/useDisabled.ts";
+import { ThemeContext } from "@tiny-chat/client/core/components/ThemeContext.tsx";
+import { useConfig } from "@tiny-chat/client/features/agent/hooks/useConfig.ts";
+import { useMessaging } from "@tiny-chat/client/features/chat/hooks/useMessaging.ts";
+import { MessagingService } from "@tiny-chat/client/features/chat/services/MessagingService.ts";
+import { useMessagingStore } from "@tiny-chat/client/features/chat/stores/useMessagingStore.ts";
+import { useDisabled } from "@tiny-chat/client/features/editor/hooks/useDisabled.ts";
 import type {
 	Categories,
 	Usage,
-} from "@tiny-chat/client/src/features/editor/hooks/useEstimatedTokens.ts";
-import { AttachmentService } from "@tiny-chat/client/src/features/editor/services/AttachmentService.ts";
-import { useAtomStore } from "@tiny-chat/client/src/features/editor/stores/useAtomStore.ts";
-import { useCompletionStore } from "@tiny-chat/client/src/features/editor/stores/useCompletionStore.ts";
-import { AtomUtils } from "@tiny-chat/client/src/features/editor/utils/AtomUtils.ts";
-import { EditorNodeUtils } from "@tiny-chat/client/src/features/editor/utils/EditorNodeUtils.ts";
-import { useMessages } from "@tiny-chat/client/src/features/message/hooks/useMessages.ts";
-import { useMessageStore } from "@tiny-chat/client/src/features/message/stores/useMessageStore.ts";
-import { useUploads } from "@tiny-chat/client/src/features/upload/hooks/useUploads.ts";
-import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
+} from "@tiny-chat/client/features/editor/hooks/useEstimatedTokens.ts";
+import { AttachmentService } from "@tiny-chat/client/features/editor/services/AttachmentService.ts";
+import { useAtomStore } from "@tiny-chat/client/features/editor/stores/useAtomStore.ts";
+import { useCompletionStore } from "@tiny-chat/client/features/editor/stores/useCompletionStore.ts";
+import { AtomUtils } from "@tiny-chat/client/features/editor/utils/AtomUtils.ts";
+import { EditorNodeUtils } from "@tiny-chat/client/features/editor/utils/EditorNodeUtils.ts";
+import { useMessages } from "@tiny-chat/client/features/message/hooks/useMessages.ts";
+import { useMessageStore } from "@tiny-chat/client/features/message/stores/useMessageStore.ts";
+import { useUploads } from "@tiny-chat/client/features/upload/hooks/useUploads.ts";
+import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import { useInput, usePaste, useWindowSize } from "ink";
 import { useContext, useEffect, useMemo } from "react";
 import { client } from "../../../client.ts";

@@ -1,4 +1,4 @@
-import { FileFixtureUtils } from "@tiny-chat/core/src/features/file/utils/FileFixtureUtils.ts";
+import { FileFixtureUtils } from "@tiny-chat/core/features/file/utils/FileFixtureUtils.ts";
 import { testClient } from "../../../tests.ts";
 import { UploadUtils } from "./UploadUtils.ts";
 

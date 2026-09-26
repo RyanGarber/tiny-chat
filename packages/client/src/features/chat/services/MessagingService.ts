@@ -1,5 +1,5 @@
-import type { MessageState } from "@tiny-chat/core/src/features/data/types/message.ts";
-import type { zData } from "@tiny-chat/core/src/features/data/types/part.ts";
+import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
+import type { zData } from "@tiny-chat/core/features/data/types/part.ts";
 import type { Client } from "../../../client.ts";
 import { useConfigStore } from "../../agent/stores/useConfigStore.ts";
 import { AttachmentService } from "../../editor/services/AttachmentService.ts";

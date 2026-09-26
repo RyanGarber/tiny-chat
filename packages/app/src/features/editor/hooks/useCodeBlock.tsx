@@ -1,7 +1,7 @@
 import type { HighlightResult } from "@streamdown/code";
-import { useThemes } from "@tiny-chat/client/src/features/settings/hooks/useThemes.ts";
-import { CodeUtils } from "@tiny-chat/core/src/core/utils/CodeUtils.ts";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
+import { useThemes } from "@tiny-chat/client/features/settings/hooks/useThemes.ts";
+import { CodeUtils } from "@tiny-chat/core/core/utils/CodeUtils.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
 import { CodeBlock as _CodeBlock } from "@tiptap/extension-code-block";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { type EditorState, Plugin, PluginKey } from "@tiptap/pm/state";

@@ -4,17 +4,17 @@ import { WrenchIcon } from "@phosphor-icons/react";
 import type {
 	AgentStreamEvent,
 	ToolStreamEvent,
-} from "@tiny-chat/client/src/core/services/StreamService.ts";
-import { useStream } from "@tiny-chat/client/src/features/agent/hooks/useStream.ts";
-import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
-import type { StreamState } from "@tiny-chat/core/src/core/types/stream.ts";
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import type { zToolCallPart } from "@tiny-chat/core/src/features/data/types/part.ts";
-import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeUtils.ts";
-import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
-import type { shell_exec } from "@tiny-chat/core/src/features/tool/tools/shell/shell_exec.ts";
-import type { spawn_subagent } from "@tiny-chat/core/src/features/tool/tools/subagents/spawn_subagent.ts";
-import type { ToolCallUtils } from "@tiny-chat/core/src/features/tool/utils/ToolCallUtils.ts";
+} from "@tiny-chat/client/core/services/StreamService.ts";
+import { useStream } from "@tiny-chat/client/features/agent/hooks/useStream.ts";
+import { ChatService } from "@tiny-chat/client/features/chat/services/ChatService.ts";
+import type { StreamState } from "@tiny-chat/core/core/types/stream.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import type { zToolCallPart } from "@tiny-chat/core/features/data/types/part.ts";
+import { FileTypeUtils } from "@tiny-chat/core/features/file/utils/FileTypeUtils.ts";
+import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
+import type { shell_exec } from "@tiny-chat/core/features/tool/tools/shell/shell_exec.ts";
+import type { spawn_subagent } from "@tiny-chat/core/features/tool/tools/subagents/spawn_subagent.ts";
+import type { ToolCallUtils } from "@tiny-chat/core/features/tool/utils/ToolCallUtils.ts";
 import { type ReactNode, useState } from "react";
 import type { BundledLanguage } from "streamdown";
 import WebSourceCard from "#app/features/chat/components/WebSourceCard.tsx";

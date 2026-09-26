@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { useChatFiles } from "@tiny-chat/client/src/features/chat/hooks/useChatFiles.ts";
-import { FileExtractionService } from "@tiny-chat/core/src/features/file/services/FileExtractionService.ts";
-import { FileTypeUtils } from "@tiny-chat/core/src/features/file/utils/FileTypeUtils.ts";
-import { FileUtils } from "@tiny-chat/core/src/features/file/utils/FileUtils.ts";
-import { PathUtils } from "@tiny-chat/core/src/features/file/utils/PathUtils.ts";
+import { useChatFiles } from "@tiny-chat/client/features/chat/hooks/useChatFiles.ts";
+import { FileExtractionService } from "@tiny-chat/core/features/file/services/FileExtractionService.ts";
+import { FileTypeUtils } from "@tiny-chat/core/features/file/utils/FileTypeUtils.ts";
+import { FileUtils } from "@tiny-chat/core/features/file/utils/FileUtils.ts";
+import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import { client } from "#app/client.ts";
 
 /**

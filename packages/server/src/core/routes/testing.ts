@@ -1,8 +1,8 @@
-import { CommonUtils } from "@tiny-chat/core/src/core/utils/CommonUtils.ts";
-import { zAgentContext } from "@tiny-chat/core/src/features/agent/types/agent.ts";
-import { AgentUtils } from "@tiny-chat/core/src/features/agent/utils/AgentUtils.ts";
-import { ToolService } from "@tiny-chat/core/src/features/tool/services/ToolService.ts";
-import { ToolUtils } from "@tiny-chat/core/src/features/tool/utils/ToolUtils.ts";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import { zAgentContext } from "@tiny-chat/core/features/agent/types/agent.ts";
+import { AgentUtils } from "@tiny-chat/core/features/agent/utils/AgentUtils.ts";
+import { ToolService } from "@tiny-chat/core/features/tool/services/ToolService.ts";
+import { ToolUtils } from "@tiny-chat/core/features/tool/utils/ToolUtils.ts";
 import { z } from "zod";
 import { ChatService } from "../../features/chat/services/ChatService.ts";
 import { MessageService } from "../../features/message/services/MessageService.ts";

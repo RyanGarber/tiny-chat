@@ -6,10 +6,10 @@ import {
 	PlusCircleIcon,
 	UserCircleIcon,
 } from "@phosphor-icons/react";
-import type { useSession } from "@tiny-chat/client/src/core/hooks/useSession.ts";
-import type { useChat } from "@tiny-chat/client/src/features/chat/hooks/useChat.ts";
-import { ChatService } from "@tiny-chat/client/src/features/chat/services/ChatService.ts";
-import { useChatStore } from "@tiny-chat/client/src/features/chat/stores/useChatStore.ts";
+import type { useSession } from "@tiny-chat/client/core/hooks/useSession.ts";
+import type { useChat } from "@tiny-chat/client/features/chat/hooks/useChat.ts";
+import { ChatService } from "@tiny-chat/client/features/chat/services/ChatService.ts";
+import { useChatStore } from "@tiny-chat/client/features/chat/stores/useChatStore.ts";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
 
 export default function SidebarCollapsed({

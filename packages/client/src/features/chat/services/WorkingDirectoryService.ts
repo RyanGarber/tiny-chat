@@ -1,4 +1,4 @@
-import type { ShellCapability } from "@tiny-chat/core/src/core/types/capability.ts";
+import type { ShellCapability } from "@tiny-chat/core/core/types/capability.ts";
 import { useChatStore } from "../stores/useChatStore.ts";
 import { useMessagingStore } from "../stores/useMessagingStore.ts";
 

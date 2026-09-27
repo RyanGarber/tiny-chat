@@ -1,3 +1,10 @@
+## [0.9.1](https://github.com/RyanGarber/tiny-chat/compare/0.9.0...0.9.1) (2026-09-27)
+
+### Bug Fixes
+
+* ios safe area insets not applying ([062cbf2](https://github.com/RyanGarber/tiny-chat/commit/062cbf21e37f0d15ec50f06e35e267da8dcaa7d9))
+
+
 ## [0.9.0](https://github.com/RyanGarber/tiny-chat/compare/0.8.6...0.9.0) (2026-09-27)
 
 ### ⚠ BREAKING CHANGES

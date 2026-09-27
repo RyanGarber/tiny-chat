@@ -305,11 +305,12 @@ export default function App() {
 						)}
 						<AppShell.Navbar
 							{...dragSidebarClose()}
-							p={10}
 							style={{
+								padding: 10,
 								paddingTop: "calc(10px + env(safe-area-inset-top, 0px))",
 								paddingBottom: "calc(10px + env(safe-area-inset-bottom, 0px))",
 								paddingLeft: "calc(10px + env(safe-area-inset-left, 0px))",
+								paddingRight: "calc(10px + env(safe-area-inset-right, 0px))",
 								touchAction: "pan-y",
 								fontWeight: 450,
 							}}
@@ -340,8 +341,8 @@ export default function App() {
 						</AppShell.Main>
 						<AppShell.Aside
 							{...dragAsideClose()}
-							p={10}
 							style={{
+								padding: 10,
 								paddingTop: "calc(10px + env(safe-area-inset-top, 0px))",
 								paddingBottom: "calc(10px + env(safe-area-inset-bottom, 0px))",
 								paddingLeft: "calc(10px + env(safe-area-inset-left, 0px))",

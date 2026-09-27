@@ -25,7 +25,6 @@ export default function ChatHeader({ fixed }: { fixed: boolean }) {
 			left={0}
 			right={0}
 			bottom={fixed ? undefined : 0}
-			p={10}
 			gap={5}
 			display={isMobile ? undefined : "none"}
 			className="glass"
@@ -33,6 +32,7 @@ export default function ChatHeader({ fixed }: { fixed: boolean }) {
 				paddingTop: "calc(10px + env(safe-area-inset-top, 0px))",
 				paddingLeft: "calc(10px + env(safe-area-inset-left, 0px))",
 				paddingRight: "calc(10px + env(safe-area-inset-right, 0px))",
+				paddingBottom: "10px",
 				zIndex: "calc(var(--mantine-z-index-app) + 1)",
 				borderBottom: "1px solid var(--mantine-color-default-border)",
 			}}

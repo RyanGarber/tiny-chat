@@ -7,7 +7,7 @@
 		"start:server": "dotenv run -- pnpm --filter @tiny-chat/server run start",
 		"start:web": "dotenv run -- pnpm --filter @tiny-chat/web run start",
 		"dev:web": "dotenv run -- node scripts/use-server.ts \"[web] pnpm --filter @tiny-chat/web run dev\"",
-		"dev:cli": "dotenv run -- node scripts/use-server.ts \"[cli] pnpm --filter @tiny-chat/cli run dev\"",
+		"dev:cli": "dotenv run -- node scripts/dev-cli.ts",
 		"dev:tauri": "dotenv run -- node scripts/use-server.ts \"[tauri] pnpm --filter @tiny-chat/tauri run tauri dev\"",
 		"dev:tauri:ios": "dotenv run -- node scripts/use-server.ts --host \"[tauri] pnpm --filter @tiny-chat/tauri run tauri ios dev --host\"",
 		"dev:tauri:android": "dotenv run -- node scripts/use-server.ts --host \"[tauri] pnpm --filter @tiny-chat/tauri run tauri android dev --host\"",

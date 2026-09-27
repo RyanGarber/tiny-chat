@@ -21,7 +21,6 @@ import { useInput, usePaste, useWindowSize } from "ink";
 import { useContext, useEffect, useMemo } from "react";
 import { client } from "../../../client.ts";
 import Box from "../../../core/components/Box.tsx";
-import Text from "../../../core/components/Text.tsx";
 import type { Color } from "../../../core/hooks/useColor.ts";
 import { useMouseInput } from "../../../core/hooks/useMouseInput.ts";
 import { useWorkingStatus } from "../../../core/hooks/useWorkingStatus.ts";
@@ -367,12 +366,6 @@ export default function Editor({
 
 	return (
 		<>
-			{nextFeedbackId && (
-				<Text color="textSubtle">
-					{" "}
-					Tab: {feedbackFocused ? "message editor" : "tool feedback"}
-				</Text>
-			)}
 			<Commands
 				content={content}
 				setContent={setContent}

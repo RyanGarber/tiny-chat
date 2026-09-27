@@ -1,10 +1,9 @@
+import { ThemeContext } from "@tiny-chat/client/core/components/ThemeContext.tsx";
 import { ComponentUtils } from "@tiny-chat/client/core/utils/ComponentUtils.ts";
 import { useMessageStore } from "@tiny-chat/client/features/message/stores/useMessageStore.ts";
 import { SourceUtils } from "@tiny-chat/core/features/data/utils/SourceUtils.ts";
 import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import type { ExtraProps } from "hast-util-to-jsx-runtime";
-import { useWindowSize } from "ink";
-import Image from "ink-picture";
 import {
 	Children,
 	type ComponentType,
@@ -20,6 +19,7 @@ import Divider from "../../../core/components/Divider.tsx";
 import Text, { type TextProps } from "../../../core/components/Text.tsx";
 import { CliUtils } from "../../../core/utils/CliUtils.ts";
 import { Code } from "../../code/components/Code.tsx";
+import Image from "../../part/components/Image.tsx";
 import Paste from "../../part/components/Paste.tsx";
 import Quote from "../../part/components/Quote.tsx";
 import {
@@ -133,15 +133,7 @@ const H5Component: Components["h5"] = H4Component;
 const H6Component: Components["h6"] = H4Component;
 
 const ImgComponent: Components["img"] = ({ src, alt }) => {
-	const { rows } = useWindowSize();
-	return (
-		<Image
-			src={src ?? ""}
-			alt={alt ?? ""}
-			height={rows - 2}
-			objectFit="contain"
-		/>
-	);
+	return <Image src={src ?? ""} alt={alt ?? ""} />;
 };
 
 const AComponent: Components["a"] = ({ href, children }) => (
@@ -155,7 +147,7 @@ const PreComponent: Components["pre"] = ({ children }) => (
 );
 
 const CodeComponent: Components["code"] = ({ children, className }) => {
-	const { rows } = useWindowSize();
+	const { colorScheme } = useContext(ThemeContext);
 
 	const code = ComponentUtils.text({ children });
 	const language = className?.replace("language-", "");
@@ -163,13 +155,10 @@ const CodeComponent: Components["code"] = ({ children, className }) => {
 
 	if (language === "math") {
 		return (
-			<Box>
+			<Box justifyContent="center">
 				<Image
-					src={`https://latex.codecogs.com/png.latex?\\fg{white}${encodeURIComponent(code)}`}
+					src={`https://latex.codecogs.com/png.latex?${encodeURIComponent(`\\fg{${colorScheme.text.replace("#", "")}}\\bg{${colorScheme.surface.replace("#", "")}}${code}`)}`}
 					alt={children as string}
-					height={rows - 2}
-					objectFit="contain"
-					protocol="braille"
 				/>
 			</Box>
 		);
@@ -342,7 +331,7 @@ const MarkComponent: Components["mark"] = ({ children, node }) => {
 	});
 	const text = ComponentUtils.text({ children });
 	return (
-		<Text>
+		<BaseComponent gap={1}>
 			{children}
 			{keys.map((key) => {
 				const source = SourceUtils.getDisplay({ sources, key, text });
@@ -360,7 +349,7 @@ const MarkComponent: Components["mark"] = ({ children, node }) => {
 					</>
 				);
 			})}
-		</Text>
+		</BaseComponent>
 	);
 };
 

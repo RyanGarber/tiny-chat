@@ -1,3 +1,24 @@
+## [0.9.0](https://github.com/RyanGarber/tiny-chat/compare/0.8.6...0.9.0) (2026-09-27)
+
+### ⚠ BREAKING CHANGES
+
+* apple foundation models
+
+### Features
+
+* apple foundation models ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a))
+* better command auto-approval ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a-6))
+* github tool display, source citations ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a-7))
+* improved completion sorting ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a-8))
+* skip file edit approvals in folder ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a-5))
+
+### Bug Fixes
+
+* cli citation crash ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a-4))
+* editor doesn't collapse when deleting empty lines ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a-10))
+* tool definitions not counted in token estimation ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a-11))
+
+
 ## [0.8.6](https://github.com/RyanGarber/tiny-chat/compare/0.8.5...0.8.6) (2026-09-24)
 
 ### Features

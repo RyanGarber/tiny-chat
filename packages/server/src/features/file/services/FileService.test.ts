@@ -37,7 +37,7 @@ it("preserves chat cwd, refreshes files, and resets on activation with isolated 
 	assert.equal((await exec("pwd")).stdout.trim(), `/mnt/chat/${chat.id}`);
 	await exec("echo hello > sample.txt");
 	assert.equal((await exec("cat sample.txt")).stdout.trim(), "hello");
-	await ChatService.setFolderTitle({
+	await ChatService.updateFolder({
 		user,
 		folder,
 		title: "cwd test",
@@ -47,7 +47,7 @@ it("preserves chat cwd, refreshes files, and resets on activation with isolated 
 	assert.equal((await exec("pwd")).stdout.trim(), `/mnt/chat/${chat.id}`);
 	await exec("cd /mnt");
 	assert.equal(await FileService.cwd({ user, chat: chat.id }), "/mnt");
-	await ChatService.setFolderTitle({
+	await ChatService.updateFolder({
 		user,
 		folder,
 		title: "cwd test",

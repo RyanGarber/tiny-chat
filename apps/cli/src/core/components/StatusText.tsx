@@ -23,7 +23,7 @@ export default function StatusText() {
 				<Box>
 					<Text color="primary">
 						<Spinner type="circleQuarters" />
-						embedding ({embeddingStatus.totalCount})
+						{` `}embedding ({embeddingStatus.totalCount})
 					</Text>
 				</Box>
 			)}

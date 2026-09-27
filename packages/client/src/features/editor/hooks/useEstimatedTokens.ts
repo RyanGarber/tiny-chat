@@ -39,7 +39,8 @@ export const chatTokensQueryKey = [
 	"estimatedTokens",
 ] as const;
 
-export const editorTokensQueryKey = ["useEstimatedTokens", "editorTokens"];
+/** @deprecated The editor and chat now share one generation-accurate estimate. */
+export const editorTokensQueryKey = chatTokensQueryKey;
 
 export const useEstimatedTokens = <T>({
 	draft,
@@ -50,9 +51,9 @@ export const useEstimatedTokens = <T>({
 }) => {
 	const { session } = useSession();
 	const { nextChat } = useChat();
-	const { config: baseConfig, modelArgs } = useConfig();
-	const { toolsets } = useTools();
-	const { skills } = useSkills();
+	const { config: baseConfig, model, modelArgs, providers } = useConfig();
+	const { toolsets, nativeTools, mcpTools } = useTools();
+	const { skills, localSkills, nativeSkills } = useSkills();
 	const editing = useMessagingStore((state) => state.editing);
 
 	const config = useMemo(() => {
@@ -107,22 +108,49 @@ export const useEstimatedTokens = <T>({
 		draft: draftMessage,
 	});
 
-	const messagesKey = useStableKey({
-		messages: sourceMessages.data?.messages,
+	const estimateMessages = useMemo(
+		() => [
+			...(sourceMessages.data?.messages.filter(
+				(message) => message.id !== editing?.id,
+			) ?? []),
+			...draftMessage,
+		],
+		[sourceMessages.data?.messages, editing?.id, draftMessage],
+	);
+	const estimateKey = useStableKey({
+		messages: estimateMessages,
+		capabilities: capabilities.data,
 		toolsets,
+		skills,
+		config,
+		chat: nextChat,
 	});
-	const messagesEmpty = useMemo(() => {
-		return !sourceMessages.data?.messages.length;
-	}, [sourceMessages]);
+	const dependenciesLoading =
+		session.isFetching ||
+		providers.isFetching ||
+		sourceMessages.isFetching ||
+		capabilities.isFetching ||
+		nativeTools.isFetching ||
+		mcpTools.isFetching ||
+		localSkills.isFetching ||
+		nativeSkills.isFetching;
+	const dependenciesReady =
+		!!session.data &&
+		providers.isSuccess &&
+		sourceMessages.isSuccess &&
+		capabilities.isSuccess &&
+		nativeTools.isSuccess &&
+		mcpTools.isSuccess &&
+		localSkills.isSuccess &&
+		nativeSkills.isSuccess;
+	const supportsTools = model?.features.includes("language:tools") ?? false;
 
 	const chatTokens = useQuery({
 		queryKey: [
 			...chatTokensQueryKey,
 			session.data?.user.id,
-			capabilities.data,
-			nextChat,
-			messagesKey,
-			config,
+			supportsTools,
+			estimateKey,
 		],
 		queryFn: async (): Promise<CompactionResult> => {
 			if (!session.data) return ZERO;
@@ -131,10 +159,7 @@ export const useEstimatedTokens = <T>({
 				context: {
 					user: session.data.user,
 					chat: nextChat,
-					messages:
-						sourceMessages.data?.messages.filter(
-							(message) => message.id !== editing?.id,
-						) ?? [],
+					messages: estimateMessages,
 					timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 					interactive: true,
 				},
@@ -142,55 +167,25 @@ export const useEstimatedTokens = <T>({
 				capabilities: capabilities.data ?? {},
 				toolsets,
 				skills,
+				supportsTools,
 			});
 		},
+		enabled: dependenciesReady,
 		throwOnError: true,
 		refetchOnWindowFocus: false,
 		refetchOnReconnect: false,
 		staleTime: Infinity,
 	});
-
-	const draftKey = useStableKey({ messages: draftMessage, toolsets });
-
-	const draftTokens = useQuery({
-		queryKey: [
-			...editorTokensQueryKey,
-			session.data?.user.id,
-			capabilities.data,
-			nextChat,
-			config,
-			draftKey,
-			messagesEmpty,
-		],
-		queryFn: async (): Promise<CompactionResult> => {
-			if (!session.data) return ZERO;
-
-			return await AgentService.estimate({
-				context: {
-					user: session.data.user,
-					chat: nextChat,
-					messages: draftMessage,
-					timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-					interactive: true,
-				},
-				config,
-				capabilities: capabilities.data ?? {},
-				toolsets,
-				skills,
-			});
-		},
-		refetchOnWindowFocus: false,
-		refetchOnReconnect: false,
-		staleTime: Infinity,
-	});
+	// Kept as an alias for callers that previously observed both queries. The
+	// estimate is deliberately one build now: generation never sends history and
+	// the draft as two independent prompts.
+	const draftTokens = chatTokens;
 
 	const { totalTokens, usage } = useMemo<{
 		totalTokens: number;
 		usage: Usage<T>;
 	}>(() => {
-		const totalTokens =
-			(chatTokens.data?.before.total ?? 0) +
-			(draftTokens.data?.before.total ?? 0);
+		const totalTokens = chatTokens.data?.before.total ?? 0;
 		const maxTokens =
 			config.args?.["tokens-in"] !== undefined
 				? Number(config.args["tokens-in"])
@@ -201,13 +196,12 @@ export const useEstimatedTokens = <T>({
 		if (percent >= 75) level = "moderate";
 		if (percent >= 100) level = "high";
 		const color = colors?.[level] ?? ("" as T);
-		const loading = chatTokens.isFetching || draftTokens.isFetching;
+		const loading = dependenciesLoading || chatTokens.isFetching;
 		return { totalTokens, usage: { percent, level, color, loading } };
 	}, [
 		chatTokens.data,
-		draftTokens.data,
 		chatTokens.isFetching,
-		draftTokens.isFetching,
+		dependenciesLoading,
 		config.args["tokens-in"],
 		colors,
 	]);
@@ -216,43 +210,33 @@ export const useEstimatedTokens = <T>({
 		() => [
 			{
 				name: "Instructions",
-				tokens: Math.max(
-					chatTokens.data?.before.instructions ?? 0,
-					draftTokens.data?.before.instructions ?? 0,
-				),
-				loading: chatTokens.isFetching || draftTokens.isFetching,
+				tokens: chatTokens.data?.before.instructions ?? 0,
+				loading: dependenciesLoading || chatTokens.isFetching,
 			},
 			{
 				name: "Memories",
-				tokens: Math.max(
-					chatTokens.data?.before.memories ?? 0,
-					draftTokens.data?.before.memories ?? 0,
-				),
-				loading: chatTokens.isFetching || draftTokens.isFetching,
+				tokens: chatTokens.data?.before.memories ?? 0,
+				loading: dependenciesLoading || chatTokens.isFetching,
 			},
 			{
 				name: "Thoughts",
 				tokens: chatTokens.data?.before.thoughts ?? 0,
-				loading: chatTokens.isFetching,
+				loading: dependenciesLoading || chatTokens.isFetching,
 			},
 			{
 				name: "Tools",
 				tokens: chatTokens.data?.before.tools ?? 0,
-				loading: chatTokens.isFetching,
+				loading: dependenciesLoading || chatTokens.isFetching,
 			},
 			{
 				name: "Text",
-				tokens:
-					(chatTokens.data?.before.text ?? 0) +
-					(draftTokens.data?.before.text ?? 0),
-				loading: chatTokens.isFetching || draftTokens.isFetching,
+				tokens: chatTokens.data?.before.text ?? 0,
+				loading: dependenciesLoading || chatTokens.isFetching,
 			},
 			{
 				name: "Files",
-				tokens:
-					(chatTokens.data?.before.files ?? 0) +
-					(draftTokens.data?.before.files ?? 0),
-				loading: chatTokens.isFetching || draftTokens.isFetching,
+				tokens: chatTokens.data?.before.files ?? 0,
+				loading: dependenciesLoading || chatTokens.isFetching,
 			},
 		],
 		[
@@ -263,11 +247,7 @@ export const useEstimatedTokens = <T>({
 			chatTokens.data?.before.thoughts,
 			chatTokens.data?.before.tools,
 			chatTokens.isFetching,
-			draftTokens.data?.before.instructions,
-			draftTokens.data?.before.memories,
-			draftTokens.data?.before.files,
-			draftTokens.data?.before.text,
-			draftTokens.isFetching,
+			dependenciesLoading,
 		],
 	);
 

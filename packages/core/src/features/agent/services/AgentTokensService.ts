@@ -10,6 +10,8 @@ import type {
 } from "../../data/types/part.ts";
 import { EditorPartUtils } from "../../data/utils/EditorPartUtils.ts";
 import { FileUtils } from "../../file/utils/FileUtils.ts";
+import type { ToolDefinition } from "../../tool/types/tool.ts";
+import { ToolUtils } from "../../tool/utils/ToolUtils.ts";
 import type { zAgentMessage } from "../types/agent.ts";
 
 /**
@@ -90,20 +92,33 @@ const getSerializedLength = (value: unknown): number =>
 
 const getPartLength = (part: zDataPart | zDataSimplePart): number => {
 	if (part.type === "text" || part.type === "thought") return part.value.length;
-	if (part.type === "toolCall") return getSerializedLength(part.input);
+	if (part.type === "toolCall") {
+		return getSerializedLength({
+			type: "tool-call",
+			toolCallId: part.id,
+			toolName: part.name,
+			input: part.input,
+		});
+	}
 	if (part.type === "interjection")
 		return part.value.reduce(
 			(length, value) => length + getPartLength(value),
 			0,
 		);
 	if (part.type === "toolResult") {
-		return part.output.reduce(
-			(length, value) => length + getPartLength(value),
-			0,
+		return (
+			getSerializedLength({
+				type: "tool-result",
+				toolCallId: part.id,
+				toolName: part.name,
+				error: part.error,
+			}) +
+			part.output.reduce((length, value) => length + getPartLength(value), 0)
 		);
 	}
 	if (part.type === "file") return part.data.length * (2 / 3);
-	if (part.type === "json") return getSerializedLength(part.value);
+	if (part.type === "json")
+		return `\`\`\`json\n${getSerialized(part.value)}\n\`\`\``.length;
 	if (part.type === "attachment") return getSerializedLength(part.content);
 	if (part.type === "quote" || part.type === "paste") return part.text.length;
 	if (part.type === "command") return EditorPartUtils.toMarkdown(part).length;
@@ -181,7 +196,16 @@ const getArgumentSummary = (args: unknown): string => {
 	return value.length > 80 ? `${value.slice(0, 80)}…` : value;
 };
 
-const CONTEXT_PATTERN = /^\s*<context>(?:.|\s)*<\/context>\s*$/gm;
+const CONTEXT_PATTERN = /^\s*<context>[\s\S]*<\/context>\s*$/;
+
+const getToolDefinitionTokens = (tools: ToolDefinition[]): number =>
+	tools.reduce(
+		(tokens, tool) =>
+			tokens +
+			getSerializedLength(ToolUtils.getPromptDefinition(tool)) /
+				CHARS_PER_TOKEN,
+		0,
+	);
 
 const replaceIfSmaller = (
 	parts: zDataPart[],
@@ -716,14 +740,17 @@ export const AgentTokensService = {
 		instructions,
 		messages,
 		config,
+		tools = [],
 	}: {
 		instructions?: string;
 		messages: zAgentMessage[];
 		config?: zConfig | null;
+		tools?: ToolDefinition[];
 	}): Promise<CompactionResult> => {
 		const before = AgentTokensService.tokenizeMessages({
 			instructions,
 			messages,
+			tools,
 		});
 
 		const { preprocessed, compaction } = AgentTokensService.preprocessMessages({
@@ -733,6 +760,7 @@ export const AgentTokensService = {
 		let after = AgentTokensService.tokenizeMessages({
 			instructions,
 			messages: preprocessed,
+			tools,
 		});
 
 		if (config?.args?.["tokens-in"] === undefined) {
@@ -793,6 +821,7 @@ export const AgentTokensService = {
 		after = AgentTokensService.tokenizeMessages({
 			instructions,
 			messages: compacted,
+			tools,
 		});
 		console.log(
 			"[AgentTokensService] estimated tokens after compaction:",
@@ -804,16 +833,20 @@ export const AgentTokensService = {
 	tokenizeMessages: ({
 		instructions = "",
 		messages = [],
+		tools = [],
 	}: {
 		instructions?: string;
 		messages?: zAgentMessage[];
+		tools?: ToolDefinition[];
 	}): TokenizationResult => {
-		const tokens = (part: zDataPart) => getPartLength(part) / CHARS_PER_TOKEN;
+		const tokens = (part: zDataPart | zDataSimplePart) =>
+			getPartLength(part) / CHARS_PER_TOKEN;
 		const categories: Omit<TokenizationResult, "total"> = {
 			...AgentTokensService.zero,
 			instructions: instructions.length / CHARS_PER_TOKEN,
+			tools: getToolDefinitionTokens(tools),
 		};
-		for (const part of messages.flatMap((message) => message.data.flat())) {
+		const addPart = (part: zDataPart | zDataSimplePart) => {
 			if (part.type === "text") {
 				if (CONTEXT_PATTERN.test(part.value)) {
 					categories.memories += tokens(part);
@@ -826,9 +859,17 @@ export const AgentTokensService = {
 				categories.files += tokens(part);
 			} else if (part.type === "toolCall" || part.type === "toolResult") {
 				categories.tools += tokens(part);
+			} else if (part.type === "interjection") {
+				for (const value of part.value) addPart(value);
+			} else if (part.type === "json") {
+				// ModelTransformService sends standalone JSON as fenced text.
+				categories.text += tokens(part);
 			} else {
 				categories.other += tokens(part);
 			}
+		};
+		for (const part of messages.flatMap((message) => message.data.flat())) {
+			addPart(part);
 		}
 		return {
 			...categories,

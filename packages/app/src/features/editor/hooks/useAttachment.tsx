@@ -84,6 +84,24 @@ const Attachment = Node.create({
 				char: "@",
 				pluginKey,
 				allowToIncludeChar: true,
+				findSuggestionMatch: ({ $position }) => {
+					const text =
+						$position.nodeBefore?.isText && $position.nodeBefore.text;
+					if (!text) return null;
+
+					const match = AttachmentUtils.match(text);
+					if (!match) return null;
+
+					const textFrom = $position.pos - text.length;
+					return {
+						range: {
+							from: textFrom + match.from,
+							to: textFrom + match.to,
+						},
+						query: match.text,
+						text: text.slice(match.from, match.to),
+					};
+				},
 				placement: "top-start",
 				items: async ({ query, signal }) => {
 					const items = await (
@@ -101,22 +119,7 @@ const Attachment = Node.create({
 						});
 					}
 
-					const search = query.split("/").at(-1)?.trim().toLowerCase();
-
-					const include = (item: AttachmentItem) => {
-						return (
-							(!search || item.name?.toLowerCase().includes(search)) &&
-							(!query.includes("/") || item.traversable)
-						);
-					};
-
-					return [
-						...items.map((group) => ({
-							...group,
-							items: group.items.filter(include),
-						})),
-						other,
-					];
+					return [...AttachmentUtils.filter({ groups: items, query }), other];
 				},
 				command: ({ editor, range, props }) => {
 					void (this.options as AttachmentOptions).attach(props).then((id) => {
@@ -153,16 +156,13 @@ const Attachment = Node.create({
 							</FileTag>
 						);
 					},
-					onTab: ({ item, editor, range }) => {
-						const existing = editor.$doc.content
-							.textBetween(range.from, range.to, "\n", "\n")
-							.replace(/^@/, "");
+					onTab: ({ item, editor, range, query }) => {
 						editor
 							.chain()
 							.focus()
 							.insertContentAt(
 								range,
-								`@${AttachmentUtils.continued({ query: existing, item })}`,
+								`@${AttachmentUtils.continued({ query, item })}`,
 							)
 							.run();
 					},

@@ -39,6 +39,7 @@ export interface CompletionProps<
 		item: T2;
 		editor: Editor;
 		range: Range;
+		query: string;
 		select: () => void;
 	}) => boolean | undefined;
 }
@@ -54,6 +55,7 @@ function Completions<
 				command,
 				editor,
 				range,
+				query,
 				renderEmpty,
 				renderItem,
 				onTab,
@@ -103,6 +105,7 @@ function Completions<
 									item,
 									editor,
 									range,
+									query,
 									select: () => select(item.value),
 								});
 								if (handled !== false) return true;
@@ -114,7 +117,7 @@ function Completions<
 						return false;
 					},
 				}),
-				[combobox, editor, items, onTab, range, select],
+				[combobox, editor, items, onTab, query, range, select],
 			);
 
 			// biome-ignore lint/correctness/useExhaustiveDependencies: auto select

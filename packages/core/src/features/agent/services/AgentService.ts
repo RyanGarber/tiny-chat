@@ -58,6 +58,14 @@ export const AgentService = {
 			(skill) => skill.name && prompt?.config?.skills?.includes(skill.path),
 		);
 		if (VERBOSE) console.log("[AgentService] enabled skills:", enabledSkills);
+		const enabledTools = enabledToolsets.flatMap((toolset) =>
+			toolset.tools
+				.map((tool) => ({
+					...tool,
+					name: ToolUtils.name({ toolset, tool }),
+				}))
+				.filter((tool) => context.interactive || !tool.feedback),
+		);
 
 		const { messages, customInstructions } =
 			await AgentMessagesService.buildMessages({
@@ -82,6 +90,7 @@ export const AgentService = {
 		return {
 			config: prompt?.config,
 			enabledToolsets,
+			enabledTools,
 			messages,
 			instructions,
 		};
@@ -93,6 +102,7 @@ export const AgentService = {
 		config,
 		toolsets,
 		skills,
+		supportsTools = true,
 		skipInstructions,
 	}: {
 		context: zAgentContext;
@@ -100,9 +110,10 @@ export const AgentService = {
 		config: zConfig;
 		toolsets: Toolset<any>[];
 		skills: zSkill[];
+		supportsTools?: boolean;
 		skipInstructions?: boolean;
 	}): Promise<CompactionResult> => {
-		const { messages, instructions } = await AgentService.build({
+		const { messages, instructions, enabledTools } = await AgentService.build({
 			context,
 			capabilities,
 			toolsets,
@@ -114,6 +125,7 @@ export const AgentService = {
 			messages,
 			instructions,
 			config,
+			tools: supportsTools ? enabledTools : [],
 		});
 	},
 
@@ -156,12 +168,18 @@ export const AgentService = {
 		const {
 			config,
 			enabledToolsets,
+			enabledTools,
 			messages,
 			instructions: builtInstructions,
 		} = await AgentService.build({ context, capabilities, toolsets, skills });
 		const instructions = instructionOverride ?? builtInstructions;
 
 		if (!config) throw new Error("missing config");
+		const supportsTools = (
+			await provider.getStatus({ user: context.user })
+		).models
+			.find((model) => model.name === config.model)
+			?.features.includes("language:tools");
 
 		const toolValidationErrors = new Map<string, unknown>();
 
@@ -190,20 +208,14 @@ export const AgentService = {
 					instructions,
 					messages,
 					config,
+					tools: supportsTools ? enabledTools : [],
 				});
 				const stream = ModelProviderService.runLanguageModel({
 					user: context.user,
 					provider,
 					messages: compacted.messages,
 					config,
-					tools: enabledToolsets.flatMap((toolset) =>
-						toolset.tools
-							.map((tool) => ({
-								...tool,
-								name: ToolUtils.name({ toolset, tool }),
-							}))
-							.filter((tool) => context.interactive || !tool.feedback),
-					),
+					tools: enabledTools,
 					env,
 					options: {
 						system: instructions,

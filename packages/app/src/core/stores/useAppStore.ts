@@ -25,6 +25,8 @@ interface LayoutStore {
 
 	isSidebarOpen: boolean;
 	setSidebarOpen: (value: boolean) => void;
+	sidebarWidth: number;
+	setSidebarWidth: (value: number) => void;
 
 	isAsideOpen: boolean;
 	setAsideOpen: (value: boolean) => void;
@@ -50,6 +52,8 @@ export const useAppStore = create<LayoutStore>((set) => ({
 
 	isSidebarOpen: false,
 	setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
+	sidebarWidth: 300,
+	setSidebarWidth: (sidebarWidth) => set({ sidebarWidth }),
 
 	isAsideOpen: false,
 	setAsideOpen: (isAsideOpen) => set({ isAsideOpen }),

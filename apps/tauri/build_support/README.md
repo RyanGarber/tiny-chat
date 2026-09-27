@@ -17,7 +17,7 @@ the Swift package alone does not fix this visibility problem.
 
 The existing macOS rpaths are retained. iOS uses its own SDK/runtime search
 paths, and the final Xcode link also needs `FoundationModels` (configured in
-`scripts/build-ios-ci.sh` at the repository root).
+`apps/tauri/scripts/build-ios.sh`, invoked with `pnpm build:tauri:ios:ci`).
 
 Run the regression tests from the repository root on an Apple toolchain:
 

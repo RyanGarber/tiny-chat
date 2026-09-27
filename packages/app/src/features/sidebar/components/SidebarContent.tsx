@@ -1,6 +1,7 @@
 import {
 	ActionIcon,
 	Button,
+	Checkbox,
 	Group,
 	Indicator,
 	Modal,
@@ -75,7 +76,6 @@ function ChatDropOverlay({ label, color }: { label: string; color: string }) {
 }
 
 function Folder({
-	chat,
 	folder,
 	setEditing,
 	dragHandlers,
@@ -85,7 +85,6 @@ function Folder({
 	onDragOver,
 	onDrop,
 }: {
-	chat?: ChatState | null;
 	folder: FolderState;
 	setEditing: Dispatch<SetStateAction<FolderState | ChatState | null>>;
 	dragHandlers: ChatDragHandlers;
@@ -98,11 +97,12 @@ function Folder({
 	const isMobile = useAppStore((state) => state.isMobile);
 	const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
 	const activeFolder = useMessagingStore((state) => state.activeFolder);
+	const hasChat = useChatStore((state) => !!state.chatId);
 	const setCurrentModal = useAppStore((state) => state.setCurrentModal);
 
 	const [isExpanded, setExpanded] = useState(false);
 
-	const active = !chat && activeFolder?.id === folder.id;
+	const active = !hasChat && activeFolder?.id === folder.id;
 
 	return (
 		<Stack
@@ -181,15 +181,19 @@ function Folder({
 }
 
 function FolderEditor({ editing }: { editing: FolderState }) {
-	const { renameFolder, deleteFolder } = useChatList();
+	const { updateFolder, deleteFolder } = useChatList();
 
 	const currentModal = useAppStore((state) => state.currentModal);
 	const setCurrentModal = useAppStore((state) => state.setCurrentModal);
 
 	const [title, setTitle] = useState(editing.title ?? "");
+
 	const [cwd, setCwd] = useState(editing.cwd ?? "");
+	const [cwdWritable, setCwdWritable] = useState(editing.cwdWritable ?? false);
 	const [cwdError, setCwdError] = useState<string | null>(null);
+
 	const [validating, setValidating] = useState(false);
+
 	const save = async () => {
 		setValidating(true);
 		setCwdError(null);
@@ -211,8 +215,8 @@ function FolderEditor({ editing }: { editing: FolderState }) {
 			return;
 		}
 		setValidating(false);
-		renameFolder.mutate(
-			{ folder: editing, title, cwd: cwd || null },
+		updateFolder.mutate(
+			{ folder: editing, title, cwd: cwd || null, cwdWritable },
 			{ onSuccess: () => setCurrentModal(null) },
 		);
 	};
@@ -230,7 +234,7 @@ function FolderEditor({ editing }: { editing: FolderState }) {
 					<TextInput
 						label="Title"
 						value={title}
-						disabled={renameFolder.isPending}
+						disabled={updateFolder.isPending}
 						onChange={(e) => setTitle(e.target.value)}
 						data-autofocus
 					/>
@@ -238,11 +242,16 @@ function FolderEditor({ editing }: { editing: FolderState }) {
 						label="Path"
 						value={cwd}
 						error={cwdError}
-						disabled={!client.desktop || renameFolder.isPending || validating}
+						disabled={!client.desktop || updateFolder.isPending || validating}
 						onChange={(event) => {
 							setCwd(event.target.value);
 							setCwdError(null);
 						}}
+					/>
+					<Checkbox
+						label="Skip approval for files in path"
+						checked={cwdWritable}
+						onChange={(event) => setCwdWritable(event.target.checked)}
 					/>
 					<ContextSettings folder={editing.id} />
 					<Button.Group mt="lg">
@@ -250,8 +259,8 @@ function FolderEditor({ editing }: { editing: FolderState }) {
 							variant="default"
 							fullWidth
 							onClick={save}
-							loading={renameFolder.isPending}
-							disabled={renameFolder.isPending || validating || !title}
+							loading={updateFolder.isPending}
+							disabled={updateFolder.isPending || validating || !title}
 						>
 							Save
 						</Button>
@@ -393,7 +402,7 @@ function ChatEditor({ editing }: { editing: ChatState }) {
 	);
 }
 
-export default function SidebarContent({ chat }: { chat?: ChatState | null }) {
+export default function SidebarContent() {
 	const { folders, createFolder, moveChat } = useChatList();
 
 	const currentModal = useAppStore((state) => state.currentModal);
@@ -490,7 +499,6 @@ export default function SidebarContent({ chat }: { chat?: ChatState | null }) {
 						.map((folder) => (
 							<Folder
 								key={folder.id}
-								chat={chat}
 								folder={folder}
 								setEditing={setEditing}
 								dragHandlers={dragHandlers}

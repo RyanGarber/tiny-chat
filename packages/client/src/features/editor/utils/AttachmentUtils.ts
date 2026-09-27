@@ -8,11 +8,33 @@ import type { CommandEdit } from "../types/command.ts";
 import type { EditorNode } from "../types/node.ts";
 import { AtomUtils } from "./AtomUtils.ts";
 import { CommandUtils } from "./CommandUtils.ts";
+import { CompletionUtils } from "./CompletionUtils.ts";
 
-/** `@path`, at the end of a line */
-const QUERY_REGEX = /(?:^|\s)@(\S*)$/;
+/** `@path`, at the end of a line. Spaces and backslashes may be escaped. */
+const QUERY_REGEX = /(?:^|\s)@((?:\\[\\ \t]|[^\s])*)$/;
+
+const escapeQuery = (value: string) =>
+	value.replaceAll("\\", "\\\\").replaceAll(" ", "\\ ");
+const unescapeQuery = (value: string) => value.replace(/\\([\\ ])/g, "$1");
 
 export const AttachmentUtils = {
+	/**
+	 * Find an attachment query at the end of a text run. Literal spaces end the
+	 * query; escaped spaces belong to it, so ordinary prose is never swallowed.
+	 */
+	match: (content: string): AttachmentQuery | null => {
+		const match = QUERY_REGEX.exec(content);
+		if (!match) return null;
+
+		const [raw, encoded] = match;
+		const from = match.index + raw.indexOf("@");
+		return {
+			text: unescapeQuery(encoded),
+			from,
+			to: content.length,
+		};
+	},
+
 	/**
 	 * Locate the attachment being typed at `cursor` in a plain text buffer.
 	 */
@@ -35,17 +57,18 @@ export const AttachmentUtils = {
 		const line = lines[row];
 		if (line === undefined) return null;
 
-		const match = QUERY_REGEX.exec(line.slice(0, column));
+		const match = AttachmentUtils.match(line.slice(0, column));
 		if (!match) return null;
 
-		const [raw, text] = match;
 		const offset = lines
 			.slice(0, row)
 			.reduce((total, line) => total + line.length + 1, 0);
-		const from = offset + match.index + raw.indexOf("@");
-		const to = offset + column;
 
-		return { text: content.slice(to - text.length, to), from, to };
+		return {
+			text: match.text,
+			from: offset + match.from,
+			to: offset + match.to,
+		};
 	},
 
 	/**
@@ -66,11 +89,10 @@ export const AttachmentUtils = {
 		return groups
 			.map((group) => ({
 				...group,
-				items: group.items.filter(
-					(item) =>
-						(!search || item.name?.toLowerCase().includes(search)) &&
-						(!traversing || item.traversable),
-				),
+				items: CompletionUtils.filter({
+					items: group.items.filter((item) => !traversing || item.traversable),
+					query: search,
+				}),
 			}))
 			.filter((group) => group.items.length > 0);
 	},
@@ -135,9 +157,11 @@ export const AttachmentUtils = {
 	continued: ({ query, item }: { query: string; item: AttachmentItem }) => {
 		const trailing = item.directory ? "/" : "";
 
-		return item.path
+		const continued = item.path
 			? `${item.path}${trailing}`
 			: query.replace(/([^/]+)?$/, `${item.name}${trailing}`);
+
+		return escapeQuery(continued);
 	},
 
 	/**

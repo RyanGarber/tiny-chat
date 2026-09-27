@@ -14,9 +14,14 @@ jobs:
             fail-fast: false
             matrix:
                 include:
-                    # -   name: macos
-                    #     rust_targets: aarch64-apple-darwin
+                    -   name: macos-x86_64
+                        platform: macos
+                        rust_targets: x86_64-apple-darwin
+                    -   name: macos-aarch64
+                        platform: macos
+                        rust_targets: aarch64-apple-darwin
                     -   name: ios
+                        platform: ios
                         rust_targets: aarch64-apple-ios
         environment: production
 
@@ -107,19 +112,19 @@ jobs:
                     "$RUNNER_TEMP/swift-archive-tests" --include-ignored
 
             -   name: Build macOS
-                if: matrix.name == 'macos'
+                if: matrix.platform == 'macos'
                 run: |
                     pnpm --filter @tiny-chat/tauri exec tauri build \
-                      --target aarch64-apple-darwin \
+                      --target ${{ matrix.rust_targets }} \
                       --no-sign \
                       --ci \
                       -vv \
                       --config '{"bundle":{"createUpdaterArtifacts":false}}'
 
             -   name: Check macOS link
-                if: matrix.name == 'macos'
+                if: matrix.platform == 'macos'
                 run: |
-                    APP=$(find apps/tauri/target/aarch64-apple-darwin/release/bundle/macos -maxdepth 1 -name "*.app" | head -1)
+                    APP=$(find apps/tauri/target/${{ matrix.rust_targets }}/release/bundle/macos -maxdepth 1 -name "*.app" | head -1)
                     EXEC=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Contents/Info.plist")
                     BIN="$APP/Contents/MacOS/$EXEC"
                     echo "Binary: $BIN"
@@ -135,20 +140,20 @@ jobs:
                     otool -l "$BIN" | grep "lib/swift/macosx" > /dev/null
 
             -   name: Upload macOS artifact
-                if: matrix.name == 'macos'
+                if: matrix.platform == 'macos'
                 uses: actions/upload-artifact@v7
                 with:
                     name: tiny-chat-macos
                     retention-days: 14
                     if-no-files-found: error
-                    path: apps/tauri/target/aarch64-apple-darwin/release/bundle
+                    path: apps/tauri/target/${{ matrix.rust_targets }}/release/bundle
 
             -   name: Build iOS archive
-                if: matrix.name == 'ios'
-                run: bash scripts/build-ios-ci.sh
+                if: matrix.platform == 'ios'
+                run: pnpm build:tauri:ios:ci
 
             -   name: Check iOS link
-                if: matrix.name == 'ios'
+                if: matrix.platform == 'ios'
                 run: |
                     APP=$(find "$RUNNER_TEMP/tiny-chat_iOS.xcarchive/Products/Applications" -maxdepth 1 -name "*.app" | head -1)
                     EXEC=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Info.plist")
@@ -171,7 +176,7 @@ jobs:
                     otool -L "$BIN" | grep "libswift" > /dev/null
 
             -   name: Package iOS
-                if: matrix.name == 'ios'
+                if: matrix.platform == 'ios'
                 run: |
                     APP_PATH=$(find "$RUNNER_TEMP/tiny-chat_iOS.xcarchive/Products/Applications" \
                       -maxdepth 1 -name "*.app" | head -1)
@@ -183,7 +188,7 @@ jobs:
                     echo "IPA size: $(du -sh Tiny.Chat_iOS.ipa | cut -f1)"
 
             -   name: Upload iOS artifact
-                if: matrix.name == 'ios'
+                if: matrix.platform == 'ios'
                 uses: actions/upload-artifact@v7
                 with:
                     name: tiny-chat-ios

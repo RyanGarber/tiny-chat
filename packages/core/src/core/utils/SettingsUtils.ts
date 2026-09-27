@@ -46,12 +46,16 @@ export const SettingsUtils = {
 	},
 
 	defaults: (from?: zSettings | null): zSettingsWithDefaults => {
+		const codeThemes = [
+			...ThemeUtils.codeThemesByTheme[from?.theme ?? ThemeUtils.themes[0]],
+		];
 		return {
 			...from,
 			theme: from?.theme ?? ThemeUtils.themes[0],
 			codeTheme:
-				from?.codeTheme ??
-				ThemeUtils.codeThemesByTheme(from?.theme ?? ThemeUtils.themes[0])[0],
+				from?.codeTheme && codeThemes.includes(from.codeTheme)
+					? from.codeTheme
+					: codeThemes[0],
 			instructions: from?.instructions ?? [],
 			memoryBudget: from?.memoryBudget ?? 2500,
 			embeddingConfig: from?.embeddingConfig ?? null,

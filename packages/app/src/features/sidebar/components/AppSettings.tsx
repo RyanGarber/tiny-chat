@@ -55,7 +55,7 @@ export default function AppSettings() {
 					label="Code Theme"
 					styles={StyleUtils.input}
 					allowDeselect={false}
-					data={ThemeUtils.codeThemesByTheme(theme)}
+					data={ThemeUtils.codeThemesByTheme[theme]}
 					value={codeTheme}
 					onChange={(value) => {
 						if (!value) return;

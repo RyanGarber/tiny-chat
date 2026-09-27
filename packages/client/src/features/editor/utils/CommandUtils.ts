@@ -7,6 +7,7 @@ import type {
 	CommandQuery,
 } from "../types/command.ts";
 import { AtomUtils } from "./AtomUtils.ts";
+import { CompletionUtils } from "./CompletionUtils.ts";
 import { EditorNodeUtils } from "./EditorNodeUtils.ts";
 
 /** `/name` optionally followed by an argument, at the end of a line */
@@ -69,7 +70,10 @@ export const CommandUtils = {
 		return groups
 			.map((group) => ({
 				...group,
-				items: group.items.filter((item) => include(item, group)),
+				items: CompletionUtils.filter({
+					items: group.items.filter((item) => include(item, group)),
+					query,
+				}),
 			}))
 			.filter((group) => group.items.length > 0);
 	},
@@ -84,9 +88,7 @@ export const CommandUtils = {
 		(command?.choices ?? [])
 			.map((group) => ({
 				...group,
-				items: group.items.filter(
-					(item) => !!item.name?.toLowerCase().includes(query.toLowerCase()),
-				),
+				items: CompletionUtils.filter({ items: group.items, query }),
 			}))
 			.filter((group) => group.items.length > 0),
 

@@ -89,7 +89,7 @@ export const DreamRunnerService = {
 							.select("id"),
 					)
 					.include("folder", (folder) =>
-						folder.select("title", "cwd", "settings"),
+						folder.select("title", "cwd", "cwdWritable", "settings"),
 					)
 					.orderBy((m) => m.createdAt.asc())
 					.all();

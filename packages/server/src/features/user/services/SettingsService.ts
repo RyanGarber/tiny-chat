@@ -48,7 +48,7 @@ export const SettingsService = {
 				.query(
 					globalThis.db.sql.public.folder
 						.select("settingsRaw", (f, fns) =>
-							fns.raw`${f.settings}`.returns("pg/jsonb@1"),
+							fns.raw`${f.settings}`.returns("pg/json@1"),
 						)
 						.where((f, fns) =>
 							fns.and(fns.eq(f.userId, user.id), fns.eq(f.id, folder.id)),

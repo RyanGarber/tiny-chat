@@ -40,7 +40,19 @@ function ToolCallDetails({
 
 	let detailsNode: ReactNode | undefined;
 
-	if (details.name === "search_web") {
+	if (
+		details.name.startsWith("github_") &&
+		details.result === "success" &&
+		details.sources?.length
+	) {
+		detailsNode = details.sources.map((source) => (
+			<Box key={source.url} flexDirection="column">
+				<Text bold>{source.title}</Text>
+				<Anchor href={source.url} wrap="truncate-end" />
+				<Code code={source.content} language="markdown" lineNumbers={false} />
+			</Box>
+		));
+	} else if (details.name === "search_web") {
 		detailsNode = details.output?.map((result) => (
 			<Box key={result.url} flexDirection="column">
 				<Text bold>{result.title}</Text>

@@ -23,7 +23,7 @@ printf '#!/bin/sh\nexit 0\n' > "$scratch/open"
 chmod +x "$scratch/open"
 export PATH="$scratch:$PATH"
 log_file="$scratch/tauri.log"
-pnpm --filter @tiny-chat/tauri exec tauri ios build \
+pnpm exec tauri ios build \
     --target aarch64 --ci --open -vv \
     --config '{"bundle":{"createUpdaterArtifacts":false,"iOS":{"minimumSystemVersion":"27.0","frameworks":["FoundationModels"]}}}' \
     > "$log_file" 2>&1 &
@@ -45,7 +45,7 @@ until grep -q 'Opening Xcode' "$log_file"; do
 done
 cat "$log_file"
 
-cd apps/tauri/gen/apple
+cd gen/apple
 # Xcode, not the shell, expands $(inherited).
 # shellcheck disable=SC2016
 xcodebuild \

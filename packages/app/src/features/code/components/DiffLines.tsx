@@ -18,49 +18,59 @@ export default function DiffLines({
 	setExpanded: Dispatch<SetStateAction<number[]>>;
 	language: string;
 }) {
-	return diff.flatMap((change, index) => (
-		<div key={index}>
-			{change.type === "unchanged" &&
-				expanded.includes(index) &&
-				change.lines.map((line, lineIndex) => (
-					<Block key={lineIndex} type={change.type} expanded>
-						<div style={{ flex: 1 }}>
-							<CodeLines code={line} language={language} lineNumbers={false} />
-						</div>
-					</Block>
-				))}
-			{(change.type !== "unchanged" || !expanded.includes(index)) && (
-				<Block key={index} type={change.type}>
-					{change.type === "unchanged" && (
-						<Button
-							variant="transparent"
-							bg="rgba(0, 0, 0, 0.1)"
-							flex={1}
-							size="xs"
-							onClick={() => setExpanded((previous) => [...previous, index])}
-						>
-							{change.lines.length} unchanged line
-							{change.lines.length === 1 ? "" : "s"}
-						</Button>
-					)}
-					{change.type !== "unchanged" && (
-						<div style={{ flex: 1 }}>
-							{change.type === "changed" && (
-								<ChangedLines change={change} language={language} />
+	return (
+		<Box miw="100%" w="max-content">
+			{diff.flatMap((change, index) => (
+				<div key={index}>
+					{change.type === "unchanged" &&
+						expanded.includes(index) &&
+						change.lines.map((line, lineIndex) => (
+							<Block key={lineIndex} type={change.type} expanded>
+								<div style={{ flex: 1 }}>
+									<CodeLines
+										code={line}
+										language={language}
+										lineNumbers={false}
+									/>
+								</div>
+							</Block>
+						))}
+					{(change.type !== "unchanged" || !expanded.includes(index)) && (
+						<Block key={index} type={change.type}>
+							{change.type === "unchanged" && (
+								<Button
+									variant="transparent"
+									bg="rgba(0, 0, 0, 0.1)"
+									flex={1}
+									size="xs"
+									onClick={() =>
+										setExpanded((previous) => [...previous, index])
+									}
+								>
+									{change.lines.length} unchanged line
+									{change.lines.length === 1 ? "" : "s"}
+								</Button>
 							)}
-							{change.type !== "changed" && (
-								<CodeLines
-									code={change.line}
-									language={language}
-									lineNumbers={false}
-								/>
+							{change.type !== "unchanged" && (
+								<div style={{ flex: 1 }}>
+									{change.type === "changed" && (
+										<ChangedLines change={change} language={language} />
+									)}
+									{change.type !== "changed" && (
+										<CodeLines
+											code={change.line}
+											language={language}
+											lineNumbers={false}
+										/>
+									)}
+								</div>
 							)}
-						</div>
+						</Block>
 					)}
-				</Block>
-			)}
-		</div>
-	));
+				</div>
+			))}
+		</Box>
+	);
 }
 
 function ChangedLines({

@@ -11,13 +11,7 @@ import {
 	type JSONContent,
 } from "@tiptap/react";
 import { StarterKit } from "@tiptap/starter-kit";
-import {
-	type RefObject,
-	useEffect,
-	useLayoutEffect,
-	useRef,
-	useState,
-} from "react";
+import { type RefObject, useEffect, useLayoutEffect, useState } from "react";
 import { useMessaging } from "#client/features/chat/hooks/useMessaging.ts";
 import { useUploads } from "#client/features/upload/hooks/useUploads.ts";
 import { useAttachment } from "../hooks/useAttachment.tsx";
@@ -128,7 +122,6 @@ export const useEditor = ({
 	const { sendMessage } = useMessaging();
 
 	const [isMultiline, setMultiline] = useState(false);
-	const wasEmpty = useRef(true);
 
 	const editor = _useEditor({
 		editorProps: {
@@ -218,9 +211,7 @@ export const useEditor = ({
 			};
 		},
 		onUpdate: ({ editor }) => {
-			const _isNowEmpty = editor.isEmpty && !wasEmpty.current;
-			if (_isNowEmpty) setMultiline(false);
-			wasEmpty.current = editor.isEmpty;
+			if (editor.isEmpty) setMultiline(false);
 			useEditorStore.getState().update();
 		},
 	});

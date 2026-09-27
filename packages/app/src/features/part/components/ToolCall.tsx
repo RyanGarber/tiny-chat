@@ -41,7 +41,15 @@ function ToolCallDetails({
 
 	let detailsNode: ReactNode;
 
-	if (details.name === "search_web" && details.output) {
+	if (
+		details.name.startsWith("github_") &&
+		details.result === "success" &&
+		details.sources?.length
+	) {
+		detailsNode = details.sources.map((source) => (
+			<WebSourceCard key={source.url} source={source} />
+		));
+	} else if (details.name === "search_web" && details.output) {
 		detailsNode = details.output.map((result) => (
 			<WebSourceCard key={result.url} source={result} />
 		));

@@ -90,9 +90,11 @@ export async function useServer(
 }
 
 export async function useServerProcess({
+	execPath = process.execPath,
 	start,
 	host,
 }: {
+	execPath?: string;
 	start?: boolean | null;
 	host?: true;
 } = {}) {
@@ -122,7 +124,7 @@ export async function useServerProcess({
 	if (doStart) {
 		// Own the actual server process, without pnpm wrappers or a file watcher.
 		child = spawn(
-			process.execPath,
+			execPath,
 			[
 				resolve(import.meta.dirname, "../packages/server/src/server.ts"),
 				...(host ? ["--host"] : []),

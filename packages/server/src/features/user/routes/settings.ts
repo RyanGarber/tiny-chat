@@ -33,11 +33,11 @@ export const settings = router({
 				})
 				.default({}),
 		)
-		.query(async ({ ctx, input }) => {
-			return await SettingsService.getSettingsRaw({
+		.query(async ({ ctx, input }): Promise<Record<string, unknown>> => {
+			return (await SettingsService.getSettingsRaw({
 				user: ctx.session.user,
 				folder: input.folder,
-			});
+			})) as Record<string, unknown>;
 		}),
 
 	setTheme: procedure
@@ -54,13 +54,6 @@ export const settings = router({
 				update: (settings) => ({
 					...settings,
 					theme: input.theme,
-					codeTheme:
-						settings.codeTheme &&
-						ThemeUtils.codeThemesByTheme(input.theme).includes(
-							settings.codeTheme,
-						)
-							? settings.codeTheme
-							: undefined,
 				}),
 			});
 		}),

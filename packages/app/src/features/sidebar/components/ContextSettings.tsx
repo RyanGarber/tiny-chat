@@ -29,7 +29,7 @@ export default function ContextSettings({
 	return (
 		<>
 			<Box>
-				<Text size="sm">Instructions</Text>
+				<Text size="sm">Context</Text>
 				<Text size="xs" c="dimmed">
 					Shapes model responses
 				</Text>

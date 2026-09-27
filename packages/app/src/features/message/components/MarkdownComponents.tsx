@@ -210,7 +210,7 @@ const DetailsComponent: Components["details"] = ({ node, children }) => {
 const TableComponent: Components["table"] = ({ children }) => {
 	const streaming = useContext(StreamContext);
 	return (
-		<Table withButtons streaming={streaming}>
+		<Table withButtons streaming={streaming} mb={10}>
 			{children}
 		</Table>
 	);

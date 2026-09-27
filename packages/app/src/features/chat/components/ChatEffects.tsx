@@ -54,10 +54,12 @@ function Effect({
 export default function ChatEffects({
 	inputEffectsRef,
 	inputMaxWidth,
+	bottom,
 	disabled,
 }: {
 	inputEffectsRef: Ref<HTMLDivElement>;
 	inputMaxWidth: number;
+	bottom: number;
 	disabled: boolean;
 }) {
 	const chatId = useChatStore((s) => s.chatId);
@@ -69,7 +71,7 @@ export default function ChatEffects({
 	return (
 		<Group
 			pos="absolute"
-			bottom={0}
+			bottom={bottom}
 			left={isMobile ? 10 : 20}
 			right={isMobile ? 10 : 20}
 			justify="center"

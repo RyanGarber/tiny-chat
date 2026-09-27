@@ -15,10 +15,9 @@ export const useMcpServerSettings = () => {
 	}, [settings.data?.mcpServers]);
 
 	const mcpServerSettingsUnparsed = useQuery({
-		...client.query.settings.getRaw.queryOptions({}),
+		...client.query.settings.getRaw.queryOptions(),
 		staleTime: Infinity,
-		select: (data) =>
-			SettingsUtils.defaults(data as { mcpServers: never }).mcpServers,
+		select: (data) => SettingsUtils.defaults(data).mcpServers,
 	});
 
 	const setMcpServerSettings = useMutation({

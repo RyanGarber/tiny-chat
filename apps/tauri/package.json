@@ -2,6 +2,7 @@
 	"name": "@tiny-chat/tauri",
 	"scripts": {
 		"tauri": "tauri",
+		"build:ios:ci": "bash scripts/build-ios.sh",
 		"lint": "cargo clippy --fix --allow-dirty && cargo fmt",
 		"typecheck": "cargo check",
 		"test": "cargo test"

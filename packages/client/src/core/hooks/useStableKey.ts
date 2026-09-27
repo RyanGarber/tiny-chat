@@ -16,34 +16,108 @@ import type {
 	ProviderState,
 	ProviderStatus,
 } from "@tiny-chat/core/features/provider/types/provider.ts";
+import type { zSkill } from "@tiny-chat/core/features/skill/types/skill.ts";
 import type { Toolset } from "@tiny-chat/core/features/tool/types/tool.ts";
+import { ToolUtils } from "@tiny-chat/core/features/tool/utils/ToolUtils.ts";
 import { useMemo } from "react";
 import type { McpServer } from "../../features/agent/hooks/useMcp.ts";
 
-export function getPartsKey(parts?: zDataPart[]) {
-	if (!parts?.length) return "";
-	const first = parts[0];
-	const last = parts[parts.length - 1];
-	return `${getPartKey(first)}:${parts.length}:${getPartKey(last)}`;
+/** A compact, order-stable fingerprint for large query inputs. */
+export function getValueKey(value: unknown): string {
+	let first = 0x811c9dc5;
+	let second = 0x9e3779b9;
+	let length = 0;
+	let nextReference = 0;
+	const seen = new WeakMap<object, number>();
+
+	const write = (text: string) => {
+		length += text.length;
+		for (let i = 0; i < text.length; i++) {
+			const code = text.charCodeAt(i);
+			first = Math.imul(first ^ code, 0x01000193) >>> 0;
+			second = Math.imul(second ^ code, 0x85ebca6b) >>> 0;
+		}
+	};
+
+	const visit = (item: unknown) => {
+		if (item === null) return write("null;");
+		if (item === undefined) return write("undefined;");
+		if (typeof item === "string")
+			return write(`string:${item.length}:${item};`);
+		if (typeof item === "number" || typeof item === "boolean")
+			return write(`${typeof item}:${String(item)};`);
+		if (typeof item === "bigint") return write(`bigint:${item.toString()};`);
+		if (typeof item === "function") return write(`function:${item.name};`);
+		if (typeof item !== "object")
+			return write(`${typeof item}:${String(item)};`);
+
+		const existing = seen.get(item);
+		if (existing !== undefined) return write(`reference:${existing};`);
+		seen.set(item, nextReference++);
+
+		if (Array.isArray(item)) {
+			write(`array:${item.length}[`);
+			for (const value of item) visit(value);
+			return write("];");
+		}
+		if (item instanceof Map) {
+			write(`map:${item.size}{`);
+			for (const [key, value] of [...item.entries()].sort(([a], [b]) =>
+				String(a).localeCompare(String(b)),
+			)) {
+				visit(key);
+				visit(value);
+			}
+			return write("};");
+		}
+		if (item instanceof Set) {
+			write(`set:${item.size}[`);
+			for (const value of [...item].sort((a, b) =>
+				String(a).localeCompare(String(b)),
+			))
+				visit(value);
+			return write("];");
+		}
+
+		const json = (item as { toJSON?: () => unknown }).toJSON;
+		if (typeof json === "function") {
+			write("json:");
+			visit(json.call(item));
+			return;
+		}
+
+		const record = item as Record<string, unknown>;
+		const keys = Object.keys(record).sort();
+		write(`object:${keys.length}{`);
+		for (const key of keys) {
+			write(`${key.length}:${key}=`);
+			visit(record[key]);
+		}
+		write("};");
+	};
+
+	visit(value);
+	return `${length.toString(36)}:${first.toString(36)}:${second.toString(36)}`;
 }
 
-function getPartKey(part?: zDataPart) {
-	if (!part) return "";
-	let value = "";
-	if (part.type === "text" || part.type === "thought") {
-		value = part.value;
-	} else if (part.type === "json") {
-		value = JSON.stringify(part.value);
-	} else if (part.type === "file") {
-		value = `${part.name}:${part.data}:${part.mime}`;
-	} else if (part.type === "toolCall") {
-		value = `${part.name}:${JSON.stringify(part.input)}`;
-	} else if (part.type === "toolResult") {
-		value = `${part.name}:${part.error}:${getPartsKey(part.output)}`;
-	} else if (part.type === "abort") {
-		value = `${part.reason}:${part.message}:${JSON.stringify(part.details)}`;
-	}
-	return `${part.type}:${part.id}:${value.at(0)}:${value.length}:${value.at(-1)}`;
+export function getPartsKey(parts?: zDataPart[]) {
+	return parts?.length ? getValueKey(parts) : "";
+}
+
+export function getToolsetsKey(toolsets?: Toolset<any>[]) {
+	return getValueKey(
+		toolsets?.map((toolset) => ({
+			name: ToolUtils.name({ toolset }),
+			instructions: toolset.instructions,
+			status: toolset.status,
+			tools: toolset.tools.map((tool) =>
+				ToolUtils.getPromptDefinition({
+					...tool,
+					name: ToolUtils.name({ toolset, tool }),
+				}),
+			),
+		})) ?? [],
+	);
 }
 
 export const useStableKey = ({
@@ -54,6 +128,7 @@ export const useStableKey = ({
 	mcpServers,
 	mcpServerSettings,
 	toolsets,
+	skills,
 	config,
 	chat,
 }: {
@@ -64,6 +139,7 @@ export const useStableKey = ({
 	mcpServers?: McpServer[];
 	mcpServerSettings?: zMCPServers;
 	toolsets?: Toolset<any>[];
+	skills?: zSkill[];
 	config?: zConfig | null;
 	chat?: zAgentChat | null;
 }) => {
@@ -73,66 +149,44 @@ export const useStableKey = ({
 	}, [data]);
 
 	const messagesKey = useMemo(() => {
-		let key = "";
-		for (const message of messages ?? []) {
-			const parts = message.data.flat();
-			key += `${message.id}:${message.author}${JSON.stringify(message.config)}:${getPartsKey(parts)};`;
-		}
-		return key;
+		return getValueKey(messages ?? []);
 	}, [messages]);
 
 	const providersKey = useMemo(() => {
-		let key = "";
-		for (const provider of providers ?? []) {
-			key += `${provider.name}:${provider.status.valid}:${provider.status.error};`;
-		}
-		return key;
+		return getValueKey(providers ?? []);
 	}, [providers]);
 
 	const capabilitiesKey = useMemo(() => {
-		let key = "";
-		for (const [name, value] of Object.entries(capabilities ?? {})) {
-			key += `${name}:${JSON.stringify(value)};`;
-		}
-		return key;
+		return getValueKey(capabilities ?? {});
 	}, [capabilities]);
 
 	const mcpServersKey = useMemo(() => {
-		let key = "";
-		for (const server of mcpServers ?? []) {
-			key += `${server.name}:${server.id}:${server.tools.length}:${server.error};`;
-		}
-		return key;
+		return getValueKey(
+			mcpServers?.map(({ name, id, tools, error }) => ({
+				name,
+				id,
+				tools,
+				error,
+			})) ?? [],
+		);
 	}, [mcpServers]);
 
 	const mcpServerSettingsKey = useMemo(() => {
-		let key = "";
-		for (const [name, value] of Object.entries(mcpServerSettings ?? {})) {
-			let settings = "";
-			if ("url" in value)
-				settings = `${value.url}:${value.headers ? JSON.stringify(value.headers) : ""}`;
-			else if ("command" in value)
-				settings = `${value.command}:${value.args}:${value.env ? JSON.stringify(value.env) : ""}`;
-			key += `${name}:${settings};`;
-		}
-		return key;
+		return getValueKey(mcpServerSettings ?? {});
 	}, [mcpServerSettings]);
 
 	const toolsetsKey = useMemo(() => {
-		let key = "";
-		for (const toolset of toolsets ?? []) {
-			key += `${toolset.name}:${toolset.status.valid}:${toolset.status.error}:${toolset.tools.length};`;
-		}
-		return key;
+		return getToolsetsKey(toolsets);
 	}, [toolsets]);
 
+	const skillsKey = useMemo(() => getValueKey(skills ?? []), [skills]);
+
 	const configKey = useMemo(() => {
-		return config ? `${JSON.stringify(config)};` : "";
+		return config ? getValueKey(config) : "";
 	}, [config]);
 
 	const chatKey = useMemo(() => {
-		if (!chat) return "";
-		return `${chat.id}:${chat.incognito}:${chat.temporary}:${JSON.stringify(chat.folder?.settings)};`;
+		return chat ? getValueKey(chat) : "";
 	}, [chat]);
 
 	return useMemo(() => {
@@ -144,6 +198,7 @@ export const useStableKey = ({
 			mcpServersKey,
 			mcpServerSettingsKey,
 			toolsetsKey,
+			skillsKey,
 			configKey,
 			chatKey,
 		]
@@ -157,6 +212,7 @@ export const useStableKey = ({
 		mcpServersKey,
 		mcpServerSettingsKey,
 		toolsetsKey,
+		skillsKey,
 		configKey,
 		chatKey,
 	]);

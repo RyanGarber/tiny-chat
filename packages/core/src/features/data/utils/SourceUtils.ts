@@ -10,6 +10,7 @@ import { write_file } from "../../tool/tools/shell/write_file.ts";
 import { search_web } from "../../tool/tools/web/search_web.ts";
 import { view_web } from "../../tool/tools/web/view_web.ts";
 import type { Toolset } from "../../tool/types/tool.ts";
+import { GitHubSourceUtils } from "../../tool/utils/GitHubSourceUtils.ts";
 import { ToolUtils } from "../../tool/utils/ToolUtils.ts";
 import { SnippetService } from "../services/SnippetService.ts";
 import type { ActionState } from "../types/action.ts";
@@ -151,6 +152,13 @@ export const SourceUtils = {
 					(p): p is zToolResultPart =>
 						p.type === "toolResult" && p.id === part.id,
 				);
+				const { tool } = ToolUtils.find({ toolsets, part });
+				if (tool?.name.startsWith("github_") && !result?.error) {
+					return GitHubSourceUtils.parse(
+						tool.name,
+						ToolUtils.json(result, true),
+					).map((value) => ({ key: value.url, type: "web", value }));
+				}
 				if (ToolUtils.is(toolsets, part, search_web)) {
 					const output = ToolUtils.json<typeof search_web>(result, true);
 					return (

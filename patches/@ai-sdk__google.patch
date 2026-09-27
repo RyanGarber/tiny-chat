@@ -12,10 +12,10 @@ index d8a8e219bea1c0636a6902f3d650a37adc52fc5f..55f73d4ccb9344b58a4e48aa92f4b52d
          thinkingBudget?: number | undefined;
          includeThoughts?: boolean | undefined;
 diff --git a/dist/index.js b/dist/index.js
-index 3537b15715f783b6177bb11419f9cded9d341890..98043e4f8525e80d38c209893f96973596b69bfc 100644
+index 3953a52ae8269bdcef5e3bebc043048a6b8693ad..8920aa7d9c9932581d9a4718a87aa65f39b28bd4 100644
 --- a/dist/index.js
 +++ b/dist/index.js
-@@ -983,7 +983,7 @@ import { z as z5 } from "zod/v4";
+@@ -1020,7 +1020,7 @@ import { z as z5 } from "zod/v4";
  var googleLanguageModelOptions = lazySchema4(
    () => zodSchema4(
      z5.object({
@@ -25,10 +25,10 @@ index 3537b15715f783b6177bb11419f9cded9d341890..98043e4f8525e80d38c209893f969735
          thinkingBudget: z5.number().optional(),
          includeThoughts: z5.boolean().optional(),
 diff --git a/dist/internal/index.d.ts b/dist/internal/index.d.ts
-index 5dbc20968ebee3bdca99bd8c32627c9f19a042bb..1a310e403bbd1fe464d7b823b362ae9f9801fbf4 100644
+index 655255708e5a80c90a0400b59664cd063c641cb5..c4665944b2b9f0947728336081817d527e7ccbd3 100644
 --- a/dist/internal/index.d.ts
 +++ b/dist/internal/index.d.ts
-@@ -131,7 +131,7 @@ declare class GoogleLanguageModel implements LanguageModelV4 {
+@@ -137,7 +137,7 @@ declare class GoogleLanguageModel implements LanguageModelV4 {
                      } | undefined;
                  } | undefined;
                  mediaResolution?: "MEDIA_RESOLUTION_UNSPECIFIED" | "MEDIA_RESOLUTION_LOW" | "MEDIA_RESOLUTION_MEDIUM" | "MEDIA_RESOLUTION_HIGH" | undefined;
@@ -38,10 +38,10 @@ index 5dbc20968ebee3bdca99bd8c32627c9f19a042bb..1a310e403bbd1fe464d7b823b362ae9f
                      thinkingBudget?: number | undefined;
                      includeThoughts?: boolean | undefined;
 diff --git a/dist/internal/index.js b/dist/internal/index.js
-index b31ee31680baa23596af6b06627bd3902b8c81a1..12455565a144e38d917972b7cd045128b3539ca5 100644
+index 7799172884c22e3960ccdfd43fcb450b2622709c..d0613b4942fbd08e7c6303f89a0e3d0535ea0f5c 100644
 --- a/dist/internal/index.js
 +++ b/dist/internal/index.js
-@@ -702,7 +702,7 @@ import { z as z3 } from "zod/v4";
+@@ -740,7 +740,7 @@ import { z as z3 } from "zod/v4";
  var googleLanguageModelOptions = lazySchema2(
    () => zodSchema2(
      z3.object({

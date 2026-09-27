@@ -17,6 +17,7 @@ export const zAgentChat = z.object({
 		.object({
 			title: z.string().nullable(),
 			cwd: z.string().nullable(),
+			cwdWritable: z.boolean(),
 			settings: zSettings,
 		})
 		.nullable(),

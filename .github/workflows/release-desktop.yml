@@ -62,8 +62,9 @@ jobs:
             -   name: Install Rust
                 uses: dtolnay/rust-toolchain@stable
                 with:
-                    targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+                    targets: ${{ matrix.platform == 'xcode-27' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
                     toolchain: stable
+                    components: llvm-tools
 
             -   name: Create cache key
                 id: rust-toolchain

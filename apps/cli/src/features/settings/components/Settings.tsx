@@ -43,7 +43,7 @@ export default function Settings() {
 					{
 						name: "code-theme",
 						value: "code-theme",
-						choices: ThemeUtils.codeThemesByTheme(theme),
+						choices: [...ThemeUtils.codeThemesByTheme[theme]],
 						current: codeTheme,
 						set: (codeTheme) => setCodeTheme.mutate({ codeTheme }),
 					} satisfies SettingsItem<(typeof ThemeUtils.codeThemes)[number][]>,

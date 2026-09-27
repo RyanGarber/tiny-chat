@@ -61,7 +61,12 @@ export const useChat = () => {
 		return {
 			id: null,
 			folder: activeFolder
-				? { title: null, cwd: null, settings: folderSettings.data ?? {} }
+				? {
+						title: null,
+						cwd: null,
+						cwdWritable: false,
+						settings: folderSettings.data ?? {},
+					}
 				: null,
 			incognito: createIncognito,
 			temporary: createTemporary,

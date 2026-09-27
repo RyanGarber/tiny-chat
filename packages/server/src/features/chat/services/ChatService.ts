@@ -33,7 +33,9 @@ export const ChatService = {
 				),
 			)
 			.include("messages", (message) => message.select("createdAt"))
-			.include("folder", (folder) => folder.select("title", "cwd", "settings"))
+			.include("folder", (folder) =>
+				folder.select("title", "cwd", "cwdWritable", "settings"),
+			)
 			.first();
 
 		if (!chat) throw new Error(`no chat or message with id ${chatLike.id}`);
@@ -63,7 +65,7 @@ export const ChatService = {
 								.where({ temporary: false })
 								.include("messages", (message) => message.select("createdAt"))
 								.include("folder", (folder) =>
-									folder.select("title", "cwd", "settings"),
+									folder.select("title", "cwd", "cwdWritable", "settings"),
 								),
 						)
 						.orderBy((f) => f.createdAt.desc())
@@ -75,7 +77,7 @@ export const ChatService = {
 			})
 				.include("messages", (message) => message.select("createdAt"))
 				.include("folder", (folder) =>
-					folder.select("title", "cwd", "settings"),
+					folder.select("title", "cwd", "cwdWritable", "settings"),
 				)
 				.all(),
 		]);
@@ -225,22 +227,28 @@ export const ChatService = {
 		return { id: row?.id ?? null, cwd: row?.cwd ?? null };
 	},
 
-	setFolderTitle: async ({
+	updateFolder: async ({
 		user,
 		folder,
 		title,
 		cwd,
+		cwdWritable,
 	}: {
 		user: zUser;
 		folder: FolderLike;
 		title: string;
 		cwd?: string | null;
+		cwdWritable?: boolean;
 	}) => {
 		if (typeof folder === "string") folder = { id: folder };
 		await globalThis.db.orm.public.Folder.where({
 			userId: user.id,
 			id: folder.id,
-		}).update({ title, ...(cwd !== undefined ? { cwd } : {}) });
+		}).update({
+			title,
+			...(cwd !== undefined ? { cwd } : {}),
+			...(cwdWritable !== undefined ? { cwdWritable } : {}),
+		});
 	},
 
 	deleteFolder: async ({

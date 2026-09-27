@@ -2,6 +2,7 @@
 
 import { type ChildProcess, spawn } from "node:child_process";
 import { watch } from "node:fs/promises";
+import { useServerProcess as startServerProcess } from "../../../scripts/use-server.ts";
 import {
 	print,
 	setExitHandler,
@@ -49,19 +50,28 @@ async function run() {
 	});
 }
 
+// The dev compiler runs in Bun; keep the backend on Node as before.
+const cleanup = await startServerProcess({ execPath: "node" });
+
 setExitHandler((isCtrlD) => {
 	if (child?.pid) {
 		if (!isCtrlD) return true;
-		process.kill(child.pid);
+		child.kill();
 	}
-	return false;
+	void cleanup().then(() => process.exit(0));
+	return true;
 });
 
-await run();
+try {
+	await run();
 
-for await (const event of watch("./src", { recursive: true })) {
-	if (event.eventType === "change") {
-		print({ message: `↻ changes: ${event.filename}` });
-		await run();
+	for await (const event of watch("./src", { recursive: true })) {
+		if (event.eventType === "change") {
+			print({ message: `↻ changes: ${event.filename}` });
+			await run();
+		}
 	}
+} finally {
+	child?.kill();
+	await cleanup();
 }

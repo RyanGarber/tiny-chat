@@ -144,12 +144,15 @@ export default function MessageParts({
 				<Box
 					key={index}
 					backgroundColor={part.reason === "error" ? "#872323" : "interior"}
+					color={part.reason === "error" ? "white" : undefined}
 					flexDirection="column"
 					paddingX={2}
 					paddingY={1}
 				>
-					<Text bold>{part.reason === "error" ? "Failed" : "Stopped"}</Text>
-					<Text>{part.message ?? `Response ended due to ${part.reason}.`}</Text>
+					<Text bold>
+						{part.reason === "error" ? "Failed" : "Stopped"}: {part.reason}
+					</Text>
+					<Text>{part.message ?? JSON.stringify(part.details)}</Text>
 				</Box>
 			);
 		}

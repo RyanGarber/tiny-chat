@@ -19,15 +19,15 @@ namespace public {
     createdAt     Timestamp(3) @default(now())
     updatedAt     Timestamp(3)
     isAnonymous   Boolean?     @default(false)
-    settings      zSettings    @default(dbgenerated("'{}'::jsonb"))
-    cache         zCache       @default(dbgenerated("'{}'::jsonb"))
+    settings      zSettings    @default(sql`'{}'::jsonb`)
+    cache         zCache       @default(sql`'{}'::jsonb`)
     isEphemeral   Boolean?     @default(false)
     accounts      Account[]
     actions       Action[]
     chats         Chat[]
     dreams        Dream[]
     files         File[]
-    folders       Folder[]
+    projects      Project[]
     memories      Memory[]
     messages      Message[]
     sessions      Session[]
@@ -58,35 +58,33 @@ namespace public {
     @@map("account")
   }
 
-  model Folder {
-    id          String       @id(map: "folder_pkey")
-    userId      String
-    title       String?
-    createdAt   Timestamp(3) @default(now())
-    chats       Chat[]
-    user        User         @relation(fields:[userId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "folder_userId_fkey")
-    cwd         String?
-    cwdWritable Boolean      @default(false)
-    settings    zSettings    @default(dbgenerated("'{}'::jsonb"))
+  model Project {
+    id        String       @id(map: "project_pkey")
+    userId    String
+    title     String?
+    createdAt Timestamp(3) @default(now())
+    chats     Chat[]
+    user      User         @relation(fields:[userId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "project_userId_fkey")
+    settings  zSettings    @default(sql`'{}'::jsonb`)
 
-    @@index([userId], map: "folder_userId_idx")
-    @@map("folder")
+    @@index([userId], map: "project_userId_idx")
+    @@map("project")
   }
 
   model Chat {
     id        String       @id(map: "chat_pkey")
     userId    String
-    folderId  String?
+    projectId String?
     title     String?
     createdAt Timestamp(3) @default(now())
     temporary Boolean      @default(false)
     incognito Boolean      @default(false)
     files     File[]
     messages  Message[]
-    folder    Folder?      @relation(fields:[folderId], references:[id], onDelete: SetNull, onUpdate: Cascade, map: "chat_folderId_fkey")
+    project   Project?     @relation(fields:[projectId], references:[id], onDelete: SetNull, onUpdate: Cascade, map: "chat_projectId_fkey")
     user      User         @relation(fields:[userId], references:[id], onDelete: Cascade, onUpdate: Cascade, map: "chat_userId_fkey")
 
-    @@index([folderId], map: "chat_folderId_idx")
+    @@index([projectId], map: "chat_projectId_idx")
     @@index([userId], map: "chat_userId_idx")
     @@map("chat")
   }
@@ -114,6 +112,7 @@ namespace public {
     metadata   zMetadata
     embedding  Embedding?
     createdAt  Timestamp(3)    @default(now())
+    updatedAt  Timestamp(3)?
     actions    Action[]
     dreams     Dream[]
     memories   Memory[]

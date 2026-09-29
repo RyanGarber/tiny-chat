@@ -12,45 +12,45 @@ describe("message", () => {
 			data: [],
 			metadata: [],
 		};
-		const folder = await api.chat.createFolder.mutate();
-		expect(folder.title).toBeNull();
+		const project = await api.chat.createProject.mutate();
+		expect(project.title).toBeNull();
 		expect(
-			(await api.chat.getChatList.query()).folders.find(
-				(item) => item.id === folder.id,
+			(await api.chat.getChatList.query()).projects.find(
+				(item) => item.id === project.id,
 			)?.chats,
 		).toEqual([]);
 		const recent = await api.message.createMessage.mutate(content);
-		expect((await api.chat.getChat.query(recent)).folderId).toBeNull();
+		expect((await api.chat.getChat.query(recent)).projectId).toBeNull();
 		const nested = await api.message.createMessage.mutate({
 			...content,
-			folderId: folder.id,
+			projectId: project.id,
 		});
-		expect((await api.chat.getChat.query(nested)).folderId).toBe(folder.id);
+		expect((await api.chat.getChat.query(nested)).projectId).toBe(project.id);
 		const list = await api.chat.getChatList.query();
 		expect(list.chats.some((item) => item.id === recent.chatId)).toBe(true);
 		expect(list.chats.some((item) => item.id === nested.chatId)).toBe(false);
 		expect(
-			list.folders
-				.find((item) => item.id === folder.id)
+			list.projects
+				.find((item) => item.id === project.id)
 				?.chats.map((item) => item.id),
 		).toEqual([nested.chatId]);
 		await api.message.deleteMessage.mutate(nested);
 		expect(
-			(await api.chat.getChatList.query()).folders.find(
-				(item) => item.id === folder.id,
+			(await api.chat.getChatList.query()).projects.find(
+				(item) => item.id === project.id,
 			)?.chats,
 		).toEqual([]);
 		await expect(
 			api.message.createMessage.mutate({
 				...content,
-				folderId: CommonUtils.getRandomId(),
+				projectId: CommonUtils.getRandomId(),
 			}),
 		).rejects.toThrow();
 		await api.chat.deleteChat.mutate({ id: recent.chatId });
 	});
 
 	it("moves chats into folders and back to recents", async () => {
-		const folder = await api.chat.createFolder.mutate();
+		const project = await api.chat.createProject.mutate();
 		const message = await api.message.createMessage.mutate({
 			author: "USER",
 			config: mockConfig(),
@@ -58,39 +58,39 @@ describe("message", () => {
 			metadata: [],
 		});
 
-		await api.chat.setChatFolder.mutate({
+		await api.chat.setChatProject.mutate({
 			chat: message.chatId,
-			folderId: folder.id,
+			projectId: project.id,
 		});
 
 		let list = await api.chat.getChatList.query();
 		expect(list.chats.some((chat) => chat.id === message.chatId)).toBe(false);
 		expect(
-			list.folders
-				.find((item) => item.id === folder.id)
+			list.projects
+				.find((item) => item.id === project.id)
 				?.chats.some((chat) => chat.id === message.chatId),
 		).toBe(true);
 
-		await api.chat.setChatFolder.mutate({
+		await api.chat.setChatProject.mutate({
 			chat: message.chatId,
-			folderId: null,
+			projectId: null,
 		});
 		list = await api.chat.getChatList.query();
 		expect(list.chats.some((chat) => chat.id === message.chatId)).toBe(true);
 		expect(
-			list.folders
-				.find((item) => item.id === folder.id)
+			list.projects
+				.find((item) => item.id === project.id)
 				?.chats.some((chat) => chat.id === message.chatId),
 		).toBe(false);
 
 		await expect(
-			api.chat.setChatFolder.mutate({
+			api.chat.setChatProject.mutate({
 				chat: message.chatId,
-				folderId: CommonUtils.getRandomId(),
+				projectId: CommonUtils.getRandomId(),
 			}),
 		).rejects.toThrow();
 		await api.chat.deleteChat.mutate({ id: message.chatId });
-		await api.chat.deleteFolder.mutate({ folder, deleteChats: false });
+		await api.chat.deleteProject.mutate({ project, deleteChats: false });
 	});
 
 	it("creates a new chat with two messages", async () => {
@@ -216,9 +216,10 @@ describe("message", () => {
 
 		const chat = await api.chat.getChatList.query();
 		expect(
-			[...chat.chats, ...chat.folders.flatMap((folder) => folder.chats)].filter(
-				(chat) => chat.id === first.chatId,
-			),
+			[
+				...chat.chats,
+				...chat.projects.flatMap((project) => project.chats),
+			].filter((chat) => chat.id === first.chatId),
 		).toHaveLength(0);
 	});
 

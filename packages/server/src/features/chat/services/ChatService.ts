@@ -1,10 +1,11 @@
 import { or } from "@prisma/orm-postgres/orm-client";
 import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import { SettingsUtils } from "@tiny-chat/core/core/utils/SettingsUtils.ts";
 import type {
 	ChatLike,
 	ChatState,
-	FolderLike,
-	FolderState,
+	ProjectLike,
+	ProjectState,
 } from "@tiny-chat/core/features/data/types/chat.ts";
 import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
 import { selectAll } from "../../../db.ts";
@@ -33,9 +34,7 @@ export const ChatService = {
 				),
 			)
 			.include("messages", (message) => message.select("createdAt"))
-			.include("folder", (folder) =>
-				folder.select("title", "cwd", "cwdWritable", "settings"),
-			)
+			.include("project", (project) => project.select("title", "settings"))
 			.first();
 
 		if (!chat) throw new Error(`no chat or message with id ${chatLike.id}`);
@@ -52,33 +51,31 @@ export const ChatService = {
 		limit?: number;
 		cursor?: string;
 	}): Promise<{
-		folders: FolderState[];
+		projects: ProjectState[];
 		chats: ChatState[];
 		nextCursor: string | null;
 	}> => {
-		const [folderRows, chatRows] = await Promise.all([
+		const [projectRows, chatRows] = await Promise.all([
 			cursor
 				? []
-				: db.orm.public.Folder.where({ userId: user.id })
+				: db.orm.public.Project.where({ userId: user.id })
 						.include("chats", (chat) =>
 							selectAll(chat, "public", "Chat")
 								.where({ temporary: false })
 								.include("messages", (message) => message.select("createdAt"))
-								.include("folder", (folder) =>
-									folder.select("title", "cwd", "cwdWritable", "settings"),
+								.include("project", (project) =>
+									project.select("title", "settings"),
 								),
 						)
 						.orderBy((f) => f.createdAt.desc())
 						.all(),
 			db.orm.public.Chat.where({
 				userId: user.id,
-				folderId: null,
+				projectId: null,
 				temporary: false,
 			})
 				.include("messages", (message) => message.select("createdAt"))
-				.include("folder", (folder) =>
-					folder.select("title", "cwd", "cwdWritable", "settings"),
-				)
+				.include("project", (project) => project.select("title", "settings"))
 				.all(),
 		]);
 
@@ -98,9 +95,9 @@ export const ChatService = {
 			);
 		};
 
-		const folders = folderRows.map((folder) => ({
-			...folder,
-			chats: sortChats(folder.chats.map(ChatUtils.toChatState)),
+		const projects = projectRows.map((project) => ({
+			...project,
+			chats: sortChats(project.chats.map(ChatUtils.toChatState)),
 		}));
 		const chats = sortChats(chatRows.map(ChatUtils.toChatState));
 
@@ -113,7 +110,7 @@ export const ChatService = {
 		const end = limit ? start + limit : chats.length;
 
 		return {
-			folders,
+			projects,
 			chats: chats.slice(start, end),
 			nextCursor: chats[end]?.id ?? null,
 		};
@@ -138,30 +135,30 @@ export const ChatService = {
 		await globalThis.db.orm.public.Chat.where({ id }).update({ title });
 	},
 
-	setChatFolder: async ({
+	setChatProject: async ({
 		user,
 		chat,
-		folderId,
+		projectId,
 	}: {
 		user: zUser;
 		chat: ChatLike;
-		folderId: string | null;
+		projectId: string | null;
 	}) => {
 		const { id } = await ChatService.getChat({ user, chat });
-		if (folderId) {
-			const folder = await globalThis.db.orm.public.Folder.where({
-				id: folderId,
+		if (projectId) {
+			const project = await globalThis.db.orm.public.Project.where({
+				id: projectId,
 				userId: user.id,
 			})
 				.select("id")
 				.first();
-			if (!folder) throw new Error(`no folder with id ${folderId}`);
+			if (!project) throw new Error(`no project with id ${projectId}`);
 		}
-		await globalThis.db.orm.public.Chat.where({ id }).update({ folderId });
+		await globalThis.db.orm.public.Chat.where({ id }).update({ projectId });
 	},
 
 	/**
-	 * Delete a chat, preserving its folder.
+	 * Delete a chat, preserving its project.
 	 */
 	deleteChat: async ({ user, chat }: { user: zUser; chat: ChatLike }) => {
 		if (typeof chat === "string") chat = { id: chat };
@@ -190,86 +187,70 @@ export const ChatService = {
 		});
 	},
 
-	createFolder: async ({
-		user,
-		title,
-		cwd,
-	}: {
-		user: zUser;
-		title?: string;
-		cwd?: string;
-	}) => {
-		return globalThis.db.orm.public.Folder.create({
+	createProject: async ({ user, title }: { user: zUser; title?: string }) => {
+		return globalThis.db.orm.public.Project.create({
 			id: CommonUtils.getRandomId(),
 			userId: user.id,
 			title,
-			cwd,
 		});
 	},
 
 	getWorkingDirectory: async ({
 		user,
 		chat,
-		folder,
+		project,
 	}: {
 		user: zUser;
 		chat?: string | null;
-		folder?: string | null;
+		project?: string | null;
 	}) => {
 		const selected = chat ? await ChatService.getChat({ user, chat }) : null;
-		const id = selected ? selected.folderId : folder;
+		const id = selected ? selected.projectId : project;
 		const row = id
-			? await globalThis.db.orm.public.Folder.where({
+			? await globalThis.db.orm.public.Project.where({
 					id,
 					userId: user.id,
 				}).first()
 			: null;
-		return { id: row?.id ?? null, cwd: row?.cwd ?? null };
+		const { folders } = SettingsUtils.of(user, row);
+		return { id: row?.id ?? null, cwd: folders[0]?.path ?? null, folders };
 	},
 
-	updateFolder: async ({
+	updateProject: async ({
 		user,
-		folder,
+		project,
 		title,
-		cwd,
-		cwdWritable,
 	}: {
 		user: zUser;
-		folder: FolderLike;
+		project: ProjectLike;
 		title: string;
-		cwd?: string | null;
-		cwdWritable?: boolean;
 	}) => {
-		if (typeof folder === "string") folder = { id: folder };
-		await globalThis.db.orm.public.Folder.where({
+		if (typeof project === "string") project = { id: project };
+		await globalThis.db.orm.public.Project.where({
 			userId: user.id,
-			id: folder.id,
-		}).update({
-			title,
-			...(cwd !== undefined ? { cwd } : {}),
-			...(cwdWritable !== undefined ? { cwdWritable } : {}),
-		});
+			id: project.id,
+		}).update({ title });
 	},
 
-	deleteFolder: async ({
+	deleteProject: async ({
 		user,
-		folder,
+		project,
 		deleteChats,
 	}: {
 		user: zUser;
-		folder: FolderLike;
+		project: ProjectLike;
 		deleteChats: boolean;
 	}) => {
-		if (typeof folder === "string") folder = { id: folder };
+		if (typeof project === "string") project = { id: project };
 		if (deleteChats) {
 			await globalThis.db.orm.public.Chat.where({
 				userId: user.id,
-				folderId: folder.id,
+				projectId: project.id,
 			}).deleteAll();
 		}
-		await globalThis.db.orm.public.Folder.where({
+		await globalThis.db.orm.public.Project.where({
 			userId: user.id,
-			id: folder.id,
+			id: project.id,
 		}).delete();
 	},
 } as const;

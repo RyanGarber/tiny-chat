@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { ActionsCapability } from "../../../../core/types/capability.ts";
 import { zId } from "../../../../core/types/common.ts";
+import type { ToolDisplay } from "../../types/display.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
 export const delete_action = {
@@ -15,11 +16,20 @@ export const delete_action = {
 	}),
 } as const satisfies ToolDefinition;
 
+const display: ToolDisplay<typeof delete_action> = {
+	status: ({ input }) => [
+		["Deleting", "Deleted"],
+		{ count: ["action", "actions"] },
+		{ subject: input.reason ?? "" },
+	],
+};
+
 export const createDeleteActionTool: ToolFactory<
 	Tool<typeof delete_action, { actions: ActionsCapability }>
 > = (options) => ({
 	...delete_action,
 	...options,
+	display,
 	execute: async ({ input }) => {
 		const action = await options.capabilities.actions.deleteAction({
 			id: input.id,

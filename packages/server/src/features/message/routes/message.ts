@@ -47,7 +47,7 @@ export const message = router({
 		.input(
 			z.object({
 				chat: ChatLike.nullish(),
-				folderId: z.string().nullish(),
+				projectId: z.string().nullish(),
 				author: z.enum(Enum.Author.values),
 				config: zConfig,
 				data: zData,
@@ -61,7 +61,7 @@ export const message = router({
 			return await MessageService.createMessage({
 				user: ctx.session.user,
 				chat: input.chat,
-				folderId: input.folderId,
+				projectId: input.projectId,
 				author: input.author,
 				config: input.config,
 				data: input.data,

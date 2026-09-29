@@ -5,8 +5,10 @@ import { FileExcludeUtils } from "../../../file/utils/FileExcludeUtils.ts";
 import { FileTypeUtils } from "../../../file/utils/FileTypeUtils.ts";
 import { FileUtils } from "../../../file/utils/FileUtils.ts";
 import { PathUtils } from "../../../file/utils/PathUtils.ts";
+import type { ToolDisplay } from "../../types/display.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 import { ShellUtils } from "../../utils/ShellUtils.ts";
+import { ToolDisplayUtils } from "../../utils/ToolDisplayUtils.ts";
 
 /** Bytes of a non-text file that may be pulled into the conversation. */
 const MAX_BINARY_BYTES = 5_000_000;
@@ -32,11 +34,24 @@ export const read_file = {
 	output: z.never(),
 } as const satisfies ToolDefinition;
 
+const display: ToolDisplay<typeof read_file> = {
+	status: ({ input }) => [
+		["Reading", "Read"],
+		{ count: ["file", "files"] },
+		{ subject: ToolDisplayUtils.name(input.path) },
+	],
+	output: ({ input, files }) =>
+		files.flatMap(
+			(file) => ToolDisplayUtils.file({ path: input.path, file }) ?? [],
+		),
+};
+
 export const createReadFileTool: ToolFactory<
 	Tool<typeof read_file, Pick<Capabilities, "shell" | "chatShell">>
 > = (options) => ({
 	...read_file,
 	...options,
+	display,
 	execute: async ({ input }) => {
 		const shell = ShellUtils.detect(input.path, options.capabilities);
 

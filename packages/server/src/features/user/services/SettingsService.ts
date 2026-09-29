@@ -1,5 +1,5 @@
 import { TypeUtils } from "@tiny-chat/core/core/utils/TypeUtils.ts";
-import type { FolderLike } from "@tiny-chat/core/features/data/types/chat.ts";
+import type { ProjectLike } from "@tiny-chat/core/features/data/types/chat.ts";
 import type {
 	zSettings,
 	zUser,
@@ -8,21 +8,21 @@ import type {
 export const SettingsService = {
 	getSettings: async ({
 		user,
-		folder,
+		project,
 	}: {
 		user: zUser;
-		folder?: FolderLike | null;
+		project?: ProjectLike | null;
 	}): Promise<zSettings> => {
-		if (typeof folder === "string") folder = { id: folder };
+		if (typeof project === "string") project = { id: project };
 
-		if (folder?.id) {
-			const row = await globalThis.db.orm.public.Folder.where({
+		if (project?.id) {
+			const row = await globalThis.db.orm.public.Project.where({
 				userId: user.id,
-				id: folder.id,
+				id: project.id,
 			})
 				.select("settings")
 				.first();
-			if (!row) throw new Error("missing folder");
+			if (!row) throw new Error("missing project");
 			return row.settings;
 		}
 
@@ -35,23 +35,23 @@ export const SettingsService = {
 
 	getSettingsRaw: async ({
 		user,
-		folder,
+		project,
 	}: {
 		user: zUser;
-		folder?: FolderLike | null;
+		project?: ProjectLike | null;
 	}) => {
-		if (typeof folder === "string") folder = { id: folder };
+		if (typeof project === "string") project = { id: project };
 
-		if (folder?.id) {
+		if (project?.id) {
 			const row = await globalThis.db
 				.runtime()
 				.query(
-					globalThis.db.sql.public.folder
+					globalThis.db.sql.public.project
 						.select("settingsRaw", (f, fns) =>
 							fns.raw`${f.settings}`.returns("pg/jsonb@1"),
 						)
 						.where((f, fns) =>
-							fns.and(fns.eq(f.userId, user.id), fns.eq(f.id, folder.id)),
+							fns.and(fns.eq(f.userId, user.id), fns.eq(f.id, project.id)),
 						)
 						.build(),
 				)
@@ -75,20 +75,20 @@ export const SettingsService = {
 
 	setSettings: async ({
 		user,
-		folder,
+		project,
 		update,
 	}: {
 		user: zUser;
-		folder?: FolderLike | null;
+		project?: ProjectLike | null;
 		update: (old: zSettings) => zSettings;
 	}): Promise<zSettings> => {
-		if (typeof folder === "string") folder = { id: folder };
-		let settings = await SettingsService.getSettings({ user, folder });
+		if (typeof project === "string") project = { id: project };
+		let settings = await SettingsService.getSettings({ user, project });
 		settings = update(TypeUtils.deepClone(settings));
-		if (folder?.id) {
-			await globalThis.db.orm.public.Folder.where({
+		if (project?.id) {
+			await globalThis.db.orm.public.Project.where({
 				userId: user.id,
-				id: folder.id,
+				id: project.id,
 			}).update({
 				settings,
 			});

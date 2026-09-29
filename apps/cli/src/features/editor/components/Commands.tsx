@@ -43,7 +43,7 @@ export default function Commands({
 
 	const cliCommands = useMemo<CommandItem[]>(
 		() => [
-			{ name: "folders", value: "folders", run: () => setPage("folders") },
+			{ name: "projects", value: "projects", run: () => setPage("projects") },
 			{
 				name: "chats",
 				value: "chats",
@@ -170,6 +170,7 @@ export default function Commands({
 						);
 					}
 				}}
+				actions={[{ key: "tab", name: "fill" }, "select"]}
 			/>
 		);
 	} else {
@@ -204,7 +205,7 @@ export default function Commands({
 						);
 					}
 				}}
-				actions={[{ key: "tab", name: "fill" }]}
+				actions={[{ key: "tab", name: "fill" }, "select"]}
 			/>
 		);
 	}

@@ -353,7 +353,39 @@ const commandWrites = (command: string, args: string[]): boolean => {
 	return false;
 };
 
-const isCommandBuiltinSafe = (args: string[]): boolean => {
+type Whitelist = (command: string, args: string[]) => boolean;
+
+/** Matches a whole command against `*` (any run of characters) and `?` globs. */
+const createWhitelist = (patterns: readonly string[]): Whitelist => {
+	const regexes = patterns
+		.map((pattern) => pattern.trim().replace(/\s+/g, " "))
+		.filter(Boolean)
+		.map(
+			(pattern) =>
+				new RegExp(
+					`^${pattern
+						.split("")
+						.map((char) =>
+							char === "*"
+								? ".*"
+								: char === "?"
+									? "."
+									: char.replace(/[.+^${}()|[\]\\]/g, "\\$&"),
+						)
+						.join("")}$`,
+				),
+		);
+	return (command, args) => {
+		if (!regexes.length) return false;
+		const text = [command, ...args].join(" ");
+		return regexes.some((regex) => regex.test(text));
+	};
+};
+
+const isCommandBuiltinSafe = (
+	args: string[],
+	whitelist: Whitelist,
+): boolean => {
 	let inspectsCommands = false;
 	let index = 0;
 	for (; index < args.length; index++) {
@@ -369,18 +401,25 @@ const isCommandBuiltinSafe = (args: string[]): boolean => {
 	}
 	if (inspectsCommands || index === args.length) return true;
 	const command = args[index];
-	return command ? isInvocationSafe(command, args.slice(index + 1)) : true;
+	return command
+		? isInvocationSafe(command, args.slice(index + 1), whitelist)
+		: true;
 };
 
-const isInvocationSafe = (command: string, args: string[]): boolean => {
-	if (command === "command") return isCommandBuiltinSafe(args);
+const isInvocationSafe = (
+	command: string,
+	args: string[],
+	whitelist: Whitelist,
+): boolean => {
+	if (whitelist(command, args)) return true;
+	if (command === "command") return isCommandBuiltinSafe(args, whitelist);
 	return (
 		(ShellUtils.safeCommands.has(command) && !commandWrites(command, args)) ||
 		(command === "git" && isGitSafe(args))
 	);
 };
 
-const isScriptSafe = (script: ParsedScript): boolean => {
+const isScriptSafe = (script: ParsedScript, whitelist: Whitelist): boolean => {
 	if (script.errors?.length) return false;
 
 	const seen = new Set<object>();
@@ -408,7 +447,7 @@ const isScriptSafe = (script: ParsedScript): boolean => {
 			}
 			if (!isStaticWord(node.name)) return false;
 			const args = node.suffix.map((word) => word.value);
-			if (!isInvocationSafe(node.name.value, args)) return false;
+			if (!isInvocationSafe(node.name.value, args, whitelist)) return false;
 		}
 
 		// unbash exposes Word.parts via a lazy, non-enumerable getter.
@@ -517,11 +556,16 @@ export const ShellUtils = {
 		"verify-tag",
 	]),
 
-	/** Parses the full Bash syntax tree and rejects commands that may write to disk. */
-	isSafe: (command: string): boolean => {
+	/**
+	 * Parses the full Bash syntax tree and rejects commands that may write to
+	 * disk. Every simple command — including those in `$(...)`, pipes and `&&`
+	 * chains — must be read-only or match a `whitelist` glob such as
+	 * `npm run *`. Write redirects are rejected even on whitelisted commands.
+	 */
+	isSafe: (command: string, whitelist: readonly string[] = []): boolean => {
 		if (!command.trim()) return false;
 		try {
-			return isScriptSafe(parse(command));
+			return isScriptSafe(parse(command), createWhitelist(whitelist));
 		} catch {
 			return false;
 		}

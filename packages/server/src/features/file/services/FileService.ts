@@ -150,21 +150,20 @@ export const FileService = {
 					user,
 					chat: spec.chat,
 				});
-				const [, , mount, id] = (folder.cwd ?? "").split("/");
+				// Folders inside a shared tree mount it, so it can be worked in.
+				const mounted = (kind: string) =>
+					folder.folders.flatMap(({ path }) => {
+						const [, root, mount, id] = path.split("/");
+						return `/${root}` === PathUtils.mount && mount === kind && id
+							? [id]
+							: [];
+					});
 				const mounts = {
 					...spec,
 					uploads: [
-						...new Set([
-							...(spec.uploads ?? []),
-							...(mount === "uploads" && id ? [id] : []),
-						]),
+						...new Set([...(spec.uploads ?? []), ...mounted("uploads")]),
 					],
-					skills: [
-						...new Set([
-							...(spec.skills ?? []),
-							...(mount === "skills" && id ? [id] : []),
-						]),
-					],
+					skills: [...new Set([...(spec.skills ?? []), ...mounted("skills")])],
 				};
 				const filesystem = new FilesystemService({ user, ...mounts });
 				await filesystem.fetch();

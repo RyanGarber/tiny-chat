@@ -81,7 +81,7 @@ export const useMessaging = () => {
 		mutationKey: sendMessageMutationKey,
 		mutationFn: async () => {
 			sendingData.current = undefined;
-			const { truncating, editing, insertingAfter, activeFolder } =
+			const { truncating, editing, insertingAfter, project } =
 				useMessagingStore.getState();
 			const { createTemporary, createIncognito } = useChatStore.getState();
 
@@ -152,7 +152,7 @@ export const useMessaging = () => {
 					})
 				: await client.api.message.createMessage.mutate({
 						chat: chatId,
-						folderId: chatId ? undefined : activeFolder?.id,
+						projectId: chatId ? undefined : project?.id,
 						author: "USER",
 						config: config,
 						data: data,

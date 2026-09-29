@@ -2,7 +2,9 @@ import { z } from "zod";
 import type { GitHubCapability } from "../../../../core/types/capability.ts";
 import { FileOperationService } from "../../../file/services/FileOperationService.ts";
 import { FileUtils } from "../../../file/utils/FileUtils.ts";
+import type { ToolDisplay } from "../../types/display.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
+import { GitHubSourceUtils } from "../../utils/GitHubSourceUtils.ts";
 import { GitHubToolUtils } from "../../utils/GitHubToolUtils.ts";
 
 const zContentEntry = z.object({
@@ -63,11 +65,27 @@ export const github_view_file = {
 	output: z.union([zFileOutput, zDirectoryOutput]),
 } as const satisfies ToolDefinition;
 
+const display: ToolDisplay<typeof github_view_file> = {
+	status: ({ input }) => [
+		["Reading", "Read"],
+		{ count: ["GitHub path", "GitHub paths"] },
+		{
+			subject: `${input.owner ?? ""}/${input.repository ?? ""}/${input.path ?? ""}${input.ref ? ` @ ${input.ref}` : ""}`,
+		},
+	],
+	output: ({ output }) =>
+		GitHubSourceUtils.parse(github_view_file.name, output).map((source) => ({
+			type: "web",
+			source,
+		})),
+};
+
 export const createGitHubViewFileTool: ToolFactory<
 	Tool<typeof github_view_file, { github: GitHubCapability }>
 > = (options) => ({
 	...github_view_file,
 	...options,
+	display,
 	execute: async ({ input }) => {
 		const suffix = input.path
 			? `/contents/${input.path.split("/").map(GitHubToolUtils.segment).join("/")}`

@@ -32,9 +32,19 @@ export const zMCPServers = z
 	.optional();
 export type zMCPServers = z.infer<typeof zMCPServers>;
 
+export const zFolderPath = z.object({
+	path: z.string().min(1),
+	writable: z.boolean(),
+});
+export type zFolderPath = z.infer<typeof zFolderPath>;
+
 export const zSettings = z
 	.object({
 		instructions: z.array(z.string()),
+		/** Glob patterns for shell commands that skip approval, e.g. `npm run *`. */
+		commandWhitelist: z.array(z.string()),
+		/** Paths the shell works in. The first is the working directory. */
+		folders: z.array(zFolderPath),
 		memoryBudget: z.number(),
 		useEmbeddingSearch: z.boolean(),
 		embeddingConfig: zConfig.nullable(),

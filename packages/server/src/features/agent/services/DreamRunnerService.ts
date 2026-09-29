@@ -88,9 +88,7 @@ export const DreamRunnerService = {
 							.where((m) => m.dreams.none())
 							.select("id"),
 					)
-					.include("folder", (folder) =>
-						folder.select("title", "cwd", "cwdWritable", "settings"),
-					)
+					.include("project", (project) => project.select("title", "settings"))
 					.orderBy((m) => m.createdAt.asc())
 					.all();
 

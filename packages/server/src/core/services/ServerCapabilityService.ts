@@ -44,7 +44,7 @@ export const ServerCapabilityService = {
 		const enabled = CapabilityUtils.getEnabled({
 			user,
 			providers,
-			folder: chat?.folder,
+			project: chat?.project,
 			chat: !!chat?.id,
 			message: !!message?.id,
 			incognito,

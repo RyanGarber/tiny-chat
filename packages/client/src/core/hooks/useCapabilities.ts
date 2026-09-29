@@ -59,7 +59,7 @@ export const useCapabilities = ({
 		messages: sources,
 		providers: providers.data,
 		// Gating reads settings, and the folder's win over the user's.
-		config: session.data?.user.settings.subagentConfig,
+		settings: session.data?.user.settings,
 		chat: nextChat,
 	});
 

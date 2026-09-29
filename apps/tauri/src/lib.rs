@@ -13,7 +13,9 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init());
 
     #[cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))]
-    let builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+    let builder = builder
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build());
 
     let builder = builder.invoke_handler(tauri::generate_handler![
         tools::is_dir,

@@ -45,7 +45,7 @@ export default function SidebarExpanded({
 
 	const setCreateTemporary = useChatStore((state) => state.setCreateTemporary);
 	const setCreateIncognito = useChatStore((state) => state.setCreateIncognito);
-	const activeFolder = useMessagingStore((state) => state.activeFolder);
+	const project = useMessagingStore((state) => state.project);
 
 	return (
 		<Stack gap={0} h="100%">
@@ -67,7 +67,7 @@ export default function SidebarExpanded({
 					className="nav-link-like filled"
 					leftSection={<PlusCircleIcon size={20} />}
 					onClick={() => close(() => ChatService.newChat())}
-					active={!chat.data && !activeFolder}
+					active={!chat.data && !project}
 					flex={1}
 					h={40}
 				/>

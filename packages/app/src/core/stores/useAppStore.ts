@@ -6,7 +6,7 @@ type ModalType =
 	| "embedding-config"
 	| "delete-account"
 	| "edit-chat"
-	| "edit-folder"
+	| "edit-project"
 	| "capabilities"
 	| "uploads"
 	| "console";

@@ -231,14 +231,16 @@ describe("GitHub presentation", () => {
 			).toEqual(fixture.titles);
 			const pending = ToolCallUtils.getDisplay({ part, toolsets });
 			expect(pending.name).toBe(fixture.name);
-			expect(pending.result).toBe("pending");
+			expect(pending.state).toBe("running");
 			const completed = ToolCallUtils.getDisplay({
 				part: { ...part, result },
 				toolsets,
 			});
-			expect(completed.result).toBe("success");
+			expect(completed.state).toBe("success");
 			expect(completed.status).not.toEqual(pending.status);
-			expect(completed.sources).toEqual(sources.map((source) => source.value));
+			expect(completed.output).toEqual(
+				sources.map((source) => ({ type: "web", source: source.value })),
+			);
 		},
 	);
 

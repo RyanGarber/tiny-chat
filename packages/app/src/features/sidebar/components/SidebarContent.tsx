@@ -1,13 +1,13 @@
 import {
 	ActionIcon,
 	Button,
-	Checkbox,
 	Group,
 	Indicator,
 	Modal,
 	NavLink,
 	Overlay,
 	ScrollArea,
+	Space,
 	Stack,
 	Text,
 	TextInput,
@@ -24,7 +24,7 @@ import { useChatStore } from "@tiny-chat/client/features/chat/stores/useChatStor
 import { useMessagingStore } from "@tiny-chat/client/features/chat/stores/useMessagingStore.ts";
 import type {
 	ChatState,
-	FolderState,
+	ProjectState,
 } from "@tiny-chat/core/features/data/types/chat.ts";
 import {
 	type Dispatch,
@@ -36,7 +36,9 @@ import { client } from "#app/client.ts";
 import { useSentinel } from "#app/core/hooks/useSentinel.ts";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
 import scrollable from "#app/core/styles/scrollable.module.css";
+import CommandSettings from "#app/features/sidebar/components/CommandSettings.tsx";
 import ContextSettings from "#app/features/sidebar/components/ContextSettings.tsx";
+import FolderSettings from "#app/features/sidebar/components/FolderSettings.tsx";
 import Sentinel from "../../../core/components/Sentinel.tsx";
 
 type ChatDragHandlers = {
@@ -75,8 +77,8 @@ function ChatDropOverlay({ label, color }: { label: string; color: string }) {
 	);
 }
 
-function Folder({
-	folder,
+function Project({
+	project,
 	setEditing,
 	dragHandlers,
 	dropActive,
@@ -85,8 +87,8 @@ function Folder({
 	onDragOver,
 	onDrop,
 }: {
-	folder: FolderState;
-	setEditing: Dispatch<SetStateAction<FolderState | ChatState | null>>;
+	project: ProjectState;
+	setEditing: Dispatch<SetStateAction<ProjectState | ChatState | null>>;
 	dragHandlers: ChatDragHandlers;
 	dropActive: boolean;
 	onDragEnter: (event: DragEvent<HTMLElement>) => void;
@@ -96,13 +98,13 @@ function Folder({
 }) {
 	const isMobile = useAppStore((state) => state.isMobile);
 	const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
-	const activeFolder = useMessagingStore((state) => state.activeFolder);
+	const currentProject = useMessagingStore((state) => state.project);
 	const hasChat = useChatStore((state) => !!state.chatId);
 	const setCurrentModal = useAppStore((state) => state.setCurrentModal);
 
 	const [isExpanded, setExpanded] = useState(false);
 
-	const active = !hasChat && activeFolder?.id === folder.id;
+	const active = !hasChat && currentProject?.id === project.id;
 
 	return (
 		<Stack
@@ -114,8 +116,8 @@ function Folder({
 			onDrop={onDrop}
 		>
 			<NavLink
-				key={folder.id}
-				label={folder.title || "Untitled"}
+				key={project.id}
+				label={project.title || "Untitled"}
 				h={40}
 				opened={isExpanded}
 				onChange={setExpanded}
@@ -137,8 +139,8 @@ function Folder({
 							variant="light"
 							onClick={(e) => {
 								e.stopPropagation();
-								setEditing(folder);
-								setCurrentModal("edit-folder");
+								setEditing(project);
+								setCurrentModal("edit-project");
 							}}
 						>
 							<DotsThreeIcon size={20} />
@@ -149,7 +151,7 @@ function Folder({
 							className="nav-link-like filled"
 							onClick={(event) => {
 								event.stopPropagation();
-								ChatService.newChat(folder);
+								ChatService.newChat(project);
 								if (isMobile) setSidebarOpen(false);
 							}}
 							data-active={active}
@@ -161,7 +163,7 @@ function Folder({
 				disableRightSectionRotation
 				defaultOpened
 			>
-				{folder.chats.map((chat) => (
+				{project.chats.map((chat) => (
 					<Chat
 						key={chat.id}
 						chat={chat}
@@ -172,7 +174,7 @@ function Folder({
 			</NavLink>
 			{dropActive ? (
 				<ChatDropOverlay
-					label={`Move to ${folder.title || "Untitled"}`}
+					label={`Move to ${project.title || "Untitled"}`}
 					color="blue"
 				/>
 			) : null}
@@ -180,51 +182,25 @@ function Folder({
 	);
 }
 
-function FolderEditor({ editing }: { editing: FolderState }) {
-	const { updateFolder, deleteFolder } = useChatList();
+function ProjectEditor({ editing }: { editing: ProjectState }) {
+	const { updateProject, deleteProject } = useChatList();
 
 	const currentModal = useAppStore((state) => state.currentModal);
 	const setCurrentModal = useAppStore((state) => state.setCurrentModal);
 
 	const [title, setTitle] = useState(editing.title ?? "");
 
-	const [cwd, setCwd] = useState(editing.cwd ?? "");
-	const [cwdWritable, setCwdWritable] = useState(editing.cwdWritable ?? false);
-	const [cwdError, setCwdError] = useState<string | null>(null);
-
-	const [validating, setValidating] = useState(false);
-
-	const save = async () => {
-		setValidating(true);
-		setCwdError(null);
-		try {
-			if (client.desktop && cwd) {
-				if (cwd === "/mnt" || cwd.startsWith("/mnt/")) {
-					const [, , mount, id] = cwd.split("/");
-					await client.api.file.getDirectory.query({
-						path: cwd,
-						chat: mount === "chat" ? id : undefined,
-						uploads: mount === "uploads" && id ? [id] : [],
-						skills: mount === "skills" && id ? [id] : [],
-					});
-				} else await client.shell?.readDir({ path: cwd });
-			}
-		} catch {
-			setCwdError("Cannot open this directory");
-			setValidating(false);
-			return;
-		}
-		setValidating(false);
-		updateFolder.mutate(
-			{ folder: editing, title, cwd: cwd || null, cwdWritable },
+	const save = () => {
+		updateProject.mutate(
+			{ project: editing, title },
 			{ onSuccess: () => setCurrentModal(null) },
 		);
 	};
 
 	return (
 		<Modal
-			title="Edit Folder"
-			opened={currentModal === "edit-folder"}
+			title="Edit Project"
+			opened={currentModal === "edit-project"}
 			onClose={() => setCurrentModal(null)}
 			centered
 			classNames={scrollable}
@@ -234,33 +210,22 @@ function FolderEditor({ editing }: { editing: FolderState }) {
 					<TextInput
 						label="Title"
 						value={title}
-						disabled={updateFolder.isPending}
+						disabled={updateProject.isPending}
 						onChange={(e) => setTitle(e.target.value)}
 						data-autofocus
 					/>
-					<TextInput
-						label="Path"
-						value={cwd}
-						error={cwdError}
-						disabled={!client.desktop || updateFolder.isPending || validating}
-						onChange={(event) => {
-							setCwd(event.target.value);
-							setCwdError(null);
-						}}
-					/>
-					<Checkbox
-						label="Skip approval for files in path"
-						checked={cwdWritable}
-						onChange={(event) => setCwdWritable(event.target.checked)}
-					/>
-					<ContextSettings folder={editing.id} />
+					<FolderSettings project={editing.id} />
+					<Space />
+					<CommandSettings project={editing.id} />
+					<Space />
+					<ContextSettings project={editing.id} />
 					<Button.Group mt="lg">
 						<Button
 							variant="default"
 							fullWidth
 							onClick={save}
-							loading={updateFolder.isPending}
-							disabled={updateFolder.isPending || validating || !title}
+							loading={updateProject.isPending}
+							disabled={updateProject.isPending || !title}
 						>
 							Save
 						</Button>
@@ -268,13 +233,13 @@ function FolderEditor({ editing }: { editing: FolderState }) {
 							variant="outline"
 							color="red"
 							onClick={() =>
-								deleteFolder.mutate(
-									{ folder: editing, deleteChats: true },
+								deleteProject.mutate(
+									{ project: editing, deleteChats: true },
 									{ onSuccess: () => setCurrentModal(null) },
 								)
 							}
-							loading={deleteFolder.isPending}
-							disabled={deleteFolder.isPending}
+							loading={deleteProject.isPending}
+							disabled={deleteProject.isPending}
 						>
 							<TrashIcon size={20} />
 						</Button>
@@ -291,7 +256,7 @@ function Chat({
 	dragHandlers,
 }: {
 	chat: ChatState;
-	setEditing: Dispatch<SetStateAction<FolderState | ChatState | null>>;
+	setEditing: Dispatch<SetStateAction<ProjectState | ChatState | null>>;
 	dragHandlers: ChatDragHandlers;
 }) {
 	const active = useChatStore((state) => state.chatId === chat.id);
@@ -403,13 +368,13 @@ function ChatEditor({ editing }: { editing: ChatState }) {
 }
 
 export default function SidebarContent() {
-	const { folders, createFolder, moveChat } = useChatList();
+	const { projects, createProject, moveChat } = useChatList();
 
 	const currentModal = useAppStore((state) => state.currentModal);
 
-	const [editing, setEditing] = useState<FolderState | ChatState | null>(null);
+	const [editing, setEditing] = useState<ProjectState | ChatState | null>(null);
 	const [draggedChat, setDraggedChat] = useState<ChatState | null>(null);
-	const [dropFolderId, setDropFolderId] = useState<string | null | undefined>(
+	const [dropProjectId, setDropProjectId] = useState<string | null | undefined>(
 		undefined,
 	);
 
@@ -421,25 +386,25 @@ export default function SidebarContent() {
 		},
 		onDragEnd: () => {
 			setDraggedChat(null);
-			setDropFolderId(undefined);
+			setDropProjectId(undefined);
 		},
 	};
 
-	const isValidDrop = (folderId: string | null) =>
-		draggedChat !== null && draggedChat.folderId !== folderId;
+	const isValidDrop = (projectId: string | null) =>
+		draggedChat !== null && draggedChat.projectId !== projectId;
 	const handleDragEnter = (
 		event: DragEvent<HTMLElement>,
-		folderId: string | null,
+		projectId: string | null,
 	) => {
-		if (!isValidDrop(folderId)) return;
+		if (!isValidDrop(projectId)) return;
 		event.preventDefault();
-		setDropFolderId(folderId);
+		setDropProjectId(projectId);
 	};
 	const handleDragOver = (
 		event: DragEvent<HTMLElement>,
-		folderId: string | null,
+		projectId: string | null,
 	) => {
-		if (!isValidDrop(folderId)) return;
+		if (!isValidDrop(projectId)) return;
 		event.preventDefault();
 		event.dataTransfer.dropEffect = "move";
 	};
@@ -447,21 +412,21 @@ export default function SidebarContent() {
 		const nextTarget = event.relatedTarget;
 		if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget))
 			return;
-		setDropFolderId(undefined);
+		setDropProjectId(undefined);
 	};
 	const handleDrop = (
 		event: DragEvent<HTMLElement>,
-		folderId: string | null,
+		projectId: string | null,
 	) => {
-		if (!isValidDrop(folderId) || !draggedChat) return;
+		if (!isValidDrop(projectId) || !draggedChat) return;
 		event.preventDefault();
-		moveChat.mutate({ chat: draggedChat, folderId });
+		moveChat.mutate({ chat: draggedChat, projectId });
 		setDraggedChat(null);
-		setDropFolderId(undefined);
+		setDropProjectId(undefined);
 	};
 
 	const { viewportRef, sentinelRef } = useSentinel({
-		query: folders,
+		query: projects,
 		queryKey: client.query.chat.getChatList.pathKey(),
 	});
 
@@ -481,32 +446,32 @@ export default function SidebarContent() {
 				<Stack gap={10} flex={1}>
 					<Group justify="space-between" px="sm">
 						<Text size="sm" c="dimmed">
-							Folders
+							Projects
 						</Text>
 						<ActionIcon
 							c="dimmed"
 							variant="subtle"
 							className="nav-link-like"
-							loading={createFolder.isPending}
-							disabled={createFolder.isPending}
-							onClick={() => createFolder.mutate()}
+							loading={createProject.isPending}
+							disabled={createProject.isPending}
+							onClick={() => createProject.mutate()}
 						>
 							+
 						</ActionIcon>
 					</Group>
-					{folders.data?.pages
-						.flatMap((page) => page.folders)
-						.map((folder) => (
-							<Folder
-								key={folder.id}
-								folder={folder}
+					{projects.data?.pages
+						.flatMap((page) => page.projects)
+						.map((project) => (
+							<Project
+								key={project.id}
+								project={project}
 								setEditing={setEditing}
 								dragHandlers={dragHandlers}
-								dropActive={dropFolderId === folder.id}
-								onDragEnter={(event) => handleDragEnter(event, folder.id)}
+								dropActive={dropProjectId === project.id}
+								onDragEnter={(event) => handleDragEnter(event, project.id)}
 								onDragLeave={handleDragLeave}
-								onDragOver={(event) => handleDragOver(event, folder.id)}
-								onDrop={(event) => handleDrop(event, folder.id)}
+								onDragOver={(event) => handleDragOver(event, project.id)}
+								onDrop={(event) => handleDrop(event, project.id)}
 							/>
 						))}
 					<Stack
@@ -522,7 +487,7 @@ export default function SidebarContent() {
 						<Text size="sm" c="dimmed" px="sm">
 							Recents
 						</Text>
-						{folders.data?.pages
+						{projects.data?.pages
 							.flatMap((page) => page.chats)
 							.map((chat) => (
 								<Chat
@@ -532,8 +497,8 @@ export default function SidebarContent() {
 									dragHandlers={dragHandlers}
 								/>
 							))}
-						<Sentinel isFetching={folders.isFetching} ref={sentinelRef} />
-						{dropFolderId === null ? (
+						<Sentinel isFetching={projects.isFetching} ref={sentinelRef} />
+						{dropProjectId === null ? (
 							<ChatDropOverlay label="Move to Recents" color="grape" />
 						) : null}
 					</Stack>
@@ -542,8 +507,8 @@ export default function SidebarContent() {
 			{currentModal === "edit-chat" && (
 				<ChatEditor editing={editing as ChatState} />
 			)}
-			{currentModal === "edit-folder" && (
-				<FolderEditor editing={editing as FolderState} />
+			{currentModal === "edit-project" && (
+				<ProjectEditor editing={editing as ProjectState} />
 			)}
 		</>
 	);

@@ -1,7 +1,7 @@
 import { zId } from "@tiny-chat/core/core/types/common.ts";
 import {
 	ChatLike,
-	FolderLike,
+	ProjectLike,
 } from "@tiny-chat/core/features/data/types/chat.ts";
 import { z } from "zod";
 import { procedure, router } from "../../../index.ts";
@@ -12,19 +12,20 @@ import { ChatService } from "../services/ChatService.ts";
 export const chat = router({
 	activate: procedure
 		.input(
-			z.object({ chat: z.string().nullish(), folder: z.string().nullish() }),
+			z.object({ chat: z.string().nullish(), project: z.string().nullish() }),
 		)
 		.mutation(async ({ ctx, input }) => {
-			const folder = await ChatService.getWorkingDirectory({
+			const project = await ChatService.getWorkingDirectory({
 				user: ctx.session.user,
-				...input,
+				chat: input.chat,
+				project: input.project,
 			});
 			if (input.chat) FileService.activate(ctx.session.user.id, input.chat);
-			return folder;
+			return project;
 		}),
 
-	createFolder: procedure.mutation(({ ctx }) =>
-		ChatService.createFolder({ user: ctx.session.user }),
+	createProject: procedure.mutation(({ ctx }) =>
+		ChatService.createProject({ user: ctx.session.user }),
 	),
 
 	getChat: procedure.input(ChatLike).query(async ({ ctx, input }) => {
@@ -77,13 +78,13 @@ export const chat = router({
 			});
 		}),
 
-	setChatFolder: procedure
-		.input(z.object({ chat: ChatLike, folderId: zId.nullable() }))
+	setChatProject: procedure
+		.input(z.object({ chat: ChatLike, projectId: zId.nullable() }))
 		.mutation(async ({ ctx, input }) => {
-			return await ChatService.setChatFolder({
+			return await ChatService.setChatProject({
 				user: ctx.session.user,
 				chat: input.chat,
-				folderId: input.folderId,
+				projectId: input.projectId,
 			});
 		}),
 
@@ -94,31 +95,27 @@ export const chat = router({
 		});
 	}),
 
-	updateFolder: procedure
+	updateProject: procedure
 		.input(
 			z.object({
-				folder: FolderLike,
+				project: ProjectLike,
 				title: z.string(),
-				cwd: z.string().nullable().optional(),
-				cwdWritable: z.boolean().optional(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
-			return await ChatService.updateFolder({
+			return await ChatService.updateProject({
 				user: ctx.session.user,
-				folder: input.folder,
+				project: input.project,
 				title: input.title,
-				cwd: input.cwd,
-				cwdWritable: input.cwdWritable,
 			});
 		}),
 
-	deleteFolder: procedure
-		.input(z.object({ folder: FolderLike, deleteChats: z.boolean() }))
+	deleteProject: procedure
+		.input(z.object({ project: ProjectLike, deleteChats: z.boolean() }))
 		.mutation(async ({ ctx, input }) => {
-			return await ChatService.deleteFolder({
+			return await ChatService.deleteProject({
 				user: ctx.session.user,
-				folder: input.folder,
+				project: input.project,
 				deleteChats: input.deleteChats,
 			});
 		}),

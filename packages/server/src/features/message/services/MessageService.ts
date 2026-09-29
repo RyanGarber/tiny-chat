@@ -59,6 +59,7 @@ export const MessageService = {
 						"config",
 						"data",
 						"createdAt",
+						"updatedAt",
 					)
 					.first(),
 			),
@@ -117,6 +118,7 @@ export const MessageService = {
 						"config",
 						"data",
 						"createdAt",
+						"updatedAt",
 					)
 					.all()
 			: await selected.all();
@@ -134,7 +136,7 @@ export const MessageService = {
 	createMessage: async ({
 		user,
 		chat,
-		folderId,
+		projectId,
 		previous,
 		temporary,
 		incognito,
@@ -142,7 +144,7 @@ export const MessageService = {
 	}: Content & {
 		user: zUser;
 		chat?: ChatLike | null;
-		folderId?: string | null;
+		projectId?: string | null;
 		previous?: MessageLike | null;
 		temporary?: boolean;
 		incognito?: boolean;
@@ -150,11 +152,11 @@ export const MessageService = {
 		if (typeof chat === "string") chat = { id: chat };
 		if (typeof previous === "string") previous = { id: previous };
 
-		let folder: Pick<Model["Folder"], "settings"> | undefined;
-		if (folderId)
-			folder = requireRow(
-				await globalThis.db.orm.public.Folder.where({
-					id: folderId,
+		let project: Pick<Model["Project"], "settings"> | undefined;
+		if (projectId)
+			project = requireRow(
+				await globalThis.db.orm.public.Project.where({
+					id: projectId,
 					userId: user.id,
 				})
 					.select("settings")
@@ -165,7 +167,7 @@ export const MessageService = {
 			? await MemoryRetrievalService.build({
 					user,
 					text: DataUtils.getText(content),
-					tokens: SettingsUtils.of(user, folder).memoryBudget,
+					tokens: SettingsUtils.of(user, project).memoryBudget,
 					more: false,
 				})
 			: { memories: [], embedding: undefined };
@@ -218,7 +220,7 @@ export const MessageService = {
 				await tx.orm.public.Chat.create({
 					id: chatId,
 					userId: user.id,
-					folderId: folderId ?? null,
+					projectId: projectId ?? null,
 					title: null,
 					temporary: temporary ?? false,
 					incognito: incognito ?? false,
@@ -264,7 +266,7 @@ export const MessageService = {
 				.include("chat", (chat) =>
 					chat
 						.select("incognito")
-						.include("folder", (folder) => folder.select("settings")),
+						.include("project", (project) => project.select("settings")),
 				)
 				.first(),
 		);
@@ -273,7 +275,7 @@ export const MessageService = {
 			? await MemoryRetrievalService.build({
 					user,
 					text: DataUtils.getText(content),
-					tokens: SettingsUtils.of(user, existing.chat?.folder).memoryBudget,
+					tokens: SettingsUtils.of(user, existing.chat?.project).memoryBudget,
 					more: false,
 				})
 			: { memories: [], embedding: undefined };
@@ -357,6 +359,7 @@ export const MessageService = {
 				userId: user.id,
 			}).update({
 				...content,
+				updatedAt: Temporal.Now.plainDateTimeISO("UTC"),
 				...(DataUtils.getText(existing) !== DataUtils.getText(content)
 					? { embedding: null }
 					: {}),

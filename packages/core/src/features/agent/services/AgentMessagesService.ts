@@ -30,7 +30,7 @@ export const AgentMessagesService = {
 
 		const memoryBudget = SettingsUtils.of(
 			context.user,
-			context.chat?.folder,
+			context.chat?.project,
 		)?.memoryBudget;
 		console.log("[AgentMessagesService] memory budget:", memoryBudget);
 		const memories = !context.chat?.incognito

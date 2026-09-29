@@ -4,6 +4,7 @@ import type {
 	StreamOptions,
 	StreamState,
 } from "@tiny-chat/core/core/types/stream.ts";
+import { TypeUtils } from "@tiny-chat/core/core/utils/TypeUtils.ts";
 import type { zData } from "@tiny-chat/core/features/data/types/part.ts";
 import type { ToolDefinition } from "@tiny-chat/core/features/tool/types/tool.ts";
 import type { z } from "zod";
@@ -23,7 +24,13 @@ const publish = <T>(stream: Stream<T>) => {
 	const items = stream.keep
 		? stream.items.filter(stream.keep)
 		: [...stream.items];
-	stream.snapshot = { items, truncated: stream.truncated };
+	// Producers mutate message parts and tool output in place. Detach the
+	// published values so previous snapshots stay stable and memoized consumers
+	// see new references. Clone at the batched flush, not on every token.
+	stream.snapshot = {
+		items: TypeUtils.deepClone(items),
+		truncated: stream.truncated,
+	};
 };
 
 const notify = (key: string) => {
@@ -83,7 +90,7 @@ class StreamService<T> {
 		const stream: Stream<T> = {
 			items,
 			truncated: false,
-			snapshot: { items: [...items], truncated: false },
+			snapshot: { items: TypeUtils.deepClone(items), truncated: false },
 			abort: new AbortController(),
 			chat: options.chat,
 			keep: options.keep,

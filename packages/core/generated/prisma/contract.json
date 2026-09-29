@@ -28,10 +28,6 @@
       "model": "File",
       "namespace": "public"
     },
-    "folder": {
-      "model": "Folder",
-      "namespace": "public"
-    },
     "memory": {
       "model": "Memory",
       "namespace": "public"
@@ -42,6 +38,10 @@
     },
     "message_context": {
       "model": "MessageContext",
+      "namespace": "public"
+    },
+    "project": {
+      "model": "Project",
       "namespace": "public"
     },
     "session": {
@@ -401,13 +401,6 @@
                   }
                 }
               },
-              "folderId": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
               "id": {
                 "nullable": false,
                 "type": {
@@ -419,6 +412,13 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "projectId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
@@ -460,22 +460,6 @@
                   "namespace": "public"
                 }
               },
-              "folder": {
-                "cardinality": "N:1",
-                "nullable": true,
-                "on": {
-                  "localFields": [
-                    "folderId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
-                },
-                "to": {
-                  "model": "Folder",
-                  "namespace": "public"
-                }
-              },
               "messages": {
                 "cardinality": "1:N",
                 "on": {
@@ -488,6 +472,22 @@
                 },
                 "to": {
                   "model": "Message",
+                  "namespace": "public"
+                }
+              },
+              "project": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "projectId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Project",
                   "namespace": "public"
                 }
               },
@@ -513,14 +513,14 @@
                 "createdAt": {
                   "column": "createdAt"
                 },
-                "folderId": {
-                  "column": "folderId"
-                },
                 "id": {
                   "column": "id"
                 },
                 "incognito": {
                   "column": "incognito"
+                },
+                "projectId": {
+                  "column": "projectId"
                 },
                 "temporary": {
                   "column": "temporary"
@@ -886,122 +886,6 @@
               "table": "file"
             }
           },
-          "Folder": {
-            "fields": {
-              "createdAt": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/timestamp-temporal@1",
-                  "kind": "scalar",
-                  "typeParams": {
-                    "precision": 3
-                  }
-                }
-              },
-              "cwd": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "cwdWritable": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/bool@1",
-                  "kind": "scalar"
-                }
-              },
-              "id": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "settings": {
-                "nullable": false,
-                "type": {
-                  "codecId": "zod/json@1",
-                  "kind": "scalar"
-                }
-              },
-              "title": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "userId": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              }
-            },
-            "relations": {
-              "chats": {
-                "cardinality": "1:N",
-                "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "folderId"
-                  ]
-                },
-                "to": {
-                  "model": "Chat",
-                  "namespace": "public"
-                }
-              },
-              "user": {
-                "cardinality": "N:1",
-                "nullable": false,
-                "on": {
-                  "localFields": [
-                    "userId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
-                },
-                "to": {
-                  "model": "User",
-                  "namespace": "public"
-                }
-              }
-            },
-            "storage": {
-              "fields": {
-                "createdAt": {
-                  "column": "createdAt"
-                },
-                "cwd": {
-                  "column": "cwd"
-                },
-                "cwdWritable": {
-                  "column": "cwdWritable"
-                },
-                "id": {
-                  "column": "id"
-                },
-                "settings": {
-                  "column": "settings"
-                },
-                "title": {
-                  "column": "title"
-                },
-                "userId": {
-                  "column": "userId"
-                }
-              },
-              "namespaceId": "public",
-              "table": "folder"
-            }
-          },
           "Memory": {
             "fields": {
               "category": {
@@ -1278,6 +1162,16 @@
                   "kind": "scalar"
                 }
               },
+              "updatedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamp-temporal@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
               "userId": {
                 "nullable": false,
                 "type": {
@@ -1481,6 +1375,9 @@
                 "previousId": {
                   "column": "previousId"
                 },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
                 "userId": {
                   "column": "userId"
                 }
@@ -1551,6 +1448,102 @@
               },
               "namespaceId": "public",
               "table": "message_context"
+            }
+          },
+          "Project": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamp-temporal@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "settings": {
+                "nullable": false,
+                "type": {
+                  "codecId": "zod/json@1",
+                  "kind": "scalar"
+                }
+              },
+              "title": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "chats": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "projectId"
+                  ]
+                },
+                "to": {
+                  "model": "Chat",
+                  "namespace": "public"
+                }
+              },
+              "user": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "settings": {
+                  "column": "settings"
+                },
+                "title": {
+                  "column": "title"
+                },
+                "userId": {
+                  "column": "userId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "project"
             }
           },
           "Session": {
@@ -2048,21 +2041,6 @@
                   "namespace": "public"
                 }
               },
-              "folders": {
-                "cardinality": "1:N",
-                "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "userId"
-                  ]
-                },
-                "to": {
-                  "model": "Folder",
-                  "namespace": "public"
-                }
-              },
               "memories": {
                 "cardinality": "1:N",
                 "on": {
@@ -2090,6 +2068,21 @@
                 },
                 "to": {
                   "model": "Message",
+                  "namespace": "public"
+                }
+              },
+              "projects": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "Project",
                   "namespace": "public"
                 }
               },
@@ -2573,11 +2566,6 @@
                     "precision": 3
                   }
                 },
-                "folderId": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": true
-                },
                 "id": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
@@ -2591,6 +2579,11 @@
                   },
                   "nativeType": "bool",
                   "nullable": false
+                },
+                "projectId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
                 },
                 "temporary": {
                   "codecId": "pg/bool@1",
@@ -2614,12 +2607,12 @@
               },
               "foreignKeys": [
                 {
-                  "name": "chat_folderId_fkey",
+                  "name": "chat_projectId_fkey",
                   "onDelete": "setNull",
                   "onUpdate": "cascade",
                   "source": {
                     "columns": [
-                      "folderId"
+                      "projectId"
                     ],
                     "namespaceId": "public",
                     "tableName": "chat"
@@ -2629,7 +2622,7 @@
                       "id"
                     ],
                     "namespaceId": "public",
-                    "tableName": "folder"
+                    "tableName": "project"
                   }
                 },
                 {
@@ -2655,9 +2648,9 @@
               "indexes": [
                 {
                   "columns": [
-                    "folderId"
+                    "projectId"
                   ],
-                  "name": "chat_folderId_idx",
+                  "name": "chat_projectId_idx",
                   "unique": false
                 },
                 {
@@ -2993,98 +2986,6 @@
               },
               "uniques": []
             },
-            "folder": {
-              "columns": {
-                "createdAt": {
-                  "codecId": "pg/timestamp-temporal@1",
-                  "default": {
-                    "expression": "now()",
-                    "kind": "function"
-                  },
-                  "nativeType": "timestamp",
-                  "nullable": false,
-                  "typeParams": {
-                    "precision": 3
-                  }
-                },
-                "cwd": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": true
-                },
-                "cwdWritable": {
-                  "codecId": "pg/bool@1",
-                  "default": {
-                    "kind": "literal",
-                    "value": false
-                  },
-                  "nativeType": "bool",
-                  "nullable": false
-                },
-                "id": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": false
-                },
-                "settings": {
-                  "codecId": "zod/json@1",
-                  "default": {
-                    "expression": "'{}'::jsonb",
-                    "kind": "function"
-                  },
-                  "nativeType": "jsonb",
-                  "nullable": false,
-                  "typeRef": "zSettings"
-                },
-                "title": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": true
-                },
-                "userId": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": false
-                }
-              },
-              "foreignKeys": [
-                {
-                  "name": "folder_userId_fkey",
-                  "onDelete": "cascade",
-                  "onUpdate": "cascade",
-                  "source": {
-                    "columns": [
-                      "userId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "folder"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "user"
-                  }
-                }
-              ],
-              "indexes": [
-                {
-                  "columns": [
-                    "userId"
-                  ],
-                  "name": "folder_userId_idx",
-                  "unique": false
-                }
-              ],
-              "primaryKey": {
-                "columns": [
-                  "id"
-                ],
-                "name": "folder_pkey"
-              },
-              "uniques": []
-            },
             "memory": {
               "columns": {
                 "category": {
@@ -3313,6 +3214,14 @@
                   "nativeType": "text",
                   "nullable": true
                 },
+                "updatedAt": {
+                  "codecId": "pg/timestamp-temporal@1",
+                  "nativeType": "timestamp",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
                 "userId": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
@@ -3484,6 +3393,84 @@
                   "memoryId"
                 ],
                 "name": "message_context_pkey"
+              },
+              "uniques": []
+            },
+            "project": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamp-temporal@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamp",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "settings": {
+                  "codecId": "zod/json@1",
+                  "default": {
+                    "expression": "'{}'::jsonb",
+                    "kind": "function"
+                  },
+                  "nativeType": "jsonb",
+                  "nullable": false,
+                  "typeRef": "zSettings"
+                },
+                "title": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "userId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "name": "project_userId_fkey",
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "project"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "user"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "project_userId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ],
+                "name": "project_pkey"
               },
               "uniques": []
             },
@@ -3994,7 +3981,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "89feade643133e4e691e0921e74e2679868fa5af5adf48ad71dcdc9c37c41f78",
+    "storageHash": "a31f98f0b65be7d8f4e66f0dc8725ef98f265d85a8a3285ab80448f92f0eca35",
     "types": {
       "Embedding": {
         "codecId": "pg/vector@1",
@@ -4068,6 +4055,8 @@
       "checkConstraint": true,
       "defaultInInsert": true,
       "enums": true,
+      "insertOnConflictSkip": true,
+      "insertOnConflictWithoutTarget": true,
       "lateral": true,
       "returning": true,
       "scalarList": true

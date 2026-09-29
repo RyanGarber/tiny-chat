@@ -98,7 +98,7 @@ export const ChatSearchService = {
 		const messages = await globalThis.db.orm.public.Message.where((message) =>
 			message.id.in(rows.map((row) => row.id)),
 		)
-			.select("id", "chatId", "author", "data", "createdAt")
+			.select("id", "chatId", "author", "data", "createdAt", "updatedAt")
 			.include("chat", (chat) => chat.select("title"))
 			.all();
 

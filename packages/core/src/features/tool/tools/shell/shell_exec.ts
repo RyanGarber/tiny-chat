@@ -1,6 +1,8 @@
 import { z } from "zod";
 import type { Capabilities } from "../../../../core/types/capability.ts";
+import { SettingsUtils } from "../../../../core/utils/SettingsUtils.ts";
 import { PathUtils } from "../../../file/utils/PathUtils.ts";
+import type { ToolDisplay } from "../../types/display.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 import { ShellUtils } from "../../utils/ShellUtils.ts";
 import { ToolOutputUtils } from "../../utils/ToolOutputUtils.ts";
@@ -32,13 +34,77 @@ const keep: (event: z.infer<typeof shell_exec.stream>) => boolean = (event) => {
 	return event.value.length > 0;
 };
 
+/** The programs a command runs, without their arguments: `git status && ls`. */
+const getPrograms = (command: string) =>
+	command
+		.split("&&")
+		.map((command) => {
+			const parts = command
+				.split(" ")
+				.filter(Boolean)
+				.filter((part) => part !== "--");
+			const end = parts.findIndex((part) => /[^A-Za-z0-9-_]/.test(part));
+			return parts
+				.slice(0, end === -1 ? undefined : end)
+				.join(" ")
+				.trim();
+		})
+		.filter(Boolean)
+		.join(" && ");
+
+const display: ToolDisplay<typeof shell_exec> = {
+	status: ({ input }) => [
+		["Running", "Ran"],
+		{
+			count: ["command", "commands"],
+			subject: getPrograms(input.command ?? ""),
+		},
+	],
+	input: ({ input }) => [
+		{ type: "code", value: input.command ?? "", language: "bash" },
+	],
+	output: ({ state, output, stream }) => {
+		if (state === "running") {
+			return [
+				{
+					type: "code",
+					value: stream.map((line) => line.value).join("\n"),
+					terminal: true,
+				},
+			];
+		}
+		const [result] = output;
+		if (!result) return [];
+		const text = [result.stdout.trim(), result.stderr.trim()]
+			.filter(Boolean)
+			.join("\n");
+		return [
+			...(text ? [{ type: "code" as const, value: text, terminal: true }] : []),
+			...(result.code
+				? [
+						{
+							type: "text" as const,
+							value: `Exited with code ${result.code}`,
+							tone: "dimmed" as const,
+						},
+					]
+				: []),
+		];
+	},
+};
+
 export const createShellExecTool: ToolFactory<
 	Tool<typeof shell_exec, Pick<Capabilities, "shell" | "chatShell">>
 > = (options) => ({
 	...shell_exec,
 	...options,
-	validate: async ({ input }) => {
-		return { approval: !ShellUtils.isSafe(input.command) };
+	display,
+	validate: async ({ input, context }) => {
+		const { commandWhitelist } = SettingsUtils.of(
+			context.user,
+			context.chat?.project,
+		);
+		return { approval: !ShellUtils.isSafe(input.command, commandWhitelist) };
 	},
 	execute: async ({ input, stream }) => {
 		const shell = ShellUtils.detect(input.mnt, options.capabilities);

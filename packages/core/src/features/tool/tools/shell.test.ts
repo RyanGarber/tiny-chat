@@ -1,4 +1,5 @@
 import type { zAgentContext } from "../../agent/types/agent.ts";
+import type { zSettings } from "../../data/types/user.ts";
 import { createShell } from "../../file/services/FileSearchService.test.ts";
 import { FileUtils } from "../../file/utils/FileUtils.ts";
 import { createEditFileTool } from "./shell/edit_file.ts";
@@ -10,9 +11,19 @@ import { createShellExecTool } from "./shell/shell_exec.ts";
 import { createWriteFileTool } from "./shell/write_file.ts";
 
 const context = {} as zAgentContext;
-const contextWithFolder = (cwd: string | null, cwdWritable: boolean = true) =>
+const contextWithFolder = (path: string | null, writable: boolean = true) =>
 	({
-		chat: { folder: cwd === null ? null : { cwd, cwdWritable } },
+		chat: {
+			project:
+				path === null
+					? null
+					: { title: null, settings: { folders: [{ path, writable }] } },
+		},
+	}) as zAgentContext;
+const contextWithSettings = (user: zSettings, folder?: zSettings) =>
+	({
+		user: { settings: user },
+		chat: { project: folder ? { title: null, settings: folder } : null },
 	}) as zAgentContext;
 
 describe("shell", () => {
@@ -299,6 +310,66 @@ describe("shell", () => {
 				context: contextWithFolder("/project"),
 			}),
 		).resolves.toEqual({ approval: false });
+	});
+
+	it("skips approval for writes inside app-wide or folder writable folders", async () => {
+		const tool = await createWriteFileTool({
+			capabilities: { shell: createShell({}) },
+		});
+		const validate = (path: string, context: zAgentContext) =>
+			tool.validate?.({ input: { path, content: "new" }, context });
+		const context = contextWithSettings(
+			{
+				folders: [
+					{ path: "/app", writable: true },
+					{ path: "/shared", writable: true },
+				],
+			},
+			{
+				folders: [
+					{ path: "/project", writable: true },
+					{ path: "/shared", writable: false },
+				],
+			},
+		);
+
+		await expect(validate("/app/new.ts", context)).resolves.toEqual({
+			approval: false,
+		});
+		await expect(validate("/project/new.ts", context)).resolves.toEqual({
+			approval: false,
+		});
+		// The folder's own entry wins over the app-wide one for the same path.
+		await expect(validate("/shared/new.ts", context)).resolves.toEqual({
+			approval: true,
+		});
+	});
+
+	it("skips approval for commands matching a whitelist pattern", async () => {
+		const tool = await createShellExecTool({
+			capabilities: { shell: createShell({}) },
+		});
+		const validate = (command: string) =>
+			tool.validate?.({
+				input: { command, mnt: false },
+				context: contextWithSettings(
+					{ commandWhitelist: ["npm run *"] },
+					{ commandWhitelist: ["pnpm test"] },
+				),
+			});
+
+		await expect(validate("npm run build && pnpm test")).resolves.toEqual({
+			approval: false,
+		});
+		await expect(validate("echo $(npm run lint)")).resolves.toEqual({
+			approval: false,
+		});
+		await expect(validate("pnpm test --watch")).resolves.toEqual({
+			approval: true,
+		});
+		await expect(validate("npm run build && rm -rf dist")).resolves.toEqual({
+			approval: true,
+		});
 	});
 
 	it("requires approval for file writes outside the active folder", async () => {

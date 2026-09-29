@@ -17,6 +17,16 @@ describe("CompletionUtils", () => {
 		).toEqual(["preset", "presets", "set-preset", "unset-preset"]);
 	});
 
+	it("ignores punctuation when matching completion names", () => {
+		const items: CompletionItem[] = [{ value: "set-preset" }];
+
+		expect(
+			CompletionUtils.filter({ items, query: "setpres" }).map(
+				(item) => item.value,
+			),
+		).toEqual(["set-preset"]);
+	});
+
 	it("preserves declaration order for equally weighted matches", () => {
 		const items: CompletionItem[] = [
 			{ value: "settings" },

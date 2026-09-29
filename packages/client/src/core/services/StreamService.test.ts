@@ -1,6 +1,60 @@
+import type { zData } from "@tiny-chat/core/features/data/types/part.ts";
 import type { shell_exec } from "@tiny-chat/core/features/tool/tools/shell/shell_exec.ts";
 import type { z } from "zod";
-import { ToolStreamService } from "./StreamService.ts";
+import { AgentStreamService, ToolStreamService } from "./StreamService.ts";
+
+describe("stream snapshots", () => {
+	beforeEach(() => vi.useFakeTimers());
+	afterEach(() => {
+		AgentStreamService.clear("snapshot");
+		vi.useRealTimers();
+	});
+
+	it("detaches initial and flushed message data from the mutable producer", () => {
+		const part = { id: "text", type: "text" as const, value: "one" };
+		const data: zData = [[part]];
+		AgentStreamService.start("snapshot", { initial: { data } });
+		const initial = AgentStreamService.get("snapshot");
+
+		part.value = "two";
+		AgentStreamService.mutate("snapshot", { mode: "patch", data: { data } });
+		expect(AgentStreamService.get("snapshot")).toBe(initial);
+		expect(initial?.items[0].data[0][0]).toMatchObject({ value: "one" });
+		vi.advanceTimersByTime(50);
+		const second = AgentStreamService.get("snapshot");
+		expect(second?.items[0].data).not.toBe(initial?.items[0].data);
+		expect(second?.items[0].data[0][0]).toMatchObject({ value: "two" });
+
+		part.value = "three";
+		AgentStreamService.mutate("snapshot", { mode: "patch", data: { data } });
+		vi.advanceTimersByTime(50);
+		expect(
+			AgentStreamService.get("snapshot")?.items[0].data[0][0],
+		).toMatchObject({ value: "three" });
+		expect(second?.items[0].data[0][0]).toMatchObject({ value: "two" });
+	});
+
+	it("detaches coalesced tool output while retaining filtering and truncation", () => {
+		const service = ToolStreamService.of<{ value: string }>();
+		const line = { value: "one" };
+		service.start("snapshot", { maxItems: 2, keep: (item) => !!item.value });
+		service.mutate("snapshot", { mode: "append", data: line });
+		vi.advanceTimersByTime(50);
+		const first = service.get("snapshot");
+		line.value = "two";
+		service.mutate("snapshot", { mode: "replace", data: line });
+		service.mutate("snapshot", { mode: "append", data: { value: "" } });
+		vi.advanceTimersByTime(50);
+		expect(first?.items).toEqual([{ value: "one" }]);
+		expect(service.get("snapshot")?.items).toEqual([{ value: "two" }]);
+		service.mutate("snapshot", { mode: "append", data: { value: "three" } });
+		vi.advanceTimersByTime(50);
+		expect(service.get("snapshot")).toEqual({
+			items: [{ value: "three" }],
+			truncated: true,
+		});
+	});
+});
 
 const keep: (event: z.infer<typeof shell_exec.stream>) => boolean = (event) => {
 	return event.value.length > 0;

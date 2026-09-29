@@ -21,7 +21,7 @@ export const WorkingDirectoryService = {
 			const chat = useChatStore.getState().chatId;
 			const folder = chat
 				? null
-				: (useMessagingStore.getState().activeFolder?.id ?? null);
+				: (useMessagingStore.getState().project?.id ?? null);
 			const key = JSON.stringify([chat, folder]);
 			if (key === selection) return;
 			selection = key;

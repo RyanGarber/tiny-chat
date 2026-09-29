@@ -13,16 +13,16 @@
 		"./*": "./src/*"
 	},
 	"dependencies": {
-		"@prisma/orm-extension-paradedb": "^8.0.0-rc.12",
+		"@prisma/orm-extension-paradedb": "^8.0.0-rc.13",
 		"@prisma/orm-extension-pgvector": "npm:@ryangarber/prisma-orm-extension-pgvector@latest",
-		"@prisma/orm-postgres": "8.0.0-rc.12",
+		"@prisma/orm-postgres": "8.0.0-rc.13",
 		"@ryangarber/ai-sdk-antigravity-proxy": "^0.1.4",
 		"@tiny-chat/core": "workspace:*",
-		"chalk": "^6.0.0",
+		"chalk": "^6.0.1",
 		"fflate": "^0.8.3",
 		"internal-ip": "^9.0.0",
 		"just-bash": "^3.4.2",
-		"sharp": "^0.35.4"
+		"sharp": "^0.35.5"
 	},
 	"devDependencies": {
 		"prisma": "^8.0.0-rc.17"

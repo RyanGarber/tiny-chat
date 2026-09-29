@@ -1,6 +1,8 @@
 import { z } from "zod";
 import type { GitHubCapability } from "../../../../core/types/capability.ts";
+import type { ToolDisplay } from "../../types/display.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
+import { GitHubSourceUtils } from "../../utils/GitHubSourceUtils.ts";
 import { GitHubToolUtils } from "../../utils/GitHubToolUtils.ts";
 import { zGitHubFileDiff } from "./schemas.ts";
 
@@ -66,11 +68,27 @@ export const github_compare = {
 	}),
 } as const satisfies ToolDefinition;
 
+const display: ToolDisplay<typeof github_compare> = {
+	status: ({ input }) => [
+		["Comparing", "Compared"],
+		{
+			count: ["revision range", "revision ranges"],
+			subject: `${input.owner ?? ""}/${input.repository ?? ""}: ${input.base ?? ""}...${input.head ?? ""}`,
+		},
+	],
+	output: ({ output }) =>
+		GitHubSourceUtils.parse(github_compare.name, output).map((source) => ({
+			type: "web",
+			source,
+		})),
+};
+
 export const createGitHubCompareTool: ToolFactory<
 	Tool<typeof github_compare, { github: GitHubCapability }>
 > = (options) => ({
 	...github_compare,
 	...options,
+	display,
 	execute: async ({ input }) => {
 		const page = GitHubToolUtils.page(input.page);
 		const comparison = await GitHubToolUtils.request({

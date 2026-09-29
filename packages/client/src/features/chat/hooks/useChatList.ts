@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
 import type {
 	ChatState,
-	FolderLike,
+	ProjectLike,
 } from "@tiny-chat/core/features/data/types/chat.ts";
 import { ChatUtils } from "@tiny-chat/core/features/data/utils/ChatUtils.ts";
 import { useContext } from "react";
@@ -26,7 +26,7 @@ export const useChatList = () => {
 		};
 	};
 
-	const folders = useInfiniteQuery({
+	const projects = useInfiniteQuery({
 		...client.query.chat.getChatList.infiniteQueryOptions(
 			{ limit: 10 },
 			{
@@ -36,9 +36,9 @@ export const useChatList = () => {
 						pages: data.pages.map((page) => ({
 							...page,
 							chats: page.chats.map(markSeen),
-							folders: page.folders.map((folder) => ({
-								...folder,
-								chats: folder.chats.map(markSeen),
+							projects: page.projects.map((project) => ({
+								...project,
+								chats: project.chats.map(markSeen),
 							})),
 						})),
 						pageParams: data.pageParams,
@@ -61,11 +61,11 @@ export const useChatList = () => {
 	const moveChat = useMutation({
 		mutationFn: ({
 			chat,
-			folderId,
+			projectId,
 		}: {
 			chat: ChatState;
-			folderId: string | null;
-		}) => client.api.chat.setChatFolder.mutate({ chat, folderId }),
+			projectId: string | null;
+		}) => client.api.chat.setChatProject.mutate({ chat, projectId }),
 		onSuccess: () => {
 			client.workingDirectory.refresh();
 			return ChatService.fetchChatList({ client });
@@ -82,38 +82,25 @@ export const useChatList = () => {
 		},
 	});
 
-	const createFolder = useMutation({
-		mutationFn: () => client.api.chat.createFolder.mutate(),
+	const createProject = useMutation({
+		mutationFn: () => client.api.chat.createProject.mutate(),
 		onSuccess: () => ChatService.fetchChatList({ client }),
 	});
 
-	const updateFolder = useMutation({
-		mutationFn: ({
-			folder,
-			title,
-			cwd,
-			cwdWritable,
-		}: {
-			folder: FolderLike;
-			title: string;
-			cwd?: string | null;
-			cwdWritable?: boolean;
-		}) =>
-			client.api.chat.updateFolder.mutate({ folder, title, cwd, cwdWritable }),
-		onSuccess: () => {
-			client.workingDirectory.refresh();
-			return ChatService.fetchChatList({ client });
-		},
+	const updateProject = useMutation({
+		mutationFn: ({ project, title }: { project: ProjectLike; title: string }) =>
+			client.api.chat.updateProject.mutate({ project, title }),
+		onSuccess: () => ChatService.fetchChatList({ client }),
 	});
 
-	const deleteFolder = useMutation({
+	const deleteProject = useMutation({
 		mutationFn: ({
-			folder,
+			project,
 			deleteChats,
 		}: {
-			folder: FolderLike;
+			project: ProjectLike;
 			deleteChats: boolean;
-		}) => client.api.chat.deleteFolder.mutate({ folder, deleteChats }),
+		}) => client.api.chat.deleteProject.mutate({ project, deleteChats }),
 		onSuccess: () => {
 			client.workingDirectory.refresh();
 			return ChatService.fetchChatList({ client });
@@ -121,12 +108,12 @@ export const useChatList = () => {
 	});
 
 	return {
-		folders,
+		projects,
 		renameChat,
 		moveChat,
 		deleteChat,
-		createFolder,
-		updateFolder,
-		deleteFolder,
+		createProject,
+		updateProject,
+		deleteProject,
 	};
 };

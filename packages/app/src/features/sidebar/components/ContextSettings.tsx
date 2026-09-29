@@ -9,13 +9,13 @@ import {
 } from "@mantine/core";
 import { TrashIcon } from "@phosphor-icons/react";
 import { useInstructions } from "@tiny-chat/client/features/settings/hooks/useInstructions.ts";
-import type { FolderLike } from "@tiny-chat/core/features/data/types/chat.ts";
+import type { ProjectLike } from "@tiny-chat/core/features/data/types/chat.ts";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
 
 export default function ContextSettings({
-	folder,
+	project,
 }: {
-	folder: FolderLike | null;
+	project: ProjectLike | null;
 }) {
 	const {
 		instructions,
@@ -24,7 +24,7 @@ export default function ContextSettings({
 		removeInstruction,
 		memoryBudget,
 		setMemoryBudget,
-	} = useInstructions({ folder });
+	} = useInstructions({ project });
 
 	return (
 		<>
@@ -46,11 +46,11 @@ export default function ContextSettings({
 						if (e.target.value === instruction) return;
 						if (e.target.value)
 							editInstruction.mutate({
-								folder,
+								project,
 								index,
 								instruction: e.target.value,
 							});
-						else removeInstruction.mutate({ folder, index });
+						else removeInstruction.mutate({ project, index });
 					}}
 					leftSection={
 						<Text c="dimmed" size="xs">
@@ -60,7 +60,7 @@ export default function ContextSettings({
 					rightSection={
 						<ActionIcon
 							variant="subtle"
-							onClick={() => removeInstruction.mutate({ folder, index })}
+							onClick={() => removeInstruction.mutate({ project, index })}
 							disabled={
 								removeInstruction.isPending &&
 								removeInstruction.variables.index === index
@@ -92,7 +92,7 @@ export default function ContextSettings({
 					}
 					onBlur={(e) => {
 						if (!e.target.value) return;
-						addInstruction.mutate({ folder, instruction: e.target.value });
+						addInstruction.mutate({ project, instruction: e.target.value });
 						e.target.value = "";
 					}}
 					disabled={addInstruction.isPending}
@@ -114,7 +114,7 @@ export default function ContextSettings({
 						step={500}
 						value={memoryBudget}
 						onChange={(value) =>
-							setMemoryBudget.mutate({ folder, tokens: value })
+							setMemoryBudget.mutate({ project, tokens: value })
 						}
 					/>
 				</Box>

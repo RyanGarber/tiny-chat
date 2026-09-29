@@ -6,6 +6,7 @@ import type { DistributiveOmit } from "../../../core/types/common.ts";
 import type { StreamMutation } from "../../../core/types/stream.ts";
 import type { zAgentContext } from "../../agent/types/agent.ts";
 import type { zDataSimplePart, zJsonPart } from "../../data/types/part.ts";
+import type { ToolDisplay } from "./display.ts";
 
 export interface ToolDefinition {
 	name: string;
@@ -37,6 +38,9 @@ export interface Tool<
 	feedback?: TDefinition["feedback"];
 	output: TDefinition["output"];
 	stream?: TDefinition["stream"];
+
+	/** How calls are shown. Without it, input and output are shown raw. */
+	display?: ToolDisplay<TDefinition>;
 
 	/**
 	 * Runs before `execute`, and before the loop stops for approval or feedback.

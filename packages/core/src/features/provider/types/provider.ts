@@ -13,10 +13,12 @@ export interface ProviderStatus {
 	error?: string;
 }
 
-export interface Provider<T extends ProviderStatus> extends zProvider {
+export interface Provider<T extends ProviderStatus = ProviderStatus>
+	extends zProvider {
 	getStatus: ({ user }: { user: zUser }) => Promise<T>;
 }
 
-export interface ProviderState<T extends ProviderStatus> extends zProvider {
+export interface ProviderState<T extends ProviderStatus = ProviderStatus>
+	extends zProvider {
 	status: T;
 }

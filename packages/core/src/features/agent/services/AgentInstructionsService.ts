@@ -21,7 +21,7 @@ export const AgentInstructionsService = {
 		enabledToolsets: Toolset<any>[];
 		enabledSkills: zSkill[];
 	}) => {
-		const settings = SettingsUtils.of(context.user, context.chat?.folder);
+		const settings = SettingsUtils.of(context.user, context.chat?.project);
 
 		const actions = !context.chat?.incognito
 			? await capabilities.actions?.getActions()
@@ -97,9 +97,25 @@ ${citeExamples.map((r) => `- ${r}`).join("\n")}`;
 			instructions += `\n
 ## Context`;
 
-			if (context.chat?.folder?.title || context.chat?.folder?.cwd) {
+			if (context.chat?.id) {
 				instructions += `\n
-<workspace name="${context.chat.folder.title ?? "unnamed"}">${context.chat.folder.cwd}</workspace>`;
+	<chat>/mnt/chat/${context.chat.id}/</chat>`;
+			}
+
+			if (context.chat?.project?.title) {
+				instructions += `\n
+<project title="${context.chat.project.title}" />`;
+			}
+
+			if (
+				settings.folders.length &&
+				enabledToolsets.some((toolset) => toolset.name === "shell")
+			) {
+				instructions += `\n
+The user works in these folders. The shell starts in the one marked cwd, and file edits inside writable ones need no approval.
+<folders>
+${settings.folders.map((folder, index) => `<folder${index === 0 ? " cwd" : ""}${folder.writable ? " writable" : ""}>${folder.path}</folder>`).join("\n")}
+</folders>`;
 			}
 
 			if (actions?.length) {

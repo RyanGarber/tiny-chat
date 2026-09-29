@@ -1,6 +1,8 @@
 import { z } from "zod";
 import type { GitHubCapability } from "../../../../core/types/capability.ts";
+import type { ToolDisplay } from "../../types/display.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
+import { GitHubSourceUtils } from "../../utils/GitHubSourceUtils.ts";
 import { GitHubToolUtils } from "../../utils/GitHubToolUtils.ts";
 import {
 	zGitHubIssue,
@@ -25,11 +27,27 @@ export const github_list_issues = {
 	output: zGitHubIssueSummaryOutput,
 } as const satisfies ToolDefinition;
 
+const display: ToolDisplay<typeof github_list_issues> = {
+	status: ({ input }) => [
+		["Listing", "Listed"],
+		{
+			count: ["issue list", "issue lists"],
+			subject: `${input.kind === "pull_requests" ? "pull requests" : "issues"} in ${input.owner ?? ""}/${input.repository ?? ""}`,
+		},
+	],
+	output: ({ output }) =>
+		GitHubSourceUtils.parse(github_list_issues.name, output).map((source) => ({
+			type: "web",
+			source,
+		})),
+};
+
 export const createGitHubListIssuesTool: ToolFactory<
 	Tool<typeof github_list_issues, { github: GitHubCapability }>
 > = (options) => ({
 	...github_list_issues,
 	...options,
+	display,
 	execute: async ({ input }) => {
 		const limit = GitHubToolUtils.limit(input.limit, 20, 50);
 		const path = GitHubToolUtils.repositoryPath({

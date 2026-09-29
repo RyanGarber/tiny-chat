@@ -1,127 +1,73 @@
-import { z } from "zod";
-import type { CodeLanguage } from "../../../core/utils/CodeUtils.ts";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 import type { zDataSimplePart, zTextPart } from "../../data/types/part.ts";
 import type { RenderedPart } from "../../data/utils/DataUtils.ts";
-import { FileTypeUtils } from "../../file/utils/FileTypeUtils.ts";
-import { FileUtils } from "../../file/utils/FileUtils.ts";
-import { PathUtils } from "../../file/utils/PathUtils.ts";
-import type { zWebContext } from "../../provider/types/web.ts";
-import { create_action } from "../tools/actions/create_action.ts";
-import { delete_action } from "../tools/actions/delete_action.ts";
-import { list_actions } from "../tools/actions/list_actions.ts";
-import { update_action } from "../tools/actions/update_action.ts";
-import { github_compare } from "../tools/github/compare.ts";
-import { github_list_commits } from "../tools/github/list_commits.ts";
-import { github_list_issues } from "../tools/github/list_issues.ts";
-import { github_view_commit } from "../tools/github/view_commit.ts";
-import { github_view_file } from "../tools/github/view_file.ts";
-import { github_view_issue } from "../tools/github/view_issue.ts";
-import { github_view_repository } from "../tools/github/view_repository.ts";
-import { create_memory } from "../tools/memories/create_memory.ts";
-import { delete_memory } from "../tools/memories/delete_memory.ts";
-import { search_chats } from "../tools/memories/search_chats.ts";
-import { search_memories } from "../tools/memories/search_memories.ts";
-import { update_memory } from "../tools/memories/update_memory.ts";
-import { ask_question } from "../tools/questions/ask_question.ts";
-import { edit_file } from "../tools/shell/edit_file.ts";
-import { find_files } from "../tools/shell/find_files.ts";
-import { grep_files } from "../tools/shell/grep_files.ts";
-import { read_dir } from "../tools/shell/read_dir.ts";
-import { read_file } from "../tools/shell/read_file.ts";
-import { search_files } from "../tools/shell/search_files.ts";
-import { shell_exec } from "../tools/shell/shell_exec.ts";
-import { write_file } from "../tools/shell/write_file.ts";
-import { spawn_subagent } from "../tools/subagents/spawn_subagent.ts";
-import { search_web } from "../tools/web/search_web.ts";
-import { view_web } from "../tools/web/view_web.ts";
-import type { ToolDefinition, Toolset } from "../types/tool.ts";
-import { GitHubSourceUtils } from "./GitHubSourceUtils.ts";
-import { type ToolCall, ToolUtils } from "./ToolUtils.ts";
+import type {
+	ToolBlock,
+	ToolCallContext,
+	ToolCallDisplay,
+	ToolCallState,
+	ToolDisplay,
+	ToolStatusPart,
+	ToolStatusPiece,
+} from "../types/display.ts";
+import type { Tool, ToolDefinition, Toolset } from "../types/tool.ts";
+import { ToolDisplayUtils } from "./ToolDisplayUtils.ts";
+import { ToolUtils } from "./ToolUtils.ts";
 
-const UNKNOWN = {
-	name: "unknown" as const,
-	description: "unknown",
-	input: z.unknown(),
-	output: z.unknown(),
-} satisfies ToolDefinition;
+type ToolCallPart = Extract<RenderedPart, { type: "toolCall" }>;
 
-type ToolCallDisplay<T extends ToolDefinition, U extends boolean = false> = {
-	name: T["name"];
-	sources?: zWebContext[];
-	status: (string | { subject: string })[];
-	approval?: "pending" | "approved" | "rejected";
-	feedback?: "pending" | "complete";
-	feedbackDefault?: z.infer<T["feedback"]>;
-	result: "pending" | "success" | "error";
-	input: z.infer<T["input"]>;
-	output?: U extends true ? z.infer<T["output"]>[] : z.infer<T["output"]>;
-};
+/** A call's status line before tense is applied, for combining with others. */
+export interface ToolCallStatus {
+	pieces: ToolStatusPiece[];
+	pending: boolean;
+}
 
-export type ToolCallDisplayType =
-	| ToolCallDisplay<typeof github_view_repository>
-	| ToolCallDisplay<typeof github_view_file>
-	| ToolCallDisplay<typeof github_list_commits, true>
-	| ToolCallDisplay<typeof github_view_commit>
-	| ToolCallDisplay<typeof github_compare>
-	| ToolCallDisplay<typeof github_list_issues, true>
-	| ToolCallDisplay<typeof github_view_issue>
-	| ToolCallDisplay<typeof search_web, true>
-	| ToolCallDisplay<typeof view_web>
-	| ToolCallDisplay<typeof create_action>
-	| ToolCallDisplay<typeof update_action>
-	| ToolCallDisplay<typeof delete_action>
-	| ToolCallDisplay<typeof list_actions, true>
-	| ToolCallDisplay<typeof create_memory>
-	| ToolCallDisplay<typeof update_memory>
-	| ToolCallDisplay<typeof delete_memory>
-	| ToolCallDisplay<typeof search_memories, true>
-	| ToolCallDisplay<typeof search_chats, true>
-	| ToolCallDisplay<typeof search_files, true>
-	| ToolCallDisplay<typeof grep_files, true>
-	| ToolCallDisplay<typeof find_files, true>
-	| ToolCallDisplay<typeof read_dir, true>
-	| (ToolCallDisplay<typeof read_file> & {
-			language?: CodeLanguage;
-			content?: { type: "image" | "text"; value: string };
-	  })
-	| (ToolCallDisplay<typeof write_file> & { language?: CodeLanguage })
-	| (ToolCallDisplay<typeof edit_file> & { language?: CodeLanguage })
-	| (ToolCallDisplay<typeof shell_exec> & { content?: string })
-	| ToolCallDisplay<typeof ask_question>
-	| ToolCallDisplay<typeof spawn_subagent>
-	| ToolCallDisplay<typeof UNKNOWN>;
+/** Shown for tools without a display of their own, such as MCP tools. */
+const fallback = (name: string): ToolDisplay<ToolDefinition> => ({
+	status: () => [
+		["Using", "Used"],
+		{ count: ["tool", "tools"], subject: name },
+	],
+	input: ({ input }) =>
+		input && typeof input === "object" && !Object.keys(input).length
+			? []
+			: [{ type: "json", value: input, title: "Input" }],
+	output: ({ output, files }) => [
+		...output.map((value): ToolBlock => ({ type: "json", value })),
+		...files.flatMap((file) => ToolDisplayUtils.file({ file }) ?? []),
+	],
+});
 
 /**
- * `getDisplay` builds fresh arrays (`status`, `output`) on every call, so its
- * result can never be compared by reference downstream. `DataUtils` also hands
- * out a new wrapper object for each tool call on every render, which rules out
- * keying a cache on the part itself.
- *
- * The fields the display is derived from — `input`, `result`, `validation` — are
- * carried through that wrapper by reference and are only ever replaced whole,
- * never mutated in place, so they make a sound identity key. Caching on them
- * means a settled tool call keeps one display object for the life of the
- * message, which is what lets `ToolCall` memoize on `display` by equality.
+ * Status lines are read for every call in a message on every render, to build
+ * the headers of each group of calls. They are derived only from the part's
+ * `input`, `result` and `validation`, which are replaced whole and never
+ * mutated, so those identities make a sound cache key.
  */
-interface DisplayCacheEntry {
-	name: string;
+interface StatusCacheEntry {
 	input: unknown;
 	result: unknown;
 	validation: unknown;
-	display: ToolCallDisplayType;
+	partial: unknown;
+	status: ToolCallStatus;
 }
 
 /** Keyed by toolsets first so a toolset change drops the whole cache. */
-const displayCache = new WeakMap<
+const statusCache = new WeakMap<
 	Toolset<any>[],
-	Map<string, DisplayCacheEntry>
+	Map<string, StatusCacheEntry>
 >();
 
 const __rejection = {
 	type: "text",
 	value: "[Tool call rejected by user]",
 } satisfies Omit<zTextPart, "id">;
+
+const isPending = (state: ToolCallState) =>
+	state === "input" || state === "feedback" || state === "running";
+
+const capitalize = (text: string, upper: boolean) =>
+	text.charAt(0)[upper ? "toUpperCase" : "toLowerCase"]() + text.slice(1);
 
 export const ToolCallUtils = {
 	isRejection: (output: zDataSimplePart[]) => {
@@ -141,386 +87,252 @@ export const ToolCallUtils = {
 		];
 	},
 
-	getDisplay: ({
+	getState: ({
+		part,
+		tool,
+		running = false,
+	}: {
+		part: ToolCallPart;
+		tool: Tool<any, any> | null;
+		/** Whether the call is reporting output, which it only does once it runs. */
+		running?: boolean;
+	}): ToolCallState => {
+		if (part.partial) return "input";
+		if (part.result) {
+			if (part.result.error) return "error";
+			if (ToolCallUtils.isRejection(part.result.output)) return "rejected";
+			return "success";
+		}
+		if ((tool?.feedback || part.validation?.approval) && !running)
+			return "feedback";
+		return "running";
+	},
+
+	getContext: <T extends ToolDefinition>({
+		part,
+		state,
+		stream = [],
+	}: {
+		part: ToolCallPart;
+		state: ToolCallState;
+		stream?: unknown[];
+	}): ToolCallContext<T> => {
+		const success = state === "success";
+		return {
+			state,
+			input: part.input ?? {},
+			output: success ? ToolUtils.json<T>(part.result, true) : [],
+			files: success ? ToolUtils.file(part.result) : [],
+			stream: stream as ToolCallContext<T>["stream"],
+		};
+	},
+
+	getStatus: ({
 		part,
 		toolsets,
 	}: {
-		part: Extract<RenderedPart, { type: "toolCall" }>;
+		part: ToolCallPart;
 		toolsets: Toolset<any>[];
-	}): ToolCallDisplayType => {
-		let cache = displayCache.get(toolsets);
+	}): ToolCallStatus => {
+		let cache = statusCache.get(toolsets);
 		if (!cache) {
 			cache = new Map();
-			displayCache.set(toolsets, cache);
+			statusCache.set(toolsets, cache);
 		}
 
 		const cached = cache.get(part.id);
 		if (
 			cached &&
-			cached.name === part.name &&
 			cached.input === part.input &&
 			cached.result === part.result &&
-			cached.validation === part.validation
+			cached.validation === part.validation &&
+			cached.partial === part.partial
 		) {
-			return cached.display;
+			return cached.status;
 		}
 
-		const display = ToolCallUtils._createDisplay({ part, toolsets });
+		const { tool } = ToolUtils.find({ toolsets, part });
+		const display = tool?.display ?? fallback(part.name);
+		const state = ToolCallUtils.getState({ part, tool });
+		const status: ToolCallStatus = {
+			pieces: display.status(ToolCallUtils.getContext({ part, state })),
+			pending: isPending(state),
+		};
+
 		cache.set(part.id, {
-			name: part.name,
 			input: part.input,
 			result: part.result,
 			validation: part.validation,
-			display,
+			partial: part.partial,
+			status,
 		});
-		return display;
+		return status;
 	},
 
-	/** Uncached builder. Call `getDisplay` instead. */
-	_createDisplay: ({
+	getDisplay: ({
 		part,
 		toolsets,
+		stream,
 	}: {
-		part: Extract<RenderedPart, { type: "toolCall" }>;
+		part: ToolCallPart;
 		toolsets: Toolset<any>[];
-	}): ToolCallDisplayType => {
+		/** Output the call has reported so far, if it is running. */
+		stream?: unknown[];
+	}): ToolCallDisplay => {
 		const { tool } = ToolUtils.find({ toolsets, part });
-		const base = <T extends ToolDefinition, U extends boolean = false>(
-			definition: T,
-			status: (ToolCallDisplayType["status"][number] | [string, string])[],
-			multiple?: U,
-		) =>
-			({
-				name: definition.name as T["name"],
-				sources: !definition.name.startsWith("github_")
-					? undefined
-					: part.result?.error
-						? []
-						: GitHubSourceUtils.parse(
-								definition.name,
-								ToolUtils.json(part.result, true),
-							),
-				status: status.map((piece) =>
-					Array.isArray(piece) ? piece[part.result ? 1 : 0] : piece,
-				),
-				result:
-					part.result === undefined
-						? "pending"
-						: part.result?.error
-							? "error"
-							: "success",
-				approval: part.validation?.approval
-					? part.result === undefined
-						? "pending"
-						: ToolCallUtils.isRejection(part.result.output)
-							? "rejected"
-							: "approved"
-					: undefined,
-				feedback: tool?.feedback
-					? part.result === undefined
-						? "pending"
-						: "complete"
-					: undefined,
-				input: part.input as z.infer<T["input"]>,
-				output: (multiple
-					? ToolUtils.json<T>(part.result, true)
-					: ToolUtils.json<T>(part.result)[0]) as U extends true
-					? z.infer<T["output"]>[]
-					: z.infer<T["output"]>,
-			}) satisfies ToolCallDisplay<any>;
+		const display = tool?.display ?? fallback(part.name);
+		const state = ToolCallUtils.getState({
+			part,
+			tool,
+			running: stream !== undefined,
+		});
+		const context = ToolCallUtils.getContext({ part, state, stream });
+		const pending = isPending(state);
 
-		if (ToolUtils.is(toolsets, part, github_view_repository)) {
-			return base(github_view_repository, [
-				["Reading repository", "Read repository"],
-				{ subject: `${part.input.owner}/${part.input.repository}` },
-			]);
-		}
-		if (ToolUtils.is(toolsets, part, github_view_file)) {
-			return base(github_view_file, [
-				["Reading GitHub path", "Read GitHub path"],
-				{
-					subject: `${part.input.owner}/${part.input.repository}/${part.input.path ?? ""}${part.input.ref ? ` @ ${part.input.ref}` : ""}`,
-				},
-			]);
-		}
-		if (ToolUtils.is(toolsets, part, github_list_commits)) {
-			return base(
-				github_list_commits,
-				[
-					["Listing commits in", "Listed commits in"],
-					{
-						subject: `${part.input.owner}/${part.input.repository}${part.input.ref ? ` @ ${part.input.ref}` : ""}${part.input.path ? `/${part.input.path}` : ""}`,
-					},
-				],
-				true,
-			);
-		}
-		if (ToolUtils.is(toolsets, part, github_view_commit)) {
-			return base(github_view_commit, [
-				["Reading commit", "Read commit"],
-				{
-					subject: `${part.input.owner}/${part.input.repository}@${part.input.ref}`,
-				},
-			]);
-		}
-		if (ToolUtils.is(toolsets, part, github_compare)) {
-			return base(github_compare, [
-				["Comparing", "Compared"],
-				{
-					subject: `${part.input.owner}/${part.input.repository}: ${part.input.base}...${part.input.head}`,
-				},
-			]);
-		}
-		if (ToolUtils.is(toolsets, part, github_list_issues)) {
-			return base(
-				github_list_issues,
-				[
-					["Listing", "Listed"],
-					{
-						subject: `${part.input.kind === "pull_requests" ? "pull requests" : "issues"} in ${part.input.owner}/${part.input.repository}`,
-					},
-				],
-				true,
-			);
-		}
-		if (ToolUtils.is(toolsets, part, github_view_issue)) {
-			return base(github_view_issue, [
-				["Reading issue or pull request", "Read issue or pull request"],
-				{
-					subject: `${part.input.owner}/${part.input.repository}#${part.input.number}`,
-				},
-			]);
-		}
+		const texts =
+			part.result?.output
+				.filter((output) => output.type === "text")
+				.map((output) => output.value) ?? [];
 
-		if (ToolUtils.is(toolsets, part, search_web)) {
-			return {
-				...base(
-					search_web,
-					[
-						["Searching web for", "Searched web for"],
-						{ subject: part.input.query },
-					],
-					true,
+		let output: ToolBlock[] = [];
+		if (state === "error") {
+			output = texts.map((value) => ({ type: "text", value, tone: "error" }));
+		} else if (state === "rejected") {
+			output = [{ type: "text", value: "Rejected", tone: "dimmed" }];
+		} else if (state === "running" || state === "success") {
+			output = [
+				...(display.output?.(context) ?? []),
+				// Notices a tool leaves beside its output — truncation, summaries.
+				...texts.map(
+					(value): ToolBlock =>
+						tool?.display
+							? { type: "text", value, tone: "dimmed" }
+							: { type: "code", value },
 				),
-			};
-		} else if (ToolUtils.is(toolsets, part, view_web)) {
-			return {
-				...base(view_web, [
-					["Reading page at", "Read page at"],
-					{ subject: PathUtils.name(part.input.url) },
-				]),
-			};
-		} else if (ToolUtils.is(toolsets, part, create_action)) {
-			return {
-				...base(create_action, [
-					["Scheduling action", "Scheduled action"],
-					{ subject: part.input.prompt },
-				]),
-			};
-		} else if (ToolUtils.is(toolsets, part, update_action)) {
-			return {
-				...base(update_action, [
-					["Updating action", "Updated action"],
-					{ subject: part.input.prompt },
-				]),
-			};
-		} else if (ToolUtils.is(toolsets, part, delete_action)) {
-			return {
-				...base(delete_action, [
-					["Deleting action", "Deleted action"],
-					{ subject: part.input.reason },
-				]),
-			};
-		} else if (ToolUtils.is(toolsets, part, list_actions)) {
-			return {
-				...base(list_actions, [["Listing", "Listed"], "actions"], true),
-			};
-		} else if (ToolUtils.is(toolsets, part, create_memory)) {
-			return {
-				...base(create_memory, [
-					["Remembering", "Remembered"],
-					{ subject: part.input.fact },
-				]),
-			};
-		} else if (ToolUtils.is(toolsets, part, update_memory)) {
-			return {
-				...base(update_memory, [
-					["Updating memory", "Updated memory"],
-					{ subject: part.input.fact },
-				]),
-			};
-		} else if (ToolUtils.is(toolsets, part, delete_memory)) {
-			return {
-				...base(delete_memory, [
-					["Deleting memory", "Deleted memory"],
-					{ subject: part.input.reason },
-				]),
-			};
-		} else if (ToolUtils.is(toolsets, part, search_memories)) {
-			return {
-				...base(
-					search_memories,
-					[
-						["Searching memory for", "Searched memory for"],
-						{ subject: part.input.query },
-					],
-					true,
-				),
-			};
-		} else if (ToolUtils.is(toolsets, part, search_chats)) {
-			return {
-				...base(
-					search_chats,
-					[
-						["Searching chats for", "Searched chats for"],
-						{ subject: part.input.query },
-					],
-					true,
-				),
-			};
-		} else if (ToolUtils.is(toolsets, part, read_dir)) {
-			return {
-				...base(
-					read_dir,
-					[
-						["Browsing folder", "Browsed folder"],
-						{ subject: PathUtils.name(part.input.path) },
-					],
-					true,
-				),
-			};
-		} else if (ToolUtils.is(toolsets, part, find_files)) {
-			return {
-				...base(
-					find_files,
-					[
-						["Looking for", "Looked for"],
-						{ subject: part.input.pattern },
-						["in", "in"],
-						{ subject: PathUtils.name(part.input.path) },
-					],
-					true,
-				),
-			};
-		} else if (ToolUtils.is(toolsets, part, search_files)) {
-			return {
-				...base(
-					search_files,
-					[
-						["Searching files for", "Searched files for"],
-						{ subject: part.input.query },
-					],
-					true,
-				),
-			};
-		} else if (ToolUtils.is(toolsets, part, grep_files)) {
-			return {
-				...base(
-					grep_files,
-					[
-						["Grepping", "Grepped"],
-						{ subject: part.input.query },
-						["in", "in"],
-						{ subject: PathUtils.name(part.input.path) },
-					],
-					true,
-				),
-			};
-		} else if (ToolUtils.is(toolsets, part, read_file)) {
-			const file = ToolUtils.file(part.result)[0];
-			const image = file?.mime.startsWith("image/")
-				? `data:${file.mime};base64,${file.data}`
-				: null;
-			const text = file && !image ? FileUtils.getTextFromBytes(file) : null;
-			return {
-				...base(read_file, [
-					["Reading file", "Read file"],
-					{ subject: PathUtils.name(part.input.path) },
-				]),
-				content: image
-					? { type: "image", value: image }
-					: text
-						? {
-								type: "text",
-								value: text,
-							}
-						: undefined,
-				language: FileTypeUtils.getLanguage({
-					mime: file?.mime,
-					name: file?.name,
-				}),
-			};
-		} else if (ToolUtils.is(toolsets, part, write_file)) {
-			return {
-				...base(write_file, [
-					["Writing file", "Wrote file"],
-					{ subject: PathUtils.name(part.input.path) },
-				]),
-				language: FileTypeUtils.getLanguage({
-					path: part.input.path,
-				}),
-			};
-		} else if (ToolUtils.is(toolsets, part, edit_file)) {
-			return {
-				...base(edit_file, [
-					["Editing file", "Edited file"],
-					{ subject: PathUtils.name(part.input.path) },
-				]),
-				language: FileTypeUtils.getLanguage({
-					path: part.input.path,
-				}),
-			};
-		} else if (ToolUtils.is(toolsets, part, shell_exec)) {
-			const json = ToolUtils.json<typeof shell_exec>(part.result)[0];
-			const content = json
-				? `# stdin\n${part.input.command.trim()}\n\n${[
-						json.stdout ? `# stdout\n${json.stdout.trim()}` : "",
-						json.stderr ? `# stderr\n${json.stderr.trim()}` : "",
-					]
-						.filter(Boolean)
-						.join("\n\n")}`
-				: undefined;
-			// TODO - fix type inference
-			const commands = (part as ToolCall<typeof shell_exec>).input.command
-				.split("&&")
-				.map((command) => {
-					const parts = command
-						.split(" ")
-						.filter(Boolean)
-						.filter((part) => part !== "--");
-					return parts
-						.slice(
-							0,
-							parts.findIndex((part) => part.match(/[^A-Za-z0-9-_]/)),
-						)
-						.join(" ")
-						.trim();
-				})
-				.join(" && ");
-			return {
-				...base(shell_exec, [
-					["Running command", "Ran command"],
-					{
-						subject: commands,
-					},
-				]),
-				content,
-			};
-		} else if (ToolUtils.is(toolsets, part, ask_question)) {
-			return {
-				...base(ask_question, [["Asking a question", "Asked a question"]]),
-			};
-		} else if (ToolUtils.is(toolsets, part, spawn_subagent)) {
-			return {
-				...base(spawn_subagent, [
-					["Using subagent", "Used subagent"],
-					{ subject: part.input.task },
-				]),
-			} satisfies ToolCallDisplay<typeof spawn_subagent>;
+			];
 		}
 
 		return {
-			...base(UNKNOWN, [["Using tool", "Used tool"], { subject: part.name }]),
+			id: part.id,
+			name: tool?.name ?? part.name,
+			state,
+			active: pending,
+			status: ToolCallUtils.resolveStatus({
+				pieces: display.status(context),
+				pending,
+			}),
+			input: display.input?.(context) ?? [],
+			output,
+			controls:
+				state === "feedback"
+					? {
+							approval: !!part.validation?.approval,
+							fields: display.fields?.(context) ?? [],
+						}
+					: undefined,
 		};
+	},
+
+	/**
+	 * A run of tool calls, as it is shown: the line that stands for all of it
+	 * once collapsed. It is `pending` while any call in it is still streaming,
+	 * running or waiting on the user.
+	 */
+	getGroup: ({
+		parts,
+		toolsets,
+	}: {
+		parts: ToolCallPart[];
+		toolsets: Toolset<any>[];
+	}) => {
+		const statuses = parts.map((part) =>
+			ToolCallUtils.getStatus({ part, toolsets }),
+		);
+		return {
+			calls: statuses.length,
+			status: statuses.length ? ToolCallUtils.resolveSummary(statuses) : [],
+			pending: statuses.some((status) => status.pending),
+		};
+	},
+
+	/** One call's status line. */
+	resolveStatus: ({ pieces, pending }: ToolCallStatus): ToolStatusPart[] => {
+		return pieces.flatMap((piece): ToolStatusPart | [] => {
+			if (typeof piece === "string") return { text: piece };
+			if (Array.isArray(piece)) return { text: piece[pending ? 0 : 1] };
+			if ("count" in piece) {
+				return piece.subject !== undefined
+					? { text: piece.subject, subject: true }
+					: { text: piece.count[0] };
+			}
+			return { text: piece.subject, subject: true };
+		});
+	},
+
+	/**
+	 * The status line for a run of calls. Calls whose pieces agree up to their
+	 * `count` are counted together, in the order they first appear:
+	 * `Read file a.txt` + `Read file b.txt` + `Edit file a.txt` reads as
+	 * `Read 2 files, edited 1 file`.
+	 */
+	resolveSummary: (statuses: ToolCallStatus[]): ToolStatusPart[] => {
+		if (statuses.length === 1) return ToolCallUtils.resolveStatus(statuses[0]);
+
+		const kinds = new Map<
+			string,
+			{ pieces: ToolStatusPiece[]; count: number; pending: boolean }
+		>();
+
+		for (const status of statuses) {
+			let end = status.pieces.findIndex(
+				(piece) => typeof piece === "object" && "count" in piece,
+			);
+			// Without a noun to count by, a call is only counted as a tool.
+			const pieces: ToolStatusPiece[] =
+				end === -1
+					? [["Using", "Used"], { count: ["tool", "tools"] }]
+					: status.pieces.slice(0, end + 1);
+			end = pieces.length - 1;
+
+			const key = JSON.stringify(
+				pieces.map((piece) =>
+					typeof piece === "object" && "count" in piece ? piece.count : piece,
+				),
+			);
+			const kind = kinds.get(key) ?? { pieces, count: 0, pending: false };
+			kind.count++;
+			kind.pending ||= status.pending;
+			kinds.set(key, kind);
+		}
+
+		const parts: ToolStatusPart[] = [];
+		for (const { pieces, count, pending } of kinds.values()) {
+			const first = !parts.length;
+			const previous = parts.at(-1);
+			if (previous) {
+				parts[parts.length - 1] = { ...previous, text: `${previous.text},` };
+			}
+
+			const resolved = pieces.map((piece): ToolStatusPart => {
+				if (typeof piece === "string") return { text: piece };
+				if (Array.isArray(piece)) return { text: piece[pending ? 0 : 1] };
+				if ("count" in piece) {
+					return {
+						text: `${count} ${piece.count[count === 1 ? 0 : 1]}`,
+						subject: true,
+					};
+				}
+				return { text: piece.subject, subject: true };
+			});
+			if (resolved[0] && !resolved[0].subject) {
+				resolved[0] = {
+					...resolved[0],
+					text: capitalize(resolved[0].text, first),
+				};
+			}
+			parts.push(...resolved);
+		}
+
+		return parts;
 	},
 };

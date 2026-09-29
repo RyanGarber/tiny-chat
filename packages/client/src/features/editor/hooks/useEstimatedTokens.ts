@@ -39,9 +39,6 @@ export const chatTokensQueryKey = [
 	"estimatedTokens",
 ] as const;
 
-/** @deprecated The editor and chat now share one generation-accurate estimate. */
-export const editorTokensQueryKey = chatTokensQueryKey;
-
 export const useEstimatedTokens = <T>({
 	draft,
 	colors,

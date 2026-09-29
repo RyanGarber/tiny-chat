@@ -1,6 +1,8 @@
 import { z } from "zod";
 import type { GitHubCapability } from "../../../../core/types/capability.ts";
+import type { ToolDisplay } from "../../types/display.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
+import { GitHubSourceUtils } from "../../utils/GitHubSourceUtils.ts";
 import { GitHubToolUtils, zGitHubUser } from "../../utils/GitHubToolUtils.ts";
 
 const zCommitFile = z.object({
@@ -72,11 +74,27 @@ export const github_view_commit = {
 	}),
 } as const satisfies ToolDefinition;
 
+const display: ToolDisplay<typeof github_view_commit> = {
+	status: ({ input }) => [
+		["Reading", "Read"],
+		{ count: ["commit", "commits"] },
+		{
+			subject: `${input.owner ?? ""}/${input.repository ?? ""}@${input.ref ?? ""}`,
+		},
+	],
+	output: ({ output }) =>
+		GitHubSourceUtils.parse(github_view_commit.name, output).map((source) => ({
+			type: "web",
+			source,
+		})),
+};
+
 export const createGitHubViewCommitTool: ToolFactory<
 	Tool<typeof github_view_commit, { github: GitHubCapability }>
 > = (options) => ({
 	...github_view_commit,
 	...options,
+	display,
 	execute: async ({ input }) => {
 		const filePage = GitHubToolUtils.page(input.file_page);
 		const commit = await GitHubToolUtils.request({

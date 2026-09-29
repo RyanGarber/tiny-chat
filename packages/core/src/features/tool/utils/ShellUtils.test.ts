@@ -82,6 +82,31 @@ describe("ShellUtils", () => {
 		expect(ShellUtils.isSafe(command)).toBe(false);
 	});
 
+	it.each([
+		["npm run build", ["npm run *"]],
+		["git status && npm run test -- --watch", ["npm run *"]],
+		["echo $(pnpm lint)", ["pnpm lint"]],
+		["ls | xargs make", ["xargs make", "ls"]],
+		["cargo  test", ["cargo   test"]],
+		["make b1", ["make b?"]],
+	])("allows whitelisted Bash: %s", (command, whitelist) => {
+		expect(ShellUtils.isSafe(command, whitelist)).toBe(true);
+	});
+
+	it.each([
+		["npm run build", []],
+		["npm run build > out.txt", ["npm run *"]],
+		["npm run build && rm -rf dist", ["npm run *"]],
+		["echo $(rm file)", ["echo *"]],
+		["npm install", ["npm run *"]],
+		["npm run", ["npm run *"]],
+		["make b12", ["make b?"]],
+		["makeAx", ["make.x"]],
+		["rm file", ["rm file.*"]],
+	])("rejects Bash outside the whitelist: %s", (command, whitelist) => {
+		expect(ShellUtils.isSafe(command, whitelist)).toBe(false);
+	});
+
 	it("loads through the package bundler", async () => {
 		const module = await import("./ShellUtils.ts");
 		expect(module.ShellUtils.isSafe("pwd")).toBe(true);

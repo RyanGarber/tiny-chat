@@ -3,6 +3,7 @@ import type { ActionsCapability } from "../../../../core/types/capability.ts";
 import { zId } from "../../../../core/types/common.ts";
 import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
 import { RRule } from "../../../../index.ts";
+import type { ToolDisplay } from "../../types/display.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
 export const update_action = {
@@ -31,11 +32,37 @@ export const update_action = {
 	}),
 } as const satisfies ToolDefinition;
 
+/** An RRule in words, or as written when it cannot be read. */
+const describeSchedule = (schedule: string | undefined) => {
+	if (!schedule) return "";
+	try {
+		return RRule.fromString(schedule).toText();
+	} catch {
+		return schedule;
+	}
+};
+
+const display: ToolDisplay<typeof update_action> = {
+	status: ({ input }) => [
+		["Updating", "Updated"],
+		{ count: ["action", "actions"] },
+		{ subject: input.prompt ?? "" },
+	],
+	input: ({ input }) => [
+		{
+			type: "record",
+			title: input.prompt ?? "",
+			details: [describeSchedule(input.schedule)],
+		},
+	],
+};
+
 export const createUpdateActionTool: ToolFactory<
 	Tool<typeof update_action, { actions: ActionsCapability }>
 > = (options) => ({
 	...update_action,
 	...options,
+	display,
 	execute: async ({ input, context }) => {
 		const action = await options.capabilities.actions.updateAction({
 			id: input.id,

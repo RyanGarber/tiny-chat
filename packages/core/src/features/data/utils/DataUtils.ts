@@ -13,10 +13,14 @@ export type RenderedPart =
 			result?: zToolResultPart;
 	  });
 
+/** A run of consecutive parts of one type, told apart by `of`. */
 export type RenderedPartGroup<T extends RenderedPart["type"][]> = {
-	type: "group";
-	value: Extract<RenderedPart, { type: T[number] }>[];
-};
+	[K in T[number]]: {
+		type: "group";
+		of: K;
+		value: Extract<RenderedPart, { type: K }>[];
+	};
+}[T[number]];
 
 export const DataUtils = {
 	getText: ({ data, join = " " }: { data: zData; join?: string }): string => {
@@ -58,7 +62,9 @@ export const DataUtils = {
 
 	isMissingToolResult: ({ data }: { data: zData }) => {
 		const parts = data.flat();
-		const toolCallCount = parts.filter((p) => p.type === "toolCall").length;
+		const toolCallCount = parts.filter(
+			(p) => p.type === "toolCall" && !p.partial,
+		).length;
 		const toolResultCount = parts.filter((p) => p.type === "toolResult").length;
 		return toolResultCount < toolCallCount;
 	},
@@ -96,7 +102,9 @@ export const DataUtils = {
 	},
 
 	/**
-	 * Groups parts into renderable chunks with additional UI state.
+	 * Groups parts into renderable chunks with additional UI state. Each run of
+	 * consecutive parts of one of the `groups` types becomes one group; a part
+	 * of another type, including another grouped one, ends the run.
 	 */
 	getRenderedPartsGrouped: <T extends RenderedPart["type"][]>(
 		data: zData,
@@ -110,15 +118,19 @@ export const DataUtils = {
 			const part = parts[i];
 
 			if (DataUtils.isGroupedPart(part, groups)) {
-				const group: RenderedPartGroup<T> = { type: "group", value: [part] };
+				const value: RenderedPart[] = [part];
 				let end = i;
 				while (end < parts.length - 1) {
 					const nextPart = parts[end + 1];
-					if (!DataUtils.isGroupedPart(nextPart, groups)) break;
-					group.value.push(nextPart);
+					if (nextPart.type !== part.type) break;
+					value.push(nextPart);
 					end++;
 				}
-				renderedParts.push(group);
+				renderedParts.push({
+					type: "group",
+					of: part.type,
+					value,
+				} as RenderedPartGroup<T>);
 				i = end;
 			} else {
 				renderedParts.push(part);

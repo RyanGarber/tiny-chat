@@ -7,22 +7,22 @@ import { useWorkingStatus } from "../../../core/hooks/useWorkingStatus.ts";
 import Completions from "../../editor/components/Completions.tsx";
 
 export default function ChatList() {
-	const { folders, deleteChat } = useChatList();
-	useWorkingStatus(folders, deleteChat);
+	const { projects, deleteChat } = useChatList();
+	useWorkingStatus(projects, deleteChat);
 
-	const activeFolder = useMessagingStore((state) => state.activeFolder);
+	const project = useMessagingStore((state) => state.project);
 	const chats =
-		folders.data?.pages.flatMap((page) =>
-			activeFolder
-				? page.folders
-						.filter((folder) => folder.id === activeFolder.id)
-						.flatMap((folder) => folder.chats)
+		projects.data?.pages.flatMap((page) =>
+			project
+				? page.projects
+						.filter((other) => project.id === other.id)
+						.flatMap((other) => other.chats)
 				: page.chats,
 		) ?? [];
 
 	// Older chats are appended below the list, so reaching the bottom is what
 	// asks for the next page.
-	const fetchOlder = useSentinel(folders);
+	const fetchOlder = useSentinel(projects);
 
 	const { setPage } = usePage();
 
@@ -48,9 +48,9 @@ export default function ChatList() {
 				}
 			}}
 			renderEmpty={() => "nothing here yet"}
-			actions={[{ key: "d", name: "delete" }, "back"]}
+			actions={[{ key: "d", name: "delete" }, "select", "back"]}
 			selectFirstOnChange={false}
-			onReachBottom={activeFolder ? undefined : fetchOlder}
+			onReachBottom={project ? undefined : fetchOlder}
 		/>
 	);
 }

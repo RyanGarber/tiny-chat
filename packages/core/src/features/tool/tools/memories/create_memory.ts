@@ -2,6 +2,7 @@ import { z } from "zod";
 import { Enum } from "../../../../core/services/PostgresService.ts";
 import type { MemoriesCapability } from "../../../../core/types/capability.ts";
 import { zId } from "../../../../core/types/common.ts";
+import type { ToolDisplay } from "../../types/display.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
 export const create_memory = {
@@ -29,11 +30,28 @@ export const create_memory = {
 	}),
 } as const satisfies ToolDefinition;
 
+const display: ToolDisplay<typeof create_memory> = {
+	status: ({ input }) => [
+		["Remembering", "Remembered"],
+		{ count: ["fact", "facts"], subject: input.fact ?? "" },
+	],
+	input: ({ input }) => [
+		{
+			type: "record",
+			title: input.fact ?? "",
+			details: [input.category, input.stability].filter(
+				(detail): detail is NonNullable<typeof detail> => !!detail,
+			),
+		},
+	],
+};
+
 export const createCreateMemoryTool: ToolFactory<
 	Tool<typeof create_memory, { memories: MemoriesCapability }>
 > = (options) => ({
 	...create_memory,
 	...options,
+	display,
 	execute: async ({ input }) => {
 		const memory = await options.capabilities.memories.createMemory({
 			fact: input.fact,

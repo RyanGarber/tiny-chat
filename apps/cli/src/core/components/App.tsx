@@ -1,13 +1,14 @@
 import { ThemeContext } from "@tiny-chat/client/core/components/ThemeContext.tsx";
 import { useDraftStore } from "@tiny-chat/client/features/chat/stores/useDraftStore.ts";
 import { useEstimatedTokens } from "@tiny-chat/client/features/editor/hooks/useEstimatedTokens.ts";
+import { MessageProvider } from "@tiny-chat/client/features/message/components/MessageProvider.tsx";
 import { Box, useInput, useWindowSize } from "ink";
 import { useContext, useEffect } from "react";
 import Capabilities from "../../features/agent/components/Capabilities.tsx";
 import Chat from "../../features/chat/components/Chat.tsx";
 import ChatEffects from "../../features/chat/components/ChatEffects.tsx";
 import ChatList from "../../features/chat/components/ChatList.tsx";
-import FolderList from "../../features/chat/components/FolderList.tsx";
+import ProjectList from "../../features/chat/components/ProjectList.tsx";
 import Editor from "../../features/editor/components/Editor.tsx";
 import Settings from "../../features/settings/components/Settings.tsx";
 import { useUpdate } from "../../features/update/hooks/useUpdate.ts";
@@ -59,35 +60,37 @@ export default function App() {
 	});
 
 	return (
-		<Box
-			flexDirection="column"
-			height={rows}
-			backgroundColor={colorScheme.exterior}
-		>
-			<Chat compaction={chatTokens.data?.compaction} />
+		<MessageProvider>
 			<Box
 				flexDirection="column"
-				position="static"
-				bottom={0}
-				left={0}
-				right={0}
+				height={rows}
+				backgroundColor={colorScheme.exterior}
 			>
-				<StatusText />
-				{page === "chats" && <ChatList />}
-				{page === "folders" && <FolderList />}
-				{page === "uploads" && <Uploads />}
-				{page === "github" && <GitHub />}
-				{page === "settings" && <Settings />}
-				{(page === "tools" || page === "skills") && <Capabilities />}
-				{page === "chat" && <ChatEffects />}
-				<Editor
-					disabled={
-						page !== "chat" || statuses.some((status) => !status.passive)
-					}
-					usage={usage}
-					categories={categories}
-				/>
+				<Chat compaction={chatTokens.data?.compaction} />
+				<Box
+					flexDirection="column"
+					position="static"
+					bottom={0}
+					left={0}
+					right={0}
+				>
+					<StatusText />
+					{page === "chats" && <ChatList />}
+					{page === "projects" && <ProjectList />}
+					{page === "uploads" && <Uploads />}
+					{page === "github" && <GitHub />}
+					{page === "settings" && <Settings />}
+					{(page === "tools" || page === "skills") && <Capabilities />}
+					{page === "chat" && <ChatEffects />}
+					<Editor
+						disabled={
+							page !== "chat" || statuses.some((status) => !status.passive)
+						}
+						usage={usage}
+						categories={categories}
+					/>
+				</Box>
 			</Box>
-		</Box>
+		</MessageProvider>
 	);
 }

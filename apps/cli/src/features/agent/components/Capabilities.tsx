@@ -150,7 +150,7 @@ export default function Capabilities() {
 					item.toggle();
 				}
 			}}
-			actions={["back"]}
+			actions={[{ key: "enter", name: "toggle" }, "back"]}
 		/>
 	);
 }

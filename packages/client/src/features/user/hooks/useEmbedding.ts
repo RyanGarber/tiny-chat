@@ -27,6 +27,9 @@ export const useEmbedding = () => {
 			embeddingConfig?.provider,
 			embeddingConfig?.model,
 		],
+		// Server-capable providers are hydrated by EmbeddingRunnerService; the
+		// client only fetches batches it is expected to run itself.
+		enabled: !!session.data && !!embeddingConfig && !serverHandlesHydration,
 		queryFn: async () => {
 			if (!session.data || !embeddingConfig) return null;
 
@@ -46,8 +49,6 @@ export const useEmbedding = () => {
 		staleTime: Infinity,
 		refetchOnWindowFocus: false,
 		refetchOnReconnect: false,
-		// Server runner drains the backlog; poll so the status UI stays current.
-		refetchInterval: serverHandlesHydration ? 2000 : false,
 	});
 
 	const runEmbeddingBatch = useMutation({
@@ -104,9 +105,6 @@ export const useEmbedding = () => {
 	const isPendingRef = useRef(false);
 
 	useEffect(() => {
-		// Server-capable providers are hydrated by EmbeddingRunnerService.
-		if (serverHandlesHydration) return;
-
 		const hasPendingMutation =
 			isPendingRef.current ||
 			client.queryClient.getMutationCache().findAll({
@@ -127,7 +125,6 @@ export const useEmbedding = () => {
 			});
 		}
 	}, [
-		serverHandlesHydration,
 		nextEmbeddingBatch.data,
 		nextEmbeddingBatch.isFetching,
 		client.queryClient.getMutationCache,

@@ -18,7 +18,7 @@ import { useMessageStore } from "@tiny-chat/client/features/message/stores/useMe
 import { useUploads } from "@tiny-chat/client/features/upload/hooks/useUploads.ts";
 import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import { useInput, usePaste, useWindowSize } from "ink";
-import { useContext, useEffect, useMemo } from "react";
+import { useContext, useEffect, useMemo, useRef } from "react";
 import { client } from "../../../client.ts";
 import Box from "../../../core/components/Box.tsx";
 import type { Color } from "../../../core/hooks/useColor.ts";
@@ -58,6 +58,14 @@ export default function Editor({
 	const { mouseRef: focusRef } = useMouseInput({
 		onClick: () => useEditorStore.setState({ focusedFeedbackId: null }),
 	});
+	// Feedback that turns up, live or by opening a chat that has some waiting,
+	// takes the focus so it can be answered right away.
+	const previousFeedbackId = useRef<string | undefined>(undefined);
+	useEffect(() => {
+		if (nextFeedbackId && nextFeedbackId !== previousFeedbackId.current)
+			useEditorStore.setState({ focusedFeedbackId: nextFeedbackId });
+		previousFeedbackId.current = nextFeedbackId;
+	}, [nextFeedbackId]);
 	useInput(
 		(_, key) => {
 			if (key.tab && nextFeedbackId)
@@ -94,12 +102,11 @@ export default function Editor({
 		(state) => state.isCompletionsEmpty,
 	);
 
-	const activeFolder = useMessagingStore((state) => state.activeFolder);
+	const project = useMessagingStore((state) => state.project);
 	const placeholder = useMemo(() => {
-		if (!config)
-			return activeFolder ? activeFolder.title || "Untitled" : "/folders";
+		if (!config) return project ? project.title || "in project" : "/projects";
 		return [
-			activeFolder ? activeFolder.title || "Untitled" : "/folders",
+			project ? project.title || "in project" : "/projects",
 			config.model,
 			...modelArgs.map(
 				(arg) => `${arg.name} ${config.args?.[arg.name] ?? arg.default}`,
@@ -107,7 +114,7 @@ export default function Editor({
 		]
 			.join(" · ")
 			.slice(0, columns - 10);
-	}, [config, modelArgs, columns, activeFolder]);
+	}, [config, modelArgs, columns, project]);
 
 	// The atoms are painted before the markdown, so a command or an attachment
 	// standing in the value keeps its own style whatever punctuation it carries.

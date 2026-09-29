@@ -8,7 +8,9 @@ import { zId } from "../../../../core/types/common.ts";
 import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
 import { SnippetService } from "../../../data/services/SnippetService.ts";
 import { DataUtils } from "../../../data/utils/DataUtils.ts";
+import type { ToolDisplay } from "../../types/display.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
+import { ToolDisplayUtils } from "../../utils/ToolDisplayUtils.ts";
 
 export const search_chats = {
 	name: "search_chats",
@@ -26,6 +28,21 @@ export const search_chats = {
 	}),
 } as const satisfies ToolDefinition;
 
+const display: ToolDisplay<typeof search_chats> = {
+	status: ({ input }) => [
+		["Searching chats for", "Searched chats for"],
+		{ count: ["query", "queries"], subject: input.query ?? "" },
+	],
+	output: ({ output }) =>
+		output.map((message) => ({
+			type: "record",
+			title: message.chat_title ?? "Untitled chat",
+			description: message.snippet,
+			chat: message.chat_id,
+			details: [`Sent ${ToolDisplayUtils.date(message.created_at)}`],
+		})),
+};
+
 export const createSearchChatsTool: ToolFactory<
 	Tool<
 		typeof search_chats,
@@ -34,6 +51,7 @@ export const createSearchChatsTool: ToolFactory<
 > = (options) => ({
 	...search_chats,
 	...options,
+	display,
 	execute: async ({ input }) => {
 		let embedding: number[] | undefined;
 		if (options.capabilities.embedding) {

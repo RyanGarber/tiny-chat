@@ -1,3 +1,4 @@
+import { SettingsUtils } from "../../../core/utils/SettingsUtils.ts";
 import type { zAgentContext } from "../../agent/types/agent.ts";
 import { PathUtils } from "../../file/utils/PathUtils.ts";
 
@@ -21,7 +22,25 @@ const normalizeAbsolutePath = (path: string): string | null => {
 	return `${root}${parts.join("/")}`.replace(/\/$/, "") || "/";
 };
 
+const contains = (folderPath: string, path: string): boolean => {
+	const folder = normalizeAbsolutePath(folderPath);
+	const target = normalizeAbsolutePath(path);
+	if (!folder || !target) return false;
+
+	const windows = /^[A-Za-z]:/.test(folder) && /^[A-Za-z]:/.test(target);
+	const comparableFolder = windows ? folder.toLowerCase() : folder;
+	const comparableTarget = windows ? target.toLowerCase() : target;
+	if (comparableTarget === comparableFolder) return true;
+	if (comparableFolder === "/") return true;
+
+	return comparableTarget.startsWith(`${comparableFolder}/`);
+};
+
 export const FileToolUtils = {
+	/**
+	 * Writes skip approval inside `/mnt/chat` (the chat's own scratch tree), or
+	 * inside a writable folder from the merged settings.
+	 */
 	requiresApproval: ({
 		path,
 		context,
@@ -29,19 +48,16 @@ export const FileToolUtils = {
 		path: string;
 		context: zAgentContext;
 	}): boolean => {
-		const folderPath = context.chat?.folder?.cwd;
-		if (!folderPath || !context.chat?.folder?.cwdWritable) return true;
+		const normalized = normalizeAbsolutePath(path);
+		if (
+			normalized &&
+			PathUtils.fromMount({ path: normalized })?.mount === "chat"
+		)
+			return false;
 
-		const folder = normalizeAbsolutePath(folderPath);
-		const target = normalizeAbsolutePath(path);
-		if (!folder || !target) return true;
-
-		const windows = /^[A-Za-z]:/.test(folder) && /^[A-Za-z]:/.test(target);
-		const comparableFolder = windows ? folder.toLowerCase() : folder;
-		const comparableTarget = windows ? target.toLowerCase() : target;
-		if (comparableTarget === comparableFolder) return false;
-		if (comparableFolder === "/") return false;
-
-		return !comparableTarget.startsWith(`${comparableFolder}/`);
+		const { folders } = SettingsUtils.of(context.user, context.chat?.project);
+		return !folders.some(
+			(folder) => folder.writable && contains(folder.path, path),
+		);
 	},
 } as const;

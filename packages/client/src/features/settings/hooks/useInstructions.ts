@@ -1,14 +1,18 @@
 import { useMutation } from "@tanstack/react-query";
 import { SettingsUtils } from "@tiny-chat/core/core/utils/SettingsUtils.ts";
-import type { FolderLike } from "@tiny-chat/core/features/data/types/chat.ts";
+import type { ProjectLike } from "@tiny-chat/core/features/data/types/chat.ts";
 import { useContext, useMemo } from "react";
 import { ClientContext } from "../../../client.ts";
 import { useSettings } from "./useSettings.ts";
 
-export const useInstructions = ({ folder }: { folder?: FolderLike | null }) => {
+export const useInstructions = ({
+	project,
+}: {
+	project?: ProjectLike | null;
+}) => {
 	const client = useContext(ClientContext);
 
-	const { settings, applySettings } = useSettings({ folder });
+	const { settings, applySettings } = useSettings({ project });
 
 	const instructions = useMemo(() => {
 		return SettingsUtils.defaults({ instructions: settings.data?.instructions })

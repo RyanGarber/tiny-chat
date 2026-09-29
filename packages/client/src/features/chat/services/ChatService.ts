@@ -5,7 +5,7 @@ import { useMessagingStore } from "../stores/useMessagingStore.ts";
 
 export const ChatService = {
 	newChat: (folder: { id: string; title: string | null } | null = null) => {
-		useMessagingStore.getState().setActiveFolder(folder);
+		useMessagingStore.getState().setProject(folder);
 		ChatService.setChat({ id: null });
 	},
 	setChat: ({ id }: { id: string | null }) => {

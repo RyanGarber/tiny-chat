@@ -14,7 +14,7 @@ export const useChat = () => {
 	const lastSeen = useChatStore((s) => s.lastSeen);
 	const createIncognito = useChatStore((s) => s.createIncognito);
 	const createTemporary = useChatStore((s) => s.createTemporary);
-	const activeFolder = useMessagingStore((s) => s.activeFolder);
+	const project = useMessagingStore((s) => s.project);
 
 	const chat = useQuery({
 		queryKey: client.query.chat.getChat.queryKey({ id: chatId || undefined }),
@@ -37,7 +37,7 @@ export const useChat = () => {
 			)
 			?.pages.flatMap((page) => [
 				...page.chats,
-				...page.folders.flatMap((folder) => folder.chats),
+				...page.projects.flatMap((project) => project.chats),
 			])
 			.find((chat) => chat.id === chatId),
 		enabled: !!chatId,
@@ -46,26 +46,24 @@ export const useChat = () => {
 		refetchOnReconnect: false,
 	});
 
-	const { settings: folderSettings } = useSettings({
-		folder: chatId ? null : activeFolder,
+	const { settings: projectSettings } = useSettings({
+		project: chatId ? null : project,
 	});
 
 	/**
 	 * The chat the next message will belong to, whether or not it exists yet: the
 	 * open chat, or a stand-in for the one that sending would create in the active
-	 * folder. This is what an agent build is described by, so the folder's
+	 * project. This is what an agent build is described by, so the project's
 	 * settings and the pending flags count before there is a row to read them off.
 	 */
 	const nextChat = useMemo((): zAgentChat => {
 		if (chat.data) return chat.data;
 		return {
 			id: null,
-			folder: activeFolder
+			project: project
 				? {
 						title: null,
-						cwd: null,
-						cwdWritable: false,
-						settings: folderSettings.data ?? {},
+						settings: projectSettings.data ?? {},
 					}
 				: null,
 			incognito: createIncognito,
@@ -73,8 +71,8 @@ export const useChat = () => {
 		};
 	}, [
 		chat.data,
-		activeFolder,
-		folderSettings.data,
+		project,
+		projectSettings.data,
 		createIncognito,
 		createTemporary,
 	]);

@@ -93,4 +93,34 @@ describe("SettingsUtils", () => {
 			},
 		});
 	});
+
+	it("dedupes whitelists and puts folder paths first", () => {
+		const merged = SettingsUtils.of(
+			{
+				settings: {
+					commandWhitelist: ["npm run *", "git push"],
+					folders: [
+						{ path: "/app", writable: false },
+						{ path: "/shared", writable: true },
+					],
+				},
+			},
+			{
+				settings: {
+					commandWhitelist: ["git push", "make"],
+					folders: [
+						{ path: "/project", writable: true },
+						{ path: "/shared", writable: false },
+					],
+				},
+			},
+		);
+		expect(merged.commandWhitelist).toEqual(["npm run *", "git push", "make"]);
+		expect(merged.folders).toEqual([
+			{ path: "/project", writable: true },
+			{ path: "/shared", writable: false },
+			{ path: "/app", writable: false },
+		]);
+		expect(SettingsUtils.of({ settings: {} }).folders).toEqual([]);
+	});
 });

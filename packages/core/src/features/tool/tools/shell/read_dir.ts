@@ -2,8 +2,10 @@ import { z } from "zod";
 import type { Capabilities } from "../../../../core/types/capability.ts";
 import { FileSearchService } from "../../../file/services/FileSearchService.ts";
 import { PathUtils } from "../../../file/utils/PathUtils.ts";
+import type { ToolDisplay } from "../../types/display.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 import { ShellUtils } from "../../utils/ShellUtils.ts";
+import { ToolDisplayUtils } from "../../utils/ToolDisplayUtils.ts";
 
 /** Entries a listing returns before it starts costing more than it explains. */
 const MAX_ENTRIES = 200;
@@ -31,11 +33,33 @@ export const read_dir = {
 	}),
 } as const satisfies ToolDefinition;
 
+const display: ToolDisplay<typeof read_dir> = {
+	status: ({ input }) => [
+		["Browsing", "Browsed"],
+		{ count: ["folder", "folders"] },
+		{ subject: ToolDisplayUtils.name(input.path) },
+	],
+	output: ({ input, output }) =>
+		output.length
+			? [
+					{
+						type: "directory",
+						path: input.path ?? "",
+						entries: output.map((entry) => ({
+							path: entry.path,
+							directory: entry.is_dir,
+						})),
+					},
+				]
+			: [],
+};
+
 export const createReadDirTool: ToolFactory<
 	Tool<typeof read_dir, Pick<Capabilities, "shell" | "chatShell">>
 > = (options) => ({
 	...read_dir,
 	...options,
+	display,
 	execute: async ({ input }) => {
 		const shell = ShellUtils.detect(input.path, options.capabilities);
 

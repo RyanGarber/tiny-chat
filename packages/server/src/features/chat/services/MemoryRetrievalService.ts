@@ -169,6 +169,7 @@ export const MemoryRetrievalService = {
 						"evidence",
 						"confidence",
 						"createdAt",
+						"updatedAt",
 					),
 				)
 				.first();

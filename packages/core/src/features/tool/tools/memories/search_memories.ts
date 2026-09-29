@@ -6,7 +6,9 @@ import type {
 } from "../../../../core/types/capability.ts";
 import { zId } from "../../../../core/types/common.ts";
 import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
+import type { ToolDisplay } from "../../types/display.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
+import { ToolDisplayUtils } from "../../utils/ToolDisplayUtils.ts";
 
 export const search_memories = {
 	name: "search_memories",
@@ -25,6 +27,19 @@ export const search_memories = {
 	}),
 } as const satisfies ToolDefinition;
 
+const display: ToolDisplay<typeof search_memories> = {
+	status: ({ input }) => [
+		["Searching memory for", "Searched memory for"],
+		{ count: ["query", "queries"], subject: input.query ?? "" },
+	],
+	output: ({ output }) =>
+		output.map((memory) => ({
+			type: "record",
+			title: memory.fact,
+			details: [`Learned ${ToolDisplayUtils.date(memory.created_at)}`],
+		})),
+};
+
 export const createSearchMemoriesTool: ToolFactory<
 	Tool<
 		typeof search_memories,
@@ -33,6 +48,7 @@ export const createSearchMemoriesTool: ToolFactory<
 > = (options) => ({
 	...search_memories,
 	...options,
+	display,
 	execute: async ({ input }) => {
 		let embedding: number[] | undefined;
 		if (options.capabilities.embedding) {

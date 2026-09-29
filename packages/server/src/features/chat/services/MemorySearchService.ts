@@ -110,6 +110,7 @@ export const MemorySearchService = {
 				"category",
 				"stability",
 				"createdAt",
+				"updatedAt",
 				"evidence",
 				"confidence",
 			)

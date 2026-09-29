@@ -11,6 +11,7 @@ export type MemorySearchResult = Pick<
 	| "category"
 	| "stability"
 	| "createdAt"
+	| "updatedAt"
 	| "evidence"
 	| "confidence"
 >;

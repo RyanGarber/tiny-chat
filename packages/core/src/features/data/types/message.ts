@@ -22,7 +22,7 @@ export type MessageState = Omit<Model["Message"], "embedding"> & {
 
 export type MessageSearchResult = Pick<
 	MessageState,
-	"id" | "chatId" | "author" | "data" | "createdAt"
+	"id" | "chatId" | "author" | "data" | "createdAt" | "updatedAt"
 > & { chatTitle: string | null };
 
 export type MessageLike = { id: string } | string;

@@ -93,7 +93,7 @@ export default function Attachments({
 					apply(AttachmentUtils.complete({ content, query, item }));
 				}
 			}}
-			actions={[{ key: "tab", name: "fill" }]}
+			actions={[{ key: "tab", name: "fill" }, "select"]}
 		/>
 	);
 }

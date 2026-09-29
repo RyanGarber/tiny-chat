@@ -62,8 +62,7 @@ export const CommandUtils = {
 			return (
 				items.filter((other) => other.value === item.value).length === 1 &&
 				!used.includes(item.value) &&
-				(!group.max || usedInGroup.length < group.max) &&
-				!!item.name?.toLowerCase().includes(query.toLowerCase())
+				(!group.max || usedInGroup.length < group.max)
 			);
 		};
 

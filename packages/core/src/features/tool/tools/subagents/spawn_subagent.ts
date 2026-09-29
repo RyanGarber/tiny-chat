@@ -4,6 +4,7 @@ import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
 import { SettingsUtils } from "../../../../core/utils/SettingsUtils.ts";
 import { zAbortPart, zData } from "../../../data/types/part.ts";
 import { DataUtils } from "../../../data/utils/DataUtils.ts";
+import type { ToolDisplay } from "../../types/display.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
 export const spawn_subagent = {
@@ -34,15 +35,38 @@ export const spawn_subagent = {
 	stream: zData,
 } as const satisfies ToolDefinition;
 
+const display: ToolDisplay<typeof spawn_subagent> = {
+	status: ({ input }) => [
+		["Using", "Used"],
+		{ count: ["subagent", "subagents"] },
+		{ subject: input.task ?? "" },
+	],
+	input: ({ input }) => [
+		{ type: "markdown", value: input.prompt ?? "", quote: true },
+	],
+	// The live conversation while it runs, settling into the answer it gave.
+	output: ({ state, stream, output }) => {
+		if (state === "running") {
+			const data = stream.at(-1);
+			return data ? [{ type: "messages", data }] : [];
+		}
+		return output.map((result) => ({
+			type: "messages",
+			data: [[{ id: "response", type: "text", value: result.response }]],
+		}));
+	},
+};
+
 export const createSpawnSubagentTool: ToolFactory<
 	Tool<typeof spawn_subagent, { subagents: SubagentsCapability }>
 > = (options) => ({
 	...spawn_subagent,
 	...options,
+	display,
 	execute: async ({ input, stream, abort, context }) => {
 		const { subagentConfig } = SettingsUtils.of(
 			context.user,
-			context.chat?.folder,
+			context.chat?.project,
 		);
 		if (!subagentConfig) throw new Error("missing subagent config");
 

@@ -1,3 +1,4 @@
+import { parsePartialJson } from "ai";
 import type { z } from "zod";
 import type { Capabilities } from "../../../core/types/capability.ts";
 import type { zEnv } from "../../../core/types/env.ts";
@@ -28,6 +29,9 @@ import {
 	AgentTokensService,
 	type CompactionResult,
 } from "./AgentTokensService.ts";
+
+/** How often a streaming tool call's partial input is re-parsed. */
+const PARTIAL_INPUT_MS = 50;
 
 export const AgentService = {
 	build: async ({
@@ -183,11 +187,26 @@ export const AgentService = {
 
 		const toolValidationErrors = new Map<string, unknown>();
 
+		/** Raw input text of tool calls the model is still writing. */
+		const toolInputs = new Map<string, { text: string; parsedAt: number }>();
+
 		// Agentic loop: keep generating until the model stops calling tools
 		while (true) {
 			messages[messages.length - 1].data = data;
 
 			let parts = data[data.length - 1];
+
+			/**
+			 * Drop calls the model never finished writing. They carry no usable
+			 * input and must not be persisted or sent back to the model.
+			 */
+			const settle = () => {
+				toolInputs.clear();
+				for (let i = (parts?.length ?? 0) - 1; i >= 0; i--) {
+					const part = parts[i];
+					if (part.type === "toolCall" && part.partial) parts.splice(i, 1);
+				}
+			};
 
 			const push = (part: zDataPart): zAgentEvent => {
 				if (!parts) {
@@ -230,6 +249,36 @@ export const AgentService = {
 						});
 						data.push([]);
 						parts = data[data.length - 1];
+					}
+
+					if (event.type === "toolInput") {
+						if (event.name !== undefined) {
+							toolInputs.set(event.id, { text: "", parsedAt: 0 });
+							parts.push({
+								type: "toolCall",
+								id: event.id,
+								name: event.name,
+								input: {},
+								partial: true,
+							});
+						} else if (event.delta) {
+							const raw = toolInputs.get(event.id);
+							const part = parts.find(
+								(p): p is zToolCallPart =>
+									p.type === "toolCall" && p.id === event.id && !!p.partial,
+							);
+							if (raw && part) {
+								raw.text += event.delta;
+								// Re-parsing the whole input on every token is quadratic in
+								// its length, which a long file write makes noticeable.
+								if (Date.now() - raw.parsedAt >= PARTIAL_INPUT_MS) {
+									raw.parsedAt = Date.now();
+									const { value } = await parsePartialJson(raw.text);
+									// Replaced whole, so anything keyed on it sees the change.
+									if (value && typeof value === "object") part.input = value;
+								}
+							}
+						}
 					}
 
 					if (event.type === "data") {
@@ -286,7 +335,12 @@ export const AgentService = {
 									),
 								);
 							}
-							parts.push(event.value);
+							toolInputs.delete(event.value.id);
+							const partial = parts.findIndex(
+								(p) => p.type === "toolCall" && p.id === event.value.id,
+							);
+							if (partial === -1) parts.push(event.value);
+							else parts[partial] = event.value;
 						} else {
 							parts.push(event.value);
 						}
@@ -298,6 +352,8 @@ export const AgentService = {
 
 					yield event;
 				}
+
+				settle();
 
 				if (options?.abortSignal?.aborted) {
 					yield push({
@@ -311,6 +367,7 @@ export const AgentService = {
 				}
 			} catch (e: any) {
 				console.error("[AgentService] error during stream:", e);
+				settle();
 				yield push({
 					id: CommonUtils.getRandomId(),
 					type: "abort",

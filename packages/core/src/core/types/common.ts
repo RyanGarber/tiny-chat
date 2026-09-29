@@ -27,3 +27,12 @@ export type PromiseOr<T, P = void> = T | ((params: P) => PromiseOrValue<T>);
 export type PromiseOrValue<T> = Promise<T> | T;
 
 export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+
+/** What a value looks like while it is still being streamed in. */
+export type DeepPartial<T> = T extends (infer U)[]
+	? DeepPartial<U>[]
+	: T extends Date
+		? T
+		: T extends object
+			? { [K in keyof T]?: DeepPartial<T[K]> }
+			: T;

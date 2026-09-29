@@ -13,11 +13,9 @@ import { zSettings, zUser } from "../../data/types/user.ts";
  */
 export const zAgentChat = z.object({
 	id: zId.nullish(),
-	folder: z
+	project: z
 		.object({
 			title: z.string().nullable(),
-			cwd: z.string().nullable(),
-			cwdWritable: z.boolean(),
 			settings: zSettings,
 		})
 		.nullable(),
@@ -48,5 +46,13 @@ export const zAgentEvent = z.discriminatedUnion("type", [
 	z.object({ type: z.literal("start"), warnings: z.array(z.any()) }),
 	z.object({ type: z.literal("data"), value: zDataPart }),
 	z.object({ type: z.literal("end"), metadata: zMetadata }),
+	/** A tool call's input as the model writes it, before the call is complete. */
+	z.object({
+		type: z.literal("toolInput"),
+		id: z.string(),
+		/** Set on the first event of a call. */
+		name: z.string().optional(),
+		delta: z.string().optional(),
+	}),
 ]);
 export type zAgentEvent = z.infer<typeof zAgentEvent>;

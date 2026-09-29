@@ -28,6 +28,8 @@ export type CompletionsProps<
 	setSelected?: (_: (previous?: number) => number) => void;
 	itemRef?: RefObject<T2 | null>;
 	active?: boolean;
+	/** A press landed on an item, whether or not the list is the active one. */
+	onPointerDown?: () => void;
 	onInput?: (_: {
 		item?: T2;
 		input: string;
@@ -48,13 +50,14 @@ export type CompletionsProps<
 
 export default function Completions<
 	T1 extends CompletionGroup<T2>,
-	T2 extends CompletionItem,
+	T2 extends CompletionItem = CompletionItem,
 >({
 	groups,
 	selected: controlledSelected,
 	setSelected: setControlledSelected,
 	itemRef,
 	onInput,
+	onPointerDown,
 	active = true,
 	itemProps,
 	renderItem,
@@ -126,6 +129,7 @@ export default function Completions<
 	const { mouseRef } = useMouseInput({
 		onClick: ({ index }) => {
 			if (index === undefined) return;
+			onPointerDown?.();
 			if (selected === index) {
 				onInput?.({
 					item: items[selected],
@@ -208,7 +212,7 @@ export default function Completions<
 				)}
 			</ScrollView>
 			{after}
-			<HelpText actions={["choose", "select", ...(actions ?? [])]} />
+			<HelpText actions={["choose", ...(actions ?? [])]} />
 		</Box>
 	);
 }

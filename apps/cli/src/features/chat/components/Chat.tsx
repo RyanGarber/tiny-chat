@@ -1,6 +1,5 @@
 import { useGreeting } from "@tiny-chat/client/core/hooks/useGreeting.ts";
 import { useChat } from "@tiny-chat/client/features/chat/hooks/useChat.ts";
-import { MessageProvider } from "@tiny-chat/client/features/message/components/MessageProvider.tsx";
 import { useMessages } from "@tiny-chat/client/features/message/hooks/useMessages.ts";
 import type { Compaction } from "@tiny-chat/core/features/agent/services/AgentTokensService.ts";
 import { useMemo } from "react";
@@ -36,23 +35,18 @@ export default function Chat({ compaction }: { compaction?: Compaction }) {
 	}
 
 	return (
-		// The provider wraps the view rather than the list: every message has to
-		// stay a direct child of the ScrollView for it to measure and position
-		// them individually.
-		<MessageProvider>
-			<ScrollView
-				flexGrow={1}
-				flexShrink={1}
-				flexBasis={0}
-				minHeight={0}
-				stickToBottom
-				resetKey={chat.data.id}
-				onReachTop={fetchOlder}
-			>
-				{messageList.map((message) => (
-					<Message key={message.id} message={message} compaction={compaction} />
-				))}
-			</ScrollView>
-		</MessageProvider>
+		<ScrollView
+			flexGrow={1}
+			flexShrink={1}
+			flexBasis={0}
+			minHeight={0}
+			stickToBottom
+			resetKey={chat.data.id}
+			onReachTop={fetchOlder}
+		>
+			{messageList.map((message) => (
+				<Message key={message.id} message={message} compaction={compaction} />
+			))}
+		</ScrollView>
 	);
 }

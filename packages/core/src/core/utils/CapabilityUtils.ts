@@ -27,7 +27,7 @@ export interface CapabilityConditions {
 	user: zUser;
 	providers: ProviderState<ProviderStatus>[];
 	/** The folder of the chat the message runs in; its settings win over the user's. */
-	folder?: zAgentChat["folder"];
+	project?: zAgentChat["project"];
 	chat: boolean;
 	message: boolean;
 	incognito: boolean | undefined;
@@ -45,14 +45,14 @@ export const CapabilityUtils = {
 	getEnabled: ({
 		user,
 		providers,
-		folder,
+		project,
 		chat,
 		message,
 		incognito,
 		temporary,
 		desktop,
 	}: CapabilityConditions): CapabilitySet => {
-		const settings = SettingsUtils.of(user, folder);
+		const settings = SettingsUtils.of(user, project);
 
 		// Incognito and temporary chats leave nothing behind, so nothing that
 		// writes back to the user is offered to them.

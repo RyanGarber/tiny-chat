@@ -27,7 +27,9 @@ import { useState } from "react";
 import ModelSelect from "#app/core/components/ModelSelect.tsx";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
 import { StyleUtils } from "#app/core/utils/StyleUtils.ts";
+import CommandSettings from "#app/features/sidebar/components/CommandSettings.tsx";
 import ContextSettings from "#app/features/sidebar/components/ContextSettings.tsx";
+import FolderSettings from "#app/features/sidebar/components/FolderSettings.tsx";
 
 export default function ChatSettings({
 	embeddingStatus,
@@ -48,7 +50,7 @@ export default function ChatSettings({
 		useModelSettings();
 	const currentModal = useAppStore((state) => state.currentModal);
 	const setCurrentModal = useAppStore((state) => state.setCurrentModal);
-	const folder = useMessagingStore((state) => state.activeFolder);
+	const project = useMessagingStore((state) => state.project);
 
 	const [newEmbeddingConfig, setNewEmbeddingConfig] = useState<zConfig | null>(
 		null,
@@ -62,7 +64,11 @@ export default function ChatSettings({
 
 	return (
 		<Stack>
-			<ContextSettings folder={folder} />
+			<ContextSettings project={project} />
+			<Space />
+			<FolderSettings project={project} />
+			<Space />
+			<CommandSettings project={project} />
 			<Space />
 			<Box>
 				<Text size="sm">Retrieval</Text>

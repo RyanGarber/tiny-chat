@@ -1,6 +1,10 @@
 import type { CompletionItem } from "../types/completion.ts";
 
-const normalize = (value: string) => value.trim().toLowerCase();
+const normalize = (value: string) =>
+	value
+		.trim()
+		.toLowerCase()
+		.replace(/[\p{P}\p{S}]/gu, "");
 
 const weight = ({ value, query }: { value: string; query: string }) => {
 	if (!query) return [0, 0, 0] as const;

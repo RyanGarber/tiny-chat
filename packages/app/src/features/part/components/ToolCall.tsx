@@ -1,319 +1,95 @@
-import { JsonTree } from "@gfazioli/mantine-json-tree";
-import { Anchor, Box, Collapse, Group, Stack, Text } from "@mantine/core";
+import { Box, Collapse, Stack } from "@mantine/core";
 import { WrenchIcon } from "@phosphor-icons/react";
-import type {
-	AgentStreamEvent,
-	ToolStreamEvent,
-} from "@tiny-chat/client/core/services/StreamService.ts";
-import { useStream } from "@tiny-chat/client/features/agent/hooks/useStream.ts";
-import { ChatService } from "@tiny-chat/client/features/chat/services/ChatService.ts";
-import type { StreamState } from "@tiny-chat/core/core/types/stream.ts";
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import type { zToolCallPart } from "@tiny-chat/core/features/data/types/part.ts";
-import { FileTypeUtils } from "@tiny-chat/core/features/file/utils/FileTypeUtils.ts";
-import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
-import type { shell_exec } from "@tiny-chat/core/features/tool/tools/shell/shell_exec.ts";
-import type { spawn_subagent } from "@tiny-chat/core/features/tool/tools/subagents/spawn_subagent.ts";
-import type { ToolCallUtils } from "@tiny-chat/core/features/tool/utils/ToolCallUtils.ts";
-import { type ReactNode, useState } from "react";
-import type { BundledLanguage } from "streamdown";
-import WebSourceCard from "#app/features/chat/components/WebSourceCard.tsx";
-import Code from "#app/features/code/components/Code.tsx";
-import Diff from "#app/features/code/components/Diff.tsx";
-import Markdown from "#app/features/message/components/Markdown.tsx";
-import MessageParts from "#app/features/message/components/MessageParts.tsx";
-import Image from "#app/features/part/components/Image.tsx";
-import Quote from "#app/features/part/components/Quote.tsx";
+import { useAutoExpand } from "@tiny-chat/client/features/part/hooks/useAutoExpand.ts";
+import { useToolCall } from "@tiny-chat/client/features/part/hooks/useToolCall.ts";
+import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
+import type { RenderedPart } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
+import Tail from "./Tail.tsx";
+import ToolBlock from "./ToolBlock.tsx";
+import ToolControls from "./ToolControls.tsx";
+import ToolHeader from "./ToolHeader.tsx";
+
+/** Height the call is held to while it is open on its own. */
+const TAIL_HEIGHT = 400;
 
 /**
- * Renders the expanded details content for a tool call.
- * Extracted as a separate component so it only mounts when expanded,
- * avoiding heavy JSX computation (Code, Diff, etc.) for collapsed tool calls.
+ * A tool call: open while it streams in, runs or waits on the user, showing
+ * its input, then any controls, then its output as it arrives; folded back to
+ * its status line once it settles.
  */
-function ToolCallDetails({
-	part,
-	details,
-}: {
-	part: zToolCallPart;
-	details: ReturnType<typeof ToolCallUtils.getDisplay>;
-}) {
-	const stream = useStream<ToolStreamEvent<any>>(part.id);
-
-	let detailsNode: ReactNode;
-
-	if (
-		details.name.startsWith("github_") &&
-		details.result === "success" &&
-		details.sources?.length
-	) {
-		detailsNode = details.sources.map((source) => (
-			<WebSourceCard key={source.url} source={source} />
-		));
-	} else if (details.name === "search_web" && details.output) {
-		detailsNode = details.output.map((result) => (
-			<WebSourceCard key={result.url} source={result} />
-		));
-	} else if (details.name === "view_web" && details.output) {
-		detailsNode = <WebSourceCard source={details.output} />;
-	} else if (details.name === "create_action" && details.output) {
-		detailsNode = (
-			<Text>Created action {details.output.created_action_id}.</Text>
-		);
-	} else if (details.name === "update_action" && details.output) {
-		detailsNode = (
-			<Text>Updated action {details.output.updated_action_id}.</Text>
-		);
-	} else if (details.name === "delete_action" && details.output) {
-		detailsNode = (
-			<Text>Deleted action {details.output.deleted_action_id}.</Text>
-		);
-	} else if (details.name === "list_actions" && details.output) {
-		detailsNode = details.output.map((action) => (
-			<Box key={action.id}>
-				<Text fw={500}>{action.prompt}</Text>
-				<Anchor
-					truncate="end"
-					href={`/#/${action.chat_id}`}
-					target="_blank"
-					display="block"
-					onClick={(e) => {
-						e.preventDefault();
-						ChatService.setChat({ id: action.chat_id });
-					}}
-				>
-					Created{" "}
-					{CommonUtils.formatDate({
-						date: action.created_at,
-						relative: true,
-					})}
-					.
-				</Anchor>
-				{action.next_run_at && (
-					<Text truncate="end">
-						Next runs{" "}
-						{CommonUtils.formatDate({
-							date: new Date(action.next_run_at),
-							relative: true,
-						})}
-						.
-					</Text>
-				)}
-			</Box>
-		));
-	} else if (details.name === "search_chats" && details.output) {
-		detailsNode = details.output.map((message) => (
-			<Box key={message.id}>
-				<Text fw={500}>{message.snippet}</Text>
-				<Anchor
-					truncate="end"
-					href={`/#/${message.chat_id}`}
-					target="_blank"
-					display="block"
-					onClick={(e) => {
-						e.preventDefault();
-						ChatService.setChat({ id: message.chat_id });
-					}}
-				>
-					Sent{" "}
-					{CommonUtils.formatDate({
-						date: new Date(message.created_at),
-						relative: true,
-					})}
-					.
-				</Anchor>
-				<Text truncate="end">{message.snippet}</Text>
-			</Box>
-		));
-	} else if (details.name === "create_memory" && details.output) {
-		detailsNode = (
-			<Text>Created memory {details.output.created_memory_id}.</Text>
-		);
-	} else if (details.name === "update_memory" && details.output) {
-		detailsNode = (
-			<Text>Updated memory {details.output.updated_memory_id}.</Text>
-		);
-	} else if (details.name === "delete_memory" && details.output) {
-		detailsNode = (
-			<Text>Deleted memory {details.output.deleted_memory_id}.</Text>
-		);
-	} else if (details.name === "search_memories" && details.output) {
-		detailsNode = details.output.map((result) => (
-			<Stack key={result.fact} gap={0}>
-				<Text>{result.fact}</Text>
-				<Text size="xs" c="dimmed">
-					Learned{" "}
-					{CommonUtils.formatDate({
-						date: new Date(result.created_at),
-						relative: true,
-					})}
-					.
-				</Text>
-			</Stack>
-		));
-	} else if (details.name === "read_file" && details.content) {
-		detailsNode = (
-			<>
-				{details.content.type === "image" && (
-					<Image
-						src={details.content.value}
-						filename={details.input.path.split("/").at(-1)}
-					/>
-				)}
-				{details.content.type === "text" && (
-					<Code
-						code={details.content.value}
-						language={
-							FileTypeUtils.getExtension({
-								name: details.name,
-								path: details.input.path,
-							}) as BundledLanguage
-						}
-						filename={details.input.path}
-					/>
-				)}
-			</>
-		);
-	} else if (details.name === "write_file" && details.output) {
-		detailsNode = (
-			<Code
-				filename={details.output.path}
-				language={details.language}
-				code={details.input.content}
-			/>
-		);
-	} else if (details.name === "edit_file" && details.output) {
-		detailsNode = (
-			<Diff
-				filename={details.output.path}
-				language={details.language}
-				before={details.input.old_string}
-				after={details.input.new_string}
-			/>
-		);
-	} else if (
-		(details.name === "read_dir" || details.name === "find_files") &&
-		details.output
-	) {
-		detailsNode = (
-			<Code
-				code={details.output
-					.map(
-						(item) =>
-							`${PathUtils.name(item)}${typeof item === "object" && item.is_dir ? "/" : ""}`,
-					)
-					.join("\n")}
-				filename={details.input.path}
-				language="text"
-			/>
-		);
-	} else if (
-		(details.name === "search_files" || details.name === "grep_files") &&
-		details.output
-	) {
-		detailsNode = details.output.map((file) => (
-			<Code key={file.path} filename={file.path} code={file.snippet} />
-		));
-	} else if (details.name === "shell_exec" && details.content) {
-		const _stream = stream as
-			| StreamState<ToolStreamEvent<typeof shell_exec>>
-			| undefined;
-		const streamLines = _stream?.items;
-
-		const streamOutput = streamLines?.map((line) => line.value).join("\n");
-
-		detailsNode = (
-			<Code
-				code={streamOutput ?? details.content}
-				language="bash"
-				h={400}
-				fillHeight
-			/>
-		);
-	} else if (details.name === "spawn_subagent") {
-		const _stream = stream as
-			| StreamState<ToolStreamEvent<typeof spawn_subagent>>
-			| undefined;
-		const streamData = _stream?.items.at(-1);
-
-		const latest = streamData?.at(-1)?.at(-1)?.type;
-		const status: AgentStreamEvent["status"] | undefined =
-			latest === "text"
-				? "generating"
-				: latest === "thought"
-					? "thinking"
-					: undefined;
-
-		detailsNode = (
-			<>
-				<Quote>
-					<Markdown source={details.input.prompt} />
-				</Quote>
-				{streamData && <MessageParts data={streamData} status={status} />}
-				{details.output && <Markdown source={details.output.response} />}
-			</>
-		);
-	}
-
-	return (
-		<Box
-			style={{
-				borderLeft: "2px solid var(--mantine-color-default-border)",
-			}}
-			px="lg"
-			py="xs"
-			ml={8}
-		>
-			<Stack>
-				{detailsNode ?? (
-					<>
-						<Text>Input</Text>
-						<JsonTree data={details.input} withExpandAll withCopyToClipboard />
-						<Text>Output</Text>
-						<JsonTree data={details.output} withExpandAll withCopyToClipboard />
-					</>
-				)}
-			</Stack>
-		</Box>
-	);
-}
-
 export default function ToolCall({
+	message,
 	part,
-	display,
+	isFocused,
+	hold,
 }: {
-	part: zToolCallPart;
-	display: ReturnType<typeof ToolCallUtils.getDisplay>;
+	message?: MessageState;
+	part: Extract<RenderedPart, { type: "toolCall" }>;
+	isFocused?: boolean;
+	/** Keeps it open after it settles, until something follows it. */
+	hold?: boolean;
 }) {
-	const [expanded, setExpanded] = useState(false);
+	const display = useToolCall({ part });
+	const { expanded, auto, toggle } = useAutoExpand(display.active || !!hold);
+
+	const controls = message && display.controls;
+	const empty = !display.input.length && !display.output.length && !controls;
 
 	return (
-		<Box my={10}>
-			<Group
-				className={`shimmer-text ${display.result === "pending" ? "active" : ""}`}
-				onClick={() => setExpanded(!expanded)}
-				style={{ cursor: "pointer" }}
-				gap="xs"
-				wrap="nowrap"
-			>
-				<WrenchIcon size={20} color="var(--mantine-color-dimmed)" />
-				<Text
-					truncate="end"
-					c={display.result === "error" ? "red" : undefined}
-					flex={1}
+		<Box my={8}>
+			<ToolHeader
+				icon={
+					<WrenchIcon
+						size={20}
+						color="var(--mantine-color-dimmed)"
+						className="shrink-0"
+					/>
+				}
+				status={display.status}
+				active={display.active}
+				error={display.state === "error"}
+				expanded={expanded && !empty}
+				onToggle={empty ? undefined : toggle}
+			/>
+			<Collapse expanded={expanded && !empty} keepMounted={false}>
+				<Box
+					style={{
+						borderLeft: "2px solid var(--mantine-color-default-border)",
+					}}
+					pl="md"
+					py="xs"
+					ml={9}
+					mt={4}
 				>
-					{display.status.map((part) =>
-						typeof part === "string" ? (
-							<span key={part}>{part} </span>
-						) : (
-							<span key={part.subject} style={{ fontWeight: 500 }}>
-								{part.subject}{" "}
-							</span>
-						),
-					)}
-				</Text>
-			</Group>
-			<Collapse expanded={expanded} style={{ zoom: 0.9 }}>
-				{expanded && <ToolCallDetails part={part} details={display} />}
+					<Tail follow={auto} height={TAIL_HEIGHT} content={part}>
+						<Stack gap="xs" style={{ zoom: 0.9 }}>
+							{display.input.map((block, index) => (
+								<ToolBlock
+									// biome-ignore lint/suspicious/noArrayIndexKey: a tool's blocks keep their order
+									key={`input-${index}`}
+									block={block}
+									active={display.state === "input"}
+								/>
+							))}
+							{controls && message && (
+								<ToolControls
+									message={message}
+									part={part}
+									controls={controls}
+									isFocused={isFocused}
+								/>
+							)}
+							{display.output.map((block, index) => (
+								<ToolBlock
+									// biome-ignore lint/suspicious/noArrayIndexKey: a tool's blocks keep their order
+									key={`output-${index}`}
+									block={block}
+									active={display.state === "running"}
+								/>
+							))}
+						</Stack>
+					</Tail>
+				</Box>
 			</Collapse>
 		</Box>
 	);

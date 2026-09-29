@@ -3,6 +3,7 @@ import { useAnimation } from "ink";
 import {
 	createContext,
 	type ReactNode,
+	useCallback,
 	useContext,
 	useMemo,
 	useState,
@@ -23,17 +24,27 @@ const TaskContext = createContext<TaskContext>({ expanded: false });
 
 function Task({
 	children,
+	expanded: controlledExpanded,
+	onToggle,
 	...props
 }: BoxProps & {
 	children: ReactNode;
+	/** Controls whether the details show, instead of the task holding it. */
+	expanded?: boolean;
+	onToggle?: () => void;
 }) {
 	const context = useContext(TaskContext);
 
-	const [expanded, setExpanded] = useState(false);
+	const [expandedState, setExpandedState] = useState(false);
+	const expanded = controlledExpanded ?? expandedState;
+	const setExpanded = useCallback(
+		(value: boolean) => (onToggle ? onToggle() : setExpandedState(value)),
+		[onToggle],
+	);
 
 	const mergedContext = useMemo<TaskContext>(
 		() => ({ ...context, expanded, setExpanded }),
-		[context, expanded],
+		[context, expanded, setExpanded],
 	);
 
 	return (
@@ -143,7 +154,8 @@ namespace Task {
 	export function Details({
 		children,
 		collapse = true,
-	}: {
+		...props
+	}: BoxProps & {
 		children: ReactNode;
 		collapse?: boolean;
 	}) {
@@ -154,7 +166,7 @@ namespace Task {
 		}
 
 		return (
-			<Box flexDirection="column" paddingLeft={2} {...detailsProps}>
+			<Box flexDirection="column" paddingLeft={2} {...detailsProps} {...props}>
 				{children}
 			</Box>
 		);

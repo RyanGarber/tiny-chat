@@ -1,9 +1,11 @@
 import { z } from "zod";
 import type { Capabilities } from "../../../../core/types/capability.ts";
 import { FileOperationService } from "../../../file/services/FileOperationService.ts";
+import type { ToolDisplay } from "../../types/display.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 import { FileToolUtils } from "../../utils/FileToolUtils.ts";
 import { ShellUtils } from "../../utils/ShellUtils.ts";
+import { ToolDisplayUtils } from "../../utils/ToolDisplayUtils.ts";
 
 export const edit_file = {
 	name: "edit_file",
@@ -36,11 +38,29 @@ export const edit_file = {
 	}),
 } as const satisfies ToolDefinition;
 
+const display: ToolDisplay<typeof edit_file> = {
+	status: ({ input }) => [
+		["Editing", "Edited"],
+		{ count: ["file", "files"] },
+		{ subject: ToolDisplayUtils.name(input.path) },
+	],
+	input: ({ input }) => [
+		{
+			type: "diff",
+			path: input.path,
+			before: input.old_string ?? "",
+			after: input.new_string ?? "",
+			language: ToolDisplayUtils.language(input.path),
+		},
+	],
+};
+
 export const createEditFileTool: ToolFactory<
 	Tool<typeof edit_file, Pick<Capabilities, "shell" | "chatShell">>
 > = (options) => ({
 	...edit_file,
 	...options,
+	display,
 	validate: async ({ input, context }) => {
 		const shell = ShellUtils.detect(input.path, options.capabilities);
 

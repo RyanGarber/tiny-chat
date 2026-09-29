@@ -2,19 +2,16 @@ import { z } from "zod";
 import type { FieldOutputTypes } from "../../../../generated/prisma/contract.d.ts";
 import type { Model } from "../../../core/services/PostgresService.ts";
 
-export type FolderState = FieldOutputTypes["public"]["Folder"] & {
+export type ProjectState = FieldOutputTypes["public"]["Project"] & {
 	chats: ChatState[];
 };
 
-export type FolderLike = { id: string } | string;
-export const FolderLike = z.custom<FolderLike>();
+export type ProjectLike = { id: string } | string;
+export const ProjectLike = z.custom<ProjectLike>();
 
 export type ChatState = Model["Chat"] & {
 	messages: Pick<Model["Message"], "createdAt">[];
-	folder: Pick<
-		Model["Folder"],
-		"title" | "cwd" | "cwdWritable" | "settings"
-	> | null;
+	project: Pick<Model["Project"], "title" | "settings"> | null;
 	unseen: boolean;
 };
 

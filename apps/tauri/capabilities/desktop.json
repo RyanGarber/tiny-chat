@@ -9,6 +9,7 @@
     "main"
   ],
   "permissions": [
+    "dialog:allow-open",
     "updater:default",
     "process:default"
   ]

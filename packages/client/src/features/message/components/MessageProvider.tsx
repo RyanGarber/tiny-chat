@@ -111,21 +111,23 @@ function MessageSync({ store }: { store: StoreApi<MessageStore> }) {
 	}, [messageList, toolsets, actions.data, chatFiles.data, memories.data]);
 
 	/**
-	 * A message is stale when an earlier model message carries a newer timestamp,
-	 * which means the chat was edited above it. Tracking the newest timestamp
-	 * seen so far settles the whole list in one pass.
+	 * A message is stale when an earlier message carries a newer timestamp, which
+	 * means the chat was edited above it. Editing creates a sibling with a fresh
+	 * `createdAt` and clones the descendants with their original timestamps, so
+	 * user edits count too. Generation rewrites a message in place and bumps
+	 * `updatedAt`, so a regenerated reply is current again. Tracking the newest
+	 * timestamp seen so far settles the whole list in one pass.
 	 */
 	const staleIds = useMemo(() => {
 		const stale = new Set<string>();
 		let newestPrior = -Infinity;
 
 		for (const message of messageList) {
-			const createdAt =
-				message.createdAt.toZonedDateTime("UTC").epochMilliseconds;
-			if (newestPrior > createdAt) stale.add(message.id);
-			if (message.author === "MODEL" && createdAt > newestPrior) {
-				newestPrior = createdAt;
-			}
+			const touchedAt = (
+				message.updatedAt ?? message.createdAt
+			).toZonedDateTime("UTC").epochMilliseconds;
+			if (newestPrior > touchedAt) stale.add(message.id);
+			if (touchedAt > newestPrior) newestPrior = touchedAt;
 		}
 
 		return stale;
@@ -139,6 +141,7 @@ function MessageSync({ store }: { store: StoreApi<MessageStore> }) {
 			for (const part of parts) {
 				if (
 					part.type === "toolCall" &&
+					!part.partial &&
 					!part.result &&
 					!ToolStreamService.get(part.id)
 				) {

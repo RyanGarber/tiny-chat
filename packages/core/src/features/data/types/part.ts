@@ -66,6 +66,12 @@ export const zToolCallPart = _zDataPart.extend({
 		})
 		.partial()
 		.optional(),
+	/**
+	 * The model is still writing `input`, which holds what has been parsed so
+	 * far. Only ever seen mid-stream: the loop settles or drops these before a
+	 * step ends, so they are never persisted.
+	 */
+	partial: z.boolean().optional(),
 });
 export type zToolCallPart = z.infer<typeof zToolCallPart>;
 

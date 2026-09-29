@@ -245,6 +245,10 @@ export const ModelTransformService = {
 					signature,
 				},
 			};
+		} else if (event.type === "tool-input-start") {
+			return { type: "toolInput", id: event.id, name: event.toolName };
+		} else if (event.type === "tool-input-delta") {
+			return { type: "toolInput", id: event.id, delta: event.delta };
 		} else if (event.type === "tool-call") {
 			return {
 				type: "data",

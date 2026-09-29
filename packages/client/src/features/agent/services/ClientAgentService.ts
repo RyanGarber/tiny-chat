@@ -151,6 +151,12 @@ export const ClientAgentService = {
 		});
 
 		for await (const event of agent) {
+			if (event.type === "toolInput" && event.name !== undefined) {
+				AgentStreamService.mutate(streamKey, {
+					mode: "patch",
+					data: { status: "generating" },
+				});
+			}
 			if (event.type === "data") {
 				if (event.value.type === "text" || event.value.type === "json") {
 					AgentStreamService.mutate(streamKey, {

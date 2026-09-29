@@ -1,6 +1,7 @@
 import type {
 	EmbeddingModelV4,
 	LanguageModelV4,
+	LanguageModelV4CallOptions,
 	LanguageModelV4StreamPart,
 	LanguageModelV4ToolResultPart,
 	ProviderV4,
@@ -262,11 +263,13 @@ function buildMarkdown(kind: Bench["kind"], count: number): string {
 }
 
 async function runBench({
+	options,
 	controller,
 	bench,
 	sleep,
 	toolResult,
 }: {
+	options: LanguageModelV4CallOptions;
 	controller: ReadableStreamDefaultController<LanguageModelV4StreamPart>;
 	bench: Bench;
 	sleep: (ms: number) => Promise<unknown>;
@@ -299,10 +302,30 @@ async function runBench({
 	};
 
 	const _emitToolCall = async (n: number) => {
+		const prompt = options.prompt.reduce(
+			(acc, message) =>
+				typeof message.content === "string"
+					? acc + message.content
+					: acc +
+						message.content
+							.filter((part) => part.type === "text")
+							.map((part) => part.text)
+							.join(""),
+			"",
+		);
+		console.log("[TestProvider] prompt:", prompt);
+		const path = /<chat>(.*?)<\/chat>/i.exec(prompt)?.[1] ?? "";
+		console.log("[TestProvider] path:", path);
 		await emitToolCall(
 			controller,
-			"chat_read_dir",
-			{ path: `/mnt/uploads/dir-${n}` },
+			"write_file",
+			{ path: `${path}${n}.txt`, content: `Hello, world!` },
+			delay > 0 ? () => sleep(delay) : undefined,
+		);
+		await emitToolCall(
+			controller,
+			"read_dir",
+			{ path: `${path}` },
 			delay > 0 ? () => sleep(delay) : undefined,
 		);
 	};
@@ -341,6 +364,7 @@ async function runSub({
 	controller,
 	toolResult,
 }: {
+	options: LanguageModelV4CallOptions;
 	controller: ReadableStreamDefaultController<LanguageModelV4StreamPart>;
 	toolResult?: LanguageModelV4ToolResultPart;
 }) {
@@ -392,9 +416,15 @@ function createTestProvider(): ProviderV4 {
 							const sub = getSub(options.prompt);
 
 							if (bench) {
-								await runBench({ controller, bench, sleep, toolResult });
+								await runBench({
+									options,
+									controller,
+									bench,
+									sleep,
+									toolResult,
+								});
 							} else if (sub) {
-								await runSub({ controller, toolResult });
+								await runSub({ options, controller, toolResult });
 							} else {
 								controller.enqueue({
 									type: "text-start",

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { MemoriesCapability } from "../../../../core/types/capability.ts";
 import { zId } from "../../../../core/types/common.ts";
+import type { ToolDisplay } from "../../types/display.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
 export const delete_memory = {
@@ -19,11 +20,20 @@ export const delete_memory = {
 	}),
 } as const satisfies ToolDefinition;
 
+const display: ToolDisplay<typeof delete_memory> = {
+	status: ({ input }) => [
+		["Deleting", "Deleted"],
+		{ count: ["memory", "memories"] },
+		{ subject: input.reason ?? "" },
+	],
+};
+
 export const createDeleteMemoryTool: ToolFactory<
 	Tool<typeof delete_memory, { memories: MemoriesCapability }>
 > = (options) => ({
 	...delete_memory,
 	...options,
+	display,
 	execute: async ({ input }) => {
 		const memory = await options.capabilities.memories.deleteMemory({
 			id: input.id,

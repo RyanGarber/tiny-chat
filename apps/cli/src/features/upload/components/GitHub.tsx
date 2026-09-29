@@ -135,6 +135,7 @@ export default function GitHub() {
 			actions={[
 				{ key: "c", name: "clone" },
 				{ key: "d", name: "delete" },
+				"select",
 				"back",
 			]}
 			selectFirstOnChange={false}

@@ -11,7 +11,9 @@
 				"Cargo.toml",
 				"Cargo.lock",
 				"tauri.conf.json"
-			]
+			],
+			"outputs": ["target/**/*.rs", "target/**/*.d"],
+			"cache": true
 		},
 		"typecheck": {
 			"dependsOn": ["^typecheck"]
@@ -23,7 +25,9 @@
 				"Cargo.toml",
 				"Cargo.lock",
 				"tauri.conf.json"
-			]
+			],
+			"outputs": ["target/**/*.rs", "target/**/*.d"],
+			"cache": true
 		},
 		"test": {
 			"dependsOn": ["^test"]
@@ -35,7 +39,9 @@
 				"Cargo.toml",
 				"Cargo.lock",
 				"tauri.conf.json"
-			]
+			],
+			"outputs": ["target/**/*.rs", "target/**/*.d"],
+			"cache": true
 		},
 		"smoketest": {
 			"dependsOn": ["^smoketest"]

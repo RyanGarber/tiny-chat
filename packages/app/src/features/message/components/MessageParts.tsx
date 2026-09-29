@@ -1,7 +1,6 @@
 import { Alert, Button, Stack, Text } from "@mantine/core";
 import { ArrowClockwiseIcon } from "@phosphor-icons/react";
 import type { AgentStreamEvent } from "@tiny-chat/client/core/services/StreamService.ts";
-import { useMessageStore } from "@tiny-chat/client/features/message/stores/useMessageStore.ts";
 import { MarkdownDataUtils } from "@tiny-chat/client/features/message/utils/MarkdownDataUtils.ts";
 import { useThemes } from "@tiny-chat/client/features/settings/hooks/useThemes.ts";
 import type { Compaction } from "@tiny-chat/core/features/agent/services/AgentTokensService.ts";
@@ -9,7 +8,6 @@ import type { MessageState } from "@tiny-chat/core/features/data/types/message.t
 import type { zData } from "@tiny-chat/core/features/data/types/part.ts";
 import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
 import { EditorPartUtils } from "@tiny-chat/core/features/data/utils/EditorPartUtils.ts";
-import { ToolCallUtils } from "@tiny-chat/core/features/tool/utils/ToolCallUtils.ts";
 import { MediaPlayer, MediaProvider } from "@vidstack/react";
 import {
 	DefaultAudioLayout,
@@ -17,26 +15,11 @@ import {
 	defaultLayoutIcons,
 } from "@vidstack/react/player/layouts/default";
 import Code from "#app/features/code/components/Code.tsx";
+import CompactionBadge from "#app/features/message/components/CompactionBadge.tsx";
 import Markdown from "#app/features/message/components/Markdown.tsx";
 import Image from "#app/features/part/components/Image.tsx";
 import Thought from "#app/features/part/components/Thought.tsx";
-import ToolCall from "#app/features/part/components/ToolCall.tsx";
-import ToolFeedback from "#app/features/part/components/ToolFeedback.tsx";
-
-function CompactionBadge({
-	compaction,
-	id,
-}: {
-	compaction?: Compaction;
-	id?: string;
-}) {
-	const status = id ? compaction?.get(id) : undefined;
-	return status ? (
-		<Text component="span" size="xs" c="dimmed" fs="italic" mr={4}>
-			[{status}]
-		</Text>
-	) : null;
-}
+import ToolGroup from "#app/features/part/components/ToolGroup.tsx";
 
 /* biome-ignore-start lint/suspicious/noArrayIndexKey: parts stay in order */
 export default function MessageParts({
@@ -54,14 +37,17 @@ export default function MessageParts({
 }) {
 	const { theme } = useThemes();
 
-	const toolsets = useMessageStore((s) => s.toolsets);
-	const nextFeedbackId = useMessageStore((s) => s.nextFeedbackId);
-
 	const parts = DataUtils.getRenderedPartsGrouped(
 		data,
 		status === "thinking",
 		"thought",
+		"toolCall",
 	);
+
+	// The last part stays open while the message is still streaming, so it does
+	// not fold between one call or thought and whatever comes after it.
+	const hold = (index: number) =>
+		status !== undefined && index === parts.length - 1;
 
 	return parts.map((part, index) => {
 		if (part.type === "text" || EditorPartUtils.is(part)) {
@@ -94,34 +80,26 @@ export default function MessageParts({
 					<MessageParts data={[part.value]} compaction={compaction} />
 				</Stack>
 			);
-		if (part.type === "group") {
-			const statusPart = part.value.find(
-				(value) => value.id && compaction?.has(value.id),
-			);
+		if (part.type === "group" && part.of === "thought") {
 			return (
 				<div key={index}>
-					<CompactionBadge compaction={compaction} id={statusPart?.id} />
-					<Thought thoughts={part.value} />
+					<CompactionBadge
+						compaction={compaction}
+						id={part.value.find((thought) => compaction?.has(thought.id))?.id}
+					/>
+					<Thought thoughts={part.value} hold={hold(index)} />
 				</div>
 			);
-		} else if (part.type === "toolCall") {
-			const display = ToolCallUtils.getDisplay({
-				part,
-				toolsets,
-			});
+		}
+		if (part.type === "group" && part.of === "toolCall") {
 			return (
-				<div key={index}>
-					<CompactionBadge compaction={compaction} id={part.id} />
-					<ToolCall part={part} display={display} />
-					{message && (display.approval || display.feedback) && (
-						<ToolFeedback
-							message={message}
-							part={part}
-							display={display}
-							isFocused={nextFeedbackId === part.id}
-						/>
-					)}
-				</div>
+				<ToolGroup
+					key={index}
+					message={message}
+					parts={part.value}
+					compaction={compaction}
+					hold={hold(index)}
+				/>
 			);
 		} else if (part.type === "json") {
 			return (

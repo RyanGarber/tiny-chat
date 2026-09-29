@@ -81,7 +81,7 @@ export default function Uploads() {
 				if ((key.return || input === " ") && item) item.attach();
 				if (input === "d" && item) item.remove();
 			}}
-			actions={[{ key: "d", name: "delete" }, "back"]}
+			actions={[{ key: "d", name: "delete" }, "select", "back"]}
 			selectFirstOnChange={false}
 			onReachBottom={fetchOlder}
 		/>

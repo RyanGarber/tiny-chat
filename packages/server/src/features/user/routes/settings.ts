@@ -1,7 +1,8 @@
 import { ThemeUtils } from "@tiny-chat/core/core/utils/ThemeUtils.ts";
-import { FolderLike } from "@tiny-chat/core/features/data/types/chat.ts";
+import { ProjectLike } from "@tiny-chat/core/features/data/types/chat.ts";
 import { zConfig } from "@tiny-chat/core/features/data/types/message.ts";
 import {
+	zFolderPath,
 	zMCPServers,
 	zSettings,
 } from "@tiny-chat/core/features/data/types/user.ts";
@@ -14,14 +15,14 @@ export const settings = router({
 		.input(
 			z
 				.object({
-					folder: FolderLike.nullish(),
+					project: ProjectLike.nullish(),
 				})
 				.default({}),
 		)
 		.query(async ({ ctx, input }) => {
 			return await SettingsService.getSettings({
 				user: ctx.session.user,
-				folder: input.folder,
+				project: input.project,
 			});
 		}),
 
@@ -29,14 +30,14 @@ export const settings = router({
 		.input(
 			z
 				.object({
-					folder: FolderLike.nullish(),
+					project: ProjectLike.nullish(),
 				})
 				.default({}),
 		)
 		.query(async ({ ctx, input }): Promise<Record<string, unknown>> => {
 			return (await SettingsService.getSettingsRaw({
 				user: ctx.session.user,
-				folder: input.folder,
+				project: input.project,
 			})) as Record<string, unknown>;
 		}),
 
@@ -44,13 +45,13 @@ export const settings = router({
 		.input(
 			z.object({
 				theme: z.enum(ThemeUtils.themes),
-				folder: FolderLike.nullish(),
+				project: ProjectLike.nullish(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
 			return SettingsService.setSettings({
 				user: ctx.session.user,
-				folder: input.folder,
+				project: input.project,
 				update: (settings) => ({
 					...settings,
 					theme: input.theme,
@@ -62,13 +63,13 @@ export const settings = router({
 		.input(
 			z.object({
 				codeTheme: z.enum(ThemeUtils.codeThemes),
-				folder: FolderLike.nullish(),
+				project: ProjectLike.nullish(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
 			return SettingsService.setSettings({
 				user: ctx.session.user,
-				folder: input.folder,
+				project: input.project,
 				update: (settings) => ({
 					...settings,
 					codeTheme: input.codeTheme,
@@ -80,13 +81,13 @@ export const settings = router({
 		.input(
 			z.object({
 				instruction: z.string(),
-				folder: FolderLike.nullish(),
+				project: ProjectLike.nullish(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
 			return SettingsService.setSettings({
 				user: ctx.session.user,
-				folder: input.folder,
+				project: input.project,
 				update: (settings) => ({
 					...settings,
 					instructions: [...(settings.instructions ?? []), input.instruction],
@@ -98,13 +99,13 @@ export const settings = router({
 		.input(
 			z.object({
 				index: z.number(),
-				folder: FolderLike.nullish(),
+				project: ProjectLike.nullish(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
 			return SettingsService.setSettings({
 				user: ctx.session.user,
-				folder: input.folder,
+				project: input.project,
 				update: (settings) => ({
 					...settings,
 					instructions:
@@ -118,13 +119,13 @@ export const settings = router({
 			z.object({
 				index: z.number(),
 				instruction: z.string(),
-				folder: FolderLike.nullish(),
+				project: ProjectLike.nullish(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
 			return SettingsService.setSettings({
 				user: ctx.session.user,
-				folder: input.folder,
+				project: input.project,
 				update: (settings) => ({
 					...settings,
 					instructions:
@@ -135,17 +136,145 @@ export const settings = router({
 			});
 		}),
 
-	setMemoryBudget: procedure
+	addCommand: procedure
 		.input(
 			z.object({
-				tokens: z.number(),
-				folder: FolderLike.nullish(),
+				command: z.string().trim().min(1),
+				project: ProjectLike.nullish(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
 			return SettingsService.setSettings({
 				user: ctx.session.user,
-				folder: input.folder,
+				project: input.project,
+				update: (settings) => ({
+					...settings,
+					commandWhitelist: [
+						...new Set([...(settings.commandWhitelist ?? []), input.command]),
+					],
+				}),
+			});
+		}),
+
+	removeCommand: procedure
+		.input(
+			z.object({
+				index: z.number(),
+				project: ProjectLike.nullish(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			return SettingsService.setSettings({
+				user: ctx.session.user,
+				project: input.project,
+				update: (settings) => ({
+					...settings,
+					commandWhitelist:
+						settings.commandWhitelist?.filter((_, i) => i !== input.index) ??
+						[],
+				}),
+			});
+		}),
+
+	editCommand: procedure
+		.input(
+			z.object({
+				index: z.number(),
+				command: z.string().trim().min(1),
+				project: ProjectLike.nullish(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			return SettingsService.setSettings({
+				user: ctx.session.user,
+				project: input.project,
+				update: (settings) => ({
+					...settings,
+					commandWhitelist: [
+						...new Set(
+							settings.commandWhitelist?.map((v, i) =>
+								i === input.index ? input.command : v,
+							) ?? [],
+						),
+					],
+				}),
+			});
+		}),
+
+	addFolder: procedure
+		.input(
+			z.object({
+				path: zFolderPath.shape.path,
+				project: ProjectLike.nullish(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			return SettingsService.setSettings({
+				user: ctx.session.user,
+				project: input.project,
+				update: (settings) => ({
+					...settings,
+					folders: [
+						...(settings.folders ?? []).filter(
+							({ path }) => path !== input.path,
+						),
+						{ path: input.path, writable: false },
+					],
+				}),
+			});
+		}),
+
+	removeFolder: procedure
+		.input(
+			z.object({
+				index: z.number(),
+				project: ProjectLike.nullish(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			return SettingsService.setSettings({
+				user: ctx.session.user,
+				project: input.project,
+				update: (settings) => ({
+					...settings,
+					folders: settings.folders?.filter((_, i) => i !== input.index) ?? [],
+				}),
+			});
+		}),
+
+	setFolderWritable: procedure
+		.input(
+			z.object({
+				index: z.number(),
+				writable: z.boolean(),
+				project: ProjectLike.nullish(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			return SettingsService.setSettings({
+				user: ctx.session.user,
+				project: input.project,
+				update: (settings) => ({
+					...settings,
+					folders:
+						settings.folders?.map((v, i) =>
+							i === input.index ? { ...v, writable: input.writable } : v,
+						) ?? [],
+				}),
+			});
+		}),
+
+	setMemoryBudget: procedure
+		.input(
+			z.object({
+				tokens: z.number(),
+				project: ProjectLike.nullish(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			return SettingsService.setSettings({
+				user: ctx.session.user,
+				project: input.project,
 				update: (settings) => ({
 					...settings,
 					memoryBudget: input.tokens,
@@ -158,13 +287,13 @@ export const settings = router({
 			z.object({
 				name: z.string().regex(/[A-Za-z0-9-_]+/),
 				config: zConfig,
-				folder: FolderLike.nullish(),
+				project: ProjectLike.nullish(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
 			return SettingsService.setSettings({
 				user: ctx.session.user,
-				folder: input.folder,
+				project: input.project,
 				update: (settings) => ({
 					...settings,
 					presets: {
@@ -179,13 +308,13 @@ export const settings = router({
 		.input(
 			z.object({
 				name: z.string().regex(/[A-Za-z0-9-_]+/),
-				folder: FolderLike.nullish(),
+				project: ProjectLike.nullish(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
 			return SettingsService.setSettings({
 				user: ctx.session.user,
-				folder: input.folder,
+				project: input.project,
 				update: (settings) => {
 					const newPresets = { ...settings.presets };
 					delete newPresets[input.name];
@@ -202,13 +331,13 @@ export const settings = router({
 			z.object({
 				feature: zSettings.shape.hiddenModels.unwrap().keyType,
 				models: zSettings.shape.hiddenModels.unwrap().valueType,
-				folder: FolderLike.nullish(),
+				project: ProjectLike.nullish(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
 			return SettingsService.setSettings({
 				user: ctx.session.user,
-				folder: input.folder,
+				project: input.project,
 				update: (settings) => {
 					settings.hiddenModels ??= { language: [], embedding: [] };
 					settings.hiddenModels[input.feature] = input.models;
@@ -221,13 +350,13 @@ export const settings = router({
 		.input(
 			z.object({
 				preferredWebProvider: z.string(),
-				folder: FolderLike.nullish(),
+				project: ProjectLike.nullish(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
 			return SettingsService.setSettings({
 				user: ctx.session.user,
-				folder: input.folder,
+				project: input.project,
 				update: (settings) => ({
 					...settings,
 					preferredWebProvider: input.preferredWebProvider,
@@ -237,12 +366,12 @@ export const settings = router({
 
 	setEmbeddingConfig: procedure
 		.input(
-			z.object({ config: zConfig.nullish(), folder: FolderLike.nullish() }),
+			z.object({ config: zConfig.nullish(), project: ProjectLike.nullish() }),
 		)
 		.mutation(async ({ ctx, input }) => {
 			return SettingsService.setSettings({
 				user: ctx.session.user,
-				folder: input.folder,
+				project: input.project,
 				update: (settings) => ({
 					...settings,
 					embeddingConfig: input.config ?? undefined,
@@ -254,13 +383,13 @@ export const settings = router({
 		.input(
 			z.object({
 				useEmbeddingSearch: z.boolean(),
-				folder: FolderLike.nullish(),
+				project: ProjectLike.nullish(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
 			return SettingsService.setSettings({
 				user: ctx.session.user,
-				folder: input.folder,
+				project: input.project,
 				update: (settings) => ({
 					...settings,
 					useEmbeddingSearch: input.useEmbeddingSearch,
@@ -270,12 +399,12 @@ export const settings = router({
 
 	setDreamConfig: procedure
 		.input(
-			z.object({ config: zConfig.nullish(), folder: FolderLike.nullish() }),
+			z.object({ config: zConfig.nullish(), project: ProjectLike.nullish() }),
 		)
 		.mutation(async ({ ctx, input }) => {
 			return SettingsService.setSettings({
 				user: ctx.session.user,
-				folder: input.folder,
+				project: input.project,
 				update: (settings) => ({
 					...settings,
 					dreamConfig: input.config ?? undefined,
@@ -285,12 +414,12 @@ export const settings = router({
 
 	setSubagentConfig: procedure
 		.input(
-			z.object({ config: zConfig.nullish(), folder: FolderLike.nullish() }),
+			z.object({ config: zConfig.nullish(), project: ProjectLike.nullish() }),
 		)
 		.mutation(async ({ ctx, input }) => {
 			return SettingsService.setSettings({
 				user: ctx.session.user,
-				folder: input.folder,
+				project: input.project,
 				update: (settings) => ({
 					...settings,
 					subagentConfig: input.config ?? undefined,
@@ -304,13 +433,13 @@ export const settings = router({
 				provider: z.string(),
 				key: z.string(),
 				value: z.string().nullish(),
-				folder: FolderLike.nullish(),
+				project: ProjectLike.nullish(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
 			return SettingsService.setSettings({
 				user: ctx.session.user,
-				folder: input.folder,
+				project: input.project,
 				update: (settings) => ({
 					...settings,
 					providers: {
@@ -326,12 +455,15 @@ export const settings = router({
 
 	setUseProviderCache: procedure
 		.input(
-			z.object({ useProviderCache: z.boolean(), folder: FolderLike.nullish() }),
+			z.object({
+				useProviderCache: z.boolean(),
+				project: ProjectLike.nullish(),
+			}),
 		)
 		.mutation(async ({ ctx, input }) => {
 			return SettingsService.setSettings({
 				user: ctx.session.user,
-				folder: input.folder,
+				project: input.project,
 				update: (settings) => ({
 					...settings,
 					useProviderCache: input.useProviderCache,
@@ -341,12 +473,15 @@ export const settings = router({
 
 	setUseBrowserModels: procedure
 		.input(
-			z.object({ useBrowserModels: z.boolean(), folder: FolderLike.nullish() }),
+			z.object({
+				useBrowserModels: z.boolean(),
+				project: ProjectLike.nullish(),
+			}),
 		)
 		.mutation(async ({ ctx, input }) => {
 			return SettingsService.setSettings({
 				user: ctx.session.user,
-				folder: input.folder,
+				project: input.project,
 				update: (settings) => ({
 					...settings,
 					useBrowserModels: input.useBrowserModels,
@@ -355,11 +490,13 @@ export const settings = router({
 		}),
 
 	setMcpServers: procedure
-		.input(z.object({ mcpServers: zMCPServers, folder: FolderLike.nullish() }))
+		.input(
+			z.object({ mcpServers: zMCPServers, project: ProjectLike.nullish() }),
+		)
 		.mutation(async ({ ctx, input }) => {
 			return SettingsService.setSettings({
 				user: ctx.session.user,
-				folder: input.folder,
+				project: input.project,
 				update: (settings) => ({
 					...settings,
 					mcpServers: input.mcpServers,

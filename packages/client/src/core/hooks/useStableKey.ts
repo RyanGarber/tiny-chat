@@ -11,7 +11,10 @@ import type {
 	zData,
 	zDataPart,
 } from "@tiny-chat/core/features/data/types/part.ts";
-import type { zMCPServers } from "@tiny-chat/core/features/data/types/user.ts";
+import type {
+	zMCPServers,
+	zSettings,
+} from "@tiny-chat/core/features/data/types/user.ts";
 import type {
 	ProviderState,
 	ProviderStatus,
@@ -130,6 +133,7 @@ export const useStableKey = ({
 	toolsets,
 	skills,
 	config,
+	settings,
 	chat,
 }: {
 	data?: zData;
@@ -141,6 +145,7 @@ export const useStableKey = ({
 	toolsets?: Toolset<any>[];
 	skills?: zSkill[];
 	config?: zConfig | null;
+	settings?: zSettings | null;
 	chat?: zAgentChat | null;
 }) => {
 	const dataKey = useMemo(() => {
@@ -185,6 +190,10 @@ export const useStableKey = ({
 		return config ? getValueKey(config) : "";
 	}, [config]);
 
+	const settingsKey = useMemo(() => {
+		return settings ? getValueKey(settings) : "";
+	}, [settings]);
+
 	const chatKey = useMemo(() => {
 		return chat ? getValueKey(chat) : "";
 	}, [chat]);
@@ -200,6 +209,7 @@ export const useStableKey = ({
 			toolsetsKey,
 			skillsKey,
 			configKey,
+			settingsKey,
 			chatKey,
 		]
 			.filter(Boolean)
@@ -214,6 +224,7 @@ export const useStableKey = ({
 		toolsetsKey,
 		skillsKey,
 		configKey,
+		settingsKey,
 		chatKey,
 	]);
 };

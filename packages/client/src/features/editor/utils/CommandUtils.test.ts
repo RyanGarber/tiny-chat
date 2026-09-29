@@ -2,6 +2,18 @@ import type { CommandGroup } from "../types/command.ts";
 import { CommandUtils } from "./CommandUtils.ts";
 
 describe("CommandUtils", () => {
+	it("matches command names without typing punctuation", () => {
+		const groups: CommandGroup[] = [
+			{ items: [{ name: "set-preset", value: "set-preset" }] },
+		];
+
+		expect(
+			CommandUtils.filter({ groups, query: "setpres" })[0].items.map(
+				(item) => item.value,
+			),
+		).toEqual(["set-preset"]);
+	});
+
 	it("puts an exact command match before commands containing it", () => {
 		const groups: CommandGroup[] = [
 			{

@@ -1,29 +1,31 @@
 import { useQuery } from "@tanstack/react-query";
-import type { FolderLike } from "@tiny-chat/core/features/data/types/chat.ts";
+import type { ProjectLike } from "@tiny-chat/core/features/data/types/chat.ts";
 import { zSettings } from "@tiny-chat/core/features/data/types/user.ts";
 import { useCallback, useContext } from "react";
 import { ClientContext } from "../../../client.ts";
-import { useSession } from "../../../core/hooks/useSession.ts";
+import { sessionQueryKey, useSession } from "../../../core/hooks/useSession.ts";
+import { ChatService } from "../../chat/services/ChatService.ts";
 
 export const settingsQueryKey = ["useSettings", "settings"] as const;
 
 export const useSettings = ({
-	folder,
+	project,
 }: {
-	folder?: FolderLike | null;
+	project?: ProjectLike | null;
 } = {}) => {
 	const client = useContext(ClientContext);
 
 	const { session } = useSession();
 
-	const folderId = folder && typeof folder === "object" ? folder.id : folder;
+	const projectId =
+		project && typeof project === "object" ? project.id : project;
 
 	const settings = useQuery({
-		queryKey: [...settingsQueryKey, folderId],
+		queryKey: [...settingsQueryKey, projectId],
 		queryFn: async () => {
-			return await client.api.settings.get.query({ folder: folderId });
+			return await client.api.settings.get.query({ project: projectId });
 		},
-		initialData: !folderId
+		initialData: !projectId
 			? zSettings.safeParse(session.data?.user?.settings).data
 			: undefined,
 		refetchOnWindowFocus: false,
@@ -34,12 +36,26 @@ export const useSettings = ({
 	const applySettings = useCallback(
 		(settings: zSettings) => {
 			client.queryClient.setQueryData(
-				[...settingsQueryKey, folderId],
+				[...settingsQueryKey, projectId],
 				settings,
 			);
+			// Everything that runs as the user (capabilities, providers,
+			// generation) reads settings off the session, so keep it in step.
+			if (!projectId) {
+				client.queryClient.setQueryData<typeof session.data>(
+					sessionQueryKey,
+					(old) => old && { ...old, user: { ...old.user, settings } },
+				);
+			} else {
+				// Chats carry their folder's settings, which generation reads.
+				void client.queryClient.invalidateQueries({
+					queryKey: client.query.chat.getChat.pathKey(),
+				});
+				void ChatService.fetchChatList({ client });
+			}
 			return true;
 		},
-		[client.queryClient, folderId],
+		[client, projectId],
 	);
 
 	return { settings, applySettings };

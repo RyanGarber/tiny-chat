@@ -1,25 +1,36 @@
 import { Box, Collapse, Group, Text } from "@mantine/core";
 import { BrainIcon } from "@phosphor-icons/react";
+import { useAutoExpand } from "@tiny-chat/client/features/part/hooks/useAutoExpand.ts";
 import type { RenderedPart } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
-import { useState } from "react";
 import Markdown from "../../message/components/Markdown.tsx";
+import Tail from "./Tail.tsx";
 
+/** Height the thought is held to while it is open on its own. */
+const TAIL_HEIGHT = 400;
+
+/**
+ * A run of thinking: open while it streams in, folded back to one line once
+ * something follows it.
+ */
 export default function Thought({
 	thoughts,
+	hold,
 }: {
 	thoughts: Extract<RenderedPart, { type: "thought" }>[];
+	/** Keeps it open after it settles, until something follows it. */
+	hold?: boolean;
 }) {
 	const pending = thoughts.some((thought) => thought.active);
 
 	const thoughtText = thoughts.map((thought) => thought.value).join("\n\n");
 
-	const [expanded, setExpanded] = useState(false);
+	const { expanded, auto, toggle } = useAutoExpand(pending || !!hold);
 
 	return (
 		<Box my={10}>
 			<Group
 				className={`shimmer-text ${pending ? "active" : ""}`}
-				onClick={() => setExpanded(!expanded)}
+				onClick={toggle}
 				style={{ cursor: "pointer" }}
 				gap="xs"
 			>
@@ -37,9 +48,11 @@ export default function Thought({
 					py="xs"
 					ml={8}
 				>
-					<div style={{ zoom: 0.9 }}>
-						<Markdown source={thoughtText} streaming={pending} />
-					</div>{" "}
+					<Tail follow={auto} height={TAIL_HEIGHT} content={thoughtText}>
+						<div style={{ zoom: 0.9 }}>
+							<Markdown source={thoughtText} streaming={pending} />
+						</div>
+					</Tail>
 				</Box>
 			</Collapse>
 		</Box>

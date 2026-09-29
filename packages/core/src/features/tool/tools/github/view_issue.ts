@@ -1,6 +1,8 @@
 import { z } from "zod";
 import type { GitHubCapability } from "../../../../core/types/capability.ts";
+import type { ToolDisplay } from "../../types/display.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
+import { GitHubSourceUtils } from "../../utils/GitHubSourceUtils.ts";
 import { GitHubToolUtils } from "../../utils/GitHubToolUtils.ts";
 import {
 	zGitHubComment,
@@ -56,11 +58,27 @@ export const github_view_issue = {
 	}),
 } as const satisfies ToolDefinition;
 
+const display: ToolDisplay<typeof github_view_issue> = {
+	status: ({ input }) => [
+		["Reading", "Read"],
+		{ count: ["issue", "issues"] },
+		{
+			subject: `${input.owner ?? ""}/${input.repository ?? ""}#${input.number ?? ""}`,
+		},
+	],
+	output: ({ output }) =>
+		GitHubSourceUtils.parse(github_view_issue.name, output).map((source) => ({
+			type: "web",
+			source,
+		})),
+};
+
 export const createGitHubViewIssueTool: ToolFactory<
 	Tool<typeof github_view_issue, { github: GitHubCapability }>
 > = (options) => ({
 	...github_view_issue,
 	...options,
+	display,
 	execute: async ({ input }) => {
 		const root = GitHubToolUtils.repositoryPath(input);
 		const number = GitHubToolUtils.segment(input.number);

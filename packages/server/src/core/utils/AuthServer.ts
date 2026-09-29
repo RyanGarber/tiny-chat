@@ -76,7 +76,7 @@ export const AuthServer = userFields.inferClient(
 						);
 
 						// merge all other user tables
-						await db.orm.public.Folder.where({
+						await db.orm.public.Project.where({
 							userId: anonymousUser.user.id,
 						}).updateAndCount({ userId: newUser.user.id });
 

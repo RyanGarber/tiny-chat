@@ -1,6 +1,8 @@
 import { z } from "zod";
 import type { GitHubCapability } from "../../../../core/types/capability.ts";
+import type { ToolDisplay } from "../../types/display.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
+import { GitHubSourceUtils } from "../../utils/GitHubSourceUtils.ts";
 import { GitHubToolUtils, zGitHubUser } from "../../utils/GitHubToolUtils.ts";
 
 const zCommit = z.object({
@@ -52,11 +54,27 @@ export const github_list_commits = {
 	}),
 } as const satisfies ToolDefinition;
 
+const display: ToolDisplay<typeof github_list_commits> = {
+	status: ({ input }) => [
+		["Listing commits in", "Listed commits in"],
+		{
+			count: ["repository", "repositories"],
+			subject: `${input.owner ?? ""}/${input.repository ?? ""}${input.ref ? ` @ ${input.ref}` : ""}${input.path ? `/${input.path}` : ""}`,
+		},
+	],
+	output: ({ output }) =>
+		GitHubSourceUtils.parse(github_list_commits.name, output).map((source) => ({
+			type: "web",
+			source,
+		})),
+};
+
 export const createGitHubListCommitsTool: ToolFactory<
 	Tool<typeof github_list_commits, { github: GitHubCapability }>
 > = (options) => ({
 	...github_list_commits,
 	...options,
+	display,
 	execute: async ({ input }) => {
 		const commits = await GitHubToolUtils.request({
 			github: options.capabilities.github,

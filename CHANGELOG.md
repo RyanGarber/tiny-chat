@@ -1,3 +1,19 @@
+## [0.9.2](https://github.com/RyanGarber/tiny-chat/compare/0.9.1...0.9.2) (2026-09-30)
+
+### Features
+
+* customizable command, folder auto approval ([36f3374](https://github.com/RyanGarber/tiny-chat/commit/36f337490e1fa045be8447f872ca0620c00b67b1-1))
+* feature parity in cli settings menu ([36f3374](https://github.com/RyanGarber/tiny-chat/commit/36f337490e1fa045be8447f872ca0620c00b67b1-3))
+* improved completions ([36f3374](https://github.com/RyanGarber/tiny-chat/commit/36f337490e1fa045be8447f872ca0620c00b67b1))
+* redesigned tool call, result, feedback ui ([36f3374](https://github.com/RyanGarber/tiny-chat/commit/36f337490e1fa045be8447f872ca0620c00b67b1-2))
+
+### Bug Fixes
+
+* subagent model selection not updating tool status ([36f3374](https://github.com/RyanGarber/tiny-chat/commit/36f337490e1fa045be8447f872ca0620c00b67b1-6))
+* tab not switching focused tool call in cli ([36f3374](https://github.com/RyanGarber/tiny-chat/commit/36f337490e1fa045be8447f872ca0620c00b67b1-4))
+* various app, cli fixes and improvements ([36f3374](https://github.com/RyanGarber/tiny-chat/commit/36f337490e1fa045be8447f872ca0620c00b67b1-5))
+
+
 ## [0.9.1](https://github.com/RyanGarber/tiny-chat/compare/0.9.0...0.9.1) (2026-09-27)
 
 ### Bug Fixes

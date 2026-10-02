@@ -35,4 +35,36 @@ describe("DataUtils", () => {
 			]);
 		});
 	});
+
+	describe("getRenderedParts", () => {
+		it("shows a background call with the result it finished with", () => {
+			const data: zData = [
+				[
+					{ type: "toolCall", id: "a", name: "shell_exec", input: {} },
+					{
+						type: "toolResult",
+						id: "a",
+						name: "shell_exec",
+						output: [{ id: "x", type: "text", value: "[Running…]" }],
+					},
+					{
+						type: "interjection",
+						id: "report",
+						value: [{ id: "y", type: "json", value: { code: 0 } }],
+						task: { id: "a", name: "shell_exec" },
+					},
+				],
+			];
+			const parts = DataUtils.getRenderedParts(data);
+			expect(parts).toHaveLength(1);
+			expect(parts[0]).toMatchObject({
+				type: "toolCall",
+				result: {
+					type: "toolResult",
+					id: "a",
+					output: [{ type: "json", value: { code: 0 } }],
+				},
+			});
+		});
+	});
 });

@@ -17,6 +17,20 @@ export const SettingsUtils = {
 		);
 	},
 
+	/**
+	 * The primary folder: the project's first folder, else the user's first.
+	 */
+	primaryFolder: (
+		user?: { settings?: zSettings | null } | null,
+		project?: { settings?: zSettings | null } | null,
+	): string | null =>
+		project?.settings?.folders?.[0]?.path ??
+		user?.settings?.folders?.[0]?.path ??
+		null,
+
+	/**
+	 * Merges settings with the context's entries last.
+	 */
 	merge: ({
 		to,
 		from,
@@ -29,25 +43,7 @@ export const SettingsUtils = {
 			const overrides = TypeUtils.deepClone(from);
 			for (const key of zSettings.keyof().options) {
 				if (overrides[key] === undefined) continue;
-				if (key === "commandWhitelist") {
-					merged.commandWhitelist = [
-						...new Set([
-							...(merged.commandWhitelist ?? []),
-							...(overrides.commandWhitelist ?? []),
-						]),
-					];
-				} else if (key === "folders") {
-					// The override's paths come first so its first path is the working
-					// directory, and its `writable` wins for a path listed in both.
-					const paths = new Set(overrides.folders?.map(({ path }) => path));
-					merged.folders = [
-						...(overrides.folders ?? []),
-						...(merged.folders ?? []).filter(({ path }) => !paths.has(path)),
-					];
-				} else if (
-					Array.isArray(merged[key]) &&
-					Array.isArray(overrides[key])
-				) {
+				if (Array.isArray(merged[key]) && Array.isArray(overrides[key])) {
 					Object.assign(merged, { [key]: [...merged[key], ...overrides[key]] });
 				} else if (
 					merged[key] !== null &&
@@ -75,7 +71,7 @@ export const SettingsUtils = {
 					? from.codeTheme
 					: codeThemes[0],
 			instructions: from?.instructions ?? [],
-			commandWhitelist: from?.commandWhitelist ?? [],
+			commands: from?.commands ?? [],
 			folders: from?.folders ?? [],
 			memoryBudget: from?.memoryBudget ?? 2500,
 			embeddingConfig: from?.embeddingConfig ?? null,

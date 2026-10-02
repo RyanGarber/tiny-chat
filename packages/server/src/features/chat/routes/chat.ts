@@ -12,15 +12,18 @@ import { ChatService } from "../services/ChatService.ts";
 export const chat = router({
 	activate: procedure
 		.input(
-			z.object({ chat: z.string().nullish(), project: z.string().nullish() }),
+			z.object({
+				chatId: z.string().nullish(),
+				projectId: z.string().nullish(),
+			}),
 		)
 		.mutation(async ({ ctx, input }) => {
 			const project = await ChatService.getWorkingDirectory({
 				user: ctx.session.user,
-				chat: input.chat,
-				project: input.project,
+				chat: input.chatId,
+				project: input.projectId,
 			});
-			if (input.chat) FileService.activate(ctx.session.user.id, input.chat);
+			if (input.chatId) FileService.activate(ctx.session.user.id, input.chatId);
 			return project;
 		}),
 

@@ -3,30 +3,21 @@ import type { MessageState } from "@tiny-chat/core/features/data/types/message.t
 import type { zToolCallPart } from "@tiny-chat/core/features/data/types/part.ts";
 import type { ToolControls as ToolControlsType } from "@tiny-chat/core/features/tool/types/display.ts";
 import { useCallback, useMemo, useState } from "react";
-import Box from "../../../core/components/Box.tsx";
-import Text from "../../../core/components/Text.tsx";
 import { useWorkingStatus } from "../../../core/hooks/useWorkingStatus.ts";
 import Completions from "../../editor/components/Completions.tsx";
-import Textarea from "../../editor/components/Textarea.tsx";
 import { useEditorStore } from "../../editor/stores/useEditorStore.ts";
+import Textarea from "../../textarea/components/Textarea.tsx";
 
-interface Option {
-	label: string;
-	approved?: boolean;
-}
-
-/** An item a field's value is picked from, or the submit row when none. */
 interface Item {
 	name?: string;
 	value: string;
 	field?: string;
 	custom?: boolean;
+	approved?: boolean;
+	submit?: boolean;
 }
 
-/**
- * What the user answers a tool call with: each field's options, one of which
- * may be written in, then approve / deny or continue.
- */
+/** Write-in fields precede the approval/continue choices; suggestions fill a field. */
 export default function ToolControls({
 	message,
 	part,
@@ -40,7 +31,6 @@ export default function ToolControls({
 }) {
 	const focusedFeedbackId = useEditorStore((s) => s.focusedFeedbackId);
 	const isFocused = isNext && focusedFeedbackId === part.id;
-
 	const { values, setValue, submit, locked, mutation } = useToolFeedback({
 		message,
 		part,
@@ -48,70 +38,44 @@ export default function ToolControls({
 	});
 	useWorkingStatus(mutation);
 
-	const options = useMemo(
-		(): Option[] =>
-			controls.approval
-				? [
-						{ label: "approve", approved: true },
-						{ label: "deny", approved: false },
-					]
-				: [{ label: "continue" }],
-		[controls.approval],
-	);
 	const [selected, setSelected] = useState(0);
-
-	const pick = useCallback(
-		(offset: number) => {
-			setSelected((previous) =>
-				Math.min(Math.max(previous + offset, 0), options.length - 1),
-			);
-		},
-		[options.length],
+	// Completions resets to the first item whenever this changes identity.
+	const updateSelected = useCallback(
+		(update: (previous?: number) => number) =>
+			setSelected((previous) => update(previous)),
+		[],
 	);
-
-	const groups = useMemo(
-		() =>
-			controls.fields.length
-				? controls.fields.map((field) => ({
-						items: [
-							...field.options.map(
-								(option): Item => ({
-									name: option,
-									value: option,
-									field: field.name,
-								}),
-							),
-							...(field.custom
-								? [
-										{
-											value: `custom:${field.name}`,
-											field: field.name,
-											custom: true,
-										} satisfies Item,
-									]
-								: []),
-						],
-					}))
-				: [
-						{
-							items: [
-								{
-									name: controls.approval ? "Approval" : "Continue",
-									value: "submit",
-								} satisfies Item,
-							],
-						},
-					],
-		[controls],
-	);
-
-	const placeholder = useMemo(
-		() =>
-			Object.fromEntries(
-				controls.fields.map((field) => [field.name, field.placeholder]),
-			),
-		[controls.fields],
-	);
+	const [suggestionIndex, setSuggestionIndex] = useState<
+		Record<string, number>
+	>({});
+	const groups = useMemo(() => {
+		const fields = controls.fields.map((field) => ({
+			items: [
+				...(field.custom
+					? [
+							{
+								value: `custom:${field.name}`,
+								field: field.name,
+								custom: true,
+							} satisfies Item,
+						]
+					: field.options.map(
+							(option): Item => ({
+								name: option,
+								value: option,
+								field: field.name,
+							}),
+						)),
+			],
+		}));
+		const actions: Item[] = controls.approval
+			? [
+					{ name: "approve", value: "approve", submit: true, approved: true },
+					{ name: "deny", value: "deny", submit: true, approved: false },
+				]
+			: [{ name: "continue", value: "continue", submit: true }];
+		return [...fields, { items: actions }];
+	}, [controls]);
 
 	return (
 		<Completions<{ items: Item[] }, Item>
@@ -121,79 +85,97 @@ export default function ToolControls({
 					useEditorStore.setState({ focusedFeedbackId: part.id });
 			}}
 			groups={groups}
-			renderItem={({ item, selected }) => {
+			selected={selected}
+			setSelected={updateSelected}
+			renderItem={({ item, selected: isSelected }) => {
 				if (item.custom && item.field) {
 					const field = item.field;
 					return (
 						<Textarea
-							focus={isFocused && selected && !locked}
+							focus={isFocused && isSelected && !locked}
 							value={values[field] ?? ""}
 							onChange={(value) => setValue(field, value)}
-							initialLineCount={1}
-							autoNewLineLimit={0}
-							placeholder={placeholder[field] ?? "something else..."}
+							// Enter moves on to the submit action rather than breaking the line.
+							onEnter={() => {}}
+							placeholder={
+								controls.fields.find((entry) => entry.name === field)
+									?.placeholder ?? "something else..."
+							}
 						/>
 					);
 				}
 				return item.name;
 			}}
-			after={
-				<Box gap={2}>
-					{options.map((option, index) => {
-						const active = isFocused && !locked && index === selected;
-						return (
-							<Text
-								key={option.label}
-								color={active ? "blue" : "gray"}
-								bold={active}
-								dimColor={locked}
-							>
-								{active ? "▶ " : "  "}
-								{option.label}
-							</Text>
-						);
-					})}
-				</Box>
-			}
 			onInput={({ item, key, pointer }) => {
 				if (locked || !isNext) return false;
 				if (pointer) useEditorStore.setState({ focusedFeedbackId: part.id });
 				else if (!isFocused) return false;
 
-				// Shift belongs to the text area, which selects its text by it.
+				if (key.shift && key.tab) {
+					const field =
+						controls.fields.find(
+							(entry) => entry.name === item?.field && entry.options.length,
+						) ??
+						controls.fields.find(
+							(entry) => entry.custom && entry.options.length,
+						);
+					if (field) {
+						const index = (suggestionIndex[field.name] ?? -1) + 1;
+						setValue(field.name, field.options[index % field.options.length]);
+						setSuggestionIndex((previous) => ({
+							...previous,
+							[field.name]: index,
+						}));
+						const position = groups
+							.flatMap((group) => group.items)
+							.findIndex((entry) => entry.custom && entry.field === field.name);
+						if (position >= 0) setSelected(position);
+					}
+					return false;
+				}
+				// Shift and the arrows belong to the textarea's text selection.
 				if (key.shift) return false;
-
-				// A press on the write-in field is how the cursor is put into it,
-				// and how a selection is started, so it is not taken as a send.
+				// Clicking a textarea positions its cursor, not the submit action.
 				if (pointer && item?.custom) return false;
 
-				if (key.leftArrow) pick(-1);
-				if (key.rightArrow) pick(1);
 				if (key.return && item) {
-					const answer: Record<string, string> = {};
 					if (item.field) {
-						answer[item.field] = item.custom
-							? (values[item.field] ?? "")
-							: item.value;
-						if (!answer[item.field]) return;
+						if (item.custom) {
+							setSelected(
+								groups
+									.flatMap((group) => group.items)
+									.findIndex((entry) => entry.submit),
+							);
+							return false;
+						}
+						setValue(item.field, item.value);
+						return false;
 					}
-					// Every field has to have something before it can be sent.
-					const complete = controls.fields.every(
-						(field) => !!(answer[field.name] ?? values[field.name]),
-					);
-					if (!complete) {
-						if (item.field) setValue(item.field, answer[item.field]);
-						return;
+					if (!item.submit) return false;
+					if (controls.fields.some((field) => !values[field.name])) {
+						const position = groups
+							.flatMap((group) => group.items)
+							.findIndex((entry) =>
+								controls.fields.some(
+									(field) => field.name === entry.field && !values[field.name],
+								),
+							);
+						if (position >= 0) setSelected(position);
+						return false;
 					}
-
 					useEditorStore.setState({ focusedFeedbackId: null });
-					submit(options[selected].approved, answer);
+					submit(item.approved);
+					return false;
 				}
 			}}
-			actions={
-				options.length > 1 ? [{ key: "←→", name: "pick" }, "select"] : []
-			}
-			minHeight={4}
+			actions={[
+				"select",
+				...(controls.fields.some(
+					(field) => field.custom && field.options.length,
+				)
+					? [{ key: "shift+tab", name: "suggestion" }]
+					: []),
+			]}
 		/>
 	);
 }

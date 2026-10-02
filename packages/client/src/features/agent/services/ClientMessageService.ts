@@ -43,6 +43,7 @@ export const ClientMessageService = {
 		mcpTools,
 		providers,
 		skills,
+		resume = true,
 	}: {
 		client: Client;
 		user: zUser;
@@ -52,6 +53,8 @@ export const ClientMessageService = {
 		skills: zSkill[];
 		mcpTools: Toolset<any>[];
 		toolResults?: zDataPart[];
+		/** False to only record `toolResults`, leaving the model to wait. */
+		resume?: boolean;
 	}): Promise<void> => {
 		console.log(
 			"[ClientMessageService] handling model message",
@@ -84,6 +87,8 @@ export const ClientMessageService = {
 			chat,
 			toolResults,
 		);
+
+		if (!resume) return;
 
 		useMessageQueueStore.getState().setActive(chat.id, true);
 		if (DataUtils.isMissingToolResult(response)) {

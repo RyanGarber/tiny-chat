@@ -43,17 +43,6 @@ export default function Commands({
 
 	const cliCommands = useMemo<CommandItem[]>(
 		() => [
-			{ name: "projects", value: "projects", run: () => setPage("projects") },
-			{
-				name: "chats",
-				value: "chats",
-				run: () => setPage("chats"),
-			},
-			{
-				name: "settings",
-				value: "settings",
-				run: () => setPage("settings"),
-			},
 			{
 				name: "quit",
 				value: "quit",
@@ -90,19 +79,15 @@ export default function Commands({
 						run: () => client.auth.signOut(),
 					},
 		],
-		[
-			isAnonymous,
-			requestClone,
-			doUpdate,
-			version,
-			setPage,
-			setStatus,
-			unsetStatus,
-		],
+		[isAnonymous, requestClone, doUpdate, version, setStatus, unsetStatus],
 	);
 
 	const { getCommands } = useCommands({
 		commands: cliCommands,
+		onOpenSettings: () => setPage("settings"),
+		onOpenChats: () => setPage("chats"),
+		onOpenFiles: () => setPage("files"),
+		onOpenProjects: () => setPage("projects"),
 		onOpenTools: () => setPage("tools"),
 		onOpenSkills: () => setPage("skills"),
 		onOpenUploads: () => setPage("uploads"),

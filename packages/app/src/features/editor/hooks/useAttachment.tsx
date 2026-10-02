@@ -16,7 +16,7 @@ import {
 } from "#app/features/editor/components/Completions.tsx";
 import { NodeUtils } from "#app/features/editor/utils/NodeUtils.ts";
 import AttachmentView from "#app/features/part/components/Attachment.tsx";
-import FileTag from "#app/features/upload/components/FileTag.tsx";
+import SourceTag from "#app/features/upload/components/SourceTag.tsx";
 
 interface AttachmentGroup extends CompletionGroup<AttachmentItem> {
 	items: AttachmentItem[];
@@ -138,7 +138,7 @@ const Attachment = Node.create({
 					renderEmpty: () => "No matches",
 					renderItem: (item) => {
 						return (
-							<FileTag
+							<SourceTag
 								path={item.value}
 								directory={item.directory}
 								miw={0}
@@ -153,7 +153,7 @@ const Attachment = Node.create({
 										textOverflow: "ellipsis",
 									}}
 								>{`${item.name}${item.directory ? "/" : ""}`}</Text>
-							</FileTag>
+							</SourceTag>
 						);
 					},
 					onTab: ({ item, editor, range, query }) => {

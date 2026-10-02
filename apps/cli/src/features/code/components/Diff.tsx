@@ -4,6 +4,7 @@ import { useCode } from "@tiny-chat/client/core/hooks/useCode.ts";
 import { DiffUtils } from "@tiny-chat/core/features/file/utils/DiffUtils.ts";
 import { Text } from "ink";
 import { useMemo } from "react";
+import Content from "../../../core/components/Content.tsx";
 import { CliUtils } from "../../../core/utils/CliUtils.ts";
 import DiffLines from "./DiffLines.tsx";
 import Highlight from "./Highlight.tsx";
@@ -37,14 +38,17 @@ export default function Diff({
 
 	const { highlighted } = useCode({ code: "", language });
 
+	// the app's first format is the file before the edit
 	return (
-		<Highlight code={highlighted} {...props}>
-			<DiffLines
-				diff={diffShown}
-				highlighted={highlighted}
-				language={language}
-			/>
-			{overflow > 0 && <Text dimColor>{` ⋮ ${overflow} more lines`}</Text>}
-		</Highlight>
+		<Content formatter={() => after} backgroundColor={highlighted.bg}>
+			<Highlight code={highlighted} {...props}>
+				<DiffLines
+					diff={diffShown}
+					highlighted={highlighted}
+					language={language}
+				/>
+				{overflow > 0 && <Text dimColor>{` ⋮ ${overflow} more lines`}</Text>}
+			</Highlight>
+		</Content>
 	);
 }

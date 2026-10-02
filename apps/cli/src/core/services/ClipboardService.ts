@@ -3,8 +3,10 @@ import {
 	getText,
 	hasImage,
 	hasText,
+	setImageBinary,
 	setText,
 } from "@crosscopy/clipboard";
+import { CliUtils } from "../utils/CliUtils.ts";
 
 /** What the clipboard was holding when it was read. */
 export type ClipboardContent =
@@ -23,13 +25,21 @@ export type ClipboardContent =
  */
 export const ClipboardService = {
 	/**
-	 * Hands text to the clipboard. Nothing to fall back on where the system has
-	 * no clipboard to write to.
+	 * Hands plain text to the clipboard, removing terminal escape sequences.
+	 * Nothing to fall back on where the system has no clipboard to write to.
 	 */
 	copy: (text: string) => {
 		if (!text) return;
-		setText(text).catch((error) => {
+		setText(CliUtils.plain(text)).catch((error) => {
 			console.warn("[ClipboardService] failed to copy", error);
+		});
+	},
+
+	/** Hands an encoded image (PNG, JPEG, …) to the clipboard. */
+	copyImage: (data: Uint8Array) => {
+		if (!data.length) return;
+		setImageBinary(Array.from(data)).catch((error) => {
+			console.warn("[ClipboardService] failed to copy image", error);
 		});
 	},
 

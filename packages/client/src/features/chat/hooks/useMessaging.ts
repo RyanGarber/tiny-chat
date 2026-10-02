@@ -296,6 +296,14 @@ export const useMessaging = () => {
 					error: true,
 					output: ToolCallUtils.getRejection(),
 				};
+			} else if (ToolCallUtils.isBackgrounded({ tool, part })) {
+				// The generation it resumes runs it, so the model can carry on.
+				result = {
+					type: "toolResult",
+					id: part.id,
+					name: part.name,
+					output: ToolCallUtils.getBackground({ id: part.id }),
+				};
 			} else {
 				result = {
 					...(await ClientAgentService.runTool({
@@ -322,6 +330,11 @@ export const useMessaging = () => {
 				providers: providers.data,
 				skills,
 				mcpTools: mcpTools.data ?? [],
+				// An interrupted call waits for the user's next word, not the model's.
+				resume: !(
+					result.type === "toolResult" &&
+					ToolCallUtils.isInterruption(result.output)
+				),
 			});
 		},
 	});

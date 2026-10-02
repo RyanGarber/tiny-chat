@@ -4,6 +4,7 @@ import type { Compaction } from "@tiny-chat/core/features/agent/services/AgentTo
 import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
 import type { RenderedPart } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
 import { ToolCallUtils } from "@tiny-chat/core/features/tool/utils/ToolCallUtils.ts";
+import { ToolUtils } from "@tiny-chat/core/features/tool/utils/ToolUtils.ts";
 import Box from "../../../core/components/Box.tsx";
 import Text from "../../../core/components/Text.tsx";
 import ScrollTail from "./ScrollTail.tsx";
@@ -45,6 +46,13 @@ export default function ToolGroup({
 	const nextFeedbackId = useMessageStore((s) => s.nextFeedbackId);
 
 	const group = ToolCallUtils.getGroup({ parts, toolsets });
+	const hasFeedback = parts.some(
+		(part) =>
+			ToolCallUtils.getState({
+				part,
+				tool: ToolUtils.find({ toolsets, part }).tool,
+			}) === "feedback",
+	);
 	const { expanded, auto, toggle } = useAutoExpand(group.pending || !!hold);
 
 	const items = parts.map((part) => (
@@ -76,7 +84,7 @@ export default function ToolGroup({
 						paddingLeft={0}
 						backgroundColor={undefined}
 					>
-						<ScrollTail follow={auto}>
+						<ScrollTail follow={auto && !hasFeedback}>
 							<Box flexDirection="column" gap={1} marginTop={1}>
 								{items}
 							</Box>

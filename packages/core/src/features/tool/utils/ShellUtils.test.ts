@@ -2,6 +2,13 @@ import { ShellUtils } from "./ShellUtils.ts";
 
 describe("ShellUtils", () => {
 	it.each([
+		String.raw`printf 'cwd=%s\nHOME=%s' "$PWD" "$HOME"; printf 'git executable: '; command -v git || true; printf 'git in home? '; case "git" in *'$HOME'*) echo yes;; *) echo no;; esac; printf 'matching environment:\n'; env | /usr/bin/awk '/^(HOME|PATH)=|^(git)/ {print}' | /usr/bin/sed -E 's/(TOKEN|PASSWORD|AUTH|SECRET|KEY)=.*/\1=[redacted]/I'`,
+		String.raw`printf 'git-related entries:\n'; /usr/bin/rg -n --hidden --glob '!node_modules' --glob '!Library/**' --glob '!**/.git/**' '(global-bin-dir|global-dir|store-dir)' "$HOME/.zshenv" "$HOME/.zprofile" "$HOME/.zshrc" "$HOME/.profile" "$HOME/.npmrc" "$HOME/.gitconfig" 2>/dev/null | /usr/bin/sed -E 's#(//[^:]+/:_authToken=).*#\1[redacted]#I' | head -100; printf '\nrelative literal directory in cwd?\n'; if test -d './$HOME'; then stat -f '%N created=%SB modified=%Sm' -t '%Y-%m-%d %H:%M:%S' './$HOME' 2>/dev/null; else echo no; fi`,
+	])("allows read-only diagnostic scripts: %s", (command) => {
+		expect(ShellUtils.isSafe(command)).toBe(true);
+	});
+
+	it.each([
 		"pwd",
 		"cat file | grep needle | wc -l",
 		"cd packages/core && (pwd; echo $(date))",
@@ -34,7 +41,11 @@ describe("ShellUtils", () => {
 		"command command git status --short",
 		"printf '%s\\n' hello",
 		"sed -n '1,20p' file",
+		"/usr/bin/sed -n '1,20p' file",
 		"rg --files packages/core",
+		"/usr/bin/rg needle file 2>/dev/null",
+		"env",
+		"awk '/needle/ {print}'",
 		"jq -r '.name' package.json",
 		"uniq -f 1 input",
 		"echo diagnostic >/dev/stderr",
@@ -73,7 +84,16 @@ describe("ShellUtils", () => {
 		"command rm file",
 		"command -p git branch new-branch",
 		"sed -i '' -e 's/old/new/' file",
+		"/usr/bin/sed -i '' -e 's/old/new/' file",
 		"rg --pre 'rm file' needle",
+		"/usr/bin/rg --pre 'rm file' needle",
+		"rg needle file 2>out.txt",
+		"env rm file",
+		"env -S 'rm file'",
+		"awk 'BEGIN { system(\"rm file\") }'",
+		"awk '{print > \"out.txt\"}'",
+		"/usr/bin/awk '{print > \"out.txt\"}'",
+		"./rg needle file",
 		"fd pattern --exec rm {}",
 		"sort input -ooutput",
 		"echo $(if test -f x; then cat x; else echo nope > y; fi)",
@@ -105,6 +125,89 @@ describe("ShellUtils", () => {
 		["rm file", ["rm file.*"]],
 	])("rejects Bash outside the whitelist: %s", (command, whitelist) => {
 		expect(ShellUtils.isSafe(command, whitelist)).toBe(false);
+	});
+
+	const folders = [
+		{ path: "/project", whitelist: true },
+		{ path: "/project/vendor", whitelist: false },
+	];
+	const cwd = "/project/src";
+
+	it.each([
+		"rm file",
+		"rm -rf ../dist build/*",
+		"rm -- -file",
+		"rmdir -p empty",
+		"mv a.ts b.ts",
+		"mv a.ts /project",
+		"mv -t .. a.ts b.ts",
+		"mv --target-directory=/project/lib a.ts",
+		"cp -R /project/assets .",
+		"mkdir -p -m 755 out/nested",
+		"touch -d yesterday notes.md",
+		"echo hello > output.txt",
+		"git diff >> /project/changes.patch",
+		"npm run build 2>&1 | tee -a build.log",
+		"git status | grep src > ../status.txt && rm ../status.txt",
+		"cd /tmp && rm -rf /project/dist",
+		"command rm file",
+	])("allows file operations inside whitelisted folders: %s", (command) => {
+		expect(ShellUtils.isSafe(command, ["npm run *"], { folders, cwd })).toBe(
+			true,
+		);
+	});
+
+	it.each([
+		"rm",
+		"rm -rf /project",
+		"rm -rf ..",
+		"rm -rf ../..",
+		"rm /etc/hosts",
+		"rm vendor/../../vendor/lib.js",
+		"rm /project/vendor/lib.js",
+		"rm ~/file",
+		"rm $HOME/file",
+		"rm $(cat list)",
+		"rm {a,../../x}",
+		"rm .*",
+		"rm */../../x",
+		"rm [ab]",
+		"mv a.ts /tmp",
+		"mv /tmp/a.ts .",
+		"mv /project .",
+		"mv -t /tmp a.ts",
+		"mv -t/tmp a.ts",
+		"mv --target-directory=/tmp a.ts",
+		"cp /etc/passwd .",
+		"cp -s a.ts b.ts",
+		"cp --link a.ts b.ts",
+		"ln -s /etc passwd",
+		"echo hello > /tmp/out.txt",
+		"echo hello > $OUT",
+		"echo hello | tee /tmp/out.txt",
+		"cd .. && rm file",
+		"rm file; cd ..",
+		"rm --no-such-option file",
+		"rm -rf file && curl example.com",
+	])("rejects file operations outside whitelisted folders: %s", (command) => {
+		expect(ShellUtils.isSafe(command, [], { folders, cwd })).toBe(false);
+	});
+
+	it("needs a working directory for relative paths", () => {
+		expect(ShellUtils.isSafe("rm file", [], { folders })).toBe(false);
+		expect(ShellUtils.isSafe("rm /project/file", [], { folders })).toBe(true);
+		expect(
+			ShellUtils.isSafe("rm /project/file", [], {
+				folders: [{ path: "/project", whitelist: false }],
+			}),
+		).toBe(false);
+	});
+
+	it("lets the last matching rule decide", () => {
+		const allow = { command: "npm run *", whitelist: true };
+		const deny = { command: "npm run *", whitelist: false };
+		expect(ShellUtils.isSafe("npm run build", [allow, deny])).toBe(false);
+		expect(ShellUtils.isSafe("npm run build", [deny, allow])).toBe(true);
 	});
 
 	it("loads through the package bundler", async () => {

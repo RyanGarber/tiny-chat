@@ -1,6 +1,7 @@
 import type {
 	zData,
 	zDataPart,
+	zInterjectionPart,
 	zThoughtPart,
 	zToolCallPart,
 	zToolResultPart,
@@ -84,15 +85,30 @@ export const DataUtils = {
 					active: thinking && i === parts.length - 1,
 				});
 			} else if (part.type === "toolCall") {
+				// A background call shows the result it finished with, once it has.
+				const finished = parts.find(
+					(p): p is zInterjectionPart =>
+						p.type === "interjection" && p.task?.id === part.id,
+				);
 				renderedParts.push({
 					...part,
-					result: parts.find(
-						(p): p is zToolResultPart =>
-							p.type === "toolResult" && p.id === part.id,
-					),
+					result: finished?.task
+						? {
+								type: "toolResult",
+								id: finished.task.id,
+								name: finished.task.name,
+								error: finished.task.error,
+								output: finished.value,
+							}
+						: parts.find(
+								(p): p is zToolResultPart =>
+									p.type === "toolResult" && p.id === part.id,
+							),
 				});
 			} else if (part.type === "toolResult") {
 				// skip
+			} else if (part.type === "interjection" && part.task) {
+				// shown as the result of the call it reports on
 			} else {
 				renderedParts.push(part);
 			}

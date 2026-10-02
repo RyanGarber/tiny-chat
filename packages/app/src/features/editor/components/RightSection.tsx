@@ -1,20 +1,14 @@
 import {
 	ActionIcon,
-	Box,
 	Button,
 	type DefaultMantineColor,
 	Popover,
-	Select,
-	Slider,
-	Stack,
 	Text,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { GearIcon, PaperPlaneTiltIcon, StopIcon } from "@phosphor-icons/react";
 import { AgentStreamService } from "@tiny-chat/client/core/services/StreamService.ts";
 import { useConfig } from "@tiny-chat/client/features/agent/hooks/useConfig.ts";
-import { useSkills } from "@tiny-chat/client/features/agent/hooks/useSkills.ts";
-import { useTools } from "@tiny-chat/client/features/agent/hooks/useTools.ts";
 import { useStreamStore } from "@tiny-chat/client/features/agent/stores/useStreamStore.ts";
 import { useChat } from "@tiny-chat/client/features/chat/hooks/useChat.ts";
 import { useMessaging } from "@tiny-chat/client/features/chat/hooks/useMessaging.ts";
@@ -23,11 +17,10 @@ import type {
 	Categories,
 	Usage,
 } from "@tiny-chat/client/features/editor/hooks/useEstimatedTokens.ts";
-import { ToolUtils } from "@tiny-chat/core/features/tool/utils/ToolUtils.ts";
-import { useEffect, useMemo } from "react";
-import ModelSelect from "#app/core/components/ModelSelect.tsx";
+import { useEffect } from "react";
 import { AppService } from "#app/core/services/AppService.ts";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
+import ConfigPanel from "#app/features/editor/components/ConfigPanel.tsx";
 import TokenUsage from "#app/features/editor/components/TokenUsage.tsx";
 import { useEditorStore } from "#app/features/editor/stores/useEditorStore.ts";
 
@@ -44,21 +37,8 @@ export default function RightSection({
 }) {
 	const { chat } = useChat();
 	const { sendMessage } = useMessaging();
-	const { config, setConfig, modelArgs, setModelArg } = useConfig();
+	const { config, setConfig } = useConfig();
 	const currentModal = useAppStore((state) => state.currentModal);
-
-	const { toolsets } = useTools();
-	const enabledTools = useMemo(
-		() => ToolUtils.checkAll({ toolsets, config }).tools,
-		[toolsets, config],
-	);
-
-	const { skills } = useSkills();
-	const enabledSkills = useMemo(
-		() =>
-			skills.filter((s) => config.skills?.includes(s.path)).map((s) => s.name),
-		[skills, config.skills],
-	);
 
 	const stream = useStreamStore((state) =>
 		state.chatAgentStreams.get(chat.data?.id ?? ""),
@@ -124,75 +104,13 @@ export default function RightSection({
 					)}
 				</Popover.Target>
 				<Popover.Dropdown maw={400} className="right-section">
-					<ModelSelect
-						flex={1}
-						variant="subtle"
-						comboboxProps={{
-							offset: 0,
-						}}
-						classNames={{
-							dropdown: "right-section",
-						}}
-						configValue={config}
-						onConfigChange={(value) => value && setConfig(value)}
-						feature="language"
+					<ConfigPanel
+						config={config}
+						setConfig={setConfig}
+						onMore={(capabilities) => AppService.openCapabilities(capabilities)}
 						disabled={disabled}
+						className="right-section"
 					/>
-					<Button
-						fullWidth
-						variant="transparent"
-						c="dimmed"
-						size="xs"
-						onClick={() => AppService.openCapabilities()}
-					>
-						{enabledTools.length} TOOL{enabledTools.length !== 1 ? "S" : ""}{" "}
-						&middot; {enabledSkills.length} SKILL
-						{enabledSkills.length !== 1 ? "S" : ""}
-					</Button>
-					<Stack gap="xs" mt={5}>
-						{modelArgs?.map((arg) => (
-							<Box key={arg.name}>
-								<Text size="xs" mb={2} c="dimmed">
-									{arg.name}
-								</Text>
-								{arg.type === "list" && (
-									<Select
-										key={arg.name}
-										data={arg.values}
-										size="xs"
-										value={
-											(config.args as Record<string, string> | undefined)?.[
-												arg.name
-											] ?? arg.default
-										}
-										comboboxProps={{
-											offset: 0,
-											position: "top",
-										}}
-										onChange={(value) => setModelArg(arg.name, value)}
-										disabled={disabled}
-										classNames={{
-											dropdown: "right-section",
-										}}
-									/>
-								)}
-								{arg.type === "range" && (
-									<Slider
-										min={arg.min}
-										max={arg.max}
-										step={(arg.max - arg.min) / 50}
-										value={
-											(config.args as Record<string, number> | undefined)?.[
-												arg.name
-											] ?? arg.default
-										}
-										onChange={(value) => setModelArg(arg.name, value)}
-										disabled={disabled}
-									/>
-								)}
-							</Box>
-						))}
-					</Stack>
 				</Popover.Dropdown>
 			</Popover>
 			<ActionIcon

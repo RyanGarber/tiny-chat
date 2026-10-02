@@ -1,9 +1,12 @@
+import chalk from "chalk";
 import { type ParsedScript, parse, type Redirect, type Word } from "unbash";
 import type {
 	Capabilities,
 	ShellCapability,
 } from "../../../core/types/capability.ts";
 import { PathUtils } from "../../file/utils/PathUtils.ts";
+
+const AUDIT = false;
 
 const WRITE_REDIRECTS = new Set([">", ">>", "<>", ">|", "&>", "&>>"]);
 const FIND_WRITE_ACTIONS = new Set([
@@ -111,6 +114,73 @@ const GIT_CONFIG_OPTIONS_WITH_VALUES = new Set([
 	"-f",
 ]);
 
+/** Commands that change the working directory, which relative paths depend on. */
+const DIRECTORY_COMMANDS = new Set(["cd", "popd", "pushd"]);
+
+/**
+ * File operations allowed inside whitelisted folders. `flags` are the short
+ * options that take no value; `values` take one, which is either a path that
+ * must also be inside a folder or something else to skip over. Anything
+ * else — notably the link options of `cp`, which could plant an escape
+ * hatch — is rejected.
+ */
+const FILE_OPERATIONS: Record<
+	string,
+	{
+		flags: string;
+		values?: Record<string, "path" | "skip">;
+		/** Which operands are removed, so must not be a folder itself. */
+		removes: "all" | "sources" | "none";
+	}
+> = {
+	cp: {
+		flags: "aRrfHiLnPpvxbTuZ",
+		values: { t: "path", S: "skip" },
+		removes: "none",
+	},
+	mkdir: { flags: "pv", values: { m: "skip" }, removes: "none" },
+	mv: {
+		flags: "bfhinTuvZ",
+		values: { t: "path", S: "skip" },
+		removes: "sources",
+	},
+	rm: { flags: "dfiIPrRvx", removes: "all" },
+	rmdir: { flags: "pv", removes: "all" },
+	tee: { flags: "aip", removes: "none" },
+	touch: {
+		flags: "acfhm",
+		values: { d: "skip", r: "skip", t: "skip" },
+		removes: "none",
+	},
+};
+const FILE_OPERATION_LONG_OPTIONS: Record<string, "flag" | "path" | "skip"> = {
+	"--append": "flag",
+	"--archive": "flag",
+	"--backup": "flag",
+	"--date": "skip",
+	"--dir": "flag",
+	"--force": "flag",
+	"--ignore-fail-on-non-empty": "flag",
+	"--ignore-interrupts": "flag",
+	"--interactive": "flag",
+	"--mode": "skip",
+	"--no-clobber": "flag",
+	"--no-create": "flag",
+	"--no-dereference": "flag",
+	"--no-preserve": "flag",
+	"--no-target-directory": "flag",
+	"--one-file-system": "flag",
+	"--parents": "flag",
+	"--preserve": "flag",
+	"--recursive": "flag",
+	"--reference": "skip",
+	"--strip-trailing-slashes": "flag",
+	"--suffix": "skip",
+	"--target-directory": "path",
+	"--update": "flag",
+	"--verbose": "flag",
+};
+
 const isStaticWord = (word: Word): boolean =>
 	(word.parts ?? []).every((part) => {
 		switch (part.type) {
@@ -126,18 +196,162 @@ const isStaticWord = (word: Word): boolean =>
 		}
 	});
 
-const hasWriteRedirect = (redirect: Redirect): boolean => {
-	if (WRITE_REDIRECTS.has(redirect.operator)) {
-		return ![
-			"/dev/fd/1",
-			"/dev/fd/2",
-			"/dev/null",
-			"/dev/stderr",
-			"/dev/stdout",
-		].includes(redirect.target?.value ?? "");
+type Folder = { path: string; whitelist: boolean };
+
+type Context = {
+	whitelist: Whitelist;
+	folders: readonly Folder[];
+	/** Unset when relative paths cannot be trusted to resolve against it. */
+	cwd?: string;
+};
+
+/** Resolves `.` and `..` lexically; relative paths need a `cwd`. */
+const resolvePath = (path: string, cwd?: string): string | undefined => {
+	if (!path.startsWith("/")) {
+		if (!cwd?.startsWith("/")) return undefined;
+		path = `${cwd}/${path}`;
 	}
-	if (redirect.operator !== ">&") return false;
-	return !redirect.target || !/^(?:[0-9]+|-)$/.test(redirect.target.value);
+	const parts: string[] = [];
+	for (const part of path.split("/")) {
+		if (!part || part === ".") continue;
+		if (part === "..") parts.pop();
+		else parts.push(part);
+	}
+	return `/${parts.join("/")}`;
+};
+
+/**
+ * The absolute path a word names, if it can be known without running
+ * anything. Tildes, braces and globs that could match `..` or a dotfile
+ * parent are refused rather than expanded.
+ */
+const getStaticPath = (word: Word, cwd?: string): string | undefined => {
+	if (!isStaticWord(word)) return undefined;
+	const { value } = word;
+	if (!value || value.startsWith("~") || /[{}[\]]/.test(value)) {
+		return undefined;
+	}
+	const segments = value.split("/");
+	if (
+		/[*?]/.test(value) &&
+		segments.some((segment) => segment === ".." || /^\.[^/]*[*?]/.test(segment))
+	) {
+		return undefined;
+	}
+	return resolvePath(value, cwd);
+};
+
+/**
+ * Whether the last folder containing `path` is whitelisted. A `strict` path
+ * must also lie beneath the folder rather than be the folder itself.
+ */
+const isPathWhitelisted = (
+	path: string,
+	folders: readonly Folder[],
+	strict = false,
+): boolean => {
+	const folder = folders.findLast(
+		(folder) =>
+			path === folder.path ||
+			path.startsWith(folder.path === "/" ? "/" : `${folder.path}/`),
+	);
+	return !!folder?.whitelist && !(strict && path === folder.path);
+};
+
+const isRedirectSafe = (redirect: Redirect, context: Context): boolean => {
+	if (WRITE_REDIRECTS.has(redirect.operator)) {
+		const target = redirect.target?.value ?? "";
+		if (
+			[
+				"/dev/fd/1",
+				"/dev/fd/2",
+				"/dev/null",
+				"/dev/stderr",
+				"/dev/stdout",
+			].includes(target)
+		) {
+			return true;
+		}
+	} else if (
+		redirect.operator !== ">&" ||
+		(redirect.target && /^(?:[0-9]+|-)$/.test(redirect.target.value))
+	) {
+		return true;
+	}
+	const path = redirect.target && getStaticPath(redirect.target, context.cwd);
+	return !!path && isPathWhitelisted(path, context.folders);
+};
+
+/**
+ * Whether a file operation only touches paths inside whitelisted folders.
+ * Every operand counts, sources included, so nothing is copied or moved in
+ * from elsewhere.
+ */
+const isFileOperationSafe = (
+	name: string,
+	words: Word[],
+	context: Context,
+): boolean => {
+	const operation = FILE_OPERATIONS[name];
+	if (!operation || !context.folders.length) return false;
+
+	const operands: Word[] = [];
+	const targets: Word[] = [];
+	let options = true;
+	for (let index = 0; index < words.length; index++) {
+		const word = words[index];
+		const arg = word.value;
+		if (!options || arg === "-" || !arg.startsWith("-")) {
+			operands.push(word);
+			continue;
+		}
+		if (arg === "--") {
+			options = false;
+			continue;
+		}
+		if (!isStaticWord(word)) return false;
+		if (arg.startsWith("--")) {
+			const [option, value] = arg.split(/=(.*)/s, 2);
+			const kind = FILE_OPERATION_LONG_OPTIONS[option];
+			if (!kind) return false;
+			if (kind === "flag") continue;
+			const valueWord =
+				value === undefined
+					? words[++index]
+					: { ...word, value, text: value, parts: word.parts };
+			if (!valueWord) return false;
+			if (kind === "path") targets.push(valueWord);
+			continue;
+		}
+		for (let letter = 1; letter < arg.length; letter++) {
+			const char = arg[letter];
+			if (operation.flags.includes(char)) continue;
+			const kind = operation.values?.[char];
+			if (!kind) return false;
+			const rest = arg.slice(letter + 1);
+			const valueWord = rest
+				? { ...word, value: rest, text: rest, parts: word.parts }
+				: words[++index];
+			if (!valueWord) return false;
+			if (kind === "path") targets.push(valueWord);
+			break;
+		}
+	}
+	if (!operands.length) return false;
+
+	const destination =
+		operation.removes === "sources" && !targets.length
+			? operands.at(-1)
+			: undefined;
+	return [...operands, ...targets].every((word) => {
+		const path = getStaticPath(word, context.cwd);
+		const strict =
+			operation.removes === "all" ||
+			(operation.removes === "sources" &&
+				word !== destination &&
+				!targets.includes(word));
+		return !!path && isPathWhitelisted(path, context.folders, strict);
+	});
 };
 
 const getOptionArgs = (args: string[]): string[] => {
@@ -355,37 +569,49 @@ const commandWrites = (command: string, args: string[]): boolean => {
 
 type Whitelist = (command: string, args: string[]) => boolean;
 
-/** Matches a whole command against `*` (any run of characters) and `?` globs. */
-const createWhitelist = (patterns: readonly string[]): Whitelist => {
-	const regexes = patterns
-		.map((pattern) => pattern.trim().replace(/\s+/g, " "))
-		.filter(Boolean)
-		.map(
-			(pattern) =>
-				new RegExp(
-					`^${pattern
-						.split("")
-						.map((char) =>
-							char === "*"
-								? ".*"
-								: char === "?"
-									? "."
-									: char.replace(/[.+^${}()|[\]\\]/g, "\\$&"),
-						)
-						.join("")}$`,
-				),
-		);
+/** A bare string is an allowed pattern; entries are matched in order. */
+type ShellRule = string | { command: string; whitelist: boolean };
+
+/**
+ * Matches a whole command against `*` (any run of characters) and `?` globs.
+ * The last rule that matches decides, so a later `whitelist: false` shadows
+ * an earlier `whitelist: true` for the same command.
+ */
+const createWhitelist = (rules: readonly ShellRule[]): Whitelist => {
+	const entries = rules
+		.map((rule) =>
+			typeof rule === "string" ? { command: rule, whitelist: true } : rule,
+		)
+		.map(({ command, whitelist }) => ({
+			command: command.trim().replace(/\s+/g, " "),
+			whitelist,
+		}))
+		.filter(({ command }) => command)
+		.map(({ command: pattern, whitelist }) => ({
+			whitelist,
+			regex: new RegExp(
+				`^${pattern
+					.split("")
+					.map((char) =>
+						char === "*"
+							? ".*"
+							: char === "?"
+								? "."
+								: char.replace(/[.+^${}()|[\]\\]/g, "\\$&"),
+					)
+					.join("")}$`,
+			),
+		}));
 	return (command, args) => {
-		if (!regexes.length) return false;
 		const text = [command, ...args].join(" ");
-		return regexes.some((regex) => regex.test(text));
+		return (
+			entries.findLast(({ regex }) => regex.test(text))?.whitelist ?? false
+		);
 	};
 };
 
-const isCommandBuiltinSafe = (
-	args: string[],
-	whitelist: Whitelist,
-): boolean => {
+const isCommandBuiltinSafe = (words: Word[], context: Context): boolean => {
+	const args = words.map((word) => word.value);
 	let inspectsCommands = false;
 	let index = 0;
 	for (; index < args.length; index++) {
@@ -400,28 +626,58 @@ const isCommandBuiltinSafe = (
 		if (/[Vv]/.test(arg)) inspectsCommands = true;
 	}
 	if (inspectsCommands || index === args.length) return true;
-	const command = args[index];
+	const command = words[index];
 	return command
-		? isInvocationSafe(command, args.slice(index + 1), whitelist)
+		? isInvocationSafe(command, words.slice(index + 1), context)
 		: true;
 };
 
 const isInvocationSafe = (
-	command: string,
-	args: string[],
-	whitelist: Whitelist,
+	commandWord: Word,
+	words: Word[],
+	context: Context,
 ): boolean => {
-	if (whitelist(command, args)) return true;
-	if (command === "command") return isCommandBuiltinSafe(args, whitelist);
-	return (
-		(ShellUtils.safeCommands.has(command) && !commandWrites(command, args)) ||
-		(command === "git" && isGitSafe(args))
-	);
+	if (!isStaticWord(commandWord)) return false;
+	const command = commandWord.value;
+	const args = words.map((word) => word.value);
+	if (context.whitelist(command, args)) return true;
+	// Only normalize the system bin directory, not arbitrary paths that could
+	// contain user-controlled executables with familiar names.
+	const match = /^(?:\/usr\/bin\/|\/bin\/)/.exec(command);
+	const name = match ? command.slice(match[0].length) : command;
+	if (name === "command") return isCommandBuiltinSafe(words, context);
+	if (name in FILE_OPERATIONS) return isFileOperationSafe(name, words, context);
+	if (name === "env") return args.length === 0;
+	if (name === "awk") {
+		// awk programs can run commands or write files; permit only a single
+		// regex pattern with a plain print action (no options or input files).
+		return (
+			args.length === 1 && /^\/(?:\\.|[^/\\])*\/\s*\{print\}$/.test(args[0])
+		);
+	}
+	const safe = ShellUtils.safeCommands.has(name);
+	const safeWrite = !commandWrites(name, args);
+	const safeGit = name === "git" && isGitSafe(args);
+	const result = (safe && safeWrite) || safeGit;
+	if (AUDIT) {
+		console.log(chalk.gray(`${name} ${args.join(" ")}`));
+		console.log(
+			result
+				? `╰── safe`
+				: `╰── not safe (safe: ${safe} safeWrite: ${safeWrite} safeGit: ${safeGit})`,
+		);
+	}
+	return result;
 };
 
-const isScriptSafe = (script: ParsedScript, whitelist: Whitelist): boolean => {
-	if (script.errors?.length) return false;
-
+/**
+ * Visits every node of the syntax tree, stopping at the first one `check`
+ * rejects.
+ */
+const walk = (
+	script: ParsedScript,
+	check: (item: Record<string, unknown>) => boolean,
+): boolean => {
 	const seen = new Set<object>();
 	const visit = (value: unknown): boolean => {
 		if (!value || typeof value !== "object") return true;
@@ -429,26 +685,7 @@ const isScriptSafe = (script: ParsedScript, whitelist: Whitelist): boolean => {
 		seen.add(value);
 
 		const item = value as Record<string, unknown>;
-		if (item.type === "Script" && (value as ParsedScript).errors?.length) {
-			return false;
-		}
-		if ("operator" in item && "target" in item) {
-			if (hasWriteRedirect(value as Redirect)) return false;
-		}
-		if (item.type === "Command") {
-			const node = value as {
-				name?: Word;
-				prefix: unknown[];
-				redirects: Redirect[];
-				suffix: Word[];
-			};
-			if (!node.name) {
-				return node.prefix.every(visit) && node.redirects.every(visit);
-			}
-			if (!isStaticWord(node.name)) return false;
-			const args = node.suffix.map((word) => word.value);
-			if (!isInvocationSafe(node.name.value, args, whitelist)) return false;
-		}
+		if (!check(item)) return false;
 
 		// unbash exposes Word.parts via a lazy, non-enumerable getter.
 		if ("text" in item && "value" in item && "pos" in item && "end" in item) {
@@ -459,8 +696,45 @@ const isScriptSafe = (script: ParsedScript, whitelist: Whitelist): boolean => {
 			key === "parts" ? true : visit(item[key]),
 		);
 	};
-
 	return visit(script);
+};
+
+const isScriptSafe = (script: ParsedScript, context: Context): boolean => {
+	if (script.errors?.length) return false;
+
+	// Paths are resolved against the starting directory, so once anything
+	// changes it only absolute paths can be judged.
+	const movesDirectory = !walk(
+		script,
+		(item) =>
+			item.type !== "Command" ||
+			!DIRECTORY_COMMANDS.has((item.name as Word | undefined)?.value ?? ""),
+	);
+	if (movesDirectory) context = { ...context, cwd: undefined };
+
+	return walk(script, (item) => {
+		if (
+			item.type === "Script" &&
+			(item as unknown as ParsedScript).errors?.length
+		) {
+			return false;
+		}
+		if ("operator" in item && "target" in item) {
+			if (!isRedirectSafe(item as unknown as Redirect, context)) return false;
+		}
+		if (item.type === "Command") {
+			const node = item as unknown as {
+				name?: Word;
+				suffix: (Word | Redirect)[];
+			};
+			if (!node.name) return true;
+			const words = node.suffix.filter(
+				(part): part is Word => part.type === "Word",
+			);
+			if (!isInvocationSafe(node.name, words, context)) return false;
+		}
+		return true;
+	});
 };
 
 export const ShellUtils = {
@@ -560,12 +834,28 @@ export const ShellUtils = {
 	 * Parses the full Bash syntax tree and rejects commands that may write to
 	 * disk. Every simple command — including those in `$(...)`, pipes and `&&`
 	 * chains — must be read-only or match a `whitelist` glob such as
-	 * `npm run *`. Write redirects are rejected even on whitelisted commands.
+	 * `npm run *`. Writes are allowed only inside whitelisted `folders`: file
+	 * operations (`rm`, `mv`, `cp`, `mkdir`, `touch`, `tee`, `rmdir`) and
+	 * output redirects whose every path resolves there. Relative paths resolve
+	 * against `cwd` until the script changes directory. Paths are compared
+	 * lexically, so a symlink inside a folder can still lead outside it.
 	 */
-	isSafe: (command: string, whitelist: readonly string[] = []): boolean => {
+	isSafe: (
+		command: string,
+		rules: readonly ShellRule[] = [],
+		options: { folders?: readonly Folder[]; cwd?: string } = {},
+	): boolean => {
 		if (!command.trim()) return false;
 		try {
-			return isScriptSafe(parse(command), createWhitelist(whitelist));
+			const folders = (options.folders ?? []).flatMap((folder) => {
+				const path = resolvePath(folder.path);
+				return path ? [{ path, whitelist: folder.whitelist }] : [];
+			});
+			return isScriptSafe(parse(command), {
+				whitelist: createWhitelist(rules),
+				folders,
+				cwd: options.cwd && resolvePath(options.cwd),
+			});
 		} catch {
 			return false;
 		}

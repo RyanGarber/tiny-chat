@@ -56,13 +56,13 @@ export const TestProvider: ModelProvider<ProviderV4> = {
 };
 
 interface Bench {
-	kind: "text" | "code" | "table" | "tools" | "thought" | "mixed";
+	kind: "text" | "code" | "table" | "tools" | "tasks" | "thought" | "mixed";
 	count: number;
 	delay: number;
 }
 
 const BENCH_RE =
-	/!bench(?:\s+(text|code|table|tools|thought|mixed))?(?:\s+(\d+))?(?:\s*~(\d+))?/i;
+	/!bench(?:\s+(text|code|table|tools|tasks|thought|mixed))?(?:\s+(\d+))?(?:\s*~(\d+))?/i;
 
 const SUB_RE = /!sub/;
 
@@ -336,6 +336,33 @@ async function runBench({
 			for (let n = 0; n < count; n++) await _emitToolCall(n);
 		} else {
 			await emitText(controller, buildMarkdown("text", 60));
+		}
+		return;
+	}
+
+	// Like `tools`, with the write sent to the background: the model carries on
+	// once the batch settles, and answers when the write reports in.
+	if (kind === "tasks") {
+		const answered = options.prompt.some(
+			(message) =>
+				typeof message.content !== "string" &&
+				message.content.some((part) => part.type === "tool-result"),
+		);
+		if (!answered) {
+			await emitToolCall(
+				controller,
+				"write_file",
+				{ path: "0.txt", content: "Hello, world!", background: true },
+				delay > 0 ? () => sleep(delay) : undefined,
+			);
+			await emitToolCall(
+				controller,
+				"read_dir",
+				{ path: "" },
+				delay > 0 ? () => sleep(delay) : undefined,
+			);
+		} else {
+			await emitText(controller, buildMarkdown("text", 20));
 		}
 		return;
 	}

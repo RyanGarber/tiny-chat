@@ -14,6 +14,9 @@ export default function CodeLines({
 }) {
 	const { highlighted } = useCode({ code, language });
 
+	// Numbered lines are blocks. Unnumbered ones stay inline, so a diff can
+	// set a fragment of a line inside its own markup, and are separated by
+	// their line breaks instead.
 	return highlighted.tokens.map((line, lineIndex) => (
 		<span
 			className={
@@ -23,8 +26,11 @@ export default function CodeLines({
 			}
 			key={lineIndex}
 		>
+			{!lineNumbers && lineIndex > 0 && "\n"}
 			{line.length === 0 || (line.length === 1 && line[0].content === "")
-				? "\n"
+				? lineNumbers
+					? "\n"
+					: ""
 				: line.map((token, tokenIndex) => {
 						const tokenStyle: Record<string, string> = {};
 						let hasBg = Boolean(token.bgColor);

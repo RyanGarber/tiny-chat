@@ -1,8 +1,8 @@
 export const apps = [
 	{
 		name: "server",
-		script: "bun",
-		args: "run ./src/server.ts",
+		script: "node",
+		args: "./src/server.ts",
 		exec_mode: "fork",
 		instances: 1,
 		autorestart: true,

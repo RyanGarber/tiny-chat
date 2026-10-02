@@ -16,19 +16,19 @@ export const useShellSettings = ({
 
 	const { settings, applySettings } = useSettings({ project });
 
-	const commandWhitelist = useMemo(() => {
+	const commands = useMemo(() => {
 		return SettingsUtils.defaults({
-			commandWhitelist: settings.data?.commandWhitelist,
-		}).commandWhitelist;
-	}, [settings.data?.commandWhitelist]);
+			commands: settings.data?.commands,
+		}).commands;
+	}, [settings.data?.commands]);
 
 	const addCommand = useMutation({
 		...client.query.settings.addCommand.mutationOptions(),
 		onSuccess: applySettings,
 	});
 
-	const editCommand = useMutation({
-		...client.query.settings.editCommand.mutationOptions(),
+	const updateCommand = useMutation({
+		...client.query.settings.updateCommand.mutationOptions(),
 		onSuccess: applySettings,
 	});
 
@@ -86,25 +86,25 @@ export const useShellSettings = ({
 		onSuccess: applyFolders,
 	});
 
+	const updateFolder = useMutation({
+		...client.query.settings.updateFolder.mutationOptions(),
+		onSuccess: applyFolders,
+	});
+
 	const removeFolder = useMutation({
 		...client.query.settings.removeFolder.mutationOptions(),
 		onSuccess: applyFolders,
 	});
 
-	const setFolderWritable = useMutation({
-		...client.query.settings.setFolderWritable.mutationOptions(),
-		onSuccess: applyFolders,
-	});
-
 	return {
-		commandWhitelist,
+		commands,
 		addCommand,
-		editCommand,
+		updateCommand,
 		removeCommand,
 		folders,
 		folderStatus,
 		addFolder,
 		removeFolder,
-		setFolderWritable,
+		updateFolder,
 	};
 };

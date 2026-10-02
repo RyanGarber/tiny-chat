@@ -16,7 +16,14 @@ export interface AttachmentItem extends CompletionItem {
 	label?: string;
 }
 
-export interface AttachmentGroup extends CompletionGroup<AttachmentItem> {}
+export interface AttachmentGroup extends CompletionGroup<AttachmentItem> {
+	/**
+	 * Already matched against the query, and ranked, by whoever built the
+	 * group. A search over whole paths finds items whose name alone would not
+	 * match, so filtering them again by name would throw those away.
+	 */
+	matched?: boolean;
+}
 
 /**
  * An attachment being typed in a plain text buffer, up to the cursor.

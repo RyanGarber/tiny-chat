@@ -44,6 +44,7 @@ export const useExperiments = () => {
 							providers: providers.data,
 							skills,
 							mcpTools: mcpTools.data ?? [],
+							resume: true,
 						}),
 				});
 			},

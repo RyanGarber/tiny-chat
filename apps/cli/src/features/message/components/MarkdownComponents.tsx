@@ -1,7 +1,6 @@
 import { ThemeContext } from "@tiny-chat/client/core/components/ThemeContext.tsx";
 import { ComponentUtils } from "@tiny-chat/client/core/utils/ComponentUtils.ts";
-import { useMessageStore } from "@tiny-chat/client/features/message/stores/useMessageStore.ts";
-import { SourceUtils } from "@tiny-chat/core/features/data/utils/SourceUtils.ts";
+import { StreamContext } from "@tiny-chat/client/features/message/components/StreamContext.tsx";
 import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import type { ExtraProps } from "hast-util-to-jsx-runtime";
 import {
@@ -30,6 +29,7 @@ import {
 	TheadComponent,
 	TrComponent,
 } from "./MarkdownTable.tsx";
+import SourceTag from "./SourceTag.tsx";
 
 type Components = {
 	[TagName in keyof JSX.IntrinsicElements]:
@@ -152,6 +152,7 @@ const CodeComponent: Components["code"] = ({ children, className }) => {
 	const code = ComponentUtils.text({ children });
 	const language = className?.replace("language-", "");
 	const isBlock = useContext(CodeBlockContext);
+	const incomplete = useContext(StreamContext);
 
 	if (language === "math") {
 		return (
@@ -165,7 +166,14 @@ const CodeComponent: Components["code"] = ({ children, className }) => {
 	}
 
 	if (isBlock) {
-		return <Code code={code} language={language} filename={language} />;
+		return (
+			<Code
+				code={code}
+				language={language}
+				filename={language}
+				incomplete={incomplete}
+			/>
+		);
 	}
 
 	return (
@@ -321,37 +329,15 @@ const DetailsComponent: Components["details"] = ({ node, children }) => {
 	return <Paste lines={lines}>{children}</Paste>;
 };
 
-const MarkComponent: Components["mark"] = ({ children, node }) => {
-	// Read per-citation rather than through the markdown context: sources change
-	// whenever a chat-scoped query settles, and only this component cares.
-	const sources = useMessageStore((s) => s.sources);
-	const keys = SourceUtils.matchKeys({
-		sources,
-		keys: ComponentUtils.props(node, { sources: "" }).sources,
-	});
-	const text = ComponentUtils.text({ children });
-	return (
-		<BaseComponent gap={1}>
-			{children}
-			{keys.map((key) => {
-				const source = SourceUtils.getDisplay({ sources, key, text });
-				return (
-					<>
-						{` ${source.emoji} `}
-						<Anchor
-							key={key}
-							href={source.type === "web" ? source.value.url : undefined}
-							color="textSubtle"
-						>
-							{source.title.slice(0, 50)}
-							{source.title.length > 50 ? "…" : ""}
-						</Anchor>
-					</>
-				);
-			})}
-		</BaseComponent>
-	);
-};
+const MarkComponent: Components["mark"] = ({ children, node }) => (
+	<BaseComponent gap={1}>
+		{children}
+		<SourceTag
+			sources={ComponentUtils.props(node, { sources: "" }).sources}
+			cited={children}
+		/>
+	</BaseComponent>
+);
 
 // --- Inline/block detection ---
 

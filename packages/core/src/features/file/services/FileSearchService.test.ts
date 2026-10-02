@@ -176,6 +176,68 @@ describe("FileSearchService", () => {
 		expect(truncated).toBe(true);
 	});
 
+	// A native walk lists everything it was not told to prune, so what it
+	// returns has to be held to the same rules a `readDir` walk applies.
+	it("filters a native walk the same way", async () => {
+		const files = {
+			"/project/.gitignore": "ignored/\n",
+			"/project/src/app.ts": "app",
+			"/project/ignored/schema.ts": "generated",
+			"/project/cmake-build-debug/out.o": "built",
+			"/project/target/debug/main": "built",
+		};
+		const shell = createShell(files);
+		const pruned: string[][] = [];
+		shell.walk = async ({ path, prune }) => {
+			pruned.push(prune);
+			const paths = new Set<string>();
+			for (const file of Object.keys(files)) {
+				const parts = file.slice(path.length + 1).split("/");
+				for (let index = 1; index <= parts.length; index++)
+					paths.add(`${path}/${parts.slice(0, index).join("/")}`);
+			}
+			return {
+				root: path,
+				entries: [...paths].map((entry) => ({
+					path: entry,
+					is_dir: !(entry in files),
+				})),
+				truncated: false,
+			};
+		};
+
+		const { entries } = await FileSearchService.walk({
+			shell,
+			path: "/project",
+			scope: "lookup",
+		});
+
+		expect(pruned[0]).toContain("target");
+		expect(entries.map((entry) => entry.path).sort()).toEqual([
+			"/project/.gitignore",
+			"/project/src/app.ts",
+		]);
+	});
+
+	it("leaves build output out of a lookup but not media", async () => {
+		const shell = createShell({
+			"/project/logo.png": "png",
+			"/project/target/debug/main.rs": "built",
+			"/project/src/main.rs": "fn main() {}",
+		});
+
+		const { entries } = await FileSearchService.walk({
+			shell,
+			path: "/project",
+			scope: "lookup",
+		});
+
+		expect(entries.map((entry) => entry.path).sort()).toEqual([
+			"/project/logo.png",
+			"/project/src/main.rs",
+		]);
+	});
+
 	it("returns numbered lines and a coverage summary", async () => {
 		const shell = createShell({
 			"/project/a.ts": "const answer = 42;\nconst other = 1;\n",

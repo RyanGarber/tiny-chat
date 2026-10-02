@@ -56,7 +56,13 @@ export const file = router({
 
 	exec: procedure
 		.input(Filesystem.extend({ command: z.string() }))
-		.mutation(async ({ ctx, input }) => {
-			return await FileService.exec({ user: ctx.session.user, ...input });
+		// The signal fires when the client drops the request, which is how a
+		// user interrupting the command reaches the shell running it.
+		.mutation(async ({ ctx, input, signal }) => {
+			return await FileService.exec({
+				user: ctx.session.user,
+				...input,
+				abort: signal,
+			});
 		}),
 });

@@ -3,6 +3,7 @@
 import { useCode } from "@tiny-chat/client/core/hooks/useCode.ts";
 import { Text } from "ink";
 import { useMemo } from "react";
+import Content from "../../../core/components/Content.tsx";
 import { CliUtils } from "../../../core/utils/CliUtils.ts";
 import CodeLines from "./CodeLines.tsx";
 import Highlight from "./Highlight.tsx";
@@ -14,6 +15,7 @@ export const Code = ({
 	startLine = 1,
 	lineNumbers = true,
 	maxHeight,
+	incomplete = false,
 	...props
 }: Omit<Parameters<typeof Highlight>[0], "code"> & {
 	code: string;
@@ -22,6 +24,8 @@ export const Code = ({
 	startLine?: number;
 	lineNumbers?: boolean;
 	maxHeight?: number;
+	/** The code is still streaming in. */
+	incomplete?: boolean;
 }) => {
 	const codeShown = code.slice(0, maxHeight);
 	const overflow = code.length - codeShown.length;
@@ -33,12 +37,19 @@ export const Code = ({
 	const { highlighted } = useCode({
 		code: displayed,
 		language: language ?? null,
+		incomplete,
 	});
 
 	return (
-		<Highlight code={highlighted} filename={filename} {...props}>
-			<CodeLines code={highlighted} language={language} />
-			{overflow > 0 && <Text dimColor>{` ⋮ ${overflow} more lines`}</Text>}
-		</Highlight>
+		<Content
+			formatter={() => code}
+			streaming={incomplete}
+			backgroundColor={highlighted.bg}
+		>
+			<Highlight code={highlighted} filename={filename} {...props}>
+				<CodeLines code={highlighted} language={language} />
+				{overflow > 0 && <Text dimColor>{` ⋮ ${overflow} more lines`}</Text>}
+			</Highlight>
+		</Content>
 	);
 };

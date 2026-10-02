@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { SettingsUtils } from "@tiny-chat/core/core/utils/SettingsUtils.ts";
-import { useContext, useMemo } from "react";
+import type { zConfig } from "@tiny-chat/core/features/data/types/message.ts";
+import { useCallback, useContext, useMemo } from "react";
 import { ClientContext } from "../../../client.ts";
 import { useSettings } from "./useSettings.ts";
 
@@ -22,6 +23,20 @@ export const useModelSettings = () => {
 		},
 	});
 
+	/** Saves the subagent config, shown at once so quick edits each build on the last. */
+	const updateSubagentConfig = useCallback(
+		(config: zConfig | null) => {
+			if (settings.data) {
+				applySettings({ ...settings.data, subagentConfig: config });
+			}
+			setSubagentConfig.mutate(
+				{ config },
+				{ onError: () => void settings.refetch() },
+			);
+		},
+		[settings, applySettings, setSubagentConfig.mutate],
+	);
+
 	const dreamConfig = useMemo(() => {
 		return SettingsUtils.defaults({ dreamConfig: settings.data?.dreamConfig })
 			.dreamConfig;
@@ -34,5 +49,11 @@ export const useModelSettings = () => {
 		},
 	});
 
-	return { subagentConfig, setSubagentConfig, dreamConfig, setDreamConfig };
+	return {
+		subagentConfig,
+		setSubagentConfig,
+		updateSubagentConfig,
+		dreamConfig,
+		setDreamConfig,
+	};
 };

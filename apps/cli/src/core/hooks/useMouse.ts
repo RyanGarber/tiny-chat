@@ -1,13 +1,9 @@
-import { useStdin } from "ink";
+import { useStdin, useStdout } from "ink";
 import { useEffect, useEffectEvent } from "react";
-import { type MouseEvent, MouseUtils } from "../utils/MouseUtils.ts";
-import { StdinUtils } from "../utils/StdinUtils.ts";
+import type { MouseEvent } from "../utils/MouseUtils.ts";
 
-// 1000 reports button presses, 1006 reports the coordinates in SGR form, which
-// lifts the 223 column ceiling of the original encoding. 1002 adds a report for
-// every pointer move made with a button held, which is what a drag is, and 1003
-// adds one for every move at all, which is only worth its noise when something
-// is hovering.
+// 1000 reports presses, 1006 uses SGR coordinates, 1002 adds dragging, and
+// 1003 adds all pointer motion. Only request the widest mode still needed.
 const TRACKING = "\x1b[?1000h\x1b[?1006h";
 const TRACKING_OFF = "\x1b[?1006l\x1b[?1000l";
 const DRAG = "\x1b[?1002h";
@@ -15,86 +11,85 @@ const DRAG_OFF = "\x1b[?1002l";
 const MOTION = "\x1b[?1003h";
 const MOTION_OFF = "\x1b[?1003l";
 
-type Listener = (event: MouseEvent) => void;
+type Subscription = {
+	listener: (event: MouseEvent) => void;
+	motion: boolean;
+	drag: boolean;
+};
+type Session = {
+	stdin: NodeJS.ReadableStream;
+	stdout: NodeJS.WritableStream;
+	subscriptions: Set<Subscription>;
+	reporting: "none" | "drag" | "motion";
+	dispatch: (event: MouseEvent) => void;
+};
 
-const listeners = new Set<Listener>();
-const dragListeners = new Set<Listener>();
-const motionListeners = new Set<Listener>();
+const sessions = new Set<Session>();
 
-let stream: NodeJS.ReadStream | null = null;
-
-/**
- * Holds the terminal to the widest reporting anyone still asks for. The modes
- * overlap, so they are switched one at a time rather than counted apart.
- */
-let reporting: "none" | "drag" | "motion" = "none";
-
-const sync = () => {
-	const next = motionListeners.size
+const sync = (session: Session) => {
+	const subscriptions = [...session.subscriptions];
+	const next = subscriptions.some((item) => item.motion)
 		? "motion"
-		: dragListeners.size
+		: subscriptions.some((item) => item.drag)
 			? "drag"
 			: "none";
-	if (next === reporting) return;
-
-	if (reporting === "motion") process.stdout.write(MOTION_OFF);
-	else if (reporting === "drag") process.stdout.write(DRAG_OFF);
-
-	if (next === "motion") process.stdout.write(MOTION);
-	else if (next === "drag") process.stdout.write(DRAG);
-
-	reporting = next;
+	if (next === session.reporting) return;
+	if (session.reporting === "motion") session.stdout.write(MOTION_OFF);
+	else if (session.reporting === "drag") session.stdout.write(DRAG_OFF);
+	if (next === "motion") session.stdout.write(MOTION);
+	else if (next === "drag") session.stdout.write(DRAG);
+	// Tracking modes are mutually exclusive on xterm-compatible terminals.
+	// Turning motion off does not restore the previously enabled click mode.
+	else session.stdout.write(TRACKING);
+	session.reporting = next;
 };
 
-const onData = (data: string | Buffer) => {
-	for (const event of MouseUtils.parse(data.toString())) {
-		// Copied, so a listener that unsubscribes mid-dispatch cannot break it.
-		for (const listener of [...listeners]) listener(event);
-	}
+const stop = (session: Session) => {
+	session.stdin.off("mouse", session.dispatch);
+	session.stdout.write(MOTION_OFF + DRAG_OFF + TRACKING_OFF);
+	sessions.delete(session);
+	if (!sessions.size) process.off("exit", stopAll);
 };
 
-const stop = () => {
-	if (!stream) return;
-	stream.off("data", onData);
-	stream = null;
-	reporting = "none";
-	process.stdout.write(MOTION_OFF + DRAG_OFF + TRACKING_OFF);
+// process.exit skips React cleanup. Do not leave the shell reporting clicks.
+const stopAll = () => {
+	for (const session of sessions) stop(session);
 };
 
 const subscribe = (
-	input: NodeJS.ReadStream,
-	listener: Listener,
-	motion: boolean,
-	drag: boolean,
+	stdin: NodeJS.ReadableStream,
+	stdout: NodeJS.WritableStream,
+	subscription: Subscription,
 ) => {
-	if (!stream) {
-		stream = input;
-		stream.on("data", onData);
-		process.stdout.write(TRACKING);
+	let session = [...sessions].find(
+		(item) => item.stdin === stdin && item.stdout === stdout,
+	);
+	if (!session) {
+		const subscriptions = new Set<Subscription>();
+		session = {
+			stdin,
+			stdout,
+			subscriptions,
+			reporting: "none",
+			dispatch: (event) => {
+				for (const item of [...subscriptions]) item.listener(event);
+			},
+		};
+		if (!sessions.size) process.on("exit", stopAll);
+		sessions.add(session);
+		stdin.on("mouse", session.dispatch);
+		stdout.write(TRACKING);
 	}
-
-	listeners.add(listener);
-	if (motion) motionListeners.add(listener);
-	if (drag) dragListeners.add(listener);
-	sync();
+	session.subscriptions.add(subscription);
+	sync(session);
+	return () => {
+		session.subscriptions.delete(subscription);
+		if (!session.subscriptions.size) stop(session);
+		else sync(session);
+	};
 };
 
-const unsubscribe = (listener: Listener) => {
-	listeners.delete(listener);
-	motionListeners.delete(listener);
-	dragListeners.delete(listener);
-	sync();
-
-	if (listeners.size === 0) stop();
-};
-
-// Quitting through `process.exit` skips React cleanup, which would leave the
-// terminal reporting every click long after the app is gone.
-process.on("exit", stop);
-
-/**
- * Subscribes to raw mouse events.
- */
+/** Subscribes to reports decoded by the stdin adapter, never keyboard text. */
 export const useMouse = ({
 	handler,
 	motion = false,
@@ -108,24 +103,17 @@ export const useMouse = ({
 	isActive?: boolean;
 }) => {
 	const { stdin, setRawMode, isRawModeSupported } = useStdin();
-
-	// Ink reads the input the mouse reports have already been taken out of, so
-	// they are read from the terminal's own handle instead.
-	const input = StdinUtils.source() ?? stdin;
-
-	// Stable, so an inline handler does not resubscribe on every render.
+	const { stdout } = useStdout();
 	const listener = useEffectEvent(handler);
 
 	useEffect(() => {
-		if (!isActive || !input || !isRawModeSupported) return;
-
+		if (!isActive || !isRawModeSupported) return;
 		// biome-ignore lint/nursery/useReactCompiler: setRawMode controls Ink's external terminal input mode, not React state.
 		setRawMode(true);
-		subscribe(input, listener, motion, drag);
-
+		const unsubscribe = subscribe(stdin, stdout, { listener, motion, drag });
 		return () => {
-			unsubscribe(listener);
+			unsubscribe();
 			setRawMode(false);
 		};
-	}, [input, setRawMode, isRawModeSupported, isActive, motion, drag]);
+	}, [stdin, stdout, setRawMode, isRawModeSupported, isActive, motion, drag]);
 };

@@ -32,10 +32,17 @@ peerDependencyRules:
         'alchemy>mysql2': '3'
         '@better-fetch/fetch': '1'
         'vitest': '5'
+        'better-auth>prisma': '*'
+        '@better-auth/prisma-adapter>prisma': '*'
+        '@prisma/composer-cli>@prisma/cli-engine': '*'
 overrides:
     'conventional-changelog-writer': '^9.1.1'
     'effect': '4.0.0-rc.115'
-patchedDependencies:
-    '@ai-sdk/google': patches/@ai-sdk__google.patch
-    just-bash@3.4.2: patches/just-bash@3.4.2.patch
-    sixel: patches/sixel.patch
+    '@prisma/orm-toolchain': '8.0.0-rc.14'
+catalogs:
+    prisma:
+        'prisma': '8.0.0-rc.19'
+        '@prisma/orm-postgres': '8.0.0-rc.14'
+        '@prisma/orm-extension-paradedb': '8.0.0-rc.14'
+        '@prisma/orm-extension-pgvector': 'npm:@ryangarber/prisma-orm-extension-pgvector@8.0.0-rc.14a'
+        '@ryangarber/prisma-orm-extension-zod': '0.2.7'

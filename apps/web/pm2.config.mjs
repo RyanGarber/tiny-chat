@@ -1,8 +1,8 @@
 export const apps = [
 	{
 		name: "web",
-		script: "bun",
-		args: "run ./src/index.ts",
+		script: "node",
+		args: "./src/index.ts",
 		exec_mode: "fork",
 		instances: 1,
 		autorestart: true,

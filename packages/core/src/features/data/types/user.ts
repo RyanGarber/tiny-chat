@@ -32,29 +32,47 @@ export const zMCPServers = z
 	.optional();
 export type zMCPServers = z.infer<typeof zMCPServers>;
 
-export const zFolderPath = z.object({
-	path: z.string().min(1),
-	writable: z.boolean(),
+export const zCommand = z.object({
+	command: z.string().min(1),
+	whitelist: z.boolean(),
 });
-export type zFolderPath = z.infer<typeof zFolderPath>;
+export type zCommand = z.infer<typeof zCommand>;
+
+export const zFolder = z
+	.object({
+		path: z.string().min(1),
+		whitelist: z.boolean(),
+	})
+	.catch(({ value }) => {
+		console.warn("zFolder: using deprecated writable field");
+		const compat = z
+			.object({ path: z.string().min(1), writable: z.boolean() })
+			.parse(value);
+		return {
+			path: compat.path,
+			whitelist: compat.writable,
+		};
+	});
+export type zFolder = z.infer<typeof zFolder>;
+
+export const zHiddenModels = z.partialRecord(
+	zModelFeature.exclude(["language:tools"]),
+	z.array(zConfig.pick({ model: true, provider: true })),
+);
+export type zHiddenModels = z.infer<typeof zHiddenModels>;
 
 export const zSettings = z
 	.object({
 		instructions: z.array(z.string()),
-		/** Glob patterns for shell commands that skip approval, e.g. `npm run *`. */
-		commandWhitelist: z.array(z.string()),
-		/** Paths the shell works in. The first is the working directory. */
-		folders: z.array(zFolderPath),
+		commands: z.array(zCommand),
+		folders: z.array(zFolder),
 		memoryBudget: z.number(),
 		useEmbeddingSearch: z.boolean(),
 		embeddingConfig: zConfig.nullable(),
 		subagentConfig: zConfig.nullable(),
 		dreamConfig: zConfig.nullable(),
 		preferredWebProvider: z.string().nullable(),
-		hiddenModels: z.partialRecord(
-			zModelFeature.exclude(["language:tools"]),
-			z.array(zConfig.pick({ model: true, provider: true })),
-		),
+		hiddenModels: zHiddenModels,
 		useProviderCache: z.boolean(),
 		useBrowserModels: z.boolean(),
 		theme: z.enum(ThemeUtils.themes),

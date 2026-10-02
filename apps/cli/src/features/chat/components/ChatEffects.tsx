@@ -4,10 +4,10 @@ import { useChatStore } from "@tiny-chat/client/features/chat/stores/useChatStor
 import { useMessageQueueStore } from "@tiny-chat/client/features/chat/stores/useMessageQueueStore.ts";
 import { useMessagingStore } from "@tiny-chat/client/features/chat/stores/useMessagingStore.ts";
 import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
-import { useContext, useState } from "react";
+import { useContext } from "react";
 import Box from "../../../core/components/Box.tsx";
+import Button from "../../../core/components/Button.tsx";
 import Text from "../../../core/components/Text.tsx";
-import { useMouseInput } from "../../../core/hooks/useMouseInput.ts";
 
 function Effect({
 	content,
@@ -16,19 +16,9 @@ function Effect({
 	content: string;
 	onDelete: () => void;
 }) {
-	const [hover, setHover] = useState(false);
-	const { mouseRef } = useMouseInput({
-		onClick: onDelete,
-		onHoverStart: () => setHover(true),
-		onHoverEnd: () => setHover(false),
-	});
 	return (
 		<Box gap={1}>
-			<Box ref={(element) => mouseRef(element, 0)}>
-				<Text color="textSubtle" dimColor={hover}>
-					[×]
-				</Text>
-			</Box>
+			<Button label="×" onClick={onDelete} />
 			<Text>{content}</Text>
 		</Box>
 	);

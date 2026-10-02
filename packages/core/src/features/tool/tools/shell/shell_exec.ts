@@ -11,6 +11,9 @@ const MAX_LINE_LENGTH = 2_000;
 
 const MNT_DESCRIPTION = `MUST set to TRUE any time the command should run in the virtual \`${PathUtils.mount}\` filesystem.`;
 
+const BACKGROUND_DESCRIPTION =
+	"Set to TRUE to run the command in the background and carry on working meanwhile. Its result is sent to you when it finishes, and your turn does not end until then.";
+
 export const shell_exec = {
 	name: "shell_exec",
 	description:
@@ -18,6 +21,12 @@ export const shell_exec = {
 	input: z.object({
 		command: z.string(),
 		mnt: z.boolean().describe(MNT_DESCRIPTION),
+		background: z
+			.boolean()
+			.optional()
+			.describe(
+				`${BACKGROUND_DESCRIPTION} Use it for long builds and test runs, not for commands that never exit, like servers.`,
+			),
 	}),
 	output: z.object({
 		code: z.number().optional(),
@@ -75,7 +84,9 @@ const display: ToolDisplay<typeof shell_exec> = {
 		}
 		const [result] = output;
 		if (!result) return [];
-		const text = [result.stdout.trim(), result.stderr.trim()]
+		// Results saved before output was cleaned on the way in still carry it.
+		const text = [result.stdout, result.stderr]
+			.map((value) => ToolOutputUtils.getPlain(value).trim())
 			.filter(Boolean)
 			.join("\n");
 		return [
@@ -99,29 +110,34 @@ export const createShellExecTool: ToolFactory<
 	...shell_exec,
 	...options,
 	display,
+	background: true,
 	validate: async ({ input, context }) => {
-		const { commandWhitelist } = SettingsUtils.of(
+		const { commands, folders } = SettingsUtils.of(
 			context.user,
 			context.chat?.project,
 		);
-		return { approval: !ShellUtils.isSafe(input.command, commandWhitelist) };
+		// Folders live on the user's machine, not in the virtual filesystem.
+		const cwd = input.mnt
+			? undefined
+			: await options.capabilities.shell?.cwd?.().catch(() => undefined);
+		return {
+			approval: !ShellUtils.isSafe(input.command, commands, {
+				folders: input.mnt ? [] : folders,
+				cwd,
+			}),
+		};
 	},
-	execute: async ({ input, stream }) => {
+	execute: async ({ input, stream, abort }) => {
 		const shell = ShellUtils.detect(input.mnt, options.capabilities);
 
 		let buffer: z.infer<(typeof shell_exec)["stream"]> | undefined;
 
 		const result = await shell.exec({
 			command: input.command,
+			abort,
 			stream: ({ type, value }) => {
-				// clean shell noise
-				const text = value
-					.replace(
-						// biome-ignore lint/suspicious/noControlCharactersInRegex: matching escapes is the point
-						/\u001B\[[0-?]*[ -/]*[@-~]|\u001B][^\u0007]*(?:\u0007|\u001B\\)/g,
-						"",
-					)
-					.replace(/\r\n/g, "\n");
+				// Carriage returns are resolved below, against the line being built.
+				const text = ToolOutputUtils.stripAnsi(value);
 				if (!text) return;
 
 				const pieces = text.split("\n");
@@ -148,11 +164,11 @@ export const createShellExecTool: ToolFactory<
 				value: {
 					code: result.code,
 					stdout: ToolOutputUtils.getBounded({
-						text: result.stdout,
+						text: ToolOutputUtils.getPlain(result.stdout),
 						label: "stdout",
 					}),
 					stderr: ToolOutputUtils.getBounded({
-						text: result.stderr,
+						text: ToolOutputUtils.getPlain(result.stderr),
 						maxChars: 10_000,
 						maxLines: 150,
 						label: "stderr",

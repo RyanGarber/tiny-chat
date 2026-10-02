@@ -2,6 +2,7 @@ import type { MessageState } from "@tiny-chat/core/features/data/types/message.t
 import type { zToolCallPart } from "@tiny-chat/core/features/data/types/part.ts";
 import type { ToolControls } from "@tiny-chat/core/features/tool/types/display.ts";
 import { useCallback, useState } from "react";
+import { useStreamStore } from "../../agent/stores/useStreamStore.ts";
 import { useMessaging } from "../../chat/hooks/useMessaging.ts";
 
 /**
@@ -25,9 +26,15 @@ export const useToolFeedback = ({
 		setValues((previous) => ({ ...previous, [name]: value }));
 	}, []);
 
+	// A generation waits on its background calls before it ends, and feedback
+	// sent meanwhile would resume the message under it.
+	const generating = useStreamStore((state) =>
+		state.chatAgentStreams.has(message.chatId),
+	);
+
 	// Nothing can be sent twice: the controls stay locked from the moment
 	// feedback is sent until the result it produces has been saved.
-	const locked = sendToolFeedback.isPending;
+	const locked = sendToolFeedback.isPending || generating;
 
 	const complete = controls.fields.every((field) => !!values[field.name]);
 

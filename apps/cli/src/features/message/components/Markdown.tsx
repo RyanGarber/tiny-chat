@@ -43,14 +43,18 @@ export default function Markdown({
 	const { content } = useMarkdown({ source });
 	const blocks = useMarkdownBlocks({ content, streaming });
 
+	// Only the last block can still be growing; the ones above it are final.
 	return (
-		<StreamContext value={streaming}>
-			<Box flexDirection="column" gap={1} color={textColor}>
-				{blocks.map((block, index) => (
+		<Box flexDirection="column" gap={1} color={textColor}>
+			{blocks.map((block, index) => (
+				<StreamContext
 					// biome-ignore lint/suspicious/noArrayIndexKey: blocks stay in order
-					<MarkdownBlock key={index} source={block} />
-				))}
-			</Box>
-		</StreamContext>
+					key={index}
+					value={streaming && index === blocks.length - 1}
+				>
+					<MarkdownBlock source={block} />
+				</StreamContext>
+			))}
+		</Box>
 	);
 }

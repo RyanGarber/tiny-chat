@@ -1,5 +1,5 @@
-import { Alert, Button, Stack, Text } from "@mantine/core";
-import { ArrowClockwiseIcon } from "@phosphor-icons/react";
+import { Alert, Button, Group, Stack, Text } from "@mantine/core";
+import { ArrowClockwiseIcon, PlayIcon } from "@phosphor-icons/react";
 import type { AgentStreamEvent } from "@tiny-chat/client/core/services/StreamService.ts";
 import { MarkdownDataUtils } from "@tiny-chat/client/features/message/utils/MarkdownDataUtils.ts";
 import { useThemes } from "@tiny-chat/client/features/settings/hooks/useThemes.ts";
@@ -28,12 +28,14 @@ export default function MessageParts({
 	status,
 	compaction,
 	regenerate,
+	resume,
 }: {
 	message?: MessageState;
 	data: zData;
 	status?: AgentStreamEvent["status"];
 	compaction?: Compaction;
 	regenerate?: (message: MessageState) => void;
+	resume?: (message: MessageState) => void;
 }) {
 	const { theme } = useThemes();
 
@@ -163,15 +165,30 @@ export default function MessageParts({
 						<Text size="sm" w="100%">
 							{part.message ?? JSON.stringify(part.details)}
 						</Text>
-						{message && regenerate && (
-							<Button
-								variant="subtle"
-								color="dimmed"
-								onClick={() => regenerate(message)}
-								leftSection={<ArrowClockwiseIcon size={20} />}
-							>
-								Retry
-							</Button>
+						{/* Once the reply carries on past it, it has nothing left to offer. */}
+						{message && status === undefined && index === parts.length - 1 && (
+							<Group gap="xs">
+								{resume && (
+									<Button
+										variant="subtle"
+										color="dimmed"
+										onClick={() => resume(message)}
+										leftSection={<PlayIcon size={20} />}
+									>
+										Continue
+									</Button>
+								)}
+								{regenerate && (
+									<Button
+										variant="subtle"
+										color="dimmed"
+										onClick={() => regenerate(message)}
+										leftSection={<ArrowClockwiseIcon size={20} />}
+									>
+										Retry
+									</Button>
+								)}
+							</Group>
 						)}
 					</Stack>
 				</Alert>

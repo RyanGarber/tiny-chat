@@ -1,9 +1,9 @@
 /// <reference types="../../../vitest.context.d.ts" />
 
 import { create, onAfterAll, onBeforeAll } from "@tiny-chat/client/tests.ts";
-import { render as _render } from "ink-testing-library";
 import type { ReactNode } from "react";
 import { afterAll, beforeAll } from "vitest";
+import { render as _render } from "./core/utils/RenderTestUtils.tsx";
 
 beforeAll(async () => {
 	return await onBeforeAll({

@@ -17,16 +17,29 @@ export default function Tail({
 	content: unknown;
 }) {
 	const ref = useRef<HTMLDivElement>(null);
+	const inner = useRef<HTMLDivElement>(null);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: scrolls as `content` grows
 	useEffect(() => {
 		if (follow && ref.current) ref.current.scrollTop = ref.current.scrollHeight;
 	}, [follow, content]);
 
+	// Content can also grow without `content` changing: streamed tool output,
+	// a subagent's messages, a nested block of its own.
+	useEffect(() => {
+		const outer = ref.current;
+		if (!follow || !outer || !inner.current) return;
+		const observer = new ResizeObserver(() => {
+			outer.scrollTop = outer.scrollHeight;
+		});
+		observer.observe(inner.current);
+		return () => observer.disconnect();
+	}, [follow]);
+
 	if (!follow) return children;
 	return (
 		<Box ref={ref} mah={height} style={{ overflowY: "auto" }}>
-			{children}
+			<div ref={inner}>{children}</div>
 		</Box>
 	);
 }

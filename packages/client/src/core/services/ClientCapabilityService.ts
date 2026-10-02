@@ -16,6 +16,7 @@ import type { Toolset } from "@tiny-chat/core/features/tool/types/tool.ts";
 import type { Client } from "../../client.ts";
 import { ClientProviderService } from "../../features/agent/services/ClientProviderService.ts";
 import { createActionsCapability } from "../capabilities/createActionsCapability.ts";
+import { createBrowserCapability } from "../capabilities/createBrowserCapability.ts";
 import { createChatShellCapability } from "../capabilities/createChatShellCapability.ts";
 import { createEmbeddingCapability } from "../capabilities/createEmbeddingCapability.ts";
 import { createGitHubCapability } from "../capabilities/createGitHubCapability.ts";
@@ -92,6 +93,10 @@ export const ClientCapabilityService = {
 
 		if (enabled.shell) {
 			capabilities.shell = await createShellCapability({ client });
+		}
+
+		if (enabled.browser) {
+			capabilities.browser = await createBrowserCapability({ client });
 		}
 
 		if (enabled.actions) {

@@ -1,3 +1,4 @@
+import type { DeepPartial } from "../../../core/types/common.ts";
 import type { zAgentContext } from "../../agent/types/agent.ts";
 import type { zSettings } from "../../data/types/user.ts";
 import { createShell } from "../../file/services/FileSearchService.test.ts";
@@ -11,20 +12,24 @@ import { createShellExecTool } from "./shell/shell_exec.ts";
 import { createWriteFileTool } from "./shell/write_file.ts";
 
 const context = {} as zAgentContext;
-const contextWithFolder = (path: string | null, writable: boolean = true) =>
-	({
+
+const contextWithFolder = (path: string | null, whitelist: boolean = true) => {
+	return {
 		chat: {
 			project:
 				path === null
 					? null
-					: { title: null, settings: { folders: [{ path, writable }] } },
+					: { title: null, settings: { folders: [{ path, whitelist }] } },
 		},
-	}) as zAgentContext;
-const contextWithSettings = (user: zSettings, folder?: zSettings) =>
-	({
+	} satisfies DeepPartial<zAgentContext> as zAgentContext;
+};
+
+const contextWithSettings = (user: zSettings, folder?: zSettings) => {
+	return {
 		user: { settings: user },
 		chat: { project: folder ? { title: null, settings: folder } : null },
-	}) as zAgentContext;
+	} satisfies DeepPartial<zAgentContext> as zAgentContext;
+};
 
 describe("shell", () => {
 	it("returns a window of a long file and says how to read on", async () => {
@@ -321,14 +326,14 @@ describe("shell", () => {
 		const context = contextWithSettings(
 			{
 				folders: [
-					{ path: "/app", writable: true },
-					{ path: "/shared", writable: true },
+					{ path: "/app", whitelist: true },
+					{ path: "/shared", whitelist: true },
 				],
 			},
 			{
 				folders: [
-					{ path: "/project", writable: true },
-					{ path: "/shared", writable: false },
+					{ path: "/project", whitelist: true },
+					{ path: "/shared", whitelist: false },
 				],
 			},
 		);
@@ -353,8 +358,8 @@ describe("shell", () => {
 			tool.validate?.({
 				input: { command, mnt: false },
 				context: contextWithSettings(
-					{ commandWhitelist: ["npm run *"] },
-					{ commandWhitelist: ["pnpm test"] },
+					{ commands: [{ command: "npm run *", whitelist: true }] },
+					{ commands: [{ command: "pnpm test", whitelist: true }] },
 				),
 			});
 

@@ -6,6 +6,12 @@
 			"runtimeExecutable": "pnpm",
 			"runtimeArgs": ["dev:web"],
 			"port": 8010
+		},
+		{
+			"name": "server",
+			"runtimeExecutable": "pnpm",
+			"runtimeArgs": ["dev:server"],
+			"port": 8009
 		}
 	]
 }

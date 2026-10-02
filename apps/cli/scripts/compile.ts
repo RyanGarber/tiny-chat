@@ -49,7 +49,10 @@ export async function compile({
 
 	try {
 		result = await Bun.build({
-			entrypoints: ["./src/index.ts"],
+			// the highlight worker is its own entrypoint so Shiki stays out of the
+			// main bundle; `client.ts` starts it from beside `index`
+			entrypoints: ["./src/index.ts", "./src/highlight.ts"],
+			banner: "globalThis.UPNG = undefined;",
 			plugins: [
 				{
 					name: "react-compiler",

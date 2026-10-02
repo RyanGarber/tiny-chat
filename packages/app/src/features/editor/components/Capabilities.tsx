@@ -1,5 +1,6 @@
 import {
 	ActionIcon,
+	Badge,
 	Box,
 	Button,
 	Card,
@@ -11,6 +12,7 @@ import {
 	SegmentedControl,
 	Space,
 	Stack,
+	Switch,
 	Tabs,
 	TagsInput,
 	Text,
@@ -19,15 +21,19 @@ import {
 import {
 	ArrowClockwiseIcon,
 	CaretDownIcon,
+	CaretLeftIcon,
 	CaretRightIcon,
+	CheckCircleIcon,
 	GraduationCapIcon,
 	PlusIcon,
 	TrashIcon,
 	WarningCircleIcon,
 	WarningDiamondIcon,
 	WrenchIcon,
+	XCircleIcon,
 } from "@phosphor-icons/react";
 import { useIsFetching } from "@tanstack/react-query";
+import { useBrowser } from "@tiny-chat/client/features/agent/hooks/useBrowser.ts";
 import { useConfig } from "@tiny-chat/client/features/agent/hooks/useConfig.ts";
 import { mcpServerQueryKey } from "@tiny-chat/client/features/agent/hooks/useMcp.ts";
 import {
@@ -35,13 +41,15 @@ import {
 	useTools,
 } from "@tiny-chat/client/features/agent/hooks/useTools.ts";
 import { useMcpServerSettings } from "@tiny-chat/client/features/settings/hooks/useMcpServerSettings.ts";
+import { useModelSettings } from "@tiny-chat/client/features/settings/hooks/useModelSettings.ts";
 import { read_file } from "@tiny-chat/core/features/tool/tools/shell/read_file.ts";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import {
 	type CapabilitiesType,
 	useAppStore,
 } from "#app/core/stores/useAppStore.ts";
 import scrollable from "#app/core/styles/scrollable.module.css";
+import ConfigPanel from "#app/features/editor/components/ConfigPanel.tsx";
 import { useTauri } from "#app/features/tauri/hooks/useTauri.ts";
 import Dropzone from "#app/features/upload/components/Dropzone.tsx";
 import {
@@ -57,6 +65,9 @@ import type { Toolset } from "#core/features/tool/types/tool.ts";
 import { ToolUtils } from "#core/features/tool/utils/ToolUtils.ts";
 
 const SHELL_TOOLSET = "shell";
+const BROWSER_TOOLSET = "browser";
+const SUBAGENTS_TOOLSET = "subagents";
+const MODAL_Z_INDEX = 1000;
 type McpServers = NonNullable<zMCPServers>;
 type McpServerSetting = McpServers[keyof McpServers];
 
@@ -367,60 +378,250 @@ function McpServerCard({
 	);
 }
 
+function ToolsetCard({
+	toolset,
+	panel,
+}: {
+	toolset: McpToolset | Toolset<any>;
+	panel?: ReactNode;
+}) {
+	const { config, setConfig } = useConfig();
+	const [expanded, setExpanded] = useState(false);
+
+	const toolsetName = ToolUtils.name({ toolset });
+	const toolNames = toolset.tools.map((tool) =>
+		ToolUtils.name({ toolset, tool }),
+	);
+
+	const card = (
+		<Checkbox.Card
+			p="xs"
+			withBorder={!panel}
+			checked={ToolUtils.checkOne({ toolset, config })}
+			onClick={() => {
+				setConfig({
+					...config,
+					toolsets: !config.toolsets.includes(toolsetName)
+						? [...config.toolsets, toolsetName]
+						: config.toolsets.filter((name) => name !== toolsetName),
+				});
+			}}
+			style={{
+				cursor: !toolset.status.valid ? "not-allowed" : undefined,
+			}}
+			disabled={!toolset.status.valid}
+			opacity={!toolset.status.valid ? 0.5 : 1}
+		>
+			<Group wrap="nowrap" align="flex-start">
+				<Checkbox.Indicator />
+				<Stack gap={5} miw={0} flex={1}>
+					<Text size="xs">{toolsetName}</Text>
+					<Text size="xs" c="dimmed">
+						{toolNames.map((toolName, i) => (
+							<span key={toolName}>
+								{`${toolName}${i < toolset.tools.length - 1 ? ", " : ""}`}
+							</span>
+						))}
+					</Text>
+					{!!toolset.status.error && (
+						<Group gap="xs" c="red">
+							<WarningCircleIcon size={14} />
+							<Text size="xs">{CommonUtils.formatError(toolset.status)}</Text>
+						</Group>
+					)}
+				</Stack>
+			</Group>
+		</Checkbox.Card>
+	);
+
+	if (!panel) return card;
+
+	return (
+		<Card withBorder padding={0}>
+			<Group wrap="nowrap" gap={0} align="flex-start">
+				<Box flex={1} miw={0}>
+					{card}
+				</Box>
+				<ActionIcon
+					m={6}
+					variant="transparent"
+					c="dimmed"
+					aria-label={`${expanded ? "Collapse" : "Expand"} ${toolsetName}`}
+					aria-expanded={expanded}
+					onClick={() => setExpanded((value) => !value)}
+				>
+					{expanded ? <CaretDownIcon size={16} /> : <CaretLeftIcon size={16} />}
+				</ActionIcon>
+			</Group>
+			<Collapse expanded={expanded}>
+				<Box px="xs" pb="xs">
+					{expanded && panel}
+				</Box>
+			</Collapse>
+		</Card>
+	);
+}
+
 function ToolsetView({
 	toolsets,
 }: {
 	toolsets: McpToolset[] | Toolset<any>[];
 }) {
-	const { config, setConfig } = useConfig();
+	const { isTauriDesktop } = useTauri();
 
 	return toolsets.map((toolset) => {
 		const toolsetName = ToolUtils.name({ toolset });
-		const toolNames = toolset.tools.map((tool) =>
-			ToolUtils.name({ toolset, tool }),
-		);
-
 		return (
-			<Checkbox.Card
+			<ToolsetCard
 				key={toolsetName}
-				p="xs"
-				checked={ToolUtils.checkOne({ toolset, config })}
-				onClick={() => {
-					setConfig({
-						...config,
-						toolsets: !config.toolsets.includes(toolsetName)
-							? [...config.toolsets, toolsetName]
-							: config.toolsets.filter((name) => name !== toolsetName),
-					});
-				}}
-				style={{
-					cursor: !toolset.status.valid ? "not-allowed" : undefined,
-				}}
-				disabled={!toolset.status.valid}
-				opacity={!toolset.status.valid ? 0.5 : 1}
-			>
-				<Group wrap="nowrap" align="flex-start">
-					<Checkbox.Indicator />
-					<Stack gap={5} miw={0}>
-						<Text size="xs">{toolsetName}</Text>
-						<Text size="xs" c="dimmed">
-							{toolNames.map((toolName, i) => (
-								<span key={toolName}>
-									{`${toolName}${i < toolset.tools.length - 1 ? ", " : ""}`}
-								</span>
-							))}
-						</Text>
-						{!!toolset.status.error && (
-							<Group gap="xs" c="red">
-								<WarningCircleIcon size={14} />
-								<Text size="xs">{CommonUtils.formatError(toolset.status)}</Text>
-							</Group>
-						)}
-					</Stack>
-				</Group>
-			</Checkbox.Card>
+				toolset={toolset}
+				panel={
+					toolsetName === BROWSER_TOOLSET && isTauriDesktop.data ? (
+						<BrowserView />
+					) : toolsetName === SUBAGENTS_TOOLSET ? (
+						<SubagentView />
+					) : undefined
+				}
+			/>
 		);
 	});
+}
+
+function BrowserRequirement({
+	label,
+	found,
+	children,
+}: {
+	label: string;
+	found: boolean;
+	children: ReactNode;
+}) {
+	return (
+		<Card withBorder padding="xs">
+			<Group wrap="nowrap" align="flex-start">
+				<Box pt={2} c={found ? "green" : "red"}>
+					{found ? <CheckCircleIcon size={16} /> : <XCircleIcon size={16} />}
+				</Box>
+				<Stack gap={5} miw={0} flex={1}>
+					<Text size="xs">{label}</Text>
+					{children}
+				</Stack>
+			</Group>
+		</Card>
+	);
+}
+
+const pathStyle = {
+	fontFamily: "monospace",
+	overflow: "hidden",
+	textOverflow: "ellipsis",
+	whiteSpace: "nowrap",
+} as const;
+
+function BrowserView() {
+	const { browserStatus, browserSettings, recheckBrowser, setBrowserSettings } =
+		useBrowser();
+	const isChecking =
+		browserStatus.isFetching || recheckBrowser.isPending || !browserStatus.data;
+	const status = recheckBrowser.data ?? browserStatus.data;
+
+	return (
+		<Stack gap="xs">
+			<Group justify="space-between" wrap="nowrap">
+				<Switch
+					size="xs"
+					label="Show the browser window"
+					checked={browserSettings.data?.headed ?? false}
+					onChange={(event) =>
+						setBrowserSettings.mutate({
+							headed: event.currentTarget.checked,
+						})
+					}
+				/>
+				<ActionIcon
+					variant="transparent"
+					loading={isChecking}
+					aria-label="Recheck browsers"
+					onClick={() => recheckBrowser.mutate()}
+				>
+					<ArrowClockwiseIcon size={18} />
+				</ActionIcon>
+			</Group>
+			{status && !isChecking && (
+				<>
+					<BrowserRequirement label="Node.js" found={!!status.node}>
+						<Text size="xs" c="dimmed" style={pathStyle}>
+							{status.node
+								? `${status.node.version} · ${status.node.path}`
+								: "Not found"}
+						</Text>
+					</BrowserRequirement>
+					<BrowserRequirement label="Playwright" found={!!status.playwright}>
+						<Text size="xs" c="dimmed" style={pathStyle}>
+							{status.playwright
+								? `${status.playwright.name}@${status.playwright.version} · ${status.playwright.path}`
+								: "Not found · npm install -g playwright"}
+						</Text>
+					</BrowserRequirement>
+					<BrowserRequirement label="Browsers" found={!!status.browsers.length}>
+						{status.browsers.length ? (
+							status.browsers.map((browser) => (
+								<Stack key={browser.path} gap={2} miw={0}>
+									<Group gap={5}>
+										<Text size="xs">{browser.name}</Text>
+										{browser.version && (
+											<Text size="xs" c="dimmed">
+												{browser.version}
+											</Text>
+										)}
+										<Badge size="xs" variant="light" color="gray">
+											{browser.source}
+										</Badge>
+										{browser.path === status.browser?.path && (
+											<Badge size="xs" variant="light">
+												In use
+											</Badge>
+										)}
+									</Group>
+									<Text size="xs" c="dimmed" style={pathStyle}>
+										{browser.path}
+									</Text>
+								</Stack>
+							))
+						) : (
+							<Text size="xs" c="dimmed">
+								Not found · npx playwright install chromium
+							</Text>
+						)}
+					</BrowserRequirement>
+					{status.error && (
+						<Group gap="xs" c="red" wrap="nowrap">
+							<WarningCircleIcon size={14} />
+							<Text size="xs">{status.error}</Text>
+						</Group>
+					)}
+				</>
+			)}
+		</Stack>
+	);
+}
+
+function SubagentView() {
+	const { subagentConfig, updateSubagentConfig } = useModelSettings();
+
+	return (
+		<Stack gap={5}>
+			<Text size="xs" c="dimmed">
+				The model, tools and skills subagents run with
+			</Text>
+			<ConfigPanel
+				config={subagentConfig}
+				setConfig={updateSubagentConfig}
+				onClear={() => updateSubagentConfig(null)}
+				zIndex={MODAL_Z_INDEX + 1}
+			/>
+		</Stack>
+	);
 }
 
 function SkillView({ skills, native }: { skills: zSkill[]; native?: boolean }) {
@@ -531,7 +732,7 @@ export default function Capabilities() {
 			opened={currentModal === "capabilities"}
 			onClose={() => setCurrentModal(null)}
 			title="Tools & Skills"
-			zIndex={1000}
+			zIndex={MODAL_Z_INDEX}
 			size="lg"
 			centered
 			classNames={scrollable}

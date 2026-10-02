@@ -7,9 +7,13 @@ import { DataUtils } from "../../../data/utils/DataUtils.ts";
 import type { ToolDisplay } from "../../types/display.ts";
 import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
 
+const BACKGROUND_DESCRIPTION =
+	"Set to TRUE to run the subagent in the background and carry on working meanwhile. Its result is sent to you when it finishes, and your turn does not end until then.";
+
 export const spawn_subagent = {
 	name: "spawn_subagent",
-	description: "Run a subagent to perform a task.",
+	description:
+		"Run a subagent to perform a task. Subagents called together run at the same time.",
 	input: z.object({
 		task: z
 			.string()
@@ -21,6 +25,7 @@ export const spawn_subagent = {
 			.describe(
 				"Detailed instructions for the agent, including the task to perform and the results to provide.",
 			),
+		background: z.boolean().optional().describe(BACKGROUND_DESCRIPTION),
 	}),
 	output: z.object({
 		response: z.string(),
@@ -63,6 +68,7 @@ export const createSpawnSubagentTool: ToolFactory<
 	...spawn_subagent,
 	...options,
 	display,
+	background: true,
 	execute: async ({ input, stream, abort, context }) => {
 		const { subagentConfig } = SettingsUtils.of(
 			context.user,

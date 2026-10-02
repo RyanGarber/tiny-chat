@@ -46,6 +46,8 @@ export type CompletionsProps<
 	actions?: Action[];
 	selectFirstOnChange?: boolean;
 	stickToBottom?: number;
+	/** Takes the full height it is given, as a sidebar does, instead of half the screen at most. */
+	fill?: boolean;
 };
 
 export default function Completions<
@@ -67,6 +69,7 @@ export default function Completions<
 	actions,
 	selectFirstOnChange = true,
 	stickToBottom,
+	fill = false,
 	...props
 }: CompletionsProps<T1, T2>) {
 	const { rows } = useWindowSize();
@@ -165,13 +168,17 @@ export default function Completions<
 		<Box
 			padding={1}
 			flexDirection="column"
-			flexShrink={0}
+			flexShrink={fill ? 1 : 0}
+			flexGrow={fill ? 1 : 0}
+			minHeight={fill ? 0 : undefined}
 			backgroundColor="interior"
 		>
 			{before}
 			<ScrollView
 				selectedIndex={selected}
-				maxHeight={Math.floor(rows / 2)}
+				{...(fill
+					? { flexGrow: 1, flexShrink: 1, flexBasis: 0, minHeight: 0 }
+					: { maxHeight: Math.floor(rows / 2) })}
 				paddingBottom={1}
 				{...props}
 			>

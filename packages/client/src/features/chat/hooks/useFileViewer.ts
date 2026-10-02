@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { useChatFiles } from "@tiny-chat/client/features/chat/hooks/useChatFiles.ts";
 import { FileExtractionService } from "@tiny-chat/core/features/file/services/FileExtractionService.ts";
 import { FileTypeUtils } from "@tiny-chat/core/features/file/utils/FileTypeUtils.ts";
 import { FileUtils } from "@tiny-chat/core/features/file/utils/FileUtils.ts";
 import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
-import { client } from "#app/client.ts";
+import { useContext } from "react";
+import { ClientContext } from "../../../client.ts";
+import { useChatFiles } from "./useChatFiles.ts";
 
 /**
  * A file as readable text.
@@ -19,6 +20,7 @@ export const useFileViewer = ({
 }: {
 	file: { path: string; directory: boolean };
 }) => {
+	const client = useContext(ClientContext);
 	const { readChatFile, readChatDirectory } = useChatFiles();
 
 	return useQuery<{

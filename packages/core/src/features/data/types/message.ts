@@ -3,13 +3,14 @@ import type { Model } from "../../../core/services/PostgresService.ts";
 import type { zData, zMetadata } from "./part.ts";
 
 const DEFAULT_TOOLSETS = [
-	"questions",
-	"github",
 	"actions",
+	"browser",
+	"github",
 	"memories",
-	"web",
-	"subagents",
+	"questions",
 	"shell",
+	"subagents",
+	"web",
 ];
 
 const DEFAULT_SKILLS: string[] = [];

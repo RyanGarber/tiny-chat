@@ -1,15 +1,19 @@
+import {
+	getEditorPart,
+	useEditorPartStore,
+} from "@tiny-chat/client/features/editor/stores/useEditorPartStore.ts";
 import type { EditorNode } from "@tiny-chat/client/features/editor/types/node.ts";
 import { AtomUtils } from "@tiny-chat/client/features/editor/utils/AtomUtils.ts";
-import type { TextAreaHandle } from "react-ink-textarea";
+import { PasteUtils } from "@tiny-chat/client/features/editor/utils/PasteUtils.ts";
 import { create } from "zustand";
-import { type EditorSelection, EditorUtils } from "../utils/EditorUtils.ts";
+import type { TextareaSelection } from "../../textarea/types/textarea.ts";
+import { TextareaUtils } from "../../textarea/utils/TextareaUtils.ts";
+import { type EditorUnfolded, EditorUtils } from "../utils/EditorUtils.ts";
 
 interface EditorStore {
-	selection: EditorSelection | null;
-	setSelection: (selection: EditorSelection | null) => void;
+	selection: TextareaSelection | null;
+	setSelection: (selection: TextareaSelection | null) => void;
 	focusedFeedbackId: string | null;
-	editor: TextAreaHandle | null;
-	setEditor: (editor: TextAreaHandle | null) => void;
 
 	content: string;
 	setContent: (content: string) => void;
@@ -24,14 +28,29 @@ interface EditorStore {
 
 	/** Writes text in at the cursor, over `range` when one is given. */
 	insert: (text: string, range?: [start: number, end: number]) => void;
+
+	/** The paste written out in full in place of its atom, while there is one. */
+	unfolded: EditorUnfolded | null;
+
+	/**
+	 * Writes the paste at an offset out in full in place of its atom, with the
+	 * cursor at its start. False when there is no paste there.
+	 */
+	unfold: (offset: number) => boolean;
+
+	/**
+	 * Folds the unfolded paste back into an atom once the cursor has left it,
+	 * keeping whatever was edited inside of it.
+	 *
+	 * @param isForced Folds it wherever the cursor is, for a message on its way out.
+	 */
+	refold: (isForced?: boolean) => void;
 }
 
 export const useEditorStore = create<EditorStore>((set, get) => ({
 	selection: null,
 	setSelection: (selection) => set({ selection }),
 	focusedFeedbackId: null,
-	editor: null,
-	setEditor: (editor) => set({ editor }),
 
 	content: "",
 	setContent: (content) => set({ content }),
@@ -42,14 +61,86 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
 	insert: (text, range) => {
 		const { content, cursor } = get();
 
-		const offset = EditorUtils.offset(content, cursor);
+		const offset = TextareaUtils.offset(content, cursor);
 		const [start, end] = range ?? [offset, offset];
 
 		const next = content.slice(0, start) + text + content.slice(end);
 
 		set({
 			content: next,
-			cursor: EditorUtils.cursor(next, start + text.length),
+			cursor: TextareaUtils.cursor(next, start + text.length),
+		});
+	},
+
+	unfolded: null,
+
+	unfold: (offset) => {
+		let at = offset;
+
+		// One open at a time: a click outside the one already open folds it up
+		// first, which moves anything after it.
+		const { unfolded } = get();
+		const span = unfolded && EditorUtils.unfolded(get().content, unfolded);
+		if (span) {
+			if (at >= span[0] && at <= span[1]) return false;
+
+			const length = get().content.length;
+			get().refold(true);
+			if (at > span[1]) at += get().content.length - length;
+		}
+
+		const { content } = get();
+		const opened = EditorUtils.unfold({
+			value: content,
+			atoms: AtomUtils.atoms(),
+			offset: at,
+		});
+		if (!opened) return false;
+
+		set({
+			content: opened.value,
+			cursor: TextareaUtils.cursor(opened.value, opened.start),
+			selection: null,
+			unfolded: opened.unfolded,
+		});
+		return true;
+	},
+
+	refold: (isForced = false) => {
+		const { content, cursor, unfolded } = get();
+		if (!unfolded) return;
+
+		const span = EditorUtils.unfolded(content, unfolded);
+		if (!span) {
+			// Edited from outside, so it stands as the text it now is.
+			set({ unfolded: null });
+			return;
+		}
+
+		const [start, end] = span;
+		const offset = TextareaUtils.offset(content, cursor);
+		if (!isForced && offset >= start && offset <= end) return;
+
+		const { before, after } = unfolded;
+		const text = content.slice(start, end);
+		const part = getEditorPart("paste", unfolded.id);
+
+		// Emptied out, or gone from the registry, it is left as what is there.
+		let folded = text;
+		if (part && text.trim()) {
+			const edited = { ...part, text, lines: PasteUtils.lines(text).length };
+			useEditorPartStore.getState().addPart(edited);
+			folded = AtomUtils.fromPart({ content: before + after, part: edited });
+		}
+
+		const next = before + folded + after;
+		set({
+			content: next,
+			cursor: TextareaUtils.cursor(
+				next,
+				offset < start ? offset : offset - (end - start) + folded.length,
+			),
+			unfolded: null,
 		});
 	},
 }));

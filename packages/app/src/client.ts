@@ -1,5 +1,7 @@
 import { createClient } from "@tiny-chat/client/client.ts";
 import { MarkdownDataUtils } from "@tiny-chat/client/features/message/utils/MarkdownDataUtils.ts";
+import HighlightWorker from "@tiny-chat/core/core/services/HighlightWorker.ts?worker";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
 import { FileUtils } from "@tiny-chat/core/features/file/utils/FileUtils.ts";
 import type {
 	ModelProvider,
@@ -25,6 +27,7 @@ export const client = createClient({
 	setToken: (token) => localStorage.setItem("token", token ?? ""),
 	getStorage: (key) => JSON.parse(localStorage.getItem(key) ?? "null"),
 	setStorage: (key, value) => localStorage.setItem(key, JSON.stringify(value)),
+	highlighter: () => new HighlightWorker({ name: "highlight" }),
 	providers: {
 		getModelProviders: async ({ user }) => {
 			const providers: ModelProvider<any>[] = [];
@@ -121,13 +124,21 @@ export const client = createClient({
 						is_dir: item.is_dir,
 					}));
 				},
+				walk: async ({ path, maxDepth, maxEntries, prune }) => {
+					return await TauriUtils.invoke<{
+						root: string;
+						entries: { path: string; is_dir: boolean }[];
+						truncated: boolean;
+					}>("walk", { path, maxDepth, maxEntries, prune });
+				},
 				writeFile: async ({ path, content }) => {
 					await TauriUtils.invoke("write_file", { path, content });
 					return { path, success: true };
 				},
 				// The command reports its output over a channel while it runs; the
-				// resolved value still carries all of it.
-				exec: async ({ command, stream }) => {
+				// resolved value still carries all of it. It is stopped by the id it
+				// was started under.
+				exec: async ({ command, stream, abort }) => {
 					const { Channel } = await import("@tauri-apps/api/core");
 					const channel = new Channel<{
 						type: "stdout" | "stderr";
@@ -135,11 +146,19 @@ export const client = createClient({
 					}>();
 					channel.onmessage = (event) => stream?.(event);
 
-					return await TauriUtils.invoke<{
-						code?: number;
-						stdout: string;
-						stderr: string;
-					}>("shell_exec", { command, onOutputChannel: channel });
+					abort?.throwIfAborted();
+					const id = CommonUtils.getRandomId();
+					const kill = () => void TauriUtils.invoke("shell_kill", { id });
+					abort?.addEventListener("abort", kill, { once: true });
+					try {
+						return await TauriUtils.invoke<{
+							code?: number;
+							stdout: string;
+							stderr: string;
+						}>("shell_exec", { id, command, onOutputChannel: channel });
+					} finally {
+						abort?.removeEventListener("abort", kill);
+					}
 				},
 			}
 		: undefined,

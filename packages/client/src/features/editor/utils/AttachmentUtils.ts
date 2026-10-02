@@ -74,7 +74,8 @@ export const AttachmentUtils = {
 	/**
 	 * Narrow attachment groups to those matching `query`, given the last path
 	 * segment being typed. Paths that traverse into a directory only include
-	 * items that can be traversed into further.
+	 * items that can be traversed into further. A group that was already
+	 * matched keeps its items and their order.
 	 */
 	filter: ({
 		groups,
@@ -87,13 +88,17 @@ export const AttachmentUtils = {
 		const traversing = query.includes("/");
 
 		return groups
-			.map((group) => ({
-				...group,
-				items: CompletionUtils.filter({
-					items: group.items.filter((item) => !traversing || item.traversable),
-					query: search,
-				}),
-			}))
+			.map((group) => {
+				const items = group.items.filter(
+					(item) => !traversing || item.traversable,
+				);
+				return {
+					...group,
+					items: group.matched
+						? items
+						: CompletionUtils.filter({ items, query: search }),
+				};
+			})
 			.filter((group) => group.items.length > 0);
 	},
 

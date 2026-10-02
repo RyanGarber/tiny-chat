@@ -1,7 +1,7 @@
 import type { CompletionGroup } from "@tiny-chat/client/features/editor/types/completion.ts";
 import Text from "../../../core/components/Text.tsx";
 import Completions from "../../editor/components/Completions.tsx";
-import Textarea from "../../editor/components/Textarea.tsx";
+import Textarea from "../../textarea/components/Textarea.tsx";
 import type { ChoiceItem } from "./Choice.tsx";
 
 export interface TextEntry {
@@ -117,9 +117,9 @@ export default function TextList({
 								focus={selected}
 								value={draft.text}
 								onChange={(text) => setDraft({ ...draft, text })}
+								// An entry is committed by Enter, under a modifier or not.
+								onEnter={() => commit(draft.text)}
 								onSubmit={commit}
-								initialLineCount={1}
-								autoNewLineLimit={0}
 								placeholder={placeholder}
 							/>
 						</>

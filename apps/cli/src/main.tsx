@@ -26,7 +26,8 @@ const cli = new Command()
 	);
 
 cli.action(() => {
-	render(
+	const stdin = StdinUtils.filter(process.stdin);
+	const instance = render(
 		<QueryClientProvider client={client.queryClient}>
 			<ClientContext value={client}>
 				<ThemeContextProvider>
@@ -39,7 +40,7 @@ cli.action(() => {
 		{
 			exitOnCtrlC: false,
 			patchConsole: CommonUtils.isTruthy(process.env.DEV),
-			stdin: StdinUtils.filter(process.stdin),
+			stdin,
 			// Legacy terminal input cannot say which modifiers a key was pressed
 			// with: an arrow under Shift, under Alt, or under both can all arrive
 			// as the same bytes, which is what leaves Alt and Shift selection to
@@ -47,6 +48,15 @@ cli.action(() => {
 			// apart, and the query behind `auto` is ignored by terminals that do
 			// not speak it, so the ones that do need no setting turned on.
 			kittyKeyboard: { mode: "auto" },
+		},
+	);
+	// Detach the adapter without closing the terminal owned by the process.
+	void instance.waitUntilExit().then(
+		() => {
+			stdin.destroy();
+		},
+		() => {
+			stdin.destroy();
 		},
 	);
 });

@@ -12,6 +12,7 @@ import {
 	useState,
 } from "react";
 import { useMouse } from "../hooks/useMouse.ts";
+import { useWidth } from "../hooks/useWidth.ts";
 import { MouseUtils } from "../utils/MouseUtils.ts";
 import Box, { type BoxProps } from "./Box.tsx";
 
@@ -118,7 +119,10 @@ export default function ScrollView({
 	overscan = 40,
 	...props
 }: ScrollViewProps) {
-	const { columns, rows } = useWindowSize();
+	const { rows } = useWindowSize();
+	// Heights are only good for the width they were measured at, which is the
+	// column this view sits in rather than the whole terminal.
+	const columns = useWidth();
 
 	const viewportRef = useRef<DOMElement | null>(null);
 	const contentRef = useRef<DOMElement | null>(null);

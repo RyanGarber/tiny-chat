@@ -95,6 +95,7 @@ export const OpenAiProvider: ModelProvider<_OpenAIProvider> = {
 		if (ModelProviderUtils.isModel(model, "gpt", "o1", "o3", "o4")) {
 			const isReasoning = ModelProviderUtils.isModel(
 				model,
+				"gpt 6",
 				"gpt 5",
 				"gpt 4o",
 				"o1",

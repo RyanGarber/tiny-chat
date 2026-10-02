@@ -1,6 +1,9 @@
-import type { HighlightResult } from "@streamdown/code";
 import { useThemes } from "@tiny-chat/client/features/settings/hooks/useThemes.ts";
-import { CodeUtils } from "@tiny-chat/core/core/utils/CodeUtils.ts";
+import {
+	type CodeRequest,
+	type CodeResult,
+	CodeUtils,
+} from "@tiny-chat/core/core/utils/CodeUtils.ts";
 import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
 import { CodeBlock as _CodeBlock } from "@tiptap/extension-code-block";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
@@ -20,9 +23,10 @@ import { useEffect } from "react";
 
 type CodeBlockEntry = {
 	from: number;
-	language: string | null;
-	theme: string | null;
-	result: HighlightResult;
+	request: CodeRequest;
+	result: CodeResult;
+	/** Aborts this block's pending highlight, if it has one. */
+	controller: AbortController | null;
 };
 
 type CodeBlockPluginState = {
@@ -113,6 +117,10 @@ const CodeBlock = _CodeBlock
 						view = editorView;
 						return {
 							destroy: () => {
+								for (const block of key.getState(editorView.state)?.blocks ??
+									[]) {
+									block.controller?.abort();
+								}
 								view = null;
 							},
 						};
@@ -146,47 +154,63 @@ function onHighlight(
 ): CodeBlockPluginState {
 	const decorations: Decoration[] = [];
 	const blocks: CodeBlockEntry[] = [];
+	const reused = new Set<CodeBlockEntry>();
 
 	doc.descendants((node, pos) => {
 		if (node.type.name !== "codeBlock") return;
 
-		const text = node.textContent;
-		const language = node.attrs.language as string | null;
-		const theme = node.attrs.codeTheme as string | null;
+		const request: CodeRequest = {
+			code: node.textContent,
+			language: node.attrs.language as string | null,
+			theme: node.attrs.codeTheme as string | null,
+		};
 
 		const previous = previousBlocks.find(
 			(block) =>
 				block.from === pos &&
-				block.language === language &&
-				block.theme === theme,
+				block.request.language === request.language &&
+				block.request.theme === request.theme,
 		);
+		if (previous) reused.add(previous);
 
-		// `settled` distinguishes a synchronous answer (already cached, or the
-		// language isn't supported) from one that will only arrive later.
-		let settled = false;
-		let fresh: HighlightResult | undefined;
-		const placeholder =
-			CodeUtils.highlight({ language, theme, code: text }, (resolved) => {
-				if (settled) {
-					// Fired asynchronously, well after this function returned:
-					// ask the caller to redraw so the new tokens get applied.
-					onAsyncReady();
-				} else {
-					fresh = resolved;
-				}
-			}) ?? CodeUtils.unhighlight(text);
-		settled = true;
+		// Draw now with whatever is known (cached tokens, or the last result
+		// with unchanged lines kept) and redraw once the worker answers.
+		const result = CodeUtils.placeholder(request, previous);
+		let controller: AbortController | null = null;
 
-		const result = fresh ?? previous?.result ?? placeholder;
+		if (CodeUtils.peek(request)) {
+			previous?.controller?.abort();
+		} else if (
+			previous?.controller &&
+			!previous.controller.signal.aborted &&
+			previous.request.code === request.code
+		) {
+			controller = previous.controller; // already on its way
+		} else {
+			previous?.controller?.abort();
+			const created = new AbortController();
+			controller = created;
+			void CodeUtils.highlight(request, { signal: created.signal }).then(
+				(resolved) => {
+					if (resolved) onAsyncReady();
+				},
+			);
+		}
+
 		blocks.push({
 			from: pos,
-			language,
-			theme,
-			result: fresh ?? previous?.result ?? placeholder,
+			request,
+			// keep the last real highlight to reconcile against, not a placeholder
+			result: CodeUtils.peek(request) ?? previous?.result ?? result,
+			controller,
 		});
 
-		toDecorations(pos, node, text, result, decorations);
+		toDecorations(pos, node, request.code, result, decorations);
 	});
+
+	for (const block of previousBlocks) {
+		if (!reused.has(block)) block.controller?.abort();
+	}
 
 	return { decorations: DecorationSet.create(doc, decorations), blocks };
 }
@@ -195,7 +219,7 @@ function toDecorations(
 	pos: number,
 	node: ProseMirrorNode,
 	text: string,
-	result: HighlightResult,
+	result: CodeResult,
 	decorations: Decoration[],
 ) {
 	const style: Record<string, string> = {};
@@ -244,7 +268,7 @@ function toDecorations(
 }
 
 function toDecorationAttributes(
-	token: HighlightResult["tokens"][number][number],
+	token: CodeResult["tokens"][number][number],
 ): DecorationAttrs {
 	let style = "";
 	let hasBg = Boolean(token.bgColor);

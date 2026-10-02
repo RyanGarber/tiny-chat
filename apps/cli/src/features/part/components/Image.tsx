@@ -1,7 +1,9 @@
 import { useWindowSize } from "ink";
 import _Image, { type ImageProps } from "ink-picture";
 import Box from "../../../core/components/Box.tsx";
+import Content from "../../../core/components/Content.tsx";
 import type { Color } from "../../../core/hooks/useColor.ts";
+import { useWidth } from "../../../core/hooks/useWidth.ts";
 
 const AUTO_SIZE = 854902;
 
@@ -17,7 +19,8 @@ export default function Image({
 	center?: boolean;
 	backgroundColor?: Color;
 }) {
-	const { columns, rows } = useWindowSize();
+	const { rows } = useWindowSize();
+	const columns = useWidth();
 
 	if (width === AUTO_SIZE) {
 		width = Math.floor(columns / 2);
@@ -30,17 +33,25 @@ export default function Image({
 		<_Image {...props} width={width} height={height} objectFit="contain" />
 	);
 
-	if (center) {
-		return (
-			<Box
-				flexGrow={1}
-				justifyContent="center"
-				backgroundColor={backgroundColor}
-			>
-				{image}
-			</Box>
-		);
-	}
+	// the original image, as the app copies it
+	const formatter = async () =>
+		typeof props.src === "string"
+			? new Uint8Array(await (await fetch(props.src)).arrayBuffer())
+			: new Uint8Array(props.src);
 
-	return image;
+	return (
+		<Content formatter={formatter} backgroundColor={backgroundColor}>
+			{center ? (
+				<Box
+					flexGrow={1}
+					justifyContent="center"
+					backgroundColor={backgroundColor}
+				>
+					{image}
+				</Box>
+			) : (
+				image
+			)}
+		</Content>
+	);
 }

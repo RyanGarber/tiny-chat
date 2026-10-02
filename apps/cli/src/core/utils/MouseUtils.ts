@@ -1,4 +1,6 @@
 import { type DOMElement, measureElement } from "ink";
+import stringWidth from "string-width";
+import wrapAnsi from "wrap-ansi";
 
 /** A position in terminal cells, measured from the top left of the screen. */
 export type MousePoint = {
@@ -44,6 +46,64 @@ const CTRL = 16;
 const MOTION = 32;
 /** The wheel turned, with the button bits carrying the direction. */
 const WHEEL = 64;
+
+type DOMNode = DOMElement["childNodes"][number];
+
+/** The text a node shows, before Ink styles it. */
+const textOf = (node: DOMNode): string =>
+	node.nodeName === "#text"
+		? node.nodeValue
+		: node.childNodes.map(textOf).join("");
+
+/** The text that comes before `target` inside `node`, or null if it is not there. */
+const textBefore = (node: DOMElement, target: DOMElement): string | null => {
+	let text = "";
+	for (const child of node.childNodes) {
+		if (child === target) return text;
+		if (child.nodeName !== "#text") {
+			const before = textBefore(child, target);
+			if (before !== null) return text + before;
+		}
+		text += textOf(child);
+	}
+	return null;
+};
+
+/**
+ * Where the character at `index` of `text` lands once Ink has wrapped it into
+ * `wrapped`. Wrapping only adds line breaks, and at most drops the spaces it
+ * breaks on, so the two are walked side by side.
+ */
+const locate = (text: string, wrapped: string, index: number) => {
+	let line = 0;
+	let lineStart = 0;
+	let j = 0;
+	for (let i = 0; i < index && j < wrapped.length; ) {
+		if (text[i] === wrapped[j]) {
+			if (wrapped[j] === "\n") {
+				line++;
+				lineStart = j + 1;
+			}
+			i++;
+			j++;
+		} else if (wrapped[j] === "\n") {
+			j++;
+			line++;
+			lineStart = j;
+		} else if (text[i] === " ") {
+			i++;
+		} else {
+			return null;
+		}
+	}
+	// The character itself may be the first on the next line.
+	if (wrapped[j] === "\n") {
+		j++;
+		line++;
+		lineStart = j;
+	}
+	return { line, column: stringWidth(wrapped.slice(lineStart, j)) };
+};
 
 export const MouseUtils = {
 	/**
@@ -102,6 +162,76 @@ export const MouseUtils = {
 		const top = rows - (root.yogaNode?.getComputedHeight() ?? rows);
 
 		return { x, y: y + top, width, height };
+	},
+
+	/**
+	 * Where an inline run of text (a `<Text>` nested in another) sits on screen,
+	 * or null where it cannot be seen. Inline text has no layout of its own, so
+	 * the block it sits in is wrapped the way Ink wraps it to find the run.
+	 *
+	 * Only the run's first character is placed, and it is assumed to fit on one
+	 * line, which holds for the short labels this is meant for.
+	 */
+	textBounds: (node: DOMElement, rows: number): MouseBounds | null => {
+		let block = node.parentNode;
+		while (block && block.nodeName !== "ink-text") block = block.parentNode;
+		if (!block?.yogaNode) return null;
+
+		const textWrap = block.style.textWrap ?? "wrap";
+		if (textWrap !== "wrap" && textWrap !== "hard") return null;
+
+		const before = textBefore(block, node);
+		if (before === null) return null;
+
+		const own = textOf(node);
+		const text = textOf(block);
+		const bounds = MouseUtils.bounds(block, rows);
+
+		// Ink only wraps text that does not fit, so neither does this.
+		const fits = text
+			.split("\n")
+			.every((line) => stringWidth(line) <= bounds.width);
+		const wrapped = fits
+			? text
+			: wrapAnsi(text, bounds.width, {
+					trim: false,
+					hard: true,
+					wordWrap: textWrap === "wrap",
+				});
+
+		const position = locate(text, wrapped, before.length);
+		if (!position) return null;
+
+		const result = {
+			x: bounds.x + position.column,
+			y: bounds.y + position.line,
+			width: stringWidth(own),
+			height: 1,
+		};
+
+		// Rows scrolled out of a view are still laid out, just not drawn.
+		for (let parent = block.parentNode; parent; parent = parent.parentNode) {
+			const { overflow, overflowX, overflowY } = parent.style;
+			if (
+				overflow !== "hidden" &&
+				overflowX !== "hidden" &&
+				overflowY !== "hidden"
+			) {
+				continue;
+			}
+			const clip = MouseUtils.bounds(parent, rows);
+			if (
+				!MouseUtils.contains(clip, result) ||
+				!MouseUtils.contains(clip, {
+					x: result.x + result.width - 1,
+					y: result.y,
+				})
+			) {
+				return null;
+			}
+		}
+
+		return result;
 	},
 
 	contains: (bounds: MouseBounds, point: MousePoint) =>

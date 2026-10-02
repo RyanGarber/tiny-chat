@@ -1,4 +1,6 @@
 import * as fs from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
@@ -20,6 +22,9 @@ export default defineConfig({
 		include: ["**/*.test.ts"],
 		testTimeout: 30_000,
 		hookTimeout: 30_000,
-		globals: true
+		globals: true,
+		globalSetup: [
+			join(dirname(fileURLToPath(import.meta.url)), "./scripts/setup-test.ts"),
+		],
 	},
 });

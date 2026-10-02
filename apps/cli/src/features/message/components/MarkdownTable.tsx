@@ -1,4 +1,3 @@
-import { useWindowSize } from "ink";
 import {
 	Children,
 	cloneElement,
@@ -9,8 +8,10 @@ import {
 	useMemo,
 } from "react";
 import Box from "../../../core/components/Box.tsx";
+import Content from "../../../core/components/Content.tsx";
 import Divider from "../../../core/components/Divider.tsx";
 import Text from "../../../core/components/Text.tsx";
+import { useWidth } from "../../../core/hooks/useWidth.ts";
 
 type Align = "left" | "center" | "right";
 
@@ -101,6 +102,41 @@ function collectRows(children: ReactNode): RowData[] {
 	return rows;
 }
 
+const SEPARATORS: Record<Align, string> = {
+	left: "---",
+	center: ":---:",
+	right: "---:",
+};
+
+// The table back as markdown, the format the app copies first. The first row is
+// taken as the header, since that is the row markdown requires.
+function toMarkdown(children: ReactNode): string {
+	const rows = collectRows(children);
+	const colCount = rows.reduce(
+		(max, row) => Math.max(max, row.cells.length),
+		0,
+	);
+	if (colCount === 0) return "";
+
+	const line = (cells: string[]) => `| ${cells.join(" | ")} |`;
+	const cellsOf = (row: RowData) =>
+		Array.from({ length: colCount }, (_, i) =>
+			(row.cells[i]?.text ?? "").replaceAll("|", "\\|").replaceAll("\n", " "),
+		);
+
+	const [header, ...body] = rows;
+	return [
+		line(cellsOf(header)),
+		line(
+			Array.from(
+				{ length: colCount },
+				(_, i) => SEPARATORS[header.cells[i]?.align ?? "left"],
+			),
+		),
+		...body.map((row) => line(cellsOf(row))),
+	].join("\n");
+}
+
 function computeColumns(
 	children: ReactNode,
 	availableWidth: number,
@@ -157,7 +193,7 @@ function computeColumns(
  */
 
 export function TableComponent({ children }: { children?: ReactNode }) {
-	const { columns: terminalWidth } = useWindowSize();
+	const terminalWidth = useWidth();
 
 	const width = Math.max(20, terminalWidth - 4);
 
@@ -168,17 +204,19 @@ export function TableComponent({ children }: { children?: ReactNode }) {
 	);
 
 	return (
-		<Box
-			flexDirection="column"
-			width={width}
-			paddingX={2}
-			paddingY={1}
-			backgroundColor="surface"
-		>
-			<ColumnsContext.Provider value={columns}>
-				{children}
-			</ColumnsContext.Provider>
-		</Box>
+		<Content formatter={() => toMarkdown(children)} backgroundColor="surface">
+			<Box
+				flexDirection="column"
+				width={width}
+				paddingX={2}
+				paddingY={1}
+				backgroundColor="surface"
+			>
+				<ColumnsContext.Provider value={columns}>
+					{children}
+				</ColumnsContext.Provider>
+			</Box>
+		</Content>
 	);
 }
 

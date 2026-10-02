@@ -144,6 +144,17 @@ export const zInterjectionPart = _zDataPart.extend({
 	get value() {
 		return z.array(zDataSimplePart);
 	},
+	/**
+	 * Set when this reports a background tool call finishing rather than
+	 * carrying a message from the user: `value` is then the call's output.
+	 */
+	task: z
+		.object({
+			id: z.string(),
+			name: z.string(),
+			error: z.boolean().optional(),
+		})
+		.optional(),
 });
 export type zInterjectionPart = z.infer<typeof zInterjectionPart>;
 

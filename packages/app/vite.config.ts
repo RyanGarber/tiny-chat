@@ -9,6 +9,11 @@ import ViteInspect from "vite-plugin-inspect";
 import baseConfig from "../../vitest.config.base.ts";
 
 const host = process.env.TAURI_DEV_HOST;
+const hmr = !process.argv.includes("--no-hmr") && !process.env.NO_HMR;
+
+if (!hmr) {
+	console.log(":: disabling hmr");
+}
 
 export default mergeConfig(
 	baseConfig,
@@ -34,6 +39,10 @@ export default mergeConfig(
 		resolve: {
 			tsconfigPaths: true,
 		},
+		worker: {
+			// Shiki loads grammars and themes on demand, which needs code splitting
+			format: "es",
+		},
 		build: {
 			rolldownOptions: {
 				external: [/^(node:)?(path|fs)$/],
@@ -50,10 +59,10 @@ export default mergeConfig(
 						port: parseInt(process.env.VITE_WEB_PORT as string, 10) + 1,
 					}
 				: undefined,
+			hmr,
 		},
 		cacheDir: "../../node_modules/.vite",
 		test: {
-			globalSetup: ["../../scripts/setup-test.ts"],
 			setupFiles: ["./src/tests.ts"],
 			include: ["**/*.test.tsx"],
 			browser: {

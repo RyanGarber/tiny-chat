@@ -47,7 +47,7 @@ export default function SidebarCollapsed({
 						c="dimmed"
 						className="nav-link-like filled"
 						data-active={!chat.data}
-						onClick={() => close(() => ChatService.newChat())}
+						onClick={() => close(() => ChatService.clearChat(chat.data))}
 					>
 						<PlusCircleIcon size={20} />
 					</ActionIcon>

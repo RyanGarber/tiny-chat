@@ -20,7 +20,7 @@ export default function ContextSettings({
 	const {
 		instructions,
 		addInstruction,
-		editInstruction,
+		updateInstruction,
 		removeInstruction,
 		memoryBudget,
 		setMemoryBudget,
@@ -45,7 +45,7 @@ export default function ContextSettings({
 					onBlur={(e) => {
 						if (e.target.value === instruction) return;
 						if (e.target.value)
-							editInstruction.mutate({
+							updateInstruction.mutate({
 								project,
 								index,
 								instruction: e.target.value,
@@ -70,8 +70,8 @@ export default function ContextSettings({
 						</ActionIcon>
 					}
 					disabled={
-						(editInstruction.isPending &&
-							editInstruction.variables.index === index) ||
+						(updateInstruction.isPending &&
+							updateInstruction.variables.index === index) ||
 						(removeInstruction.isPending &&
 							removeInstruction.variables.index === index)
 					}

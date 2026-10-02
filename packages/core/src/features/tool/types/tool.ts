@@ -43,6 +43,21 @@ export interface Tool<
 	display?: ToolDisplay<TDefinition>;
 
 	/**
+	 * Calls the model makes together run at the same time. A `sequential` tool
+	 * runs alone instead: after every call before it has settled, and before any
+	 * after it starts. For tools whose calls would race, like edits to a file.
+	 */
+	sequential?: boolean;
+
+	/**
+	 * Whether a call can run in the background, when its input sets
+	 * `background: true`. The call settles at once with a placeholder and the
+	 * model carries on; its result reaches the model once it finishes, and the
+	 * generation does not end before it has.
+	 */
+	background?: boolean;
+
+	/**
 	 * Runs before `execute`, and before the loop stops for approval or feedback.
 	 * Throw to fail the call outright: the error becomes the tool result and the
 	 * model gets to correct itself, rather than the user being asked to approve

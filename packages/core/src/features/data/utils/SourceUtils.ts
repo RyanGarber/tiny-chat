@@ -47,6 +47,14 @@ type SourceDisplayType =
 
 const SOURCE_DISTANCE_LIMIT = 0.1;
 
+const EMOJIS: Record<SourceDisplayType["type"], string> = {
+	web: "🔗",
+	memory: "🧠",
+	action: "⚡",
+	file: "📎",
+	unknown: "❔",
+};
+
 const normalizeKey = (key: string) =>
 	key
 		.trim()
@@ -237,6 +245,10 @@ export const SourceUtils = {
 		});
 	},
 
+	/** The emoji {@link SourceUtils.getDisplay} would give, without the rest of it. */
+	getEmoji: ({ sources, key }: { sources?: Source[]; key: string }) =>
+		EMOJIS[findClosestSource({ sources, key })?.type ?? "unknown"],
+
 	getDisplay: ({
 		sources,
 		key,
@@ -252,8 +264,8 @@ export const SourceUtils = {
 		if (source?.type === "web") {
 			return {
 				...source,
-				emoji: "🔗",
-				title: source.value.title ?? key,
+				emoji: EMOJIS.web,
+				title: PathUtils.hostname(source.value.url) ?? key,
 				description: SnippetService.getSnippet({
 					text: source.value.content,
 					query: text,
@@ -262,14 +274,14 @@ export const SourceUtils = {
 		} else if (source?.type === "memory") {
 			return {
 				...source,
-				emoji: "🧠",
+				emoji: EMOJIS.memory,
 				title: source.value.fact,
 				description: `Learned ${CommonUtils.formatDate({ date: source.value.createdAt, relative: true })}.`,
 			};
 		} else if (source?.type === "action") {
 			return {
 				...source,
-				emoji: "⚡",
+				emoji: EMOJIS.action,
 				title: DataUtils.getTextCleaned({ data: source.value.data }),
 				description: source.value.nextRunAt
 					? `Next run ${CommonUtils.formatDate({ date: source.value.nextRunAt, relative: true })}.`
@@ -278,7 +290,7 @@ export const SourceUtils = {
 		} else if (source?.type === "file") {
 			return {
 				...source,
-				emoji: "📎",
+				emoji: EMOJIS.file,
 				title: PathUtils.name(source.value.path),
 				description: source.value.path,
 			};
@@ -287,7 +299,7 @@ export const SourceUtils = {
 				type: "unknown",
 				title: key,
 				description: "Source not found",
-				emoji: "❔",
+				emoji: EMOJIS.unknown,
 			};
 		}
 	},

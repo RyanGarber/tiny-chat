@@ -50,7 +50,10 @@ export const useMouseInput = ({
 	}, []);
 
 	const hovers = useRef<Set<number>>(new Set());
-	const drags = useRef<Set<number>>(new Set());
+
+	// The last point each drag reached, which a drag whose release never came is
+	// ended on.
+	const drags = useRef<Map<number, MouseEvent>>(new Map());
 
 	useMouse({
 		handler: (event) => {
@@ -62,6 +65,28 @@ export const useMouseInput = ({
 				if (!element) continue;
 
 				const bounds = MouseUtils.bounds(element, rows);
+
+				// A drag follows the pointer out of the element, held to its edge, and
+				// ends wherever the button comes up. A release out past the terminal's
+				// window may never be reported at all, which a move with no button
+				// held, or a fresh press, gives away.
+				const last = drags.current.get(i);
+				if (last) {
+					const isLost =
+						event.type === "down" ||
+						(event.type === "move" && event.button === "none");
+
+					if (event.type === "up" || isLost) {
+						drags.current.delete(i);
+						onDragEnd?.({
+							index: i,
+							event: clamp(isLost ? last : event, bounds),
+						});
+					} else if (event.type === "move") {
+						drags.current.set(i, event);
+						onDrag?.({ index: i, event: clamp(event, bounds) });
+					}
+				}
 
 				if (MouseUtils.contains(bounds, event)) {
 					if (!hovers.current.has(i)) {
@@ -87,16 +112,7 @@ export const useMouseInput = ({
 						index: i,
 						event: { ...event, x: event.x - bounds.x, y: event.y - bounds.y },
 					});
-					drags.current.add(i);
-				}
-
-				if (drags.current.has(i) && event.type === "move") {
-					onDrag?.({ index: i, event: clamp(event, bounds) });
-				}
-
-				if (drags.current.has(i) && event.type === "up") {
-					drags.current.delete(i);
-					onDragEnd?.({ index: i, event: clamp(event, bounds) });
+					drags.current.set(i, event);
 				}
 			}
 		},

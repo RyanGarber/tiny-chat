@@ -6,12 +6,15 @@ import { useMessagingStore } from "@tiny-chat/client/features/chat/stores/useMes
 import { useMessageBranches } from "@tiny-chat/client/features/message/hooks/useMessageBranches.ts";
 import type { Compaction } from "@tiny-chat/core/features/agent/services/AgentTokensService.ts";
 import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
-import { useWindowSize } from "ink";
+import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
 import Spinner from "ink-spinner";
 import { useContext, useState } from "react";
 import Box from "../../../core/components/Box.tsx";
+import Button from "../../../core/components/Button.tsx";
 import Text from "../../../core/components/Text.tsx";
 import { useMouseInput } from "../../../core/hooks/useMouseInput.ts";
+import { useWidth } from "../../../core/hooks/useWidth.ts";
+import { ClipboardService } from "../../../core/services/ClipboardService.ts";
 import { useEditorStore } from "../../editor/stores/useEditorStore.ts";
 import MessageParts from "./MessageParts.tsx";
 
@@ -24,21 +27,9 @@ export default function Message({
 }) {
 	const client = useContext(ClientContext);
 
-	const { columns } = useWindowSize();
+	const columns = useWidth();
 
 	const editing = useMessagingStore((state) => state.editing);
-	const [editHover, setEditHover] = useState(false);
-	const { mouseRef: editRef } = useMouseInput({
-		onClick: () => {
-			useEditorStore.setState({ focusedFeedbackId: null });
-			MessagingService.setEditing({
-				client,
-				message: editing?.id === message.id ? null : message,
-			});
-		},
-		onHoverStart: () => setEditHover(true),
-		onHoverEnd: () => setEditHover(false),
-	});
 
 	const branch = useMessageBranches(message);
 	const [branchHover, setBranchHover] = useState<number | null>(null);
@@ -76,12 +67,30 @@ export default function Message({
 			</Box>
 			<Box paddingLeft={2} paddingTop={1}>
 				<Text color="textSubtle">➤ {message.config.model}</Text>
+				{!streamed.status && (
+					<Button
+						marginLeft={2}
+						label="copy"
+						labelOnClick="copied"
+						onClick={() =>
+							ClipboardService.copy(
+								DataUtils.getText({ data: message.data, join: "\n\n" }),
+							)
+						}
+					/>
+				)}
 				{message.author === "USER" && (
-					<Box marginLeft={2} ref={(element) => editRef(element, 0)}>
-						<Text color="textSubtle" dimColor={editHover}>
-							[{editing?.id === message.id ? "  ×  " : "edit"}]
-						</Text>
-					</Box>
+					<Button
+						marginLeft={2}
+						label={editing?.id === message.id ? "cancel" : "edit"}
+						onClick={() => {
+							useEditorStore.setState({ focusedFeedbackId: null });
+							MessagingService.setEditing({
+								client,
+								message: editing?.id === message.id ? null : message,
+							});
+						}}
+					/>
 				)}
 				{branch.count > 1 && (
 					<Box marginLeft={2} gap={1}>

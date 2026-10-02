@@ -15,7 +15,6 @@
 @source "../node_modules/streamdown/dist/*.js";
 @source "../node_modules/@streamdown/math/dist/*.js";
 @source "../node_modules/@streamdown/mermaid/dist/*.js";
-@source "../node_modules/@streamdown/code/dist/*.js";
 
 /* Shadcn map */
 @theme inline {
@@ -378,6 +377,14 @@ body:not(.unselectable) .selectable * {
 	}
 	:not(pre) > code {
 		@apply rounded bg-muted px-1.5 py-0.5 font-mono text-sm;
+	}
+
+	p.is-editor-empty:first-child::before {
+		opacity: 0.25;
+		content: attr(data-placeholder);
+		float: left;
+		height: 0;
+		pointer-events: none;
 	}
 }
 

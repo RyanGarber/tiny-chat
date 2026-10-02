@@ -3,14 +3,16 @@ import { BrowserIcon } from "@phosphor-icons/react";
 import { useChatStore } from "@tiny-chat/client/features/chat/stores/useChatStore.ts";
 import { FileUtils } from "@tiny-chat/core/features/file/utils/FileUtils.ts";
 import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
+import type { zWebContext } from "@tiny-chat/core/features/provider/types/web.ts";
 import { type HTMLAttributes, type ReactNode, useMemo } from "react";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
 import { useChatFilesStore } from "#app/features/chat/stores/useChatFilesStore.ts";
 import { FileIcon } from "../../../../generated/stylicious";
 import MaterialIconTheme from "../../../../generated/stylicious/material-icon-theme.js";
 
-export default function FileTag({
+export default function SourceTag({
 	path,
+	web,
 	thumbnail: thumbnailBytes,
 	directory = false,
 	expanded = false,
@@ -21,6 +23,7 @@ export default function FileTag({
 	...props
 }: GroupProps & {
 	path: string;
+	web?: zWebContext;
 	thumbnail?: Uint8Array;
 	directory?: boolean;
 	expanded?: boolean;
@@ -69,13 +72,16 @@ export default function FileTag({
 	const events = useMemo<HTMLAttributes<HTMLElement>>(() => {
 		if (viewable) {
 			const open = () => {
-				viewFile({ path, directory, chatId });
+				viewFile({ path, directory, chatId, web });
 				setAsideOpen(true);
 			};
 			return {
+				role: "button",
+				tabIndex: 0,
 				onClick: open,
 				onKeyDown: (event) => {
-					if (event.key === "Enter") {
+					if (event.key === "Enter" || event.key === " ") {
+						event.preventDefault();
 						open();
 					}
 				},
@@ -85,7 +91,7 @@ export default function FileTag({
 			};
 		}
 		return {};
-	}, [viewable, directory, path, chatId, setAsideOpen, viewFile]);
+	}, [viewable, directory, path, chatId, web, setAsideOpen, viewFile]);
 
 	if (inline) {
 		return (

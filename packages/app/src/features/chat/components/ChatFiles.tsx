@@ -1,6 +1,5 @@
 import {
 	ActionIcon,
-	Anchor,
 	Box,
 	Burger,
 	Group,
@@ -19,119 +18,101 @@ import {
 	CaretLeftIcon,
 	CaretRightIcon,
 } from "@phosphor-icons/react";
-import { useTools } from "@tiny-chat/client/features/agent/hooks/useTools.ts";
-import { useChatFiles } from "@tiny-chat/client/features/chat/hooks/useChatFiles.ts";
+import { useChatFileTree } from "@tiny-chat/client/features/chat/hooks/useChatFileTree.ts";
+import { useFileDiff } from "@tiny-chat/client/features/chat/hooks/useFileDiff.ts";
+import { useFileViewer } from "@tiny-chat/client/features/chat/hooks/useFileViewer.ts";
 import { useChatStore } from "@tiny-chat/client/features/chat/stores/useChatStore.ts";
-import { useDraftStore } from "@tiny-chat/client/features/chat/stores/useDraftStore.ts";
-import { useMessages } from "@tiny-chat/client/features/message/hooks/useMessages.ts";
+import type {
+	ChatFile,
+	ChatFileChanges,
+	ChatFileNode,
+	GitRepo,
+} from "@tiny-chat/client/features/chat/types/chatFiles.ts";
+import { ChatFilesUtils } from "@tiny-chat/client/features/chat/utils/ChatFilesUtils.ts";
 import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
-import { SourceUtils } from "@tiny-chat/core/features/data/utils/SourceUtils.ts";
 import { FileTypeUtils } from "@tiny-chat/core/features/file/utils/FileTypeUtils.ts";
 import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { BundledLanguage } from "streamdown";
-import { client } from "#app/client.ts";
 import { useAppStore } from "#app/core/stores/useAppStore.ts";
-import WebSourceCard from "#app/features/chat/components/WebSourceCard.tsx";
 import { useChatFilesStore } from "#app/features/chat/stores/useChatFilesStore.ts";
 import Code from "#app/features/code/components/Code.tsx";
+import Diff from "#app/features/code/components/Diff.tsx";
 import Markdown from "#app/features/message/components/Markdown.tsx";
 import Image from "#app/features/part/components/Image.tsx";
-import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
-import FileTag from "#app/features/upload/components/FileTag.tsx";
-import { useFileViewer } from "#app/features/upload/hooks/useFileViewer.ts";
+import Web from "#app/features/part/components/Web.tsx";
+import SourceTag from "#app/features/upload/components/SourceTag.tsx";
 
-interface SidebarFile {
-	path: string;
-	directory: boolean;
-	local: boolean;
-	displayPath: string[];
-}
 interface FileTreeNodeProps {
-	type: "file" | "directory";
-	file?: SidebarFile;
+	node: ChatFileNode;
 }
 
-function toLocalFile(path: string, directory: boolean): SidebarFile {
-	const normalized = PathUtils.normalize({ path, unix: true });
-	return {
-		path: normalized,
-		directory,
-		local: true,
-		displayPath: ["local", ...PathUtils.split(normalized)],
-	};
+function toTreeData(nodes: ChatFileNode[]): TreeNodeData[] {
+	return nodes.map((node) => ({
+		value: node.value,
+		label: node.label,
+		nodeProps: { node } satisfies FileTreeNodeProps,
+		children: toTreeData(node.children),
+	}));
 }
 
-function attachmentFiles(message: Pick<MessageState, "data">): SidebarFile[] {
-	return message.data
-		.flat()
-		.filter(
-			(part) =>
-				part.type === "attachment" &&
-				part.content.type !== "web" &&
-				!PathUtils.fromMount({ path: part.source }),
-		)
-		.map((part) =>
-			toLocalFile(
-				part.type === "attachment" ? part.source : "",
-				part.type === "attachment" && part.content.type === "directory",
-			),
-		);
+function Changes({ changes }: { changes: ChatFileChanges }) {
+	return (
+		<Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
+			{changes.additions > 0 && (
+				<Text size="xs" c="green" ff="monospace">
+					+{changes.additions}
+				</Text>
+			)}
+			{changes.deletions > 0 && (
+				<Text size="xs" c="red" ff="monospace">
+					−{changes.deletions}
+				</Text>
+			)}
+		</Group>
+	);
 }
 
-function buildTreeNodes(files: SidebarFile[]): TreeNodeData[] {
-	type MutableNode = TreeNodeData & { children: MutableNode[] };
-	const roots: MutableNode[] = [];
-	const nodes = new Map<string, MutableNode>();
-	for (const file of files) {
-		let children = roots;
-		for (let index = 0; index < file.displayPath.length; index++) {
-			const parts = file.displayPath.slice(0, index + 1);
-			const value = `${file.local ? "local" : "mount"}:${parts.join("/")}`;
-			let node = nodes.get(value);
-			if (!node) {
-				node = { value, label: parts.at(-1) ?? "", children: [] };
-				nodes.set(value, node);
-				children.push(node);
-			}
-			children = node.children;
-			if (index === file.displayPath.length - 1)
-				node.nodeProps = {
-					type: file.directory ? "directory" : "file",
-					file,
-				} satisfies FileTreeNodeProps;
-		}
-	}
-	for (const [value, node] of nodes) {
-		if (node.nodeProps || !value.startsWith("local:")) continue;
-		node.nodeProps = {
-			type: "directory",
-		} satisfies FileTreeNodeProps;
-	}
-	return roots;
-}
-
-function FilePreview({ file }: { file: { path: string; directory: boolean } }) {
+function FilePreview({ file, repos }: { file: ChatFile; repos: GitRepo[] }) {
 	const content = useFileViewer({ file });
+	const diff = useFileDiff({ file, repos });
+	const language = (FileTypeUtils.getExtension(file) ?? undefined) as
+		| BundledLanguage
+		| undefined;
+	if (diff.data) {
+		return (
+			<Diff
+				filename={file.path}
+				language={language}
+				before={diff.data.before}
+				after={diff.data.after}
+				maw="100%"
+				fillHeight
+			/>
+		);
+	}
 	if (content.isError) {
 		return (
 			<Text c="red">{CommonUtils.formatError({ error: content.error })}</Text>
 		);
 	}
-	if (!content.data) {
+	if (!content.data || diff.isLoading) {
 		return <Skeleton width="100%" height="auto" style={{ aspectRatio: 2 }} />;
 	}
 	if (content.data.directory) {
 		return (
 			<Stack gap={5}>
 				{content.data.items?.map((item) => (
-					<FileTag key={item.path} path={item.path} directory={item.directory}>
+					<SourceTag
+						key={item.path}
+						path={item.path}
+						directory={item.directory}
+					>
 						<Text size="sm" truncate>
 							{PathUtils.name(item)}
 							{item.directory && "/"}
 						</Text>
-					</FileTag>
+					</SourceTag>
 				)) ?? <Loader size="xs" my="md" />}
 			</Stack>
 		);
@@ -170,13 +151,13 @@ function FileTreeNode({
 	onPreview,
 	highlighted,
 }: RenderTreeNodePayload & {
-	onLoadDirectory: (file: SidebarFile) => void;
-	onPreview: (file: SidebarFile) => void;
+	onLoadDirectory: (file: ChatFile) => void;
+	onPreview: (file: ChatFile) => void;
 	highlighted: boolean;
 }) {
-	const props = node.nodeProps as FileTreeNodeProps | undefined;
-	const file = props?.file;
-	const directory = props?.type !== "file";
+	const { node: fileNode } = node.nodeProps as FileTreeNodeProps;
+	const file = fileNode.file;
+	const directory = fileNode.directory;
 	return (
 		<Group
 			gap={5}
@@ -208,7 +189,7 @@ function FileTreeNode({
 					style={{ opacity: directory ? 1 : 0, flexShrink: 0 }}
 				/>
 			)}
-			<FileTag
+			<SourceTag
 				path={file?.path ?? String(node.label)}
 				directory={directory}
 				expanded={expanded}
@@ -219,16 +200,21 @@ function FileTreeNode({
 					{String(node.label)}
 					{directory && "/"}
 				</Text>
-			</FileTag>
+			</SourceTag>
+			{fileNode.changes && <Changes changes={fileNode.changes} />}
 		</Group>
 	);
 }
 
 export default function ChatFiles() {
-	const { chatFiles } = useChatFiles();
-	const { messages } = useMessages();
-	const { toolsets } = useTools();
-	const draftData = useDraftStore((state) => state.data);
+	const {
+		chatFiles,
+		files,
+		tree: fileTree,
+		webSources: chatWebSources,
+		repos,
+		loadDirectory,
+	} = useChatFileTree();
 	const chatId = useChatStore((state) => state.chatId);
 	const isAsideOpen = useAppStore((state) => state.isAsideOpen);
 	const setAsideOpen = useAppStore((state) => state.setAsideOpen);
@@ -245,93 +231,19 @@ export default function ChatFiles() {
 	const highlightFrame = useRef<number>(undefined);
 	const highlightTimeout = useRef<number>(undefined);
 	const [highlightedNode, setHighlightedNode] = useState<string | null>(null);
-	const [localEntries, setLocalEntries] = useState<{
-		chatId: string | null;
-		files: SidebarFile[];
-	}>({ chatId, files: [] });
-	const [loadingDirectories, setLoadingDirectories] = useState<Set<string>>(
-		() => new Set(),
-	);
 	useEffect(() => {
 		treeRef.current = tree;
 	}, [tree]);
 
-	const files = useMemo(() => {
-		const mounted: SidebarFile[] = (chatFiles.data ?? []).map((node) => {
-			const [tree, id, ...rest] = node.path;
-			const displayPath =
-				tree === "chat" ? [tree, ...rest] : [tree, id, ...rest].filter(Boolean);
-			return {
-				path: node.uri,
-				directory: node.isDirectory,
-				local: false,
-				displayPath,
-			};
-		});
-		const messageList =
-			messages.data?.pages.flatMap((page) => page.messages) ?? [];
-		const referenced = messageList.flatMap((message) => [
-			...SourceUtils.find({ message, toolsets }).flatMap((source) =>
-				source.type === "file" && !PathUtils.fromMount(source.value)
-					? [toLocalFile(source.value.path, source.value.directory)]
-					: [],
-			),
-			...attachmentFiles(message),
-		]);
-		const draft = attachmentFiles({ data: draftData });
-		const localDirectories = [...referenced, ...draft].filter(
-			(file) => file.local && file.directory,
-		);
-		const loaded =
-			localEntries.chatId === chatId
-				? localEntries.files.filter((entry) =>
-						localDirectories.some(
-							(directory) =>
-								PathUtils.equals(directory.path, entry.path) ||
-								PathUtils.contains({
-									parent: directory.path,
-									descendent: entry.path,
-								}),
-						),
-					)
-				: [];
-		return [
-			...new Map(
-				[...mounted, ...referenced, ...draft, ...loaded].map((file) => [
-					`${file.local}:${file.path}`,
-					file,
-				]),
-			).values(),
-		];
-	}, [
-		chatFiles.data,
-		messages.data,
-		toolsets,
-		draftData,
-		localEntries,
-		chatId,
-	]);
-	const webSources = useMemo(() => {
-		const sources = [
-			...(messages.data?.pages.flatMap((page) => page.messages) ?? []),
-			{ data: draftData },
-		].flatMap((message) => SourceUtils.find({ message, toolsets }));
-		const byUrl = new Map<
-			string,
-			Extract<(typeof sources)[number], { type: "web" }>["value"]
-		>();
-		for (const source of sources) {
-			if (source.type !== "web") continue;
-			const existing = byUrl.get(source.value.url);
-			if (!existing || source.value.content.length > existing.content.length) {
-				byUrl.set(source.value.url, source.value);
-			}
-		}
-		if (viewedFile?.web && !byUrl.has(viewedFile.web.url)) {
-			byUrl.set(viewedFile.web.url, viewedFile.web);
-		}
-		return [...byUrl.values()];
-	}, [messages.data, draftData, toolsets, viewedFile]);
+	// A page opened from a citation stays listed even if no message has it.
+	const webSources = useMemo(
+		() =>
+			viewedFile?.web &&
+			!chatWebSources.some((source) => source.url === viewedFile.web?.url)
+				? [...chatWebSources, viewedFile.web]
+				: chatWebSources,
+		[chatWebSources, viewedFile],
+	);
 	const previewedWeb = viewedFile?.path.startsWith("web:")
 		? (viewedFile.web ??
 			webSources.find((source) => source.url === viewedFile.path.slice(4)))
@@ -345,7 +257,7 @@ export default function ChatFiles() {
 			});
 		}
 	}, [previewedWeb, viewedFile, isAsideOpen]);
-	const treeData = useMemo(() => buildTreeNodes(files), [files]);
+	const treeData = useMemo(() => toTreeData(fileTree), [fileTree]);
 	const previewedFile = useMemo(() => {
 		if (!viewedFile) return null;
 		return (
@@ -356,20 +268,10 @@ export default function ChatFiles() {
 			) ?? null
 		);
 	}, [files, viewedFile]);
-	const viewedNode = useMemo(() => {
-		if (!previewedFile) return null;
-		const file = previewedFile;
-		const prefix = file.local ? "local" : "mount";
-		return {
-			value: `${prefix}:${file.displayPath.join("/")}`,
-			parents: file.displayPath
-				.slice(0, -1)
-				.map(
-					(_, index) =>
-						`${prefix}:${file.displayPath.slice(0, index + 1).join("/")}`,
-				),
-		};
-	}, [previewedFile]);
+	const viewedNode = useMemo(
+		() => (previewedFile ? ChatFilesUtils.node(previewedFile) : null),
+		[previewedFile],
+	);
 
 	useEffect(() => {
 		if (
@@ -408,31 +310,6 @@ export default function ChatFiles() {
 			window.clearTimeout(highlightTimeout.current);
 		};
 	}, []);
-
-	const loadDirectory = (directory: SidebarFile) => {
-		const directoryKey = `${chatId}:${directory.path}`;
-		if (!client.shell || loadingDirectories.has(directoryKey)) return;
-		setLoadingDirectories((current) => new Set(current).add(directoryKey));
-		void client.shell
-			.readDir({ path: directory.path })
-			.then((entries) => {
-				setLocalEntries((current) => ({
-					chatId,
-					files: [
-						...(current.chatId === chatId ? current.files : []),
-						...entries.map((entry) => toLocalFile(entry.path, entry.is_dir)),
-					],
-				}));
-			})
-			.catch((error) => {
-				console.warn("Failed to read local directory", error);
-				setLoadingDirectories((current) => {
-					const next = new Set(current);
-					next.delete(directoryKey);
-					return next;
-				});
-			});
-	};
 
 	return (
 		<Stack flex={1} h="100%" p={5} gap="xs">
@@ -488,10 +365,18 @@ export default function ChatFiles() {
 								previewedWeb?.url === source.url ? webSelectionRef : undefined
 							}
 						>
-							<WebSourceCard
-								source={source}
-								selected={previewedWeb?.url === source.url}
-							/>
+							<SourceTag
+								path={`web:${source.url}`}
+								web={source}
+								wrap="nowrap"
+								py={4}
+							>
+								<Text size="sm" flex={1} miw={0} truncate>
+									{source.title ??
+										URL.parse(source.url)?.hostname ??
+										source.url}
+								</Text>
+							</SourceTag>
 						</div>
 					))}
 					{!webSources.length && (
@@ -511,30 +396,9 @@ export default function ChatFiles() {
 						>
 							<CaretLeftIcon size={18} />
 						</ActionIcon>
-						<Text size="xs" fw={600} truncate>
-							{previewedWeb.title || previewedWeb.url}
-						</Text>
 					</Group>
-					<Box
-						h="calc(100% - 24px)"
-						className="markdown-sm"
-						style={{ overflow: "auto" }}
-					>
-						<Anchor
-							size="sm"
-							href={previewedWeb.url}
-							target="_blank"
-							display="block"
-							mb="md"
-							truncate="end"
-							onClick={(event) => {
-								event.preventDefault();
-								void TauriUtils.open(previewedWeb.url);
-							}}
-						>
-							{previewedWeb.url}
-						</Anchor>
-						<Markdown key={previewedWeb.url} source={previewedWeb.content} />
+					<Box h="calc(100% - 24px)">
+						<Web key={previewedWeb.url} source={previewedWeb} h="100%" />
 					</Box>
 				</Box>
 			)}
@@ -556,7 +420,7 @@ export default function ChatFiles() {
 						</Text>
 					</Group>
 					<Box h="calc(100% - 24px)" style={{ overflow: "auto" }}>
-						<FilePreview file={previewedFile} />
+						<FilePreview file={previewedFile} repos={repos} />
 					</Box>
 				</Box>
 			)}

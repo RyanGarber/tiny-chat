@@ -13,12 +13,14 @@ export default function Diff({
 	after,
 	language,
 	filename,
+	fillHeight = false,
 	...props
 }: Omit<Parameters<typeof Content>[0], "code"> & {
 	before: string;
 	after: string;
 	language?: string;
 	filename?: string;
+	fillHeight?: boolean;
 }) {
 	const [expanded, setExpanded] = useState<number[]>([]);
 
@@ -51,6 +53,7 @@ export default function Diff({
 				language={language ?? ""}
 				filename={filename}
 				lineNumbers={false}
+				fillHeight={fillHeight}
 			>
 				<DiffLines
 					diff={diff}

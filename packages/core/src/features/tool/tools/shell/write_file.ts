@@ -36,6 +36,8 @@ export const createWriteFileTool: ToolFactory<
 	...write_file,
 	...options,
 	display,
+	// Writes to one file would race, and the model often makes several.
+	sequential: true,
 	validate: async ({ input, context }) => {
 		return {
 			approval: FileToolUtils.requiresApproval({ path: input.path, context }),

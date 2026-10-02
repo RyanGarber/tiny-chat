@@ -19,7 +19,7 @@ export default function FolderSettings({
 }: {
 	project: ProjectLike | null;
 }) {
-	const { folders, folderStatus, addFolder, removeFolder, setFolderWritable } =
+	const { folders, folderStatus, addFolder, removeFolder, updateFolder } =
 		useShellSettings({ project });
 
 	const pickFolder = async () => {
@@ -30,7 +30,7 @@ export default function FolderSettings({
 			multiple: false,
 			defaultPath: folders[0]?.path,
 		});
-		if (path) addFolder.mutate({ project, path });
+		if (path) addFolder.mutate({ project, folder: { path, whitelist: false } });
 	};
 
 	return (
@@ -43,11 +43,10 @@ export default function FolderSettings({
 						: "Available in the desktop app"}
 				</Text>
 			</Box>
-			{folders.map(({ path, writable }, index) => {
+			{folders.map(({ path, whitelist }, index) => {
 				const pending =
 					(removeFolder.isPending && removeFolder.variables.index === index) ||
-					(setFolderWritable.isPending &&
-						setFolderWritable.variables.index === index);
+					(updateFolder.isPending && updateFolder.variables.index === index);
 				return (
 					<Paper key={path} withBorder p="xs">
 						<Group gap="xs" wrap="nowrap" align="flex-start">
@@ -67,13 +66,13 @@ export default function FolderSettings({
 								<Checkbox
 									size="xs"
 									label="Skip approval for file edits"
-									checked={writable}
+									checked={whitelist}
 									disabled={pending}
 									onChange={(event) =>
-										setFolderWritable.mutate({
+										updateFolder.mutate({
 											project,
 											index,
-											writable: event.currentTarget.checked,
+											folder: { whitelist: event.currentTarget.checked },
 										})
 									}
 								/>

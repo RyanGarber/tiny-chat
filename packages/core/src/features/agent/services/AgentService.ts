@@ -12,6 +12,7 @@ import type {
 	zInterjectionPart,
 	zMetadata,
 	zToolCallPart,
+	zToolResultPart,
 } from "../../data/types/part.ts";
 import {
 	ModelProviderService,
@@ -20,6 +21,7 @@ import {
 import type { ModelProvider } from "../../provider/types/model.ts";
 import type { zSkill } from "../../skill/types/skill.ts";
 import type { Tool, ToolDefinition, Toolset } from "../../tool/types/tool.ts";
+import { ToolCallUtils } from "../../tool/utils/ToolCallUtils.ts";
 import { ToolUtils } from "../../tool/utils/ToolUtils.ts";
 import type { zAgentContext, zAgentEvent } from "../types/agent.ts";
 import { AgentUtils } from "../utils/AgentUtils.ts";
@@ -145,6 +147,7 @@ export const AgentService = {
 		instructions: instructionOverride,
 		options,
 		toolStream,
+		toolSignal,
 		interjections,
 	}: {
 		provider: ModelProvider<any>;
@@ -168,6 +171,11 @@ export const AgentService = {
 				z.infer<Exclude<ToolDefinition["stream"], void>>
 			>;
 		}) => void;
+		/**
+		 * Stops one tool call without stopping the generation. An interrupted
+		 * call ends the loop so the model waits for the user rather than retrying.
+		 */
+		toolSignal?: (_: { part: zToolCallPart }) => AbortSignal | undefined;
 	}) {
 		const {
 			config,
@@ -190,11 +198,165 @@ export const AgentService = {
 		/** Raw input text of tool calls the model is still writing. */
 		const toolInputs = new Map<string, { text: string; parsedAt: number }>();
 
+		let parts = data[data.length - 1];
+
+		const push = (part: zDataPart): zAgentEvent => {
+			if (!parts) {
+				console.warn(
+					"[AgentService] parts array is undefined - this should not happen",
+				);
+				data.push([]);
+				parts = data[data.length - 1];
+			}
+			parts.push(part);
+			return { type: "data", value: part };
+		};
+
+		/** Runs one call to its result. Never rejects. */
+		const run = async ({
+			toolCall,
+			tool,
+			signal,
+		}: {
+			toolCall: zToolCallPart;
+			tool: Tool<any, any>;
+			signal?: AbortSignal;
+		}): Promise<{ result: zToolResultPart; interrupted: boolean }> => {
+			const signals = [
+				options?.abortSignal,
+				toolSignal?.({ part: toolCall }),
+				signal,
+			].filter((signal) => !!signal);
+			const abort = signals.length ? AbortSignal.any(signals) : undefined;
+
+			try {
+				if (VERBOSE)
+					console.log(
+						`[AgentService] running tool ${toolCall.name} with args:`,
+						toolCall.input,
+					);
+				const value = await ToolCallUtils.interruptible(
+					tool.execute({
+						input: toolCall.input,
+						feedback: undefined,
+						context,
+						stream: toolStream
+							? (mutation) => toolStream({ tool, part: toolCall, mutation })
+							: undefined,
+						abort,
+					}),
+					abort,
+				);
+				if (VERBOSE)
+					console.log(
+						`[AgentService] tool ${toolCall.name} finished with result:`,
+						value,
+					);
+				return {
+					interrupted: false,
+					result: {
+						type: "toolResult",
+						id: toolCall.id,
+						name: toolCall.name,
+						output: value.map((part) => ({
+							...part,
+							id: CommonUtils.getRandomId(),
+						})),
+					},
+				};
+			} catch (error: any) {
+				if (abort?.aborted) {
+					console.log(`[AgentService] tool ${toolCall.name} interrupted`);
+					return {
+						interrupted: true,
+						result: {
+							type: "toolResult",
+							id: toolCall.id,
+							name: toolCall.name,
+							error: true,
+							output: ToolCallUtils.getInterruption(),
+						},
+					};
+				}
+				console.warn(
+					`[AgentService] error running tool ${toolCall.name}:`,
+					error,
+				);
+				return {
+					interrupted: false,
+					result: {
+						type: "toolResult",
+						id: toolCall.id,
+						name: toolCall.name,
+						error: true,
+						output: [
+							{
+								type: "text",
+								value: CommonUtils.formatError({ error, details: true }),
+								id: CommonUtils.getRandomId(),
+							},
+						],
+					},
+				};
+			}
+		};
+
+		/**
+		 * Calls running in the background, by call id. Each settles once the part
+		 * reporting it is in `finished`, which the model reads at its next step.
+		 * They are stopped with the generation, and when it fails.
+		 */
+		const background = new Map<string, Promise<void>>();
+		const finished: zInterjectionPart[] = [];
+		const backgroundAbort = new AbortController();
+		const runInBackground = (toolCall: zToolCallPart, tool: Tool<any, any>) => {
+			background.set(
+				toolCall.id,
+				run({ toolCall, tool, signal: backgroundAbort.signal }).then(
+					({ result }) => {
+						background.delete(toolCall.id);
+						finished.push({
+							id: CommonUtils.getRandomId(),
+							type: "interjection",
+							value: result.output,
+							task: {
+								id: toolCall.id,
+								name: toolCall.name,
+								error: result.error,
+							},
+						});
+					},
+				),
+			);
+		};
+
+		// A background call the user approved settles with its placeholder before
+		// this generation resumes, and starts here.
+		for (const part of data.flat()) {
+			if (
+				part.type !== "toolResult" ||
+				!ToolCallUtils.isBackground(part.output) ||
+				data
+					.flat()
+					.some((p) => p.type === "interjection" && p.task?.id === part.id)
+			)
+				continue;
+			const toolCall = data
+				.flat()
+				.find(
+					(p): p is zToolCallPart => p.type === "toolCall" && p.id === part.id,
+				);
+			const { tool } = toolCall
+				? ToolUtils.find({ toolsets: enabledToolsets, part: toolCall })
+				: { tool: null };
+			if (toolCall && tool) runInBackground(toolCall, tool);
+		}
+
 		// Agentic loop: keep generating until the model stops calling tools
 		while (true) {
 			messages[messages.length - 1].data = data;
 
-			let parts = data[data.length - 1];
+			parts = data[data.length - 1];
 
 			/**
 			 * Drop calls the model never finished writing. They carry no usable
@@ -208,21 +370,13 @@ export const AgentService = {
 				}
 			};
 
-			const push = (part: zDataPart): zAgentEvent => {
-				if (!parts) {
-					console.warn(
-						"[AgentService] parts array is undefined - this should not happen",
-					);
-					data.push([]);
-					parts = data[data.length - 1];
-				}
-				parts.push(part);
-				return { type: "data", value: part };
-			};
-
 			try {
 				if (options?.abortSignal?.aborted) break;
-				for (const part of (await interjections?.()) ?? []) yield push(part);
+				for (const part of [
+					...finished.splice(0),
+					...((await interjections?.()) ?? []),
+				])
+					yield push(part);
 				const compacted = await AgentTokensService.compactMessages({
 					instructions,
 					messages,
@@ -368,6 +522,7 @@ export const AgentService = {
 			} catch (e: any) {
 				console.error("[AgentService] error during stream:", e);
 				settle();
+				backgroundAbort.abort();
 				yield push({
 					id: CommonUtils.getRandomId(),
 					type: "abort",
@@ -386,6 +541,10 @@ export const AgentService = {
 				);
 
 			let stop = false;
+			let interrupted = false;
+
+			/** Calls to run, in the order the model made them. */
+			const queue: { toolCall: zToolCallPart; tool: Tool<any, any> }[] = [];
 
 			for (const toolCall of toolCalls) {
 				const { tool } = ToolUtils.find({
@@ -435,54 +594,72 @@ export const AgentService = {
 					continue;
 				}
 
-				try {
-					if (VERBOSE)
-						console.log(
-							`[AgentService] running tool ${toolCall.name} with args:`,
-							toolCall.input,
-						);
-					const value = await tool.execute({
-						input: toolCall.input,
-						feedback: undefined,
-						context,
-						stream: toolStream
-							? (mutation) => toolStream({ tool, part: toolCall, mutation })
-							: undefined,
-					});
-					if (VERBOSE)
-						console.log(
-							`[AgentService] tool ${toolCall.name} finished with result:`,
-							value,
-						);
-					yield push({
-						type: "toolResult",
-						id: toolCall.id,
-						name: toolCall.name,
-						output: value.map((part) => ({
-							...part,
-							id: CommonUtils.getRandomId(),
-						})),
-					});
-				} catch (error: any) {
-					console.warn(
-						`[AgentService] error running tool ${toolCall.name}:`,
-						error,
+				queue.push({ toolCall, tool });
+			}
+
+			// Calls run together, except that a sequential one runs alone. Results
+			// land as calls finish, then are put back in the order of the calls.
+			const running = new Map<
+				string,
+				{
+					sequential: boolean;
+					done: Promise<{ result: zToolResultPart; interrupted: boolean }>;
+				}
+			>();
+			while (queue.length || running.size) {
+				while (queue.length && !interrupted) {
+					const [{ toolCall, tool }] = queue;
+					const sequential = !!tool.sequential;
+					const blocked = [...running.values()].some(
+						(call) => call.sequential || sequential,
 					);
-					yield push({
-						type: "toolResult",
-						id: toolCall.id,
-						name: toolCall.name,
-						error: true,
-						output: [
-							{
-								type: "text",
-								value: CommonUtils.formatError({ error, details: true }),
-								id: CommonUtils.getRandomId(),
-							},
-						],
+					if (blocked) break;
+					queue.shift();
+
+					if (ToolCallUtils.isBackgrounded({ tool, part: toolCall })) {
+						runInBackground(toolCall, tool);
+						yield push({
+							type: "toolResult",
+							id: toolCall.id,
+							name: toolCall.name,
+							output: ToolCallUtils.getBackground({ id: toolCall.id }),
+						});
+						continue;
+					}
+
+					running.set(toolCall.id, {
+						sequential,
+						done: run({ toolCall, tool }),
 					});
 				}
+
+				// Calls not yet started are not run: the user stepped in.
+				if (interrupted) {
+					for (const { toolCall } of queue.splice(0)) {
+						yield push({
+							type: "toolResult",
+							id: toolCall.id,
+							name: toolCall.name,
+							error: true,
+							output: ToolCallUtils.getInterruption(),
+						});
+					}
+				}
+
+				if (!running.size) continue;
+				const settled = await Promise.race(
+					[...running.values()].map(({ done }) => done),
+				);
+				running.delete(settled.result.id);
+				if (settled.interrupted) interrupted = true;
+				yield push(settled.result);
 			}
+
+			parts.splice(
+				0,
+				parts.length,
+				...AgentUtils.getToolResultsSorted({ data: parts }),
+			);
 
 			if (options?.abortSignal?.aborted) {
 				yield push({
@@ -493,10 +670,20 @@ export const AgentService = {
 				});
 				break;
 			}
-			if (stop || !toolCalls.length) {
-				console.log("[AgentService] loop complete");
-				break;
+			if (stop || interrupted) break;
+			if (!toolCalls.length) {
+				if (!background.size) {
+					console.log("[AgentService] loop complete");
+					break;
+				}
+				// The model is done for now, but a background call is not: wait for
+				// one to report in, and let the model pick up from there.
+				await Promise.race(background.values());
 			}
 		}
+
+		// The generation does not end with calls still running in the background.
+		await Promise.all(background.values());
+		for (const part of finished.splice(0)) yield push(part);
 	},
 } as const;

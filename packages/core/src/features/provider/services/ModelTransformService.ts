@@ -3,9 +3,11 @@ import { z } from "zod";
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 import { AgentMessagesService } from "../../agent/services/AgentMessagesService.ts";
 import type { zAgentEvent } from "../../agent/types/agent.ts";
+import { AgentUtils } from "../../agent/utils/AgentUtils.ts";
 import type { zConfig } from "../../data/types/message.ts";
 import { type zDataPart, zDataSimplePart } from "../../data/types/part.ts";
 import type { zUser } from "../../data/types/user.ts";
+import { ToolCallUtils } from "../../tool/utils/ToolCallUtils.ts";
 import type { ModelProvider, zModelMessage } from "../types/model.ts";
 import { ModelProviderUtils } from "../utils/ModelProviderUtils.ts";
 
@@ -63,7 +65,10 @@ export const ModelTransformService = {
 				return (await Promise.all(items.map(map))).flat();
 			}
 
-			const parts = message.data.flat();
+			// Sorted again here so a message saved out of order still sends.
+			const parts = message.data.flatMap((slot) =>
+				AgentUtils.getToolResultsSorted({ data: slot }),
+			);
 
 			for (const part of parts) {
 				const role =
@@ -101,10 +106,23 @@ export const ModelTransformService = {
 					part: zDataPart,
 				): Promise<SdkPart[] | SdkBasicPart[]> {
 					if (part.type === "interjection") {
-						return await flatMap(
-							await flatMap(part.value, transform),
-							toSdkPart,
-						);
+						const notice: SdkBasicPart[] = part.task
+							? [
+									{
+										type: "text",
+										text: ToolCallUtils.getBackgroundNotice({
+											task: part.task,
+										}),
+									},
+								]
+							: [];
+						return [
+							...notice,
+							...(await flatMap(
+								await flatMap(part.value, transform),
+								toSdkPart,
+							)),
+						];
 					} else if (part.type === "attachment") {
 						return await flatMap(
 							await flatMap(

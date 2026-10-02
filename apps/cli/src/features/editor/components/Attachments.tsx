@@ -28,26 +28,29 @@ export default function Attachments({
 
 	const [groups, setGroups] = useState<AttachmentGroup[]>([]);
 
+	// Keyed on the text alone: the query is rebuilt every render, and a search
+	// that re-ran on each one would restart itself with every result it set.
+	const text = query?.text;
 	useEffect(() => {
-		if (!query) return;
+		if (text === undefined) return;
 
 		const controller = new AbortController();
 
-		getAttachables(query.text, controller.signal)
+		getAttachables(text, controller.signal)
 			.then((attachables) => {
 				if (controller.signal.aborted) return;
 
 				const other: AttachmentGroup = { name: "Other", items: [] };
-				const hostname = PathUtils.hostname(query.text);
+				const hostname = PathUtils.hostname(text);
 				if (hostname) {
 					other.items.push({
 						name: hostname,
-						value: PathUtils.asWeb(query.text),
+						value: PathUtils.asWeb(text),
 					});
 				}
 
 				setGroups([
-					...AttachmentUtils.filter({ groups: attachables, query: query.text }),
+					...AttachmentUtils.filter({ groups: attachables, query: text }),
 					...(other.items.length > 0 ? [other] : []),
 				]);
 			})
@@ -58,7 +61,7 @@ export default function Attachments({
 			});
 
 		return () => controller.abort();
-	}, [getAttachables, query]);
+	}, [getAttachables, text]);
 
 	const apply = useCallback(
 		(edit: CommandEdit | null) => {

@@ -5,9 +5,8 @@ import { useMessageStore } from "@tiny-chat/client/features/message/stores/useMe
 import type { CodeLanguage } from "@tiny-chat/core/core/utils/CodeUtils.ts";
 import { SourceUtils } from "@tiny-chat/core/features/data/utils/SourceUtils.ts";
 import { createContext, useContext } from "react";
-import type { Components } from "streamdown";
+import { type Components, useIsCodeFenceIncomplete } from "streamdown";
 import Popup from "#app/core/components/Popup.tsx";
-import WebSourceCard from "#app/features/chat/components/WebSourceCard.tsx";
 import Code from "#app/features/code/components/Code.tsx";
 import Mermaid from "#app/features/code/components/Mermaid.tsx";
 import { Table } from "#app/features/message/components/MarkdownTable.tsx";
@@ -16,7 +15,7 @@ import Command from "#app/features/part/components/Command.tsx";
 import Paste from "#app/features/part/components/Paste.tsx";
 import Quote from "#app/features/part/components/Quote.tsx";
 import { TauriUtils } from "#app/features/tauri/utils/TauriUtils.ts";
-import FileTag from "#app/features/upload/components/FileTag.tsx";
+import SourceTag from "#app/features/upload/components/SourceTag.tsx";
 
 const CodeBlockContext = createContext(false);
 
@@ -36,6 +35,7 @@ const CodeComponent: Components["code"] = ({
 }) => {
 	const inline = !useContext(CodeBlockContext);
 	const streaming = useContext(StreamContext);
+	const incomplete = useIsCodeFenceIncomplete();
 
 	const language = className?.match(LANGUAGE_REGEX)?.[1] ?? "";
 
@@ -80,6 +80,7 @@ const CodeComponent: Components["code"] = ({
 			startLine={startLine}
 			lineNumbers={!noLineNumbers}
 			streaming={streaming}
+			incomplete={incomplete}
 		/>
 	);
 };
@@ -119,40 +120,44 @@ const MarkComponent: Components["mark"] = ({ children, node }) => {
 							</Pill>
 						</Popup.Target>
 						<Popup.Dropdown c="var(--mantine-color-text)">
-							{source?.type === "web" && (
-								<WebSourceCard source={source.value} unstyled />
-							)}
-							{source?.type !== "web" && (
-								<Stack gap="xs" maw={300}>
-									<Text size="sm" fw={500} lineClamp={2}>
-										{source.title}
-									</Text>
-									<Box c="dimmed">
-										{source?.type !== "file" && (
-											<Text
-												textWrap="pretty"
-												style={{
-													wordBreak: "break-word",
-													whiteSpace: "pre-wrap",
-												}}
-												size="xs"
-											>
-												{source.description}
+							<Stack gap="xs" maw={300}>
+								<Text size="sm" fw={500} lineClamp={2}>
+									{source.title}
+								</Text>
+								<Box c="dimmed">
+									{source?.type !== "web" && source?.type !== "file" && (
+										<Text
+											textWrap="pretty"
+											style={{
+												wordBreak: "break-word",
+												whiteSpace: "pre-wrap",
+											}}
+											size="xs"
+										>
+											{source.description}
+										</Text>
+									)}
+									{(source?.type === "file" || source?.type === "web") && (
+										<SourceTag
+											path={
+												source.type === "web"
+													? `web:${source.value.url}`
+													: source.value.path
+											}
+											directory={
+												source.type === "web" ? false : source.value.directory
+											}
+											web={source.type === "web" ? source.value : undefined}
+										>
+											<Text flex={1} miw={0} truncate size="xs">
+												{source.type === "web"
+													? (source.value.title ?? source.value.url)
+													: source.value.path}
 											</Text>
-										)}
-										{source?.type === "file" && (
-											<FileTag
-												path={source.value.path}
-												directory={source.value.directory}
-											>
-												<Text flex={1} miw={0} truncate size="xs">
-													{source.description}
-												</Text>
-											</FileTag>
-										)}
-									</Box>
-								</Stack>
-							)}
+										</SourceTag>
+									)}
+								</Box>
+							</Stack>
 						</Popup.Dropdown>
 					</Popup>
 				);

@@ -61,6 +61,8 @@ export const createEditFileTool: ToolFactory<
 	...edit_file,
 	...options,
 	display,
+	// Edits read the file and write it back, so two at once lose one.
+	sequential: true,
 	validate: async ({ input, context }) => {
 		const shell = ShellUtils.detect(input.path, options.capabilities);
 

@@ -94,33 +94,61 @@ describe("SettingsUtils", () => {
 		});
 	});
 
-	it("dedupes whitelists and puts folder paths first", () => {
+	it("keeps every entry and puts folder entries last", () => {
 		const merged = SettingsUtils.of(
 			{
 				settings: {
-					commandWhitelist: ["npm run *", "git push"],
+					commands: [
+						{ command: "npm run *", whitelist: false },
+						{ command: "git push", whitelist: true },
+					],
 					folders: [
-						{ path: "/app", writable: false },
-						{ path: "/shared", writable: true },
+						{ path: "/app", whitelist: false },
+						{ path: "/shared", whitelist: true },
 					],
 				},
 			},
 			{
 				settings: {
-					commandWhitelist: ["git push", "make"],
+					commands: [
+						{ command: "git push", whitelist: true },
+						{ command: "make", whitelist: false },
+					],
 					folders: [
-						{ path: "/project", writable: true },
-						{ path: "/shared", writable: false },
+						{ path: "/project", whitelist: true },
+						{ path: "/shared", whitelist: false },
 					],
 				},
 			},
 		);
-		expect(merged.commandWhitelist).toEqual(["npm run *", "git push", "make"]);
+		expect(merged.commands).toEqual([
+			{ command: "npm run *", whitelist: false },
+			{ command: "git push", whitelist: true },
+			{ command: "git push", whitelist: true },
+			{ command: "make", whitelist: false },
+		]);
 		expect(merged.folders).toEqual([
-			{ path: "/project", writable: true },
-			{ path: "/shared", writable: false },
-			{ path: "/app", writable: false },
+			{ path: "/app", whitelist: false },
+			{ path: "/shared", whitelist: true },
+			{ path: "/project", whitelist: true },
+			{ path: "/shared", whitelist: false },
 		]);
 		expect(SettingsUtils.of({ settings: {} }).folders).toEqual([]);
+	});
+
+	it("picks the project's first folder as primary, else the user's", () => {
+		const user = { settings: { folders: [{ path: "/app", whitelist: true }] } };
+		const project = {
+			settings: {
+				folders: [
+					{ path: "/project", whitelist: true },
+					{ path: "/other", whitelist: true },
+				],
+			},
+		};
+		expect(SettingsUtils.primaryFolder(user, project)).toBe("/project");
+		expect(SettingsUtils.primaryFolder(user, { settings: {} })).toBe("/app");
+		expect(SettingsUtils.primaryFolder(user)).toBe("/app");
+		expect(SettingsUtils.primaryFolder({ settings: {} })).toBeNull();
 	});
 });

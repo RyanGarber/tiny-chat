@@ -1,6 +1,7 @@
 import type { Capabilities } from "../../../core/types/capability.ts";
 import { PathUtils } from "../../file/utils/PathUtils.ts";
 import { createActionsToolset } from "../tools/actions.ts";
+import { createBrowserToolset } from "../tools/browser.ts";
 import { createGitHubToolset } from "../tools/github.ts";
 import { createMemoriesToolset } from "../tools/memories.ts";
 import { createQuestionsToolset } from "../tools/questions.ts";
@@ -80,6 +81,15 @@ export const ToolService = {
 					needs: ["web"],
 					instructions:
 						"You have full access to the web. While you should rely training knowledge for basic, historical, and static facts, always search when a topic could benefit from a more well-rounded or up-to-date answer.",
+				}),
+			),
+
+			await createBrowserToolset(
+				forToolset({
+					capabilities,
+					needs: ["browser"],
+					instructions:
+						"You can drive a real browser on the user's machine. Use it to interact with pages — sign-in flows, forms, web apps, the user's local dev servers — or when a page needs JavaScript to render; for simply reading or searching the web, prefer the web tools. Batch predictable steps into one call, read the tree before acting on a page you have not seen, and take a screenshot when layout or visual state matters. Ask before submitting anything on the user's behalf that cannot be undone.",
 				}),
 			),
 

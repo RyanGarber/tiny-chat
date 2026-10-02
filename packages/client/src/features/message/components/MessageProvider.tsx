@@ -171,6 +171,26 @@ function MessageSync({ store }: { store: StoreApi<MessageStore> }) {
 		[session.data, chat.data, providers.data, mcpTools.data, skills, client],
 	);
 
+	const resume = useCallback(
+		(message: MessageState) => {
+			if (!session.data || !chat.data || !providers.data) return;
+			void ClientMessageService.onMessage({
+				client,
+				user: session.data.user,
+				message,
+				chat: chat.data,
+				providers: providers.data,
+				skills,
+				mcpTools: mcpTools.data ?? [],
+				// No new results: the reply is kept as it is, and generation picks
+				// up after it rather than starting it over.
+				toolResults: [],
+				resume: true,
+			});
+		},
+		[session.data, chat.data, providers.data, mcpTools.data, skills, client],
+	);
+
 	useEffect(() => {
 		if (!ready) return;
 		store.getState().publish({
@@ -181,6 +201,7 @@ function MessageSync({ store }: { store: StoreApi<MessageStore> }) {
 			pendingFeedbackIds,
 			nextFeedbackId,
 			regenerate: retry,
+			resume,
 		});
 	}, [
 		store,
@@ -191,6 +212,7 @@ function MessageSync({ store }: { store: StoreApi<MessageStore> }) {
 		pendingFeedbackIds,
 		nextFeedbackId,
 		retry,
+		resume,
 	]);
 
 	return null;

@@ -56,6 +56,20 @@ export const AppService = {
 		return false;
 	},
 
+	openSidebar: () => {
+		const { setSidebarOpen } = useAppStore.getState();
+
+		setSidebarOpen(true);
+		return true;
+	},
+
+	openSettings: () => {
+		const { setCurrentDrawer } = useAppStore.getState();
+
+		setCurrentDrawer("settings");
+		return true;
+	},
+
 	openUploads: (uploads?: UploadsType) => {
 		const { setCurrentModal, setCurrentUploads } = useAppStore.getState();
 

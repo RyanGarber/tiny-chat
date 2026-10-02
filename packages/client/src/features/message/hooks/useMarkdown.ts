@@ -236,19 +236,22 @@ export const useMarkdown = ({
 	source: MarkdownSource;
 	withKatex?: boolean;
 }) => {
-	const content = useMemo(
-		() =>
-			MarkdownUtils.normalize(
-				(typeof source === "string"
-					? source
-					: MarkdownDataUtils.toInlineBlock(source)
-				)
-					.replace(MESSAGE_OPEN, "")
-					.replace(MESSAGE_CLOSE, "")
-					.replace(/<cite([/ ])/g, "<mark$1"),
-			),
-		[source],
-	);
+	const content = useMemo(() => {
+		const normalized = MarkdownUtils.normalize(
+			(typeof source === "string"
+				? source
+				: MarkdownDataUtils.toInlineBlock(source)
+			)
+				.replace(MESSAGE_OPEN, "")
+				.replace(MESSAGE_CLOSE, "")
+				.replace(
+					/<cite sources="([^>]+)"([/ ]+)?>/g,
+					(_, p1, p2) =>
+						`<mark sources="${p1.replace(/" "/g, " ")}"${p2 ?? ""}>`,
+				),
+		);
+		return normalized;
+	}, [source]);
 
 	return {
 		remarkPlugins,

@@ -12,7 +12,7 @@ import { client } from "#app/client.ts";
 import Sentinel from "#app/core/components/Sentinel.tsx";
 import { useSentinel } from "#app/core/hooks/useSentinel.ts";
 import Dropzone from "#app/features/upload/components/Dropzone.tsx";
-import FileTag from "#app/features/upload/components/FileTag.tsx";
+import SourceTag from "#app/features/upload/components/SourceTag.tsx";
 import { MessagingService } from "#client/features/chat/services/MessagingService.ts";
 import { useUploads } from "#client/features/upload/hooks/useUploads.ts";
 
@@ -49,7 +49,7 @@ export function AttachmentUploads({ close }: { close: () => void }) {
 								}}
 							>
 								<Group justify="space-between" wrap="nowrap" gap="xs">
-									<FileTag
+									<SourceTag
 										path={upload.name}
 										directory={true}
 										thumbnail={upload.thumbnail ?? undefined}
@@ -79,7 +79,7 @@ export function AttachmentUploads({ close }: { close: () => void }) {
 													: ""}
 											</Text>
 										</Stack>
-									</FileTag>
+									</SourceTag>
 									<ActionIcon
 										variant="subtle"
 										color="red"

@@ -39,9 +39,12 @@ export const createChatShellCapability: CapabilityFactory<
 			return { path, success: true };
 		},
 
-		exec: async ({ command }) => {
+		exec: async ({ command, abort }) => {
 			await client.workingDirectory.ready();
-			return await client.api.file.exec.mutate({ ...spec, command });
+			return await client.api.file.exec.mutate(
+				{ ...spec, command },
+				{ signal: abort },
+			);
 		},
 	};
 };

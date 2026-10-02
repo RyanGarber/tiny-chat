@@ -24,7 +24,9 @@ export const useMessageQueueStore = create<MessageQueueStore>((set, get) => ({
 		if (
 			failed ||
 			!DataUtils.isMissingToolResult({ data }) ||
-			data.flat().some((part) => part.type === "abort")
+			// Only the latest step counts: a reply that was continued keeps the
+			// abort it stopped on.
+			data.at(-1)?.some((part) => part.type === "abort")
 		) {
 			get().clear(chatId);
 			get().setActive(chatId, false);

@@ -125,10 +125,17 @@ export const FileService = {
 	exec: async ({
 		user,
 		command,
+		abort,
 		...spec
-	}: { user: zUser; command: string } & FilesystemSpec) => {
+	}: {
+		user: zUser;
+		command: string;
+		abort?: AbortSignal;
+	} & FilesystemSpec) => {
 		if (!spec.chat)
-			return (await FileService.get({ user, ...spec })).bash.exec(command);
+			return (await FileService.get({ user, ...spec })).bash.exec(command, {
+				signal: abort,
+			});
 		const key = sessionKey(user.id, spec.chat);
 		let session = sessions.get(key);
 		if (!session) {
@@ -145,6 +152,7 @@ export const FileService = {
 		current.pending++;
 		const run = current.queue
 			.then(async () => {
+				abort?.throwIfAborted();
 				// Recheck ownership even when a shell already exists (including deleted chats).
 				const folder = await ChatService.getWorkingDirectory({
 					user,
@@ -192,6 +200,7 @@ export const FileService = {
 				}
 				try {
 					const result = await bash.exec(command, {
+						signal: abort,
 						cwd: current.cwd,
 						env: current.env ? { ...current.env, PWD: current.cwd } : undefined,
 					});

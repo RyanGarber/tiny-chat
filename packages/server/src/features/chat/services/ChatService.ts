@@ -213,7 +213,11 @@ export const ChatService = {
 				}).first()
 			: null;
 		const { folders } = SettingsUtils.of(user, row);
-		return { id: row?.id ?? null, cwd: folders[0]?.path ?? null, folders };
+		return {
+			id: row?.id ?? null,
+			cwd: SettingsUtils.primaryFolder(user, row),
+			folders,
+		};
 	},
 
 	updateProject: async ({

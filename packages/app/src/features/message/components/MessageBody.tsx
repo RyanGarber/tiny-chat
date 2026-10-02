@@ -39,6 +39,7 @@ export default function MessageBody({
 	// above this response. Resolved for the whole list in MessageProvider.
 	const isStaleId = useMessageStore((s) => s.staleIds.has(message.id));
 	const regenerate = useMessageStore((s) => s.regenerate);
+	const resume = useMessageStore((s) => s.resume);
 
 	const { rect, captureSelection, getSelectedText } = useMessageSelection(
 		message.id,
@@ -100,6 +101,7 @@ export default function MessageBody({
 						status={streamed.status}
 						compaction={compaction}
 						regenerate={regenerate}
+						resume={resume}
 					/>
 					{!!streamed.status && (
 						<Box

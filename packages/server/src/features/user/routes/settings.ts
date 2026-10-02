@@ -2,9 +2,10 @@ import { ThemeUtils } from "@tiny-chat/core/core/utils/ThemeUtils.ts";
 import { ProjectLike } from "@tiny-chat/core/features/data/types/chat.ts";
 import { zConfig } from "@tiny-chat/core/features/data/types/message.ts";
 import {
-	zFolderPath,
+	zCommand,
+	zFolder,
+	zHiddenModels,
 	zMCPServers,
-	zSettings,
 } from "@tiny-chat/core/features/data/types/user.ts";
 import { z } from "zod";
 import { procedure, router } from "../../../index.ts";
@@ -95,26 +96,7 @@ export const settings = router({
 			});
 		}),
 
-	removeInstruction: procedure
-		.input(
-			z.object({
-				index: z.number(),
-				project: ProjectLike.nullish(),
-			}),
-		)
-		.mutation(async ({ ctx, input }) => {
-			return SettingsService.setSettings({
-				user: ctx.session.user,
-				project: input.project,
-				update: (settings) => ({
-					...settings,
-					instructions:
-						settings.instructions?.filter((_, i) => i !== input.index) ?? [],
-				}),
-			});
-		}),
-
-	editInstruction: procedure
+	updateInstruction: procedure
 		.input(
 			z.object({
 				index: z.number(),
@@ -136,10 +118,10 @@ export const settings = router({
 			});
 		}),
 
-	addCommand: procedure
+	removeInstruction: procedure
 		.input(
 			z.object({
-				command: z.string().trim().min(1),
+				index: z.number(),
 				project: ProjectLike.nullish(),
 			}),
 		)
@@ -149,8 +131,48 @@ export const settings = router({
 				project: input.project,
 				update: (settings) => ({
 					...settings,
-					commandWhitelist: [
-						...new Set([...(settings.commandWhitelist ?? []), input.command]),
+					instructions:
+						settings.instructions?.filter((_, i) => i !== input.index) ?? [],
+				}),
+			});
+		}),
+
+	addCommand: procedure
+		.input(
+			z.object({
+				command: zCommand,
+				project: ProjectLike.nullish(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			return SettingsService.setSettings({
+				user: ctx.session.user,
+				project: input.project,
+				update: (settings) => ({
+					...settings,
+					commands: [...(settings.commands ?? []), input.command],
+				}),
+			});
+		}),
+
+	updateCommand: procedure
+		.input(
+			z.object({
+				index: z.number(),
+				command: zCommand.partial(),
+				project: ProjectLike.nullish(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			return SettingsService.setSettings({
+				user: ctx.session.user,
+				project: input.project,
+				update: (settings) => ({
+					...settings,
+					commands: [
+						...(settings.commands ?? []).map((command, i) =>
+							i === input.index ? { ...command, ...input.command } : command,
+						),
 					],
 				}),
 			});
@@ -169,34 +191,8 @@ export const settings = router({
 				project: input.project,
 				update: (settings) => ({
 					...settings,
-					commandWhitelist:
-						settings.commandWhitelist?.filter((_, i) => i !== input.index) ??
-						[],
-				}),
-			});
-		}),
-
-	editCommand: procedure
-		.input(
-			z.object({
-				index: z.number(),
-				command: z.string().trim().min(1),
-				project: ProjectLike.nullish(),
-			}),
-		)
-		.mutation(async ({ ctx, input }) => {
-			return SettingsService.setSettings({
-				user: ctx.session.user,
-				project: input.project,
-				update: (settings) => ({
-					...settings,
-					commandWhitelist: [
-						...new Set(
-							settings.commandWhitelist?.map((v, i) =>
-								i === input.index ? input.command : v,
-							) ?? [],
-						),
-					],
+					commands:
+						settings.commands?.filter((_, i) => i !== input.index) ?? [],
 				}),
 			});
 		}),
@@ -204,7 +200,7 @@ export const settings = router({
 	addFolder: procedure
 		.input(
 			z.object({
-				path: zFolderPath.shape.path,
+				folder: zFolder,
 				project: ProjectLike.nullish(),
 			}),
 		)
@@ -214,12 +210,29 @@ export const settings = router({
 				project: input.project,
 				update: (settings) => ({
 					...settings,
-					folders: [
-						...(settings.folders ?? []).filter(
-							({ path }) => path !== input.path,
-						),
-						{ path: input.path, writable: false },
-					],
+					folders: [...(settings.folders ?? []), input.folder],
+				}),
+			});
+		}),
+
+	updateFolder: procedure
+		.input(
+			z.object({
+				index: z.number(),
+				folder: zFolder.def.innerType.partial(),
+				project: ProjectLike.nullish(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			return SettingsService.setSettings({
+				user: ctx.session.user,
+				project: input.project,
+				update: (settings) => ({
+					...settings,
+					folders:
+						settings.folders?.map((folder, i) =>
+							i === input.index ? { ...folder, ...input.folder } : folder,
+						) ?? [],
 				}),
 			});
 		}),
@@ -238,28 +251,6 @@ export const settings = router({
 				update: (settings) => ({
 					...settings,
 					folders: settings.folders?.filter((_, i) => i !== input.index) ?? [],
-				}),
-			});
-		}),
-
-	setFolderWritable: procedure
-		.input(
-			z.object({
-				index: z.number(),
-				writable: z.boolean(),
-				project: ProjectLike.nullish(),
-			}),
-		)
-		.mutation(async ({ ctx, input }) => {
-			return SettingsService.setSettings({
-				user: ctx.session.user,
-				project: input.project,
-				update: (settings) => ({
-					...settings,
-					folders:
-						settings.folders?.map((v, i) =>
-							i === input.index ? { ...v, writable: input.writable } : v,
-						) ?? [],
 				}),
 			});
 		}),
@@ -329,8 +320,8 @@ export const settings = router({
 	setHiddenModels: procedure
 		.input(
 			z.object({
-				feature: zSettings.shape.hiddenModels.unwrap().keyType,
-				models: zSettings.shape.hiddenModels.unwrap().valueType,
+				feature: zHiddenModels.keyType,
+				models: zHiddenModels.valueType,
 				project: ProjectLike.nullish(),
 			}),
 		)

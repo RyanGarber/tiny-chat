@@ -57,7 +57,7 @@ describe("FilesystemService", () => {
 			interactive: false,
 			timezone: "UTC",
 		};
-		await api.chat.activate.mutate({ chat: chat.id });
+		await api.chat.activate.mutate({ chatId: chat.id });
 		await exec(`cd /mnt/chat/${chat.id}`);
 	});
 

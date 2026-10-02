@@ -1,4 +1,13 @@
-import { ActionIcon, Box, Text, TextInput, Tooltip } from "@mantine/core";
+import {
+	ActionIcon,
+	Box,
+	Checkbox,
+	Paper,
+	Stack,
+	Text,
+	TextInput,
+	Tooltip,
+} from "@mantine/core";
 import { TrashIcon } from "@phosphor-icons/react";
 import { useShellSettings } from "@tiny-chat/client/features/settings/hooks/useShellSettings.ts";
 import type { ProjectLike } from "@tiny-chat/core/features/data/types/chat.ts";
@@ -9,7 +18,7 @@ export default function CommandSettings({
 }: {
 	project: ProjectLike | null;
 }) {
-	const { commandWhitelist, addCommand, editCommand, removeCommand } =
+	const { commands, addCommand, updateCommand, removeCommand } =
 		useShellSettings({ project });
 
 	return (
@@ -20,52 +29,76 @@ export default function CommandSettings({
 					Runs matching shell commands without approval
 				</Text>
 			</Box>
-			{commandWhitelist.map((command, index) => (
-				<TextInput
-					key={command}
-					defaultValue={command}
-					ff="monospace"
-					onKeyDown={(e) =>
-						e.key === "Enter" && (e.target as HTMLInputElement).blur()
-					}
-					onBlur={(e) => {
-						const value = e.target.value.trim();
-						if (value === command) return;
-						if (value) editCommand.mutate({ project, index, command: value });
-						else removeCommand.mutate({ project, index });
-					}}
-					rightSection={
-						<ActionIcon
-							variant="subtle"
-							onClick={() => removeCommand.mutate({ project, index })}
-							disabled={
-								removeCommand.isPending &&
-								removeCommand.variables.index === index
-							}
-						>
-							<TrashIcon size={20} />
-						</ActionIcon>
-					}
-					disabled={
-						(editCommand.isPending && editCommand.variables.index === index) ||
-						(removeCommand.isPending && removeCommand.variables.index === index)
-					}
-				/>
-			))}
-			<Tooltip label="Use * to match anything" position="right">
+			{commands.map((command, index) => {
+				const pending =
+					(updateCommand.isPending &&
+						updateCommand.variables.index === index) ||
+					(removeCommand.isPending && removeCommand.variables.index === index);
+				return (
+					<Paper key={command.command} withBorder p="xs">
+						<Stack gap={6} flex={1} miw={0}>
+							<TextInput
+								defaultValue={command.command}
+								ff="monospace"
+								onKeyDown={(e) =>
+									e.key === "Enter" && (e.target as HTMLInputElement).blur()
+								}
+								onBlur={(e) => {
+									const value = e.target.value.trim();
+									if (value === command.command) return;
+									if (value)
+										updateCommand.mutate({
+											project,
+											index,
+											command: { command: value },
+										});
+									else removeCommand.mutate({ project, index });
+								}}
+								rightSection={
+									<ActionIcon
+										variant="subtle"
+										onClick={() => removeCommand.mutate({ project, index })}
+										disabled={pending}
+									>
+										<TrashIcon size={20} />
+									</ActionIcon>
+								}
+								disabled={pending}
+							/>
+							<Checkbox
+								size="xs"
+								label="Skip approval for matching"
+								checked={command.whitelist}
+								disabled={pending}
+								onChange={(event) =>
+									updateCommand.mutate({
+										project,
+										index,
+										command: { whitelist: event.currentTarget.checked },
+									})
+								}
+							/>
+						</Stack>
+					</Paper>
+				);
+			})}
+			<Tooltip label="How to handle model commands" position="right">
 				<TextInput
 					key="add"
 					label="Command"
 					styles={StyleUtils.input}
 					ff="monospace"
-					placeholder="npm run *"
+					placeholder="command (use * to match anything)"
 					onKeyDown={(e) =>
 						e.key === "Enter" && (e.target as HTMLInputElement).blur()
 					}
 					onBlur={(e) => {
 						const value = e.target.value.trim();
 						if (!value) return;
-						addCommand.mutate({ project, command: value });
+						addCommand.mutate({
+							project,
+							command: { command: value, whitelist: false },
+						});
 						e.target.value = "";
 					}}
 					disabled={addCommand.isPending}

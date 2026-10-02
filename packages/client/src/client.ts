@@ -4,6 +4,10 @@ import { QueryClient } from "@tanstack/react-query";
 import { JsonService } from "@tiny-chat/core/core/services/JsonService.ts";
 import type { ShellCapability } from "@tiny-chat/core/core/types/capability.ts";
 import { zEnv, type zProviderEnv } from "@tiny-chat/core/core/types/env.ts";
+import {
+	CodeUtils,
+	type CodeWorker,
+} from "@tiny-chat/core/core/utils/CodeUtils.ts";
 import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
 import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
 import type { ModelProvider } from "@tiny-chat/core/features/provider/types/model.ts";
@@ -67,6 +71,7 @@ export const createClient = ({
 	input,
 	shell,
 	desktop,
+	highlighter,
 	queryClient = new QueryClient(),
 }: {
 	env: zEnv;
@@ -80,6 +85,8 @@ export const createClient = ({
 	input?: ClientInput;
 	shell?: ClientShell;
 	desktop?: boolean;
+	/** Starts the runtime's bundle of `HighlightWorker.ts`, where Shiki runs. */
+	highlighter?: () => CodeWorker;
 	queryClient?: QueryClient;
 }) => {
 	const env = zEnv.safeParse(_env);
@@ -87,6 +94,8 @@ export const createClient = ({
 		console.error(z.treeifyError(env.error));
 		throw new Error("invalid environment");
 	}
+
+	CodeUtils.setWorker(highlighter);
 
 	const webUrl = CommonUtils.isTruthy(env.data.DEV)
 		? `http://${host}:${env.data.VITE_WEB_PORT}`

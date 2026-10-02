@@ -1,4 +1,4 @@
-import { zConfig } from "@tiny-chat/core/features/data/types/message.ts";
+import { ThemeUtils } from "@tiny-chat/core/core/utils/ThemeUtils.ts";
 import type { ModelProviderStatus } from "@tiny-chat/core/features/provider/types/model.ts";
 import type { ProviderState } from "@tiny-chat/core/features/provider/types/provider.ts";
 import { useCallback, useContext, useRef } from "react";
@@ -7,13 +7,24 @@ import { useConfig } from "../../agent/hooks/useConfig.ts";
 import { useProviders } from "../../agent/hooks/useProviders.ts";
 import { useSkills } from "../../agent/hooks/useSkills.ts";
 import { useTools } from "../../agent/hooks/useTools.ts";
+import { useChat } from "../../chat/hooks/useChat.ts";
 import { ChatService } from "../../chat/services/ChatService.ts";
+import { useMessagingStore } from "../../chat/stores/useMessagingStore.ts";
+import { useEmbeddingSettings } from "../../settings/hooks/useEmbeddingSettings.ts";
+import { useInstructions } from "../../settings/hooks/useInstructions.ts";
 import { usePresets } from "../../settings/hooks/usePresets.ts";
+import { useProviderSettings } from "../../settings/hooks/useProviderSettings.ts";
+import { useThemes } from "../../settings/hooks/useThemes.ts";
 import type {
 	CommandChoiceGroup,
 	CommandGroup,
 	CommandItem,
 } from "../types/command.ts";
+
+/** The budgets the memory can be filled up to, as the app's slider steps. */
+const MEMORY_BUDGETS = Array.from({ length: 21 }, (_, i) => i * 500);
+
+const onOff = (value: boolean) => (value ? "on" : "off");
 
 /**
  * Build the commands available to any client, optionally extended with
@@ -21,12 +32,20 @@ import type {
  */
 export const useCommands = ({
 	commands = [],
+	onOpenSettings,
+	onOpenChats,
+	onOpenFiles,
+	onOpenProjects,
 	onOpenTools,
 	onOpenSkills,
 	onOpenUploads,
 	onOpenGitHub,
 }: {
 	commands?: CommandItem[];
+	onOpenSettings?: () => void;
+	onOpenChats?: () => void;
+	onOpenFiles?: () => void;
+	onOpenProjects?: () => void;
 	onOpenTools?: () => void;
 	onOpenSkills?: () => void;
 	onOpenUploads?: () => void;
@@ -37,15 +56,41 @@ export const useCommands = ({
 	const { providers, updateProviders } = useProviders();
 	const { skills, localSkills } = useSkills();
 	const { refreshMcpServers } = useTools();
-	const { config, setConfig, modelArgs, setModelArg } = useConfig();
+	const { config, setConfig, setModel, modelArgs, setModelArg } = useConfig();
 	const { presets, setPreset, unsetPreset } = usePresets();
+
+	const project = useMessagingStore((state) => state.project);
+	const { chat } = useChat();
+	const { theme, setTheme, codeTheme, setCodeTheme } = useThemes();
+	const {
+		useProviderCache,
+		setUseProviderCache,
+		useBrowserModels,
+		setUseBrowserModels,
+		preferredWebProvider,
+		setPreferredWebProvider,
+	} = useProviderSettings();
+	const { embeddingConfig, useEmbeddingSearch, setUseEmbeddingSearch } =
+		useEmbeddingSettings();
+	const { memoryBudget, setMemoryBudget } = useInstructions({ project });
 
 	const clientRef = useRef(client);
 	clientRef.current = client;
 
+	const chatRef = useRef(chat.data);
+	chatRef.current = chat.data;
+
 	const commandsRef = useRef(commands);
 	commandsRef.current = commands;
 
+	const onOpenSettingsRef = useRef(onOpenSettings);
+	onOpenSettingsRef.current = onOpenSettings;
+	const onOpenChatsRef = useRef(onOpenChats);
+	onOpenChatsRef.current = onOpenChats;
+	const onOpenFilesRef = useRef(onOpenFiles);
+	onOpenFilesRef.current = onOpenFiles;
+	const onOpenProjectsRef = useRef(onOpenProjects);
+	onOpenProjectsRef.current = onOpenProjects;
 	const onOpenToolsRef = useRef(onOpenTools);
 	onOpenToolsRef.current = onOpenTools;
 	const onOpenSkillsRef = useRef(onOpenSkills);
@@ -64,6 +109,8 @@ export const useCommands = ({
 	configRef.current = config;
 	const setConfigRef = useRef(setConfig);
 	setConfigRef.current = setConfig;
+	const setModelRef = useRef(setModel);
+	setModelRef.current = setModel;
 
 	const modelArgsRef = useRef(modelArgs);
 	modelArgsRef.current = modelArgs;
@@ -85,6 +132,44 @@ export const useCommands = ({
 	const refreshMcpServersRef = useRef(refreshMcpServers);
 	refreshMcpServersRef.current = refreshMcpServers;
 
+	// The settings that are a choice between a few plain values.
+	const settingsRef = useRef({
+		project,
+		theme,
+		setTheme,
+		codeTheme,
+		setCodeTheme,
+		useProviderCache,
+		setUseProviderCache,
+		useBrowserModels,
+		setUseBrowserModels,
+		preferredWebProvider,
+		setPreferredWebProvider,
+		embeddingConfig,
+		useEmbeddingSearch,
+		setUseEmbeddingSearch,
+		memoryBudget,
+		setMemoryBudget,
+	});
+	settingsRef.current = {
+		project,
+		theme,
+		setTheme,
+		codeTheme,
+		setCodeTheme,
+		useProviderCache,
+		setUseProviderCache,
+		useBrowserModels,
+		setUseBrowserModels,
+		preferredWebProvider,
+		setPreferredWebProvider,
+		embeddingConfig,
+		useEmbeddingSearch,
+		setUseEmbeddingSearch,
+		memoryBudget,
+		setMemoryBudget,
+	};
+
 	const getCommands = useCallback((): CommandGroup[] => {
 		const models: CommandChoiceGroup[] =
 			providersRef.current
@@ -100,22 +185,11 @@ export const useCommands = ({
 						active:
 							configRef.current.provider === provider.name &&
 							configRef.current.model === model.name,
-						run: () => {
-							console.log("[useCommands] setting config:", {
+						run: () =>
+							setModelRef.current({
 								provider: provider.name,
 								model: model.name,
-								toolsets: configRef.current.toolsets,
-								skills: configRef.current.skills,
-							});
-							setConfigRef.current(
-								zConfig.parse({
-									provider: provider.name,
-									model: model.name,
-									toolsets: configRef.current.toolsets,
-									skills: configRef.current.skills,
-								}),
-							);
-						},
+							}),
 					})),
 				})) ?? [];
 
@@ -216,16 +290,137 @@ export const useCommands = ({
 				]
 			: [];
 
+		const settings = settingsRef.current;
+
+		/** A command choosing between plain values, the one in effect marked. */
+		const choice = (
+			name: string,
+			values: readonly string[],
+			current: string | undefined,
+			set: (value: string) => unknown,
+		): CommandItem => ({
+			name,
+			value: name,
+			choices: [
+				{
+					items: values.map((value) => ({
+						name: value,
+						value,
+						active: value === current,
+						run: () => set(value),
+					})),
+				},
+			],
+		});
+
+		const webProviders =
+			providersRef.current
+				?.filter((provider) => provider.type === "web" && provider.status.valid)
+				.map((provider) => provider.name) ?? [];
+
+		const simpleSettings: CommandItem[] = [
+			choice("theme", ThemeUtils.themes, settings.theme, (value) =>
+				settings.setTheme.mutate({ theme: value as typeof settings.theme }),
+			),
+			choice(
+				"code-theme",
+				ThemeUtils.codeThemesByTheme[settings.theme],
+				settings.codeTheme,
+				(value) =>
+					settings.setCodeTheme.mutate({
+						codeTheme: value as typeof settings.codeTheme,
+					}),
+			),
+			choice(
+				"provider-cache",
+				["on", "off"],
+				onOff(settings.useProviderCache),
+				(value) =>
+					settings.setUseProviderCache.mutate({
+						useProviderCache: value === "on",
+					}),
+			),
+			choice(
+				"browser-models",
+				["on", "off"],
+				onOff(settings.useBrowserModels),
+				(value) =>
+					settings.setUseBrowserModels.mutate({
+						useBrowserModels: value === "on",
+					}),
+			),
+			choice(
+				"smart-search",
+				["on", "off"],
+				onOff(settings.useEmbeddingSearch),
+				(value) => {
+					// Search runs on embeddings, so there is nothing to turn on without a model.
+					if (!settings.embeddingConfig) return;
+					settings.setUseEmbeddingSearch.mutate({
+						useEmbeddingSearch: value === "on",
+					});
+				},
+			),
+			choice(
+				"memory-budget",
+				MEMORY_BUDGETS.map(String),
+				String(settings.memoryBudget),
+				(value) =>
+					settings.setMemoryBudget.mutate({
+						project: settings.project,
+						tokens: Number(value),
+					}),
+			),
+			choice(
+				"web-provider",
+				webProviders,
+				settings.preferredWebProvider ?? undefined,
+				(value) =>
+					settings.setPreferredWebProvider.mutate({
+						preferredWebProvider: value,
+					}),
+			),
+		];
+
+		const navigation: CommandItem[] = [
+			{
+				name: "projects",
+				value: "projects",
+				run: () => onOpenProjectsRef.current?.(),
+			},
+			{
+				name: "chats",
+				value: "chats",
+				run: () => onOpenChatsRef.current?.(),
+			},
+			...(onOpenFilesRef.current
+				? [
+						{
+							name: "files",
+							value: "files",
+							run: () => onOpenFilesRef.current?.(),
+						},
+					]
+				: []),
+			{
+				name: "settings",
+				value: "settings",
+				run: () => onOpenSettingsRef.current?.(),
+			},
+		];
+
 		return [
 			{
 				name: "Commands",
 				items: [
 					...commandsRef.current,
+					...navigation,
+					...simpleSettings,
 					{
 						name: "clear",
 						value: "clear",
 						run: () => {
-							ChatService.setChat({ id: null });
+							ChatService.clearChat(chatRef.current);
 						},
 					},
 					{ name: "model", value: "model", choices: models },

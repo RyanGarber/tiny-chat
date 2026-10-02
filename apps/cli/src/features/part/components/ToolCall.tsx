@@ -4,7 +4,10 @@ import type { MessageState } from "@tiny-chat/core/features/data/types/message.t
 import type { RenderedPart } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
 import type { ToolStatusPart } from "@tiny-chat/core/features/tool/types/display.ts";
 import chalk from "chalk";
+import { useInput } from "ink";
 import Box from "../../../core/components/Box.tsx";
+import Button from "../../../core/components/Button.tsx";
+import { useAppStore } from "../../../core/stores/useAppStore.ts";
 import type { StatusPart } from "../utils/TaskUtils.ts";
 import ScrollTail from "./ScrollTail.tsx";
 import Task from "./Task.tsx";
@@ -38,24 +41,37 @@ export default function ToolCall({
 
 	const controls = message && display.controls;
 
+	// Escape stops a running call from the chat; other pages take it to go back.
+	const page = useAppStore((state) => state.page);
+	const { interrupt } = display;
+	useInput(
+		(_, key) => {
+			if (key.escape) interrupt?.();
+		},
+		{ isActive: !!interrupt && page === "chat" },
+	);
+
 	return (
 		<Task expanded={expanded} onToggle={toggle}>
-			<Task.Status
-				status={
-					display.active
-						? "pending"
-						: display.state === "error"
-							? "error"
-							: "success"
-				}
-				emoji="⚙️ "
-				parts={toStatusParts(display.status)}
-			/>
+			<Box gap={1}>
+				<Task.Status
+					status={
+						display.active
+							? "pending"
+							: display.state === "error"
+								? "error"
+								: "success"
+					}
+					emoji="⚙️ "
+					parts={toStatusParts(display.status)}
+				/>
+				{interrupt && <Button label="stop · esc" onClick={interrupt} />}
+			</Box>
 			{(display.input.length > 0 ||
 				display.output.length > 0 ||
 				!!controls) && (
 				<Task.Details>
-					<ScrollTail follow={auto}>
+					<ScrollTail follow={auto && !controls}>
 						<Box flexDirection="column" gap={1}>
 							{display.input.map((block, index) => (
 								<ToolBlock

@@ -5,6 +5,7 @@ import Image from "ink-picture";
 import type { ReactNode } from "react";
 import Anchor from "../../../core/components/Anchor.tsx";
 import Box from "../../../core/components/Box.tsx";
+import Content from "../../../core/components/Content.tsx";
 import Text from "../../../core/components/Text.tsx";
 import { Code } from "../../code/components/Code.tsx";
 import Diff from "../../code/components/Diff.tsx";
@@ -132,13 +133,21 @@ export default function ToolBlock({
 			);
 		case "web":
 			return (
-				<Box flexDirection="column">
-					{block.source.title && <Text bold>{block.source.title}</Text>}
-					<Anchor href={block.source.url} wrap="truncate-end" />
-					<Text wrap="truncate-end" color="textSubtle">
-						{block.source.content.replaceAll("\n", " ")}
-					</Text>
-				</Box>
+				<Content formatter={() => block.source.content} streaming={active}>
+					<Box flexDirection="column" gap={1} paddingX={2} paddingY={1}>
+						<Box flexDirection="column" paddingRight={8}>
+							<Text bold>
+								{block.source.title ??
+									URL.parse(block.source.url)?.hostname ??
+									block.source.url}
+							</Text>
+							<Anchor href={block.source.url} wrap="truncate-end" />
+						</Box>
+						<Tail follow={active} value={block.source.content}>
+							{(value) => <Markdown source={value} streaming={active} />}
+						</Tail>
+					</Box>
+				</Content>
 			);
 		case "record":
 			return (

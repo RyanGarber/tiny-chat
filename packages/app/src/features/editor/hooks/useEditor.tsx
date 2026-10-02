@@ -23,6 +23,7 @@ import { useLink } from "../hooks/useLink.tsx";
 import { usePaste } from "../hooks/usePaste.tsx";
 import { useEditorStore } from "../stores/useEditorStore.ts";
 import { EditorUtils } from "../utils/EditorUtils.ts";
+import { usePlaceholder } from "./usePlaceholder.tsx";
 
 const EnterKeymap = Extension.create({
 	name: "enterKeymap",
@@ -175,6 +176,7 @@ export const useEditor = ({
 			usePaste(),
 			useAttachment(),
 			useCommand(),
+			usePlaceholder(),
 		],
 		coreExtensionOptions: {
 			clipboardTextSerializer: {

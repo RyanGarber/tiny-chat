@@ -1,5 +1,6 @@
 import { AppShell, Box, LoadingOverlay, MantineProvider } from "@mantine/core";
-import { ModalsProvider } from "@mantine/modals";
+import { useHotkeys } from "@mantine/hooks";
+import { ModalsProvider, useModals } from "@mantine/modals";
 import { useDrag } from "@use-gesture/react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Background from "#app/core/components/Background.tsx";
@@ -13,9 +14,45 @@ import Chat from "#app/features/chat/components/Chat.tsx";
 import ChatFiles from "#app/features/chat/components/ChatFiles.tsx";
 import Sidebar from "#app/features/sidebar/components/Sidebar.tsx";
 import mantineTheme, { cssResolver } from "#app/theme.tsx";
+import { usePrepareCode } from "#client/core/hooks/useCode.ts";
 import { useSession } from "#client/core/hooks/useSession.ts";
+import { useChatList } from "#client/features/chat/hooks/useChatList.ts";
+import { useDefaultProject } from "#client/features/chat/hooks/useDefaultProject.ts";
+import { ChatService } from "#client/features/chat/services/ChatService.ts";
+import { useDraftStore } from "#client/features/chat/stores/useDraftStore.ts";
 import { useThemes } from "../../../../client/src/features/settings/hooks/useThemes.ts";
 import { setHashbangQuery, useHashbang } from "../hooks/useHashbang";
+
+/**
+ * Shift+tab leaves the current chat and cycles projects, matching the CLI. It
+ * stands down while a drawer or modal is open, and while the editor has
+ * anything in it, which takes the key to unindent. Rendered inside
+ * `ModalsProvider` so confirm modals count too.
+ */
+function ProjectShortcut() {
+	const { projects } = useChatList();
+	const { modals } = useModals();
+
+	useHotkeys(
+		[
+			[
+				"shift+Tab",
+				(event) => {
+					const { currentDrawer, currentModal } = useAppStore.getState();
+					if (currentDrawer || currentModal || modals.length) return;
+					if (!useDraftStore.getState().isEmpty) return;
+					event.preventDefault();
+					ChatService.cycleProject(
+						projects.data?.pages.flatMap((page) => page.projects) ?? [],
+					);
+				},
+			],
+		],
+		[],
+		true,
+	);
+	return null;
+}
 
 export default function App() {
 	const { query } = useHashbang();
@@ -32,6 +69,8 @@ export default function App() {
 	useExperiments();
 	const { height: viewportHeight, containerRef } = useViewport();
 	const { theme } = useThemes();
+	usePrepareCode();
+	useDefaultProject();
 
 	const isMobile = useAppStore((s) => s.isMobile);
 	const isSidebarOpen = useAppStore((s) => s.isSidebarOpen);
@@ -215,6 +254,7 @@ export default function App() {
 		>
 			<ModalsProvider>
 				<Tauri />
+				<ProjectShortcut />
 				<Box pos="relative" h={viewportHeight} ref={containerRef}>
 					<LoadingOverlay
 						visible={session.isPending}

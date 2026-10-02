@@ -17,11 +17,15 @@ import { PathUtils } from "./PathUtils.ts";
  *               installed dependency trees, tool caches and OS debris. Media,
  *               archives, logs and build output all survive, because a caller
  *               asking which files exist is entitled to know.
+ *   `lookup`  — `listing` plus build output. Finding a file by a half-remembered
+ *               name across a whole tree, where a thousand hits inside
+ *               `target/debug` drown the one the user meant, but `logo.png`
+ *               still has to turn up.
  *   `search`  — everything above plus every format that cannot usefully be read
  *               as text, everything a machine wrote, and credentials.
  *
- * `.gitignore` belongs to `search` alone, for the same reason: it records what
- * is not tracked, not what is not there.
+ * `.gitignore` belongs to `lookup` and `search` alone, for the same reason: it
+ * records what is not tracked, not what is not there.
  *
  * PDFs, Word documents and spreadsheets are deliberately uncategorised. They
  * are stored as they arrived and unpacked when something reads one
@@ -52,7 +56,7 @@ export type FileCategory =
 export type FileSkipReason = FileCategory | "large" | "unreadable";
 
 /** How much a given operation is willing to withhold. */
-export type FileScope = "all" | "listing" | "search";
+export type FileScope = "all" | "listing" | "lookup" | "search";
 
 /** Bytes past which a file is never searched (it is machine output, not source). */
 const MAX_FILE_BYTES = 512_000;
@@ -658,6 +662,7 @@ const PATTERNS: {
 const SCOPES: Record<FileScope, ReadonlySet<FileCategory>> = {
 	all: new Set(),
 	listing: new Set(["junk", "vcs", "dependency", "cache"]),
+	lookup: new Set(["junk", "vcs", "dependency", "cache", "build"]),
 	search: new Set([
 		"junk",
 		"vcs",
@@ -725,6 +730,15 @@ export const FileExcludeUtils = {
 						DIRECTORY_ONLY.has(category) === directoryOnly),
 			)
 			.map(([name]) => name),
+
+	/**
+	 * Directory names a walk in this scope never needs to descend into, for a
+	 * shell walking natively that cannot run {@link getCategory} itself. Only
+	 * the literal names: a directory caught by a pattern is still walked, and
+	 * its contents are turned away afterwards by the same rules as ever.
+	 */
+	getPruned: (scope: FileScope): string[] =>
+		FileExcludeUtils.getNames({ categories: SCOPES[scope] }),
 
 	getExtensions: ({
 		categories,

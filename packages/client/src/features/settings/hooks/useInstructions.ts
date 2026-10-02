@@ -24,8 +24,8 @@ export const useInstructions = ({
 		onSuccess: applySettings,
 	});
 
-	const editInstruction = useMutation({
-		...client.query.settings.editInstruction.mutationOptions(),
+	const updateInstruction = useMutation({
+		...client.query.settings.updateInstruction.mutationOptions(),
 		onSuccess: applySettings,
 	});
 
@@ -47,7 +47,7 @@ export const useInstructions = ({
 	return {
 		instructions,
 		addInstruction,
-		editInstruction,
+		updateInstruction,
 		removeInstruction,
 		memoryBudget,
 		setMemoryBudget,

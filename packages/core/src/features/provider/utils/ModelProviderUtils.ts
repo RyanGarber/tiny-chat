@@ -24,15 +24,15 @@ export const ModelProviderUtils = {
 				type: "range",
 				name: "tokens-in",
 				min: 1_000,
-				max: 1_000_000,
-				default: 50_000,
+				max: 2_000_000,
+				default: 200_000,
 			},
 			{
 				type: "range",
 				name: "tokens-out",
 				min: 1_000,
-				max: 250_000,
-				default: 25_000,
+				max: 200_000,
+				default: 20_000,
 			},
 		];
 		if (maxTemp > 0) {
@@ -46,6 +46,29 @@ export const ModelProviderUtils = {
 		}
 		return args;
 	},
+
+	/** The subset of `args` that `modelArgs` declares and would accept. */
+	getArgsValid: ({
+		args,
+		modelArgs,
+	}: {
+		args: Record<string, unknown>;
+		modelArgs: zModelArg[];
+	}) =>
+		Object.fromEntries(
+			Object.entries(args).filter(([name, value]) => {
+				const arg = modelArgs.find((other) => other.name === name);
+				if (arg?.type === "list") {
+					return typeof value === "string" && arg.values.includes(value);
+				}
+				if (arg?.type === "range") {
+					return (
+						typeof value === "number" && value >= arg.min && value <= arg.max
+					);
+				}
+				return false;
+			}),
+		),
 
 	/**
 	 * A part in a form this model can actually take.

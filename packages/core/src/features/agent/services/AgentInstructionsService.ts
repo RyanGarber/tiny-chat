@@ -74,13 +74,19 @@ When referencing past assistant messages, always use the model name - do not say
 The times mentioned in <message> blocks are the user's local time. Never convert to UTC when calling tools, always use the user's time.
 Always take those times into account. Do not assume the chat is continuous. Consider whether the user's intent has changed between messages.`;
 
+		if (enabledToolsets.length) {
+			instructions += `\n
+Tool calls you make together run at the same time. When calls do not depend on each other's results, make them together rather than one after another.`;
+		}
+
 		instructions += `\n
 Markdown, Mermaid, and LaTeX are supported. Use headers, tables, lists, math, code blocks, diagrams, and images when they would genuinely help illustrate your point.
 Important: Always use two dollar signs ($$...$$) for both inline and display math - never one ($...$). Use one dollar sign in non-math cases such as currency ($5.00).`;
 
 		if (citeTypeList) {
 			instructions += `\n
-When a statement is based on or references ${citeTypeList}, always wrap it in a <cite> tag with their IDs or URLs separated by spaces. For example:
+When a statement is based on or references ${citeTypeList}, always wrap the statement in a <cite> tag with their IDs or URLs separated by spaces.
+The <cite> tag is metadata only - it wraps the original statement(s), never provides its own text. The conversation should maintain its original flow:
 ${citeExamples.map((r) => `- ${r}`).join("\n")}`;
 		}
 
@@ -111,10 +117,21 @@ ${citeExamples.map((r) => `- ${r}`).join("\n")}`;
 				settings.folders.length &&
 				enabledToolsets.some((toolset) => toolset.name === "shell")
 			) {
+				const primary = SettingsUtils.primaryFolder(
+					context.user,
+					context.chat?.project,
+				);
+				const folders = settings.folders.map((folder) => ({
+					...folder,
+					project: context.chat?.project?.settings?.folders?.find(
+						(other) => other.path === folder.path,
+					),
+				}));
+
 				instructions += `\n
-The user works in these folders. The shell starts in the one marked cwd, and file edits inside writable ones need no approval.
+The user works in these folders. A primary project folder is where the shell starts.
 <folders>
-${settings.folders.map((folder, index) => `<folder${index === 0 ? " cwd" : ""}${folder.writable ? " writable" : ""}>${folder.path}</folder>`).join("\n")}
+${folders.map((folder) => `<folder scope="${folder.project ? "project" : "user"}"${folder.path === primary ? " primary" : ""}>${folder.path}</folder>`).join("\n")}
 </folders>`;
 			}
 

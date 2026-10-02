@@ -62,6 +62,7 @@ export const CapabilityUtils = {
 			chatShell: true,
 			github: true,
 			shell: desktop,
+			browser: desktop,
 			actions: personal && message,
 			memories: personal,
 			web: (["search", "view"] satisfies zWebFeature[]).some(

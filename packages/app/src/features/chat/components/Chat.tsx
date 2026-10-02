@@ -320,8 +320,7 @@ export default function Chat() {
 					>
 						{(styles) => (
 							<ActionIcon
-								className="glass-shadow"
-								variant="filled"
+								className="glass"
 								radius="xl"
 								size="lg"
 								style={styles}
@@ -344,8 +343,7 @@ export default function Chat() {
 					>
 						{(styles) => (
 							<ActionIcon
-								className="glass-shadow"
-								variant="filled"
+								className="glass"
 								radius="xl"
 								size="lg"
 								style={styles}

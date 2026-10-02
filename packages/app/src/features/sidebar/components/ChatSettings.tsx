@@ -46,8 +46,7 @@ export default function ChatSettings({
 		useEmbeddingSearch,
 		setUseEmbeddingSearch,
 	} = useEmbeddingSettings();
-	const { subagentConfig, setSubagentConfig, dreamConfig, setDreamConfig } =
-		useModelSettings();
+	const { dreamConfig, setDreamConfig } = useModelSettings();
 	const currentModal = useAppStore((state) => state.currentModal);
 	const setCurrentModal = useAppStore((state) => state.setCurrentModal);
 	const project = useMessagingStore((state) => state.project);
@@ -197,20 +196,6 @@ export default function ChatSettings({
 					feature="language"
 					loading={setDreamConfig.isPending}
 					disabled={setDreamConfig.isPending}
-				/>
-			</Tooltip>
-			<Tooltip label="Model used for delegating tasks" position="right">
-				<ModelSelect
-					label="Subagent Model"
-					styles={StyleUtils.input}
-					optional
-					configValue={subagentConfig}
-					onConfigChange={(value) =>
-						setSubagentConfig.mutate({ config: value })
-					}
-					feature="language"
-					loading={setSubagentConfig.isPending}
-					disabled={setSubagentConfig.isPending}
 				/>
 			</Tooltip>
 			<Space />

@@ -39,7 +39,7 @@ const contains = (folderPath: string, path: string): boolean => {
 export const FileToolUtils = {
 	/**
 	 * Writes skip approval inside `/mnt/chat` (the chat's own scratch tree), or
-	 * inside a writable folder from the merged settings.
+	 * inside a writable folder from the merged settings (last matching folder wins).
 	 */
 	requiresApproval: ({
 		path,
@@ -56,8 +56,7 @@ export const FileToolUtils = {
 			return false;
 
 		const { folders } = SettingsUtils.of(context.user, context.chat?.project);
-		return !folders.some(
-			(folder) => folder.writable && contains(folder.path, path),
-		);
+		return !folders.findLast((folder) => contains(folder.path, path))
+			?.whitelist;
 	},
 } as const;

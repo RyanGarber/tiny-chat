@@ -1,5 +1,5 @@
 import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
-import FileTag from "#app/features/upload/components/FileTag.tsx";
+import SourceTag from "#app/features/upload/components/SourceTag.tsx";
 
 export default function Attachment({
 	source,
@@ -17,10 +17,10 @@ export default function Attachment({
 		<span
 			className={`inline-flex items-center gap-1 text-sm! font-medium rounded-xl px-2 bg-(--mantine-color-default-hover) ${grabbable ? "cursor-grab" : "cursor-default"}`}
 		>
-			<FileTag path={source} directory={directory} inline className="py-1">
+			<SourceTag path={source} directory={directory} inline className="py-1">
 				{name ?? PathUtils.name(source)}
 				{directory ? "/" : ""}
-			</FileTag>
+			</SourceTag>
 		</span>
 	);
 }

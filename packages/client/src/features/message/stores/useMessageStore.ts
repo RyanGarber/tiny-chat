@@ -19,6 +19,8 @@ export interface MessageStore {
 	nextFeedbackId: string | undefined;
 	/** Re-runs the agent for a message (retry / refresh after an edit). */
 	regenerate: (message: MessageState) => void;
+	/** Carries on a stopped reply from where it left off. */
+	resume: (message: MessageState) => void;
 	publish: (next: MessageStoreValues) => void;
 }
 
@@ -53,6 +55,7 @@ export const createMessageStore = () =>
 		pendingFeedbackIds: [],
 		nextFeedbackId: undefined,
 		regenerate: () => {},
+		resume: () => {},
 
 		publish: (next) =>
 			set((state) => {
@@ -70,6 +73,7 @@ export const createMessageStore = () =>
 					patch.nextFeedbackId = next.nextFeedbackId;
 				if (next.regenerate !== state.regenerate)
 					patch.regenerate = next.regenerate;
+				if (next.resume !== state.resume) patch.resume = next.resume;
 				return patch;
 			}),
 	}));

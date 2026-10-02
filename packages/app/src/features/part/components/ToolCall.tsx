@@ -50,6 +50,7 @@ export default function ToolCall({
 				error={display.state === "error"}
 				expanded={expanded && !empty}
 				onToggle={empty ? undefined : toggle}
+				onInterrupt={display.interrupt}
 			/>
 			<Collapse expanded={expanded && !empty} keepMounted={false}>
 				<Box

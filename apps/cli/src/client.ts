@@ -7,6 +7,8 @@ import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { createClient } from "@tiny-chat/client/client.ts";
 import { AtomUtils } from "@tiny-chat/client/features/editor/utils/AtomUtils.ts";
 import { MarkdownDataUtils } from "@tiny-chat/client/features/message/utils/MarkdownDataUtils.ts";
+import type { CodeWorker } from "@tiny-chat/core/core/utils/CodeUtils.ts";
+import { ToolOutputUtils } from "@tiny-chat/core/features/tool/utils/ToolOutputUtils.ts";
 import { KeyringService } from "./core/services/KeyringService.ts";
 import { StorageService } from "./core/services/StorageService.ts";
 import { CliUtils } from "./core/utils/CliUtils.ts";
@@ -15,7 +17,7 @@ import {
 	useEditorStore,
 } from "./features/editor/stores/useEditorStore.ts";
 
-import { EditorUtils } from "./features/editor/utils/EditorUtils.ts";
+import { TextareaUtils } from "./features/textarea/utils/TextareaUtils.ts";
 
 export const client = createClient({
 	env: {
@@ -29,6 +31,18 @@ export const client = createClient({
 	setToken: (token) => KeyringService.setSessionToken(token ?? ""),
 	getStorage: (key) => StorageService.get(key),
 	setStorage: (key, value) => StorageService.set(key, value),
+	highlighter: () => {
+		// Bun's Web Worker (the CLI is typed against Node, not Bun)
+		const { Worker } = globalThis as unknown as {
+			Worker: new (url: URL) => CodeWorker & { unref: () => void };
+		};
+		// built beside the bundle (`scripts/compile.ts`); `import.meta.url` is
+		// the bundle's, in `dist/` and in a compiled binary alike
+		const worker = new Worker(new URL("./highlight.js", import.meta.url));
+		// an idle highlighter shouldn't keep the CLI from exiting
+		worker.unref();
+		return worker;
+	},
 	transports: {
 		createStdio: ({ command, env }) => {
 			return new StdioClientTransport({
@@ -60,7 +74,7 @@ export const client = createClient({
 			);
 			useEditorStore.setState({
 				content,
-				cursor: EditorUtils.cursor(content, content.length),
+				cursor: TextareaUtils.cursor(content, content.length),
 				selection: null,
 				focusedFeedbackId: null,
 			});
@@ -98,36 +112,71 @@ export const client = createClient({
 				is_dir: entry.isDirectory(),
 			}));
 		},
+		walk: async ({ path, ...options }) =>
+			await CliUtils.walk({ path: CliUtils.resolve(path), ...options }),
 		// Spawned rather than buffered so output can be reported as it arrives;
-		// the accumulated text is still what the tool result is built from.
-		exec: async ({ command, stream }) => {
+		// the accumulated text is still what the tool result is built from. Its
+		// own process group, so an interrupt reaches everything the shell
+		// started rather than only the shell.
+		exec: async ({ command, stream, abort }) => {
 			return new Promise((resolve) => {
-				const child = spawn(command, { shell: true });
+				const child = spawn(command, {
+					shell: true,
+					detached: process.platform !== "win32",
+				});
 
-				let stdout = "";
-				let stderr = "";
+				const stdout = ToolOutputUtils.collect();
+				const stderr = ToolOutputUtils.collect();
+
+				let settled = false;
+				const settle = (code: number) => {
+					if (settled) return;
+					settled = true;
+					abort?.removeEventListener("abort", kill);
+					resolve({ code, stdout: stdout.text(), stderr: stderr.text() });
+				};
+
+				const signal = (name: NodeJS.Signals) => {
+					if (child.pid === undefined) return;
+					try {
+						if (process.platform === "win32") child.kill(name);
+						else process.kill(-child.pid, name);
+					} catch {
+						// Already gone.
+					}
+				};
+				function kill() {
+					signal("SIGTERM");
+					// Whatever ignores the polite request does not get a second one.
+					setTimeout(() => signal("SIGKILL"), 2000).unref();
+					settle(130);
+				}
+				if (abort?.aborted) kill();
+				else abort?.addEventListener("abort", kill, { once: true });
 
 				child.stdout?.setEncoding("utf8");
 				child.stdout?.on("data", (chunk: string) => {
-					stdout += chunk;
+					if (settled) return;
+					stdout.push(chunk);
 					stream?.({ type: "stdout", value: chunk });
 				});
 
 				child.stderr?.setEncoding("utf8");
 				child.stderr?.on("data", (chunk: string) => {
-					stderr += chunk;
+					if (settled) return;
+					stderr.push(chunk);
 					stream?.({ type: "stderr", value: chunk });
 				});
 
 				child.on("error", (error) => {
 					const value = `${error.message}\n`;
-					stderr += value;
+					stderr.push(value);
 					stream?.({ type: "stderr", value });
-					resolve({ code: 1, stdout, stderr });
+					settle(1);
 				});
 
 				child.on("close", (code) => {
-					resolve({ code: code ?? 0, stdout, stderr });
+					settle(code ?? 0);
 				});
 			});
 		},

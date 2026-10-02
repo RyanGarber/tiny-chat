@@ -37,8 +37,8 @@ export const createChatShellCapability: CapabilityFactory<
 			return { path, success: true };
 		},
 
-		exec: async ({ command }) => {
-			return await FileService.exec({ user, ...spec, command });
+		exec: async ({ command, abort }) => {
+			return await FileService.exec({ user, ...spec, command, abort });
 		},
 	};
 };

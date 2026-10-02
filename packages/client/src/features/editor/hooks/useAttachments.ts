@@ -1,4 +1,5 @@
 import { FileOperationService } from "@tiny-chat/core/features/file/services/FileOperationService.ts";
+import { FileSearchService } from "@tiny-chat/core/features/file/services/FileSearchService.ts";
 import { FileUtils } from "@tiny-chat/core/features/file/utils/FileUtils.ts";
 import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import { useCallback, useContext, useMemo, useRef } from "react";
@@ -7,6 +8,26 @@ import { useChatFiles } from "../../chat/hooks/useChatFiles.ts";
 import { useUploads } from "../../upload/hooks/useUploads.ts";
 import type { AttachmentGroup } from "../types/attachment.ts";
 import { AttachmentUtils } from "../utils/AttachmentUtils.ts";
+
+/** How long a walked tree answers searches before it is walked again. */
+const TREE_TTL = 30_000;
+
+/** Deep enough for any tree laid out by hand; past it is generated. */
+const TREE_DEPTH = 16;
+
+/** Entries a picker's walk keeps, after build output and the like are pruned. */
+const TREE_ENTRIES = 50_000;
+
+/** Files and folders found below the directory being typed in. */
+const MAX_DEEP_RESULTS = 20;
+
+interface LocalTree {
+	at: number;
+	tree: Promise<{
+		root: string;
+		entries: { path: string; is_dir: boolean }[];
+	}>;
+}
 
 /**
  * Build the attachments available to any client: everything on the mount, the
@@ -55,96 +76,174 @@ export const useAttachments = () => {
 	const uploadGroupsRef = useRef(uploadGroups);
 	uploadGroupsRef.current = uploadGroups;
 
+	// Walking a large tree is the slow part of a search and its answer barely
+	// changes between keystrokes, so each directory is walked once and kept for
+	// a little while. Keyed by the working directory too: `.` moves with it.
+	const treesRef = useRef(new Map<string, LocalTree>());
+	const getTree = useCallback(
+		(path: string): LocalTree["tree"] => {
+			const shell = client.shell;
+			if (!shell) return Promise.resolve({ root: path, entries: [] });
+
+			const tree = (async () => {
+				const key = `${(await shell.cwd?.()) ?? ""}\0${path}`;
+				const cached = treesRef.current.get(key);
+				if (cached && Date.now() - cached.at < TREE_TTL) return cached.tree;
+
+				const walked = FileSearchService.walk({
+					shell,
+					path,
+					scope: "lookup",
+					includeDirectories: true,
+					maxDepth: TREE_DEPTH,
+					maxEntries: TREE_ENTRIES,
+				});
+				treesRef.current.set(key, { at: Date.now(), tree: walked });
+				walked.catch(() => treesRef.current.delete(key));
+				return walked;
+			})();
+			// Started ahead of being needed, so a failure here is only reported
+			// by whoever awaits it.
+			tree.catch(() => {});
+			return tree;
+		},
+		[client],
+	);
+
 	const getAttachables = useCallback(
 		async (query: string, signal?: AbortSignal): Promise<AttachmentGroup[]> => {
 			const parts = query.replace(/^\//, "").split("/");
 			const directory = parts.slice(0, -1);
 
-			const groups: AttachmentGroup[] = [];
-
 			// Walking into an upload the chat does not point into yet is exactly
 			// the case a mount built from ids can answer: ask for that one too.
-			const [tree, id] = directory;
-			const mounted = FileUtils.mount({
-				filesystem: filesystemRef.current,
-				mount: PathUtils.mounts.find((name) => name === tree),
-				id,
-			});
-
-			console.log("[useAttachments] mounted:", mounted);
-
-			try {
-				const entries = await client.api.file.getDirectory.query({
-					...mounted,
-					path: directory,
+			const getMounted = async (): Promise<AttachmentGroup[]> => {
+				const [tree, id] = directory;
+				const mounted = FileUtils.mount({
+					filesystem: filesystemRef.current,
+					mount: PathUtils.mounts.find((name) => name === tree),
+					id,
 				});
-				if (signal?.aborted) return groups;
 
-				console.log("[useAttachments] mounted entries:", entries);
-
-				groups.push({
-					name: "Files",
-					items: entries.map((entry) => ({
-						name: entry.label ?? entry.name,
-						label: entry.label ?? undefined,
-						value: entry.uri,
-						path: entry.path.join("/"),
-						directory: entry.isDirectory,
-						traversable: true,
-					})),
-				});
-			} catch (error) {
-				console.warn("[useAttachments] ailed to read mount files", error);
-			}
-
-			// Uploads stand outside the mount until something points into them, so
-			// they are only offered while the query is still a bare name rather
-			// than a path being walked down.
-			if (!directory.length) groups.push(...uploadGroupsRef.current);
-
-			if (!client.shell) return groups;
-
-			const local = [
-				...(query.startsWith("/") ? ["/"] : []),
-				...directory,
-			].join("/");
-
-			try {
-				let localFiles = await client.shell.readDir({ path: local || "." });
-				if (signal?.aborted) return groups;
-
-				// TODO: debounce, keep old paths visible while searching new
-				const normalizedQuery = PathUtils.name(query).toLowerCase();
-				if (
-					!localFiles.find((file) =>
-						PathUtils.name(file).toLowerCase().includes(normalizedQuery),
-					)
-				) {
-					localFiles = await FileOperationService.searchNames({
-						shell: client.shell,
-						path: local || ".",
-						query: PathUtils.name(query),
+				try {
+					const entries = await client.api.file.getDirectory.query({
+						...mounted,
+						path: directory,
 					});
+					return [
+						{
+							name: "Files",
+							items: entries.map((entry) => ({
+								name: entry.label ?? entry.name,
+								label: entry.label ?? undefined,
+								value: entry.uri,
+								path: entry.path.join("/"),
+								directory: entry.isDirectory,
+								traversable: true,
+							})),
+						},
+					];
+				} catch (error) {
+					console.warn("[useAttachments] failed to read mount files", error);
+					return [];
 				}
+			};
 
-				return [
-					...groups,
-					{
+			const getLocal = async (): Promise<AttachmentGroup[]> => {
+				if (!client.shell) return [];
+
+				const local =
+					`${query.startsWith("/") ? "/" : ""}${directory.join("/")}` || ".";
+				const name = PathUtils.name(query);
+
+				// Walked the first time a directory is looked at — the menu opening
+				// is the bare `@` — and searched on every keystroke after that.
+				const localTree = getTree(local);
+
+				try {
+					const listing = await client.shell.readDir({ path: local });
+
+					// Whatever sits directly in the directory comes first, unfiltered:
+					// it is what the user is looking at. Matches further down follow
+					// in a group of their own, so a name does not have to be walked to
+					// one segment at a time.
+					const direct: AttachmentGroup = {
 						name: "Local",
-						items: localFiles.map((file) => ({
+						items: listing.map((file) => ({
 							name: PathUtils.name(file),
 							value: PathUtils.normalize(file),
 							directory: file.is_dir,
 							traversable: true,
 						})),
-					},
-				];
-			} catch (error) {
-				console.warn("Failed to read local files", error);
-				return groups;
-			}
+					};
+					if (!name.trim() || signal?.aborted) return [direct];
+
+					// The listing and the walk may spell the same directory differently
+					// (`.` against where it resolved to), so a direct child is told by
+					// its place in the tree, not by its path matching the listing's.
+					const seen = new Set(
+						direct.items.map((item) =>
+							PathUtils.normalize({ path: item.value, unix: true }),
+						),
+					);
+					const { root, entries } = await localTree;
+					const deep = FileOperationService.matchNames({
+						entries: entries
+							.map((entry) => ({
+								...entry,
+								relative: PathUtils.relative({ base: root, path: entry.path }),
+							}))
+							.filter(
+								(entry) =>
+									entry.relative.includes("/") &&
+									!seen.has(
+										PathUtils.normalize({ path: entry.path, unix: true }),
+									),
+							),
+						root,
+						query: name,
+						maxResults: MAX_DEEP_RESULTS,
+					});
+
+					// A match further down is continued by its whole path from what
+					// has been typed so far, not by its name in place of the last
+					// segment.
+					const prefix = query.slice(0, query.lastIndexOf("/") + 1);
+
+					return [
+						direct,
+						{
+							name: "Search",
+							// Matched on whole paths, which filtering by name would undo.
+							matched: true,
+							items: deep.map((file) => ({
+								name: PathUtils.name(file),
+								value: PathUtils.normalize(file),
+								path: `${prefix}${file.relative}`,
+								directory: file.is_dir,
+								traversable: true,
+							})),
+						},
+					];
+				} catch (error) {
+					console.warn("[useAttachments] failed to read local files", error);
+					return [];
+				}
+			};
+
+			const [mounted, local] = await Promise.all([getMounted(), getLocal()]);
+			if (signal?.aborted) return [];
+
+			return [
+				...mounted,
+				// Uploads stand outside the mount until something points into them,
+				// so they are only offered while the query is still a bare name
+				// rather than a path being walked down.
+				...(directory.length ? [] : uploadGroupsRef.current),
+				...local,
+			];
 		},
-		[client],
+		[client, getTree],
 	);
 
 	return { getAttachables };

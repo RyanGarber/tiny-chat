@@ -1,5 +1,4 @@
 import { useProviders } from "@tiny-chat/client/features/agent/hooks/useProviders.ts";
-import { useMessagingStore } from "@tiny-chat/client/features/chat/stores/useMessagingStore.ts";
 import type { CompletionGroup } from "@tiny-chat/client/features/editor/types/completion.ts";
 import { useEmbeddingSettings } from "@tiny-chat/client/features/settings/hooks/useEmbeddingSettings.ts";
 import { useHiddenModels } from "@tiny-chat/client/features/settings/hooks/useHiddenModels.ts";
@@ -26,12 +25,14 @@ import { usePage } from "../../../core/hooks/usePage.ts";
 import { useWorkingStatus } from "../../../core/hooks/useWorkingStatus.ts";
 import Completions from "../../editor/components/Completions.tsx";
 import Choice, { type ChoiceItem } from "./Choice.tsx";
+import CommandSettings from "./CommandSettings.tsx";
+import FolderSettings from "./FolderSettings.tsx";
+import InstructionSettings from "./InstructionSettings.tsx";
+import MemoryBudgetSettings from "./MemoryBudgetSettings.tsx";
+import ModelChoice from "./ModelChoice.tsx";
 import TextList, { type Draft } from "./TextList.tsx";
 
 export const _debug = false;
-
-/** The budgets the memory can be filled up to, as the app's slider steps. */
-const MEMORY_BUDGETS = Array.from({ length: 21 }, (_, i) => i * 500);
 
 type Feature = Exclude<zModelFeature, "language:tools">;
 
@@ -56,8 +57,8 @@ const summarize = (provider: ProviderState<ProviderStatus>) => {
 	return status.valid ? "connected" : "not connected";
 };
 
+/** The user's own settings; a project's are edited from its page in /projects. */
 export default function Settings() {
-	const project = useMessagingStore((state) => state.project);
 	const { providers, updateProviders, isUpdating } = useProviders();
 
 	const { theme, setTheme, codeTheme, setCodeTheme } = useThemes();
@@ -72,33 +73,15 @@ export default function Settings() {
 		setProviderSetting,
 	} = useProviderSettings();
 	const { hiddenModels, setHiddenModels } = useHiddenModels();
-	const { subagentConfig, setSubagentConfig, dreamConfig, setDreamConfig } =
-		useModelSettings();
+	const { dreamConfig, setDreamConfig } = useModelSettings();
 	const {
 		embeddingConfig,
 		setEmbeddingConfig,
 		useEmbeddingSearch,
 		setUseEmbeddingSearch,
 	} = useEmbeddingSettings();
-	const {
-		instructions,
-		addInstruction,
-		editInstruction,
-		removeInstruction,
-		memoryBudget,
-		setMemoryBudget,
-	} = useInstructions({ project });
-	const {
-		commandWhitelist,
-		addCommand,
-		editCommand,
-		removeCommand,
-		folders,
-		folderStatus,
-		addFolder,
-		removeFolder,
-		setFolderWritable,
-	} = useShellSettings({ project });
+	const { instructions, memoryBudget } = useInstructions({ project: null });
+	const { commands, folders } = useShellSettings({ project: null });
 
 	useWorkingStatus(
 		setTheme,
@@ -108,20 +91,9 @@ export default function Settings() {
 		setPreferredWebProvider,
 		setProviderSetting,
 		setHiddenModels,
-		setSubagentConfig,
 		setDreamConfig,
 		setEmbeddingConfig,
 		setUseEmbeddingSearch,
-		addInstruction,
-		editInstruction,
-		removeInstruction,
-		setMemoryBudget,
-		addCommand,
-		editCommand,
-		removeCommand,
-		addFolder,
-		removeFolder,
-		setFolderWritable,
 		updateProviders,
 	);
 
@@ -241,7 +213,7 @@ export default function Settings() {
 					{
 						name: "commands",
 						value: "commands",
-						state: String(commandWhitelist.length),
+						state: String(commands.length),
 						route: "commands",
 					},
 				],
@@ -272,12 +244,6 @@ export default function Settings() {
 						state: dreamConfig?.model,
 						route: "dreamConfig",
 					},
-					{
-						name: "subagent model",
-						value: "subagent model",
-						state: subagentConfig?.model,
-						route: "subagentConfig",
-					},
 				],
 			},
 			{
@@ -306,11 +272,10 @@ export default function Settings() {
 		instructions,
 		memoryBudget,
 		folders,
-		commandWhitelist,
+		commands,
 		embeddingConfig,
 		useEmbeddingSearch,
 		dreamConfig,
-		subagentConfig,
 		preferredWebProvider,
 	]);
 
@@ -337,32 +302,19 @@ export default function Settings() {
 		/>
 	);
 
-	/** A choice of one model that can do `feature`, picked from the valid providers. */
+	/** A model for `feature`, kept with the tools and skills already chosen. */
 	const chooseModel = (
 		feature: Feature,
 		current: zConfig | null | undefined,
 		set: (config: zConfig | null) => void,
 	) => (
-		<Choice<ChoiceItem & { config: Pick<zConfig, "provider" | "model"> }>
-			groups={modelProviders
-				.filter((provider) => provider.status.valid)
-				.map((provider) => ({
-					name: provider.name,
-					items: provider.status.models
-						.filter((model) => model.features.includes(feature))
-						.map((model) => ({
-							name: model.name,
-							value: `${provider.name}/${model.name}`,
-							config: { provider: provider.name, model: model.name },
-							active:
-								current?.provider === provider.name &&
-								current.model === model.name,
-						})),
-				}))}
-			onSelect={({ config }) =>
+		<ModelChoice
+			feature={feature}
+			current={current}
+			onSelect={(model) =>
 				set(
 					zConfig.parse({
-						...config,
+						...model,
 						toolsets: current?.toolsets,
 						skills: current?.skills,
 					}),
@@ -446,9 +398,7 @@ export default function Settings() {
 		});
 	}
 	if (route === "memoryBudget") {
-		return choose(MEMORY_BUDGETS.map(String), String(memoryBudget), (value) =>
-			setMemoryBudget.mutate({ project, tokens: Number(value) }),
-		);
+		return <MemoryBudgetSettings project={null} onDone={pop} />;
 	}
 	if (route === "webProvider") {
 		return choose(
@@ -463,12 +413,6 @@ export default function Settings() {
 	if (route === "hiddenLanguage") return chooseVisible("language");
 	if (route === "hiddenEmbedding") return chooseVisible("embedding");
 
-	if (route === "subagentConfig") {
-		return chooseModel("language", subagentConfig, (config) => {
-			setSubagentConfig.mutate({ config });
-			pop();
-		});
-	}
 	if (route === "dreamConfig") {
 		return chooseModel("language", dreamConfig, (config) => {
 			setDreamConfig.mutate({ config });
@@ -513,62 +457,14 @@ export default function Settings() {
 
 	if (route === "instructions") {
 		return (
-			<TextList
-				entries={(instructions ?? []).map((text) => ({ text }))}
-				draft={draft}
-				setDraft={setDraft}
-				placeholder="Keep responses short."
-				onAdd={(instruction) => addInstruction.mutate({ project, instruction })}
-				onEdit={(index, instruction) =>
-					editInstruction.mutate({ project, index, instruction })
-				}
-				onRemove={(index) => removeInstruction.mutate({ project, index })}
-			/>
+			<InstructionSettings project={null} draft={draft} setDraft={setDraft} />
 		);
 	}
 	if (route === "commands") {
-		return (
-			<TextList
-				entries={commandWhitelist.map((text) => ({ text }))}
-				draft={draft}
-				setDraft={setDraft}
-				placeholder="npm run * (use * to match anything)"
-				onAdd={(command) => addCommand.mutate({ project, command })}
-				onEdit={(index, command) =>
-					editCommand.mutate({ project, index, command })
-				}
-				onRemove={(index) => removeCommand.mutate({ project, index })}
-			/>
-		);
+		return <CommandSettings project={null} draft={draft} setDraft={setDraft} />;
 	}
 	if (route === "folders") {
-		return (
-			<TextList
-				entries={folders.map(({ path, writable }) => ({
-					text: path,
-					detail: [
-						writable ? "skips approval for edits" : "asks before edits",
-						folderStatus.data?.[path] === false ? "unavailable" : undefined,
-					]
-						.filter(Boolean)
-						.join(" · "),
-					error: folderStatus.data?.[path] === false,
-				}))}
-				draft={draft}
-				setDraft={setDraft}
-				placeholder="add folder"
-				onAdd={(path) => addFolder.mutate({ project, path })}
-				onSelect={(index) =>
-					setFolderWritable.mutate({
-						project,
-						index,
-						writable: !folders[index].writable,
-					})
-				}
-				onRemove={(index) => removeFolder.mutate({ project, index })}
-				actions={[{ key: "enter", name: "toggle edit approval" }]}
-			/>
-		);
+		return <FolderSettings project={null} draft={draft} setDraft={setDraft} />;
 	}
 
 	if (route === "keys") {

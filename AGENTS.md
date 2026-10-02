@@ -1,262 +1,92 @@
 # AGENTS.md (tiny-chat)
 
-Tiny Chat is one chat app — web, desktop, mobile, and CLI — not three products (Chat / Cowork / Code). Agentic coding
-should be state of the art, but the same surfaces, tools, and data model have to stay equally good for a non-coding
-conversation. Do not introduce a "code mode", a separate coding agent, or features that only make sense if the user is
-in a repo.
+Tiny Chat is one chat app — web, desktop, mobile, and CLI. Agentic coding should be state of the art, but the same
+surfaces, tools, and data model must stay equally good for a non-coding conversation. Do not add a "code mode", a
+separate coding agent or prompt, or features that only make sense inside a repo.
 
-## Layers — put the change in the right package
+## Packages
 
-pnpm workspace (`apps/*`, `packages/*`). Imports are deep paths with `.ts` / `.tsx` suffixes:
+pnpm workspace. Imports are deep paths with `.ts` / `.tsx` suffixes (`@tiny-chat/core/...`, `@tiny-chat/client/...`,
+`@tiny-chat/server/...`; `packages/app` also has `#app/*`, `#client/*`, `#core/*`).
 
-`@tiny-chat/core/...`, `@tiny-chat/client/...`, `@tiny-chat/server/...`
+| Package           | Role                                                                             | May import                |
+|-------------------|----------------------------------------------------------------------------------|---------------------------|
+| `packages/core`   | Domain: types, providers, agent loop, tools. No React, HTTP, or database client. | nothing in the monorepo   |
+| `packages/server` | Node HTTP: tRPC, better-auth, Prisma, virtual FS, scheduled-action worker.       | core                      |
+| `packages/client` | Shared React runtime for app + CLI: `createClient`, tRPC/Query, stores, hooks.   | core, server *types* only |
+| `packages/app`    | Vite + React + Mantine UI (web and the Tauri webview).                           | client, core, server      |
+| `apps/cli`        | Ink terminal UI over the same client. Bun.                                       | client, core, server      |
+| `apps/web`        | Static host of the app build.                                                    | —                         |
+| `apps/tauri`      | Tauri v2 shell (desktop / iOS / Android).                                        | —                         |
 
-`packages/app` also has `#app/*`, `#client/*`, `#core/*`.
+If both app and CLI need a behavior, it belongs in `client` or `core`. If only one runtime can do it, it belongs in that
+runtime's `client.ts` adapter (passed to `createClient`) or its own `features/`. Never import `@mantine/*` from `client`
+or `ink` from `app`.
 
-```
-core  ←  server
-core  ←  client  ←  app, cli
-server types only  ←  client (ApiRouter, AuthServer)
-app dist  ←  web (static host), tauri (native shell)
-```
+Code lives in `src/features/<domain>/{components,hooks,services,stores,utils,types,routes}`, with `src/core/` for
+cross-cutting infra. Match existing feature names; don't invent a parallel tree. Services and utils are
+`export const FooService = { ... } as const`; Zod schemas are `zFoo`.
 
-| Package           | Role                                                                                                             | May import                                                                                                    | Must not                         |
-|-------------------|------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|----------------------------------|
-| `packages/core`   | Domain: types, providers, agent loop, tools, file/search utils. No React, no HTTP, no Prisma client.             | nothing in the monorepo (Prisma *types* from `packages/server/generated/prisma/browser.ts` are the exception) | client, server runtime, app, cli |
-| `packages/server` | Node HTTP: tRPC, better-auth, Prisma, virtual FS, worker.                                                        | core                                                                                                          | client, app, cli                 |
-| `packages/client` | Shared React runtime for app + CLI: `createClient`, Query/tRPC/auth, zustand, hooks, **interactive generation**. | core + server *types*                                                                                         | app, cli                         |
-| `packages/app`    | Vite + React + Mantine UI (web + Tauri webview). Runtime adapters (browser/Tauri providers, MCP, host shell).    | client, core, server                                                                                          | —                                |
-| `apps/cli`        | Ink terminal UI over the same client. Bun. OS keyring + real FS shell.                                           | client, core, server                                                                                          | —                                |
-| `apps/web`        | Fastify static host of the app build.                                                                            | —                                                                                                             | —                                |
-| `apps/tauri`      | Tauri v2 shell (desktop / iOS / Android): FS, shell, MCP, AFM. Loads the app.                                    | —                                                                                                             | —                                |
+## How it fits together
 
-If both app and CLI need a behavior, it belongs in `client` (or `core`). If only one runtime can do it (Mantine vs Ink,
-Tauri invoke vs `node:fs`), it belongs in that runtime's `client.ts` adapter or its own `features/`.
+Interactive chats generate **on the client**: the UI persists messages over tRPC (`/@/api`, composed in
+`packages/server/src/core/utils/ApiRouter.ts`), then `ClientAgentService` runs `AgentService.generate` in-process. Only
+scheduled actions generate on the server, via the worker, using the same `AgentService` with server capabilities.
 
-## Feature folders
+Agent code has three layers — keep them separate:
 
-Every package uses `src/features/<domain>/{components,hooks,services,stores,utils,types,routes}`
-plus `src/core/` for cross-cutting infra (auth, capabilities, client bootstrap, theme — not a domain).
+1. **Capability** — host-facing interface in `packages/core/src/core/types/capability.ts`, implemented by both
+   `packages/client/src/core/capabilities/` and `packages/server/src/core/capabilities/`.
+2. **Tool** — model-facing definition + `execute` in `packages/core/src/features/tool/`. Depends on capabilities only.
+3. **Toolset** — named group from `ToolService.getTools`, enabled per message via `config.toolsets`.
 
-Not every feature has every subfolder. Do not invent a parallel tree (`src/services/`, `src/utils/` at package root,
-`src/providers/`).
+Keep related edits in lockstep: route ↔ `ApiRouter` ↔ client call; capability interface ↔ both implementations ↔ tools;
+`contract.prisma` model ↔ core type in `features/data/types/`.
 
-| Kind       | File                     | Shape                                                                |
-|------------|--------------------------|----------------------------------------------------------------------|
-| Service    | `FooService.ts`          | `export const FooService = { ... } as const`                         |
-| Utils      | `FooUtils.ts`            | same, pure helpers                                                   |
-| Hook       | `useFoo.ts`              | `useContext(ClientContext)` for API access                           |
-| Component  | `Foo.tsx`                | PascalCase                                                           |
-| Types      | `foo.ts`                 | Zod schemas named `zFoo`; `FooState`; `FooLike` = `{ id } \| string` |
-| Tool       | `read_file.ts`           | snake_case definition + `createReadFileTool` factory                 |
-| Capability | `createFooCapability.ts` | factory returning a `*Capability` from `core/types/capability.ts`    |
-| Route      | `foo.ts`                 | `router({ procedure })` from `packages/server/src/index.ts`          |
+## Data
 
-Existing feature names (do not rename casually — match these):
+Prisma Next (contract-first, see the `prisma-8` skill). Contract: `packages/core/prisma/contract.prisma`; runtime `db`
+from `@tiny-chat/server/db.ts`, which loads the repo-root `.env`. Parse JSON columns with their Zod schemas at trust
+boundaries rather than passing raw JSON around.
 
-- **core:** `agent`, `data`, `file`, `provider`, `skill`, `tool`
-- **client:** `agent`, `chat`, `editor`, `message`, `part`, `settings`, `upload`, `user`
-- **server:** `chat`, `embedding`, `file`, `message`, `proxy`, `upload`, `user`, `worker`
-- **app:** `chat`, `code`, `editor`, `message`, `part`, `sidebar`, `tauri`, `upload`
-- **cli:** `agent`, `chat`, `code`, `editor`, `message`, `part`, `settings`, `update`, `upload`
+## Testing
 
-`part` is message parts (tool calls, thoughts, attachments) — not `features/tool`.
+Dev servers and Postgres are usually already running (`VITE_SERVER_PORT` / `VITE_WEB_PORT` in `.env`). Test against them
+— don't mock them or start a second database.
 
-## How the pieces talk
+- **Scratchpad / smoke tests:** use the real client provider: `createClient` wrapped in `QueryClientProvider` +
+  `ClientContext`, as `packages/app/src/main.tsx` does (in Vitest, `create()` from `packages/client/src/tests.ts`). It
+  signs in a real anonymous test user against the live server. Don't spend time building a custom harness, fake
+  client, or seeded user unless this genuinely can't cover the case. For server-only data, use the real `db`.
+- **Unit:** Vitest (`*.test.ts`), only for logic that is actually pure.
+- **App UI:** drive it with Playwright (installed at the root, Chromium included) against `http://localhost:$VITE_WEB_PORT`.
+- **CLI:** run it in a detached `tmux` session and drive it with `send-keys` / `capture-pane`:
 
-Interactive chats do **not** generate on the server. The client creates/updates messages via tRPC, then runs
-`AgentService.generate` in-process.
+  ```bash
+  tmux new-session -d -s cli -x 120 -y 40 'pnpm dev:cli'
+  tmux send-keys -t cli 'hello' M-Enter
+  tmux capture-pane -p -t cli
+  ```
 
-```
-UI (app | cli)
-  → createClient (token, storage, shell, MCP transports, extra providers)
-  → tRPC  /@/api     persistence, settings, virtual FS, uploads, web proxy
-  → auth  /@/auth    better-auth (anonymous + bearer)
-  → ClientAgentService → ClientCapabilityService + ToolService
-       → AgentService.generate (core) → stream into StreamService / ToolStreamService
-       → message.updateMessage
-```
+**Return inserts a newline in both editors — it does not send.** Hold a modifier with Return to send:
 
-Scheduled **actions** (reminders / recurring prompts) are the exception: the server worker ticks every 5s and runs the
-same `AgentService.generate` with
-`ServerCapabilityService`.
-
-HTTP surface (`packages/server/src/server.ts`), paths from `CommonUtils.endpoints`:
-
-| Path             | Handler                                                |
-|------------------|--------------------------------------------------------|
-| `/@/api`         | tRPC (`ApiService`, `ApiRouter`)                       |
-| `/@/auth`        | better-auth (`AuthServer`)                             |
-| `/@/mcp`         | CORS MCP proxy (`X-Mcp-Url`)                           |
-| `/@/antigravity` | SSE Google/Antigravity relay (`X-Antigravity-Account`) |
-
-There is no standalone `/@/upload` HTTP route. Uploads are tRPC `upload.*`.
-
-Auth: Bearer token. App keeps it in `localStorage`; CLI in the OS keyring.
-`ApiContext` rejects unauthenticated tRPC. Social: GitHub, Google, HuggingFace.
-
-tRPC is composed in `packages/server/src/core/utils/ApiRouter.ts`:
-
-`user`, `chat`, `file`, `action`, `memory`, `upload`, `settings`, `embedding`,
-`message`, `web`, `testing`
-
-Client types it as `createTRPCClient<ApiRouter>`. Adding a namespace: write the route file, add it to `ApiRouter`,
-consume `client.api.<ns>.*`. Always `.input(zod)`.
-
-`testing.tool` exists only when `DEV` is truthy.
-
-## Agent, tools, capabilities
-
-Three layers, do not collapse them:
-
-1. **Capability** — a host-facing interface (`WebCapability`, `ShellCapability`,
-   `UserCapability`, `EmbeddingCapability`) in
-   `packages/core/src/core/types/capability.ts`. Implemented twice:
-	- client: `packages/client/src/core/capabilities/` (tRPC / `client.shell`)
-	- server: `packages/server/src/core/capabilities/` (Prisma / `FileService`)
-	  Assembled by `ClientCapabilityService` / `ServerCapabilityService`.
-2. **Tool** — a model-facing `ToolDefinition` + `execute`. Lives only in core (`packages/core/src/features/tool/`).
-   Depends on capabilities, never on tRPC or Prisma. `validate` runs before approval; `onOutput` streams live output
-   that must also appear in the resolved result (streamed chunks are not persisted).
-3. **Toolset** — named group from `ToolService.getTools`. Enabled per message via
-   `config.toolsets`. Default (`DEFAULT_TOOLSETS` in `data/types/message.ts`):
-   `questions`, `actions`, `memories`, `web`, `shell`.
-
-### Two shells — do not mix them
-
-|          | `chatShell` → tools prefixed `chat_`                                                              | `shell` → unprefixed                            |
-|----------|---------------------------------------------------------------------------------------------------|-------------------------------------------------|
-| Backing  | Virtual FS in Postgres (`FilesystemService` / just-bash), mounted at `/mnt`                       | The user's real machine (`client.shell`)        |
-| When     | Always (web included). Scratchpad, attachments, skills, Python.                                   | Desktop Tauri and CLI only (`client.desktop`)   |
-| Writable | Only `/mnt/chat/<chatId>`. `/mnt/uploads/<id>` and `/mnt/skills/<id>` are read-only shared trees. | User's files                                    |
-| Rule     | `chat_*` tools *inside* `/mnt`; never outside                                                     | Unprefixed tools *outside* `/mnt`; never inside |
-
-Dedicated file tools (`read_file`, `edit_file`, `find_files`, `grep_files`,
-`search_files`, `read_dir`, `write_file`) beat `ls` / `cat` / `find` / `grep` /
-`sed`. Searches are capped and skip noise; a thin result set means a narrower query, not a bigger limit.
-
-MCP servers are extra toolsets, created by the runtime's `transports` (Tauri invoke vs Node stdio/HTTP). They are not
-native tools.
-
-Skills are uploads (`UploadKind.SKILL`) with a `SKILL.md`. Mounted read-only under `/mnt/skills/<id>` when enabled on
-the message `config.skills`.
-
-### Generation path
-
-- Interactive: `useMessaging` → `ClientAgentService.onMessage` →
-  `AgentService.generate`. Message routes are CRUD only.
-- Scheduled: `WorkerService.next` → same `AgentService` + server capabilities.
-- `AgentInstructionsService` is shared. Coding guidance lives there as one section of a general assistant prompt — do
-  not fork a coding-only prompt.
-
-Providers live in **core** (`features/provider/providers/{model,web,other}/`), not on the server. Each exposes
-`getStatus({ user })`. App may inject extra model providers (WebLLM, AFM) via `createClient({ providers })`.
-
-## Data (enough to not guess)
-
-Prisma + Postgres. Schema: `packages/core/prisma/contract.prisma`. Client:
-`packages/core/generated/prisma`. Runtime singleton: `db` from
-`packages/server/src/db.ts` (`globalThis.db`).
-
-Core domain types wrap those models and add Zod for JSON columns (`features/data/types/`). Changing a Prisma model means
-updating the matching core type.
-
-- **Message `data`:** `zData = zDataPart[][]` — slots of parts (`text`,
-  `thought`, `file`, `json`, `toolCall`, `toolResult`, `abort`).
-- **Branching:** `previousId` is a unique pointer to the parent message.
-- **Chat:** belongs to a folder; `temporary` / `incognito` (incognito strips
-  `user` capabilities — no memories/actions).
-- **Action:** recurring prompt + rrule `schedule`; executed by the worker.
-- **Memory:** user-level facts with category/stability; hybrid text + vector search.
-- **Upload / File:** attachments, skills, GitHub clones; chat-owned files are the writable `/mnt/chat` tree.
-  `Unsupported("vector"|"tsvector")` columns exist for search — do not treat them as ordinary Prisma scalars.
-
-User settings (providers, MCP, theme, instructions, presets, embedding) are JSON on `User.settings`, parsed as
-`zSettings`.
-
-## Making a change — where it actually goes
-
-**New tRPC procedure:** `packages/server/src/features/<domain>/routes/<file>.ts`, compose into `ApiRouter`. Handler uses
-`ctx.session.user`. Persistence through that feature's `*Service` and `prisma`, not from the route body.
-
-**New tool:** definition + factory under `core/.../tool/tools/<toolset>/`. Wire into the toolset factory. If it needs a
-new host ability, add a capability interface *and both factories*. Then `ToolService.getTools`. Touch
-`DEFAULT_TOOLSETS` only if it should be on for every new chat.
-
-**New model/web provider:** `core/.../provider/providers/{model,web,other}/`
-and register on the matching `*ProviderService.providers` list. Implement
-`getStatus`. Runtime-only providers (WebLLM, AFM) go on the app `createClient`
-`providers` hook, not in that list.
-
-**New UI:** shared state/hooks/services in `client`; pixels in `app` (Mantine)
-and/or `cli` (Ink). Do not import `@mantine/*` from `client` or `ink` from
-`app`. `createClient` is how runtimes differ (token, storage, host shell, MCP, editor `input`).
-
-**Host shell:** implement `ShellCapability` in the runtime `client.ts` (see app Tauri invoke vs CLI `fs`/`spawn`).
-Client's `createShellCapability` just forwards to `client.shell`.
-
-App routing is a hashbang (`#/<chatId>?…`) via `useHashbang`, synced to
-`useChatStore.chatId` — not wouter.
-
-## Testing against the real environment
-
-Dev servers and Postgres are already running. Do not mock them, do not spin up a second database, do not invent a fake
-tRPC client for product work.
-
-Scratch files and test harnesses:
-
-- **Server / data / FS / worker:** import the real `prisma` from
-  `@tiny-chat/server/db.ts`. That module loads `prisma7.config.ts` →
-  `env.ts` → the repo-root `.env`.
-- **Client / hooks / generation / UI:** `createClient` + wrap with the real
-  `QueryClientProvider` (`client.queryClient`) and `ClientContext` from
-  `@tiny-chat/client/client.ts` — the same wrapping as
-  `packages/app/src/main.tsx` and `apps/cli/src/main.tsx`.
-  `createClient` parses `zEnv` from that same `.env`.
-
-Vitest (`vitest.config.base.ts`) includes `packages/**/*.test.ts`. Global setup:
-
-- `packages/core/src/tests.ts` — mocked `__TEST__` user + `TestProvider` for pure unit tests that must not hit the
-  network.
-- `packages/server/src/tests.global.ts` — waits on `localhost:$VITE_SERVER_PORT`, anonymous ephemeral user,
-  `testClient()` for
-  live API tests.
-
-Prefer the live `prisma` / `ClientContext` path unless the test is genuinely pure (string windows, path math, markdown).
-Root scripts run under `dotenv --`.
+- App: Cmd/Ctrl + Return (Playwright: `page.keyboard.press("ControlOrMeta+Enter")`).
+- CLI: Alt/Option, Meta, or Ctrl + Return (tmux: `M-Enter`).
 
 ## Commands
 
-All root scripts use the repo-root `.env`.
+All root scripts load the repo-root `.env`.
 
-|                      |                                                                                                 |
-|----------------------|-------------------------------------------------------------------------------------------------|
-| Web (Vite + server)  | `pnpm dev:web`                                                                                  |
-| Desktop              | `pnpm dev:tauri`                                                                                |
-| iOS / Android        | `pnpm dev:tauri:ios` / `dev:tauri:android`                                                      |
-| CLI                  | `pnpm dev:cli`                                                                                  |
-| Server only          | `pnpm dev:server` (`node --watch`)                                                              |
-| Lint / types / tests | `turbo lint`, `turbo typecheck`, `turbo test` (per-package `*#lint` / `*#typecheck` / `*#test`) |
+| Task                 | Command                                                                 |
+|----------------------|-------------------------------------------------------------------------|
+| Web (Vite + server)  | `pnpm dev:web`                                                          |
+| Server only          | `pnpm dev:server`                                                       |
+| CLI                  | `pnpm dev:cli`                                                          |
+| Desktop / mobile     | `pnpm dev:tauri`, `dev:tauri:ios`, `dev:tauri:android`                  |
+| Lint / types / tests | `pnpm lint`, `pnpm typecheck`, `pnpm test` (`*:ts` variants skip Tauri) |
 
-`scripts/use-server.ts` starts or waits on the backend before web/tauri.
-
-Env schemas: `packages/core/src/core/types/env.ts`. Server also needs `PG_*` and
-`AUTH_*_{CLIENT,SECRET}`. In `DEV`, URLs are `http://{host}:{VITE_*_PORT}`; otherwise `VITE_SERVER_URL` /
-`VITE_WEB_URL`. Tauri dev host:
-`TAURI_DEV_HOST` / `__TAURI_DEV_HOST__`.
-
-## Conventions
-
-- TypeScript: `tsconfig.base.json` — strict, no unused locals/params, import
-  `.ts` extensions. Biome: tabs, double quotes, `pnpm lint` per package.
-- `zData` / `zConfig` / `zUser` parsing at trust boundaries (tRPC input, Prisma JSON out). Don't pass raw `Json` around
-  past the service that loaded it.
-- Logger: `createLogger` in `packages/core/src/logger.ts`. Server logs to disk; app intercepts console into the in-app
-  console store.
-- Patches (pnpm): `@ai-sdk/google`, `sixel`. Don't "fix" those packages in
-  `node_modules`.
-- Keep related edits in lockstep: route ↔ `ApiRouter` ↔ client call; capability interface ↔ both factories ↔ tools that
-  consume it; Prisma model ↔ core type; default toolsets ↔ agent instructions that mention them.
+TypeScript is strict with `.ts` import extensions; Biome uses tabs and double quotes. `@ai-sdk/google` and `sixel` are
+pnpm-patched — don't edit them in `node_modules`.
 
 <!-- BEGIN:turborepo-agent-rules -->
 

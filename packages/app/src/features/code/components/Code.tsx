@@ -14,6 +14,7 @@ export default function Code({
 	startLine = 1,
 	lineNumbers = true,
 	streaming,
+	incomplete = false,
 	fillHeight = false,
 	...props
 }: Parameters<typeof Content>[0] & {
@@ -23,9 +24,11 @@ export default function Code({
 	startLine?: number;
 	lineNumbers?: boolean;
 	streaming?: boolean;
+	/** This block's fence is still open: its code is streaming in. */
+	incomplete?: boolean;
 	fillHeight?: boolean;
 }) {
-	const { highlighted } = useCode({ code, language });
+	const { highlighted } = useCode({ code, language, incomplete });
 
 	const disclosure = useDisclosure();
 
@@ -48,7 +51,7 @@ export default function Code({
 			streaming={streaming}
 			data-streamdown="code-block"
 			data-language={language}
-			data-incomplete={streaming}
+			data-incomplete={incomplete || undefined}
 			disclosure={disclosure}
 			{...props}
 		>

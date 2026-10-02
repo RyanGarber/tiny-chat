@@ -4,7 +4,6 @@ import type { AgentStreamEvent } from "@tiny-chat/client/core/services/StreamSer
 import { ChatService } from "@tiny-chat/client/features/chat/services/ChatService.ts";
 import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import type { ToolBlock as ToolBlockType } from "@tiny-chat/core/features/tool/types/display.ts";
-import WebSourceCard from "#app/features/chat/components/WebSourceCard.tsx";
 import Code from "#app/features/code/components/Code.tsx";
 import Diff from "#app/features/code/components/Diff.tsx";
 import Markdown from "#app/features/message/components/Markdown.tsx";
@@ -12,6 +11,7 @@ import MessageParts from "#app/features/message/components/MessageParts.tsx";
 import Image from "#app/features/part/components/Image.tsx";
 import Quote from "#app/features/part/components/Quote.tsx";
 import Tail from "#app/features/part/components/Tail.tsx";
+import Web from "#app/features/part/components/Web.tsx";
 
 /** Height a block is held to while it grows, following its newest lines. */
 const TAIL_HEIGHT = 320;
@@ -123,7 +123,15 @@ export default function ToolBlock({
 				/>
 			);
 		case "web":
-			return <WebSourceCard source={block.source} />;
+			return (
+				<Tail
+					height={TAIL_HEIGHT}
+					follow={active}
+					content={block.source.content}
+				>
+					<Web source={block.source} streaming={active} />
+				</Tail>
+			);
 		case "record":
 			return (
 				<Stack gap={0}>

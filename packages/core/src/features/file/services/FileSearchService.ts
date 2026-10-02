@@ -36,8 +36,12 @@ import { FileExtractionService } from "./FileExtractionService.ts";
 /** Directory entries visited before a walk gives up. */
 const MAX_WALK_ENTRIES = 20_000;
 
-/** How deep a walk descends before treating the tree as pathological. */
-const MAX_WALK_DEPTH = 24;
+/**
+ * How deep a walk descends before treating the tree as pathological. Deeper
+ * than any project anyone lays out by hand; only generated or recursive trees
+ * get this far.
+ */
+const MAX_WALK_DEPTH = 16;
 
 /** Files whose contents a single search will read. */
 const MAX_SCANNED_FILES = 4_000;
@@ -99,6 +103,83 @@ interface IgnoreScope {
 }
 
 const getRelative = PathUtils.relative;
+
+const trimSeparators = (path: string) => path.replace(/[\\/]+$/, "");
+
+const getSeparator = (path: string) =>
+	Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
+
+/** The directory a path sits in, spelled the way the shell spelled the path. */
+const getParent = (path: string) => {
+	const trimmed = trimSeparators(path);
+	return trimmed.slice(0, Math.max(0, getSeparator(trimmed)));
+};
+
+const getName = (path: string) => {
+	const trimmed = trimSeparators(path);
+	return trimmed.slice(getSeparator(trimmed) + 1);
+};
+
+/**
+ * {@link ShellCapability.walk} built from `readDir`, for shells that cannot
+ * walk natively (the virtual chat filesystem). Lists breadth-first, so caps
+ * cut the deepest entries rather than whole branches.
+ */
+const walkDirectories = async ({
+	shell,
+	path,
+	maxDepth,
+	maxEntries,
+	prune,
+}: {
+	shell: Pick<ShellCapability, "readDir">;
+	path: string;
+	maxDepth: number;
+	maxEntries: number;
+	prune: string[];
+}): Promise<{
+	root: string;
+	entries: { path: string; is_dir: boolean }[];
+	truncated: boolean;
+}> => {
+	const pruned = new Set(prune);
+	const pending = [{ path, depth: 0 }];
+	const entries: { path: string; is_dir: boolean }[] = [];
+	const visited = new Set<string>();
+	let truncated = false;
+
+	for (let index = 0; index < pending.length; index++) {
+		const directory = pending[index];
+		const normalized = PathUtils.normalize({
+			path: directory.path,
+			unix: true,
+		});
+		if (visited.has(normalized)) continue;
+		visited.add(normalized);
+
+		let listing: { path: string; is_dir: boolean }[];
+		try {
+			listing = await shell.readDir({ path: directory.path });
+		} catch (error) {
+			// A missing root is a real error; an unreadable subdirectory is not.
+			if (index === 0) throw error;
+			continue;
+		}
+
+		for (const entry of listing.sort((a, b) => a.path.localeCompare(b.path))) {
+			if (entries.length >= maxEntries)
+				return { root: path, entries, truncated: true };
+
+			entries.push(entry);
+			if (!entry.is_dir || pruned.has(getName(entry.path).toLowerCase()))
+				continue;
+			if (directory.depth + 1 > maxDepth) truncated = true;
+			else pending.push({ path: entry.path, depth: directory.depth + 1 });
+		}
+	}
+
+	return { root: path, entries, truncated };
+};
 
 /** Runs `run` over `items` with a bounded number of reads in flight. */
 const mapPool = async <T, R>(
@@ -201,12 +282,12 @@ export const FileSearchService = {
 		path,
 		scope = "search",
 		includeDirectories = false,
-		gitignore = scope === "search",
+		gitignore = scope === "search" || scope === "lookup",
 		maxEntries = MAX_WALK_ENTRIES,
 		maxDepth = MAX_WALK_DEPTH,
 	}: {
 		shell: Pick<ShellCapability, "readDir"> &
-			Partial<Pick<ShellCapability, "readFile">>;
+			Partial<Pick<ShellCapability, "readFile" | "walk">>;
 		path: string;
 		scope?: FileScope;
 		includeDirectories?: boolean;
@@ -214,100 +295,122 @@ export const FileSearchService = {
 		maxEntries?: number;
 		maxDepth?: number;
 	}): Promise<{
+		/** `path` as the shell resolved it, which every entry sits under. */
+		root: string;
 		entries: WalkEntry[];
 		truncated: boolean;
 		skipped: Partial<Record<FileCategory, number>>;
 	}> => {
-		const pending: { path: string; depth: number; scopes: IgnoreScope[] }[] = [
-			{ path, depth: 0, scopes: [] },
-		];
-		const entries: WalkEntry[] = [];
-		const visited = new Set<string>();
-		const skipped: Partial<Record<FileCategory, number>> = {};
+		// The shell only lists. Everything about what a caller may see is decided
+		// here, over the whole listing, so a native walk and a `readDir` walk are
+		// held to exactly the same rules.
+		const request = {
+			path,
+			maxDepth,
+			maxEntries,
+			prune: FileExcludeUtils.getPruned(scope),
+		};
+		const walked = shell.walk
+			? await shell.walk(request)
+			: await walkDirectories({ shell, ...request });
+		const root = trimSeparators(walked.root);
 
-		let truncated = false;
-		let isRoot = true;
-
-		while (pending.length) {
-			const directory = pending.shift() as (typeof pending)[number];
-			const normalized = PathUtils.normalize({
-				path: directory.path,
-				unix: true,
+		// Every `.gitignore` the listing turned up, by the directory it governs.
+		const rules = new Map<string, IgnoreRule[]>();
+		if (gitignore && shell.readFile) {
+			const readFile = shell.readFile;
+			const files = walked.entries.filter(
+				(entry) => !entry.is_dir && getName(entry.path) === ".gitignore",
+			);
+			await mapPool(files, async (file) => {
+				const directory = getParent(file.path);
+				const found = await FileSearchService.getIgnoreRules({
+					shell: { readFile },
+					path: directory,
+				});
+				if (found.length) rules.set(directory, found);
 			});
-			if (visited.has(normalized)) continue;
-			visited.add(normalized);
+		}
 
-			let listing: WalkEntry[];
-			try {
-				listing = await shell.readDir({ path: directory.path });
-			} catch (error) {
-				// A missing root is a real error; an unreadable subdirectory is not.
-				if (isRoot) throw error;
-				continue;
+		// The rules in force inside each directory: its ancestors', then its own.
+		const scopes = new Map<string, IgnoreScope[]>();
+		const getScopes = (directory: string) => {
+			let found = scopes.get(directory);
+			if (!found) {
+				const own = rules.get(directory);
+				found = own ? [{ base: directory, rules: own }] : [];
+				scopes.set(directory, found);
 			}
-			isRoot = false;
+			return found;
+		};
+		getScopes(root);
 
-			let scopes = directory.scopes;
-			if (gitignore && shell.readFile) {
-				const rules = await FileSearchService.getIgnoreRules({
-					shell: shell as Pick<ShellCapability, "readFile">,
-					path: directory.path,
-				});
-				if (rules.length) scopes = [...scopes, { base: directory.path, rules }];
-			}
+		// Directories turned away. A native walk may still have listed what is
+		// inside one, and none of it is anything the caller should see.
+		const dropped = new Set<string>();
 
-			for (const entry of listing.sort((a, b) =>
-				a.path.localeCompare(b.path),
-			)) {
-				if (entries.length >= maxEntries) {
-					truncated = true;
-					break;
-				}
+		const entries: WalkEntry[] = [];
+		const skipped: Partial<Record<FileCategory, number>> = {};
+		let truncated = walked.truncated;
 
-				const ignored = scopes.some((ignore) =>
-					FileMatchUtils.isIgnored({
-						rules: ignore.rules,
-						path: getRelative({ base: ignore.base, path: entry.path }),
-						isDirectory: entry.is_dir,
-					}),
-				);
-				if (ignored) continue;
-
-				// Judged from the search root down, so a project checked out into
-				// a directory that happens to be called `build` is still searched.
-				const excluded = FileExcludeUtils.getExcluded({
-					path: entry.path,
-					root: path,
-					scope,
-					isDirectory: entry.is_dir,
-				});
-
-				if (excluded) {
-					skipped[excluded] = (skipped[excluded] ?? 0) + 1;
-					if (!entry.is_dir || !includeDirectories) continue;
-					entries.push({ ...entry, skipped: excluded });
-					continue;
-				}
-
-				if (entry.is_dir) {
-					if (directory.depth + 1 > maxDepth) truncated = true;
-					else
-						pending.push({
-							path: entry.path,
-							depth: directory.depth + 1,
-							scopes,
-						});
-				}
-				if (!entry.is_dir || includeDirectories) entries.push(entry);
-			}
-
+		for (const entry of walked.entries) {
 			if (entries.length >= maxEntries) {
 				truncated = true;
 				break;
 			}
+
+			const parent = getParent(entry.path);
+			const drop = () => {
+				if (entry.is_dir) dropped.add(trimSeparators(entry.path));
+			};
+			if (dropped.has(parent)) {
+				drop();
+				continue;
+			}
+
+			const inherited = getScopes(parent);
+			const ignored = inherited.some((ignore) =>
+				FileMatchUtils.isIgnored({
+					rules: ignore.rules,
+					path: getRelative({ base: ignore.base, path: entry.path }),
+					isDirectory: entry.is_dir,
+				}),
+			);
+			if (ignored) {
+				drop();
+				continue;
+			}
+
+			// Judged from the search root down, so a project checked out into
+			// a directory that happens to be called `build` is still searched.
+			const excluded = FileExcludeUtils.getExcluded({
+				path: entry.path,
+				root,
+				scope,
+				isDirectory: entry.is_dir,
+			});
+
+			if (excluded) {
+				skipped[excluded] = (skipped[excluded] ?? 0) + 1;
+				drop();
+				if (entry.is_dir && includeDirectories)
+					entries.push({ path: entry.path, is_dir: true, skipped: excluded });
+				continue;
+			}
+
+			if (entry.is_dir) {
+				const directory = trimSeparators(entry.path);
+				const own = rules.get(directory);
+				scopes.set(
+					directory,
+					own ? [...inherited, { base: directory, rules: own }] : inherited,
+				);
+			}
+			if (!entry.is_dir || includeDirectories)
+				entries.push({ path: entry.path, is_dir: entry.is_dir });
 		}
 
-		return { entries, truncated, skipped };
+		return { root: walked.root, entries, truncated, skipped };
 	},
 
 	/** Reads and parses `<path>/.gitignore`, if there is one. */

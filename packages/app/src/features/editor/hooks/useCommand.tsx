@@ -24,6 +24,7 @@ import {
 import { Suggestion } from "@tiptap/suggestion";
 import { useMemo } from "react";
 import { AppService } from "#app/core/services/AppService.ts";
+import { useAppStore } from "#app/core/stores/useAppStore.ts";
 import { renderCompletions } from "#app/features/editor/components/Completions.tsx";
 import { NodeUtils } from "#app/features/editor/utils/NodeUtils.ts";
 import CommandView from "#app/features/part/components/Command.tsx";
@@ -268,6 +269,10 @@ const Command = Node.create({
 
 export const useCommand = () => {
 	const { getCommands } = useCommands({
+		onOpenSettings: () => AppService.openSettings(),
+		onOpenChats: () => AppService.openSidebar(),
+		onOpenFiles: () => useAppStore.getState().setAsideOpen(true),
+		onOpenProjects: () => AppService.openSidebar(),
 		onOpenTools: () => AppService.openCapabilities("tools:native"),
 		onOpenSkills: () => AppService.openCapabilities("skills:native"),
 	});

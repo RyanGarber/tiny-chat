@@ -20,6 +20,7 @@ import type {
 import type { zSkill } from "@tiny-chat/core/features/skill/types/skill.ts";
 import { ToolService } from "@tiny-chat/core/features/tool/services/ToolService.ts";
 import type { Toolset } from "@tiny-chat/core/features/tool/types/tool.ts";
+import { ToolCallUtils } from "@tiny-chat/core/features/tool/utils/ToolCallUtils.ts";
 import { ToolUtils } from "@tiny-chat/core/features/tool/utils/ToolUtils.ts";
 import { smoothStream } from "ai";
 import type { Client } from "../../../client.ts";
@@ -142,6 +143,10 @@ export const ClientAgentService = {
 			interjections: streamChat
 				? () => useMessageQueueStore.getState().drain(streamChat)
 				: undefined,
+			// The call's stream carries its abort, so the stop on a running call
+			// reaches the tool. Started here rather than on first output, since a
+			// call that hangs before writing anything is the one to stop.
+			toolSignal: ({ part }) => ToolStreamService.start(part.id).signal,
 			toolStream: ({ part, mutation }) => {
 				if (!ToolStreamService.get(part.id)) {
 					ToolStreamService.start(part.id);
@@ -168,8 +173,14 @@ export const ClientAgentService = {
 						mode: "patch",
 						data: { status: "thinking" },
 					});
-				} else if (event.value.type === "toolResult") {
+				} else if (
+					event.value.type === "toolResult" &&
+					// A call settles with this while it runs on in the background.
+					!ToolCallUtils.isBackground(event.value.output)
+				) {
 					ToolStreamService.clear(event.value.id);
+				} else if (event.value.type === "interjection" && event.value.task) {
+					ToolStreamService.clear(event.value.task.id);
 				}
 			}
 
@@ -223,23 +234,26 @@ export const ClientAgentService = {
 		const { tool } = ToolUtils.find({ toolsets, part });
 		if (!tool) throw new Error("missing tool");
 
+		const abort = ToolStreamService.start(part.id).signal;
 		try {
-			ToolStreamService.start(part.id);
-
-			const output = await tool.execute({
-				input: part.input,
-				feedback,
-				stream: (mutation) => {
-					ToolStreamService.mutate(part.id, mutation);
-				},
-				context: {
-					user,
-					chat,
-					messages,
-					timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-					interactive,
-				},
-			});
+			const output = await ToolCallUtils.interruptible(
+				tool.execute({
+					input: part.input,
+					feedback,
+					stream: (mutation) => {
+						ToolStreamService.mutate(part.id, mutation);
+					},
+					context: {
+						user,
+						chat,
+						messages,
+						timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+						interactive,
+					},
+					abort,
+				}),
+				abort,
+			);
 
 			return {
 				type: "toolResult",
@@ -257,13 +271,15 @@ export const ClientAgentService = {
 				id: part.id,
 				name: part.name,
 				error: true,
-				output: [
-					{
-						type: "text",
-						value: CommonUtils.formatError({ error, details: true }),
-						id: CommonUtils.getRandomId(),
-					},
-				],
+				output: abort.aborted
+					? ToolCallUtils.getInterruption()
+					: [
+							{
+								type: "text",
+								value: CommonUtils.formatError({ error, details: true }),
+								id: CommonUtils.getRandomId(),
+							},
+						],
 			};
 		} finally {
 			ToolStreamService.clear(part.id);

@@ -40,7 +40,7 @@ export const FileOperationService = {
 		includeDirectories = false,
 	}: {
 		shell: Pick<ShellCapability, "readDir"> &
-			Partial<Pick<ShellCapability, "readFile">>;
+			Partial<Pick<ShellCapability, "readFile" | "walk">>;
 		path: string;
 		scope?: FileScope;
 		includeDirectories?: boolean;
@@ -149,36 +149,68 @@ export const FileOperationService = {
 	 * spelling is unknown. Never reads file contents.
 	 *
 	 * Matches on names alone, so it withholds only what nobody would attach:
-	 * someone reaching for `logo.png` has to be able to find `logo.png`.
+	 * someone reaching for `logo.png` has to be able to find `logo.png`, but
+	 * nobody reaching for `main.rs` means the copy under `target/debug`.
 	 */
 	searchNames: async ({
 		shell,
 		path,
 		query,
-		scope = "listing",
+		scope = "lookup",
 		maxResults = 10,
 	}: {
 		shell: Pick<ShellCapability, "readDir"> &
-			Partial<Pick<ShellCapability, "readFile">>;
+			Partial<Pick<ShellCapability, "readFile" | "walk">>;
 		path: string;
 		query: string;
 		scope?: FileScope;
 		maxResults?: number;
 	}): Promise<{ path: string; is_dir: boolean }[]> => {
-		const normalizedQuery = query.trim();
-		if (!normalizedQuery) throw new Error("Search query must not be empty.");
+		if (!query.trim()) throw new Error("Search query must not be empty.");
 
-		const { entries } = await FileSearchService.walk({
+		const { root, entries } = await FileSearchService.walk({
 			shell,
 			path,
 			scope,
 			includeDirectories: true,
 		});
 
+		return FileOperationService.matchNames({
+			entries,
+			root,
+			query,
+			maxResults,
+		});
+	},
+
+	/**
+	 * The matching half of {@link searchNames}, over entries already walked, so
+	 * a picker can walk a tree once and match against it on every keystroke.
+	 *
+	 * Paths are matched as seen from `root`, the way they are typed: the
+	 * directories above it are the same for every entry, and only dilute the
+	 * match until a path that plainly fits falls under the threshold.
+	 */
+	matchNames: <T extends { path: string; is_dir: boolean }>({
+		entries,
+		root,
+		query,
+		maxResults = 10,
+	}: {
+		entries: T[];
+		root?: string;
+		query: string;
+		maxResults?: number;
+	}): T[] => {
+		const normalizedQuery = query.trim();
+		if (!normalizedQuery) return [];
+
 		const targets = entries.map((entry) => ({
 			entry,
 			name: PathUtils.name(entry),
-			path: PathUtils.normalize({ path: entry.path, unix: true }),
+			path: root
+				? PathUtils.relative({ base: root, path: entry.path })
+				: PathUtils.normalize({ path: entry.path, unix: true }),
 		}));
 
 		const matches = fuzzysort.go(normalizedQuery, targets, {

@@ -1,17 +1,22 @@
 import { zConfig } from "@tiny-chat/core/features/data/types/message.ts";
 import type { ModelProviderStatus } from "@tiny-chat/core/features/provider/types/model.ts";
 import type { ProviderState } from "@tiny-chat/core/features/provider/types/provider.ts";
-import { useCallback, useContext, useMemo } from "react";
+import { useCallback, useContext, useEffect, useMemo } from "react";
 import { ClientContext } from "../../../client.ts";
+import { useChatStore } from "../../chat/stores/useChatStore.ts";
 import { useMessages } from "../../message/hooks/useMessages.ts";
 import { useConfigStore } from "../stores/useConfigStore.ts";
+import { useConfigEditor } from "./useConfigEditor.ts";
 import { useProviders } from "./useProviders.ts";
 
 export const useConfig = () => {
 	const client = useContext(ClientContext);
 
+	const chatId = useChatStore((s) => s.chatId);
 	const overrideConfig = useConfigStore((s) => s.overrideConfig);
 	const setOverrideConfig = useConfigStore((s) => s.setOverrideConfig);
+	const syncChatId = useConfigStore((s) => s.syncChatId);
+	const setSyncChatId = useConfigStore((s) => s.setSyncChatId);
 
 	const lastConfig = useMemo(() => {
 		try {
@@ -22,6 +27,7 @@ export const useConfig = () => {
 		}
 	}, [client.getStorage]);
 
+	// Last sent of the visible messages, whatever their order in the branch.
 	const { messages } = useMessages();
 	const lastMessageConfig = useMemo(() => {
 		const messageList = messages.data?.pages.flatMap((p) => p.messages) ?? [];
@@ -35,6 +41,25 @@ export const useConfig = () => {
 		}, messageList[0]);
 		return lastMessage?.config ?? null;
 	}, [messages]);
+
+	// Entering an existing chat adopts its last config once its messages load.
+	const syncing = !!syncChatId && syncChatId === chatId;
+	const synced = syncing && messages.isSuccess && !messages.isPlaceholderData;
+	useEffect(() => {
+		if (!synced) return;
+		if (lastMessageConfig) {
+			setOverrideConfig(lastMessageConfig);
+			client.setStorage("config", lastMessageConfig);
+		} else {
+			setSyncChatId(null);
+		}
+	}, [
+		synced,
+		lastMessageConfig,
+		setOverrideConfig,
+		setSyncChatId,
+		client.setStorage,
+	]);
 
 	const { providers } = useProviders();
 	const fallbackConfig = useMemo(() => {
@@ -53,8 +78,8 @@ export const useConfig = () => {
 
 	const config = useMemo(() => {
 		return (
+			(syncing ? lastMessageConfig : null) ??
 			overrideConfig ??
-			lastMessageConfig ??
 			lastConfig ??
 			fallbackConfig ??
 			zConfig.parse({
@@ -62,7 +87,7 @@ export const useConfig = () => {
 				provider: "",
 			})
 		);
-	}, [overrideConfig, lastMessageConfig, lastConfig, fallbackConfig]);
+	}, [syncing, lastMessageConfig, overrideConfig, lastConfig, fallbackConfig]);
 
 	const setConfig = useCallback(
 		(value: zConfig) => {
@@ -73,28 +98,18 @@ export const useConfig = () => {
 		[setOverrideConfig, client.setStorage],
 	);
 
-	const model = useMemo(() => {
-		return providers.data
-			?.filter(
-				(provider): provider is ProviderState<ModelProviderStatus> =>
-					provider.type === "model",
-			)
-			.find((s) => s.name === config.provider)
-			?.status.models.find((m) => m.name === config.model);
-	}, [config.provider, config.model, providers.data]);
-	const modelArgs = useMemo(() => model?.args ?? [], [model]);
+	const { model, modelArgs, setModel, setModelArg } = useConfigEditor({
+		config,
+		setConfig,
+	});
 
-	const setModelArg = useCallback(
-		(name: string, value: unknown) => {
-			if (!config) return;
-			const newConfig = {
-				...config,
-				args: { ...config.args, [name]: value },
-			};
-			setConfig(newConfig);
-		},
-		[config, setConfig],
-	);
-
-	return { config, setConfig, model, modelArgs, providers, setModelArg };
+	return {
+		config,
+		setConfig,
+		model,
+		modelArgs,
+		providers,
+		setModel,
+		setModelArg,
+	};
 };

@@ -4,9 +4,12 @@ import { _debug } from "../../features/settings/components/Settings.tsx";
 export type Page =
 	| "chat"
 	| "chats"
+	| "files"
 	| "projects"
 	| "tools"
 	| "skills"
+	| "browser"
+	| "subagents"
 	| "settings"
 	| "uploads"
 	| "github";

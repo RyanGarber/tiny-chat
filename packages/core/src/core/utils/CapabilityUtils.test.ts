@@ -26,6 +26,8 @@ describe("CapabilityUtils", () => {
 	it("only offers the user's own machine to a desktop host", () => {
 		expect(getEnabled({ desktop: false }).shell).toBe(false);
 		expect(getEnabled({ desktop: true }).shell).toBe(true);
+		expect(getEnabled({ desktop: false }).browser).toBe(false);
+		expect(getEnabled({ desktop: true }).browser).toBe(true);
 	});
 
 	it("withholds what writes back to the user from incognito and temporary chats", () => {

@@ -48,4 +48,23 @@ describe("AttachmentUtils", () => {
 			),
 		).toEqual(["exact", "prefix", "old"]);
 	});
+
+	it("keeps a matched group as it is, but still only what can be walked into", () => {
+		const groups = [
+			{
+				matched: true,
+				items: [
+					{ name: "tools.rs", value: "deep", traversable: true },
+					{ name: "notes", value: "other", traversable: true },
+					{ name: "upload", value: "flat" },
+				],
+			},
+		];
+
+		expect(
+			AttachmentUtils.filter({ groups, query: "src/srctools" })[0].items.map(
+				(item) => item.value,
+			),
+		).toEqual(["deep", "other"]);
+	});
 });

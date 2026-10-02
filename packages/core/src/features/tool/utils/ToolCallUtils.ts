@@ -1,5 +1,10 @@
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
-import type { zDataSimplePart, zTextPart } from "../../data/types/part.ts";
+import type {
+	zDataSimplePart,
+	zInterjectionPart,
+	zTextPart,
+	zToolCallPart,
+} from "../../data/types/part.ts";
 import type { RenderedPart } from "../../data/utils/DataUtils.ts";
 import type {
 	ToolBlock,
@@ -63,6 +68,14 @@ const __rejection = {
 	value: "[Tool call rejected by user]",
 } satisfies Omit<zTextPart, "id">;
 
+const __interruption = {
+	type: "text",
+	value:
+		"[Tool call interrupted by user. Wait for their instructions before trying it again.]",
+} satisfies Omit<zTextPart, "id">;
+
+const __background = "[Running in the background as task";
+
 const isPending = (state: ToolCallState) =>
 	state === "input" || state === "feedback" || state === "running";
 
@@ -87,6 +100,77 @@ export const ToolCallUtils = {
 		];
 	},
 
+	isInterruption: (output: zDataSimplePart[]) => {
+		return (
+			output.length === 1 &&
+			output[0].type === "text" &&
+			output[0].value === __interruption.value
+		);
+	},
+
+	getInterruption: (): zDataSimplePart[] => {
+		return [
+			{
+				id: CommonUtils.getRandomId(),
+				...__interruption,
+			},
+		];
+	},
+
+	/** Whether a call asks to run in the background, and its tool can. */
+	isBackgrounded: ({
+		tool,
+		part,
+	}: {
+		tool: Tool<any, any> | null | undefined;
+		part: zToolCallPart;
+	}) => !!tool?.background && part.input?.background === true,
+
+	/** The result a background call settles with while it is still running. */
+	isBackground: (output: zDataSimplePart[]) => {
+		return (
+			output.length === 1 &&
+			output[0].type === "text" &&
+			output[0].value.startsWith(__background)
+		);
+	},
+
+	getBackground: ({ id }: { id: string }): zDataSimplePart[] => {
+		return [
+			{
+				id: CommonUtils.getRandomId(),
+				type: "text",
+				value: `${__background} ${id}. Its result will be sent to you when it finishes, so carry on with other work meanwhile rather than waiting on it.]`,
+			},
+		];
+	},
+
+	/** What the model reads ahead of a background call's output. */
+	getBackgroundNotice: ({
+		task,
+	}: {
+		task: NonNullable<zInterjectionPart["task"]>;
+	}): string => {
+		return `[Background task ${task.id} (${task.name}) ${task.error ? "failed" : "finished"}. This is its result, not a message from the user.]`;
+	},
+
+	/**
+	 * Settles with `promise`, or rejects as soon as `abort` fires. A tool that
+	 * never looks at its signal (or a host that cannot stop what it started)
+	 * still lets go of the loop the moment the user interrupts it.
+	 */
+	interruptible: <T>(promise: Promise<T>, abort?: AbortSignal): Promise<T> => {
+		if (!abort) return promise;
+		if (abort.aborted) return Promise.reject(abort.reason);
+		return new Promise<T>((resolve, reject) => {
+			const onAbort = () => reject(abort.reason);
+			abort.addEventListener("abort", onAbort, { once: true });
+			promise.then(resolve, reject).finally(() => {
+				abort.removeEventListener("abort", onAbort);
+			});
+		});
+	},
+
 	getState: ({
 		part,
 		tool,
@@ -99,6 +183,7 @@ export const ToolCallUtils = {
 	}): ToolCallState => {
 		if (part.partial) return "input";
 		if (part.result) {
+			if (ToolCallUtils.isBackground(part.result.output)) return "running";
 			if (part.result.error) return "error";
 			if (ToolCallUtils.isRejection(part.result.output)) return "rejected";
 			return "success";
@@ -195,7 +280,13 @@ export const ToolCallUtils = {
 				.map((output) => output.value) ?? [];
 
 		let output: ToolBlock[] = [];
-		if (state === "error") {
+		if (
+			state === "error" &&
+			part.result &&
+			ToolCallUtils.isInterruption(part.result.output)
+		) {
+			output = [{ type: "text", value: "Interrupted", tone: "dimmed" }];
+		} else if (state === "error") {
 			output = texts.map((value) => ({ type: "text", value, tone: "error" }));
 		} else if (state === "rejected") {
 			output = [{ type: "text", value: "Rejected", tone: "dimmed" }];

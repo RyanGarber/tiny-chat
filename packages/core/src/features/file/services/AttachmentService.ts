@@ -54,7 +54,7 @@ export const AttachmentService = {
 			const entries = await FileOperationService.walk({
 				shell,
 				path: source,
-				scope: "listing",
+				scope: "lookup",
 				includeDirectories: true,
 			});
 			content = {

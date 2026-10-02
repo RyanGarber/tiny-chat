@@ -1,5 +1,6 @@
 import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
 import { zConfig } from "../../data/types/message.ts";
+import type { zDataPart } from "../../data/types/part.ts";
 import { PathUtils } from "../../file/utils/PathUtils.ts";
 import type { zAgentMessage } from "../types/agent.ts";
 import { AgentUtils } from "./AgentUtils.ts";
@@ -95,5 +96,57 @@ describe("AgentUtils", () => {
 				],
 			}),
 		).toEqual({ uploads: [UPLOAD, OTHER], skills: [] });
+	});
+
+	describe("getToolResultsSorted", () => {
+		const call = (id: string): zDataPart => ({
+			type: "toolCall",
+			id,
+			name: "tool",
+			input: {},
+		});
+		const result = (id: string): zDataPart => ({
+			type: "toolResult",
+			id,
+			name: "tool",
+			output: [],
+		});
+
+		it("puts results in call order, straight after the calls", () => {
+			const report: zDataPart = {
+				type: "interjection",
+				id: "report",
+				value: [],
+				task: { id: "b", name: "tool" },
+			};
+			// `a` was approved after `b` had already reported in.
+			expect(
+				AgentUtils.getToolResultsSorted({
+					data: [call("a"), call("b"), result("b"), report, result("a")],
+				}).map((part) => `${part.type} ${part.id}`),
+			).toEqual([
+				"toolCall a",
+				"toolCall b",
+				"toolResult a",
+				"toolResult b",
+				"interjection report",
+			]);
+		});
+
+		it("moves an approved result ahead of a report that came first", () => {
+			// The step stopped for approval and waited on a background call, whose
+			// report landed before the approved result was added.
+			const report: zDataPart = {
+				type: "interjection",
+				id: "report",
+				value: [],
+				task: { id: "x", name: "tool" },
+			};
+			expect(
+				AgentUtils.getToolResultsSorted({
+					data: [call("a"), report, result("a")],
+				}).map((part) => `${part.type} ${part.id}`),
+			).toEqual(["toolCall a", "toolResult a", "interjection report"]);
+		});
 	});
 });

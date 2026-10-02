@@ -22,8 +22,10 @@ pub fn run() {
         tools::make_dir,
         tools::read_file,
         tools::read_dir,
+        tools::walk,
         tools::write_file,
         tools::shell_exec,
+        tools::shell_kill,
         tools::cwd,
         tools::chdir,
         mcp_http::mcp_start_http,
@@ -41,6 +43,7 @@ pub fn run() {
     let builder = builder.setup(|app| {
         app.manage(mcp_http::HttpSessions::default());
         app.manage(mcp_stdio::StdioSessions::default());
+        app.manage(tools::ShellProcesses::default());
         Ok(())
     });
 

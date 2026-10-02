@@ -17,26 +17,25 @@ import { useMessages } from "@tiny-chat/client/features/message/hooks/useMessage
 import { useMessageStore } from "@tiny-chat/client/features/message/stores/useMessageStore.ts";
 import { useUploads } from "@tiny-chat/client/features/upload/hooks/useUploads.ts";
 import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
-import { useInput, usePaste, useWindowSize } from "ink";
+import { type Key, useInput } from "ink";
 import { useContext, useEffect, useMemo, useRef } from "react";
 import { client } from "../../../client.ts";
 import Box from "../../../core/components/Box.tsx";
 import type { Color } from "../../../core/hooks/useColor.ts";
 import { useMouseInput } from "../../../core/hooks/useMouseInput.ts";
+import { useWidth } from "../../../core/hooks/useWidth.ts";
 import { useWorkingStatus } from "../../../core/hooks/useWorkingStatus.ts";
 import { ClipboardService } from "../../../core/services/ClipboardService.ts";
-import { StdinUtils } from "../../../core/utils/StdinUtils.ts";
+import Textarea from "../../textarea/components/Textarea.tsx";
+import { TextareaUtils } from "../../textarea/utils/TextareaUtils.ts";
+import { useCodeHighlight } from "../hooks/useCodeHighlight.ts";
 import { useEditorStore } from "../stores/useEditorStore.ts";
 import { EditorUtils } from "../utils/EditorUtils.ts";
 import { FilePasteUtils } from "../utils/FilePasteUtils.ts";
 import { MarkdownUtils, type MarkdownWrite } from "../utils/MarkdownUtils.ts";
 import Attachments from "./Attachments.tsx";
 import Commands from "./Commands.tsx";
-import Textarea from "./Textarea.tsx";
 import TokenUsage from "./TokenUsage.tsx";
-
-/** Rows the editor holds on to while it is empty. */
-const LINE_COUNT = 1;
 
 export default function Editor({
 	disabled: _disabled,
@@ -48,7 +47,7 @@ export default function Editor({
 	categories: Categories;
 }) {
 	const { colorScheme } = useContext(ThemeContext);
-	const { columns } = useWindowSize();
+	const columns = useWidth();
 
 	const focusedFeedbackId = useEditorStore((s) => s.focusedFeedbackId);
 	const nextFeedbackId = useMessageStore((s) => s.nextFeedbackId);
@@ -66,15 +65,6 @@ export default function Editor({
 			useEditorStore.setState({ focusedFeedbackId: nextFeedbackId });
 		previousFeedbackId.current = nextFeedbackId;
 	}, [nextFeedbackId]);
-	useInput(
-		(_, key) => {
-			if (key.tab && nextFeedbackId)
-				useEditorStore.setState({
-					focusedFeedbackId: feedbackFocused ? null : nextFeedbackId,
-				});
-		},
-		{ isActive: !_disabled },
-	);
 	const { config, modelArgs } = useConfig();
 	const { sendMessage } = useMessaging();
 	const { messages } = useMessages();
@@ -92,6 +82,15 @@ export default function Editor({
 	const setCursor = useEditorStore((state) => state.setCursor);
 	const insertAt = useEditorStore((state) => state.insert);
 
+	const unfold = useEditorStore((state) => state.unfold);
+	const refold = useEditorStore((state) => state.refold);
+
+	// A paste clicked open is folded back up once the cursor leaves it.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: re-checked on every move and edit
+	useEffect(() => {
+		refold();
+	}, [content, cursor, refold]);
+
 	const selection = useEditorStore((state) => state.selection);
 	const setSelection = useEditorStore((state) => state.setSelection);
 
@@ -104,9 +103,9 @@ export default function Editor({
 
 	const project = useMessagingStore((state) => state.project);
 	const placeholder = useMemo(() => {
-		if (!config) return project ? project.title || "in project" : "/projects";
+		if (!config) return project ? project.title || "untitled" : "(none)";
 		return [
-			project ? project.title || "in project" : "/projects",
+			project ? project.title || "untitled" : "(none)",
 			config.model,
 			...modelArgs.map(
 				(arg) => `${arg.name} ${config.args?.[arg.name] ?? arg.default}`,
@@ -118,9 +117,13 @@ export default function Editor({
 
 	// The atoms are painted before the markdown, so a command or an attachment
 	// standing in the value keeps its own style whatever punctuation it carries.
+	const highlight = useCodeHighlight(content);
 	const labels = useMemo(
-		() => [...EditorUtils.tokenLabels({ atoms }), ...MarkdownUtils.labels()],
-		[atoms],
+		() => [
+			...EditorUtils.tokenLabels({ atoms }),
+			...MarkdownUtils.labels({ highlight }),
+		],
+		[atoms, highlight],
 	);
 
 	const styles = useMemo(
@@ -141,22 +144,7 @@ export default function Editor({
 		MessagingService.getData({ client });
 	}, [content, atoms]);
 
-	const offset = EditorUtils.offset(content, cursor);
-
-	// A command, an attachment or a paste next to the cursor, or around it, goes
-	// as one.
-	const backward = EditorUtils.deletion({
-		value: content,
-		atoms,
-		offset,
-		direction: -1,
-	});
-	const forward = EditorUtils.deletion({
-		value: content,
-		atoms,
-		offset,
-		direction: 1,
-	});
+	const offset = TextareaUtils.offset(content, cursor);
 
 	// The range Alt takes out, which stops against an atom rather than cutting a
 	// word out of the middle of one.
@@ -175,13 +163,13 @@ export default function Editor({
 
 	const remove = ([start, end]: [start: number, end: number]) => {
 		setContent(content.slice(0, start) + content.slice(end));
-		setCursor(EditorUtils.cursor(content, start));
+		setCursor(TextareaUtils.cursor(content, start));
 	};
 
 	/** Writes content in whole, with the cursor left where the write leaves it. */
 	const write = ({ content: next, offset: to }: MarkdownWrite) => {
 		setContent(next);
-		setCursor(EditorUtils.cursor(next, to));
+		setCursor(TextareaUtils.cursor(next, to));
 	};
 
 	// A markdown marker closes itself as it is opened, which the text area knows
@@ -204,14 +192,15 @@ export default function Editor({
 
 	/** Writes text in at the cursor, over whatever is selected. */
 	const insert = (text: string) => {
-		insertAt(text, selection ? EditorUtils.range(selection) : undefined);
+		insertAt(text, selection ? TextareaUtils.range(selection) : undefined);
 		setSelection(null);
 	};
 
 	// A paste arrives whole rather than a key at a time, which is what lets a
 	// long one be collapsed into an atom instead of filling the editor with it.
 	// Terminals send their newlines as carriage returns, which the value holds
-	// as line feeds.
+	// as line feeds. It is taken from the text area, which would otherwise
+	// insert it as it stands.
 	const paste = (text: string) => {
 		const pasted = text.replace(/\r\n?/g, "\n");
 		if (!pasted) return;
@@ -246,8 +235,6 @@ export default function Editor({
 		insert(node ? AtomUtils.fromNode({ content, node }) : pasted);
 	};
 
-	usePaste(paste, { isActive: !disabled });
-
 	// An image on the clipboard never reaches stdin: the terminal drops it, and
 	// a paste either arrives empty or carries the file's name instead. Ctrl+V
 	// goes to the clipboard itself, which is the only way to reach one — and
@@ -275,101 +262,63 @@ export default function Editor({
 		{ isActive: !disabled },
 	);
 
-	// The text area deletes a character at a time, so the keys that would take
-	// out a whole atom are taken from it and answered here.
-	useInput(
-		(_input, key) => {
-			if (selection || key.meta) return;
+	const isNavigating = isCompletionsOpen && !isCompletionsEmpty;
 
-			if (key.backspace && backward) remove(backward);
-			if (key.delete && forward) remove(forward);
-		},
-		{ isActive: !disabled },
-	);
-
-	// Alt and a delete, which the text area answers by taking out the word before
-	// the cursor however the delete was pressed — cutting into an atom rather
-	// than taking it whole. Taken from it altogether, so both directions are
-	// answered the same way and by the same word the arrows step.
-	useInput(
-		(_input, key) => {
-			if (selection || !key.meta) return;
-
-			if (key.backspace) remove(backwardWord);
-			else if (key.delete) remove(forwardWord);
-		},
-		{ isActive: !disabled },
-	);
-
-	// Likewise the arrows, which are made to step over an atom whole so the
-	// cursor never comes to rest inside one. Shift is left to the text area,
-	// which stretches the selection by it instead.
-	useInput(
-		(_input, key) => {
-			if (key.meta || key.shift || selection) return;
-			if (isCompletionsOpen && !isCompletionsEmpty) return;
-			if (!key.leftArrow && !key.rightArrow) return;
-
-			const target = EditorUtils.step({
-				value: content,
-				atoms,
-				offset,
-				direction: key.leftArrow ? -1 : 1,
-			});
-			if (target !== null) setCursor(EditorUtils.cursor(content, target));
-		},
-		{ isActive: !disabled },
-	);
-
-	// Word motion, which terminals send in two different shapes: an arrow under
-	// Alt, where the modifiers are encoded into the sequence, and the Emacs
-	// Alt+B and Alt+F — which is what macOS Terminal sends for Option and an
-	// arrow, whether or not Option is sent as Meta. Both are answered here
-	// rather than in the text area, so the cursor is snapped past an atom
-	// whichever shape the press arrived in.
-	//
-	// Shift is left to the text area, which selects by the word under it — as is
-	// the escaped arrow a terminal that cannot report Shift sends in its place,
-	// which reaches here as an arrow under Alt like any other.
-	useInput(
-		(input, key) => {
-			if (!key.meta || key.shift) return;
-			if (StdinUtils.isEscapedArrow()) return;
-			if (isCompletionsOpen && !isCompletionsEmpty) return;
-
-			const isBackward = key.leftArrow || input === "b";
-			const isForward = key.rightArrow || input === "f";
-			if (!isBackward && !isForward) return;
-
-			const target = isBackward
-				? EditorUtils.wordStart(content, offset)
-				: EditorUtils.wordEnd(content, offset);
-
-			setCursor(
-				EditorUtils.cursor(
-					content,
-					EditorUtils.snap({
-						value: content,
-						atoms,
-						offset: target,
-						from: offset,
-					}),
-				),
-			);
-		},
-		{ isActive: !disabled },
-	);
+	/** The edit Tab, or Shift and Tab, makes in the list or the code the cursor is in. */
+	const indent = (key: Key) =>
+		disabled || isNavigating
+			? null
+			: MarkdownUtils.indented({
+					value: content,
+					selection: selection ?? [offset, offset],
+					direction: key.shift ? -1 : 1,
+				});
 
 	useInput(
 		(_, key) => {
-			if (!key.meta || key.shift) return;
-			if (isCompletionsOpen && !isCompletionsEmpty) return;
-			if (!key.return) return;
-
-			sendMessage.mutate();
+			// Tab indents the list or the code the cursor is in before it moves
+			// the focus anywhere.
+			if (key.tab && nextFeedbackId && (feedbackFocused || !indent(key)))
+				useEditorStore.setState({
+					focusedFeedbackId: feedbackFocused ? null : nextFeedbackId,
+				});
 		},
-		{ isActive: !disabled },
+		{ isActive: !_disabled },
 	);
+
+	// Keys the text area would otherwise answer on its own. The completions take
+	// Enter and the arrows while they are open; and Alt and a delete takes out
+	// the word the arrows step, stopping against an atom rather than cutting
+	// into one.
+	const handleKey = (input: string, key: Key) => {
+		if (isCompletionsOpen && key.return && !key.ctrl && !key.meta) return true;
+
+		if (
+			isNavigating &&
+			(key.upArrow ||
+				key.downArrow ||
+				key.leftArrow ||
+				key.rightArrow ||
+				(key.meta && (input === "b" || input === "f")))
+		)
+			return true;
+
+		if (!selection && key.meta && (key.backspace || key.delete)) {
+			remove(key.backspace ? backwardWord : forwardWord);
+			return true;
+		}
+
+		// The completions fill in their item on Tab.
+		if (key.tab) return isNavigating || indent(key);
+
+		// Ctrl+I only reaches here apart from Tab over the kitty protocol.
+		if (key.ctrl && (input === "b" || input === "i"))
+			return MarkdownUtils.toggled({
+				value: content,
+				selection: selection ?? [offset, offset],
+				size: input === "b" ? 2 : 1,
+			});
+	};
 
 	return (
 		<>
@@ -396,23 +345,21 @@ export default function Editor({
 					focus={!disabled}
 					value={content}
 					onChange={handleChange}
+					onPaste={paste}
 					cursor={cursor}
 					onCursorChange={setCursor}
 					selection={selection}
 					onSelectionChange={setSelection}
-					// An atom is only ever selected whole.
+					// An atom is only ever stepped over, selected and deleted whole.
 					snap={(target, from) =>
 						EditorUtils.snap({ value: content, atoms, offset: target, from })
 					}
 					expand={(selected) =>
 						EditorUtils.expand({ value: content, atoms, selection: selected })
 					}
-					// Word motion and word deletion are answered above, where an atom
-					// is stepped over and taken whole.
-					//
 					// A newline carries the block it was pressed in on — a list keeps
 					// its bullet, a quote its marker — rather than starting a bare line.
-					onSubmit={() => {
+					onEnter={() => {
 						const broken = selection
 							? null
 							: MarkdownUtils.broken({ value: content, offset });
@@ -420,19 +367,16 @@ export default function Editor({
 						if (broken) write(broken);
 						else insert("\n");
 					}}
-					keybindings={{
-						Enter: !isCompletionsOpen,
-						"Shift+Enter": !isCompletionsOpen,
-						Backspace: !backward,
-						Delete: !forward,
-						"Alt+Backspace": false,
-						"Alt+B": false,
-						"Alt+F": false,
+					onSubmit={() => {
+						if (isNavigating) return;
+						// A paste still open goes out as the paste it was.
+						refold(true);
+						sendMessage.mutate();
 					}}
-					disableArrowNavigation={isCompletionsOpen && !isCompletionsEmpty}
-					initialLineCount={LINE_COUNT}
-					autoNewLineLimit={0}
-					highlightActiveLine={true}
+					// A paste is clicked open, written out in full to be read and
+					// edited until the cursor leaves it.
+					onClick={unfold}
+					onKey={handleKey}
 					labels={labels}
 					styles={styles}
 					placeholder={placeholder}

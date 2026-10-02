@@ -6,6 +6,7 @@ import { AttachmentService } from "../../editor/services/AttachmentService.ts";
 import type { AttachmentItem } from "../../editor/types/attachment.ts";
 import type { EditorNode } from "../../editor/types/node.ts";
 import { AttachmentUtils } from "../../editor/utils/AttachmentUtils.ts";
+import { useChatStore } from "../stores/useChatStore.ts";
 import { useDraftStore } from "../stores/useDraftStore.ts";
 import { useMessagingStore } from "../stores/useMessagingStore.ts";
 
@@ -98,10 +99,11 @@ export const MessagingService = {
 
 		MessagingService.setData({ client, data: message?.data ?? [] });
 
-		const { setOverrideConfig } = useConfigStore.getState();
+		// Editing adopts the message's config; cancelling restores the chat's.
+		const { setOverrideConfig, setSyncChatId } = useConfigStore.getState();
 
 		if (message) setOverrideConfig(message.config);
-		else setOverrideConfig(null);
+		else setSyncChatId(useChatStore.getState().chatId);
 	},
 
 	setTruncating: ({ truncating }: { truncating: boolean }) => {
@@ -125,9 +127,6 @@ export const MessagingService = {
 		setTruncating(false);
 		setEditing(null);
 		setInsertingAfter(null);
-
-		const { setOverrideConfig } = useConfigStore.getState();
-		setOverrideConfig(null);
 
 		MessagingService.setData({ client, data: [] });
 	},

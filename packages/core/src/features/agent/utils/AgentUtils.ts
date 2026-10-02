@@ -66,7 +66,11 @@ export const AgentUtils = {
 	},
 
 	/**
-	 * Sort tool calls and results together for compatibility.
+	 * Puts a step's tool results in the order of its calls, straight after the
+	 * last of them. Results land in the order calls finish, and one the user
+	 * gave later (an approval) lands after anything that followed, like a
+	 * background call reporting in; providers want every result straight after
+	 * the calls, in their order.
 	 */
 	getToolResultsSorted: ({ data }: { data: zDataPart[] }) => {
 		const toolCalls = data.filter((part) => part.type === "toolCall");
@@ -92,10 +96,8 @@ export const AgentUtils = {
 			if (!indexes.has(i)) sorted.push(result);
 		});
 
-		let resultCount = 0;
-		return data.map((part) => {
-			if (part.type === "toolResult") return sorted[resultCount++];
-			return part;
-		});
+		const rest = data.filter((part) => part.type !== "toolResult");
+		const after = rest.findLastIndex((part) => part.type === "toolCall") + 1;
+		return [...rest.slice(0, after), ...sorted, ...rest.slice(after)];
 	},
 } as const;

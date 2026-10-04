@@ -1,3 +1,35 @@
+## [0.9.3](https://github.com/RyanGarber/tiny-chat/compare/0.9.2...0.9.3) (2026-10-04)
+
+### Features
+
+* commands for common settings ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-12))
+* continue button for failed runs ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-6))
+* expand agent and CLI workflows ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583))
+* file viewer in cli ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-10))
+* git diffs in file viewer ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-9))
+* improved attachment search ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-5))
+* improved auto approval ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-7))
+* improved capability ui ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-4))
+* improved citations ui ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-13))
+* improved cli editor ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-14))
+* improved project, config switching ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-11))
+* multi-pane cli layout ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-8))
+* parallel and background tools ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-3))
+* shell timeouts and aborts ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-2))
+* web browser tools ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-1))
+
+### Bug Fixes
+
+* ansi noise and no newlines in shell output ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-15))
+* tool feedback not interactible in cli ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-16))
+
+### Performance Improvements
+
+* document subagent limitations in instructions ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-18))
+* increase default tokens-in to 250,000 ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-17))
+* wasm worker code highlighting, improved caching ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-19))
+
+
 ## [0.9.2](https://github.com/RyanGarber/tiny-chat/compare/0.9.1...0.9.2) (2026-09-30)
 
 ### Features

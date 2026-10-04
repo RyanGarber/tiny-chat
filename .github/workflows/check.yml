@@ -95,7 +95,7 @@ jobs:
                     EOF
 
             -   name: Install dependencies
-                run: pnpm ci
+                run: CI_TESTING=true pnpm ci
 
             -   name: Setup database
                 run: pnpm --filter @tiny-chat/server exec prisma db migrate --yes

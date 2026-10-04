@@ -33,13 +33,6 @@ jobs:
                     node-version: lts/*
                     cache: pnpm
 
-            -   name: Cache Turbo
-                uses: actions/cache@v6
-                with:
-                    path: .turbo
-                    key: ${{ runner.os }}-${{ runner.arch }}-turbo-deploy-${{ github.sha }}
-                    restore-keys: ${{ runner.os }}-${{ runner.arch }}-turbo-deploy-
-
             -   name: Create .env
                 run: |
                     cat << EOF > .env
@@ -63,25 +56,11 @@ jobs:
             -   name: Install dependencies
                 run: pnpm ci
 
-            -   name: Build deployment
+            -   name: Prepare deployment
                 run: |
                     pnpm run build:app
                     cp -r packages/app/dist apps/web/dist
-
-            -   name: Package deployment
-                run: |
-                    mkdir deploy
-                    cp package.json deploy/
-                    cp pnpm-lock.yaml deploy/
-                    cp pnpm-workspace.yaml deploy/
-                    cp -r scripts deploy/scripts
-                    cp -r patches deploy/patches
-                    mkdir deploy/packages
-                    cp -r packages/core deploy/packages/core
-                    cp -r packages/server deploy/packages/server
-                    mkdir deploy/apps
-                    cp -r apps/web deploy/apps/web
-                    tar -czf deploy.tar.gz deploy
+                    tar -czf deploy.tar.gz apps/web/dist
 
             -   name: Upload deployment
                 uses: actions/upload-artifact@v7
@@ -95,20 +74,24 @@ jobs:
         environment: production
 
         steps:
+            -   name: Checkout
+                run: |
+                    rm -rf ~/deploy || true
+                    git clone https://github.com/ryangarber/tiny-chat.git ~/deploy --depth 1 --branch ${{ inputs.version || github.ref }}
+
             -   name: Download deployment
                 uses: actions/download-artifact@v8
                 with:
                     name: deploy
-                    path: artifact
 
             -   name: Extract deployment
                 run: |
-                    rm -rf ~/deploy
-                    tar -xzf artifact/deploy.tar.gz -C ~
+                    tar -xzf deploy.tar.gz -C ~/deploy
 
             -   name: Create .env
                 run: |
-                    cat << EOF > ~/deploy/.env
+                    cd ~/deploy
+                    cat << EOF > .env
                     PG_HOST=${{ secrets.PG_HOST }}
                     PG_PORT=${{ secrets.PG_PORT }}
                     PG_USER=${{ secrets.PG_USER }}
@@ -132,4 +115,9 @@ jobs:
                     pnpm ci
 
             -   name: Activate deployment
-                run: pm2 restart all
+                run: |
+                    cd ~/deploy/packages/server
+                    pm2 restart pm2.config.mjs --update-env || pm2 start pm2.config.mjs
+                    cd ~/deploy/apps/web
+                    pm2 restart pm2.config.mjs --update-env || pm2 start pm2.config.mjs
+                    pm2 save

@@ -305,6 +305,7 @@ pub async fn shell_exec(
     builder
         .arg("-c")
         .arg(&command)
+        .envs(crate::env::shell_env().await)
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())

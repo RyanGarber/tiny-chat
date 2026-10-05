@@ -60,10 +60,12 @@ Dev servers and Postgres are usually already running (`VITE_SERVER_PORT` / `VITE
   client, or seeded user unless this genuinely can't cover the case. For server-only data, use the real `db`.
 - **Unit:** Vitest (`*.test.ts`), only for logic that is actually pure.
 - **App UI:** drive it with Playwright (installed at the root, Chromium included) against `http://localhost:$VITE_WEB_PORT`.
-- **CLI:** run it in a detached `tmux` session and drive it with `send-keys` / `capture-pane`:
+- **CLI:** always pass `--no-keyring` when testing so the CLI stores its session token in a plain-text OS temp file
+  instead of touching the system keyring. Run it in a detached `tmux` session and drive it with `send-keys` /
+  `capture-pane`:
 
   ```bash
-  tmux new-session -d -s cli -x 120 -y 40 'pnpm dev:cli'
+  tmux new-session -d -s cli -x 120 -y 40 'pnpm dev:cli --no-keyring'
   tmux send-keys -t cli 'hello' M-Enter
   tmux capture-pane -p -t cli
   ```

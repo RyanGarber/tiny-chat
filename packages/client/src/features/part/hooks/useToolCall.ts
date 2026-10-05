@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { ToolStreamService } from "../../../core/services/StreamService.ts";
 import { useStream } from "../../agent/hooks/useStream.ts";
 import { useMessageStore } from "../../message/stores/useMessageStore.ts";
+import { useToolFeedbackStore } from "../stores/useToolFeedbackStore.ts";
 
 /**
  * Everything a runtime needs to draw one tool call: its status line, and the
@@ -22,6 +23,9 @@ export const useToolCall = ({
 }): ToolCallDisplay & { interrupt?: () => void } => {
 	const toolsets = useMessageStore((s) => s.toolsets);
 	const stream = useStream<unknown>(part.id);
+	// An answered call shows as running from the moment it is answered, not
+	// only once it starts reporting.
+	const answered = useToolFeedbackStore((s) => s.answered.has(part.id));
 
 	const { id, name, input, result, validation, partial } = part;
 	return useMemo(() => {
@@ -36,7 +40,7 @@ export const useToolCall = ({
 				partial,
 			},
 			toolsets,
-			stream: stream?.items,
+			stream: stream?.items ?? (answered ? [] : undefined),
 		});
 		return {
 			...display,
@@ -45,5 +49,15 @@ export const useToolCall = ({
 					? () => ToolStreamService.abort(id)
 					: undefined,
 		};
-	}, [id, name, input, result, validation, partial, toolsets, stream]);
+	}, [
+		id,
+		name,
+		input,
+		result,
+		validation,
+		partial,
+		toolsets,
+		stream,
+		answered,
+	]);
 };

@@ -4,6 +4,7 @@ import {
 	type Source,
 	SourceUtils,
 } from "@tiny-chat/core/features/data/utils/SourceUtils.ts";
+import { ToolUtils } from "@tiny-chat/core/features/tool/utils/ToolUtils.ts";
 import {
 	createElement,
 	type ReactNode,
@@ -16,13 +17,16 @@ import {
 import type { StoreApi } from "zustand/vanilla";
 import { ClientContext } from "../../../client.ts";
 import { useSession } from "../../../core/hooks/useSession.ts";
-import { ToolStreamService } from "../../../core/services/StreamService.ts";
+import type { AgentStreamEvent } from "../../../core/services/StreamService.ts";
 import { useProviders } from "../../agent/hooks/useProviders.ts";
 import { useSkills } from "../../agent/hooks/useSkills.ts";
+import { useStream } from "../../agent/hooks/useStream.ts";
 import { useTools } from "../../agent/hooks/useTools.ts";
 import { ClientMessageService } from "../../agent/services/ClientMessageService.ts";
+import { useStreamStore } from "../../agent/stores/useStreamStore.ts";
 import { useChat } from "../../chat/hooks/useChat.ts";
 import { useChatFiles } from "../../chat/hooks/useChatFiles.ts";
+import { useToolFeedbackStore } from "../../part/stores/useToolFeedbackStore.ts";
 import { useActions } from "../../user/hooks/useActions.ts";
 import { useMemories } from "../../user/hooks/useMemories.ts";
 import { useMessages } from "../hooks/useMessages.ts";
@@ -133,27 +137,51 @@ function MessageSync({ store }: { store: StoreApi<MessageStore> }) {
 		return stale;
 	}, [messageList]);
 
+	// The reply being generated is read as it streams, not as last saved, so
+	// its calls can be answered while the generation is still going.
+	const streamKey = useStreamStore((state) =>
+		chat.data ? state.chatAgentStreams.get(chat.data.id) : undefined,
+	);
+	const streamed = useStream<AgentStreamEvent>(streamKey ?? "")?.items.at(-1);
+	const answered = useToolFeedbackStore((state) => state.answered);
+
+	/** Calls in `data` waiting on the user. */
+	const getPending = useCallback(
+		(data: MessageState["data"]) =>
+			DataUtils.getRenderedParts(data)
+				.filter(
+					(part) =>
+						part.type === "toolCall" &&
+						!part.partial &&
+						!part.result &&
+						!answered.has(part.id) &&
+						(part.validation?.approval ||
+							ToolUtils.find({ toolsets, part }).tool?.feedback),
+				)
+				.map((part) => part.id),
+		[answered, toolsets],
+	);
+
+	// Saved messages are scanned once per change, the streaming one per flush.
+	const savedPending = useMemo(
+		() =>
+			messageList.map((message) => ({
+				id: message.id,
+				ids: getPending(message.data),
+			})),
+		[messageList, getPending],
+	);
+	const streamedPending = useMemo(
+		() => (streamed ? getPending(streamed.data) : undefined),
+		[streamed, getPending],
+	);
+
 	const { pendingFeedbackIds, nextFeedbackId } = useMemo(() => {
-		const pendingFeedbackIds: string[] = [];
-		let nextFeedbackId: string | undefined;
-		for (const message of messageList) {
-			const parts = DataUtils.getRenderedParts(message.data);
-			for (const part of parts) {
-				if (
-					part.type === "toolCall" &&
-					!part.partial &&
-					!part.result &&
-					!ToolStreamService.get(part.id)
-				) {
-					pendingFeedbackIds.push(part.id);
-					if (!nextFeedbackId) {
-						nextFeedbackId = part.id;
-					}
-				}
-			}
-		}
-		return { pendingFeedbackIds, nextFeedbackId };
-	}, [messageList]);
+		const pendingFeedbackIds = savedPending.flatMap(({ id, ids }) =>
+			streamedPending && id === streamKey ? streamedPending : ids,
+		);
+		return { pendingFeedbackIds, nextFeedbackId: pendingFeedbackIds[0] };
+	}, [savedPending, streamedPending, streamKey]);
 
 	const retry = useCallback(
 		(message: MessageState) => {

@@ -1,0 +1,112 @@
+import { useBrowser } from "@tiny-chat/client/features/agent/hooks/useBrowser.ts";
+import type { CompletionGroup } from "@tiny-chat/client/features/editor/types/completion.ts";
+import { useMemo, useState } from "react";
+import { useWorkingStatus } from "../../../core/hooks/useWorkingStatus.ts";
+import Completions from "../../editor/components/Completions.tsx";
+import ConfigItemText, { type ConfigItem } from "./ConfigItem.tsx";
+
+/**
+ * The browser toolset's requirements and settings, beside its toggle in the
+ * config it was opened from.
+ */
+export default function BrowserSettings({ toolset }: { toolset?: ConfigItem }) {
+	const { browserStatus, browserSettings, recheckBrowser, setBrowserSettings } =
+		useBrowser();
+	const [selected, setSelected] = useState(0);
+
+	useWorkingStatus(browserStatus, recheckBrowser);
+
+	const groups = useMemo((): CompletionGroup<ConfigItem>[] => {
+		const status = recheckBrowser.data ?? browserStatus.data;
+		const headed = browserSettings.data?.headed ?? false;
+		return [
+			{ name: "Toolset", items: toolset ? [toolset] : [] },
+			{
+				name: "Requirements",
+				items: status
+					? [
+							{
+								name: "Node.js",
+								value: "node",
+								found: !!status.node,
+								detail: status.node
+									? `${status.node.version} · ${status.node.path}`
+									: "not found",
+							},
+							{
+								name: "Playwright",
+								value: "playwright",
+								found: !!status.playwright,
+								detail: status.playwright
+									? `${status.playwright.name}@${status.playwright.version} · ${status.playwright.path}`
+									: "not found · npm install -g playwright",
+							},
+							...(status.error
+								? [
+										{
+											name: "unavailable",
+											value: "error",
+											found: false,
+											error: status.error,
+										},
+									]
+								: []),
+						]
+					: [],
+			},
+			{
+				name: "Browsers",
+				items: (status?.browsers ?? []).map((browser) => ({
+					name: `${browser.name}${browser.version ? ` ${browser.version}` : ""}`,
+					value: browser.path,
+					found: true,
+					detail: `${browser.source}${browser.path === status?.browser?.path ? " · in use" : ""} · ${browser.path}`,
+				})),
+			},
+			{
+				name: "Settings",
+				items: [
+					{
+						name: "show the browser window",
+						value: "headed",
+						enabled: headed,
+						onSelect: () => setBrowserSettings.mutate({ headed: !headed }),
+					},
+				],
+			},
+		];
+	}, [
+		toolset,
+		browserStatus.data,
+		browserSettings.data,
+		recheckBrowser.data,
+		setBrowserSettings,
+	]);
+
+	const item = groups.flatMap((group) => group.items)[selected];
+
+	return (
+		<Completions<CompletionGroup<ConfigItem>, ConfigItem>
+			groups={groups}
+			selected={selected}
+			setSelected={setSelected}
+			selectFirstOnChange={false}
+			renderItem={({ item }) => <ConfigItemText item={item} />}
+			onInput={({ item, key, input }) => {
+				if ((key.return || input === " ") && item && !item.disabled) {
+					item.onSelect?.();
+					return true;
+				}
+				if (input === "r") {
+					recheckBrowser.mutate();
+					return true;
+				}
+			}}
+			actions={[
+				{ key: "enter", name: "toggle", when: !!item?.onSelect },
+				{ key: "r", name: "recheck" },
+				"back",
+			]}
+		/>
+	);
+}

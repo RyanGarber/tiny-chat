@@ -61,7 +61,7 @@ export default function ToolGroup({
 			<ToolCall
 				message={message}
 				part={part}
-				isFocused={part.id === nextFeedbackId}
+				isNext={part.id === nextFeedbackId}
 				hold={parts.length === 1 ? hold : undefined}
 			/>
 		</Box>

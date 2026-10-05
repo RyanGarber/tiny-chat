@@ -1,5 +1,6 @@
 import RolldownBabel from "@rolldown/plugin-babel";
 import ViteTailwind from "@tailwindcss/vite";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
 import ViteReact, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { playwright } from "@vitest/browser-playwright";
 import RolldownVisualizer from "rollup-plugin-visualizer";
@@ -9,7 +10,9 @@ import ViteInspect from "vite-plugin-inspect";
 import baseConfig from "../../vitest.config.base.ts";
 
 const host = process.env.TAURI_DEV_HOST;
-const hmr = !process.argv.includes("--no-hmr") && !process.env.NO_HMR;
+const hmr =
+	!process.argv.includes("--no-hmr") &&
+	!CommonUtils.isTruthy(process.env.NO_HMR);
 
 if (!hmr) {
 	console.log(":: disabling hmr");

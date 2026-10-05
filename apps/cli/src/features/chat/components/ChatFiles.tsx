@@ -18,6 +18,7 @@ import { type ReactNode, useMemo, useRef, useState } from "react";
 import Anchor from "../../../core/components/Anchor.tsx";
 import Box from "../../../core/components/Box.tsx";
 import HelpText from "../../../core/components/HelpText.tsx";
+import { usePanel } from "../../../core/components/Panel.tsx";
 import ScrollView, {
 	type ScrollViewProps,
 } from "../../../core/components/ScrollView.tsx";
@@ -25,6 +26,7 @@ import Text from "../../../core/components/Text.tsx";
 import { usePage } from "../../../core/hooks/usePage.ts";
 import { WidthContext } from "../../../core/hooks/useWidth.ts";
 import { useWorkingStatus } from "../../../core/hooks/useWorkingStatus.ts";
+import { useAppStore } from "../../../core/stores/useAppStore.ts";
 import { Code } from "../../code/components/Code.tsx";
 import Diff from "../../code/components/Diff.tsx";
 import Completions from "../../editor/components/Completions.tsx";
@@ -145,13 +147,17 @@ function PreviewPane({
 	const { rows } = useWindowSize();
 	const ref = useRef<NonNullable<ScrollViewProps["ref"]>["current"]>(null);
 
-	useInput((_input, key) => {
-		const page = Math.max(1, (ref.current?.getViewportHeight() ?? 1) - 2);
-		if (key.upArrow) ref.current?.scrollBy(-1);
-		if (key.downArrow) ref.current?.scrollBy(1);
-		if (key.pageUp) ref.current?.scrollBy(-page);
-		if (key.pageDown) ref.current?.scrollBy(page);
-	});
+	const { focused } = usePanel();
+	useInput(
+		(_input, key) => {
+			const page = Math.max(1, (ref.current?.getViewportHeight() ?? 1) - 2);
+			if (key.upArrow) ref.current?.scrollBy(-1);
+			if (key.downArrow) ref.current?.scrollBy(1);
+			if (key.pageUp) ref.current?.scrollBy(-page);
+			if (key.pageDown) ref.current?.scrollBy(page);
+		},
+		{ isActive: focused },
+	);
 
 	const change =
 		preview.type === "file"
@@ -236,10 +242,13 @@ function ChatFilesList({ fill = false, width }: ChatFilesProps) {
 	const [toggled, setToggled] = useState<Map<string, boolean>>(() => new Map());
 	const [selected, setSelected] = useState(0);
 
+	const { focused } = usePanel();
+	const closePanel = useAppStore((state) => state.closePanel);
 	usePage({
+		active: focused,
 		onBack: () => {
-			if (!preview) return;
-			setPreview(null);
+			if (preview) setPreview(null);
+			else closePanel("files");
 			return false;
 		},
 	});
@@ -350,7 +359,7 @@ function ChatFilesList({ fill = false, width }: ChatFilesProps) {
 					setPreview({ type: "file", file: node.file });
 			}}
 			renderEmpty={() => "nothing here yet"}
-			actions={["select", { key: "←→", name: "fold" }, "back"]}
+			actions={["select", "back"]}
 		/>
 	);
 }

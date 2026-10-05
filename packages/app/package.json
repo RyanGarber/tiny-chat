@@ -9,7 +9,7 @@
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
 		"smoketest": "node scripts/smoketest.ts",
-		"postinstall": "[[ -z \"$CI\" || -n \"$CI_TESTING\" ]] && playwright install --with-deps --no-shell chromium || echo \":: skipping playwright\""
+		"postinstall": "node scripts/postinstall.ts"
 	},
 	"imports": {
 		"#app/*": "./src/*",

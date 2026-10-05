@@ -30,7 +30,8 @@ export default function Commands({
 	const { session, requestClone } = useSession();
 	const { update, doUpdate } = useUpdate();
 
-	const setPage = useAppStore((state) => state.setPage);
+	const setFocus = useAppStore((state) => state.setFocus);
+	const togglePanel = useAppStore((state) => state.togglePanel);
 	const setStatus = useAppStore((state) => state.setStatus);
 	const unsetStatus = useAppStore((state) => state.unsetStatus);
 
@@ -84,14 +85,13 @@ export default function Commands({
 
 	const { getCommands } = useCommands({
 		commands: cliCommands,
-		onOpenSettings: () => setPage("settings"),
-		onOpenChats: () => setPage("chats"),
-		onOpenFiles: () => setPage("files"),
-		onOpenProjects: () => setPage("projects"),
-		onOpenTools: () => setPage("tools"),
-		onOpenSkills: () => setPage("skills"),
-		onOpenUploads: () => setPage("uploads"),
-		onOpenGitHub: () => setPage("github"),
+		onOpenSettings: () => setFocus("settings"),
+		onOpenChats: () => togglePanel("chats"),
+		onOpenFiles: () => togglePanel("files"),
+		onOpenProjects: () => setFocus("projects"),
+		onOpenConfig: () => setFocus("config"),
+		onOpenUploads: () => setFocus("uploads"),
+		onOpenGitHub: () => setFocus("github"),
 	});
 
 	const commands = getCommands();

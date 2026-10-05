@@ -21,6 +21,14 @@ interface ToolValidation {
 	approval?: boolean;
 }
 
+/** The user's answer to a call that waits on one. */
+export interface ToolFeedback {
+	/** For a call that needs approval: false rejects it. */
+	approved?: boolean;
+	/** Passed to `execute` as its `feedback`. */
+	feedback?: unknown;
+}
+
 export type OutputPart<TDefinition extends ToolDefinition> =
 	| Exclude<zDataSimplePart, { type: "json" }>
 	| (Omit<zJsonPart, "value"> & {

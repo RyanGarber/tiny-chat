@@ -11,6 +11,7 @@ import { InkPictureProvider } from "ink-picture";
 import tauri from "../../tauri/tauri.conf.json" with { type: "json" };
 import { client } from "./client.ts";
 import App from "./core/components/App.tsx";
+import { TokenService } from "./core/services/TokenService.ts";
 import { StdinUtils } from "./core/utils/StdinUtils.ts";
 
 createLogger({
@@ -23,9 +24,14 @@ const cli = new Command()
 	.description("Tiny Chat in the terminal.")
 	.version(
 		tauri.version + (CommonUtils.isTruthy(process.env.DEV) ? "-dev" : ""),
+	)
+	.option(
+		"--no-keyring",
+		"Store the session token in a plain-text OS temp file instead of the keyring",
 	);
 
-cli.action(() => {
+cli.action((options) => {
+	if (options.keyring === false) TokenService.enableTempFile();
 	const stdin = StdinUtils.filter(process.stdin);
 	const instance = render(
 		<QueryClientProvider client={client.queryClient}>

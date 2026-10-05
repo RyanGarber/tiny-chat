@@ -1,10 +1,12 @@
 import { useChatList } from "@tiny-chat/client/features/chat/hooks/useChatList.ts";
 import { ChatService } from "@tiny-chat/client/features/chat/services/ChatService.ts";
 import { useMessagingStore } from "@tiny-chat/client/features/chat/stores/useMessagingStore.ts";
+import { usePanel } from "../../../core/components/Panel.tsx";
 import Text from "../../../core/components/Text.tsx";
 import { usePage } from "../../../core/hooks/usePage.ts";
 import { useSentinel } from "../../../core/hooks/useSentinel.ts";
 import { useWorkingStatus } from "../../../core/hooks/useWorkingStatus.ts";
+import { useAppStore } from "../../../core/stores/useAppStore.ts";
 import Completions from "../../editor/components/Completions.tsx";
 
 export default function ChatList({
@@ -30,7 +32,15 @@ export default function ChatList({
 	// asks for the next page.
 	const fetchOlder = useSentinel(projects);
 
-	const { setPage } = usePage();
+	const { focused } = usePanel();
+	const closePanel = useAppStore((state) => state.closePanel);
+	const { setPage } = usePage({
+		active: focused,
+		onBack: () => {
+			closePanel("chats");
+			return false;
+		},
+	});
 
 	return (
 		<Completions

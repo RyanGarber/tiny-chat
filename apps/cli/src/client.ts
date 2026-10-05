@@ -9,8 +9,8 @@ import { AtomUtils } from "@tiny-chat/client/features/editor/utils/AtomUtils.ts"
 import { MarkdownDataUtils } from "@tiny-chat/client/features/message/utils/MarkdownDataUtils.ts";
 import type { CodeWorker } from "@tiny-chat/core/core/utils/CodeUtils.ts";
 import { ToolOutputUtils } from "@tiny-chat/core/features/tool/utils/ToolOutputUtils.ts";
-import { KeyringService } from "./core/services/KeyringService.ts";
 import { StorageService } from "./core/services/StorageService.ts";
+import { TokenService } from "./core/services/TokenService.ts";
 import { CliUtils } from "./core/utils/CliUtils.ts";
 import {
 	insertNode,
@@ -27,8 +27,8 @@ export const client = createClient({
 		VITE_WEB_PORT: String(process.env.VITE_WEB_PORT),
 		DEV: String(process.env.DEV),
 	},
-	getToken: () => KeyringService.getSessionToken(),
-	setToken: (token) => KeyringService.setSessionToken(token ?? ""),
+	getToken: () => TokenService.get(),
+	setToken: (token) => TokenService.set(token),
 	getStorage: (key) => StorageService.get(key),
 	setStorage: (key, value) => StorageService.set(key, value),
 	highlighter: () => {
@@ -76,7 +76,6 @@ export const client = createClient({
 				content,
 				cursor: TextareaUtils.cursor(content, content.length),
 				selection: null,
-				focusedFeedbackId: null,
 			});
 		},
 		insertNode: ({ node }) => insertNode(node),

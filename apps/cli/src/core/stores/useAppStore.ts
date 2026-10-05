@@ -3,16 +3,38 @@ import { _debug } from "../../features/settings/components/Settings.tsx";
 
 export type Page =
 	| "chat"
-	| "chats"
-	| "files"
 	| "projects"
-	| "tools"
-	| "skills"
-	| "browser"
-	| "subagents"
+	| "config"
 	| "settings"
 	| "uploads"
 	| "github";
+
+export type Panel = "chats" | "files";
+
+/**
+ * What takes the keys in turn on the chat page, Tab moving between them: the
+ * editor, a tool call waiting on feedback, or an open panel.
+ */
+export type Focusable = "editor" | `tool:${string}` | Panel;
+
+/** What takes the keys: a page over the chat, or one focusable on it. */
+export type Focus = Exclude<Page, "chat"> | Focusable;
+
+const isFocusable = (focus: Focus): focus is Focusable =>
+	focus === "editor" ||
+	focus === "chats" ||
+	focus === "files" ||
+	focus.startsWith("tool:");
+
+/** Tab order, whatever order they turned up on screen in. */
+const rank = (focusable: Focusable) =>
+	focusable === "editor"
+		? 0
+		: focusable.startsWith("tool:")
+			? 1
+			: focusable === "chats"
+				? 2
+				: 3;
 
 export interface Status {
 	id: string;
@@ -25,8 +47,18 @@ export interface Status {
 }
 
 interface AppStore {
-	page: Page;
-	setPage: (page: Page) => void;
+	/** Read through `selectFocus`, which accounts for focusables gone from the screen. */
+	focus: Focus;
+	setFocus: (focus: Focus) => void;
+	/** The focusables on screen, in Tab order. */
+	focusables: Focusable[];
+	addFocusable: (focusable: Focusable) => void;
+	removeFocusable: (focusable: Focusable) => void;
+	cycleFocus: (direction: 1 | -1) => void;
+
+	panels: Record<Panel, boolean>;
+	togglePanel: (panel: Panel) => void;
+	closePanel: (panel: Panel) => void;
 
 	statuses: Status[];
 	setStatus: (status: Status) => void;
@@ -37,9 +69,63 @@ interface AppStore {
 	unsetWorkingStatus: (id: string) => void;
 }
 
+/**
+ * The focus as it stands. One that has left the screen — a panel closed, a
+ * tool call answered — falls back to the editor; kept rather than reset, a
+ * panel that only moved (between the sidebar and below the chat) keeps it.
+ */
+export const selectFocus = ({ focus, focusables }: AppStore): Focus =>
+	!isFocusable(focus) || focusables.includes(focus) ? focus : "editor";
+
+/** The page the focus is on, which is the chat for anything focusable on it. */
+export const selectPage = (state: AppStore): Page => {
+	const focus = selectFocus(state);
+	return isFocusable(focus) ? "chat" : focus;
+};
+
 export const useAppStore = create<AppStore>((set) => ({
-	page: _debug ? "settings" : "chat",
-	setPage: (page) => set({ page }),
+	focus: _debug ? "settings" : "editor",
+	setFocus: (focus) => set({ focus }),
+	focusables: [],
+	addFocusable: (focusable) =>
+		set(({ focusables }) =>
+			focusables.includes(focusable)
+				? {}
+				: {
+						focusables: [...focusables, focusable].sort(
+							(a, b) => rank(a) - rank(b),
+						),
+					},
+		),
+	removeFocusable: (focusable) =>
+		set(({ focusables }) => ({
+			focusables: focusables.filter((other) => other !== focusable),
+		})),
+	cycleFocus: (direction) =>
+		set((state) => {
+			const { focusables } = state;
+			if (!focusables.length) return {};
+			const focus = selectFocus(state);
+			const index = isFocusable(focus) ? focusables.indexOf(focus) : -1;
+			return {
+				focus:
+					focusables[
+						(index + direction + focusables.length) % focusables.length
+					],
+			};
+		}),
+
+	panels: { chats: false, files: false },
+	togglePanel: (panel) =>
+		set(({ panels, focus }) => ({
+			panels: { ...panels, [panel]: !panels[panel] },
+			focus: panels[panel] ? (focus === panel ? "editor" : focus) : panel,
+		})),
+	closePanel: (panel) =>
+		set(({ panels, focus }) => ({
+			panels: { ...panels, [panel]: false },
+			focus: focus === panel ? "editor" : focus,
+		})),
 
 	statuses: [],
 	setStatus: (status: Status) => {

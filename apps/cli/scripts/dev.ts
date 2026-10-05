@@ -2,6 +2,9 @@
 
 import { type ChildProcess, spawn } from "node:child_process";
 import { watch } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
 import { useServerProcess as startServerProcess } from "../../../scripts/use-server.ts";
 import {
 	print,
@@ -12,9 +15,17 @@ import { compile } from "./compile.ts";
 
 let child: ChildProcess | undefined;
 
+const hmr =
+	!process.argv.includes("--no-hmr") &&
+	!CommonUtils.isTruthy(process.env.NO_HMR);
+const argv = process.argv.slice(2).filter((arg) => arg !== "--no-hmr");
+
 async function run() {
-	if (child?.pid) {
-		process.kill(child.pid);
+	if (child) {
+		const previous = child;
+		child = undefined;
+		previous.kill();
+		setPassthrough(false);
 	}
 
 	const result = await compile({
@@ -33,20 +44,22 @@ async function run() {
 		return;
 	}
 
-	const args = ["bun", entrypoint.path, ...process.argv.slice(2)];
+	const args = ["bun", entrypoint.path, ...argv];
 	print({ message: "running", details: `> ${args.join(" ")}` });
 
-	child = spawn(args[0], args.slice(1), {
+	const started = spawn(args[0], args.slice(1), {
 		stdio: "inherit",
 		env: { ...process.env },
 	});
+	child = started;
 	setPassthrough(true);
 
-	child.on("exit", () => {
+	started.on("exit", () => {
+		if (child !== started) return;
 		child = undefined;
 		setPassthrough(false);
 
-		print({ message: "waiting for changes" });
+		if (hmr) print({ message: "waiting for changes" });
 	});
 }
 
@@ -65,10 +78,20 @@ setExitHandler((isCtrlD) => {
 try {
 	await run();
 
-	for await (const event of watch("./src", { recursive: true })) {
-		if (event.eventType === "change") {
-			print({ message: `↻ changes: ${event.filename}` });
-			await run();
+	if (!hmr && child) {
+		const running = child;
+		await new Promise<void>((resolve) => running.once("exit", () => resolve()));
+	}
+
+	if (hmr) {
+		const watchPath = join(dirname(fileURLToPath(import.meta.url)), "../src");
+		print({ message: `watching ${watchPath}` });
+
+		for await (const event of watch(watchPath, { recursive: true })) {
+			if (event.eventType === "change") {
+				print({ message: `↻ changes: ${event.filename}` });
+				await run();
+			}
 		}
 	}
 } finally {

@@ -20,7 +20,12 @@ import {
 } from "../../provider/services/ModelProviderService.ts";
 import type { ModelProvider } from "../../provider/types/model.ts";
 import type { zSkill } from "../../skill/types/skill.ts";
-import type { Tool, ToolDefinition, Toolset } from "../../tool/types/tool.ts";
+import type {
+	Tool,
+	ToolDefinition,
+	ToolFeedback,
+	Toolset,
+} from "../../tool/types/tool.ts";
 import { ToolCallUtils } from "../../tool/utils/ToolCallUtils.ts";
 import { ToolUtils } from "../../tool/utils/ToolUtils.ts";
 import type { zAgentContext, zAgentEvent } from "../types/agent.ts";
@@ -148,6 +153,7 @@ export const AgentService = {
 		options,
 		toolStream,
 		toolSignal,
+		toolFeedback,
 		interjections,
 	}: {
 		provider: ModelProvider<any>;
@@ -176,6 +182,15 @@ export const AgentService = {
 		 * call ends the loop so the model waits for the user rather than retrying.
 		 */
 		toolSignal?: (_: { part: zToolCallPart }) => AbortSignal | undefined;
+		/**
+		 * Waits on the user's answer to a call that needs one. It is asked only
+		 * while the generation has other calls to wait on anyway; `signal` aborts
+		 * once it stops waiting, and the call is then answered after it ends.
+		 */
+		toolFeedback?: (_: {
+			part: zToolCallPart;
+			signal: AbortSignal;
+		}) => Promise<ToolFeedback>;
 	}) {
 		const {
 			config,
@@ -216,10 +231,12 @@ export const AgentService = {
 		const run = async ({
 			toolCall,
 			tool,
+			feedback,
 			signal,
 		}: {
 			toolCall: zToolCallPart;
 			tool: Tool<any, any>;
+			feedback?: unknown;
 			signal?: AbortSignal;
 		}): Promise<{ result: zToolResultPart; interrupted: boolean }> => {
 			const signals = [
@@ -238,7 +255,7 @@ export const AgentService = {
 				const value = await ToolCallUtils.interruptible(
 					tool.execute({
 						input: toolCall.input,
-						feedback: undefined,
+						feedback,
 						context,
 						stream: toolStream
 							? (mutation) => toolStream({ tool, part: toolCall, mutation })
@@ -309,10 +326,14 @@ export const AgentService = {
 		const background = new Map<string, Promise<void>>();
 		const finished: zInterjectionPart[] = [];
 		const backgroundAbort = new AbortController();
-		const runInBackground = (toolCall: zToolCallPart, tool: Tool<any, any>) => {
+		const runInBackground = (
+			toolCall: zToolCallPart,
+			tool: Tool<any, any>,
+			feedback?: unknown,
+		) => {
 			background.set(
 				toolCall.id,
-				run({ toolCall, tool, signal: backgroundAbort.signal }).then(
+				run({ toolCall, tool, feedback, signal: backgroundAbort.signal }).then(
 					({ result }) => {
 						background.delete(toolCall.id);
 						finished.push({
@@ -352,8 +373,250 @@ export const AgentService = {
 			if (toolCall && tool) runInBackground(toolCall, tool);
 		}
 
+		/**
+		 * Settles one step's calls, running them together except that a
+		 * sequential one runs alone. Results land as calls finish, then are put
+		 * back in the order of the calls.
+		 *
+		 * A call that waits on the user is answered here while there is anything
+		 * else to wait on — a call still running, or one in the background — so
+		 * the user is never kept from answering by work they are not waiting
+		 * for. Once there is nothing else, the generation ends and the call is
+		 * answered when it resumes. Returns whether it must stop: a call is
+		 * still waiting, or the user interrupted one.
+		 */
+		const settleCalls = async function* (
+			toolCalls: zToolCallPart[],
+		): AsyncGenerator<zAgentEvent, boolean> {
+			let interrupted = false;
+
+			/** Calls to run, in the order they were made or answered. */
+			const queue: {
+				toolCall: zToolCallPart;
+				tool: Tool<any, any>;
+				feedback?: unknown;
+			}[] = [];
+			/** Calls waiting on the user, by call id. */
+			const waiting = new Map<
+				string,
+				{ toolCall: zToolCallPart; tool: Tool<any, any> }
+			>();
+
+			for (const toolCall of toolCalls) {
+				const { tool } = ToolUtils.find({
+					toolsets: enabledToolsets,
+					part: toolCall,
+				});
+
+				if (!tool) {
+					yield push({
+						type: "toolResult",
+						id: toolCall.id,
+						name: toolCall.name,
+						error: true,
+						output: [
+							{
+								id: CommonUtils.getRandomId(),
+								type: "text",
+								value: `Tool "${toolCall.name}" not found`,
+							},
+						],
+					});
+					continue;
+				}
+
+				if (toolValidationErrors.has(toolCall.id)) {
+					yield push({
+						type: "toolResult",
+						id: toolCall.id,
+						name: toolCall.name,
+						error: true,
+						output: [
+							{
+								id: CommonUtils.getRandomId(),
+								type: "text",
+								value: CommonUtils.formatError({
+									error: toolValidationErrors.get(toolCall.id),
+									details: true,
+								}),
+							},
+						],
+					});
+					continue;
+				}
+
+				if (tool.feedback || toolCall.validation?.approval) {
+					waiting.set(toolCall.id, { toolCall, tool });
+					continue;
+				}
+
+				queue.push({ toolCall, tool });
+			}
+
+			type Settled =
+				| {
+						type: "result";
+						result: zToolResultPart;
+						interrupted: boolean;
+				  }
+				| { type: "answer"; id: string; answer?: ToolFeedback }
+				| { type: "background" };
+
+			const answering = new AbortController();
+			const answers = new Map<string, Promise<Settled>>();
+			if (toolFeedback) {
+				const signal = AbortSignal.any(
+					[answering.signal, options?.abortSignal].filter((s) => !!s),
+				);
+				for (const [id, { toolCall }] of waiting) {
+					answers.set(
+						id,
+						toolFeedback({ part: toolCall, signal }).then(
+							(answer): Settled => ({ type: "answer", id, answer }),
+							(): Settled => ({ type: "answer", id }),
+						),
+					);
+				}
+			}
+
+			/** Rejects an answered call, or queues it to run. */
+			const accept = async function* (
+				settled: Settled,
+			): AsyncGenerator<zAgentEvent> {
+				if (settled.type !== "answer" || !settled.answer) return;
+				const call = waiting.get(settled.id);
+				if (!call) return;
+				waiting.delete(settled.id);
+				if (call.toolCall.validation?.approval && !settled.answer.approved) {
+					yield push({
+						type: "toolResult",
+						id: call.toolCall.id,
+						name: call.toolCall.name,
+						error: true,
+						output: ToolCallUtils.getRejection(),
+					});
+				} else {
+					queue.push({ ...call, feedback: settled.answer.feedback });
+				}
+			};
+
+			const running = new Map<
+				string,
+				{
+					sequential: boolean;
+					done: Promise<{ result: zToolResultPart; interrupted: boolean }>;
+				}
+			>();
+
+			try {
+				while (true) {
+					while (queue.length && !interrupted) {
+						const [{ toolCall, tool, feedback }] = queue;
+						const sequential = !!tool.sequential;
+						const blocked = [...running.values()].some(
+							(call) => call.sequential || sequential,
+						);
+						if (blocked) break;
+						queue.shift();
+
+						if (ToolCallUtils.isBackgrounded({ tool, part: toolCall })) {
+							runInBackground(toolCall, tool, feedback);
+							yield push({
+								type: "toolResult",
+								id: toolCall.id,
+								name: toolCall.name,
+								output: ToolCallUtils.getBackground({ id: toolCall.id }),
+							});
+							continue;
+						}
+
+						running.set(toolCall.id, {
+							sequential,
+							done: run({ toolCall, tool, feedback }),
+						});
+					}
+
+					// Calls not yet started are not run: the user stepped in.
+					if (interrupted) {
+						for (const { toolCall } of queue.splice(0)) {
+							yield push({
+								type: "toolResult",
+								id: toolCall.id,
+								name: toolCall.name,
+								error: true,
+								output: ToolCallUtils.getInterruption(),
+							});
+						}
+					}
+
+					// Nothing else to wait on: what is still unanswered is answered
+					// once the generation resumes.
+					if (
+						answers.size &&
+						(interrupted ||
+							options?.abortSignal?.aborted ||
+							(!running.size && !queue.length && !background.size))
+					) {
+						answering.abort();
+						// Every wait settles on the abort; an answer given just before
+						// it still counts.
+						const late = await Promise.all(answers.values());
+						answers.clear();
+						for (const settled of late) yield* accept(settled);
+						continue;
+					}
+
+					if (!running.size && !answers.size) break;
+
+					const settled = await Promise.race<Settled>([
+						...[...running.values()].map(({ done }) =>
+							done.then((done): Settled => ({ type: "result", ...done })),
+						),
+						...answers.values(),
+						// A background call finishing may leave nothing else to wait on.
+						...(answers.size
+							? [...background.values()].map(
+									(done): Promise<Settled> =>
+										done.then(() => ({ type: "background" })),
+								)
+							: []),
+					]);
+
+					if (settled.type === "result") {
+						running.delete(settled.result.id);
+						if (settled.interrupted) interrupted = true;
+						yield push(settled.result);
+					} else if (settled.type === "answer") {
+						answers.delete(settled.id);
+						yield* accept(settled);
+					}
+				}
+			} finally {
+				answering.abort();
+			}
+
+			parts.splice(
+				0,
+				parts.length,
+				...AgentUtils.getToolResultsSorted({ data: parts }),
+			);
+
+			return interrupted || waiting.size > 0;
+		};
+
+		// A generation resumed with calls still to settle settles them before the
+		// model goes on: the user has answered at least one of them.
+		const unsettled =
+			parts?.filter(
+				(part): part is zToolCallPart =>
+					part.type === "toolCall" &&
+					!part.partial &&
+					!parts.some((p) => p.type === "toolResult" && p.id === part.id),
+			) ?? [];
+		const resumed = unsettled.length ? !(yield* settleCalls(unsettled)) : true;
+
 		// Agentic loop: keep generating until the model stops calling tools
-		while (true) {
+		while (resumed) {
 			messages[messages.length - 1].data = data;
 
 			parts = data[data.length - 1];
@@ -540,126 +803,7 @@ export const AgentService = {
 					toolCalls,
 				);
 
-			let stop = false;
-			let interrupted = false;
-
-			/** Calls to run, in the order the model made them. */
-			const queue: { toolCall: zToolCallPart; tool: Tool<any, any> }[] = [];
-
-			for (const toolCall of toolCalls) {
-				const { tool } = ToolUtils.find({
-					toolsets: enabledToolsets,
-					part: toolCall,
-				});
-
-				if (!tool) {
-					yield push({
-						type: "toolResult",
-						id: toolCall.id,
-						name: toolCall.name,
-						error: true,
-						output: [
-							{
-								id: CommonUtils.getRandomId(),
-								type: "text",
-								value: `Tool "${toolCall.name}" not found`,
-							},
-						],
-					});
-					continue;
-				}
-
-				if (toolValidationErrors.has(toolCall.id)) {
-					yield push({
-						type: "toolResult",
-						id: toolCall.id,
-						name: toolCall.name,
-						error: true,
-						output: [
-							{
-								id: CommonUtils.getRandomId(),
-								type: "text",
-								value: CommonUtils.formatError({
-									error: toolValidationErrors.get(toolCall.id),
-									details: true,
-								}),
-							},
-						],
-					});
-					continue;
-				}
-
-				if (tool.feedback || toolCall.validation?.approval) {
-					stop = true;
-					continue;
-				}
-
-				queue.push({ toolCall, tool });
-			}
-
-			// Calls run together, except that a sequential one runs alone. Results
-			// land as calls finish, then are put back in the order of the calls.
-			const running = new Map<
-				string,
-				{
-					sequential: boolean;
-					done: Promise<{ result: zToolResultPart; interrupted: boolean }>;
-				}
-			>();
-			while (queue.length || running.size) {
-				while (queue.length && !interrupted) {
-					const [{ toolCall, tool }] = queue;
-					const sequential = !!tool.sequential;
-					const blocked = [...running.values()].some(
-						(call) => call.sequential || sequential,
-					);
-					if (blocked) break;
-					queue.shift();
-
-					if (ToolCallUtils.isBackgrounded({ tool, part: toolCall })) {
-						runInBackground(toolCall, tool);
-						yield push({
-							type: "toolResult",
-							id: toolCall.id,
-							name: toolCall.name,
-							output: ToolCallUtils.getBackground({ id: toolCall.id }),
-						});
-						continue;
-					}
-
-					running.set(toolCall.id, {
-						sequential,
-						done: run({ toolCall, tool }),
-					});
-				}
-
-				// Calls not yet started are not run: the user stepped in.
-				if (interrupted) {
-					for (const { toolCall } of queue.splice(0)) {
-						yield push({
-							type: "toolResult",
-							id: toolCall.id,
-							name: toolCall.name,
-							error: true,
-							output: ToolCallUtils.getInterruption(),
-						});
-					}
-				}
-
-				if (!running.size) continue;
-				const settled = await Promise.race(
-					[...running.values()].map(({ done }) => done),
-				);
-				running.delete(settled.result.id);
-				if (settled.interrupted) interrupted = true;
-				yield push(settled.result);
-			}
-
-			parts.splice(
-				0,
-				parts.length,
-				...AgentUtils.getToolResultsSorted({ data: parts }),
-			);
+			const stop = yield* settleCalls(toolCalls);
 
 			if (options?.abortSignal?.aborted) {
 				yield push({
@@ -670,7 +814,7 @@ export const AgentService = {
 				});
 				break;
 			}
-			if (stop || interrupted) break;
+			if (stop) break;
 			if (!toolCalls.length) {
 				if (!background.size) {
 					console.log("[AgentService] loop complete");

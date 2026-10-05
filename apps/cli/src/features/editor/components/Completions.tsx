@@ -13,6 +13,7 @@ import {
 } from "react";
 import Box, { type BoxProps } from "../../../core/components/Box.tsx";
 import HelpText, { type Action } from "../../../core/components/HelpText.tsx";
+import { usePanel } from "../../../core/components/Panel.tsx";
 import ScrollView, {
 	type ScrollViewProps,
 } from "../../../core/components/ScrollView.tsx";
@@ -27,9 +28,8 @@ export type CompletionsProps<
 	selected?: number;
 	setSelected?: (_: (previous?: number) => number) => void;
 	itemRef?: RefObject<T2 | null>;
+	/** Takes the keys, and draws its selection as such. Defaults to whether its panel is focused. */
 	active?: boolean;
-	/** A press landed on an item, whether or not the list is the active one. */
-	onPointerDown?: () => void;
 	onInput?: (_: {
 		item?: T2;
 		input: string;
@@ -59,8 +59,7 @@ export default function Completions<
 	setSelected: setControlledSelected,
 	itemRef,
 	onInput,
-	onPointerDown,
-	active = true,
+	active: _active,
 	itemProps,
 	renderItem,
 	renderEmpty,
@@ -73,6 +72,8 @@ export default function Completions<
 	...props
 }: CompletionsProps<T1, T2>) {
 	const { rows } = useWindowSize();
+	const panel = usePanel();
+	const active = _active ?? panel.focused;
 
 	const items = groups.flatMap((group) =>
 		group.items.map((item, position) => ({
@@ -106,8 +107,9 @@ export default function Completions<
 
 	const pick = useCallback(
 		(offset: number) => {
-			setSelected((previous) =>
-				Math.min(Math.max((previous ?? 0) + offset, 0), items.length - 1),
+			if (!items.length) return;
+			setSelected(
+				(previous) => ((previous ?? 0) + offset + items.length) % items.length,
 			);
 		},
 		[items.length, setSelected],
@@ -132,8 +134,10 @@ export default function Completions<
 	const { mouseRef } = useMouseInput({
 		onClick: ({ index }) => {
 			if (index === undefined) return;
-			onPointerDown?.();
-			if (selected === index) {
+			// Only a press on what is already selected, in a list that already has
+			// the focus, goes through: the first press on a list elsewhere just
+			// focuses it (through its panel) and selects.
+			if (active && selected === index) {
 				onInput?.({
 					item: items[selected],
 					input: "",
@@ -199,7 +203,13 @@ export default function Completions<
 							)}
 							<Box
 								ref={(element) => mouseRef(element, index)}
-								color={index === selected ? "primary" : undefined}
+								color={
+									index === selected
+										? active
+											? "primary"
+											: "textSubtle"
+										: undefined
+								}
 								dimColor={index === hovered || item.active}
 							>
 								<Text>{index === selected ? "▶ " : "  "}</Text>

@@ -15,7 +15,7 @@ import Text from "../../../core/components/Text.tsx";
 import { useMouseInput } from "../../../core/hooks/useMouseInput.ts";
 import { useWidth } from "../../../core/hooks/useWidth.ts";
 import { ClipboardService } from "../../../core/services/ClipboardService.ts";
-import { useEditorStore } from "../../editor/stores/useEditorStore.ts";
+import { useAppStore } from "../../../core/stores/useAppStore.ts";
 import MessageParts from "./MessageParts.tsx";
 
 export default function Message({
@@ -84,7 +84,7 @@ export default function Message({
 						marginLeft={2}
 						label={editing?.id === message.id ? "cancel" : "edit"}
 						onClick={() => {
-							useEditorStore.setState({ focusedFeedbackId: null });
+							useAppStore.getState().setFocus("editor");
 							MessagingService.setEditing({
 								client,
 								message: editing?.id === message.id ? null : message,

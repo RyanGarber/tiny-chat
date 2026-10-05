@@ -4,10 +4,8 @@ import type { MessageState } from "@tiny-chat/core/features/data/types/message.t
 import type { RenderedPart } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
 import type { ToolStatusPart } from "@tiny-chat/core/features/tool/types/display.ts";
 import chalk from "chalk";
-import { useInput } from "ink";
 import Box from "../../../core/components/Box.tsx";
 import Button from "../../../core/components/Button.tsx";
-import { useAppStore } from "../../../core/stores/useAppStore.ts";
 import type { StatusPart } from "../utils/TaskUtils.ts";
 import ScrollTail from "./ScrollTail.tsx";
 import Task from "./Task.tsx";
@@ -27,12 +25,13 @@ export const toStatusParts = (status: ToolStatusPart[]): StatusPart[] =>
 export default function ToolCall({
 	message,
 	part,
-	isFocused,
+	isNext,
 	hold,
 }: {
 	message?: MessageState;
 	part: Extract<RenderedPart, { type: "toolCall" }>;
-	isFocused?: boolean;
+	/** The call next waiting on feedback, the one whose controls can take the focus. */
+	isNext?: boolean;
 	/** Keeps it open after it settles, until something follows it. */
 	hold?: boolean;
 }) {
@@ -40,16 +39,7 @@ export default function ToolCall({
 	const { expanded, auto, toggle } = useAutoExpand(display.active || !!hold);
 
 	const controls = message && display.controls;
-
-	// Escape stops a running call from the chat; other pages take it to go back.
-	const page = useAppStore((state) => state.page);
 	const { interrupt } = display;
-	useInput(
-		(_, key) => {
-			if (key.escape) interrupt?.();
-		},
-		{ isActive: !!interrupt && page === "chat" },
-	);
 
 	return (
 		<Task expanded={expanded} onToggle={toggle}>
@@ -65,7 +55,7 @@ export default function ToolCall({
 					emoji="⚙️ "
 					parts={toStatusParts(display.status)}
 				/>
-				{interrupt && <Button label="stop · esc" onClick={interrupt} />}
+				{interrupt && <Button label="stop" onClick={interrupt} />}
 			</Box>
 			{(display.input.length > 0 ||
 				display.output.length > 0 ||
@@ -86,7 +76,7 @@ export default function ToolCall({
 									message={message}
 									part={part}
 									controls={controls}
-									isFocused={isFocused}
+									isNext={isNext}
 								/>
 							)}
 							{display.output.map((block, index) => (

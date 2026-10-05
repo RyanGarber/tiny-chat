@@ -1,6 +1,7 @@
 use tauri::Manager;
 
 mod afm;
+mod env;
 mod mcp_http;
 mod mcp_stdio;
 mod tools;
@@ -44,6 +45,10 @@ pub fn run() {
         app.manage(mcp_http::HttpSessions::default());
         app.manage(mcp_stdio::StdioSessions::default());
         app.manage(tools::ShellProcesses::default());
+        // Read ahead, since a login shell can take a moment to start.
+        tauri::async_runtime::spawn(async {
+            env::shell_env().await;
+        });
         Ok(())
     });
 

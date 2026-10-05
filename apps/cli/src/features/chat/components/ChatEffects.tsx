@@ -30,6 +30,15 @@ export default function ChatEffects() {
 	const editing = useMessagingStore((s) => s.editing);
 	const truncating = useMessagingStore((s) => s.truncating);
 	const insertingAfter = useMessagingStore((s) => s.insertingAfter);
+
+	const hasEffect =
+		editing ||
+		truncating ||
+		insertingAfter ||
+		(chatId && queues[chatId]?.length > 0);
+
+	if (!hasEffect) return null;
+
 	return (
 		<Box flexDirection="column" paddingX={2} paddingBottom={1}>
 			{editing && (

@@ -36,6 +36,7 @@ export const useCommands = ({
 	onOpenChats,
 	onOpenFiles,
 	onOpenProjects,
+	onOpenConfig,
 	onOpenTools,
 	onOpenSkills,
 	onOpenUploads,
@@ -46,6 +47,8 @@ export const useCommands = ({
 	onOpenChats?: () => void;
 	onOpenFiles?: () => void;
 	onOpenProjects?: () => void;
+	/** The model, tools and skills in one menu, offered in place of tools and skills. */
+	onOpenConfig?: () => void;
 	onOpenTools?: () => void;
 	onOpenSkills?: () => void;
 	onOpenUploads?: () => void;
@@ -91,6 +94,8 @@ export const useCommands = ({
 	onOpenFilesRef.current = onOpenFiles;
 	const onOpenProjectsRef = useRef(onOpenProjects);
 	onOpenProjectsRef.current = onOpenProjects;
+	const onOpenConfigRef = useRef(onOpenConfig);
+	onOpenConfigRef.current = onOpenConfig;
 	const onOpenToolsRef = useRef(onOpenTools);
 	onOpenToolsRef.current = onOpenTools;
 	const onOpenSkillsRef = useRef(onOpenSkills);
@@ -276,6 +281,28 @@ export const useCommands = ({
 				: []),
 		];
 
+		// One config menu where the host has it; its tools and skills pages otherwise.
+		const capabilities: CommandItem[] = onOpenConfigRef.current
+			? [
+					{
+						name: "config",
+						value: "config",
+						run: () => onOpenConfigRef.current?.(),
+					},
+				]
+			: [
+					{
+						name: "tools",
+						value: "tools",
+						run: () => onOpenToolsRef.current?.(),
+					},
+					{
+						name: "skills",
+						value: "skills",
+						run: () => onOpenSkillsRef.current?.(),
+					},
+				];
+
 		const shell: CommandItem[] = clientRef.current.shell?.chdir
 			? [
 					{
@@ -457,16 +484,7 @@ export const useCommands = ({
 						choices: presets,
 					},
 					{ name: "system-prompt", value: "system-prompt", dynamic: true },
-					{
-						name: "tools",
-						value: "tools",
-						run: () => onOpenToolsRef.current?.(),
-					},
-					{
-						name: "skills",
-						value: "skills",
-						run: () => onOpenSkillsRef.current?.(),
-					},
+					...capabilities,
 					...uploads,
 					...shell,
 				],

@@ -17,6 +17,7 @@ pub async fn mcp_start_stdio(
 
     let mut client = tokio::process::Command::new(executable)
         .args(command.iter().skip(1))
+        .envs(crate::env::shell_env().await)
         .envs(env)
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())

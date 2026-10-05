@@ -7,15 +7,14 @@ import { useDraftStore } from "@tiny-chat/client/features/chat/stores/useDraftSt
 import { useEstimatedTokens } from "@tiny-chat/client/features/editor/hooks/useEstimatedTokens.ts";
 import { MessageProvider } from "@tiny-chat/client/features/message/components/MessageProvider.tsx";
 import { Box, useInput, useWindowSize } from "ink";
-import { useContext, useEffect } from "react";
-import Capabilities from "../../features/agent/components/Capabilities.tsx";
+import { type ReactNode, useContext, useEffect } from "react";
+import ChatConfig from "../../features/agent/components/ChatConfig.tsx";
 import Chat from "../../features/chat/components/Chat.tsx";
 import ChatEffects from "../../features/chat/components/ChatEffects.tsx";
 import ChatFiles from "../../features/chat/components/ChatFiles.tsx";
 import ChatList from "../../features/chat/components/ChatList.tsx";
 import ProjectList from "../../features/chat/components/ProjectList.tsx";
 import Editor from "../../features/editor/components/Editor.tsx";
-import { useEditorStore } from "../../features/editor/stores/useEditorStore.ts";
 import { CitationCard } from "../../features/message/components/Citation.tsx";
 import Settings from "../../features/settings/components/Settings.tsx";
 import { useUpdate } from "../../features/update/hooks/useUpdate.ts";
@@ -23,12 +22,20 @@ import GitHub from "../../features/upload/components/GitHub.tsx";
 import Uploads from "../../features/upload/components/Uploads.tsx";
 import type { Color } from "../hooks/useColor.ts";
 import { WidthContext } from "../hooks/useWidth.ts";
-import { useAppStore } from "../stores/useAppStore.ts";
+import {
+	type Panel as PanelName,
+	selectFocus,
+	selectPage,
+	useAppStore,
+} from "../stores/useAppStore.ts";
+import Panel from "./Panel.tsx";
 import StatusText from "./StatusText.tsx";
 
 /** Columns from which the chat list and files open beside the chat rather than below it. */
 const SIDEBAR_COLUMNS = 120;
-const CHATS_WIDTH = 32;
+// Halfway between the former chat-list (32) and file-preview (up to 64) widths.
+const panelWidth = (columns: number) =>
+	Math.floor((32 + Math.min(64, Math.floor(columns * 0.4))) / 2);
 
 export default function App() {
 	const { colorScheme } = useContext(ThemeContext);
@@ -37,7 +44,7 @@ export default function App() {
 
 	const { rows, columns } = useWindowSize();
 
-	const page = useAppStore((state) => state.page);
+	const page = useAppStore(selectPage);
 	const statuses = useAppStore((state) => state.statuses);
 	const setStatus = useAppStore((state) => state.setStatus);
 	const unsetStatus = useAppStore((state) => state.unsetStatus);
@@ -61,10 +68,9 @@ export default function App() {
 
 	useInput((input, key) => {
 		if (key.shift && key.tab) {
-			// A focused tool control uses shift+tab to cycle its own suggestions.
-			if (useEditorStore.getState().focusedFeedbackId) return;
-			// Pages own their keys; the shortcut only applies from the chat itself.
-			if (page !== "chat") return;
+			// Pages, panels and tool controls own their keys (a tool control
+			// cycles its suggestions with it): the shortcut is the editor's.
+			if (selectFocus(useAppStore.getState()) !== "editor") return;
 			// Something written in the editor takes it to indent and unindent.
 			if (!useDraftStore.getState().isEmpty) return;
 			ChatService.cycleProject(projectList ?? []);
@@ -86,11 +92,29 @@ export default function App() {
 		colors: { low: "primary", moderate: "yellowBright", high: "redBright" },
 	});
 
+	const panels = useAppStore((state) => state.panels);
+	const closePanel = useAppStore((state) => state.closePanel);
 	const sidebars = columns >= SIDEBAR_COLUMNS;
-	const left = sidebars && page === "chats" ? CHATS_WIDTH : 0;
-	const right =
-		sidebars && page === "files" ? Math.min(64, Math.floor(columns * 0.4)) : 0;
+	const left = sidebars && panels.chats ? panelWidth(columns) : 0;
+	const right = sidebars && panels.files ? panelWidth(columns) : 0;
 	const width = columns - left - right;
+	const panelCount = Number(panels.chats) + Number(panels.files);
+	const bottomWidth = Math.floor(columns / Math.max(1, panelCount));
+
+	const panel = (name: PanelName, children: ReactNode) => (
+		<Panel
+			id={name}
+			title={name}
+			closable
+			onClose={() => closePanel(name)}
+			flexGrow={1}
+			minHeight={0}
+			padding={1}
+			backgroundColor="interior"
+		>
+			{children}
+		</Panel>
+	);
 
 	return (
 		<MessageProvider>
@@ -101,7 +125,7 @@ export default function App() {
 			>
 				{left > 0 && (
 					<Box width={left} flexShrink={0} flexDirection="column">
-						<ChatList fill />
+						{panel("chats", <ChatList fill />)}
 					</Box>
 				)}
 				<WidthContext.Provider value={width}>
@@ -120,16 +144,28 @@ export default function App() {
 							right={0}
 						>
 							<StatusText />
-							{page === "chats" && !sidebars && <ChatList />}
-							{page === "files" && !sidebars && <ChatFiles />}
+							{!sidebars && panelCount > 0 && (
+								<Box height={Math.floor(rows / 2)} flexShrink={0}>
+									{panels.chats && (
+										<Box width={bottomWidth} flexDirection="column">
+											{panel("chats", <ChatList fill />)}
+										</Box>
+									)}
+									{panels.files && (
+										<Box width={bottomWidth} flexDirection="column">
+											{panel(
+												"files",
+												<ChatFiles fill width={bottomWidth - 2} />,
+											)}
+										</Box>
+									)}
+								</Box>
+							)}
 							{page === "projects" && <ProjectList />}
 							{page === "uploads" && <Uploads />}
 							{page === "github" && <GitHub />}
 							{page === "settings" && <Settings />}
-							{(page === "tools" ||
-								page === "skills" ||
-								page === "browser" ||
-								page === "subagents") && <Capabilities />}
+							{page === "config" && <ChatConfig />}
 							{page === "chat" && <ChatEffects />}
 							<Editor
 								disabled={
@@ -143,7 +179,7 @@ export default function App() {
 				</WidthContext.Provider>
 				{right > 0 && (
 					<Box width={right} flexShrink={0} flexDirection="column">
-						<ChatFiles fill width={right - 2} />
+						{panel("files", <ChatFiles fill width={right - 2} />)}
 					</Box>
 				)}
 				<CitationCard />

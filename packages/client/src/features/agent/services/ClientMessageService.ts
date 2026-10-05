@@ -44,6 +44,7 @@ export const ClientMessageService = {
 		providers,
 		skills,
 		resume = true,
+		answered = false,
 	}: {
 		client: Client;
 		user: zUser;
@@ -55,6 +56,11 @@ export const ClientMessageService = {
 		toolResults?: zDataPart[];
 		/** False to only record `toolResults`, leaving the model to wait. */
 		resume?: boolean;
+		/**
+		 * The user has answered a call the reply still waits on, so it resumes
+		 * to run it even while other calls wait on the user too.
+		 */
+		answered?: boolean;
 	}): Promise<void> => {
 		console.log(
 			"[ClientMessageService] handling model message",
@@ -91,7 +97,7 @@ export const ClientMessageService = {
 		if (!resume) return;
 
 		useMessageQueueStore.getState().setActive(chat.id, true);
-		if (DataUtils.isMissingToolResult(response)) {
+		if (!answered && DataUtils.isMissingToolResult(response)) {
 			// Awaiting more user tool inputs — do not start generation yet.
 			return;
 		}

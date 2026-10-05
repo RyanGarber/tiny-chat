@@ -1,4 +1,3 @@
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
 import { AgentService } from "@tiny-chat/core/features/agent/services/AgentService.ts";
 import type {
 	zAgentChat,
@@ -9,10 +8,7 @@ import type { MessageState } from "@tiny-chat/core/features/data/types/message.t
 import type {
 	zData,
 	zMetadata,
-	zToolCallPart,
-	zToolResultPart,
 } from "@tiny-chat/core/features/data/types/part.ts";
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
 import type {
 	ProviderState,
 	ProviderStatus,
@@ -21,7 +17,6 @@ import type { zSkill } from "@tiny-chat/core/features/skill/types/skill.ts";
 import { ToolService } from "@tiny-chat/core/features/tool/services/ToolService.ts";
 import type { Toolset } from "@tiny-chat/core/features/tool/types/tool.ts";
 import { ToolCallUtils } from "@tiny-chat/core/features/tool/utils/ToolCallUtils.ts";
-import { ToolUtils } from "@tiny-chat/core/features/tool/utils/ToolUtils.ts";
 import { smoothStream } from "ai";
 import type { Client } from "../../../client.ts";
 import { ClientCapabilityService } from "../../../core/services/ClientCapabilityService.ts";
@@ -30,6 +25,7 @@ import {
 	ToolStreamService,
 } from "../../../core/services/StreamService.ts";
 import { useMessageQueueStore } from "../../chat/stores/useMessageQueueStore.ts";
+import { ToolFeedbackService } from "../../part/services/ToolFeedbackService.ts";
 import { ClientProviderService } from "./ClientProviderService.ts";
 
 export const ClientAgentService = {
@@ -147,6 +143,8 @@ export const ClientAgentService = {
 			// reaches the tool. Started here rather than on first output, since a
 			// call that hangs before writing anything is the one to stop.
 			toolSignal: ({ part }) => ToolStreamService.start(part.id).signal,
+			// Only the user can answer, and only in a chat they are in.
+			toolFeedback: context.interactive ? ToolFeedbackService.wait : undefined,
 			toolStream: ({ part, mutation }) => {
 				if (!ToolStreamService.get(part.id)) {
 					ToolStreamService.start(part.id);
@@ -155,134 +153,47 @@ export const ClientAgentService = {
 			},
 		});
 
-		for await (const event of agent) {
-			if (event.type === "toolInput" && event.name !== undefined) {
-				AgentStreamService.mutate(streamKey, {
-					mode: "patch",
-					data: { status: "generating" },
-				});
-			}
-			if (event.type === "data") {
-				if (event.value.type === "text" || event.value.type === "json") {
+		try {
+			for await (const event of agent) {
+				if (event.type === "toolInput" && event.name !== undefined) {
 					AgentStreamService.mutate(streamKey, {
 						mode: "patch",
 						data: { status: "generating" },
 					});
-				} else if (event.value.type === "thought") {
-					AgentStreamService.mutate(streamKey, {
-						mode: "patch",
-						data: { status: "thinking" },
-					});
-				} else if (
-					event.value.type === "toolResult" &&
-					// A call settles with this while it runs on in the background.
-					!ToolCallUtils.isBackground(event.value.output)
-				) {
-					ToolStreamService.clear(event.value.id);
-				} else if (event.value.type === "interjection" && event.value.task) {
-					ToolStreamService.clear(event.value.task.id);
 				}
-			}
+				if (event.type === "data") {
+					if (event.value.type === "text" || event.value.type === "json") {
+						AgentStreamService.mutate(streamKey, {
+							mode: "patch",
+							data: { status: "generating" },
+						});
+					} else if (event.value.type === "thought") {
+						AgentStreamService.mutate(streamKey, {
+							mode: "patch",
+							data: { status: "thinking" },
+						});
+					}
+					if (event.value.type === "toolResult")
+						ToolFeedbackService.settle(event.value.id);
+					if (
+						event.value.type === "toolResult" &&
+						// A call settles with this while it runs on in the background.
+						!ToolCallUtils.isBackground(event.value.output)
+					) {
+						ToolStreamService.clear(event.value.id);
+					} else if (event.value.type === "interjection" && event.value.task) {
+						ToolStreamService.clear(event.value.task.id);
+					}
+				}
 
-			AgentStreamService.mutate(streamKey, { mode: "patch", data: { data } });
+				AgentStreamService.mutate(streamKey, { mode: "patch", data: { data } });
+			}
+		} finally {
+			// Answers the generation did not get to are given again once it is over.
+			for (const part of data.flat())
+				if (part.type === "toolCall") ToolFeedbackService.settle(part.id);
 		}
 
 		return { data, metadata };
-	},
-
-	runTool: async ({
-		client,
-		user,
-		chat,
-		part,
-		feedback,
-		message,
-		messages,
-		skills,
-		mcpTools,
-		interactive,
-	}: {
-		client: Client;
-		user: zUser;
-		chat: zAgentChat;
-		part: zToolCallPart;
-		feedback: unknown;
-		message: MessageState;
-		messages: MessageState[];
-		skills: zSkill[];
-		mcpTools: Toolset<any>[];
-		interactive: boolean;
-	}): Promise<zToolResultPart> => {
-		console.log("[ClientAgentService] running tool", part, feedback);
-
-		const capabilities = await ClientCapabilityService.getCapabilities({
-			client,
-			user,
-			chat,
-			message,
-			messages,
-			incognito: chat.incognito,
-			temporary: chat.temporary,
-			skills,
-			mcpTools,
-		});
-
-		const toolsets = await ToolService.getTools({
-			capabilities,
-		});
-
-		const { tool } = ToolUtils.find({ toolsets, part });
-		if (!tool) throw new Error("missing tool");
-
-		const abort = ToolStreamService.start(part.id).signal;
-		try {
-			const output = await ToolCallUtils.interruptible(
-				tool.execute({
-					input: part.input,
-					feedback,
-					stream: (mutation) => {
-						ToolStreamService.mutate(part.id, mutation);
-					},
-					context: {
-						user,
-						chat,
-						messages,
-						timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-						interactive,
-					},
-					abort,
-				}),
-				abort,
-			);
-
-			return {
-				type: "toolResult",
-				id: part.id,
-				name: part.name,
-				error: false,
-				output: output.map((value) => ({
-					...value,
-					id: CommonUtils.getRandomId(),
-				})),
-			};
-		} catch (error) {
-			return {
-				type: "toolResult",
-				id: part.id,
-				name: part.name,
-				error: true,
-				output: abort.aborted
-					? ToolCallUtils.getInterruption()
-					: [
-							{
-								type: "text",
-								value: CommonUtils.formatError({ error, details: true }),
-								id: CommonUtils.getRandomId(),
-							},
-						],
-			};
-		} finally {
-			ToolStreamService.clear(part.id);
-		}
 	},
 } as const;

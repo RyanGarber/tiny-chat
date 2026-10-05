@@ -10,7 +10,7 @@ import { StdinUtils } from "./StdinUtils.ts";
 const ESC = "\x1b";
 const click = `${ESC}[<0;10;20M`;
 const paste = (text: string) => `${ESC}[200~${text}${ESC}[201~`;
-const settle = () => new Promise((resolve) => setTimeout(resolve, 30));
+const settle = () => new Promise((resolve) => setTimeout(resolve, 500));
 
 const collect = async (chunks: (string | Buffer)[]) => {
 	const source = new PassThrough();

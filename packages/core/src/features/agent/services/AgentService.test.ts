@@ -6,7 +6,7 @@ import type {
 	zToolCallPart,
 } from "../../data/types/part.ts";
 import { TestProvider } from "../../provider/providers/model/TestProvider.ts";
-import type { Tool, Toolset } from "../../tool/types/tool.ts";
+import type { Tool, ToolFeedback, Toolset } from "../../tool/types/tool.ts";
 import { ToolCallUtils } from "../../tool/utils/ToolCallUtils.ts";
 import { AgentService } from "./AgentService.ts";
 
@@ -273,6 +273,7 @@ describe("AgentService", () => {
 		const gated = (options: {
 			sequential?: string[];
 			background?: string[];
+			approval?: string[];
 		}) => {
 			const log: string[] = [];
 			const gates = new Map<string, () => void>();
@@ -286,6 +287,9 @@ describe("AgentService", () => {
 						capabilities: undefined,
 						sequential: options.sequential?.includes(name),
 						background: options.background?.includes(name),
+						validate: async () => ({
+							approval: options.approval?.includes(name),
+						}),
 						execute: ({ abort }) => {
 							log.push(`start ${name}`);
 							return new Promise((resolve, reject) => {
@@ -316,8 +320,16 @@ describe("AgentService", () => {
 			prompt: string,
 			toolset: Toolset<void>,
 			abortSignal?: AbortSignal,
+			{
+				toolFeedback,
+				data = [],
+			}: {
+				toolFeedback?: Parameters<
+					typeof AgentService.generate
+				>[0]["toolFeedback"];
+				data?: zData;
+			} = {},
 		) => {
-			const data: zData = [];
 			const config = zConfig.parse({
 				provider: "test",
 				model: "test-generate",
@@ -335,6 +347,7 @@ describe("AgentService", () => {
 					env: {},
 					instructions: "Test",
 					options: { abortSignal },
+					toolFeedback,
 					context: {
 						user: { id: "test", name: "test", settings: {}, isEphemeral: true },
 						timezone: "UTC",
@@ -483,6 +496,194 @@ describe("AgentService", () => {
 				);
 			expect(report?.task?.error).toBe(true);
 			expect(ToolCallUtils.isInterruption(report?.value ?? [])).toBe(true);
+		});
+
+		describe("answering a call", () => {
+			/** Answers the generation waits on, given by the test. */
+			const answering = () => {
+				const waits = new Map<
+					string,
+					{ resolve: (answer: ToolFeedback) => void; signal: AbortSignal }
+				>();
+				const toolFeedback = ({
+					part,
+					signal,
+				}: {
+					part: zToolCallPart;
+					signal: AbortSignal;
+				}) =>
+					new Promise<ToolFeedback>((resolve, reject) => {
+						waits.set(part.name, { resolve, signal });
+						signal.addEventListener("abort", () => reject(signal.reason));
+					});
+				const answer = async (name: string, answer: ToolFeedback) => {
+					while (!waits.has(name)) await new Promise((r) => setTimeout(r, 5));
+					waits.get(name)?.resolve(answer);
+				};
+				return { toolFeedback, waits, answer };
+			};
+
+			const result = (data: zData, name: string) =>
+				data
+					.flat()
+					.find((part) => part.type === "toolResult" && part.name === name);
+
+			it("takes an answer while another call runs, and carries on", async () => {
+				const { toolset, log, release } = gated({ approval: ["write_file"] });
+				const { toolFeedback, answer } = answering();
+				const { data, events } = generate(
+					"!bench tools 1",
+					toolset,
+					undefined,
+					{
+						toolFeedback,
+					},
+				);
+				const done = drain(events);
+
+				// Answered with the other call still running, so it starts at once.
+				await answer("write_file", { approved: true });
+				await release("write_file");
+				await release("read_dir");
+				await done;
+
+				expect(log).toEqual([
+					"start read_dir",
+					"start write_file",
+					"end write_file",
+					"end read_dir",
+				]);
+				expect(result(data, "write_file")).toMatchObject({
+					output: [{ type: "text", value: "write_file done" }],
+				});
+				// No stop for the user: the model goes on after the results.
+				expect(data.flat().at(-1)?.type).toBe("text");
+			});
+
+			it("takes an answer while a background call runs", async () => {
+				const { toolset, log, release } = gated({
+					approval: ["read_dir"],
+					background: ["write_file"],
+				});
+				const { toolFeedback, answer } = answering();
+				const { data, events } = generate("!bench tasks", toolset, undefined, {
+					toolFeedback,
+				});
+				const done = drain(events);
+
+				// Nothing but the background call is running, and it is not in the way.
+				await answer("read_dir", { approved: true });
+				await release("read_dir");
+				while (
+					!data
+						.flat()
+						.some((part) => part.type === "text" && part.value.includes("<"))
+				)
+					await new Promise((r) => setTimeout(r, 5));
+				expect(log).toEqual([
+					"start write_file",
+					"start read_dir",
+					"end read_dir",
+				]);
+
+				await release("write_file");
+				await done;
+				expect(result(data, "read_dir")).toMatchObject({
+					output: [{ type: "text", value: "read_dir done" }],
+				});
+			});
+
+			it("rejects a call the user denies", async () => {
+				const { toolset, log, release } = gated({ approval: ["write_file"] });
+				const { toolFeedback, answer } = answering();
+				const { data, events } = generate(
+					"!bench tools 1",
+					toolset,
+					undefined,
+					{
+						toolFeedback,
+					},
+				);
+				const done = drain(events);
+
+				await answer("write_file", { approved: false });
+				await release("read_dir");
+				await done;
+
+				expect(log).toEqual(["start read_dir", "end read_dir"]);
+				const rejected = result(data, "write_file");
+				expect(
+					rejected?.type === "toolResult" &&
+						ToolCallUtils.isRejection(rejected.output),
+				).toBe(true);
+				expect(data.flat().at(-1)?.type).toBe("text");
+			});
+
+			it("stops waiting once nothing else runs, and ends", async () => {
+				const { toolset, release } = gated({ approval: ["write_file"] });
+				const { toolFeedback, waits } = answering();
+				const { data, events } = generate(
+					"!bench tools 1",
+					toolset,
+					undefined,
+					{
+						toolFeedback,
+					},
+				);
+				const done = drain(events);
+
+				await release("read_dir");
+				await done;
+
+				expect(waits.get("write_file")?.signal.aborted).toBe(true);
+				expect(result(data, "write_file")).toBeUndefined();
+				expect(result(data, "read_dir")).toBeDefined();
+				expect(data.flat().at(-1)?.type).toBe("toolResult");
+			});
+
+			it("resumes with an answer given ahead, and runs the call", async () => {
+				const { toolset, log, release } = gated({ approval: ["write_file"] });
+				const data: zData = [
+					[
+						{
+							type: "toolCall",
+							id: "write",
+							name: "write_file",
+							input: { path: "/a" },
+							validation: { approval: true },
+						},
+						{
+							type: "toolCall",
+							id: "read",
+							name: "read_dir",
+							input: { path: "/" },
+						},
+						{
+							type: "toolResult",
+							id: "read",
+							name: "read_dir",
+							output: [{ id: "out", type: "text", value: "read_dir done" }],
+						},
+					],
+				];
+				const { events } = generate("!bench tools 1", toolset, undefined, {
+					data,
+					toolFeedback: async () => ({ approved: true }),
+				});
+				const done = drain(events);
+
+				await release("write_file");
+				await done;
+
+				expect(log).toEqual(["start write_file", "end write_file"]);
+				// Results stay after the calls, in their order, before the reply.
+				expect(
+					data[0].map((part) =>
+						part.type === "toolResult" ? `result ${part.id}` : part.type,
+					),
+				).toEqual(["toolCall", "toolCall", "result write", "result read"]);
+				expect(data.flat().at(-1)?.type).toBe("text");
+			});
 		});
 	});
 });

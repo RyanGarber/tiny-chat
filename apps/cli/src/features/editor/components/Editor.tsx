@@ -21,11 +21,12 @@ import { type Key, useInput } from "ink";
 import { useContext, useEffect, useMemo, useRef } from "react";
 import { client } from "../../../client.ts";
 import Box from "../../../core/components/Box.tsx";
+import Panel from "../../../core/components/Panel.tsx";
 import type { Color } from "../../../core/hooks/useColor.ts";
-import { useMouseInput } from "../../../core/hooks/useMouseInput.ts";
 import { useWidth } from "../../../core/hooks/useWidth.ts";
 import { useWorkingStatus } from "../../../core/hooks/useWorkingStatus.ts";
 import { ClipboardService } from "../../../core/services/ClipboardService.ts";
+import { selectFocus, useAppStore } from "../../../core/stores/useAppStore.ts";
 import Textarea from "../../textarea/components/Textarea.tsx";
 import { TextareaUtils } from "../../textarea/utils/TextareaUtils.ts";
 import { useCodeHighlight } from "../hooks/useCodeHighlight.ts";
@@ -49,20 +50,23 @@ export default function Editor({
 	const { colorScheme } = useContext(ThemeContext);
 	const columns = useWidth();
 
-	const focusedFeedbackId = useEditorStore((s) => s.focusedFeedbackId);
+	const focus = useAppStore(selectFocus);
+	const cycleFocus = useAppStore((state) => state.cycleFocus);
 	const nextFeedbackId = useMessageStore((s) => s.nextFeedbackId);
-	const feedbackFocused =
-		!!nextFeedbackId && focusedFeedbackId === nextFeedbackId;
-	const { disabled } = useDisabled({ disabled: _disabled || feedbackFocused });
-	const { mouseRef: focusRef } = useMouseInput({
-		onClick: () => useEditorStore.setState({ focusedFeedbackId: null }),
+	const { disabled } = useDisabled({
+		disabled: _disabled || focus !== "editor",
 	});
 	// Feedback that turns up, live or by opening a chat that has some waiting,
-	// takes the focus so it can be answered right away.
+	// takes the focus from the editor so it can be answered right away — but
+	// not from a page or a panel the reader is busy in.
 	const previousFeedbackId = useRef<string | undefined>(undefined);
 	useEffect(() => {
-		if (nextFeedbackId && nextFeedbackId !== previousFeedbackId.current)
-			useEditorStore.setState({ focusedFeedbackId: nextFeedbackId });
+		if (nextFeedbackId && nextFeedbackId !== previousFeedbackId.current) {
+			const { setFocus } = useAppStore.getState();
+			const current = selectFocus(useAppStore.getState());
+			if (current === "editor" || current.startsWith("tool:"))
+				setFocus(`tool:${nextFeedbackId}`);
+		}
 		previousFeedbackId.current = nextFeedbackId;
 	}, [nextFeedbackId]);
 	const { config, modelArgs } = useConfig();
@@ -276,12 +280,14 @@ export default function Editor({
 
 	useInput(
 		(_, key) => {
-			// Tab indents the list or the code the cursor is in before it moves
-			// the focus anywhere.
-			if (key.tab && nextFeedbackId && (feedbackFocused || !indent(key)))
-				useEditorStore.setState({
-					focusedFeedbackId: feedbackFocused ? null : nextFeedbackId,
-				});
+			if (!key.tab) return;
+			// Shift+Tab keeps its project/suggestion shortcuts in the editor and
+			// tool controls. Completion and Markdown indentation take precedence
+			// while the editor has focus.
+			if (key.shift && (focus === "editor" || focus.startsWith("tool:")))
+				return;
+			if (focus === "editor" && (isNavigating || indent(key))) return;
+			cycleFocus(key.shift ? -1 : 1);
 		},
 		{ isActive: !_disabled },
 	);
@@ -321,21 +327,24 @@ export default function Editor({
 	};
 
 	return (
-		<>
-			<Commands
-				content={content}
-				setContent={setContent}
-				cursor={cursor}
-				setCursor={setCursor}
-			/>
-			<Attachments
-				content={content}
-				setContent={setContent}
-				cursor={cursor}
-				setCursor={setCursor}
-			/>
+		<Panel id="editor" disabled={_disabled}>
+			{!disabled && (
+				<>
+					<Commands
+						content={content}
+						setContent={setContent}
+						cursor={cursor}
+						setCursor={setCursor}
+					/>
+					<Attachments
+						content={content}
+						setContent={setContent}
+						cursor={cursor}
+						setCursor={setCursor}
+					/>
+				</>
+			)}
 			<Box
-				ref={(element) => focusRef(element, 0)}
 				alignItems="flex-end"
 				paddingX={2}
 				paddingY={1}
@@ -383,6 +392,6 @@ export default function Editor({
 				/>
 				<TokenUsage usage={usage} categories={categories} />
 			</Box>
-		</>
+		</Panel>
 	);
 }

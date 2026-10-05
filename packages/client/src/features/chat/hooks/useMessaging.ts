@@ -3,13 +3,11 @@ import type { ChatState } from "@tiny-chat/core/features/data/types/chat.ts";
 import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
 import type {
 	zData,
-	zDataPart,
 	zToolCallPart,
 } from "@tiny-chat/core/features/data/types/part.ts";
 import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
 import { ModelProviderService } from "@tiny-chat/core/features/provider/services/ModelProviderService.ts";
 import { ToolCallUtils } from "@tiny-chat/core/features/tool/utils/ToolCallUtils.ts";
-import { ToolUtils } from "@tiny-chat/core/features/tool/utils/ToolUtils.ts";
 import { useContext, useRef } from "react";
 import { ClientContext } from "../../../client.ts";
 import { useSession } from "../../../core/hooks/useSession.ts";
@@ -17,11 +15,11 @@ import { useConfig } from "../../agent/hooks/useConfig.ts";
 import { useProviders } from "../../agent/hooks/useProviders.ts";
 import { useSkills } from "../../agent/hooks/useSkills.ts";
 import { useTools } from "../../agent/hooks/useTools.ts";
-import { ClientAgentService } from "../../agent/services/ClientAgentService.ts";
 import { ClientMessageService } from "../../agent/services/ClientMessageService.ts";
 import { ClientProviderService } from "../../agent/services/ClientProviderService.ts";
 import { useStreamStore } from "../../agent/stores/useStreamStore.ts";
 import { MessageQueryService } from "../../message/services/MessageQueryService.ts";
+import { ToolFeedbackService } from "../../part/services/ToolFeedbackService.ts";
 import { useEmbeddingSettings } from "../../settings/hooks/useEmbeddingSettings.ts";
 import { ChatService } from "../services/ChatService.ts";
 import { MessagingService } from "../services/MessagingService.ts";
@@ -40,12 +38,26 @@ export const sendToolInputMutationKey = [
 	"sendToolFeedback",
 ] as const;
 
+/** Resolves once no generation is running in the chat. */
+const idle = (chatId: string) =>
+	new Promise<void>((resolve) => {
+		if (!useStreamStore.getState().chatAgentStreams.has(chatId)) {
+			resolve();
+			return;
+		}
+		const unsubscribe = useStreamStore.subscribe((state) => {
+			if (state.chatAgentStreams.has(chatId)) return;
+			unsubscribe();
+			resolve();
+		});
+	});
+
 export const useMessaging = () => {
 	const client = useContext(ClientContext);
 
 	const { chat } = useChat();
 	const { session } = useSession();
-	const { mcpTools, toolsets } = useTools();
+	const { mcpTools } = useTools();
 	const { skills } = useSkills();
 	const { providers } = useProviders();
 	const { embeddingConfig } = useEmbeddingSettings();
@@ -270,72 +282,58 @@ export const useMessaging = () => {
 				feedback,
 				approved,
 			);
+			const answer = { approved, feedback };
+
+			// A generation still running takes the answer as it goes.
+			if (ToolFeedbackService.give(part.id, answer)) return;
+
 			if (!session.data || !chat.data || !providers.data) return;
-			const { messages: branchMessages } =
-				await client.api.message.getMessages.query({
-					chat: chat.data,
-					start: seed.id,
-				});
-			const messages = branchMessages.slice(
-				0,
-				branchMessages.findIndex((m) => m.id === seed.id) + 1,
-			);
-			const message = messages.at(-1);
-			if (!message) throw new Error("missing message");
 
-			const { tool } = ToolUtils.find({ toolsets, part });
-			if (!tool) throw new Error(`tool ${part.name} not found`);
-
-			let result: zDataPart;
+			// One that is just ending does not, and the answer resumes the message
+			// it leaves behind rather than racing it.
+			await idle(seed.chatId);
 
 			if (part.validation?.approval && !approved) {
-				result = {
-					type: "toolResult",
-					id: part.id,
-					name: part.name,
-					error: true,
-					output: ToolCallUtils.getRejection(),
-				};
-			} else if (ToolCallUtils.isBackgrounded({ tool, part })) {
-				// The generation it resumes runs it, so the model can carry on.
-				result = {
-					type: "toolResult",
-					id: part.id,
-					name: part.name,
-					output: ToolCallUtils.getBackground({ id: part.id }),
-				};
-			} else {
-				result = {
-					...(await ClientAgentService.runTool({
-						client,
-						user: session.data.user,
-						chat: chat.data,
-						part,
-						feedback,
-						message: seed,
-						messages,
-						skills,
-						mcpTools: mcpTools.data ?? [],
-						interactive: true,
-					})),
-				};
+				await ClientMessageService.onMessage({
+					client,
+					user: session.data.user,
+					message: seed,
+					chat: chat.data,
+					toolResults: [
+						{
+							type: "toolResult",
+							id: part.id,
+							name: part.name,
+							error: true,
+							output: ToolCallUtils.getRejection(),
+						},
+					],
+					providers: providers.data,
+					skills,
+					mcpTools: mcpTools.data ?? [],
+				});
+				return;
 			}
 
-			await ClientMessageService.onMessage({
-				client,
-				user: session.data.user,
-				message: seed,
-				chat: chat.data,
-				toolResults: [result],
-				providers: providers.data,
-				skills,
-				mcpTools: mcpTools.data ?? [],
-				// An interrupted call waits for the user's next word, not the model's.
-				resume: !(
-					result.type === "toolResult" &&
-					ToolCallUtils.isInterruption(result.output)
-				),
-			});
+			// The generation it resumes runs it, and takes any other answers while
+			// it does.
+			ToolFeedbackService.hold(part.id, answer);
+			try {
+				await ClientMessageService.onMessage({
+					client,
+					user: session.data.user,
+					message: seed,
+					chat: chat.data,
+					providers: providers.data,
+					skills,
+					mcpTools: mcpTools.data ?? [],
+					toolResults: [],
+					answered: true,
+				});
+			} catch (error) {
+				ToolFeedbackService.settle(part.id);
+				throw error;
+			}
 		},
 	});
 

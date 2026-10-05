@@ -13,7 +13,6 @@ import { type EditorUnfolded, EditorUtils } from "../utils/EditorUtils.ts";
 interface EditorStore {
 	selection: TextareaSelection | null;
 	setSelection: (selection: TextareaSelection | null) => void;
-	focusedFeedbackId: string | null;
 
 	content: string;
 	setContent: (content: string) => void;
@@ -50,7 +49,6 @@ interface EditorStore {
 export const useEditorStore = create<EditorStore>((set, get) => ({
 	selection: null,
 	setSelection: (selection) => set({ selection }),
-	focusedFeedbackId: null,
 
 	content: "",
 	setContent: (content) => set({ content }),

@@ -12,6 +12,11 @@
 			"runtimeExecutable": "pnpm",
 			"runtimeArgs": ["dev:server"],
 			"port": 8009
+		},
+		{
+			"name": "cli (testing, no keyring)",
+			"runtimeExecutable": "pnpm",
+			"runtimeArgs": ["dev:cli", "--no-keyring"]
 		}
 	]
 }

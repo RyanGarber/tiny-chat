@@ -2,6 +2,8 @@
 
 import { type ChildProcess, spawn } from "node:child_process";
 import { watch } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { useServerProcess as startServerProcess } from "../../../scripts/use-server.ts";
 import {
 	print,
@@ -65,7 +67,10 @@ setExitHandler((isCtrlD) => {
 try {
 	await run();
 
-	for await (const event of watch("./src", { recursive: true })) {
+	const watchPath = join(dirname(fileURLToPath(import.meta.url)), "../src");
+	print({ message: `watching ${watchPath}` });
+
+	for await (const event of watch(watchPath, { recursive: true })) {
 		if (event.eventType === "change") {
 			print({ message: `↻ changes: ${event.filename}` });
 			await run();

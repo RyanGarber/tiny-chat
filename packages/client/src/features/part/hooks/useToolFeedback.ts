@@ -4,6 +4,7 @@ import type { ToolControls } from "@tiny-chat/core/features/tool/types/display.t
 import { useCallback, useState } from "react";
 import { useStreamStore } from "../../agent/stores/useStreamStore.ts";
 import { useMessaging } from "../../chat/hooks/useMessaging.ts";
+import { useToolFeedbackStore } from "../stores/useToolFeedbackStore.ts";
 
 /**
  * The state behind a tool call's controls: what the user has filled in, and
@@ -26,15 +27,18 @@ export const useToolFeedback = ({
 		setValues((previous) => ({ ...previous, [name]: value }));
 	}, []);
 
-	// A generation waits on its background calls before it ends, and feedback
-	// sent meanwhile would resume the message under it.
+	// A running generation takes an answer only while it is waiting on one;
+	// otherwise it is busy with the model, or ending.
 	const generating = useStreamStore((state) =>
 		state.chatAgentStreams.has(message.chatId),
 	);
+	const awaiting = useToolFeedbackStore((state) => state.awaiting.has(part.id));
+	const answered = useToolFeedbackStore((state) => state.answered.has(part.id));
 
 	// Nothing can be sent twice: the controls stay locked from the moment
-	// feedback is sent until the result it produces has been saved.
-	const locked = sendToolFeedback.isPending || generating;
+	// feedback is sent until the call it answers has settled.
+	const locked =
+		sendToolFeedback.isPending || answered || (generating && !awaiting);
 
 	const complete = controls.fields.every((field) => !!values[field.name]);
 

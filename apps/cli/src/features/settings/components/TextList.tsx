@@ -91,6 +91,9 @@ export default function TextList({
 		<Completions<{ items: TextItem[] }, TextItem>
 			groups={groups}
 			selectFirstOnChange={false}
+			// The text area wraps to the width it is given; a row sized to its
+			// content would give it only what it already holds.
+			itemProps={{ flexGrow: 1, flexShrink: 1 }}
 			onInput={({ item, key, input }) => {
 				// The text area takes every key while a draft is open.
 				if (draft) return false;

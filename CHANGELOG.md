@@ -1,3 +1,24 @@
+## [0.9.4](https://github.com/RyanGarber/tiny-chat/compare/0.9.3...0.9.4) (2026-10-05)
+
+### Features
+
+* `--no-keyring` option in cli ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2-2))
+* completions wrapping in cli ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2-3))
+* improved cli config editor ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2-5))
+* improved cli focus display ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2-1))
+* improved cli panels ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2))
+* improved tool execution loop ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2-8))
+* logic shell environment inheritance ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2-6))
+
+### Bug Fixes
+
+* cli text boxes not filling width ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2-7))
+
+### Performance Improvements
+
+* improve agentic coding prompting ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2-4))
+
+
 ## [0.9.3](https://github.com/RyanGarber/tiny-chat/compare/0.9.2...0.9.3) (2026-10-04)
 
 ### Features

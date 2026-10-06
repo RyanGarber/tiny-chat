@@ -1,11 +1,11 @@
-import type { RenderedPart } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
-import type { ToolCallDisplay } from "@tiny-chat/core/features/tool/types/display.ts";
-import { ToolCallUtils } from "@tiny-chat/core/features/tool/utils/ToolCallUtils.ts";
 import { useMemo } from "react";
-import { ToolStreamService } from "../../../core/services/StreamService.ts";
-import { useStream } from "../../agent/hooks/useStream.ts";
-import { useMessageStore } from "../../message/stores/useMessageStore.ts";
-import { useToolFeedbackStore } from "../stores/useToolFeedbackStore.ts";
+import { ToolStreamService } from "#client/core/services/StreamService.ts";
+import { useStream } from "#client/features/agent/hooks/useStream.ts";
+import { useMessageStore } from "#client/features/message/stores/useMessageStore.ts";
+import { useToolFeedbackStore } from "#client/features/part/stores/useToolFeedbackStore.ts";
+import type { RenderedPart } from "#core/features/data/utils/DataUtils.ts";
+import type { ToolCallDisplay } from "#core/features/tool/types/display.ts";
+import { ToolCallUtils } from "#core/features/tool/utils/ToolCallUtils.ts";
 
 /**
  * Everything a runtime needs to draw one tool call: its status line, and the

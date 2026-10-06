@@ -4,7 +4,7 @@
 		"lint": {
 			"dependsOn": ["^lint"]
 		},
-		"@tiny-chat/tauri#lint": {
+		"app#lint": {
 			"inputs": [
 				"src/**/*.rs",
 				"build.rs",
@@ -18,7 +18,7 @@
 		"typecheck": {
 			"dependsOn": ["^typecheck"]
 		},
-		"@tiny-chat/tauri#typecheck": {
+		"app#typecheck": {
 			"inputs": [
 				"src/**/*.rs",
 				"build.rs",
@@ -32,7 +32,7 @@
 		"test": {
 			"dependsOn": ["^test"]
 		},
-		"@tiny-chat/tauri#test": {
+		"app#test": {
 			"inputs": [
 				"src/**/*.rs",
 				"build.rs",

@@ -1,17 +1,17 @@
 import "./env.ts";
 
 import { createServer } from "node:http";
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import { createLogger } from "@tiny-chat/core/logger.ts";
 import { internalIpV4 } from "internal-ip";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { createLogger } from "#core/logger.ts";
+import { ApiService } from "#server/core/services/ApiService.ts";
+import { AuthService } from "#server/core/services/AuthService.ts";
+import { ActionRunnerService } from "#server/features/agent/services/ActionRunnerService.ts";
+import { DreamRunnerService } from "#server/features/agent/services/DreamRunnerService.ts";
+import { EmbeddingRunnerService } from "#server/features/embedding/services/EmbeddingRunnerService.ts";
+import { AntigravityService } from "#server/features/proxy/services/AntigravityService.ts";
+import { McpService } from "#server/features/proxy/services/McpService.ts";
 import { create, print } from "../../../scripts/use-stdout.ts";
-import { ApiService } from "./core/services/ApiService.ts";
-import { AuthService } from "./core/services/AuthService.ts";
-import { ActionRunnerService } from "./features/agent/services/ActionRunnerService.ts";
-import { DreamRunnerService } from "./features/agent/services/DreamRunnerService.ts";
-import { EmbeddingRunnerService } from "./features/embedding/services/EmbeddingRunnerService.ts";
-import { AntigravityService } from "./features/proxy/services/AntigravityService.ts";
-import { McpService } from "./features/proxy/services/McpService.ts";
 
 if (import.meta.main) {
 	createLogger({ logToDisk: true });

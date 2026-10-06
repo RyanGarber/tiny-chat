@@ -1,4 +1,4 @@
-import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
 
 /** Parent id -> selected child id; the empty key selects a root message. */
 export type MessageBranches = Record<string, string>;

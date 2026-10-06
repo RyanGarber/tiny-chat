@@ -1,176 +1,176 @@
 name: release-android
 
 on:
-    workflow_call:
-        inputs:
-            version:
-                description: 'Version number to use for the release tag/name'
-                required: true
-                type: string
-            notes:
-                description: 'Release notes/changelog to include in the release body'
-                required: false
-                type: string
-    workflow_dispatch:
-        inputs:
-            version:
-                description: 'Version number to use for the release tag/name (defaults to tauri.conf.json)'
-                required: false
-                type: string
-            notes:
-                description: 'Release notes/changelog to include in the release body'
-                required: false
-                type: string
+  workflow_call:
+    inputs:
+      version:
+        description: "Version number to use for the release tag/name"
+        required: true
+        type: string
+      notes:
+        description: "Release notes/changelog to include in the release body"
+        required: false
+        type: string
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version number to use for the release tag/name (defaults to tauri.conf.json)"
+        required: false
+        type: string
+      notes:
+        description: "Release notes/changelog to include in the release body"
+        required: false
+        type: string
 
 jobs:
-    release:
-        runs-on: ubuntu-latest
-        environment: production
-        permissions:
-            contents: write
+  release:
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: write
 
-        steps:
-            -   name: Checkout
-                uses: actions/checkout@v7
-                with:
-                    ref: ${{ inputs.version || github.ref }}
-                    submodules: recursive
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.version || github.ref }}
+          submodules: recursive
 
-            -   name: Install packages
-                run: |
-                    sudo apt-get update
-                    sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - name: Install packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
-            -   name: Install Rust
-                uses: dtolnay/rust-toolchain@stable
-                with:
-                    targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
-                    toolchain: stable
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+          toolchain: stable
 
-            -   name: Create cache key
-                id: rust-toolchain
-                run: echo "fingerprint=$(rustc -Vv | sha256sum | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+      - name: Create cache key
+        id: rust-toolchain
+        run: echo "fingerprint=$(rustc -Vv | sha256sum | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
 
-            -   name: Cache Cargo
-                uses: actions/cache@v6
-                with:
-                    path: |
-                        ~/.cargo/registry
-                        ~/.cargo/git
-                        apps/tauri/target
-                    key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.rust-toolchain.outputs.fingerprint }}-cargo-android-${{ hashFiles('apps/tauri/**/Cargo.lock', 'apps/tauri/build.rs', 'apps/tauri/build_support/**', 'apps/tauri/lib/afmize/Package.resolved') }}-${{ github.sha }}
-                    restore-keys: |
-                        ${{ runner.os }}-${{ runner.arch }}-${{ steps.rust-toolchain.outputs.fingerprint }}-cargo-android-${{ hashFiles('apps/tauri/**/Cargo.lock', 'apps/tauri/build.rs', 'apps/tauri/build_support/**', 'apps/tauri/lib/afmize/Package.resolved') }}-
-                        ${{ runner.os }}-${{ runner.arch }}-${{ steps.rust-toolchain.outputs.fingerprint }}-cargo-android-
+      - name: Cache Cargo
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            apps/app/target
+          key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.rust-toolchain.outputs.fingerprint }}-cargo-android-${{ hashFiles('apps/app/**/Cargo.lock', 'apps/app/build.rs', 'apps/app/build_support/**', 'lib/afmize/Package.resolved') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-${{ steps.rust-toolchain.outputs.fingerprint }}-cargo-android-${{ hashFiles('apps/app/**/Cargo.lock', 'apps/app/build.rs', 'apps/app/build_support/**', 'lib/afmize/Package.resolved') }}-
+            ${{ runner.os }}-${{ runner.arch }}-${{ steps.rust-toolchain.outputs.fingerprint }}-cargo-android-
 
-            -   name: Install Java
-                uses: actions/setup-java@v6
-                with:
-                    distribution: temurin
-                    java-version: '17'
-                    cache: gradle
-                    cache-dependency-path: |
-                        apps/tauri/gen/android/**/*.gradle*
-                        apps/tauri/gen/android/gradle/wrapper/gradle-wrapper.properties
+      - name: Install Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+          cache-dependency-path: |
+            apps/app/gen/android/**/*.gradle*
+            apps/app/gen/android/gradle/wrapper/gradle-wrapper.properties
 
-            -   name: Install Android SDK
-                uses: android-actions/setup-android@v4
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v4
 
-            -   name: Install NDK
-                run: sdkmanager "ndk;30.0.14904198"
+      - name: Install NDK
+        run: sdkmanager "ndk;30.0.14904198"
 
-            -   name: Install pnpm
-                uses: pnpm/action-setup@v6
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
 
-            -   name: Install Node
-                uses: actions/setup-node@v7
-                with:
-                    node-version: lts/*
-                    cache: pnpm
+      - name: Install Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: pnpm
 
-            -   name: Cache Turbo
-                uses: actions/cache@v6
-                with:
-                    path: .turbo
-                    key: ${{ runner.os }}-${{ runner.arch }}-turbo-release-android-${{ github.sha }}
-                    restore-keys: ${{ runner.os }}-${{ runner.arch }}-turbo-release-android-
+      - name: Cache Turbo
+        uses: actions/cache@v6
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-${{ runner.arch }}-turbo-release-android-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-turbo-release-android-
 
-            -   name: Create .env
-                run: |
-                    cat << EOF > .env
-                    PG_HOST=${{ secrets.PG_HOST }}
-                    PG_PORT=${{ secrets.PG_PORT }}
-                    PG_USER=${{ secrets.PG_USER }}
-                    PG_PASSWORD=${{ secrets.PG_PASSWORD }}
-                    PG_DATABASE=${{ secrets.PG_DATABASE }}
-                    VITE_SERVER_URL=${{ secrets.VITE_SERVER_URL }}
-                    VITE_SERVER_PORT=${{ secrets.VITE_SERVER_PORT }}
-                    VITE_WEB_URL=${{ secrets.VITE_WEB_URL }}
-                    VITE_WEB_PORT=${{ secrets.VITE_WEB_PORT }}
-                    AUTH_GITHUB_CLIENT=${{ secrets.AUTH_GITHUB_CLIENT }}
-                    AUTH_GITHUB_SECRET=${{ secrets.AUTH_GITHUB_SECRET }}
-                    AUTH_GOOGLE_CLIENT=${{ secrets.AUTH_GOOGLE_CLIENT }}
-                    AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}
-                    AUTH_HUGGINGFACE_CLIENT=${{ secrets.AUTH_HUGGINGFACE_CLIENT }}
-                    AUTH_HUGGINGFACE_SECRET=${{ secrets.AUTH_HUGGINGFACE_SECRET }}
-                    EOF
+      - name: Create .env
+        run: |
+          cat << EOF > .env
+          PG_HOST=${{ secrets.PG_HOST }}
+          PG_PORT=${{ secrets.PG_PORT }}
+          PG_USER=${{ secrets.PG_USER }}
+          PG_PASSWORD=${{ secrets.PG_PASSWORD }}
+          PG_DATABASE=${{ secrets.PG_DATABASE }}
+          VITE_SERVER_URL=${{ secrets.VITE_SERVER_URL }}
+          VITE_SERVER_PORT=${{ secrets.VITE_SERVER_PORT }}
+          VITE_WEB_URL=${{ secrets.VITE_WEB_URL }}
+          VITE_WEB_PORT=${{ secrets.VITE_WEB_PORT }}
+          AUTH_GITHUB_CLIENT=${{ secrets.AUTH_GITHUB_CLIENT }}
+          AUTH_GITHUB_SECRET=${{ secrets.AUTH_GITHUB_SECRET }}
+          AUTH_GOOGLE_CLIENT=${{ secrets.AUTH_GOOGLE_CLIENT }}
+          AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}
+          AUTH_HUGGINGFACE_CLIENT=${{ secrets.AUTH_HUGGINGFACE_CLIENT }}
+          AUTH_HUGGINGFACE_SECRET=${{ secrets.AUTH_HUGGINGFACE_SECRET }}
+          EOF
 
-            -   name: Install dependencies
-                run: pnpm ci
+      - name: Install dependencies
+        run: pnpm ci
 
-            -   name: Build project
-                env:
-                    NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/30.0.14904198
-                run: pnpm --filter @tiny-chat/tauri run tauri android build --apk --split-per-abi
+      - name: Build project
+        env:
+          NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/30.0.14904198
+        run: pnpm --filter app run tauri android build --apk --split-per-abi
 
-            -   name: Package APKs
-                run: |
-                    APK_DIR="apps/tauri/gen/android/app/build/outputs/apk"
-                    OUTPUT="$RUNNER_TEMP/Tiny.Chat_Android.zip"
-                    find "$APK_DIR" -name "*-unsigned.apk" | while read -r apk; do
-                      echo "Found: $apk"
-                    done
-                    find "$APK_DIR" -name "*-unsigned.apk" -exec zip -9 -j "$OUTPUT" {} +
-                    echo "Archive size: $(du -sh "$OUTPUT" | cut -f1)"
+      - name: Package APKs
+        run: |
+          APK_DIR="apps/app/gen/android/app/build/outputs/apk"
+          OUTPUT="$RUNNER_TEMP/Tiny.Chat_Android.zip"
+          find "$APK_DIR" -name "*-unsigned.apk" | while read -r apk; do
+            echo "Found: $apk"
+          done
+          find "$APK_DIR" -name "*-unsigned.apk" -exec zip -9 -j "$OUTPUT" {} +
+          echo "Archive size: $(du -sh "$OUTPUT" | cut -f1)"
 
-            -   name: Resolve version
-                id: version
-                run: |
-                    VERSION="${{ inputs.version }}"
-                    if [ -z "$VERSION" ]; then
-                      VERSION=$(node -pe "require('./apps/tauri/tauri.conf.json').version")
-                    fi
-                    echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Resolve version
+        id: version
+        run: |
+          VERSION="${{ inputs.version }}"
+          if [ -z "$VERSION" ]; then
+            VERSION=$(node -pe "require('./apps/app/tauri.conf.json').version")
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-            -   name: Upload release asset
-                env:
-                    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                    GH_REPO: ${{ github.repository }}
-                    VERSION: ${{ steps.version.outputs.version }}
-                    NOTES: ${{ inputs.notes }}
-                run: |
-                    # Ensure a published release exists. Create is best-effort: another
-                    # job (desktop/create-release) may win the race; treat that as success.
-                    if ! gh release view "$VERSION" >/dev/null 2>&1; then
-                      NOTES_FILE=$(mktemp)
-                      printf '%s' "$NOTES" > "$NOTES_FILE"
-                      if ! gh release create "$VERSION" \
-                          --title "$VERSION" \
-                          --notes-file "$NOTES_FILE"; then
-                        gh release view "$VERSION" >/dev/null 2>&1 \
-                          || { echo "Failed to create or find release $VERSION"; exit 1; }
-                        echo "Release $VERSION already exists (create race), continuing"
-                      fi
-                    fi
+      - name: Upload release asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ steps.version.outputs.version }}
+          NOTES: ${{ inputs.notes }}
+        run: |
+          # Ensure a published release exists. Create is best-effort: another
+          # job (desktop/create-release) may win the race; treat that as success.
+          if ! gh release view "$VERSION" >/dev/null 2>&1; then
+            NOTES_FILE=$(mktemp)
+            printf '%s' "$NOTES" > "$NOTES_FILE"
+            if ! gh release create "$VERSION" \
+                --title "$VERSION" \
+                --notes-file "$NOTES_FILE"; then
+              gh release view "$VERSION" >/dev/null 2>&1 \
+                || { echo "Failed to create or find release $VERSION"; exit 1; }
+              echo "Release $VERSION already exists (create race), continuing"
+            fi
+          fi
 
-                    # Brief wait for API visibility after a concurrent create.
-                    for attempt in 1 2 3 4 5; do
-                      gh release view "$VERSION" >/dev/null 2>&1 && break
-                      if [ "$attempt" -eq 5 ]; then
-                        echo "Release $VERSION not visible after waiting"
-                        exit 1
-                      fi
-                      sleep "$attempt"
-                    done
+          # Brief wait for API visibility after a concurrent create.
+          for attempt in 1 2 3 4 5; do
+            gh release view "$VERSION" >/dev/null 2>&1 && break
+            if [ "$attempt" -eq 5 ]; then
+              echo "Release $VERSION not visible after waiting"
+              exit 1
+            fi
+            sleep "$attempt"
+          done
 
-                    gh release upload "$VERSION" "$RUNNER_TEMP/Tiny.Chat_Android.zip" --clobber
+          gh release upload "$VERSION" "$RUNNER_TEMP/Tiny.Chat_Android.zip" --clobber

@@ -1,10 +1,10 @@
 import { zPlainDateTime } from "temporal-zod";
 import z from "zod";
-import { Enum } from "../../../core/services/PostgresService.ts";
-import { zId } from "../../../core/types/common.ts";
-import { zConfig } from "../../data/types/message.ts";
-import { zData, zDataPart, zMetadata } from "../../data/types/part.ts";
-import { zSettings, zUser } from "../../data/types/user.ts";
+import { Enum } from "#core/core/services/PostgresService.ts";
+import { zId } from "#core/core/types/common.ts";
+import { zConfig } from "#core/features/data/types/message.ts";
+import { zData, zDataPart, zMetadata } from "#core/features/data/types/part.ts";
+import { zSettings, zUser } from "#core/features/data/types/user.ts";
 
 /**
  * The chat a generation belongs to. `id` is null while the chat is still a

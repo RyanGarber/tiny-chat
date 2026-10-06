@@ -1,6 +1,6 @@
-import type { ThemeUtils } from "@tiny-chat/core/core/utils/ThemeUtils.ts";
 import { createContext, createElement, type ReactNode, useMemo } from "react";
-import { useThemes } from "../../features/settings/hooks/useThemes.ts";
+import { useThemes } from "#client/features/settings/hooks/useThemes.ts";
+import type { ThemeUtils } from "#core/core/utils/ThemeUtils.ts";
 
 export type ColorPalette = [
 	string,

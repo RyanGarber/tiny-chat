@@ -1,11 +1,11 @@
-import type { zAttachmentPart } from "@tiny-chat/core/features/data/types/part.ts";
-import { useAtomStore } from "../stores/useAtomStore.ts";
+import { useAtomStore } from "#client/features/editor/stores/useAtomStore.ts";
 import {
 	type EditorPart,
 	useEditorPartStore,
-} from "../stores/useEditorPartStore.ts";
-import { AtomUtils } from "./AtomUtils.ts";
-import { PASTE_LINE_LIMIT } from "./PasteUtils.ts";
+} from "#client/features/editor/stores/useEditorPartStore.ts";
+import { AtomUtils } from "#client/features/editor/utils/AtomUtils.ts";
+import { PASTE_LINE_LIMIT } from "#client/features/editor/utils/PasteUtils.ts";
+import type { zAttachmentPart } from "#core/features/data/types/part.ts";
 
 let next = 0;
 
@@ -82,53 +82,64 @@ describe("AtomUtils", () => {
 		expect(paste()).toBe(`[${PASTE_LINE_LIMIT} pasted lines]`);
 	});
 
-	it("writes every atom back out as the pointer it stands for", () => {
+	it("cuts the buffer into its text and the parts its atoms stand for", () => {
 		const file = attachment("src/index.ts", { id: "file" });
 		const pasted = paste("pasted");
 
 		expect(
-			AtomUtils.serialize({ content: `look at ${file} and ${pasted}` }),
-		).toBe('look at :attachment[]{id="file"} and \n::paste{id="pasted"}\n');
+			AtomUtils.toData({ content: `look at ${file} and\n${pasted}` }).map(
+				(part) => (part.type === "text" ? part.value : part.id),
+			),
+		).toEqual(["look at ", "file", " and\n", "pasted"]);
 	});
 
-	it("takes the pointers of a message back into atoms", () => {
-		useEditorPartStore.getState().setParts([
+	it("writes a message back out as a buffer of atoms", () => {
+		const parts = [
+			{ id: "t1", type: "text" as const, value: "run " },
+			{ id: "cmd", type: "command" as const, name: "model", argument: "opus" },
+			{ id: "t2", type: "text" as const, value: " on " },
 			{
 				id: "file",
-				type: "attachment",
+				type: "attachment" as const,
 				source: "src/index.ts",
 				label: "index.ts",
-				content: { type: "file", mime: "", data: "" },
+				content: { type: "file" as const, mime: "", data: "" },
 			},
-			{ id: "cmd", type: "command", name: "model", argument: "opus" },
-		]);
+		];
 
-		const markdown = 'run :command[]{id="cmd"} on :attachment[]{id="file"}';
-		const content = AtomUtils.deserialize(markdown);
-
+		const content = AtomUtils.fromData([parts]);
 		expect(content).toBe("run /model opus on @index.ts");
-		expect(AtomUtils.serialize({ content })).toBe(markdown);
+		expect(
+			AtomUtils.toData({ content }).map((part) =>
+				part.type === "text" ? part.value : part.id,
+			),
+		).toEqual(["run ", "cmd", " on ", "file"]);
 	});
 
-	it("takes an upload's name back out of its attachment pointer", () => {
-		useEditorPartStore.getState().setParts([
-			{
-				id: "upload",
-				type: "attachment",
-				source: "/mnt/chat/aaaaaaaaaaaaaaaaaaaaaaaa",
-				label: "notes.pdf",
-				content: { type: "directory", items: [] },
-			},
+	it("stands an upload as its name rather than its id", () => {
+		expect(
+			AtomUtils.fromData([
+				[
+					{ id: "t", type: "text", value: "see " },
+					{
+						id: "upload",
+						type: "attachment",
+						source: "/mnt/chat/aaaaaaaaaaaaaaaaaaaaaaaa",
+						label: "notes.pdf",
+						content: { type: "directory", items: [] },
+					},
+				],
+			]),
+		).toBe("see @notes.pdf/");
+	});
+
+	it("leaves an atom whose part has gone as the text it stood as", () => {
+		const file = attachment("src/index.ts", { id: "file" });
+		useEditorPartStore.getState().setParts([]);
+
+		expect(AtomUtils.toData({ content: `see ${file}` })).toMatchObject([
+			{ type: "text", value: "see @index.ts" },
 		]);
-		expect(AtomUtils.deserialize('see :attachment[]{id="upload"}')).toBe(
-			"see @notes.pdf/",
-		);
-	});
-
-	it("leaves a pointer with nothing behind it as it was written", () => {
-		expect(AtomUtils.deserialize('see :attachment[]{id="gone"}')).toBe(
-			'see :attachment[]{id="gone"}',
-		);
 	});
 
 	it("drops the atoms the buffer no longer holds", () => {

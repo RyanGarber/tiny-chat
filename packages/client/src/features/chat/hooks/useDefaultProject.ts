@@ -1,9 +1,9 @@
 import { useContext, useEffect, useRef } from "react";
-import { ClientContext } from "../../../client.ts";
-import { ChatService } from "../services/ChatService.ts";
-import { useChatStore } from "../stores/useChatStore.ts";
-import { useMessagingStore } from "../stores/useMessagingStore.ts";
-import { useChatList } from "./useChatList.ts";
+import { ClientContext } from "#client/client.ts";
+import { useChatList } from "#client/features/chat/hooks/useChatList.ts";
+import { ChatService } from "#client/features/chat/services/ChatService.ts";
+import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
+import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
 
 /**
  * Once the project list loads, selects the first project whose primary folder

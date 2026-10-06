@@ -1,11 +1,11 @@
 import type {
 	ActionsCapability,
 	CapabilityFactory,
-} from "@tiny-chat/core/core/types/capability.ts";
-import { CapabilityUtils } from "@tiny-chat/core/core/utils/CapabilityUtils.ts";
-import type { MessageLike } from "@tiny-chat/core/features/data/types/message.ts";
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
-import { ActionService } from "../../features/chat/services/ActionService.ts";
+} from "#core/core/types/capability.ts";
+import { CapabilityUtils } from "#core/core/utils/CapabilityUtils.ts";
+import type { MessageLike } from "#core/features/data/types/message.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import { ActionService } from "#server/features/chat/services/ActionService.ts";
 
 export const createActionsCapability: CapabilityFactory<
 	{ user: zUser; message?: MessageLike | null },

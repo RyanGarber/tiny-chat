@@ -1,28 +1,28 @@
-import type { zAgentMessage } from "@tiny-chat/core/features/agent/types/agent.ts";
-import { AgentUtils } from "@tiny-chat/core/features/agent/utils/AgentUtils.ts";
-import type { ChatState } from "@tiny-chat/core/features/data/types/chat.ts";
-import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
+import type { Client } from "#client/client.ts";
+import { AgentStreamService } from "#client/core/services/StreamService.ts";
+import { ClientAgentService } from "#client/features/agent/services/ClientAgentService.ts";
+import { ChatService } from "#client/features/chat/services/ChatService.ts";
+import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
+import { useMessageQueueStore } from "#client/features/chat/stores/useMessageQueueStore.ts";
+import { MessageQueryService } from "#client/features/message/services/MessageQueryService.ts";
+import { UserService } from "#client/features/user/services/UserService.ts";
+import type { zAgentMessage } from "#core/features/agent/types/agent.ts";
+import { AgentUtils } from "#core/features/agent/utils/AgentUtils.ts";
+import type { ChatState } from "#core/features/data/types/chat.ts";
+import type { MessageState } from "#core/features/data/types/message.ts";
 import type {
 	zData,
 	zDataPart,
 	zMetadata,
-} from "@tiny-chat/core/features/data/types/part.ts";
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
-import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
+} from "#core/features/data/types/part.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import { DataUtils } from "#core/features/data/utils/DataUtils.ts";
 import type {
 	ProviderState,
 	ProviderStatus,
-} from "@tiny-chat/core/features/provider/types/provider.ts";
-import type { zSkill } from "@tiny-chat/core/features/skill/types/skill.ts";
-import type { Toolset } from "@tiny-chat/core/features/tool/types/tool.ts";
-import type { Client } from "../../../client.ts";
-import { AgentStreamService } from "../../../core/services/StreamService.ts";
-import { ChatService } from "../../chat/services/ChatService.ts";
-import { useChatStore } from "../../chat/stores/useChatStore.ts";
-import { useMessageQueueStore } from "../../chat/stores/useMessageQueueStore.ts";
-import { MessageQueryService } from "../../message/services/MessageQueryService.ts";
-import { UserService } from "../../user/services/UserService.ts";
-import { ClientAgentService } from "./ClientAgentService.ts";
+} from "#core/features/provider/types/provider.ts";
+import type { zSkill } from "#core/features/skill/types/skill.ts";
+import type { Toolset } from "#core/features/tool/types/tool.ts";
 
 /**
  * Agent orchestration for messages.

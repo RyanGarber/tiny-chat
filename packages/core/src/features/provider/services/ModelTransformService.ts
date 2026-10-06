@@ -1,15 +1,21 @@
 import type { FilePart, ModelMessage, TextStreamPart } from "ai";
 import { z } from "zod";
-import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
-import { AgentMessagesService } from "../../agent/services/AgentMessagesService.ts";
-import type { zAgentEvent } from "../../agent/types/agent.ts";
-import { AgentUtils } from "../../agent/utils/AgentUtils.ts";
-import type { zConfig } from "../../data/types/message.ts";
-import { type zDataPart, zDataSimplePart } from "../../data/types/part.ts";
-import type { zUser } from "../../data/types/user.ts";
-import { ToolCallUtils } from "../../tool/utils/ToolCallUtils.ts";
-import type { ModelProvider, zModelMessage } from "../types/model.ts";
-import { ModelProviderUtils } from "../utils/ModelProviderUtils.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { AgentMessagesService } from "#core/features/agent/services/AgentMessagesService.ts";
+import type { zAgentEvent } from "#core/features/agent/types/agent.ts";
+import { AgentUtils } from "#core/features/agent/utils/AgentUtils.ts";
+import type { zConfig } from "#core/features/data/types/message.ts";
+import {
+	type zDataPart,
+	zDataSimplePart,
+} from "#core/features/data/types/part.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import type {
+	ModelProvider,
+	zModelMessage,
+} from "#core/features/provider/types/model.ts";
+import { ModelProviderUtils } from "#core/features/provider/utils/ModelProviderUtils.ts";
+import { ToolCallUtils } from "#core/features/tool/utils/ToolCallUtils.ts";
 
 type SdkPart =
 	| Exclude<Exclude<ModelMessage["content"][number], string>, FilePart>

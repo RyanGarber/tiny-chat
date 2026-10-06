@@ -1,9 +1,9 @@
 import type {
 	CapabilityFactory,
 	GitHubCapability,
-} from "@tiny-chat/core/core/types/capability.ts";
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
-import { GitHubApiService } from "../../features/proxy/services/GitHubApiService.ts";
+} from "#core/core/types/capability.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import { GitHubApiService } from "#server/features/proxy/services/GitHubApiService.ts";
 
 export const createGitHubCapability: CapabilityFactory<
 	{ user: zUser; preferLinkedAccount: boolean },

@@ -3,10 +3,6 @@
 import "./db.ts";
 
 import { inferPrismaClient } from "@ryangarber/better-auth-adapter-prisma/client";
-import { JsonService } from "@tiny-chat/core/core/services/JsonService.ts";
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
-import type { userFields } from "@tiny-chat/core/prisma/better-auth-adapter.ts";
 import { createTRPCClient, httpLink } from "@trpc/client";
 import { createAuthClient } from "better-auth/client";
 import {
@@ -14,8 +10,12 @@ import {
 	inferAdditionalFields,
 } from "better-auth/client/plugins";
 import { beforeAll, inject } from "vitest";
-import type { ApiRouter } from "./core/utils/ApiRouter.ts";
-import type { AuthServer } from "./core/utils/AuthServer.ts";
+import { JsonService } from "#core/core/services/JsonService.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import type { userFields } from "#core/prisma/better-auth-adapter.ts";
+import type { ApiRouter } from "#server/core/utils/ApiRouter.ts";
+import type { AuthServer } from "#server/core/utils/AuthServer.ts";
 
 const nextId = () => crypto.getRandomValues(new Uint8Array(24)).join("");
 

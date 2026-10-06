@@ -4,9 +4,9 @@ import {
 	type Tool,
 	type Transport,
 } from "@modelcontextprotocol/client";
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import type { zMCPServers } from "@tiny-chat/core/features/data/types/user.ts";
-import type { Client } from "../../../client.ts";
+import type { Client } from "#client/client.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import type { zMCPServers } from "#core/features/data/types/user.ts";
 
 export type McpServerSetting = NonNullable<zMCPServers>[string];
 

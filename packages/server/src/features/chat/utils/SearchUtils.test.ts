@@ -1,4 +1,4 @@
-import { SearchUtils } from "./SearchUtils.ts";
+import { SearchUtils } from "#server/features/chat/utils/SearchUtils.ts";
 
 describe("SearchUtils", () => {
 	it("normalizes and deduplicates transcript words", () => {

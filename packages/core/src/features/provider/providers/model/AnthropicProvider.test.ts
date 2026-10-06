@@ -1,7 +1,7 @@
 import type { TextStreamPart } from "ai";
-import { mockConfig, mockUser } from "../../../../tests.ts";
-import type { zDataPart } from "../../../data/types/part.ts";
-import { AnthropicProvider } from "./AnthropicProvider.ts";
+import type { zDataPart } from "#core/features/data/types/part.ts";
+import { AnthropicProvider } from "#core/features/provider/providers/model/AnthropicProvider.ts";
+import { mockConfig, mockUser } from "#core/tests.ts";
 
 describe("AnthropicProvider", () => {
 	it("stores signatures", () => {

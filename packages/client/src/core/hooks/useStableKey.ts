@@ -1,29 +1,23 @@
-import type { Capabilities } from "@tiny-chat/core/core/types/capability.ts";
+import { useMemo } from "react";
+import type { McpServer } from "#client/features/agent/hooks/useMcp.ts";
+import type { Capabilities } from "#core/core/types/capability.ts";
 import type {
 	zAgentChat,
 	zAgentMessage,
-} from "@tiny-chat/core/features/agent/types/agent.ts";
+} from "#core/features/agent/types/agent.ts";
 import type {
 	MessageState,
 	zConfig,
-} from "@tiny-chat/core/features/data/types/message.ts";
-import type {
-	zData,
-	zDataPart,
-} from "@tiny-chat/core/features/data/types/part.ts";
-import type {
-	zMCPServers,
-	zSettings,
-} from "@tiny-chat/core/features/data/types/user.ts";
+} from "#core/features/data/types/message.ts";
+import type { zData, zDataPart } from "#core/features/data/types/part.ts";
+import type { zMCPServers, zSettings } from "#core/features/data/types/user.ts";
 import type {
 	ProviderState,
 	ProviderStatus,
-} from "@tiny-chat/core/features/provider/types/provider.ts";
-import type { zSkill } from "@tiny-chat/core/features/skill/types/skill.ts";
-import type { Toolset } from "@tiny-chat/core/features/tool/types/tool.ts";
-import { ToolUtils } from "@tiny-chat/core/features/tool/utils/ToolUtils.ts";
-import { useMemo } from "react";
-import type { McpServer } from "../../features/agent/hooks/useMcp.ts";
+} from "#core/features/provider/types/provider.ts";
+import type { zSkill } from "#core/features/skill/types/skill.ts";
+import type { Toolset } from "#core/features/tool/types/tool.ts";
+import { ToolUtils } from "#core/features/tool/utils/ToolUtils.ts";
 
 /** A compact, order-stable fingerprint for large query inputs. */
 export function getValueKey(value: unknown): string {

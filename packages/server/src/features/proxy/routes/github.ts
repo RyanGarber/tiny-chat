@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { procedure, router } from "../../../index.ts";
-import { GitHubApiService } from "../services/GitHubApiService.ts";
+import { GitHubApiService } from "#server/features/proxy/services/GitHubApiService.ts";
+import { procedure, router } from "#server/index.ts";
 
 export const github = router({
 	request: procedure

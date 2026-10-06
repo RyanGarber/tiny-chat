@@ -1,10 +1,17 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { FileUtils } from "@tiny-chat/core/features/file/utils/FileUtils.ts";
-import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
-import type { zSkill } from "@tiny-chat/core/features/skill/types/skill.ts";
-import { SkillUtils } from "@tiny-chat/core/features/skill/utils/SkillUtils.ts";
 import { useContext, useMemo } from "react";
-import { ClientContext } from "../../../client.ts";
+import { ClientContext } from "#client/client.ts";
+import { FileOperationService } from "#core/features/file/services/FileOperationService.ts";
+import { FileSearchService } from "#core/features/file/services/FileSearchService.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
+import type { zSkill } from "#core/features/skill/types/skill.ts";
+import { SkillUtils } from "#core/features/skill/utils/SkillUtils.ts";
+
+/** Where local skills live, a directory each. */
+const LOCAL_SKILLS_PATH = "~/.agents/skills";
+
+/** Bytes of a SKILL.md read; only its frontmatter is parsed. */
+const MAX_SKILL_MD_BYTES = 256_000;
 
 export const localSkillsQueryKey = ["skills", "local"] as const;
 export const nativeSkillsQueryKey = ["skills", "native"] as const;
@@ -15,65 +22,86 @@ export const useSkills = () => {
 	const localSkills = useQuery({
 		queryKey: localSkillsQueryKey,
 		queryFn: async () => {
-			const skills: zSkill[] = [];
+			const shell = client.shell;
+			if (!shell) return [];
 
-			if (client.shell) {
-				console.log("[useSkills] reading local skills");
+			// One walk and one read, rather than a `readDir` per directory and a
+			// `readFile` per file: only each skill's SKILL.md is parsed.
+			let walked: Awaited<ReturnType<typeof FileSearchService.walk>>;
+			try {
+				walked = await FileSearchService.walk({
+					shell,
+					path: LOCAL_SKILLS_PATH,
+					scope: "listing",
+					includeDirectories: true,
+					gitignore: false,
+				});
+			} catch {
+				// No skills directory, so no local skills.
+				return [];
+			}
 
-				const walk = async (path: string) => {
-					const files: { path: string; data: string }[] = [];
-
-					const items = (await client.shell?.readDir({ path })) ?? [];
-
-					for (const item of items) {
-						if (item.is_dir) {
-							files.push(...(await walk(item.path)));
-						} else {
-							const file = await client.shell?.readFile({
-								path: item.path,
-							});
-							if (file) {
-								files.push({
-									...file,
-									data: FileUtils.getBase64FromBytes(file),
-								});
-							}
-						}
-					}
-
-					return files;
-				};
-
-				const paths = (
-					await client.shell.readDir({
-						path: "~/.agents/skills",
-					})
-				).filter((e) => e.is_dir);
-
-				console.log(
-					"[useSkills] reading local skills from:",
-					paths.map((p) => p.path).join(","),
+			// Each directory under the root is a skill; its SKILL.md is the
+			// shallowest one in it.
+			const found = new Map<
+				string,
+				{ path: string; skillMd?: { path: string; depth: number } }
+			>();
+			for (const entry of walked.entries) {
+				const [name, ...rest] = PathUtils.split(
+					PathUtils.relative({ base: walked.root, path: entry.path }),
 				);
-				for (const { path } of paths) {
+				if (!name) continue;
+				if (!rest.length) {
+					if (entry.is_dir) found.set(name, { path: entry.path });
+					continue;
+				}
+				const skill = found.get(name);
+				if (
+					!skill ||
+					entry.is_dir ||
+					rest.at(-1)?.toLowerCase() !== "skill.md" ||
+					(skill.skillMd && skill.skillMd.depth <= rest.length)
+				)
+					continue;
+				skill.skillMd = { path: entry.path, depth: rest.length };
+			}
+
+			const local = [...found.values()];
+			const reads = local.flatMap(({ skillMd }) =>
+				skillMd ? [skillMd.path] : [],
+			);
+			const data = await FileOperationService.readFiles({
+				shell,
+				paths: reads,
+				maxBytes: MAX_SKILL_MD_BYTES,
+			});
+			const read = new Map(reads.map((path, index) => [path, data[index]]));
+
+			const skills: zSkill[] = [];
+			for (const { path, skillMd } of local) {
+				let skill: zSkill | null = null;
+				const file = skillMd && read.get(skillMd.path);
+				if (skillMd && file) {
 					try {
-						const skill = SkillUtils.buildSkill({
-							files: await walk(path),
+						skill = SkillUtils.buildSkill({
+							files: [{ path: skillMd.path, data: file.data }],
 						});
-						skills.push(
-							skill ?? {
-								path,
-								name: "",
-								description: "Error: unrecognized format",
-								attributes: {},
-							},
-						);
 					} catch (error) {
 						console.warn("failed to build local skill:", error);
 					}
 				}
+				skills.push(
+					skill ?? {
+						path,
+						name: "",
+						description: "Error: unrecognized format",
+						attributes: {},
+					},
+				);
 			}
 
-			console.log("[Skill Service] built local skills:", skills);
+			console.log("[useSkills] built local skills:", skills);
 			return skills;
 		},
 		staleTime: Infinity,

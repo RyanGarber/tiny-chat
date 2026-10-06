@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
-import { zServerEnv } from "@tiny-chat/core/core/types/env.ts";
 import { config } from "dotenv";
 import { z } from "zod";
+import { zServerEnv } from "#core/core/types/env.ts";
 
 config({ path: resolve(import.meta.dirname, "../../../.env"), quiet: true });
 

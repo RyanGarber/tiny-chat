@@ -1,6 +1,6 @@
-import type { zData } from "@tiny-chat/core/features/data/types/part.ts";
 import { create } from "zustand";
-import { getPartsKey } from "../../../core/hooks/useStableKey.ts";
+import { getPartsKey } from "#client/core/hooks/useStableKey.ts";
+import type { zData } from "#core/features/data/types/part.ts";
 
 interface DraftStore {
 	/** The message being written, kept as the same `zData` a saved one carries. */

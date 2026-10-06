@@ -1,9 +1,9 @@
 import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
-import type { Enum } from "@tiny-chat/core/core/services/PostgresService.ts";
 import { useContext } from "react";
-import { ClientContext } from "../../../client.ts";
-import { MessagingService } from "../../chat/services/MessagingService.ts";
-import { UserService } from "../../user/services/UserService.ts";
+import { ClientContext } from "#client/client.ts";
+import { MessagingService } from "#client/features/chat/services/MessagingService.ts";
+import { UserService } from "#client/features/user/services/UserService.ts";
+import type { Enum } from "#core/core/services/PostgresService.ts";
 
 export const githubUploadsQueryKey = ["useUploads", "githubUploads"] as const;
 export const uploadMutationKey = ["useUploads", "upload"] as const;

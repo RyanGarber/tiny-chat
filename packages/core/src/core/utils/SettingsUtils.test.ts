@@ -1,6 +1,6 @@
 import { expect } from "vitest";
-import type { zSettings } from "../../features/data/types/user.ts";
-import { SettingsUtils } from "./SettingsUtils.ts";
+import { SettingsUtils } from "#core/core/utils/SettingsUtils.ts";
+import type { zSettings } from "#core/features/data/types/user.ts";
 
 describe("SettingsUtils", () => {
 	it("merges folder settings into user settings", () => {

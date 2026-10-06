@@ -1,4 +1,4 @@
-import type { CompletionItem } from "../types/completion.ts";
+import type { CompletionItem } from "#client/features/editor/types/completion.ts";
 
 /** Letters and digits only: the characters a name is matched on. */
 const compact = (value: string) =>

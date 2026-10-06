@@ -8,11 +8,11 @@
  * block) is dropped without being tokenized.
  */
 
+import { HighlightService } from "#core/core/services/HighlightService.ts";
 import type {
 	HighlightRequest,
 	HighlightResponse,
-} from "../utils/CodeUtils.ts";
-import { HighlightService } from "./HighlightService.ts";
+} from "#core/core/utils/CodeUtils.ts";
 
 const scope = globalThis as unknown as {
 	onmessage: ((event: { data: HighlightRequest }) => void) | null;

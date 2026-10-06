@@ -1,5 +1,5 @@
-import { FileOperationService } from "./FileOperationService.ts";
-import { createShell } from "./FileSearchService.test.ts";
+import { FileOperationService } from "#core/features/file/services/FileOperationService.ts";
+import { createShell } from "#core/features/file/services/FileSearchService.test.ts";
 
 describe("FileOperationService", () => {
 	it("searches file paths and text recursively while excluding dependencies", async () => {

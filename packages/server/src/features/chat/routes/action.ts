@@ -1,9 +1,9 @@
-import { zId } from "@tiny-chat/core/core/types/common.ts";
-import { MessageLike } from "@tiny-chat/core/features/data/types/message.ts";
-import { zData } from "@tiny-chat/core/features/data/types/part.ts";
 import z from "zod";
-import { procedure, router } from "../../../index.ts";
-import { ActionService } from "../services/ActionService.ts";
+import { zId } from "#core/core/types/common.ts";
+import { MessageLike } from "#core/features/data/types/message.ts";
+import { zData } from "#core/features/data/types/part.ts";
+import { ActionService } from "#server/features/chat/services/ActionService.ts";
+import { procedure, router } from "#server/index.ts";
 
 export const action = router({
 	getActions: procedure.query(async ({ ctx }) => {

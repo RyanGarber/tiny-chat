@@ -1,9 +1,9 @@
-import type { Enum } from "@tiny-chat/core/core/services/PostgresService.ts";
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
-import type { FileState } from "@tiny-chat/core/features/file/types/file.ts";
-import type { UploadState } from "@tiny-chat/core/features/file/types/upload.ts";
-import { FileUtils } from "@tiny-chat/core/features/file/utils/FileUtils.ts";
-import { UploadFileService } from "./UploadFileService.ts";
+import type { Enum } from "#core/core/services/PostgresService.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import type { FileState } from "#core/features/file/types/file.ts";
+import type { UploadState } from "#core/features/file/types/upload.ts";
+import { FileUtils } from "#core/features/file/utils/FileUtils.ts";
+import { UploadFileService } from "#server/features/upload/services/UploadFileService.ts";
 
 /**
  * Upload management.

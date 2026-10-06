@@ -1,10 +1,10 @@
-import { Enum } from "@tiny-chat/core/core/services/PostgresService.ts";
-import { zId } from "@tiny-chat/core/core/types/common.ts";
-import type { zUploadResult } from "@tiny-chat/core/features/file/types/upload.ts";
 import { z } from "zod";
-import { procedure, router } from "../../../index.ts";
-import { GitHubService } from "../services/GitHubService.ts";
-import { UploadService } from "../services/UploadService.ts";
+import { Enum } from "#core/core/services/PostgresService.ts";
+import { zId } from "#core/core/types/common.ts";
+import type { zUploadResult } from "#core/features/file/types/upload.ts";
+import { GitHubService } from "#server/features/upload/services/GitHubService.ts";
+import { UploadService } from "#server/features/upload/services/UploadService.ts";
+import { procedure, router } from "#server/index.ts";
 
 export const upload = router({
 	getUploads: procedure

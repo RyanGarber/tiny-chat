@@ -1,8 +1,11 @@
-import type { zToolCallPart, zToolResultPart } from "../../data/types/part.ts";
-import { SourceUtils } from "../../data/utils/SourceUtils.ts";
-import { createGitHubToolset } from "../tools/github.ts";
-import { GitHubSourceUtils } from "./GitHubSourceUtils.ts";
-import { ToolCallUtils } from "./ToolCallUtils.ts";
+import type {
+	zToolCallPart,
+	zToolResultPart,
+} from "#core/features/data/types/part.ts";
+import { SourceUtils } from "#core/features/data/utils/SourceUtils.ts";
+import { createGitHubToolset } from "#core/features/tool/tools/github.ts";
+import { GitHubSourceUtils } from "#core/features/tool/utils/GitHubSourceUtils.ts";
+import { ToolCallUtils } from "#core/features/tool/utils/ToolCallUtils.ts";
 
 const root = "https://github.com/acme/tool";
 const author = { name: "A", login: "a", date: "2026-01-01" };

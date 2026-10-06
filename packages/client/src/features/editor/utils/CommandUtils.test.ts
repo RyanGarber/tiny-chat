@@ -1,5 +1,5 @@
-import type { CommandGroup } from "../types/command.ts";
-import { CommandUtils } from "./CommandUtils.ts";
+import type { CommandGroup } from "#client/features/editor/types/command.ts";
+import { CommandUtils } from "#client/features/editor/utils/CommandUtils.ts";
 
 describe("CommandUtils", () => {
 	it("matches command names without typing punctuation", () => {

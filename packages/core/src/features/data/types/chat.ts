@@ -1,6 +1,6 @@
 import { z } from "zod";
+import type { Model } from "#core/core/services/PostgresService.ts";
 import type { FieldOutputTypes } from "../../../../generated/prisma/contract.d.ts";
-import type { Model } from "../../../core/services/PostgresService.ts";
 
 export type ProjectState = FieldOutputTypes["public"]["Project"] & {
 	chats: ChatState[];

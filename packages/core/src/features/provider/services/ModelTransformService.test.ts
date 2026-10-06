@@ -1,7 +1,7 @@
-import { zConfig } from "../../data/types/message.ts";
-import type { zData } from "../../data/types/part.ts";
-import { TestProvider } from "../providers/model/TestProvider.ts";
-import { ModelTransformService } from "./ModelTransformService.ts";
+import { zConfig } from "#core/features/data/types/message.ts";
+import type { zData } from "#core/features/data/types/part.ts";
+import { TestProvider } from "#core/features/provider/providers/model/TestProvider.ts";
+import { ModelTransformService } from "#core/features/provider/services/ModelTransformService.ts";
 
 it("keeps interjections between tool results and subsequent assistant content as user messages", async () => {
 	const data: zData = [

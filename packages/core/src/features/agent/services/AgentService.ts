@@ -1,11 +1,21 @@
 import { parsePartialJson } from "ai";
 import type { z } from "zod";
-import type { Capabilities } from "../../../core/types/capability.ts";
-import type { zEnv } from "../../../core/types/env.ts";
-import type { StreamMutation } from "../../../core/types/stream.ts";
-import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
-import { VERBOSE } from "../../../logger.ts";
-import type { zConfig } from "../../data/types/message.ts";
+import type { Capabilities } from "#core/core/types/capability.ts";
+import type { zEnv } from "#core/core/types/env.ts";
+import type { StreamMutation } from "#core/core/types/stream.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { AgentInstructionsService } from "#core/features/agent/services/AgentInstructionsService.ts";
+import { AgentMessagesService } from "#core/features/agent/services/AgentMessagesService.ts";
+import {
+	AgentTokensService,
+	type CompactionResult,
+} from "#core/features/agent/services/AgentTokensService.ts";
+import type {
+	zAgentContext,
+	zAgentEvent,
+} from "#core/features/agent/types/agent.ts";
+import { AgentUtils } from "#core/features/agent/utils/AgentUtils.ts";
+import type { zConfig } from "#core/features/data/types/message.ts";
 import type {
 	zData,
 	zDataPart,
@@ -13,29 +23,22 @@ import type {
 	zMetadata,
 	zToolCallPart,
 	zToolResultPart,
-} from "../../data/types/part.ts";
+} from "#core/features/data/types/part.ts";
 import {
 	ModelProviderService,
 	type RunLanguageModelOptions,
-} from "../../provider/services/ModelProviderService.ts";
-import type { ModelProvider } from "../../provider/types/model.ts";
-import type { zSkill } from "../../skill/types/skill.ts";
+} from "#core/features/provider/services/ModelProviderService.ts";
+import type { ModelProvider } from "#core/features/provider/types/model.ts";
+import type { zSkill } from "#core/features/skill/types/skill.ts";
 import type {
 	Tool,
 	ToolDefinition,
 	ToolFeedback,
 	Toolset,
-} from "../../tool/types/tool.ts";
-import { ToolCallUtils } from "../../tool/utils/ToolCallUtils.ts";
-import { ToolUtils } from "../../tool/utils/ToolUtils.ts";
-import type { zAgentContext, zAgentEvent } from "../types/agent.ts";
-import { AgentUtils } from "../utils/AgentUtils.ts";
-import { AgentInstructionsService } from "./AgentInstructionsService.ts";
-import { AgentMessagesService } from "./AgentMessagesService.ts";
-import {
-	AgentTokensService,
-	type CompactionResult,
-} from "./AgentTokensService.ts";
+} from "#core/features/tool/types/tool.ts";
+import { ToolCallUtils } from "#core/features/tool/utils/ToolCallUtils.ts";
+import { ToolUtils } from "#core/features/tool/utils/ToolUtils.ts";
+import { VERBOSE } from "#core/logger.ts";
 
 /** How often a streaming tool call's partial input is re-parsed. */
 const PARTIAL_INPUT_MS = 50;

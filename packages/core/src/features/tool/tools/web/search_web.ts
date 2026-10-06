@@ -1,8 +1,12 @@
 import { z } from "zod";
-import type { WebCapability } from "../../../../core/types/capability.ts";
-import { zWebContext } from "../../../provider/types/web.ts";
-import type { ToolDisplay } from "../../types/display.ts";
-import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
+import type { WebCapability } from "#core/core/types/capability.ts";
+import { zWebContext } from "#core/features/provider/types/web.ts";
+import type { ToolDisplay } from "#core/features/tool/types/display.ts";
+import type {
+	Tool,
+	ToolDefinition,
+	ToolFactory,
+} from "#core/features/tool/types/tool.ts";
 
 export const search_web = {
 	name: "search_web",

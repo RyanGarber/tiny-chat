@@ -1,9 +1,9 @@
 import "temporal-polyfill/full/global";
 
-import { zConfig } from "./features/data/types/message.ts";
-import type { zUser } from "./features/data/types/user.ts";
-import { TestProvider } from "./features/provider/providers/model/TestProvider.ts";
-import type { ModelProvider } from "./features/provider/types/model.ts";
+import { zConfig } from "#core/features/data/types/message.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import { TestProvider } from "#core/features/provider/providers/model/TestProvider.ts";
+import type { ModelProvider } from "#core/features/provider/types/model.ts";
 
 export function mockUser(overrides: Partial<zUser> = {}): zUser {
 	return {

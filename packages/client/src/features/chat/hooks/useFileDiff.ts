@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { FileUtils } from "@tiny-chat/core/features/file/utils/FileUtils.ts";
-import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import { useContext, useMemo } from "react";
-import { ClientContext } from "../../../client.ts";
-import { GitService } from "../services/GitService.ts";
-import type { GitRepo } from "../types/chatFiles.ts";
+import { ClientContext } from "#client/client.ts";
+import { GitService } from "#client/features/chat/services/GitService.ts";
+import type { GitRepo } from "#client/features/chat/types/chatFiles.ts";
+import { FileUtils } from "#core/features/file/utils/FileUtils.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
 
 /**
  * A file on the machine against its last commit, or null when git has nothing

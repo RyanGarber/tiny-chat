@@ -1,4 +1,4 @@
-import { ShellUtils } from "./ShellUtils.ts";
+import { ShellUtils } from "#core/features/tool/utils/ShellUtils.ts";
 
 describe("ShellUtils", () => {
 	it.each([
@@ -211,7 +211,7 @@ describe("ShellUtils", () => {
 	});
 
 	it("loads through the package bundler", async () => {
-		const module = await import("./ShellUtils.ts");
+		const module = await import("#core/features/tool/utils/ShellUtils.ts");
 		expect(module.ShellUtils.isSafe("pwd")).toBe(true);
 	});
 });

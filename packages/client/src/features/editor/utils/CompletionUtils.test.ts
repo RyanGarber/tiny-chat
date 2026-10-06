@@ -1,5 +1,5 @@
-import type { CompletionItem } from "../types/completion.ts";
-import { CompletionUtils } from "./CompletionUtils.ts";
+import type { CompletionItem } from "#client/features/editor/types/completion.ts";
+import { CompletionUtils } from "#client/features/editor/utils/CompletionUtils.ts";
 
 describe("CompletionUtils", () => {
 	it("orders exact, prefix, and substring matches intuitively", () => {

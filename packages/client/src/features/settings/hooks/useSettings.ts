@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import type { ProjectLike } from "@tiny-chat/core/features/data/types/chat.ts";
-import { zSettings } from "@tiny-chat/core/features/data/types/user.ts";
 import { useCallback, useContext } from "react";
-import { ClientContext } from "../../../client.ts";
-import { sessionQueryKey, useSession } from "../../../core/hooks/useSession.ts";
-import { ChatService } from "../../chat/services/ChatService.ts";
+import { ClientContext } from "#client/client.ts";
+import { sessionQueryKey, useSession } from "#client/core/hooks/useSession.ts";
+import { ChatService } from "#client/features/chat/services/ChatService.ts";
+import type { ProjectLike } from "#core/features/data/types/chat.ts";
+import { zSettings } from "#core/features/data/types/user.ts";
 
 export const settingsQueryKey = ["useSettings", "settings"] as const;
 

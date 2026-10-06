@@ -1,5 +1,5 @@
-import { testUser } from "../../../tests.ts";
-import { SettingsService } from "./SettingsService.ts";
+import { SettingsService } from "#server/features/user/services/SettingsService.ts";
+import { testUser } from "#server/tests.ts";
 
 const user = testUser();
 

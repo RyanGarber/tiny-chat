@@ -4,12 +4,12 @@ import type {
 	ThemedToken,
 	TokensResult,
 } from "shiki";
-import { flourite } from "../../index.ts";
 import {
 	CODE_LANGUAGE_ALIASES,
 	CODE_LANGUAGES,
 	CODE_THEMES,
-} from "./CodeMetadata.ts";
+} from "#core/core/utils/CodeMetadata.ts";
+import { flourite } from "#core/index.ts";
 
 type CodeLanguage = BundledLanguage;
 type CodeTheme = BundledTheme;

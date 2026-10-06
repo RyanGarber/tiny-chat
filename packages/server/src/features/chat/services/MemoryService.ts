@@ -1,9 +1,10 @@
-import type { Enum } from "@tiny-chat/core/core/services/PostgresService.ts";
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import type { MessageLike } from "@tiny-chat/core/features/data/types/message.ts";
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
-import { MemoryUtils } from "../utils/MemoryUtils.ts";
-import { MemoryRetrievalService } from "./MemoryRetrievalService.ts";
+import type { Enum } from "#core/core/services/PostgresService.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import type { ChatLike } from "#core/features/data/types/chat.ts";
+import type { MessageLike } from "#core/features/data/types/message.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import { MemoryRetrievalService } from "#server/features/chat/services/MemoryRetrievalService.ts";
+import { MemoryUtils } from "#server/features/chat/utils/MemoryUtils.ts";
 
 type MemoryInput = {
 	user: zUser;
@@ -20,6 +21,38 @@ export const MemoryService = {
 		(
 			await globalThis.db.orm.public.Memory.where({ userId: user.id }).all()
 		).map(MemoryUtils.toMemoryState),
+
+	/** Memories learned from the chat's messages, or retrieved into them. */
+	getChatMemoryIds: async ({ user, chat }: { user: zUser; chat: ChatLike }) => {
+		if (typeof chat === "string") chat = { id: chat };
+
+		const messageIds = (
+			await globalThis.db.orm.public.Message.where({
+				chatId: chat.id,
+				userId: user.id,
+			})
+				.select("id")
+				.all()
+		).map((message) => message.id);
+		if (!messageIds.length) return [];
+		const [learned, retrieved] = await Promise.all([
+			globalThis.db.orm.public.Memory.where({ userId: user.id })
+				.where((memory) => memory.messageId.in(messageIds))
+				.select("id")
+				.all(),
+			globalThis.db.orm.public.MessageContext.where((context) =>
+				context.messageId.in(messageIds),
+			)
+				.select("memoryId")
+				.all(),
+		]);
+		return [
+			...new Set([
+				...learned.map((memory) => memory.id),
+				...retrieved.map((context) => context.memoryId),
+			]),
+		];
+	},
 
 	createMemory: async (input: MemoryInput) => MemoryService.saveMemory(input),
 	updateMemory: async (input: MemoryInput & { id: string }) =>

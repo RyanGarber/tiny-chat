@@ -1,157 +1,157 @@
-name: 'release-desktop'
+name: "release-desktop"
 
 on:
-    workflow_call:
-        inputs:
-            version:
-                description: 'Version number to use for the release tag/name'
-                required: true
-                type: string
-            notes:
-                description: 'Release notes/changelog to include in the release body'
-                required: false
-                type: string
-    workflow_dispatch:
-        inputs:
-            version:
-                description: 'Version number to use for the release tag/name (defaults to tauri.conf.json)'
-                required: false
-                type: string
-            notes:
-                description: 'Release notes/changelog to include in the release body'
-                required: false
-                type: string
+  workflow_call:
+    inputs:
+      version:
+        description: "Version number to use for the release tag/name"
+        required: true
+        type: string
+      notes:
+        description: "Release notes/changelog to include in the release body"
+        required: false
+        type: string
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version number to use for the release tag/name (defaults to tauri.conf.json)"
+        required: false
+        type: string
+      notes:
+        description: "Release notes/changelog to include in the release body"
+        required: false
+        type: string
 
 jobs:
-    release:
-        permissions:
-            contents: write
-        strategy:
-            fail-fast: false
-            matrix:
-                include:
-                    -   platform: 'xcode-27'
-                        cache_target: aarch64-apple-darwin
-                        args: '--target aarch64-apple-darwin'
-                    -   platform: 'ubuntu-latest'
-                        cache_target: x86_64-unknown-linux-gnu
-                        args: ''
-                    -   platform: 'windows-latest'
-                        cache_target: x86_64-pc-windows-msvc
-                        args: ''
+  release:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: "xcode-27"
+            cache_target: aarch64-apple-darwin
+            args: "--target aarch64-apple-darwin"
+          - platform: "ubuntu-latest"
+            cache_target: x86_64-unknown-linux-gnu
+            args: ""
+          - platform: "windows-latest"
+            cache_target: x86_64-pc-windows-msvc
+            args: ""
 
-        runs-on: ${{ matrix.platform }}
-        environment: production
+    runs-on: ${{ matrix.platform }}
+    environment: production
 
-        steps:
-            -   name: Checkout
-                uses: actions/checkout@v7
-                with:
-                    ref: ${{ inputs.version || github.ref }}
-                    submodules: recursive
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.version || github.ref }}
+          submodules: recursive
 
-            -   name: Install packages
-                if: matrix.platform == 'ubuntu-latest'
-                run: |
-                    sudo apt-get update
-                    sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - name: Install packages
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
-            -   name: Install Rust
-                uses: dtolnay/rust-toolchain@stable
-                with:
-                    targets: ${{ matrix.platform == 'xcode-27' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
-                    toolchain: stable
-                    components: llvm-tools
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'xcode-27' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+          toolchain: stable
+          components: llvm-tools
 
-            -   name: Create cache key
-                id: rust-toolchain
-                shell: bash
-                run: |
-                    checksum=(shasum -a 256)
-                    if command -v sha256sum >/dev/null 2>&1; then
-                      checksum=(sha256sum)
-                    fi
-                    fingerprint=$({
-                      rustc -Vv
-                      if command -v xcodebuild >/dev/null 2>&1; then
-                        xcodebuild -version
-                        xcrun --sdk macosx --show-sdk-version
-                      fi
-                    } | "${checksum[@]}" | cut -d ' ' -f 1)
-                    echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+      - name: Create cache key
+        id: rust-toolchain
+        shell: bash
+        run: |
+          checksum=(shasum -a 256)
+          if command -v sha256sum >/dev/null 2>&1; then
+            checksum=(sha256sum)
+          fi
+          fingerprint=$({
+            rustc -Vv
+            if command -v xcodebuild >/dev/null 2>&1; then
+              xcodebuild -version
+              xcrun --sdk macosx --show-sdk-version
+            fi
+          } | "${checksum[@]}" | cut -d ' ' -f 1)
+          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
 
-            -   name: Cache Cargo
-                uses: actions/cache@v6
-                with:
-                    path: |
-                        ~/.cargo/registry
-                        ~/.cargo/git
-                        apps/tauri/target
-                    key: ${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_target }}-${{ steps.rust-toolchain.outputs.fingerprint }}-cargo-desktop-${{ hashFiles('apps/tauri/**/Cargo.lock', 'apps/tauri/build.rs', 'apps/tauri/build_support/**', 'apps/tauri/lib/afmize/Package.resolved') }}-${{ github.sha }}
-                    restore-keys: |
-                        ${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_target }}-${{ steps.rust-toolchain.outputs.fingerprint }}-cargo-desktop-${{ hashFiles('apps/tauri/**/Cargo.lock', 'apps/tauri/build.rs', 'apps/tauri/build_support/**', 'apps/tauri/lib/afmize/Package.resolved') }}-
-                        ${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_target }}-${{ steps.rust-toolchain.outputs.fingerprint }}-cargo-desktop-
+      - name: Cache Cargo
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            apps/app/target
+          key: ${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_target }}-${{ steps.rust-toolchain.outputs.fingerprint }}-cargo-desktop-${{ hashFiles('apps/app/**/Cargo.lock', 'apps/app/build.rs', 'apps/app/build_support/**', 'lib/afmize/Package.resolved') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_target }}-${{ steps.rust-toolchain.outputs.fingerprint }}-cargo-desktop-${{ hashFiles('apps/app/**/Cargo.lock', 'apps/app/build.rs', 'apps/app/build_support/**', 'lib/afmize/Package.resolved') }}-
+            ${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_target }}-${{ steps.rust-toolchain.outputs.fingerprint }}-cargo-desktop-
 
-            -   name: Install pnpm
-                uses: pnpm/action-setup@v6
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
 
-            -   name: Install Node
-                uses: actions/setup-node@v7
-                with:
-                    node-version: lts/*
-                    cache: pnpm
+      - name: Install Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: pnpm
 
-            -   name: Cache Turbo
-                uses: actions/cache@v6
-                with:
-                    path: .turbo
-                    key: ${{ runner.os }}-${{ runner.arch }}-turbo-release-desktop-${{ matrix.cache_target }}-${{ github.sha }}
-                    restore-keys: ${{ runner.os }}-${{ runner.arch }}-turbo-release-desktop-${{ matrix.cache_target }}-
+      - name: Cache Turbo
+        uses: actions/cache@v6
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-${{ runner.arch }}-turbo-release-desktop-${{ matrix.cache_target }}-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-turbo-release-desktop-${{ matrix.cache_target }}-
 
-            -   name: Create .env
-                shell: bash
-                run: |
-                    cat << EOF > .env
-                    PG_HOST=${{ secrets.PG_HOST }}
-                    PG_PORT=${{ secrets.PG_PORT }}
-                    PG_USER=${{ secrets.PG_USER }}
-                    PG_PASSWORD=${{ secrets.PG_PASSWORD }}
-                    PG_DATABASE=${{ secrets.PG_DATABASE }}
-                    VITE_SERVER_URL=${{ secrets.VITE_SERVER_URL }}
-                    VITE_SERVER_PORT=${{ secrets.VITE_SERVER_PORT }}
-                    VITE_WEB_URL=${{ secrets.VITE_WEB_URL }}
-                    VITE_WEB_PORT=${{ secrets.VITE_WEB_PORT }}
-                    AUTH_GITHUB_CLIENT=${{ secrets.AUTH_GITHUB_CLIENT }}
-                    AUTH_GITHUB_SECRET=${{ secrets.AUTH_GITHUB_SECRET }}
-                    AUTH_GOOGLE_CLIENT=${{ secrets.AUTH_GOOGLE_CLIENT }}
-                    AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}
-                    AUTH_HUGGINGFACE_CLIENT=${{ secrets.AUTH_HUGGINGFACE_CLIENT }}
-                    AUTH_HUGGINGFACE_SECRET=${{ secrets.AUTH_HUGGINGFACE_SECRET }}
-                    EOF
+      - name: Create .env
+        shell: bash
+        run: |
+          cat << EOF > .env
+          PG_HOST=${{ secrets.PG_HOST }}
+          PG_PORT=${{ secrets.PG_PORT }}
+          PG_USER=${{ secrets.PG_USER }}
+          PG_PASSWORD=${{ secrets.PG_PASSWORD }}
+          PG_DATABASE=${{ secrets.PG_DATABASE }}
+          VITE_SERVER_URL=${{ secrets.VITE_SERVER_URL }}
+          VITE_SERVER_PORT=${{ secrets.VITE_SERVER_PORT }}
+          VITE_WEB_URL=${{ secrets.VITE_WEB_URL }}
+          VITE_WEB_PORT=${{ secrets.VITE_WEB_PORT }}
+          AUTH_GITHUB_CLIENT=${{ secrets.AUTH_GITHUB_CLIENT }}
+          AUTH_GITHUB_SECRET=${{ secrets.AUTH_GITHUB_SECRET }}
+          AUTH_GOOGLE_CLIENT=${{ secrets.AUTH_GOOGLE_CLIENT }}
+          AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}
+          AUTH_HUGGINGFACE_CLIENT=${{ secrets.AUTH_HUGGINGFACE_CLIENT }}
+          AUTH_HUGGINGFACE_SECRET=${{ secrets.AUTH_HUGGINGFACE_SECRET }}
+          EOF
 
-            -   name: Install dependencies
-                run: pnpm ci
+      - name: Install dependencies
+        run: pnpm ci
 
-            -   name: Resolve version
-                shell: bash
-                id: version
-                run: |
-                    VERSION="${{ inputs.version }}"
-                    if [ -z "$VERSION" ]; then
-                      VERSION=$(node -pe "require('./apps/tauri/tauri.conf.json').version")
-                    fi
-                    echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Resolve version
+        shell: bash
+        id: version
+        run: |
+          VERSION="${{ inputs.version }}"
+          if [ -z "$VERSION" ]; then
+            VERSION=$(node -pe "require('./apps/app/tauri.conf.json').version")
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-            -   name: Create release
-                uses: tauri-apps/tauri-action@v1
-                env:
-                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                    TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-                    TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-                with:
-                    tagName: ${{ steps.version.outputs.version }}
-                    releaseName: ${{ steps.version.outputs.version }}
-                    releaseBody: ${{ inputs.notes }}
-                    projectPath: ./apps/tauri
-                    args: ${{ matrix.args }}
-                    updaterJsonPreferNsis: true
+      - name: Create release
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ steps.version.outputs.version }}
+          releaseName: ${{ steps.version.outputs.version }}
+          releaseBody: ${{ inputs.notes }}
+          projectPath: ./apps/app
+          args: ${{ matrix.args }}
+          updaterJsonPreferNsis: true

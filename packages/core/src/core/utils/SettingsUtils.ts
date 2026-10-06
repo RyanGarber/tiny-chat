@@ -1,6 +1,6 @@
-import { zSettings } from "../../features/data/types/user.ts";
-import { ThemeUtils } from "./ThemeUtils.ts";
-import { TypeUtils } from "./TypeUtils.ts";
+import { ThemeUtils } from "#core/core/utils/ThemeUtils.ts";
+import { TypeUtils } from "#core/core/utils/TypeUtils.ts";
+import { zSettings } from "#core/features/data/types/user.ts";
 
 type zSettingsWithDefaults = Required<zSettings>;
 

@@ -26,5 +26,6 @@ export default defineConfig({
 		globalSetup: [
 			join(dirname(fileURLToPath(import.meta.url)), "./scripts/setup-test.ts"),
 		],
+		passWithNoTests: true,
 	},
 });

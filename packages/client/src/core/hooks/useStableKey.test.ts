@@ -1,7 +1,11 @@
-import type { Toolset } from "@tiny-chat/core/features/tool/types/tool.ts";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { getPartsKey, getToolsetsKey, getValueKey } from "./useStableKey.ts";
+import {
+	getPartsKey,
+	getToolsetsKey,
+	getValueKey,
+} from "#client/core/hooks/useStableKey.ts";
+import type { Toolset } from "#core/features/tool/types/tool.ts";
 
 describe("useStableKey", () => {
 	it("changes when a middle part changes without changing its length", () => {

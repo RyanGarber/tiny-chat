@@ -1,46 +1,20 @@
-import "./env.ts";
-
-import { Command } from "@commander-js/extra-typings";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { ClientContext } from "@tiny-chat/client/client.ts";
-import ThemeContextProvider from "@tiny-chat/client/core/components/ThemeContext.tsx";
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import { createLogger } from "@tiny-chat/core/logger.ts";
 import { render } from "ink";
-import { InkPictureProvider } from "ink-picture";
-import tauri from "../../tauri/tauri.conf.json" with { type: "json" };
-import { client } from "./client.ts";
-import App from "./core/components/App.tsx";
-import { TokenService } from "./core/services/TokenService.ts";
-import { StdinUtils } from "./core/utils/StdinUtils.ts";
+import { client } from "#cli/client.ts";
+import { TokenService } from "#cli/core/services/TokenService.ts";
+import { ClientContext } from "#client/client.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import Root from "#tui/core/components/Root.tsx";
+import { StdinUtils } from "#tui/core/utils/StdinUtils.ts";
 
-createLogger({
-	logToDisk: true,
-	silent: !CommonUtils.isTruthy(process.env.DEV),
-});
-
-const cli = new Command()
-	.name("tiny-chat")
-	.description("Tiny Chat in the terminal.")
-	.version(
-		tauri.version + (CommonUtils.isTruthy(process.env.DEV) ? "-dev" : ""),
-	)
-	.option(
-		"--no-keyring",
-		"Store the session token in a plain-text OS temp file instead of the keyring",
-	);
-
-cli.action((options) => {
-	if (options.keyring === false) TokenService.enableTempFile();
+export async function main(keyring: boolean | undefined) {
+	if (keyring === false) TokenService.enableTempFile();
 	const stdin = StdinUtils.filter(process.stdin);
+
 	const instance = render(
 		<QueryClientProvider client={client.queryClient}>
 			<ClientContext value={client}>
-				<ThemeContextProvider>
-					<InkPictureProvider>
-						<App />
-					</InkPictureProvider>
-				</ThemeContextProvider>
+				<Root />
 			</ClientContext>
 		</QueryClientProvider>,
 		{
@@ -56,15 +30,14 @@ cli.action((options) => {
 			kittyKeyboard: { mode: "auto" },
 		},
 	);
-	// Detach the adapter without closing the terminal owned by the process.
-	void instance.waitUntilExit().then(
-		() => {
-			stdin.destroy();
-		},
-		() => {
-			stdin.destroy();
-		},
-	);
-});
 
-export { cli };
+	// The UI quits by unmounting, which has run its cleanup by now. What
+	// remains (queries, MCP servers, workers) is the process's to end.
+	try {
+		await instance.waitUntilExit();
+	} finally {
+		// Detach the adapter without closing the terminal owned by the process.
+		stdin.destroy();
+	}
+	process.exit(0);
+}

@@ -1,10 +1,17 @@
-import type { ShellCapability } from "@tiny-chat/core/core/types/capability.ts";
-import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
-import type { GitChange, GitRepo } from "../types/chatFiles.ts";
-import { GitUtils } from "../utils/GitUtils.ts";
+import type {
+	GitChange,
+	GitRepo,
+} from "#client/features/chat/types/chatFiles.ts";
+import { GitUtils } from "#client/features/chat/utils/GitUtils.ts";
+import type { ShellCapability } from "#core/core/types/capability.ts";
+import { FileOperationService } from "#core/features/file/services/FileOperationService.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
 
 /** Untracked files past this many are listed without counting their lines. */
 const MAX_COUNTED = 200;
+
+/** Untracked files larger than this are listed without counting their lines. */
+const MAX_COUNTED_BYTES = 1024 * 1024;
 
 /** `exec` keeps this much of a command's output before it starts dropping some. */
 const MAX_OUTPUT = 256 * 1024;
@@ -93,43 +100,42 @@ export const GitService = {
 				),
 			});
 
-		let head = true;
-		let tracked = await diff("HEAD");
-		if (tracked.code !== 0) {
-			head = false;
-			tracked = await diff(GitUtils.EMPTY_TREE);
-		}
+		const [first, others] = await Promise.all([
+			diff("HEAD"),
+			shell.exec({
+				command: GitUtils.command(
+					root,
+					"ls-files",
+					"--others",
+					"--exclude-standard",
+					"-z",
+				),
+			}),
+		]);
+		// Before the first commit there is no HEAD to compare against.
+		const head = first.code === 0;
+		const tracked = head ? first : await diff(GitUtils.EMPTY_TREE);
 
-		const others = await shell.exec({
-			command: GitUtils.command(
-				root,
-				"ls-files",
-				"--others",
-				"--exclude-standard",
-				"-z",
-			),
-		});
-		const untracked = await Promise.all(
-			GitUtils.paths(others.code === 0 ? others.stdout : "").map(
-				async (path, index): Promise<GitChange> => {
-					const absolute = GitUtils.join(root, path);
-					const lines =
-						index < MAX_COUNTED
-							? await shell
-									.readFile({ path: absolute })
-									.then(({ data }) => GitUtils.lines(data))
-									.catch(() => 0)
-							: 0;
-					return {
-						path: absolute,
-						additions: lines ?? 0,
-						deletions: 0,
-						untracked: true,
-						binary: lines === null,
-					};
-				},
-			),
+		const paths = GitUtils.paths(others.code === 0 ? others.stdout : "").map(
+			(path) => GitUtils.join(root, path),
 		);
+		const files = await FileOperationService.readFiles({
+			shell,
+			paths: paths.slice(0, MAX_COUNTED),
+			maxBytes: MAX_COUNTED_BYTES,
+		});
+		const untracked = paths.map((path, index): GitChange => {
+			const file = files[index];
+			const lines = file ? GitUtils.lines(file.data) : 0;
+			return {
+				path,
+				// A file only partly read has a line count nobody can vouch for.
+				additions: file && file.data.length < file.size ? 0 : (lines ?? 0),
+				deletions: 0,
+				untracked: true,
+				binary: lines === null,
+			};
+		});
 
 		return {
 			root,

@@ -1,6 +1,6 @@
-import type { zToolCallPart } from "@tiny-chat/core/features/data/types/part.ts";
-import type { ToolFeedback } from "@tiny-chat/core/features/tool/types/tool.ts";
-import { useToolFeedbackStore } from "../stores/useToolFeedbackStore.ts";
+import { useToolFeedbackStore } from "#client/features/part/stores/useToolFeedbackStore.ts";
+import type { zToolCallPart } from "#core/features/data/types/part.ts";
+import type { ToolFeedback } from "#core/features/tool/types/tool.ts";
 
 /** Resolvers of the answers live generations are waiting on, by call id. */
 const waiters = new Map<string, (answer: ToolFeedback) => void>();

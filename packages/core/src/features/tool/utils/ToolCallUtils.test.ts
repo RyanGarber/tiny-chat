@@ -1,10 +1,13 @@
-import type { zToolResultPart } from "../../data/types/part.ts";
-import type { RenderedPart } from "../../data/utils/DataUtils.ts";
-import { createQuestionsToolset } from "../tools/questions.ts";
-import { createShellToolset } from "../tools/shell.ts";
-import { createWebToolset } from "../tools/web.ts";
-import type { ToolStatusPart } from "../types/display.ts";
-import { type ToolCallStatus, ToolCallUtils } from "./ToolCallUtils.ts";
+import type { zToolResultPart } from "#core/features/data/types/part.ts";
+import type { RenderedPart } from "#core/features/data/utils/DataUtils.ts";
+import { createQuestionsToolset } from "#core/features/tool/tools/questions.ts";
+import { createShellToolset } from "#core/features/tool/tools/shell.ts";
+import { createWebToolset } from "#core/features/tool/tools/web.ts";
+import type { ToolStatusPart } from "#core/features/tool/types/display.ts";
+import {
+	type ToolCallStatus,
+	ToolCallUtils,
+} from "#core/features/tool/utils/ToolCallUtils.ts";
 
 type ToolCallPart = Extract<RenderedPart, { type: "toolCall" }>;
 

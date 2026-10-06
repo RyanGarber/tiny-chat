@@ -1,9 +1,9 @@
 import type {
 	CapabilityFactory,
 	WebCapability,
-} from "@tiny-chat/core/core/types/capability.ts";
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
-import { WebService } from "../../features/proxy/services/WebService.ts";
+} from "#core/core/types/capability.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import { WebService } from "#server/features/proxy/services/WebService.ts";
 
 export const createWebCapability: CapabilityFactory<
 	{ user: zUser },

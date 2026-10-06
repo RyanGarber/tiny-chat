@@ -1,18 +1,15 @@
 import type { Client } from "@modelcontextprotocol/client";
 import { useQuery } from "@tanstack/react-query";
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import type { zDataSimplePart } from "@tiny-chat/core/features/data/types/part.ts";
-import type { zMCPServers } from "@tiny-chat/core/features/data/types/user.ts";
-import { ToolService } from "@tiny-chat/core/features/tool/services/ToolService.ts";
-import type {
-	Tool,
-	Toolset,
-} from "@tiny-chat/core/features/tool/types/tool.ts";
 import { useMemo } from "react";
 import { z } from "zod";
-import { useCapabilities } from "../../../core/hooks/useCapabilities.ts";
-import { useStableKey } from "../../../core/hooks/useStableKey.ts";
-import { useMcp } from "./useMcp.ts";
+import { useCapabilities } from "#client/core/hooks/useCapabilities.ts";
+import { useStableKey } from "#client/core/hooks/useStableKey.ts";
+import { useMcp } from "#client/features/agent/hooks/useMcp.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import type { zDataSimplePart } from "#core/features/data/types/part.ts";
+import type { zMCPServers } from "#core/features/data/types/user.ts";
+import { ToolService } from "#core/features/tool/services/ToolService.ts";
+import type { Tool, Toolset } from "#core/features/tool/types/tool.ts";
 
 export interface McpToolset extends Toolset<void> {
 	server: NonNullable<zMCPServers>[keyof NonNullable<zMCPServers>];

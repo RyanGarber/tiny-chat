@@ -1,13 +1,13 @@
 import { z } from "zod";
-import { zStringify } from "../../../core/types/common.ts";
-import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
-import { ThemeUtils } from "../../../core/utils/ThemeUtils.ts";
-import { zModelFeature } from "../../provider/types/model.ts";
+import { zStringify } from "#core/core/types/common.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { ThemeUtils } from "#core/core/utils/ThemeUtils.ts";
+import { zConfig } from "#core/features/data/types/message.ts";
+import { zModelFeature } from "#core/features/provider/types/model.ts";
 import type {
 	ProviderState,
 	ProviderStatus,
-} from "../../provider/types/provider.ts";
-import { zConfig } from "./message.ts";
+} from "#core/features/provider/types/provider.ts";
 
 export const zCache = z.object({
 	providers: z.array(z.custom<ProviderState<ProviderStatus>>()).default([]),
@@ -38,21 +38,10 @@ export const zCommand = z.object({
 });
 export type zCommand = z.infer<typeof zCommand>;
 
-export const zFolder = z
-	.object({
-		path: z.string().min(1),
-		whitelist: z.boolean(),
-	})
-	.catch(({ value }) => {
-		console.warn("zFolder: using deprecated writable field");
-		const compat = z
-			.object({ path: z.string().min(1), writable: z.boolean() })
-			.parse(value);
-		return {
-			path: compat.path,
-			whitelist: compat.writable,
-		};
-	});
+export const zFolder = z.object({
+	path: z.string().min(1),
+	whitelist: z.boolean(),
+});
 export type zFolder = z.infer<typeof zFolder>;
 
 export const zHiddenModels = z.partialRecord(

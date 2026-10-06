@@ -1,10 +1,13 @@
 import fuzzysort from "fuzzysort";
-import type { ShellCapability } from "../../../core/types/capability.ts";
-import { type FileEditResult, FileEditUtils } from "../utils/FileEditUtils.ts";
-import type { FileScope } from "../utils/FileExcludeUtils.ts";
-import { FileUtils } from "../utils/FileUtils.ts";
-import { PathUtils } from "../utils/PathUtils.ts";
-import { FileSearchService } from "./FileSearchService.ts";
+import type { ShellCapability } from "#core/core/types/capability.ts";
+import { FileSearchService } from "#core/features/file/services/FileSearchService.ts";
+import {
+	type FileEditResult,
+	FileEditUtils,
+} from "#core/features/file/utils/FileEditUtils.ts";
+import type { FileScope } from "#core/features/file/utils/FileExcludeUtils.ts";
+import { FileUtils } from "#core/features/file/utils/FileUtils.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
 
 /** Lines a single `readText` call returns when the caller does not say. */
 const DEFAULT_LINE_LIMIT = 1_000;
@@ -52,6 +55,35 @@ export const FileOperationService = {
 			includeDirectories,
 		});
 		return entries;
+	},
+
+	/**
+	 * {@link ShellCapability.readFiles}, built from `readFile` for shells that
+	 * cannot read in bulk natively.
+	 */
+	readFiles: async ({
+		shell,
+		paths,
+		maxBytes,
+	}: {
+		shell: Pick<ShellCapability, "readFile"> &
+			Partial<Pick<ShellCapability, "readFiles">>;
+		paths: string[];
+		maxBytes: number;
+	}) => {
+		if (!paths.length) return [];
+		if (shell.readFiles) return await shell.readFiles({ paths, maxBytes });
+		return await Promise.all(
+			paths.map((path) =>
+				shell.readFile({ path }).then(
+					({ data }) => ({
+						data: data.subarray(0, maxBytes),
+						size: data.length,
+					}),
+					() => null,
+				),
+			),
+		);
 	},
 
 	/**

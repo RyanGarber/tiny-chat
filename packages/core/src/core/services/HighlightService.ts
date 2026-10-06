@@ -14,7 +14,7 @@ import {
 	type CodeRequest,
 	type CodeResult,
 	CodeUtils,
-} from "../utils/CodeUtils.ts";
+} from "#core/core/utils/CodeUtils.ts";
 
 /**
  * Tokenized prefix of an earlier request, ending on a line break, kept so a

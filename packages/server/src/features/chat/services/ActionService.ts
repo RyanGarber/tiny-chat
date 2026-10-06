@@ -1,9 +1,9 @@
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import type { MessageLike } from "@tiny-chat/core/features/data/types/message.ts";
-import type { zData } from "@tiny-chat/core/features/data/types/part.ts";
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
-import { MessageService } from "../../message/services/MessageService.ts";
-import { ActionUtils } from "../utils/ActionUtils.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import type { MessageLike } from "#core/features/data/types/message.ts";
+import type { zData } from "#core/features/data/types/part.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import { ActionUtils } from "#server/features/chat/utils/ActionUtils.ts";
+import { MessageService } from "#server/features/message/services/MessageService.ts";
 
 export const ActionService = {
 	getActions: async ({ user }: { user: zUser }) => {

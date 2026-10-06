@@ -1,0 +1,68 @@
+import { useLayoutEffect, useMemo, useRef } from "react";
+import { useGreeting } from "#client/core/hooks/useGreeting.ts";
+import { useChat } from "#client/features/chat/hooks/useChat.ts";
+import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
+import { useMessages } from "#client/features/message/hooks/useMessages.ts";
+import type { Compaction } from "#core/features/agent/services/AgentTokensService.ts";
+import Box from "#tui/core/components/Box.tsx";
+import ScrollView, {
+	type ScrollViewProps,
+} from "#tui/core/components/ScrollView.tsx";
+import Text from "#tui/core/components/Text.tsx";
+import { useSentinel } from "#tui/core/hooks/useSentinel.ts";
+import { useWorkingStatus } from "#tui/core/hooks/useWorkingStatus.ts";
+import Message from "#tui/features/message/components/Message.tsx";
+
+export default function Chat({ compaction }: { compaction?: Compaction }) {
+	const { chat } = useChat();
+	const { messages } = useMessages();
+	useWorkingStatus(chat, messages);
+
+	const messageList = useMemo(
+		() => messages.data?.pages.flatMap((page) => page.messages) ?? [],
+		[messages.data],
+	);
+
+	// Older messages live off the top of the transcript, so reaching it is what
+	// asks for the next page.
+	const fetchOlder = useSentinel(messages);
+
+	const greeting = useGreeting();
+
+	// Brings a message asked for to the top once it has been laid out, which
+	// may be a few passes away while the chat it is in loads.
+	const ref = useRef<NonNullable<ScrollViewProps["ref"]>["current"]>(null);
+	const focusedMessage = useChatStore((state) => state.focusedMessage);
+	useLayoutEffect(() => {
+		if (!focusedMessage || chat.isFetching || messages.isFetching) return;
+		const index = messageList.findIndex((m) => m.id === focusedMessage);
+		if (index < 0 || !ref.current?.getItemPosition(index)) return;
+		useChatStore.getState().clearFocusedMessage();
+		ref.current.scrollToIndex(index, "top");
+	});
+
+	if (!chat.data) {
+		return (
+			<Box flexGrow={1} justifyContent="center" alignItems="center">
+				<Text color="textSubtle">{greeting.toLowerCase()}</Text>
+			</Box>
+		);
+	}
+
+	return (
+		<ScrollView
+			ref={ref}
+			flexGrow={1}
+			flexShrink={1}
+			flexBasis={0}
+			minHeight={0}
+			stickToBottom
+			resetKey={chat.data.id}
+			onReachTop={fetchOlder}
+		>
+			{messageList.map((message) => (
+				<Message key={message.id} message={message} compaction={compaction} />
+			))}
+		</ScrollView>
+	);
+}

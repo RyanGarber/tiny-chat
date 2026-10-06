@@ -1,11 +1,11 @@
 import { useMutation, useQueries } from "@tanstack/react-query";
 import { useContext, useEffect } from "react";
-import { ClientContext } from "../../../client.ts";
-import { useMcpServerSettings } from "../../settings/hooks/useMcpServerSettings.ts";
-import { ClientMcpService } from "../services/ClientMcpService.ts";
-import { useMcpStore } from "../stores/useMcpStore.ts";
+import { ClientContext } from "#client/client.ts";
+import { ClientMcpService } from "#client/features/agent/services/ClientMcpService.ts";
+import { useMcpStore } from "#client/features/agent/stores/useMcpStore.ts";
+import { useMcpServerSettings } from "#client/features/settings/hooks/useMcpServerSettings.ts";
 
-export type { McpServer } from "../services/ClientMcpService.ts";
+export type { McpServer } from "#client/features/agent/services/ClientMcpService.ts";
 
 export const mcpServerQueryKey = ["useMcp", "mcpServer"] as const;
 export const disconnectMcpServersQueryKey = [

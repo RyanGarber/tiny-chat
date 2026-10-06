@@ -1,29 +1,29 @@
-import type { Capabilities } from "@tiny-chat/core/core/types/capability.ts";
-import { CapabilityUtils } from "@tiny-chat/core/core/utils/CapabilityUtils.ts";
+import type { Client } from "#client/client.ts";
+import { createActionsCapability } from "#client/core/capabilities/createActionsCapability.ts";
+import { createBrowserCapability } from "#client/core/capabilities/createBrowserCapability.ts";
+import { createChatShellCapability } from "#client/core/capabilities/createChatShellCapability.ts";
+import { createEmbeddingCapability } from "#client/core/capabilities/createEmbeddingCapability.ts";
+import { createGitHubCapability } from "#client/core/capabilities/createGitHubCapability.ts";
+import { createMemoriesCapability } from "#client/core/capabilities/createMemoriesCapability.ts";
+import { createShellCapability } from "#client/core/capabilities/createShellCapability.ts";
+import { createSubagentsCapability } from "#client/core/capabilities/createSubagentsCapability.ts";
+import { createWebCapability } from "#client/core/capabilities/createWebCapability.ts";
+import { ClientProviderService } from "#client/features/agent/services/ClientProviderService.ts";
+import type { Capabilities } from "#core/core/types/capability.ts";
+import { CapabilityUtils } from "#core/core/utils/CapabilityUtils.ts";
 import type {
 	zAgentChat,
 	zAgentMessage,
-} from "@tiny-chat/core/features/agent/types/agent.ts";
-import { AgentUtils } from "@tiny-chat/core/features/agent/utils/AgentUtils.ts";
-import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
+} from "#core/features/agent/types/agent.ts";
+import { AgentUtils } from "#core/features/agent/utils/AgentUtils.ts";
+import type { MessageState } from "#core/features/data/types/message.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
 import type {
 	ProviderState,
 	ProviderStatus,
-} from "@tiny-chat/core/features/provider/types/provider.ts";
-import type { zSkill } from "@tiny-chat/core/features/skill/types/skill.ts";
-import type { Toolset } from "@tiny-chat/core/features/tool/types/tool.ts";
-import type { Client } from "../../client.ts";
-import { ClientProviderService } from "../../features/agent/services/ClientProviderService.ts";
-import { createActionsCapability } from "../capabilities/createActionsCapability.ts";
-import { createBrowserCapability } from "../capabilities/createBrowserCapability.ts";
-import { createChatShellCapability } from "../capabilities/createChatShellCapability.ts";
-import { createEmbeddingCapability } from "../capabilities/createEmbeddingCapability.ts";
-import { createGitHubCapability } from "../capabilities/createGitHubCapability.ts";
-import { createMemoriesCapability } from "../capabilities/createMemoriesCapability.ts";
-import { createShellCapability } from "../capabilities/createShellCapability.ts";
-import { createSubagentsCapability } from "../capabilities/createSubagentsCapability.ts";
-import { createWebCapability } from "../capabilities/createWebCapability.ts";
+} from "#core/features/provider/types/provider.ts";
+import type { zSkill } from "#core/features/skill/types/skill.ts";
+import type { Toolset } from "#core/features/tool/types/tool.ts";
 
 export const ClientCapabilityService = {
 	getCapabilities: async ({

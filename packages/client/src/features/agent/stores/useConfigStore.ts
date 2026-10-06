@@ -1,5 +1,5 @@
-import type { zConfig } from "@tiny-chat/core/features/data/types/message.ts";
 import { create } from "zustand";
+import type { zConfig } from "#core/features/data/types/message.ts";
 
 interface ConfigStore {
 	/** The active config. Survives leaving a chat; replaced on entering one. */

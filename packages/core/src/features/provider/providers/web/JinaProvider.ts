@@ -1,4 +1,4 @@
-import type { WebProvider } from "../../types/web.ts";
+import type { WebProvider } from "#core/features/provider/types/web.ts";
 
 export const JinaProvider: WebProvider = {
 	name: "jina",

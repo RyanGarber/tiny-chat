@@ -1,11 +1,11 @@
-import type { Capabilities } from "../../../core/types/capability.ts";
-import { SettingsUtils } from "../../../core/utils/SettingsUtils.ts";
-import type { zConfig } from "../../data/types/message.ts";
-import { DataUtils } from "../../data/utils/DataUtils.ts";
-import type { zSkill } from "../../skill/types/skill.ts";
-import type { Toolset } from "../../tool/types/tool.ts";
-import { ToolUtils } from "../../tool/utils/ToolUtils.ts";
-import type { zAgentContext } from "../types/agent.ts";
+import type { Capabilities } from "#core/core/types/capability.ts";
+import { SettingsUtils } from "#core/core/utils/SettingsUtils.ts";
+import type { zAgentContext } from "#core/features/agent/types/agent.ts";
+import type { zConfig } from "#core/features/data/types/message.ts";
+import { DataUtils } from "#core/features/data/utils/DataUtils.ts";
+import type { zSkill } from "#core/features/skill/types/skill.ts";
+import type { Toolset } from "#core/features/tool/types/tool.ts";
+import { ToolUtils } from "#core/features/tool/utils/ToolUtils.ts";
 
 export const AgentInstructionsService = {
 	buildInstructions: async ({
@@ -65,8 +65,8 @@ export const AgentInstructionsService = {
 		if (config?.model) {
 			instructions += `\n
 ## Identity\n
-Only the text inside <message role="assistant" model="${config?.model}"> was written by you. Other assistant messages were written by different models that may have different knowledge and capabilities.
-When referencing past assistant messages, always use the model name - do not say "I" if it wasn't you (${config?.model}). Critique other assistants' messages from your own perspective when appropriate.`;
+You are ${config.model}. Each user <message> names the model it was sent to in its \`to\` attribute, and the assistant reply that follows it was written by that model. Different models may have answered over the course of this chat, each with its own knowledge and capabilities: only replies to messages sent to ${config.model} were written by you, and the latest message was sent to you.
+When referring to a reply written by another model, call it by that model's name - never "I". Critique other models' replies from your own perspective when appropriate.`;
 		}
 
 		instructions += `\n

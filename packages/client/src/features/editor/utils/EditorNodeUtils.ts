@@ -1,12 +1,20 @@
-import { CodeUtils } from "@tiny-chat/core/core/utils/CodeUtils.ts";
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import { EditorPartUtils } from "@tiny-chat/core/features/data/utils/EditorPartUtils.ts";
 import {
 	type EditorPart,
 	useEditorPartStore,
-} from "../stores/useEditorPartStore.ts";
-import type { EditorNode } from "../types/node.ts";
-import { PasteUtils } from "./PasteUtils.ts";
+} from "#client/features/editor/stores/useEditorPartStore.ts";
+import type { EditorNode } from "#client/features/editor/types/node.ts";
+import { PasteUtils } from "#client/features/editor/utils/PasteUtils.ts";
+import { CodeUtils } from "#core/core/utils/CodeUtils.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+
+/**
+ * What a paste turns into: a node folding it away when it is too long to
+ * leave in an input, or a block of code — however the runtime writes one —
+ * when it is short source.
+ */
+export type EditorPaste =
+	| { type: "node"; node: EditorNode }
+	| { type: "code"; text: string; language: string | null };
 
 export const EditorNodeUtils = {
 	/** Take a part into the registry and hand back the pointer standing for it. */
@@ -41,7 +49,7 @@ export const EditorNodeUtils = {
 		}),
 
 	/** Null means the runtime should leave the paste to its editor package. */
-	paste: (text: string, collapse = true): EditorNode | null => {
+	paste: (text: string): EditorPaste | null => {
 		const pasted = PasteUtils.normalize(text);
 		if (!pasted) return null;
 
@@ -52,17 +60,24 @@ export const EditorNodeUtils = {
 			CodeUtils.getLanguage(unwrapped?.language ?? null) ??
 			detected?.language ??
 			null;
-		const collapsed = collapse && PasteUtils.isLong(body);
-		if (!collapsed && !unwrapped && !detected) return null;
 
-		return EditorNodeUtils.create({
-			id: CommonUtils.getRandomId(),
-			type: "paste",
-			text: body,
-			lines: PasteUtils.lines(body).length,
-			language,
-			collapsed,
-		});
+		if (PasteUtils.isLong(body)) {
+			return {
+				type: "node",
+				node: EditorNodeUtils.create({
+					id: CommonUtils.getRandomId(),
+					type: "paste",
+					text: body,
+					lines: PasteUtils.lines(body).length,
+					// Prose is only ever folded, never highlighted as code.
+					language: unwrapped || detected ? language : null,
+					collapsed: true,
+				}),
+			};
+		}
+
+		if (!unwrapped && !detected) return null;
+		return { type: "code", text: body, language };
 	},
 
 	/** The part a node points at, or null once it has gone out of the registry. */
@@ -70,6 +85,4 @@ export const EditorNodeUtils = {
 		const part = useEditorPartStore.getState().parts[node.id];
 		return part?.type === node.type ? part : null;
 	},
-
-	toMarkdown: (node: EditorNode): string => EditorPartUtils.toPointer(node),
 } as const;

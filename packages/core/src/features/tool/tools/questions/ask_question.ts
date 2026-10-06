@@ -1,6 +1,10 @@
 import { z } from "zod";
-import type { ToolDisplay } from "../../types/display.ts";
-import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
+import type { ToolDisplay } from "#core/features/tool/types/display.ts";
+import type {
+	Tool,
+	ToolDefinition,
+	ToolFactory,
+} from "#core/features/tool/types/tool.ts";
 
 export const ask_question = {
 	name: "ask_question",

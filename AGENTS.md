@@ -6,22 +6,23 @@ separate coding agent or prompt, or features that only make sense inside a repo.
 
 ## Packages
 
-pnpm workspace. Imports are deep paths with `.ts` / `.tsx` suffixes (`@tiny-chat/core/...`, `@tiny-chat/client/...`,
-`@tiny-chat/server/...`; `packages/app` also has `#app/*`, `#client/*`, `#core/*`).
+pnpm workspace. Imports are deep paths with `.ts` / `.tsx` suffixes (`#core/...`, `#client/...`,
+`#server/...`).
 
 | Package           | Role                                                                             | May import                |
-|-------------------|----------------------------------------------------------------------------------|---------------------------|
+| ----------------- | -------------------------------------------------------------------------------- | ------------------------- |
 | `packages/core`   | Domain: types, providers, agent loop, tools. No React, HTTP, or database client. | nothing in the monorepo   |
 | `packages/server` | Node HTTP: tRPC, better-auth, Prisma, virtual FS, scheduled-action worker.       | core                      |
-| `packages/client` | Shared React runtime for app + CLI: `createClient`, tRPC/Query, stores, hooks.   | core, server *types* only |
-| `packages/app`    | Vite + React + Mantine UI (web and the Tauri webview).                           | client, core, server      |
-| `apps/cli`        | Ink terminal UI over the same client. Bun.                                       | client, core, server      |
+| `packages/client` | Shared React runtime for app + CLI: `createClient`, tRPC/Query, stores, hooks.   | core, server _types_ only |
+| `packages/gui`    | Vite + React + Mantine UI (web and the Tauri webview).                           | client, core              |
+| `packages/tui`    | Ink terminal UI over the same client.                                            | client, core              |
+| `apps/cli`        | Bun shell (CLI).                                                                 | client, core, tui         |
 | `apps/web`        | Static host of the app build.                                                    | —                         |
-| `apps/tauri`      | Tauri v2 shell (desktop / iOS / Android).                                        | —                         |
+| `apps/app`        | Tauri v2 shell (desktop / iOS / Android).                                        | —                         |
 
 If both app and CLI need a behavior, it belongs in `client` or `core`. If only one runtime can do it, it belongs in that
 runtime's `client.ts` adapter (passed to `createClient`) or its own `features/`. Never import `@mantine/*` from `client`
-or `ink` from `app`.
+or `ink` from `gui`.
 
 Code lives in `src/features/<domain>/{components,hooks,services,stores,utils,types,routes}`, with `src/core/` for
 cross-cutting infra. Match existing feature names; don't invent a parallel tree. Services and utils are
@@ -46,7 +47,7 @@ Keep related edits in lockstep: route ↔ `ApiRouter` ↔ client call; capabilit
 ## Data
 
 Prisma Next (contract-first, see the `prisma-8` skill). Contract: `packages/core/prisma/contract.prisma`; runtime `db`
-from `@tiny-chat/server/db.ts`, which loads the repo-root `.env`. Parse JSON columns with their Zod schemas at trust
+from `server/db.ts`, which loads the repo-root `.env`. Parse JSON columns with their Zod schemas at trust
 boundaries rather than passing raw JSON around.
 
 ## Testing
@@ -55,7 +56,7 @@ Dev servers and Postgres are usually already running (`VITE_SERVER_PORT` / `VITE
 — don't mock them or start a second database.
 
 - **Scratchpad / smoke tests:** use the real client provider: `createClient` wrapped in `QueryClientProvider` +
-  `ClientContext`, as `packages/app/src/main.tsx` does (in Vitest, `create()` from `packages/client/src/tests.ts`). It
+  `ClientContext`, as `packages/gui/src/main.tsx` does (in Vitest, `create()` from `packages/client/src/tests.ts`). It
   signs in a real anonymous test user against the live server. Don't spend time building a custom harness, fake
   client, or seeded user unless this genuinely can't cover the case. For server-only data, use the real `db`.
 - **Unit:** Vitest (`*.test.ts`), only for logic that is actually pure.
@@ -80,11 +81,11 @@ Dev servers and Postgres are usually already running (`VITE_SERVER_PORT` / `VITE
 All root scripts load the repo-root `.env`.
 
 | Task                 | Command                                                                 |
-|----------------------|-------------------------------------------------------------------------|
+| -------------------- | ----------------------------------------------------------------------- |
 | Web (Vite + server)  | `pnpm dev:web`                                                          |
 | Server only          | `pnpm dev:server`                                                       |
 | CLI                  | `pnpm dev:cli`                                                          |
-| Desktop / mobile     | `pnpm dev:tauri`, `dev:tauri:ios`, `dev:tauri:android`                  |
+| Desktop / mobile     | `pnpm dev:app`, `dev:app:ios`, `dev:app:android`                        |
 | Lint / types / tests | `pnpm lint`, `pnpm typecheck`, `pnpm test` (`*:ts` variants skip Tauri) |
 
 TypeScript is strict with `.ts` import extensions; Biome uses tabs and double quotes. `@ai-sdk/google` and `sixel` are

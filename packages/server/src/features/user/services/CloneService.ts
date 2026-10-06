@@ -1,6 +1,6 @@
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
 import type { Session } from "better-auth";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
 
 interface Clone {
 	id: string;

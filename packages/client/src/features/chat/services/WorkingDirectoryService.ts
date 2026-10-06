@@ -1,6 +1,6 @@
-import type { ShellCapability } from "@tiny-chat/core/core/types/capability.ts";
-import { useChatStore } from "../stores/useChatStore.ts";
-import { useMessagingStore } from "../stores/useMessagingStore.ts";
+import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
+import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
+import type { ShellCapability } from "#core/core/types/capability.ts";
 
 export const WorkingDirectoryService = {
 	create: ({

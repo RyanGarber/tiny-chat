@@ -1,7 +1,7 @@
 import { useMemo } from "react";
-import { useChatStore } from "../../features/chat/stores/useChatStore.ts";
-import { GreetingUtils } from "../utils/GreetingUtils.ts";
-import { useSession } from "./useSession.ts";
+import { useSession } from "#client/core/hooks/useSession.ts";
+import { GreetingUtils } from "#client/core/utils/GreetingUtils.ts";
+import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
 
 export function useGreeting() {
 	const { session } = useSession();

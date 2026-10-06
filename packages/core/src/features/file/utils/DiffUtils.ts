@@ -1,7 +1,7 @@
 import { diffLines, diffWords } from "diff";
-import type { CodeResult } from "../../../core/utils/CodeUtils.ts";
-import { ColorUtils } from "../../../core/utils/ColorUtils.ts";
-import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
+import type { CodeResult } from "#core/core/utils/CodeUtils.ts";
+import { ColorUtils } from "#core/core/utils/ColorUtils.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
 
 type Diff =
 	| { type: "unchanged"; line: string }

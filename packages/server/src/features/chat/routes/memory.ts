@@ -1,12 +1,13 @@
-import { Enum } from "@tiny-chat/core/core/services/PostgresService.ts";
-import { zId } from "@tiny-chat/core/core/types/common.ts";
-import { MemorySource } from "@tiny-chat/core/features/data/types/memory.ts";
-import { MessageLike } from "@tiny-chat/core/features/data/types/message.ts";
 import { z } from "zod";
-import { procedure, router } from "../../../index.ts";
-import { MemoryRetrievalService } from "../services/MemoryRetrievalService.ts";
-import { MemorySearchService } from "../services/MemorySearchService.ts";
-import { MemoryService } from "../services/MemoryService.ts";
+import { Enum } from "#core/core/services/PostgresService.ts";
+import { zId } from "#core/core/types/common.ts";
+import { ChatLike } from "#core/features/data/types/chat.ts";
+import { MemorySource } from "#core/features/data/types/memory.ts";
+import { MessageLike } from "#core/features/data/types/message.ts";
+import { MemoryRetrievalService } from "#server/features/chat/services/MemoryRetrievalService.ts";
+import { MemorySearchService } from "#server/features/chat/services/MemorySearchService.ts";
+import { MemoryService } from "#server/features/chat/services/MemoryService.ts";
+import { procedure, router } from "#server/index.ts";
 
 export const memory = router({
 	retrieveMemories: procedure
@@ -27,6 +28,15 @@ export const memory = router({
 	getMemories: procedure.query(async ({ ctx }) => {
 		return await MemoryService.getMemories({ user: ctx.session.user });
 	}),
+
+	getChatMemoryIds: procedure
+		.input(z.object({ chat: ChatLike }))
+		.query(async ({ ctx, input }) => {
+			return await MemoryService.getChatMemoryIds({
+				user: ctx.session.user,
+				chat: input.chat,
+			});
+		}),
 
 	searchMemories: procedure
 		.input(

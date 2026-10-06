@@ -1,10 +1,10 @@
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import { mockConfig } from "@tiny-chat/core/tests.ts";
-import { testUser } from "../../../tests.ts";
-import { ChatService } from "../../chat/services/ChatService.ts";
-import { MessageService } from "../../message/services/MessageService.ts";
-import { SettingsService } from "../../user/services/SettingsService.ts";
-import { FileService } from "./FileService.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { mockConfig } from "#core/tests.ts";
+import { ChatService } from "#server/features/chat/services/ChatService.ts";
+import { FileService } from "#server/features/file/services/FileService.ts";
+import { MessageService } from "#server/features/message/services/MessageService.ts";
+import { SettingsService } from "#server/features/user/services/SettingsService.ts";
+import { testUser } from "#server/tests.ts";
 
 const user = testUser();
 

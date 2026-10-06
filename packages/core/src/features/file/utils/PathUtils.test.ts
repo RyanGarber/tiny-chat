@@ -1,4 +1,4 @@
-import { PathUtils } from "./PathUtils.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
 
 describe("PathUtils", () => {
 	it("builds mount paths", () => {

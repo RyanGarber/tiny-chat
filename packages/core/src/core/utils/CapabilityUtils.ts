@@ -1,14 +1,14 @@
-import type { zAgentChat } from "../../features/agent/types/agent.ts";
-import type { zUser } from "../../features/data/types/user.ts";
-import { WebProviderService } from "../../features/provider/services/WebProviderService.ts";
+import type { Capabilities } from "#core/core/types/capability.ts";
+import { SettingsUtils } from "#core/core/utils/SettingsUtils.ts";
+import type { zAgentChat } from "#core/features/agent/types/agent.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import { WebProviderService } from "#core/features/provider/services/WebProviderService.ts";
 import type {
 	ProviderState,
 	ProviderStatus,
-} from "../../features/provider/types/provider.ts";
-import type { zWebFeature } from "../../features/provider/types/web.ts";
-import { ProviderUtils } from "../../features/provider/utils/ProviderUtils.ts";
-import type { Capabilities } from "../types/capability.ts";
-import { SettingsUtils } from "./SettingsUtils.ts";
+} from "#core/features/provider/types/provider.ts";
+import type { zWebFeature } from "#core/features/provider/types/web.ts";
+import { ProviderUtils } from "#core/features/provider/utils/ProviderUtils.ts";
 
 export type CapabilityName = keyof Capabilities;
 

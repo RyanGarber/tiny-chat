@@ -5,10 +5,10 @@ import type {
 	CommandGroup,
 	CommandItem,
 	CommandQuery,
-} from "../types/command.ts";
-import { AtomUtils } from "./AtomUtils.ts";
-import { CompletionUtils } from "./CompletionUtils.ts";
-import { EditorNodeUtils } from "./EditorNodeUtils.ts";
+} from "#client/features/editor/types/command.ts";
+import { AtomUtils } from "#client/features/editor/utils/AtomUtils.ts";
+import { CompletionUtils } from "#client/features/editor/utils/CompletionUtils.ts";
+import { EditorNodeUtils } from "#client/features/editor/utils/EditorNodeUtils.ts";
 
 /** `/name` optionally followed by an argument, at the end of a line */
 const QUERY_REGEX = /(?:^|\s)\/(\S*)(?:[ \t]+([^\n]*))?$/;

@@ -1,6 +1,11 @@
-import type { zData } from "@tiny-chat/core/features/data/types/part.ts";
 import type { Root as HastRoot } from "hast";
-import type { Code, Root as MdastRoot, Nodes } from "mdast";
+import type {
+	Code,
+	Root as MdastRoot,
+	Nodes,
+	Parent,
+	RootContent,
+} from "mdast";
 import { type JSX, useMemo } from "react";
 import RehypeKatex from "rehype-katex";
 import RehypeRaw from "rehype-raw";
@@ -13,8 +18,12 @@ import RemarkParse from "remark-parse";
 import RemarkRehype from "remark-rehype";
 import { type PluggableList, type Processor, unified } from "unified";
 import { visit } from "unist-util-visit";
-import { MarkdownDataUtils } from "../utils/MarkdownDataUtils.ts";
-import { MarkdownUtils } from "../utils/MarkdownUtils.ts";
+import { MarkdownUtils } from "#client/features/message/utils/MarkdownUtils.ts";
+import type { zData } from "#core/features/data/types/part.ts";
+import {
+	EditorPartUtils,
+	type zEditorPart,
+} from "#core/features/data/utils/EditorPartUtils.ts";
 
 export type * from "mdast";
 export type * from "mdast-util-to-hast";
@@ -55,9 +64,9 @@ type MicromarkDirectiveExtension = {
 /**
  * remark-directive's default tokenizer is greedy: `:1` is a text directive and
  * `::1` is a leaf, which turns ratios, emphasis like `*1:1*`, and IPv6 `::1`
- * into nodes. That disagrees with DirectiveUtils — text directives need `[]`,
- * and names start with a letter — so reject anything that doesn't match here,
- * at parse time, before it can split a paragraph.
+ * into nodes. Text directives need `[]` and names start with a letter, so
+ * reject anything that doesn't match here, at parse time, before it can split
+ * a paragraph.
  */
 const wrapDirectiveConstruct = (
 	construct: MicromarkConstruct,
@@ -132,14 +141,169 @@ const createDirectives = () => {
 			)
 				return;
 
-			if (node.name === "quote") toNode(node, "blockquote");
 			if (node.name === "writing") toNode(node, "blockquote");
-			if (node.name === "command") toNode(node, "slot");
-			if (node.name === "attachment") toNode(node, "link");
-			if (node.name === "paste") toNode(node, "details");
 		});
 	};
 };
+
+/** What a run's markers index into, for {@link createEditorParts}. */
+type EditorPartsData = { parts?: readonly zEditorPart[] };
+
+/** A node remark-rehype draws as the element its data names. */
+type EditorPartNode = {
+	type: "editorPart";
+	block: boolean;
+	data: { hName: string; hProperties: Record<string, string | undefined> };
+	children: RootContent[];
+};
+
+/** The node as a block part, or null when it is anything else. */
+const asBlockPart = (node: { type: string }) =>
+	node.type === "editorPart" && (node as unknown as EditorPartNode).block
+		? (node as unknown as EditorPartNode)
+		: null;
+
+/** Text that is nothing but space and line breaks, between two blocks. */
+const isBlank = (node: RootContent) =>
+	(node.type === "text" && !node.value.trim()) || node.type === "break";
+
+/** The node a part is drawn as, in place of the marker standing for it. */
+const toEditorPartNode = (part: zEditorPart): EditorPartNode | Code => {
+	const node = (
+		hName: string,
+		hProperties: EditorPartNode["data"]["hProperties"],
+		children: RootContent[] = [],
+	): EditorPartNode => ({
+		type: "editorPart",
+		block: !EditorPartUtils.isInline(part.type),
+		data: { hName, hProperties },
+		children,
+	});
+	const markdown = (text: string) =>
+		processor.parse(EditorPartUtils.strip(text)).children;
+
+	if (part.type === "attachment") {
+		return node("link", {
+			source: part.source,
+			name: part.label || undefined,
+			"is-directory": part.content.type === "directory" ? "true" : undefined,
+		});
+	}
+
+	if (part.type === "command") {
+		return node(
+			"slot",
+			{ name: part.name, value: part.value },
+			part.argument ? [{ type: "text", value: part.argument }] : [],
+		);
+	}
+
+	if (part.type === "quote") {
+		return node("blockquote", { model: part.model }, markdown(part.text));
+	}
+
+	const code: Code = { type: "code", lang: part.language, value: part.text };
+	// A paste from before every paste was folded away reads as the block it is.
+	if (part.collapsed === false) return code;
+
+	// Source is drawn as code, and anything else as the Markdown it was written
+	// in, which is how prose would have read had it been typed rather than
+	// pasted.
+	return node(
+		"details",
+		{ lines: String(part.lines) },
+		part.language ? [code] : markdown(part.text),
+	);
+};
+
+/**
+ * Draws the editor parts of a run where their markers stand.
+ *
+ * A message is written as text with attachments, commands, quotes and pastes
+ * in among it, and is joined into one string to be parsed — each part
+ * standing in it as one character of its own (see `EditorPartUtils.join`).
+ * That character is inert to Markdown, so a part can never be taken apart by
+ * the syntax around it; this swaps it back for the part in the parsed tree. A
+ * quote or a paste is a block, and is lifted out of the paragraph it landed
+ * in.
+ *
+ * The parts come from the plugin's options when there are any, and otherwise
+ * from the file being processed, so one processor can render any run.
+ */
+function createEditorParts(options?: EditorPartsData) {
+	return (tree: MdastRoot, file: { data: object }) => {
+		const parts = options?.parts ?? (file.data as EditorPartsData).parts ?? [];
+		const part = (character: string) => {
+			const index = EditorPartUtils.index(character);
+			return index === null ? undefined : parts[index];
+		};
+
+		// Code is drawn as it was written, so a part in it is written as the text
+		// it would have been typed as.
+		const written = (value: string) =>
+			value.replace(EditorPartUtils.markers(), (character) => {
+				const found = part(character);
+				return found ? EditorPartUtils.toText(found) : "";
+			});
+
+		visit(tree, (node, index, parent) => {
+			if (node.type === "code" || node.type === "inlineCode") {
+				node.value = written(node.value);
+				return;
+			}
+			if (node.type !== "text" || !parent || index === undefined) return;
+
+			const pieces = node.value.split(/([\uE000-\uE7FF])/);
+			if (pieces.length === 1) return;
+
+			const replaced = pieces.flatMap((piece, at): RootContent[] => {
+				if (at % 2 === 0) return piece ? [{ type: "text", value: piece }] : [];
+				const found = part(piece);
+				return found ? [toEditorPartNode(found) as RootContent] : [];
+			});
+			parent.children.splice(index, 1, ...(replaced as typeof parent.children));
+			return index + replaced.length;
+		});
+
+		// A block part only ever lands in a paragraph, which is broken around it.
+		visit(tree, (node) => {
+			if (!("children" in node)) return;
+			const parent = node as Parent;
+
+			parent.children = parent.children.flatMap((child): RootContent[] => {
+				if (child.type !== "paragraph" || !child.children.some(asBlockPart))
+					return [child];
+
+				const blocks: RootContent[] = [];
+				let run: RootContent[] = [];
+				const flush = () => {
+					while (run.length && isBlank(run[0])) run.shift();
+					while (run.length && isBlank(run[run.length - 1])) run.pop();
+
+					// The line breaks that stood it apart from the part go with it.
+					const first = run[0];
+					if (first?.type === "text") first.value = first.value.trimStart();
+					const last = run[run.length - 1];
+					if (last?.type === "text") last.value = last.value.trimEnd();
+
+					if (run.length)
+						blocks.push({ type: "paragraph", children: run } as RootContent);
+					run = [];
+				};
+
+				for (const inline of child.children as RootContent[]) {
+					if (asBlockPart(inline)) {
+						flush();
+						blocks.push(inline as unknown as RootContent);
+					} else run.push(inline);
+				}
+				flush();
+
+				return blocks;
+			});
+		});
+	};
+}
 
 const createCodeMeta = () => (tree: MdastRoot) => {
 	visit(tree, "code", (node: Code) => {
@@ -154,6 +318,8 @@ const createCodeMeta = () => (tree: MdastRoot) => {
 };
 
 const remarkPlugins: PluggableList = [
+	// First, so the transforms after it see what a part is drawn as.
+	createEditorParts,
 	RemarkBreaks,
 	RemarkGfm,
 	RemarkDirective,
@@ -236,12 +402,18 @@ export const useMarkdown = ({
 	source: MarkdownSource;
 	withKatex?: boolean;
 }) => {
+	const { text, parts } = useMemo(() => {
+		if (typeof source === "string") return { text: source, parts: [] };
+
+		const { source: joined, parts } = EditorPartUtils.join(
+			source.flat().filter(EditorPartUtils.isRun),
+		);
+		return { text: joined, parts };
+	}, [source]);
+
 	const content = useMemo(() => {
 		const normalized = MarkdownUtils.normalize(
-			(typeof source === "string"
-				? source
-				: MarkdownDataUtils.toInlineBlock(source)
-			)
+			text
 				.replace(MESSAGE_OPEN, "")
 				.replace(MESSAGE_CLOSE, "")
 				.replace(
@@ -251,10 +423,21 @@ export const useMarkdown = ({
 				),
 		);
 		return normalized;
-	}, [source]);
+	}, [text]);
+
+	// A renderer that runs its own processor is handed the parts with the
+	// plugin, and one that runs `processor` passes them with the file.
+	const plugins = useMemo<PluggableList>(
+		() =>
+			parts.length
+				? [[createEditorParts, { parts }], ...remarkPlugins.slice(1)]
+				: remarkPlugins,
+		[parts],
+	);
 
 	return {
-		remarkPlugins,
+		remarkPlugins: plugins,
+		parts,
 		rehypePlugins: withKatex ? rehypePluginsWithKatex : rehypePlugins,
 		allowedTags,
 		processor,
@@ -279,6 +462,7 @@ export const _useMarkdownTest = () => {
 
 	return {
 		parse: (source: string) => slim(processor.parse(source)),
-		run: (source: string) => slim(processor.runSync(processor.parse(source))),
+		run: (source: string, parts: readonly zEditorPart[] = []) =>
+			slim(processor.runSync(processor.parse(source), { data: { parts } })),
 	};
 };

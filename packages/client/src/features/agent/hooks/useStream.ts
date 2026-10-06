@@ -1,6 +1,6 @@
-import type { StreamState } from "@tiny-chat/core/core/types/stream.ts";
 import { useCallback, useSyncExternalStore } from "react";
-import { GenericStreamService } from "../../../core/services/StreamService.ts";
+import { GenericStreamService } from "#client/core/services/StreamService.ts";
+import type { StreamState } from "#core/core/types/stream.ts";
 
 export const useStream = <T>(id: string): StreamState<T> | undefined => {
 	return useSyncExternalStore(

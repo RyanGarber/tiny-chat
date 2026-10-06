@@ -1,9 +1,9 @@
-import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
-import { zConfig } from "../../data/types/message.ts";
-import type { zDataPart } from "../../data/types/part.ts";
-import { PathUtils } from "../../file/utils/PathUtils.ts";
-import type { zAgentMessage } from "../types/agent.ts";
-import { AgentUtils } from "./AgentUtils.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import type { zAgentMessage } from "#core/features/agent/types/agent.ts";
+import { AgentUtils } from "#core/features/agent/utils/AgentUtils.ts";
+import { zConfig } from "#core/features/data/types/message.ts";
+import type { zDataPart } from "#core/features/data/types/part.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
 
 const UPLOAD = "aaaaaaaaaaaaaaaaaaaaaaaa";
 const OTHER = "bbbbbbbbbbbbbbbbbbbbbbbb";

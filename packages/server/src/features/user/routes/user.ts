@@ -1,10 +1,10 @@
-import { zId } from "@tiny-chat/core/core/types/common.ts";
 import { z } from "zod";
-import { AuthService } from "../../../core/services/AuthService.ts";
-import { AuthServer } from "../../../core/utils/AuthServer.ts";
-import { procedure, router } from "../../../index.ts";
-import { CacheService } from "../services/CacheService.ts";
-import { CloneService } from "../services/CloneService.ts";
+import { zId } from "#core/core/types/common.ts";
+import { AuthService } from "#server/core/services/AuthService.ts";
+import { AuthServer } from "#server/core/utils/AuthServer.ts";
+import { CacheService } from "#server/features/user/services/CacheService.ts";
+import { CloneService } from "#server/features/user/services/CloneService.ts";
+import { procedure, router } from "#server/index.ts";
 
 export const user = router({
 	getAccounts: procedure.query(async ({ ctx }) => {

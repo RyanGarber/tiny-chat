@@ -1,5 +1,5 @@
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
-import { GitHubAccountService } from "../../user/services/GitHubAccountService.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import { GitHubAccountService } from "#server/features/user/services/GitHubAccountService.ts";
 
 const API_URL = "https://api.github.com";
 const API_VERSION = "2026-03-10";

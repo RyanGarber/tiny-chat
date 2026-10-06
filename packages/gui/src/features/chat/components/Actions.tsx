@@ -1,0 +1,75 @@
+import { Box, Card, Divider, Group, Stack, Text } from "@mantine/core";
+import { ClockIcon } from "@phosphor-icons/react";
+import { useEffect, useMemo, useState } from "react";
+import { useChat } from "#client/features/chat/hooks/useChat.ts";
+import { useActions } from "#client/features/user/hooks/useActions.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { DataUtils } from "#core/features/data/utils/DataUtils.ts";
+
+export default function Actions() {
+	const { chat } = useChat();
+	const { actions } = useActions();
+
+	const activeActions = useMemo(
+		() =>
+			actions.data?.filter(
+				(a) =>
+					a.chatId === chat.data?.id &&
+					a.nextRunAt !== null &&
+					Temporal.PlainDateTime.compare(
+						a.nextRunAt,
+						Temporal.Now.plainDateTimeISO("UTC"),
+					) > 0,
+			) ?? [],
+		[actions.data, chat.data],
+	);
+
+	const [, tick] = useState(0);
+
+	useEffect(() => {
+		const interval = setInterval(() => tick((n) => n + 1), 1000);
+		return () => clearInterval(interval);
+	}, []);
+
+	return activeActions.length ? (
+		<Card w="100%" px={20} py={10}>
+			<Group w="100%" c="dimmed">
+				<ClockIcon size={20} />
+				<Stack gap={0} flex={1}>
+					{activeActions.map((action, i, array) => (
+						<Box key={action.id}>
+							<div
+								style={{
+									display: "grid",
+									gridTemplateColumns: "minmax(0, 1fr) auto", // MAGIC LINE: forces col 1 to 0 if needed
+									gap: "8px",
+									width: "100%",
+									alignItems: "center",
+								}}
+							>
+								<Text
+									size="sm"
+									style={{
+										whiteSpace: "nowrap",
+										overflow: "hidden",
+										textOverflow: "ellipsis",
+									}}
+								>
+									{DataUtils.getTextCleaned(action)}
+								</Text>
+								<Text size="sm" style={{ whiteSpace: "nowrap" }}>
+									{action.nextRunAt &&
+										CommonUtils.formatDate({
+											date: action.nextRunAt,
+											relative: true,
+										})}
+								</Text>
+							</div>
+							{i !== array.length - 1 && <Divider my="xs" />}
+						</Box>
+					))}
+				</Stack>
+			</Group>
+		</Card>
+	) : undefined;
+}

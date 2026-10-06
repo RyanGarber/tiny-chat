@@ -1,15 +1,15 @@
 import { or } from "@prisma/orm-postgres/orm-client";
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import { SettingsUtils } from "@tiny-chat/core/core/utils/SettingsUtils.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { SettingsUtils } from "#core/core/utils/SettingsUtils.ts";
 import type {
 	ChatLike,
 	ChatState,
 	ProjectLike,
 	ProjectState,
-} from "@tiny-chat/core/features/data/types/chat.ts";
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
-import { selectAll } from "../../../db.ts";
-import { ChatUtils } from "../utils/ChatUtils.ts";
+} from "#core/features/data/types/chat.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import { selectAll } from "#server/db.ts";
+import { ChatUtils } from "#server/features/chat/utils/ChatUtils.ts";
 
 export const ChatService = {
 	/**

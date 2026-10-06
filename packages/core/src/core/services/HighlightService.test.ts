@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { HighlightService } from "./HighlightService.ts";
+import { HighlightService } from "#core/core/services/HighlightService.ts";
 
 const SOURCE = `/**
  * A block comment that spans

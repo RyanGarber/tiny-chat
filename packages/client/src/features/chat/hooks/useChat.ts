@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import type { zAgentChat } from "@tiny-chat/core/features/agent/types/agent.ts";
-import { ChatUtils } from "@tiny-chat/core/features/data/utils/ChatUtils.ts";
 import { useContext, useMemo } from "react";
-import { ClientContext } from "../../../client.ts";
-import { useSettings } from "../../settings/hooks/useSettings.ts";
-import { useChatStore } from "../stores/useChatStore.ts";
-import { useMessagingStore } from "../stores/useMessagingStore.ts";
+import { ClientContext } from "#client/client.ts";
+import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
+import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
+import { useSettings } from "#client/features/settings/hooks/useSettings.ts";
+import type { zAgentChat } from "#core/features/agent/types/agent.ts";
+import { ChatUtils } from "#core/features/data/utils/ChatUtils.ts";
 
 export const useChat = () => {
 	const client = useContext(ClientContext);

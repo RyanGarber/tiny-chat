@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { zUser } from "../../data/types/user.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
 
 const zProvider = z.object({
 	name: z.string(),

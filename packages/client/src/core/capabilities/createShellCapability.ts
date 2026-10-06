@@ -1,8 +1,8 @@
+import type { Client } from "#client/client.ts";
 import type {
 	CapabilityFactory,
 	ShellCapability,
-} from "@tiny-chat/core/core/types/capability.ts";
-import type { Client } from "../../client.ts";
+} from "#core/core/types/capability.ts";
 
 export const createShellCapability: CapabilityFactory<
 	{ client: Client },

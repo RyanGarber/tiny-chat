@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
 
 export type PathLike =
 	| { path?: string[] | null; uri?: string | null }

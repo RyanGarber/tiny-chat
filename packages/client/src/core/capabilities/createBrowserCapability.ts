@@ -1,9 +1,9 @@
+import type { Client } from "#client/client.ts";
+import { ClientBrowserService } from "#client/features/agent/services/ClientBrowserService.ts";
 import type {
 	BrowserCapability,
 	CapabilityFactory,
-} from "@tiny-chat/core/core/types/capability.ts";
-import type { Client } from "../../client.ts";
-import { ClientBrowserService } from "../../features/agent/services/ClientBrowserService.ts";
+} from "#core/core/types/capability.ts";
 
 export const createBrowserCapability: CapabilityFactory<
 	{ client: Client },

@@ -1,6 +1,6 @@
-import type { Model } from "@tiny-chat/core/core/services/PostgresService.ts";
-import type { PartialBy } from "@tiny-chat/core/core/types/common.ts";
-import type { MemoryState } from "@tiny-chat/core/features/data/types/memory.ts";
+import type { Model } from "#core/core/services/PostgresService.ts";
+import type { PartialBy } from "#core/core/types/common.ts";
+import type { MemoryState } from "#core/features/data/types/memory.ts";
 
 export const MemoryUtils = {
 	toMemoryState: ({

@@ -1,26 +1,20 @@
-import type {
-	Enum,
-	Model,
-} from "@tiny-chat/core/core/services/PostgresService.ts";
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import { SettingsUtils } from "@tiny-chat/core/core/utils/SettingsUtils.ts";
-import type { ChatLike } from "@tiny-chat/core/features/data/types/chat.ts";
+import type { Enum, Model } from "#core/core/services/PostgresService.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { SettingsUtils } from "#core/core/utils/SettingsUtils.ts";
+import type { ChatLike } from "#core/features/data/types/chat.ts";
 import type {
 	MessageLike,
 	zConfig,
-} from "@tiny-chat/core/features/data/types/message.ts";
-import type {
-	zData,
-	zMetadata,
-} from "@tiny-chat/core/features/data/types/part.ts";
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
-import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
+} from "#core/features/data/types/message.ts";
+import type { zData, zMetadata } from "#core/features/data/types/part.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import { DataUtils } from "#core/features/data/utils/DataUtils.ts";
 import {
 	type MessageBranches,
 	MessageBranchUtils,
-} from "@tiny-chat/core/features/data/utils/MessageBranchUtils.ts";
-import { MemoryRetrievalService } from "../../chat/services/MemoryRetrievalService.ts";
-import { MessageUtils } from "../utils/MessageUtils.ts";
+} from "#core/features/data/utils/MessageBranchUtils.ts";
+import { MemoryRetrievalService } from "#server/features/chat/services/MemoryRetrievalService.ts";
+import { MessageUtils } from "#server/features/message/utils/MessageUtils.ts";
 
 type Content = {
 	author: Enum["Author"];
@@ -64,6 +58,37 @@ export const MessageService = {
 					.first(),
 			),
 		);
+	},
+
+	/**
+	 * Where a message lives: its chat, and the branch selections that put it on
+	 * the path `getMessages` returns.
+	 */
+	locateMessage: async ({
+		user,
+		message,
+	}: {
+		user: zUser;
+		message: MessageLike;
+	}) => {
+		const { chatId } = await MessageService.getMessage({ user, message });
+		const id = typeof message === "string" ? message : message.id;
+		const topology = await globalThis.db.orm.public.Message.where({
+			chatId,
+			userId: user.id,
+		})
+			.select("id", "previousId")
+			.all();
+		const byId = new Map(topology.map((m) => [m.id, m]));
+		const branches: MessageBranches = {};
+		let current = byId.get(id);
+		while (current) {
+			if (branches[current.previousId ?? ""])
+				throw new Error("Message cycle detected");
+			branches[current.previousId ?? ""] = current.id;
+			current = current.previousId ? byId.get(current.previousId) : undefined;
+		}
+		return { chatId, branches };
 	},
 
 	/** Fetch the topology once, then only the selected page's content. */

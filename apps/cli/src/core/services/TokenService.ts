@@ -1,7 +1,7 @@
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { KeyringService } from "./KeyringService.ts";
+import { KeyringService } from "#cli/core/services/KeyringService.ts";
 
 // Stable across CLI runs, but separate between users on shared temp directories.
 const PATH = join(

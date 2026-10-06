@@ -1,7 +1,10 @@
-import type { zData } from "@tiny-chat/core/features/data/types/part.ts";
-import type { shell_exec } from "@tiny-chat/core/features/tool/tools/shell/shell_exec.ts";
 import type { z } from "zod";
-import { AgentStreamService, ToolStreamService } from "./StreamService.ts";
+import {
+	AgentStreamService,
+	ToolStreamService,
+} from "#client/core/services/StreamService.ts";
+import type { zData } from "#core/features/data/types/part.ts";
+import type { shell_exec } from "#core/features/tool/tools/shell/shell_exec.ts";
 
 describe("stream snapshots", () => {
 	beforeEach(() => vi.useFakeTimers());
@@ -59,7 +62,7 @@ describe("stream snapshots", () => {
 const keep: (event: z.infer<typeof shell_exec.stream>) => boolean = (event) => {
 	return event.value.length > 0;
 };
-const flush = () => new Promise((resolve) => setTimeout(resolve, 80));
+const flush = () => vi.advanceTimersByTimeAsync(80);
 
 // TODO: this logic mirrors 1:1 what's in shell_exec; move this test to that directly
 let buffer: z.infer<(typeof shell_exec)["stream"]> | undefined;
@@ -101,6 +104,8 @@ const mutate = (
 };
 
 describe("ToolStreamService", () => {
+	beforeEach(() => vi.useFakeTimers());
+	afterEach(() => vi.useRealTimers());
 	it("splits output into lines attributed to their stream", async () => {
 		const key = "p";
 		const service = ToolStreamService.of<z.infer<typeof shell_exec.stream>>();

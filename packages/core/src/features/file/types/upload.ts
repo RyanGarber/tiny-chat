@@ -1,6 +1,6 @@
 import { z } from "zod";
-import type { Model } from "../../../core/services/PostgresService.ts";
-import { zId } from "../../../core/types/common.ts";
+import type { Model } from "#core/core/services/PostgresService.ts";
+import { zId } from "#core/core/types/common.ts";
 
 export type UploadState = Model["Upload"];
 

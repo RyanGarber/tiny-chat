@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { procedure, router } from "../../../index.ts";
-import { WebService } from "../services/WebService.ts";
+import { WebService } from "#server/features/proxy/services/WebService.ts";
+import { procedure, router } from "#server/index.ts";
 
 export const web = router({
 	search: procedure

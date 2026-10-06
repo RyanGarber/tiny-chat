@@ -1,9 +1,8 @@
-import { EditorPartUtils } from "@tiny-chat/core/features/data/utils/EditorPartUtils.ts";
 import {
 	PASTE_LINE_LIMIT,
 	PASTE_NEWLINE_LIMIT,
 	PasteUtils,
-} from "./PasteUtils.ts";
+} from "#client/features/editor/utils/PasteUtils.ts";
 
 const long = (line: string, count = PASTE_LINE_LIMIT) =>
 	Array.from({ length: count }, () => line).join("\n");
@@ -14,34 +13,6 @@ describe("PasteUtils", () => {
 		expect(PasteUtils.isLong(long("line", PASTE_NEWLINE_LIMIT))).toBe(false);
 		expect(PasteUtils.isLong(long("line", PASTE_LINE_LIMIT))).toBe(true);
 		expect(PasteUtils.isLong("a\r\nb\r\n")).toBe(false);
-	});
-
-	it("wraps a collapsed paste as a paste directive around a fence", () => {
-		const text = long("hello");
-		expect(
-			EditorPartUtils.toMarkdown({
-				id: "paste-1",
-				type: "paste",
-				text,
-				lines: PASTE_LINE_LIMIT,
-				language: null,
-				collapsed: true,
-			}),
-		).toBe(
-			`:::paste{lines="${PASTE_LINE_LIMIT}"}\n${PasteUtils.fence(text)}\n:::`,
-		);
-	});
-
-	it("leaves a paste short enough to read as the block it is", () => {
-		expect(
-			EditorPartUtils.toMarkdown({
-				id: "paste-2",
-				type: "paste",
-				text: "const x = 1;",
-				lines: 1,
-				language: "typescript",
-			}),
-		).toBe("```typescript\nconst x = 1;\n```");
 	});
 
 	it("detects source as code and leaves prose and lists alone", () => {

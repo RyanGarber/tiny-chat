@@ -1,5 +1,5 @@
-import { FileUtils } from "./FileUtils.ts";
-import { PathUtils } from "./PathUtils.ts";
+import { FileUtils } from "#core/features/file/utils/FileUtils.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
 
 /**
  * FileExcludeUtils — the one place that decides what a file operation is

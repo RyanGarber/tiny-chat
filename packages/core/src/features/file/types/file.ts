@@ -1,5 +1,5 @@
-import type { Model } from "../../../core/services/PostgresService.ts";
-import type { FileMount } from "../utils/PathUtils.ts";
+import type { Model } from "#core/core/services/PostgresService.ts";
+import type { FileMount } from "#core/features/file/utils/PathUtils.ts";
 
 export type FileState = Omit<Model["File"], "embedding"> & {
 	uri: string;

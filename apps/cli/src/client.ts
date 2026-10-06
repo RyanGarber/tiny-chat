@@ -4,20 +4,16 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
-import { createClient } from "@tiny-chat/client/client.ts";
-import { AtomUtils } from "@tiny-chat/client/features/editor/utils/AtomUtils.ts";
-import { MarkdownDataUtils } from "@tiny-chat/client/features/message/utils/MarkdownDataUtils.ts";
-import type { CodeWorker } from "@tiny-chat/core/core/utils/CodeUtils.ts";
-import { ToolOutputUtils } from "@tiny-chat/core/features/tool/utils/ToolOutputUtils.ts";
-import { StorageService } from "./core/services/StorageService.ts";
-import { TokenService } from "./core/services/TokenService.ts";
-import { CliUtils } from "./core/utils/CliUtils.ts";
-import {
-	insertNode,
-	useEditorStore,
-} from "./features/editor/stores/useEditorStore.ts";
-
-import { TextareaUtils } from "./features/textarea/utils/TextareaUtils.ts";
+import { AFMService } from "#cli/core/services/AFMService.ts";
+import { StorageService } from "#cli/core/services/StorageService.ts";
+import { TokenService } from "#cli/core/services/TokenService.ts";
+import { FileSystemUtils } from "#cli/core/utils/FileSystemUtils.ts";
+import { createClient } from "#client/client.ts";
+import type { CodeWorker } from "#core/core/utils/CodeUtils.ts";
+import type { ProviderState } from "#core/features/provider/types/provider.ts";
+import { ToolOutputUtils } from "#core/features/tool/utils/ToolOutputUtils.ts";
+import { CliUtils } from "#tui/core/utils/CliUtils.ts";
+import { EditorInputService } from "#tui/features/editor/services/EditorInputService.ts";
 
 export const client = createClient({
 	env: {
@@ -57,29 +53,20 @@ export const client = createClient({
 			});
 		},
 	},
-	input: {
-		// The editor holds its commands, attachments and long pastes as atoms —
-		// short stand-ins for the Markdown they travel as — which are written
-		// back out here, and read back in when a message is loaded for editing.
-		getData: () => {
-			const { content } = useEditorStore.getState();
-			return MarkdownDataUtils.fromMarkdown(
-				AtomUtils.serialize({ content }),
-				true,
-			);
+	providers: {
+		getModelProviders: async () => {
+			const afm = await AFMService.getProvider();
+			return afm ? [afm] : [];
 		},
-		setData: ({ data }) => {
-			const content = AtomUtils.deserialize(
-				MarkdownDataUtils.toMarkdown(data, true),
-			);
-			useEditorStore.setState({
-				content,
-				cursor: TextareaUtils.cursor(content, content.length),
-				selection: null,
-			});
+		getProviderStates: async ({ user }) => {
+			const afm = await AFMService.getProvider();
+			if (!afm) return [];
+			return [
+				{ ...afm, status: await afm.getStatus({ user }) },
+			] satisfies ProviderState<any>[];
 		},
-		insertNode: ({ node }) => insertNode(node),
 	},
+	input: EditorInputService,
 	shell: {
 		cwd: async () => {
 			return process.cwd();
@@ -103,6 +90,11 @@ export const client = createClient({
 				success: true,
 			};
 		},
+		readFiles: async ({ paths, maxBytes }) =>
+			await FileSystemUtils.readFiles({
+				paths: paths.map((path) => CliUtils.resolve(path)),
+				maxBytes,
+			}),
 		readDir: async ({ path }) => {
 			path = CliUtils.resolve(path);
 			const entries = await readdir(path, { withFileTypes: true });
@@ -112,7 +104,7 @@ export const client = createClient({
 			}));
 		},
 		walk: async ({ path, ...options }) =>
-			await CliUtils.walk({ path: CliUtils.resolve(path), ...options }),
+			await FileSystemUtils.walk({ path: CliUtils.resolve(path), ...options }),
 		// Spawned rather than buffered so output can be reported as it arrives;
 		// the accumulated text is still what the tool result is built from. Its
 		// own process group, so an interrupt reaches everything the shell

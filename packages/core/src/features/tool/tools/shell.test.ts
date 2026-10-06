@@ -1,15 +1,15 @@
-import type { DeepPartial } from "../../../core/types/common.ts";
-import type { zAgentContext } from "../../agent/types/agent.ts";
-import type { zSettings } from "../../data/types/user.ts";
-import { createShell } from "../../file/services/FileSearchService.test.ts";
-import { FileUtils } from "../../file/utils/FileUtils.ts";
-import { createEditFileTool } from "./shell/edit_file.ts";
-import { createFindFilesTool } from "./shell/find_files.ts";
-import { createGrepFilesTool } from "./shell/grep_files.ts";
-import { createReadDirTool } from "./shell/read_dir.ts";
-import { createReadFileTool } from "./shell/read_file.ts";
-import { createShellExecTool } from "./shell/shell_exec.ts";
-import { createWriteFileTool } from "./shell/write_file.ts";
+import type { DeepPartial } from "#core/core/types/common.ts";
+import type { zAgentContext } from "#core/features/agent/types/agent.ts";
+import type { zSettings } from "#core/features/data/types/user.ts";
+import { createShell } from "#core/features/file/services/FileSearchService.test.ts";
+import { FileUtils } from "#core/features/file/utils/FileUtils.ts";
+import { createEditFileTool } from "#core/features/tool/tools/shell/edit_file.ts";
+import { createFindFilesTool } from "#core/features/tool/tools/shell/find_files.ts";
+import { createGrepFilesTool } from "#core/features/tool/tools/shell/grep_files.ts";
+import { createReadDirTool } from "#core/features/tool/tools/shell/read_dir.ts";
+import { createReadFileTool } from "#core/features/tool/tools/shell/read_file.ts";
+import { createShellExecTool } from "#core/features/tool/tools/shell/shell_exec.ts";
+import { createWriteFileTool } from "#core/features/tool/tools/shell/write_file.ts";
 
 const context = {} as zAgentContext;
 

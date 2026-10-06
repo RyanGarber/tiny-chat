@@ -1,4 +1,4 @@
-import { testClient } from "../../../tests.ts";
+import { testClient } from "#server/tests.ts";
 
 const { api } = testClient();
 

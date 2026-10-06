@@ -1,6 +1,6 @@
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import { mockConfig } from "@tiny-chat/core/tests.ts";
-import { testClient } from "../../../tests.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { mockConfig } from "#core/tests.ts";
+import { testClient } from "#server/tests.ts";
 
 describe("message", () => {
 	const { api } = testClient();

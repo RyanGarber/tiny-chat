@@ -1,4 +1,9 @@
-import { _useMarkdownTest } from "./useMarkdown.ts";
+import { _useMarkdownTest } from "#client/features/message/hooks/useMarkdown.ts";
+import { MarkdownUtils } from "#client/features/message/utils/MarkdownUtils.ts";
+import {
+	EditorPartUtils,
+	type zEditorPart,
+} from "#core/features/data/utils/EditorPartUtils.ts";
 
 const { parse, run } = _useMarkdownTest();
 
@@ -26,27 +31,14 @@ describe("useMarkdown", () => {
 		]);
 	});
 
-	it("still parses real directives", () => {
-		expect(parse(':command[hi]{name="x"}')).toEqual([
+	it("still parses the directives a model writes", () => {
+		expect(parse(":::writing\nhi\n:::")).toEqual([
 			"root",
-			["paragraph", ["command", "hi"]],
+			["writing", ["paragraph", "hi"]],
 		]);
-		expect(parse(':attachment[]{source="a"}')).toEqual([
+		expect(run(":::writing\nhi\n:::")).toEqual([
 			"root",
-			["paragraph", ["attachment"]],
-		]);
-		expect(parse("::command[hi]")).toEqual(["root", ["command", "hi"]]);
-		expect(parse(":::quote\nhi\n:::")).toEqual([
-			"root",
-			["quote", ["paragraph", "hi"]],
-		]);
-		expect(parse(':::paste{lines="3"}\n```\na\nb\nc\n```\n:::')).toEqual([
-			"root",
-			["paste", ["code"]],
-		]);
-		expect(run(':::paste{lines="3"}\n```\na\nb\nc\n```\n:::')).toEqual([
-			"root",
-			["details", ["pre", ["code", "a\nb\nc\n"]]],
+			["blockquote", ["p", "hi"]],
 		]);
 	});
 
@@ -56,5 +48,65 @@ describe("useMarkdown", () => {
 			["paragraph", ':command{name="x"}'],
 		]);
 		expect(parse(":quote")).toEqual(["root", ["paragraph", ":quote"]]);
+	});
+});
+
+describe("editor parts", () => {
+	const m = EditorPartUtils.marker;
+	const attachment: zEditorPart = {
+		id: "a",
+		type: "attachment",
+		source: "/project/a.ts",
+		label: "a.ts",
+		content: { type: "unavailable" },
+	};
+	const prose = "`Customer[Page]` renamed.\n\nExamples:\n- A -> B\n- C -> D";
+	const paste: zEditorPart = {
+		id: "p",
+		type: "paste",
+		text: prose,
+		lines: 5,
+		language: null,
+		collapsed: true,
+	};
+
+	it("draws an inline part where its marker stands", () => {
+		expect(run(`see **${m(0)}** now`, [attachment])).toEqual([
+			"root",
+			["p", "see ", ["strong", ["link"]], " now"],
+		]);
+	});
+
+	it("lifts a block part out of the paragraph it landed in", () => {
+		expect(run(`look:\n${m(0)}\nthanks`, [paste])).toEqual([
+			"root",
+			["p", "look:"],
+			[
+				"details",
+				["p", ["code", "Customer[Page]"], " renamed."],
+				["p", "Examples:"],
+				["ul", ["li", "A -> B"], ["li", "C -> D"]],
+			],
+			["p", "thanks"],
+		]);
+	});
+
+	it("draws a pasted source as code", () => {
+		expect(run(m(0), [{ ...paste, text: "a\n\nb", language: "ts" }])).toEqual([
+			"root",
+			["details", ["pre", ["code", "a\n\nb\n"]]],
+		]);
+	});
+
+	it("keeps one block when a paste is split from the rest", () => {
+		const content = `${m(0)}\n\nafter`;
+		expect(MarkdownUtils.split({ content }).blocks).toEqual([m(0), "after"]);
+	});
+
+	it("writes a part in code as the text it would have been typed as", () => {
+		expect(run(`\`${m(0)}\``, [attachment])).toEqual([
+			"root",
+			["p", ["code", "@a.ts"]],
+		]);
 	});
 });

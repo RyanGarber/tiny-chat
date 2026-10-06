@@ -1,19 +1,19 @@
 import { z } from "zod";
-import type { DistributiveOmit } from "../../../core/types/common.ts";
-import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
-import type { zConfig } from "../../data/types/message.ts";
+import type { DistributiveOmit } from "#core/core/types/common.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import type { zConfig } from "#core/features/data/types/message.ts";
 import type {
 	zFilePart,
 	zToolCallPart,
 	zToolResultPart,
-} from "../../data/types/part.ts";
-import type { RenderedPart } from "../../data/utils/DataUtils.ts";
+} from "#core/features/data/types/part.ts";
+import type { RenderedPart } from "#core/features/data/utils/DataUtils.ts";
 import type {
 	OutputPart,
 	Tool,
 	ToolDefinition,
 	Toolset,
-} from "../types/tool.ts";
+} from "#core/features/tool/types/tool.ts";
 
 export type ToolCall<T extends ToolDefinition> = Omit<
 	zToolCallPart,

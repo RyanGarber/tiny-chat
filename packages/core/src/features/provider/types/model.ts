@@ -1,17 +1,20 @@
 import type { ProviderV3, ProviderV4 } from "@ai-sdk/provider";
 import type { EmbeddingModel, LanguageModel, TextStreamPart } from "ai";
 import { z } from "zod";
-import { Enum } from "../../../core/services/PostgresService.ts";
-import type { PromiseOrValue } from "../../../core/types/common.ts";
-import type { zProviderEnv } from "../../../core/types/env.ts";
-import type { zConfig } from "../../data/types/message.ts";
+import { Enum } from "#core/core/services/PostgresService.ts";
+import type { PromiseOrValue } from "#core/core/types/common.ts";
+import type { zProviderEnv } from "#core/core/types/env.ts";
+import type { zConfig } from "#core/features/data/types/message.ts";
 import {
 	zData,
 	type zDataPart,
 	type zSignature,
-} from "../../data/types/part.ts";
-import type { zUser } from "../../data/types/user.ts";
-import type { Provider, ProviderStatus } from "./provider.ts";
+} from "#core/features/data/types/part.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import type {
+	Provider,
+	ProviderStatus,
+} from "#core/features/provider/types/provider.ts";
 
 export const zModelFeature = z.enum([
 	"language",

@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { DiffUtils } from "./DiffUtils.ts";
+import { DiffUtils } from "#core/features/file/utils/DiffUtils.ts";
 
 describe("DiffUtils", () => {
 	it("calculates a diff", () => {

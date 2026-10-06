@@ -1,11 +1,11 @@
+import type { Client } from "#client/client.ts";
+import { ClientProviderService } from "#client/features/agent/services/ClientProviderService.ts";
 import type {
 	CapabilityFactory,
 	EmbeddingCapability,
-} from "@tiny-chat/core/core/types/capability.ts";
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
-import { ModelProviderService } from "@tiny-chat/core/features/provider/services/ModelProviderService.ts";
-import type { Client } from "../../client.ts";
-import { ClientProviderService } from "../../features/agent/services/ClientProviderService.ts";
+} from "#core/core/types/capability.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import { ModelProviderService } from "#core/features/provider/services/ModelProviderService.ts";
 
 export const createEmbeddingCapability: CapabilityFactory<
 	{ client: Client; user: zUser },

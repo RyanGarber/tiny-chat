@@ -1,9 +1,9 @@
 import { useMutation } from "@tanstack/react-query";
-import { SettingsUtils } from "@tiny-chat/core/core/utils/SettingsUtils.ts";
-import type { zConfig } from "@tiny-chat/core/features/data/types/message.ts";
 import { useCallback, useContext, useMemo } from "react";
-import { ClientContext } from "../../../client.ts";
-import { useSettings } from "./useSettings.ts";
+import { ClientContext } from "#client/client.ts";
+import { useSettings } from "#client/features/settings/hooks/useSettings.ts";
+import { SettingsUtils } from "#core/core/utils/SettingsUtils.ts";
+import type { zConfig } from "#core/features/data/types/message.ts";
 
 export const useModelSettings = () => {
 	const client = useContext(ClientContext);

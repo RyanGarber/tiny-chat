@@ -1,9 +1,9 @@
-import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
-import type { zFilePart } from "../../data/types/part.ts";
-import { FileTypeUtils } from "../../file/utils/FileTypeUtils.ts";
-import { FileUtils } from "../../file/utils/FileUtils.ts";
-import { PathUtils } from "../../file/utils/PathUtils.ts";
-import type { ToolBlock } from "../types/display.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import type { zFilePart } from "#core/features/data/types/part.ts";
+import { FileTypeUtils } from "#core/features/file/utils/FileTypeUtils.ts";
+import { FileUtils } from "#core/features/file/utils/FileUtils.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
+import type { ToolBlock } from "#core/features/tool/types/display.ts";
 
 /** Helpers tools use to describe their calls in `ToolBlock`s. */
 export const ToolDisplayUtils = {

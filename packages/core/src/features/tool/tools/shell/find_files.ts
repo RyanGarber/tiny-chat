@@ -1,10 +1,14 @@
 import { z } from "zod";
-import type { Capabilities } from "../../../../core/types/capability.ts";
-import { FileSearchService } from "../../../file/services/FileSearchService.ts";
-import type { ToolDisplay } from "../../types/display.ts";
-import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
-import { ShellUtils } from "../../utils/ShellUtils.ts";
-import { ToolDisplayUtils } from "../../utils/ToolDisplayUtils.ts";
+import type { Capabilities } from "#core/core/types/capability.ts";
+import { FileSearchService } from "#core/features/file/services/FileSearchService.ts";
+import type { ToolDisplay } from "#core/features/tool/types/display.ts";
+import type {
+	Tool,
+	ToolDefinition,
+	ToolFactory,
+} from "#core/features/tool/types/tool.ts";
+import { ShellUtils } from "#core/features/tool/utils/ShellUtils.ts";
+import { ToolDisplayUtils } from "#core/features/tool/utils/ToolDisplayUtils.ts";
 
 export const find_files = {
 	name: "find_files",

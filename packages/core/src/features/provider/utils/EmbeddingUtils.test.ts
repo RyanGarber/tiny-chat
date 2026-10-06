@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EmbeddingUtils } from "./EmbeddingUtils.ts";
+import { EmbeddingUtils } from "#core/features/provider/utils/EmbeddingUtils.ts";
 
 describe("EmbeddingUtils", () => {
 	it("flattens a batch into typed input rows", () => {

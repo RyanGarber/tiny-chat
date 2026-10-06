@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// Updates the "version" field in apps/tauri/tauri.conf.json in place, without
+// Updates the "version" field in apps/app/tauri.conf.json in place, without
 // reformatting the rest of the file. This is the single source of truth for
 // the app version; semantic-release invokes this via its `exec` plugin.
 
@@ -17,7 +17,7 @@ await new Command()
 		console.log(`[write-version] reading existing version...`);
 		const configPath = resolve(
 			dirname(fileURLToPath(import.meta.url)),
-			"../apps/tauri/tauri.conf.json",
+			"../apps/app/tauri.conf.json",
 		);
 		const configContent = await readFile(configPath, "utf8");
 

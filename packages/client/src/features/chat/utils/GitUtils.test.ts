@@ -1,4 +1,4 @@
-import { GitUtils } from "./GitUtils.ts";
+import { GitUtils } from "#client/features/chat/utils/GitUtils.ts";
 
 describe("GitUtils", () => {
 	it("quotes paths as one shell word", () => {
@@ -10,8 +10,8 @@ describe("GitUtils", () => {
 		expect(GitUtils.root({ directory: "/repo", prefix: "\n" })).toBe("/repo");
 		expect(
 			GitUtils.root({
-				directory: "/repo/packages/app",
-				prefix: "packages/app/\n",
+				directory: "/repo/packages/core",
+				prefix: "packages/core/\n",
 			}),
 		).toBe("/repo");
 		expect(

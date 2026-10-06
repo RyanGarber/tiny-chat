@@ -1,9 +1,9 @@
 import type { TextStreamPart } from "ai";
-import { mockConfig, mockUser } from "../../../../tests.ts";
-import type { zAgentMessage } from "../../../agent/types/agent.ts";
-import type { zDataPart } from "../../../data/types/part.ts";
-import { ModelTransformService } from "../../services/ModelTransformService.ts";
-import { GoogleProvider } from "./GoogleProvider.ts";
+import type { zAgentMessage } from "#core/features/agent/types/agent.ts";
+import type { zDataPart } from "#core/features/data/types/part.ts";
+import { GoogleProvider } from "#core/features/provider/providers/model/GoogleProvider.ts";
+import { ModelTransformService } from "#core/features/provider/services/ModelTransformService.ts";
+import { mockConfig, mockUser } from "#core/tests.ts";
 
 describe("GoogleProvider", () => {
 	it("stores signatures", () => {

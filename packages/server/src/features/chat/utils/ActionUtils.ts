@@ -1,7 +1,7 @@
-import type { Model } from "@tiny-chat/core/core/services/PostgresService.ts";
-import type { PartialBy } from "@tiny-chat/core/core/types/common.ts";
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import type { ActionState } from "@tiny-chat/core/features/data/types/action.ts";
+import type { Model } from "#core/core/services/PostgresService.ts";
+import type { PartialBy } from "#core/core/types/common.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import type { ActionState } from "#core/features/data/types/action.ts";
 
 export const ActionUtils = {
 	toActionState: ({

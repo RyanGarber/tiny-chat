@@ -1,7 +1,8 @@
-import type { Client } from "../../../client.ts";
-import { useConfigStore } from "../../agent/stores/useConfigStore.ts";
-import { useChatStore } from "../stores/useChatStore.ts";
-import { useMessagingStore } from "../stores/useMessagingStore.ts";
+import type { Client } from "#client/client.ts";
+import { useConfigStore } from "#client/features/agent/stores/useConfigStore.ts";
+import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
+import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
+import { MessageQueryService } from "#client/features/message/services/MessageQueryService.ts";
 
 export const ChatService = {
 	newChat: (folder: { id: string; title: string | null } | null = null) => {
@@ -50,6 +51,26 @@ export const ChatService = {
 		useChatStore.getState().requestScrollInstant();
 		useChatStore.getState().setCreateIncognito(false);
 		useChatStore.getState().setCreateTemporary(false);
+	},
+
+	/**
+	 * Opens the chat a message is in, on the branch that leads to it, with
+	 * enough of the history loaded to show it, and asks for it to be scrolled
+	 * to. Selections below it are kept when it is in the chat already open.
+	 */
+	openMessage: async ({ client, id }: { client: Client; id: string }) => {
+		const located = await client.api.message.locateMessage.query({
+			message: id,
+		});
+		const state = useChatStore.getState();
+		const branches =
+			state.chatId === located.chatId
+				? { ...state.branches, ...located.branches }
+				: located.branches;
+		await MessageQueryService.loadThrough(client, located.chatId, branches, id);
+		if (state.chatId !== located.chatId)
+			ChatService.setChat({ id: located.chatId });
+		useChatStore.getState().focusMessage(id, branches);
 	},
 
 	fetchChat: async ({ client, id }: { client: Client; id: string }) => {

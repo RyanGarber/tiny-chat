@@ -1,14 +1,14 @@
-import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import type {
 	AttachmentGroup,
 	AttachmentItem,
 	AttachmentQuery,
-} from "../types/attachment.ts";
-import type { CommandEdit } from "../types/command.ts";
-import type { EditorNode } from "../types/node.ts";
-import { AtomUtils } from "./AtomUtils.ts";
-import { CommandUtils } from "./CommandUtils.ts";
-import { CompletionUtils } from "./CompletionUtils.ts";
+} from "#client/features/editor/types/attachment.ts";
+import type { CommandEdit } from "#client/features/editor/types/command.ts";
+import type { EditorNode } from "#client/features/editor/types/node.ts";
+import { AtomUtils } from "#client/features/editor/utils/AtomUtils.ts";
+import { CommandUtils } from "#client/features/editor/utils/CommandUtils.ts";
+import { CompletionUtils } from "#client/features/editor/utils/CompletionUtils.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
 
 /** `@path`, at the end of a line. Spaces and backslashes may be escaped. */
 const QUERY_REGEX = /(?:^|\s)@((?:\\[\\ \t]|[^\s])*)$/;

@@ -1,19 +1,21 @@
-import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
 import type {
 	zAttachmentPart,
 	zCommandPart,
 	zPastePart,
 	zQuotePart,
-} from "../types/part.ts";
+	zTextPart,
+} from "#core/features/data/types/part.ts";
 
 /**
- * The parts an editor writes as a pointer rather than as itself.
+ * The parts an editor holds whole, beside the text written around them.
  *
  * An attachment carries a file, a paste carries more lines than an input can
  * show, and a command and a quote both read as something other than what they
- * travel as. The editor document holds `:tag[]{id}` for each of them and the
- * part it points at is kept alongside, so neither runtime has to encode the
- * thing twice — once for the document and once for the message.
+ * travel as. None of them is ever written into the text: wherever text has to
+ * stand in one piece with them — an editor document being serialized, or a
+ * message being rendered — each stands in it as a single marker character,
+ * and the part itself travels beside it.
  */
 export type zEditorPart =
 	| zAttachmentPart
@@ -33,26 +35,110 @@ export type EditorPartType = (typeof EDITOR_PART_TYPES)[number];
 /** An editor part written inline, beside the text around it. */
 const INLINE_PART_TYPES: EditorPartType[] = ["attachment", "command"];
 
+/**
+ * The first of the characters a part stands in text as: the `n`th part of a
+ * run is `MARKER_BASE + n`. They are taken from the Private Use Area, which no
+ * Markdown syntax gives a meaning to and nothing the user types should hold.
+ */
+const MARKER_BASE = 0xe000;
+const MARKER_LIMIT = 0x800;
+
+const MARKERS = /[-]/g;
+
+/** Text and the editor parts it is written around, in order. */
+export type EditorRun = (zTextPart | zEditorPart)[];
+
 export const EditorPartUtils = {
 	types: EDITOR_PART_TYPES,
 
 	is: (part: { type: string }): part is zEditorPart =>
 		EDITOR_PART_TYPES.includes(part.type as EditorPartType),
 
+	/** Whether the part is one a run of text and editor parts is made of. */
+	isRun: (part: { type: string }): part is zTextPart | zEditorPart =>
+		part.type === "text" || EditorPartUtils.is(part),
+
+	/** The run of text and editor parts the list opens with. */
+	toRun: (parts: readonly { type: string }[]): EditorRun => {
+		const run: EditorRun = [];
+		for (const part of parts) {
+			if (!EditorPartUtils.isRun(part)) break;
+			run.push(part);
+		}
+		return run;
+	},
+
 	/** Whether the part sits in a line of text rather than on its own. */
 	isInline: (type: EditorPartType) => INLINE_PART_TYPES.includes(type),
 
+	/** The character the `index`th part of a run stands in text as. */
+	marker: (index: number) => String.fromCharCode(MARKER_BASE + index),
+
+	/** The index of the part a marker stands for, or null if it is not one. */
+	index: (character: string) => {
+		const code = character.charCodeAt(0) - MARKER_BASE;
+		return character.length === 1 && code >= 0 && code < MARKER_LIMIT
+			? code
+			: null;
+	},
+
+	/** Every marker character, for splitting text around them. */
+	markers: () => new RegExp(MARKERS.source, "g"),
+
+	/** Text with any marker character it happens to hold taken out. */
+	strip: (text: string) => text.replace(MARKERS, ""),
+
 	/**
-	 * An attribute value, with the characters that would cut a directive short
-	 * taken out of it.
+	 * A run as one string, each part standing in it as its marker, and the
+	 * parts the markers index into.
 	 */
-	escape: (value: string) =>
-		value.replace(/[&"\r\n]/g, (character) => {
-			if (character === "&") return "&amp;";
-			if (character === '"') return "&quot;";
-			if (character === "\r") return "&#13;";
-			return "&#10;";
-		}),
+	join: (run: EditorRun): { source: string; parts: zEditorPart[] } => {
+		const parts: zEditorPart[] = [];
+		let source = "";
+
+		for (const part of run) {
+			if (part.type === "text") {
+				source += EditorPartUtils.strip(part.value);
+			} else if (parts.length < MARKER_LIMIT) {
+				source += EditorPartUtils.marker(parts.length);
+				parts.push(part);
+			}
+		}
+
+		return { source, parts };
+	},
+
+	/**
+	 * The inverse of {@link EditorPartUtils.join}: a string with markers in it
+	 * cut back into the text and the parts they stand for. A marker with no
+	 * part behind it is dropped.
+	 */
+	split: ({
+		source,
+		parts,
+	}: {
+		source: string;
+		parts: readonly zEditorPart[];
+	}): EditorRun => {
+		const run: EditorRun = [];
+		const text = (value: string) => {
+			if (value)
+				run.push({ id: CommonUtils.getRandomId(), type: "text", value });
+		};
+
+		let cursor = 0;
+		for (const match of source.matchAll(EditorPartUtils.markers())) {
+			text(source.slice(cursor, match.index));
+			cursor = match.index + match[0].length;
+
+			const index = EditorPartUtils.index(match[0]);
+			const part = index === null ? undefined : parts[index];
+			if (part) run.push(part);
+		}
+		text(source.slice(cursor));
+
+		return run;
+	},
 
 	/**
 	 * The body of a fenced block, when the whole of the text is one. Null when
@@ -82,54 +168,21 @@ export const EditorPartUtils = {
 	},
 
 	/**
-	 * The directive an editor document holds a part as: its id and nothing
-	 * else, so the payload is only ever written once — on the part.
+	 * A part as the plain Markdown a reader would have written in its place,
+	 * for wherever only text can go — an interjection, or a model that is not
+	 * told about the part itself.
 	 */
-	toPointer: ({ type, id }: { type: EditorPartType; id: string }) =>
-		EditorPartUtils.isInline(type)
-			? `:${type}[]{id="${id}"}`
-			: `::${type}{id="${id}"}`,
-
-	/**
-	 * The directive a part is *displayed* as, which carries what a renderer
-	 * needs to draw it and nothing a reader would have to resolve.
-	 */
-	toMarkdown: (part: zEditorPart): string => {
-		const attributes = (values: Record<string, string | undefined>) =>
-			CommonUtils.toAttributesString(
-				Object.fromEntries(
-					Object.entries(values)
-						.filter(([, value]) => value !== undefined)
-						.map(([key, value]) => [
-							key,
-							EditorPartUtils.escape(String(value)),
-						]),
-				),
-			);
-
+	toText: (part: zEditorPart): string => {
 		if (part.type === "attachment") {
-			return `:attachment[]{${attributes({
-				source: part.source,
-				name: part.label,
-				"is-directory": part.content.type === "directory" ? "true" : undefined,
-			})}}`;
+			const directory = part.content.type === "directory" ? "/" : "";
+			return `@${part.label || part.source}${directory}`;
 		}
-
 		if (part.type === "command") {
-			return `:command[${part.argument ?? ""}]{${attributes({
-				name: part.name,
-				value: part.value,
-			})}}`;
+			return `/${part.name}${part.argument ? ` ${part.argument}` : ""}`;
 		}
-
 		if (part.type === "quote") {
-			return `:::quote{${attributes({ model: part.model })}}\n${part.text}\n:::`;
+			return part.text.replace(/^/gm, "> ");
 		}
-
-		const fence = EditorPartUtils.fence(part.text, part.language);
-		// A paste short enough to read goes in as the block it is; only one that
-		// would bury the message around it is folded away behind its line count.
-		if (!part.collapsed) return fence;
-		return `:::paste{${attributes({ lines: String(part.lines) })}}\n${fence}\n:::`;
+		return EditorPartUtils.fence(part.text, part.language);
 	},
 } as const;

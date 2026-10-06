@@ -1,4 +1,7 @@
-import type { CompletionGroup, CompletionItem } from "./completion.ts";
+import type {
+	CompletionGroup,
+	CompletionItem,
+} from "#client/features/editor/types/completion.ts";
 
 export interface AttachmentItem extends CompletionItem {
 	directory?: boolean;

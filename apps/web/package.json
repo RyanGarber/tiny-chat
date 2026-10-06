@@ -1,9 +1,16 @@
 {
-	"name": "@tiny-chat/web",
+	"name": "web",
+	"private": true,
 	"type": "module",
+	"imports": {
+		"#web/*": "./src/*"
+	},
+	"exports": {
+		"./*": "./src/*"
+	},
 	"scripts": {
-		"dev": "pnpm --filter @tiny-chat/app run dev",
-		"build": "pnpm --filter @tiny-chat/app run build",
+		"dev": "pnpm --filter gui run dev",
+		"build": "pnpm --filter gui run build",
 		"start": "node src/index.ts",
 		"lint": "biome check --write",
 		"typecheck": "tsc --noEmit",

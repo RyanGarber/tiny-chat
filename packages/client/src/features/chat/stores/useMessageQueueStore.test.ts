@@ -1,4 +1,4 @@
-import { useMessageQueueStore } from "./useMessageQueueStore.ts";
+import { useMessageQueueStore } from "#client/features/chat/stores/useMessageQueueStore.ts";
 
 const text = (value: string) => [[{ type: "text" as const, id: value, value }]];
 describe("useMessageQueueStore", () => {

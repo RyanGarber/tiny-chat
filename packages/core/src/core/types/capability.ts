@@ -1,23 +1,23 @@
-import type { zAgentContext } from "../../features/agent/types/agent.ts";
-import type { ActionState } from "../../features/data/types/action.ts";
+import type { Enum } from "#core/core/services/PostgresService.ts";
+import type { zAgentContext } from "#core/features/agent/types/agent.ts";
+import type { ActionState } from "#core/features/data/types/action.ts";
 import type {
 	MemorySearchResult,
 	MemorySource,
 	MemoryState,
-} from "../../features/data/types/memory.ts";
+} from "#core/features/data/types/memory.ts";
 import type {
 	MessageLike,
 	MessageSearchResult,
-} from "../../features/data/types/message.ts";
-import type { zData } from "../../features/data/types/part.ts";
-import type { FileNode } from "../../features/file/types/file.ts";
-import type { zWebContext } from "../../features/provider/types/web.ts";
+} from "#core/features/data/types/message.ts";
+import type { zData } from "#core/features/data/types/part.ts";
+import type { FileNode } from "#core/features/file/types/file.ts";
+import type { zWebContext } from "#core/features/provider/types/web.ts";
 import type {
 	zBrowserRunResult,
 	zBrowserStatus,
 	zBrowserStep,
-} from "../../features/tool/types/browser.ts";
-import type { Enum } from "../services/PostgresService.ts";
+} from "#core/features/tool/types/browser.ts";
 
 export interface WebCapability {
 	search: (_: { query: string; maxResults: number }) => Promise<zWebContext[]>;
@@ -110,6 +110,19 @@ export interface ShellCapability {
 	readFile: (_: {
 		path: string;
 	}) => Promise<{ path: string; data: Uint8Array }>;
+
+	/**
+	 * Several files in one call, for shells that can do it natively — one call
+	 * instead of one `readFile` per file. At most `maxBytes` of each is read;
+	 * `size` is the whole file's. Results line up with `paths`, and a file that
+	 * cannot be read is null rather than failing the rest. What to make of the
+	 * bytes is not this method's job: `FileOperationService.readFiles` falls
+	 * back to `readFile` for shells without it.
+	 */
+	readFiles?: (_: {
+		paths: string[];
+		maxBytes: number;
+	}) => Promise<({ data: Uint8Array; size: number } | null)[]>;
 
 	readDir: (_: {
 		path: string;

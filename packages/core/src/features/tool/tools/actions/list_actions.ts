@@ -1,11 +1,15 @@
 import { z } from "zod";
-import type { ActionsCapability } from "../../../../core/types/capability.ts";
-import { zId } from "../../../../core/types/common.ts";
-import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
-import { DataUtils } from "../../../data/utils/DataUtils.ts";
-import type { ToolDisplay } from "../../types/display.ts";
-import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
-import { ToolDisplayUtils } from "../../utils/ToolDisplayUtils.ts";
+import type { ActionsCapability } from "#core/core/types/capability.ts";
+import { zId } from "#core/core/types/common.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { DataUtils } from "#core/features/data/utils/DataUtils.ts";
+import type { ToolDisplay } from "#core/features/tool/types/display.ts";
+import type {
+	Tool,
+	ToolDefinition,
+	ToolFactory,
+} from "#core/features/tool/types/tool.ts";
+import { ToolDisplayUtils } from "#core/features/tool/utils/ToolDisplayUtils.ts";
 
 export const list_actions = {
 	name: "list_actions",

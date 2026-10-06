@@ -1,8 +1,8 @@
 import { useMutation, useMutationState, useQuery } from "@tanstack/react-query";
 import { useCallback, useContext } from "react";
-import { ClientContext } from "../../../client.ts";
-import { useSession } from "../../../core/hooks/useSession.ts";
-import { ClientProviderService } from "../services/ClientProviderService.ts";
+import { ClientContext } from "#client/client.ts";
+import { useSession } from "#client/core/hooks/useSession.ts";
+import { ClientProviderService } from "#client/features/agent/services/ClientProviderService.ts";
 
 const providerCacheQueryKey = ["cache", "providers"] as const;
 export const providerCacheMutationKey = ["cache", "providers"] as const;

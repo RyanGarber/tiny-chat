@@ -6,11 +6,11 @@ import postgres from "@prisma/orm-postgres/runtime";
 import type {
 	Contract,
 	FieldOutputTypes,
-} from "@tiny-chat/core/generated/prisma/contract.d.ts";
-import contractJson from "@tiny-chat/core/generated/prisma/contract.json" with {
+} from "#core/generated/prisma/contract.d.ts";
+import contractJson from "#core/generated/prisma/contract.json" with {
 	type: "json",
 };
-import { zod } from "@tiny-chat/core/prisma/zod-extension.ts";
+import { zod } from "#core/prisma/zod-extension.ts";
 import config from "../prisma.config.ts";
 
 declare global {

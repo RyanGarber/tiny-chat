@@ -1,5 +1,5 @@
-import { CodeUtils } from "@tiny-chat/core/core/utils/CodeUtils.ts";
-import { EditorPartUtils } from "@tiny-chat/core/features/data/utils/EditorPartUtils.ts";
+import { CodeUtils } from "#core/core/utils/CodeUtils.ts";
+import { EditorPartUtils } from "#core/features/data/utils/EditorPartUtils.ts";
 
 /** Genuine newline characters a paste may contain before it is collapsed. */
 export const PASTE_NEWLINE_LIMIT = 10;
@@ -21,10 +21,10 @@ const SQL_STRUCTURE = /\bselect\b[\s\S]*\bfrom\b/i;
  * Pastes that are too long to leave in an input, and pastes that are source
  * rather than prose.
  *
- * A long paste travels as a `:::paste` container so the editor and the
- * renderer can collapse it. A shorter one that still looks like code travels
- * as a fenced block. Everything else is left for the editor to insert as it
- * would any other text.
+ * A long paste travels as a paste part, folded away in the editor and in the
+ * message alike. A shorter one that still looks like code goes in as a block
+ * of code. Everything else is left for the editor to insert as it would any
+ * other text.
  */
 export const PasteUtils = {
 	normalize: (text: string) => text.replace(/\r\n?/g, "\n"),

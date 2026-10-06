@@ -1,17 +1,22 @@
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import { DirectiveUtils } from "@tiny-chat/core/features/data/utils/DirectiveUtils.ts";
-import {
-	EDITOR_PART_TYPES,
-	EditorPartUtils,
-} from "@tiny-chat/core/features/data/utils/EditorPartUtils.ts";
-import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
-import { useAtomStore } from "../stores/useAtomStore.ts";
+import { useAtomStore } from "#client/features/editor/stores/useAtomStore.ts";
 import {
 	type EditorPart,
 	useEditorPartStore,
-} from "../stores/useEditorPartStore.ts";
-import type { Atom, AtomKind, AtomText, AtomToken } from "../types/atom.ts";
-import type { EditorNode } from "../types/node.ts";
+} from "#client/features/editor/stores/useEditorPartStore.ts";
+import type {
+	Atom,
+	AtomKind,
+	AtomText,
+	AtomToken,
+} from "#client/features/editor/types/atom.ts";
+import type { EditorNode } from "#client/features/editor/types/node.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import type { zData } from "#core/features/data/types/part.ts";
+import {
+	EditorPartUtils,
+	type EditorRun,
+} from "#core/features/data/utils/EditorPartUtils.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
 
 /**
  * Atoms: the runs of a plain text buffer that stand in for the parts a message
@@ -20,9 +25,9 @@ import type { EditorNode } from "../types/node.ts";
  * A command, an attachment and a long paste all read badly in an input — a
  * directive is unreadable, and a pasted file is unusable — so the buffer holds
  * a short stand-in for each of them and the part itself is kept alongside, in
- * {@link useEditorPartStore}. {@link AtomUtils.serialize} puts the pointer back
- * before the message is sent, and {@link AtomUtils.deserialize} takes it back
- * out when a message is loaded for editing.
+ * {@link useEditorPartStore}. {@link AtomUtils.toData} cuts the buffer into the
+ * text and the parts it is written as, and {@link AtomUtils.fromData} writes a
+ * message back out as a buffer when it is loaded for editing.
  */
 export const AtomUtils = {
 	/** Every atom currently standing in the input. */
@@ -123,31 +128,47 @@ export const AtomUtils = {
 		return content.replace(pattern, (match) => match.replace(/[^\n]/g, " "));
 	},
 
-	/** The buffer with every atom put back as the pointer it stands for. */
-	serialize: ({
+	/**
+	 * The buffer as the message it is written as: the text between the atoms,
+	 * and the part each atom stands for. An atom whose part has gone out of the
+	 * registry is left as the text it stands as.
+	 */
+	toData: ({
 		content,
 		atoms: given,
 	}: {
 		content: string;
 		atoms?: Atom[];
-	}): string => {
+	}): EditorRun => {
 		const atoms = given ?? AtomUtils.atoms();
+		const { parts } = useEditorPartStore.getState();
 
-		const pattern = AtomUtils.pattern({ atoms });
-		if (!pattern) return content;
+		const run: EditorRun = [];
+		const text = (value: string) => {
+			const stripped = EditorPartUtils.strip(value);
+			const previous = run[run.length - 1];
+			if (!stripped) return;
+			if (previous?.type === "text") previous.value += stripped;
+			else
+				run.push({
+					id: CommonUtils.getRandomId(),
+					type: "text",
+					value: stripped,
+				});
+		};
 
-		return content.replace(pattern, (match) => {
-			const atom = AtomUtils.find({ atoms, text: match });
-			if (!atom) return match;
+		let cursor = 0;
+		for (const token of AtomUtils.tokens({ content, atoms })) {
+			text(content.slice(cursor, token.start));
+			cursor = token.end;
 
-			const pointer = EditorPartUtils.toPointer({
-				type: atom.kind,
-				id: atom.id,
-			});
-			// A quote and a paste are block directives, which only parse on a line
-			// of their own.
-			return EditorPartUtils.isInline(atom.kind) ? pointer : `\n${pointer}\n`;
-		});
+			const part = parts[token.id];
+			if (part?.type === token.kind) run.push(part);
+			else text(content.slice(token.start, token.end));
+		}
+		text(content.slice(cursor));
+
+		return run;
 	},
 
 	/** Adapt a shared editor node to the short stand-in used by a plain buffer. */
@@ -158,24 +179,23 @@ export const AtomUtils = {
 	},
 
 	/**
-	 * The inverse of {@link AtomUtils.serialize}: a message's Markdown as a
-	 * buffer, with every pointer in it taken back into an atom. Replaces the
-	 * registry, since the atoms that were standing in the buffer this one takes
-	 * over from are gone with it.
+	 * The inverse of {@link AtomUtils.toData}: a message as a buffer, each of
+	 * its parts standing in it as an atom. Replaces both registries, since the
+	 * atoms and the parts the buffer this one takes over from held are gone
+	 * with it.
 	 */
-	deserialize: (markdown: string) => {
+	fromData: (data: zData) => {
+		const run = data.flat().filter(EditorPartUtils.isRun);
+
 		useAtomStore.getState().setAtoms([]);
+		useEditorPartStore.getState().setParts(run.filter(EditorPartUtils.is));
 
-		return DirectiveUtils.extractFromMarkdown(markdown, ...EDITOR_PART_TYPES)
-			.map(({ text, directive }) => {
-				if (!directive) return text;
-
-				const part =
-					useEditorPartStore.getState().parts[directive.attributes.id];
-				if (part?.type !== directive.tag) return text;
-
-				return AtomUtils.fromPart({ part });
-			})
+		return run
+			.map((part) =>
+				part.type === "text"
+					? EditorPartUtils.strip(part.value)
+					: AtomUtils.fromPart({ part }),
+			)
 			.join("");
 	},
 

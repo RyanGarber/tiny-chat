@@ -1,19 +1,28 @@
 import type {
 	Capabilities,
 	ShellCapability,
-} from "../../../core/types/capability.ts";
-import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
-import { SettingsUtils } from "../../../core/utils/SettingsUtils.ts";
-import { VERBOSE } from "../../../logger.ts";
-import type { MemorySearchResult } from "../../data/types/memory.ts";
-import type { zAttachmentPart, zDataPart } from "../../data/types/part.ts";
-import { DataUtils } from "../../data/utils/DataUtils.ts";
-import { EditorPartUtils } from "../../data/utils/EditorPartUtils.ts";
-import { FileOperationService } from "../../file/services/FileOperationService.ts";
-import { FileTypeUtils } from "../../file/utils/FileTypeUtils.ts";
-import { type Descendent, FileUtils } from "../../file/utils/FileUtils.ts";
-import { PathUtils } from "../../file/utils/PathUtils.ts";
-import type { zAgentContext, zAgentMessage } from "../types/agent.ts";
+} from "#core/core/types/capability.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { SettingsUtils } from "#core/core/utils/SettingsUtils.ts";
+import type {
+	zAgentContext,
+	zAgentMessage,
+} from "#core/features/agent/types/agent.ts";
+import type { MemorySearchResult } from "#core/features/data/types/memory.ts";
+import type {
+	zAttachmentPart,
+	zDataPart,
+} from "#core/features/data/types/part.ts";
+import { DataUtils } from "#core/features/data/utils/DataUtils.ts";
+import { EditorPartUtils } from "#core/features/data/utils/EditorPartUtils.ts";
+import { FileOperationService } from "#core/features/file/services/FileOperationService.ts";
+import { FileTypeUtils } from "#core/features/file/utils/FileTypeUtils.ts";
+import {
+	type Descendent,
+	FileUtils,
+} from "#core/features/file/utils/FileUtils.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
+import { VERBOSE } from "#core/logger.ts";
 
 /** Directory levels shown in an attached folder's XML tree. */
 const MAX_ATTACHMENT_TREE_DEPTH = 2;
@@ -50,65 +59,69 @@ export const AgentMessagesService = {
 			const message = context.messages[i];
 			const previous = context.messages[i - 1];
 
-			const parts: zDataPart[] = message.data.flat();
-			const transformedParts: zDataPart[] = [];
-
-			for (const part of parts) {
-				if (part.type === "attachment") {
-					transformedParts.push(
-						...AgentMessagesService.buildAttachmentParts(part),
-					);
-				} else if (part.type === "quote") {
-					const model = part.model ? ` model="${part.model}"` : "";
-					transformedParts.push({
-						id: part.id,
-						type: "text",
-						value: `<quote${model}>\n${part.text}\n</quote>`,
-					});
-				} else if (part.type === "paste") {
-					transformedParts.push({
-						id: part.id,
-						type: "text",
-						value: EditorPartUtils.fence(part.text, part.language),
-					});
-				} else if (part.type === "command") {
-					// A skill is written as a command but read as its SKILL.md, which
-					// is the only thing about it the model ever sees.
-					if (part.value?.startsWith("skill:")) {
+			// Each step is transformed on its own: tool results are only ever
+			// sorted within the step that called them.
+			const data: zDataPart[][] = [];
+			for (const parts of message.data) {
+				const transformedParts: zDataPart[] = [];
+				for (const part of parts) {
+					if (part.type === "attachment") {
 						transformedParts.push(
-							...(await AgentMessagesService.buildSourceParts({
-								capabilities,
-								id: part.id,
-								source: part.value.slice(6),
-							})),
+							...AgentMessagesService.buildAttachmentParts(part),
 						);
-					} else if (part.name === "system-prompt") {
-						customInstructions = part.argument;
-						console.log(
-							"[AgentMessagesService] using custom instructions:",
-							part.argument,
-						);
-					} else {
-						console.warn(
-							"[AgentMessagesService] ignoring unknown command:",
-							part.name,
-						);
+					} else if (part.type === "quote") {
+						const model = part.model ? ` model="${part.model}"` : "";
 						transformedParts.push({
 							id: part.id,
 							type: "text",
-							value: EditorPartUtils.toMarkdown(part),
+							value: `<quote${model}>\n${part.text}\n</quote>`,
 						});
+					} else if (part.type === "paste") {
+						transformedParts.push({
+							id: part.id,
+							type: "text",
+							value: EditorPartUtils.fence(part.text, part.language),
+						});
+					} else if (part.type === "command") {
+						// A skill is written as a command but read as its SKILL.md, which
+						// is the only thing about it the model ever sees.
+						if (part.value?.startsWith("skill:")) {
+							transformedParts.push(
+								...(await AgentMessagesService.buildSourceParts({
+									capabilities,
+									id: part.id,
+									source: part.value.slice(6),
+								})),
+							);
+						} else if (part.name === "system-prompt") {
+							customInstructions = part.argument;
+							console.log(
+								"[AgentMessagesService] using custom instructions:",
+								part.argument,
+							);
+						} else {
+							console.warn(
+								"[AgentMessagesService] ignoring unknown command:",
+								part.name,
+							);
+							transformedParts.push({
+								id: part.id,
+								type: "text",
+								value: EditorPartUtils.toText(part),
+							});
+						}
+					} else {
+						transformedParts.push(part);
 					}
-				} else {
-					transformedParts.push(part);
 				}
+				data.push(transformedParts);
 			}
 
 			messages.push(
 				AgentMessagesService.buildMessageBlock({
 					message,
 					previous,
-					parts: transformedParts,
+					data,
 					timezone: context.timezone,
 					memories: memories?.at(i),
 				}),
@@ -264,34 +277,64 @@ export const AgentMessagesService = {
 		});
 	},
 
+	/**
+	 * Frames a message for the model.
+	 *
+	 * Only the user's messages are wrapped in a `<message>` block, which says
+	 * when they were sent and to which model — so the reply that follows is
+	 * known to be that model's. A reply goes out exactly as the model wrote it,
+	 * step by step: it is sent that way while it is being generated, and
+	 * framing it any differently once it is done would change a part of the
+	 * chat the model has already read, and with it every cached request after.
+	 */
 	buildMessageBlock: ({
 		message,
 		previous,
-		parts,
+		data,
 		timezone,
 		memories,
 	}: {
 		message: zAgentMessage;
 		previous?: zAgentMessage;
-		parts: zDataPart[];
+		data: zDataPart[][];
 		timezone?: string;
 		memories?: MemorySearchResult[];
 	}): zAgentMessage => {
-		const attributes = {
-			role: message.author === "USER" ? "user" : "assistant",
-		} as Record<string, string>;
+		const context: zDataPart[] = memories?.length
+			? [
+					{
+						id: CommonUtils.getRandomId(),
+						type: "text",
+						value: `<context>\n${[...memories]
+							.sort((a, b) => a.id.localeCompare(b.id))
+							.map(
+								(memory) =>
+									`<memory id="${memory.id}" category="${memory.category}" stability="${memory.stability}" learned="${CommonUtils.formatDate({ date: memory.createdAt, timezone })}">\n${memory.fact}\n</memory>`,
+							)
+							.join("\n")}\n</context>`,
+					},
+				]
+			: [];
 
 		if (message.author === "MODEL") {
-			const model = message.config?.model;
-			if (model) attributes.model = model;
+			const [first = [], ...rest] = data;
+			return {
+				...message,
+				data: context.length ? [[...context, ...first], ...rest] : data,
+			};
 		}
+
+		const attributes: Record<string, string> = { role: "user" };
+
+		const model = message.config?.model;
+		if (model) attributes.to = model;
 
 		if (message.createdAt) {
 			attributes.sent = CommonUtils.formatDate({
 				date: message.createdAt,
 				timezone,
 			});
-			if (previous?.createdAt && message.author === "USER") {
+			if (previous?.createdAt) {
 				attributes.gap = CommonUtils.formatTimespan({
 					from: previous.createdAt,
 					to: message.createdAt,
@@ -299,41 +342,22 @@ export const AgentMessagesService = {
 			}
 		}
 
-		let contextText = "";
-		if (memories && memories.length > 0) {
-			contextText += [...memories]
-				.sort((a, b) => a.id.localeCompare(b.id))
-				.map(
-					(memory) =>
-						`<memory id="${memory.id}" category="${memory.category}" stability="${memory.stability}" learned="${CommonUtils.formatDate({ date: memory.createdAt, timezone })}">\n${memory.fact}\n</memory>`,
-				)
-				.join("\n");
-		}
+		const opening: zDataPart = {
+			id: CommonUtils.getRandomId(),
+			type: "text",
+			value: `<message${Object.entries(attributes)
+				.map(([k, v]) => ` ${k}="${v}"`)
+				.join("")}>`,
+		};
+		const closing: zDataPart = {
+			id: CommonUtils.getRandomId(),
+			type: "text",
+			value: "</message>",
+		};
 
 		return {
 			...message,
-			data: [
-				[
-					...(contextText.length > 0
-						? [
-								{
-									id: CommonUtils.getRandomId(),
-									type: "text" as const,
-									value: `<context>\n${contextText}\n</context>`,
-								},
-							]
-						: []),
-					{
-						id: CommonUtils.getRandomId(),
-						type: "text",
-						value: `<message${Object.entries(attributes)
-							.map(([k, v]) => ` ${k}="${v}"`)
-							.join("")}>`,
-					},
-					...parts,
-					{ id: CommonUtils.getRandomId(), type: "text", value: "</message>" },
-				],
-			],
+			data: [[...context, opening, ...data.flat(), closing]],
 		};
 	},
 

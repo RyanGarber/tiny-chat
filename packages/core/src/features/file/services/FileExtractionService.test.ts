@@ -1,5 +1,5 @@
-import { FileFixtureUtils } from "../utils/FileFixtureUtils.ts";
-import { FileExtractionService } from "./FileExtractionService.ts";
+import { FileExtractionService } from "#core/features/file/services/FileExtractionService.ts";
+import { FileFixtureUtils } from "#core/features/file/utils/FileFixtureUtils.ts";
 
 describe("FileExtractionService", () => {
 	it("recognizes extractable formats", () => {

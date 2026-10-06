@@ -7,9 +7,9 @@ import type {
 	ProviderV4,
 } from "@ai-sdk/provider";
 import type { z } from "zod";
-import type { spawn_subagent } from "../../../tool/tools/subagents/spawn_subagent.ts";
-import type { ModelProvider } from "../../types/model.ts";
-import { ModelProviderUtils } from "../../utils/ModelProviderUtils.ts";
+import type { ModelProvider } from "#core/features/provider/types/model.ts";
+import { ModelProviderUtils } from "#core/features/provider/utils/ModelProviderUtils.ts";
+import type { spawn_subagent } from "#core/features/tool/tools/subagents/spawn_subagent.ts";
 
 export const TestProvider: ModelProvider<ProviderV4> = {
 	name: "test",
@@ -74,14 +74,6 @@ async function emitText(
 	const id = `t${Math.random().toString(36).slice(2, 8)}`;
 	controller.enqueue({ type: "text-start", id, providerMetadata: {} });
 
-	// The envelope the agent parser expects.
-	controller.enqueue({
-		type: "text-delta",
-		id,
-		delta: `<message role="assistant" model="test-generate">\n`,
-		providerMetadata: {},
-	});
-
 	// One delta per whitespace-delimited token, preserving separators.
 	const tokens = text.match(/\s+|\S+/g) ?? [];
 	for (const token of tokens) {
@@ -94,12 +86,6 @@ async function emitText(
 		if (sleep) await sleep();
 	}
 
-	controller.enqueue({
-		type: "text-delta",
-		id,
-		delta: `\n</message>`,
-		providerMetadata: {},
-	});
 	controller.enqueue({ type: "text-end", id, providerMetadata: {} });
 }
 

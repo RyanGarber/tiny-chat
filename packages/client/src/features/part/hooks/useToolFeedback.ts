@@ -1,10 +1,10 @@
-import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
-import type { zToolCallPart } from "@tiny-chat/core/features/data/types/part.ts";
-import type { ToolControls } from "@tiny-chat/core/features/tool/types/display.ts";
 import { useCallback, useState } from "react";
-import { useStreamStore } from "../../agent/stores/useStreamStore.ts";
-import { useMessaging } from "../../chat/hooks/useMessaging.ts";
-import { useToolFeedbackStore } from "../stores/useToolFeedbackStore.ts";
+import { useStreamStore } from "#client/features/agent/stores/useStreamStore.ts";
+import { useMessaging } from "#client/features/chat/hooks/useMessaging.ts";
+import { useToolFeedbackStore } from "#client/features/part/stores/useToolFeedbackStore.ts";
+import type { MessageState } from "#core/features/data/types/message.ts";
+import type { zToolCallPart } from "#core/features/data/types/part.ts";
+import type { ToolControls } from "#core/features/tool/types/display.ts";
 
 /**
  * The state behind a tool call's controls: what the user has filled in, and

@@ -1,15 +1,15 @@
-import { ThemeUtils } from "@tiny-chat/core/core/utils/ThemeUtils.ts";
-import { ProjectLike } from "@tiny-chat/core/features/data/types/chat.ts";
-import { zConfig } from "@tiny-chat/core/features/data/types/message.ts";
+import { z } from "zod";
+import { ThemeUtils } from "#core/core/utils/ThemeUtils.ts";
+import { ProjectLike } from "#core/features/data/types/chat.ts";
+import { zConfig } from "#core/features/data/types/message.ts";
 import {
 	zCommand,
 	zFolder,
 	zHiddenModels,
 	zMCPServers,
-} from "@tiny-chat/core/features/data/types/user.ts";
-import { z } from "zod";
-import { procedure, router } from "../../../index.ts";
-import { SettingsService } from "../services/SettingsService.ts";
+} from "#core/features/data/types/user.ts";
+import { SettingsService } from "#server/features/user/services/SettingsService.ts";
+import { procedure, router } from "#server/index.ts";
 
 export const settings = router({
 	get: procedure
@@ -219,7 +219,7 @@ export const settings = router({
 		.input(
 			z.object({
 				index: z.number(),
-				folder: zFolder.def.innerType.partial(),
+				folder: zFolder.partial(),
 				project: ProjectLike.nullish(),
 			}),
 		)

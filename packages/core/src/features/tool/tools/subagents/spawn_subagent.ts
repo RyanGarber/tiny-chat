@@ -1,11 +1,15 @@
 import { z } from "zod";
-import type { SubagentsCapability } from "../../../../core/types/capability.ts";
-import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
-import { SettingsUtils } from "../../../../core/utils/SettingsUtils.ts";
-import { zAbortPart, zData } from "../../../data/types/part.ts";
-import { DataUtils } from "../../../data/utils/DataUtils.ts";
-import type { ToolDisplay } from "../../types/display.ts";
-import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
+import type { SubagentsCapability } from "#core/core/types/capability.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { SettingsUtils } from "#core/core/utils/SettingsUtils.ts";
+import { zAbortPart, zData } from "#core/features/data/types/part.ts";
+import { DataUtils } from "#core/features/data/utils/DataUtils.ts";
+import type { ToolDisplay } from "#core/features/tool/types/display.ts";
+import type {
+	Tool,
+	ToolDefinition,
+	ToolFactory,
+} from "#core/features/tool/types/tool.ts";
 
 const BACKGROUND_DESCRIPTION =
 	"Set to TRUE to run the subagent in the background and carry on working meanwhile. Its result is sent to you when it finishes, and your turn does not end until then.";

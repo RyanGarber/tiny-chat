@@ -1,6 +1,6 @@
 import type { MarkItDown } from "@ryangarber/markitdown-ts";
-import { FileTypeUtils } from "../utils/FileTypeUtils.ts";
-import { PathUtils } from "../utils/PathUtils.ts";
+import { FileTypeUtils } from "#core/features/file/utils/FileTypeUtils.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
 
 /**
  * FileExtractionService — reads the formats that carry text without storing it

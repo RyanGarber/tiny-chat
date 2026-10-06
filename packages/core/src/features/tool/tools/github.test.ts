@@ -1,9 +1,9 @@
-import type { GitHubCapability } from "../../../core/types/capability.ts";
-import type { zAgentContext } from "../../agent/types/agent.ts";
-import { createGitHubCompareTool } from "./github/compare.ts";
-import { createGitHubViewFileTool } from "./github/view_file.ts";
-import { createGitHubViewIssueTool } from "./github/view_issue.ts";
-import { createGitHubViewRepositoryTool } from "./github/view_repository.ts";
+import type { GitHubCapability } from "#core/core/types/capability.ts";
+import type { zAgentContext } from "#core/features/agent/types/agent.ts";
+import { createGitHubCompareTool } from "#core/features/tool/tools/github/compare.ts";
+import { createGitHubViewFileTool } from "#core/features/tool/tools/github/view_file.ts";
+import { createGitHubViewIssueTool } from "#core/features/tool/tools/github/view_issue.ts";
+import { createGitHubViewRepositoryTool } from "#core/features/tool/tools/github/view_repository.ts";
 
 const context = {} as zAgentContext;
 

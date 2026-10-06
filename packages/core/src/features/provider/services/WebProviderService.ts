@@ -1,13 +1,16 @@
-import type { zUser } from "../../data/types/user.ts";
-import { BraveProvider } from "../providers/web/BraveProvider.ts";
-import { JinaProvider } from "../providers/web/JinaProvider.ts";
-import { TavilyProvider } from "../providers/web/TavilyProvider.ts";
-import type { ProviderState, ProviderStatus } from "../types/provider.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import { BraveProvider } from "#core/features/provider/providers/web/BraveProvider.ts";
+import { JinaProvider } from "#core/features/provider/providers/web/JinaProvider.ts";
+import { TavilyProvider } from "#core/features/provider/providers/web/TavilyProvider.ts";
+import type {
+	ProviderState,
+	ProviderStatus,
+} from "#core/features/provider/types/provider.ts";
 import type {
 	WebProvider,
 	WebProviderStatus,
 	zWebFeature,
-} from "../types/web.ts";
+} from "#core/features/provider/types/web.ts";
 
 export const WebProviderService = {
 	providers: [

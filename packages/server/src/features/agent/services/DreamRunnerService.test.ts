@@ -1,9 +1,9 @@
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import { zConfig } from "@tiny-chat/core/features/data/types/message.ts";
-import { db } from "../../../db.ts";
-import { testUser } from "../../../tests.ts";
-import { MessageService } from "../../message/services/MessageService.ts";
-import { DreamRunnerService } from "./DreamRunnerService.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { zConfig } from "#core/features/data/types/message.ts";
+import { db } from "#server/db.ts";
+import { DreamRunnerService } from "#server/features/agent/services/DreamRunnerService.ts";
+import { MessageService } from "#server/features/message/services/MessageService.ts";
+import { testUser } from "#server/tests.ts";
 
 const user = testUser();
 const content = {

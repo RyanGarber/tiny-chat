@@ -1,9 +1,19 @@
 import { z } from "zod";
-import type { BrowserCapability } from "../../../../core/types/capability.ts";
-import { zBrowserStep, zBrowserStepResult } from "../../types/browser.ts";
-import type { ToolBlock, ToolDisplay } from "../../types/display.ts";
-import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
-import { ToolDisplayUtils } from "../../utils/ToolDisplayUtils.ts";
+import type { BrowserCapability } from "#core/core/types/capability.ts";
+import {
+	zBrowserStep,
+	zBrowserStepResult,
+} from "#core/features/tool/types/browser.ts";
+import type {
+	ToolBlock,
+	ToolDisplay,
+} from "#core/features/tool/types/display.ts";
+import type {
+	Tool,
+	ToolDefinition,
+	ToolFactory,
+} from "#core/features/tool/types/tool.ts";
+import { ToolDisplayUtils } from "#core/features/tool/utils/ToolDisplayUtils.ts";
 
 export const browser = {
 	name: "browser",

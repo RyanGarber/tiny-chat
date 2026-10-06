@@ -1,8 +1,8 @@
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import { ChatService } from "../../chat/services/ChatService.ts";
-import { MessageService } from "../../message/services/MessageService.ts";
-import { MessageUtils } from "../../message/utils/MessageUtils.ts";
-import { ServerAgentService } from "./ServerAgentService.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { ServerAgentService } from "#server/features/agent/services/ServerAgentService.ts";
+import { ChatService } from "#server/features/chat/services/ChatService.ts";
+import { MessageService } from "#server/features/message/services/MessageService.ts";
+import { MessageUtils } from "#server/features/message/utils/MessageUtils.ts";
 
 let running = false;
 

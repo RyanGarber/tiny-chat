@@ -1,4 +1,4 @@
-import type { EditorPartType } from "@tiny-chat/core/features/data/utils/EditorPartUtils.ts";
+import type { EditorPartType } from "#core/features/data/utils/EditorPartUtils.ts";
 
 /**
  * What one runtime hands another to write into its editor.

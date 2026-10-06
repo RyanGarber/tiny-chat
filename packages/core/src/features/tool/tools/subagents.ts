@@ -1,6 +1,9 @@
-import type { SubagentsCapability } from "../../../core/types/capability.ts";
-import type { Toolset, ToolsetFactory } from "../types/tool.ts";
-import { createSpawnSubagentTool } from "./subagents/spawn_subagent.ts";
+import type { SubagentsCapability } from "#core/core/types/capability.ts";
+import { createSpawnSubagentTool } from "#core/features/tool/tools/subagents/spawn_subagent.ts";
+import type {
+	Toolset,
+	ToolsetFactory,
+} from "#core/features/tool/types/tool.ts";
 
 export const createSubagentsToolset: ToolsetFactory<
 	Toolset<{ subagents: SubagentsCapability }>

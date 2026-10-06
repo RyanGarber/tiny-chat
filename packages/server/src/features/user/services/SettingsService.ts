@@ -1,9 +1,6 @@
-import { TypeUtils } from "@tiny-chat/core/core/utils/TypeUtils.ts";
-import type { ProjectLike } from "@tiny-chat/core/features/data/types/chat.ts";
-import type {
-	zSettings,
-	zUser,
-} from "@tiny-chat/core/features/data/types/user.ts";
+import { TypeUtils } from "#core/core/utils/TypeUtils.ts";
+import type { ProjectLike } from "#core/features/data/types/chat.ts";
+import type { zSettings, zUser } from "#core/features/data/types/user.ts";
 
 export const SettingsService = {
 	getSettings: async ({

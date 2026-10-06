@@ -8,8 +8,8 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { ShellCapability } from "@tiny-chat/core/core/types/capability.ts";
-import { GitService } from "./GitService.ts";
+import { GitService } from "#client/features/chat/services/GitService.ts";
+import type { ShellCapability } from "#core/core/types/capability.ts";
 
 // The machine's own shell, as the CLI and desktop hand it over.
 const shell: ShellCapability = {
@@ -71,6 +71,38 @@ describe("GitService", () => {
 			additions: 3,
 			untracked: true,
 		});
+	});
+
+	it("reads untracked files in one call where the shell can", async () => {
+		const big = join(root, "big.txt");
+		writeFileSync(big, "line\n".repeat(300_000));
+		const calls: string[][] = [];
+		const bulk: ShellCapability = {
+			...shell,
+			readFile: () => Promise.reject(new Error("read one at a time")),
+			readFiles: async ({ paths, maxBytes }) => {
+				calls.push(paths);
+				return paths.map((path) => {
+					const data = readFileSync(path);
+					return { data: data.subarray(0, maxBytes), size: data.length };
+				});
+			},
+		};
+		try {
+			const repo = await GitService.status({ shell: bulk, root });
+			expect(calls).toHaveLength(1);
+			const byPath = Object.fromEntries(
+				repo.changes.map((change) => [change.path, change]),
+			);
+			expect(byPath[`${root}/src/deep/new file.ts`]).toMatchObject({
+				additions: 3,
+				untracked: true,
+			});
+			// Too large to read whole, so not counted.
+			expect(byPath[big]).toMatchObject({ additions: 0, binary: false });
+		} finally {
+			rmSync(big);
+		}
 	});
 
 	it("reads a file as it was at the last commit", async () => {

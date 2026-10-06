@@ -1,4 +1,7 @@
-import { type MarkdownBlocks, MarkdownUtils } from "./MarkdownUtils.ts";
+import {
+	type MarkdownBlocks,
+	MarkdownUtils,
+} from "#client/features/message/utils/MarkdownUtils.ts";
 
 const split = (content: string, previous?: MarkdownBlocks) =>
 	MarkdownUtils.split({ content, previous });

@@ -1,13 +1,10 @@
-import { zId } from "@tiny-chat/core/core/types/common.ts";
-import {
-	ChatLike,
-	ProjectLike,
-} from "@tiny-chat/core/features/data/types/chat.ts";
 import { z } from "zod";
-import { procedure, router } from "../../../index.ts";
-import { FileService } from "../../file/services/FileService.ts";
-import { ChatSearchService } from "../services/ChatSearchService.ts";
-import { ChatService } from "../services/ChatService.ts";
+import { zId } from "#core/core/types/common.ts";
+import { ChatLike, ProjectLike } from "#core/features/data/types/chat.ts";
+import { ChatSearchService } from "#server/features/chat/services/ChatSearchService.ts";
+import { ChatService } from "#server/features/chat/services/ChatService.ts";
+import { FileService } from "#server/features/file/services/FileService.ts";
+import { procedure, router } from "#server/index.ts";
 
 export const chat = router({
 	activate: procedure

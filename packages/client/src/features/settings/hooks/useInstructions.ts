@@ -1,9 +1,9 @@
 import { useMutation } from "@tanstack/react-query";
-import { SettingsUtils } from "@tiny-chat/core/core/utils/SettingsUtils.ts";
-import type { ProjectLike } from "@tiny-chat/core/features/data/types/chat.ts";
 import { useContext, useMemo } from "react";
-import { ClientContext } from "../../../client.ts";
-import { useSettings } from "./useSettings.ts";
+import { ClientContext } from "#client/client.ts";
+import { useSettings } from "#client/features/settings/hooks/useSettings.ts";
+import { SettingsUtils } from "#core/core/utils/SettingsUtils.ts";
+import type { ProjectLike } from "#core/features/data/types/chat.ts";
 
 export const useInstructions = ({
 	project,

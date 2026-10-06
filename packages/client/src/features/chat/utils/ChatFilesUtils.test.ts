@@ -1,5 +1,5 @@
-import type { GitRepo } from "../types/chatFiles.ts";
-import { ChatFilesUtils } from "./ChatFilesUtils.ts";
+import type { GitRepo } from "#client/features/chat/types/chatFiles.ts";
+import { ChatFilesUtils } from "#client/features/chat/utils/ChatFilesUtils.ts";
 
 const repo: GitRepo = {
 	root: "/work/repo",

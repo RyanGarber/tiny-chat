@@ -1,11 +1,11 @@
-import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
 import type {
 	zDataSimplePart,
 	zInterjectionPart,
 	zTextPart,
 	zToolCallPart,
-} from "../../data/types/part.ts";
-import type { RenderedPart } from "../../data/utils/DataUtils.ts";
+} from "#core/features/data/types/part.ts";
+import type { RenderedPart } from "#core/features/data/utils/DataUtils.ts";
 import type {
 	ToolBlock,
 	ToolCallContext,
@@ -14,10 +14,14 @@ import type {
 	ToolDisplay,
 	ToolStatusPart,
 	ToolStatusPiece,
-} from "../types/display.ts";
-import type { Tool, ToolDefinition, Toolset } from "../types/tool.ts";
-import { ToolDisplayUtils } from "./ToolDisplayUtils.ts";
-import { ToolUtils } from "./ToolUtils.ts";
+} from "#core/features/tool/types/display.ts";
+import type {
+	Tool,
+	ToolDefinition,
+	Toolset,
+} from "#core/features/tool/types/tool.ts";
+import { ToolDisplayUtils } from "#core/features/tool/utils/ToolDisplayUtils.ts";
+import { ToolUtils } from "#core/features/tool/utils/ToolUtils.ts";
 
 type ToolCallPart = Extract<RenderedPart, { type: "toolCall" }>;
 

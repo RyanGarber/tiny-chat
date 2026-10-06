@@ -1,7 +1,7 @@
 import type { TextStreamPart } from "ai";
-import { mockConfig, mockUser } from "../../../../tests.ts";
-import type { zDataPart } from "../../../data/types/part.ts";
-import { OpenAiProvider } from "./OpenAiProvider.ts";
+import type { zDataPart } from "#core/features/data/types/part.ts";
+import { OpenAiProvider } from "#core/features/provider/providers/model/OpenAiProvider.ts";
+import { mockConfig, mockUser } from "#core/tests.ts";
 
 describe("OpenAiProvider", () => {
 	it("stores signatures", () => {

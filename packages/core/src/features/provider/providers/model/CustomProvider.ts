@@ -3,9 +3,12 @@ import type {
 	OpenAICompatibleProviderOptions,
 } from "@ai-sdk/openai-compatible";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
-import type { ModelProvider, zModel } from "../../types/model.ts";
-import { ModelProviderUtils } from "../../utils/ModelProviderUtils.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import type {
+	ModelProvider,
+	zModel,
+} from "#core/features/provider/types/model.ts";
+import { ModelProviderUtils } from "#core/features/provider/utils/ModelProviderUtils.ts";
 
 export const CustomProvider: ModelProvider<OpenAICompatibleProvider> = {
 	name: "custom",

@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
-import { zConfig } from "../../data/types/message.ts";
-import type { zDataPart } from "../../data/types/part.ts";
-import type { zAgentMessage } from "../types/agent.ts";
-import { AgentTokensService } from "./AgentTokensService.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { AgentTokensService } from "#core/features/agent/services/AgentTokensService.ts";
+import type { zAgentMessage } from "#core/features/agent/types/agent.ts";
+import { zConfig } from "#core/features/data/types/message.ts";
+import type { zDataPart } from "#core/features/data/types/part.ts";
 
 const config = (tokens: number) =>
 	zConfig.parse({

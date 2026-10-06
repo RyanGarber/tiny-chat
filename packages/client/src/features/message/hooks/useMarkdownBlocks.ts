@@ -1,6 +1,9 @@
 import { useMemo, useRef } from "react";
 import remend from "remend";
-import { type MarkdownBlocks, MarkdownUtils } from "../utils/MarkdownUtils.ts";
+import {
+	type MarkdownBlocks,
+	MarkdownUtils,
+} from "#client/features/message/utils/MarkdownUtils.ts";
 
 /**
  * The top-level blocks of a markdown document, for a renderer that lays out and

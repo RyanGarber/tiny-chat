@@ -1,12 +1,12 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { createInterface } from "node:readline";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { BrowserDriverUtils } from "#client/features/agent/utils/BrowserDriverUtils.ts";
 import type {
 	zBrowserRunResult,
 	zBrowserStatus,
 	zBrowserStep,
-} from "@tiny-chat/core/features/tool/types/browser.ts";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { BrowserDriverUtils } from "./BrowserDriverUtils.ts";
+} from "#core/features/tool/types/browser.ts";
 
 const PAGE = `data:text/html,${encodeURIComponent(`<title>Form</title>
 <nav><a href="/home">Home</a></nav>

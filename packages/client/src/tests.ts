@@ -4,17 +4,29 @@
 import "temporal-polyfill/full/global";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { zEnv } from "@tiny-chat/core/core/types/env.ts";
 import { createElement, type ReactNode } from "react";
 import { inject } from "vitest";
-import { type Client, ClientContext, createClient } from "./client.ts";
+import { type Client, ClientContext, createClient } from "#client/client.ts";
+import type { ClientInput } from "#client/features/chat/services/MessagingService.ts";
+import type { zEnv } from "#core/core/types/env.ts";
 
 let client: Client;
 let token: string | null | undefined;
 
-export async function onBeforeAll({ env }: { env: zEnv }) {
+/**
+ * Signs a test client in against the live server. A UI passes the `input` its
+ * editor provides, as its host would, so what it renders reads the real thing.
+ */
+export async function onBeforeAll({
+	env,
+	input,
+}: {
+	env: zEnv;
+	input?: ClientInput;
+}) {
 	client = createClient({
 		env,
+		input,
 		host: inject("serverUrl"),
 		getToken: () => token,
 		setToken: (value) => (token = value),

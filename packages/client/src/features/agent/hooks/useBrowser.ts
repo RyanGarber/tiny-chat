@@ -1,11 +1,11 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useContext } from "react";
-import { ClientContext } from "../../../client.ts";
+import { ClientContext } from "#client/client.ts";
+import { nativeToolsQueryKey } from "#client/features/agent/hooks/useTools.ts";
 import {
 	ClientBrowserService,
 	type zBrowserSettings,
-} from "../services/ClientBrowserService.ts";
-import { nativeToolsQueryKey } from "./useTools.ts";
+} from "#client/features/agent/services/ClientBrowserService.ts";
 
 export const browserStatusQueryKey = ["useBrowser", "status"] as const;
 export const browserSettingsQueryKey = ["useBrowser", "settings"] as const;

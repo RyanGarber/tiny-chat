@@ -1,4 +1,4 @@
-import { FileEditUtils } from "./FileEditUtils.ts";
+import { FileEditUtils } from "#core/features/file/utils/FileEditUtils.ts";
 
 describe("FileEditUtils", () => {
 	it("replaces an exact match", () => {

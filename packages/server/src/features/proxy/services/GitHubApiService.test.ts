@@ -1,6 +1,6 @@
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
-import { GitHubAccountService } from "../../user/services/GitHubAccountService.ts";
-import { GitHubApiService } from "./GitHubApiService.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import { GitHubApiService } from "#server/features/proxy/services/GitHubApiService.ts";
+import { GitHubAccountService } from "#server/features/user/services/GitHubAccountService.ts";
 
 const user = { id: "test-user" } as zUser;
 

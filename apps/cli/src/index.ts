@@ -1,4 +1,4 @@
-import { cli } from "./main.tsx";
+import { cli } from "#cli/cli.ts";
 
 if (import.meta.main) {
 	await cli.parseAsync();

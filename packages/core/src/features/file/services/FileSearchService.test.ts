@@ -1,7 +1,7 @@
-import type { ShellCapability } from "../../../core/types/capability.ts";
-import { FileFixtureUtils } from "../utils/FileFixtureUtils.ts";
-import { FileExtractionService } from "./FileExtractionService.ts";
-import { FileSearchService } from "./FileSearchService.ts";
+import type { ShellCapability } from "#core/core/types/capability.ts";
+import { FileExtractionService } from "#core/features/file/services/FileExtractionService.ts";
+import { FileSearchService } from "#core/features/file/services/FileSearchService.ts";
+import { FileFixtureUtils } from "#core/features/file/utils/FileFixtureUtils.ts";
 
 export const createShell = (
 	initial: Record<string, string | Uint8Array>,

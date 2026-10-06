@@ -1,5 +1,6 @@
 {
-	"name": "@tiny-chat/server",
+	"name": "server",
+	"private": true,
 	"type": "module",
 	"scripts": {
 		"dev": "node --watch --watch-preserve-output src/server.ts -- --dev",
@@ -9,12 +10,16 @@
 		"test": "vitest run",
 		"smoketest": "node scripts/smoketest.ts"
 	},
+	"imports": {
+		"#core/*": "core/*",
+		"#server/*": "./src/*"
+	},
 	"exports": {
 		"./*": "./src/*"
 	},
 	"dependencies": {
 		"@ryangarber/ai-sdk-antigravity-proxy": "^0.1.4",
-		"@tiny-chat/core": "workspace:*",
+		"core": "workspace:*",
 		"chalk": "^6.0.1",
 		"fflate": "^0.8.3",
 		"internal-ip": "^9.0.0",

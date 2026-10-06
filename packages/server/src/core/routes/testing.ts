@@ -1,13 +1,13 @@
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import { zAgentContext } from "@tiny-chat/core/features/agent/types/agent.ts";
-import { AgentUtils } from "@tiny-chat/core/features/agent/utils/AgentUtils.ts";
-import { ToolService } from "@tiny-chat/core/features/tool/services/ToolService.ts";
-import { ToolUtils } from "@tiny-chat/core/features/tool/utils/ToolUtils.ts";
 import { z } from "zod";
-import { ChatService } from "../../features/chat/services/ChatService.ts";
-import { MessageService } from "../../features/message/services/MessageService.ts";
-import { procedure, router } from "../../index.ts";
-import { ServerCapabilityService } from "../services/ServerCapabilityService.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { zAgentContext } from "#core/features/agent/types/agent.ts";
+import { AgentUtils } from "#core/features/agent/utils/AgentUtils.ts";
+import { ToolService } from "#core/features/tool/services/ToolService.ts";
+import { ToolUtils } from "#core/features/tool/utils/ToolUtils.ts";
+import { ServerCapabilityService } from "#server/core/services/ServerCapabilityService.ts";
+import { ChatService } from "#server/features/chat/services/ChatService.ts";
+import { MessageService } from "#server/features/message/services/MessageService.ts";
+import { procedure, router } from "#server/index.ts";
 
 export const testing = router({
 	tool: procedure

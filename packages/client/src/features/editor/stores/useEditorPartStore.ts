@@ -1,5 +1,5 @@
-import type { zEditorPart } from "@tiny-chat/core/features/data/utils/EditorPartUtils.ts";
 import { create } from "zustand";
+import type { zEditorPart } from "#core/features/data/utils/EditorPartUtils.ts";
 
 export type EditorPart = zEditorPart;
 

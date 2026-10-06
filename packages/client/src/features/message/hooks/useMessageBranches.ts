@@ -1,10 +1,10 @@
 import { useMutation } from "@tanstack/react-query";
-import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
 import { useContext } from "react";
-import { ClientContext } from "../../../client.ts";
-import { useMessagingStore } from "../../chat/stores/useMessagingStore.ts";
-import { MessageQueryService } from "../services/MessageQueryService.ts";
-import { useMessages } from "./useMessages.ts";
+import { ClientContext } from "#client/client.ts";
+import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
+import { useMessages } from "#client/features/message/hooks/useMessages.ts";
+import { MessageQueryService } from "#client/features/message/services/MessageQueryService.ts";
+import type { MessageState } from "#core/features/data/types/message.ts";
 
 export const useMessageBranches = (message: MessageState) => {
 	const { messages } = useMessages();

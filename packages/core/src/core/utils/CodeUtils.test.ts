@@ -6,7 +6,7 @@ import {
 	CodeUtils,
 	type CodeWorker,
 	type HighlightRequest,
-} from "./CodeUtils.ts";
+} from "#core/core/utils/CodeUtils.ts";
 
 /** Answers every request on the next tick with plain tokens. */
 const createEchoWorker = (): CodeWorker => {

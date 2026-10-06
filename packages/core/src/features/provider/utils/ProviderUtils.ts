@@ -1,4 +1,7 @@
-import type { ProviderState, ProviderStatus } from "../types/provider.ts";
+import type {
+	ProviderState,
+	ProviderStatus,
+} from "#core/features/provider/types/provider.ts";
 
 export const ProviderUtils = {
 	isValid: (

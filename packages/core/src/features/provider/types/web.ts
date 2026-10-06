@@ -1,6 +1,9 @@
 import { z } from "zod";
-import type { zUser } from "../../data/types/user.ts";
-import type { Provider, ProviderStatus } from "./provider.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import type {
+	Provider,
+	ProviderStatus,
+} from "#core/features/provider/types/provider.ts";
 
 export const zWebContext = z.object({
 	title: z.string().optional(),

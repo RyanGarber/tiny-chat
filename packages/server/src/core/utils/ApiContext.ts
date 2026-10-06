@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { TRPCError } from "@trpc/server";
-import { AuthService } from "../services/AuthService.ts";
-import { AuthServer } from "./AuthServer.ts";
+import { AuthService } from "#server/core/services/AuthService.ts";
+import { AuthServer } from "#server/core/utils/AuthServer.ts";
 
 export const ApiContext = async ({
 	req,

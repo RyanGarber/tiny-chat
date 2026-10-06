@@ -1,4 +1,4 @@
-import { PathUtils } from "./PathUtils.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
 
 export interface IgnoreRule {
 	/** Compiled form of the pattern, tested against a normalized relative path. */

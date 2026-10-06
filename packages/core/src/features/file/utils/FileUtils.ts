@@ -1,8 +1,14 @@
-import type { Model } from "../../../core/services/PostgresService.ts";
-import type { PartialBy } from "../../../core/types/common.ts";
-import type { FileState, FilesystemSpec } from "../types/file.ts";
-import { FileTypeUtils } from "./FileTypeUtils.ts";
-import { type FileMount, PathUtils } from "./PathUtils.ts";
+import type { Model } from "#core/core/services/PostgresService.ts";
+import type { PartialBy } from "#core/core/types/common.ts";
+import type {
+	FileState,
+	FilesystemSpec,
+} from "#core/features/file/types/file.ts";
+import { FileTypeUtils } from "#core/features/file/utils/FileTypeUtils.ts";
+import {
+	type FileMount,
+	PathUtils,
+} from "#core/features/file/utils/PathUtils.ts";
 
 export interface Descendent<T> {
 	children: Map<string, Descendent<T>>;

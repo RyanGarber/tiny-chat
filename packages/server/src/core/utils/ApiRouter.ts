@@ -1,16 +1,16 @@
-import { action } from "../../features/chat/routes/action.ts";
-import { chat } from "../../features/chat/routes/chat.ts";
-import { file } from "../../features/chat/routes/file.ts";
-import { memory } from "../../features/chat/routes/memory.ts";
-import { embedding } from "../../features/embedding/routes/embedding.ts";
-import { message } from "../../features/message/routes/message.ts";
-import { github } from "../../features/proxy/routes/github.ts";
-import { web } from "../../features/proxy/routes/web.ts";
-import { upload } from "../../features/upload/routes/upload.ts";
-import { settings } from "../../features/user/routes/settings.ts";
-import { user } from "../../features/user/routes/user.ts";
-import { router } from "../../index.ts";
-import { testing } from "../routes/testing.ts";
+import { testing } from "#server/core/routes/testing.ts";
+import { action } from "#server/features/chat/routes/action.ts";
+import { chat } from "#server/features/chat/routes/chat.ts";
+import { file } from "#server/features/chat/routes/file.ts";
+import { memory } from "#server/features/chat/routes/memory.ts";
+import { embedding } from "#server/features/embedding/routes/embedding.ts";
+import { message } from "#server/features/message/routes/message.ts";
+import { github } from "#server/features/proxy/routes/github.ts";
+import { web } from "#server/features/proxy/routes/web.ts";
+import { upload } from "#server/features/upload/routes/upload.ts";
+import { settings } from "#server/features/user/routes/settings.ts";
+import { user } from "#server/features/user/routes/user.ts";
+import { router } from "#server/index.ts";
 
 export const ApiRouter = router({
 	user,

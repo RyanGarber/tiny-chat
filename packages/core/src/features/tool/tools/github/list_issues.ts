@@ -1,14 +1,18 @@
 import { z } from "zod";
-import type { GitHubCapability } from "../../../../core/types/capability.ts";
-import type { ToolDisplay } from "../../types/display.ts";
-import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
-import { GitHubSourceUtils } from "../../utils/GitHubSourceUtils.ts";
-import { GitHubToolUtils } from "../../utils/GitHubToolUtils.ts";
+import type { GitHubCapability } from "#core/core/types/capability.ts";
 import {
 	zGitHubIssue,
 	zGitHubIssueSummaryOutput,
 	zGitHubPullRequest,
-} from "./schemas.ts";
+} from "#core/features/tool/tools/github/schemas.ts";
+import type { ToolDisplay } from "#core/features/tool/types/display.ts";
+import type {
+	Tool,
+	ToolDefinition,
+	ToolFactory,
+} from "#core/features/tool/types/tool.ts";
+import { GitHubSourceUtils } from "#core/features/tool/utils/GitHubSourceUtils.ts";
+import { GitHubToolUtils } from "#core/features/tool/utils/GitHubToolUtils.ts";
 
 export const github_list_issues = {
 	name: "github_list_issues",

@@ -1,11 +1,11 @@
 import type {
 	CapabilityFactory,
 	SubagentsCapability,
-} from "@tiny-chat/core/core/types/capability.ts";
-import { CapabilityUtils } from "@tiny-chat/core/core/utils/CapabilityUtils.ts";
-import type { zAgentChat } from "@tiny-chat/core/features/agent/types/agent.ts";
-import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
-import { ServerAgentService } from "../../features/agent/services/ServerAgentService.ts";
+} from "#core/core/types/capability.ts";
+import { CapabilityUtils } from "#core/core/utils/CapabilityUtils.ts";
+import type { zAgentChat } from "#core/features/agent/types/agent.ts";
+import type { MessageState } from "#core/features/data/types/message.ts";
+import { ServerAgentService } from "#server/features/agent/services/ServerAgentService.ts";
 
 export const createSubagentsCapability: CapabilityFactory<
 	{

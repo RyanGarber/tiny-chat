@@ -1,13 +1,13 @@
 import type {
 	ShellCapability,
 	WebCapability,
-} from "../../../core/types/capability.ts";
-import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
-import type { zAttachmentPart } from "../../data/types/part.ts";
-import { FileTypeUtils } from "../utils/FileTypeUtils.ts";
-import { FileUtils } from "../utils/FileUtils.ts";
-import { PathUtils } from "../utils/PathUtils.ts";
-import { FileOperationService } from "./FileOperationService.ts";
+} from "#core/core/types/capability.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import type { zAttachmentPart } from "#core/features/data/types/part.ts";
+import { FileOperationService } from "#core/features/file/services/FileOperationService.ts";
+import { FileTypeUtils } from "#core/features/file/utils/FileTypeUtils.ts";
+import { FileUtils } from "#core/features/file/utils/FileUtils.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
 
 export const AttachmentService = {
 	unavailable: ({

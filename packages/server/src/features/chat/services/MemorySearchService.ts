@@ -1,8 +1,8 @@
-import type { MemorySearchResult } from "@tiny-chat/core/features/data/types/memory.ts";
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
-import { VERBOSE } from "@tiny-chat/core/logger.ts";
-import { SearchUtils } from "../utils/SearchUtils.ts";
-import { MemoryRetrievalService } from "./MemoryRetrievalService.ts";
+import type { MemorySearchResult } from "#core/features/data/types/memory.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import { VERBOSE } from "#core/logger.ts";
+import { MemoryRetrievalService } from "#server/features/chat/services/MemoryRetrievalService.ts";
+import { SearchUtils } from "#server/features/chat/utils/SearchUtils.ts";
 
 export const MemorySearchService = {
 	searchMemories: async ({

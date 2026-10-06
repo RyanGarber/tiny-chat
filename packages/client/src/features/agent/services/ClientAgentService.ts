@@ -1,32 +1,29 @@
-import { AgentService } from "@tiny-chat/core/features/agent/services/AgentService.ts";
-import type {
-	zAgentChat,
-	zAgentContext,
-} from "@tiny-chat/core/features/agent/types/agent.ts";
-import { AgentUtils } from "@tiny-chat/core/features/agent/utils/AgentUtils.ts";
-import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
-import type {
-	zData,
-	zMetadata,
-} from "@tiny-chat/core/features/data/types/part.ts";
-import type {
-	ProviderState,
-	ProviderStatus,
-} from "@tiny-chat/core/features/provider/types/provider.ts";
-import type { zSkill } from "@tiny-chat/core/features/skill/types/skill.ts";
-import { ToolService } from "@tiny-chat/core/features/tool/services/ToolService.ts";
-import type { Toolset } from "@tiny-chat/core/features/tool/types/tool.ts";
-import { ToolCallUtils } from "@tiny-chat/core/features/tool/utils/ToolCallUtils.ts";
 import { smoothStream } from "ai";
-import type { Client } from "../../../client.ts";
-import { ClientCapabilityService } from "../../../core/services/ClientCapabilityService.ts";
+import type { Client } from "#client/client.ts";
+import { ClientCapabilityService } from "#client/core/services/ClientCapabilityService.ts";
 import {
 	AgentStreamService,
 	ToolStreamService,
-} from "../../../core/services/StreamService.ts";
-import { useMessageQueueStore } from "../../chat/stores/useMessageQueueStore.ts";
-import { ToolFeedbackService } from "../../part/services/ToolFeedbackService.ts";
-import { ClientProviderService } from "./ClientProviderService.ts";
+} from "#client/core/services/StreamService.ts";
+import { ClientProviderService } from "#client/features/agent/services/ClientProviderService.ts";
+import { useMessageQueueStore } from "#client/features/chat/stores/useMessageQueueStore.ts";
+import { ToolFeedbackService } from "#client/features/part/services/ToolFeedbackService.ts";
+import { AgentService } from "#core/features/agent/services/AgentService.ts";
+import type {
+	zAgentChat,
+	zAgentContext,
+} from "#core/features/agent/types/agent.ts";
+import { AgentUtils } from "#core/features/agent/utils/AgentUtils.ts";
+import type { MessageState } from "#core/features/data/types/message.ts";
+import type { zData, zMetadata } from "#core/features/data/types/part.ts";
+import type {
+	ProviderState,
+	ProviderStatus,
+} from "#core/features/provider/types/provider.ts";
+import type { zSkill } from "#core/features/skill/types/skill.ts";
+import { ToolService } from "#core/features/tool/services/ToolService.ts";
+import type { Toolset } from "#core/features/tool/types/tool.ts";
+import { ToolCallUtils } from "#core/features/tool/utils/ToolCallUtils.ts";
 
 export const ClientAgentService = {
 	/** Run the generation loop, pumping deltas into the stream registry. */

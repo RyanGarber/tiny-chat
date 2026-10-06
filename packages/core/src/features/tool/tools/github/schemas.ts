@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { zGitHubLabel, zGitHubUser } from "../../utils/GitHubToolUtils.ts";
+import {
+	zGitHubLabel,
+	zGitHubUser,
+} from "#core/features/tool/utils/GitHubToolUtils.ts";
 
 export const zGitHubIssue = z.object({
 	number: z.number(),

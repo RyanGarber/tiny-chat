@@ -3,9 +3,9 @@ import {
 	createZodExtension,
 	defineZodSchema,
 } from "@ryangarber/prisma-orm-extension-zod/column-types";
-import { zConfig } from "../src/features/data/types/message.ts";
-import { zData, zMetadata } from "../src/features/data/types/part.ts";
-import { zCache, zSettings } from "../src/features/data/types/user.ts";
+import { zConfig } from "#core/features/data/types/message.ts";
+import { zData, zMetadata } from "#core/features/data/types/part.ts";
+import { zCache, zSettings } from "#core/features/data/types/user.ts";
 
 const schemas = {
 	zSettings: defineZodSchema(zSettings),

@@ -1,7 +1,7 @@
 import type { TextStreamPart } from "ai";
-import { mockConfig, mockUser } from "../../../../tests.ts";
-import type { zDataPart } from "../../../data/types/part.ts";
-import { AzureProvider } from "./AzureProvider.ts";
+import type { zDataPart } from "#core/features/data/types/part.ts";
+import { AzureProvider } from "#core/features/provider/providers/model/AzureProvider.ts";
+import { mockConfig, mockUser } from "#core/tests.ts";
 
 describe("AzureProvider", () => {
 	it("stores signatures", () => {

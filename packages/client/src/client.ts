@@ -1,23 +1,6 @@
 import type { Transport } from "@modelcontextprotocol/client";
 import { inferPrismaClient } from "@ryangarber/better-auth-adapter-prisma/client";
 import { QueryClient } from "@tanstack/react-query";
-import { JsonService } from "@tiny-chat/core/core/services/JsonService.ts";
-import type { ShellCapability } from "@tiny-chat/core/core/types/capability.ts";
-import { zEnv, type zProviderEnv } from "@tiny-chat/core/core/types/env.ts";
-import {
-	CodeUtils,
-	type CodeWorker,
-} from "@tiny-chat/core/core/utils/CodeUtils.ts";
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
-import type { ModelProvider } from "@tiny-chat/core/features/provider/types/model.ts";
-import type {
-	ProviderState,
-	ProviderStatus,
-} from "@tiny-chat/core/features/provider/types/provider.ts";
-import type { userFields } from "@tiny-chat/core/prisma/better-auth-adapter.ts";
-import type { ApiRouter } from "@tiny-chat/server/core/utils/ApiRouter.ts";
-import type { AuthServer } from "@tiny-chat/server/core/utils/AuthServer.ts";
 import { createTRPCClient, httpLink } from "@trpc/client";
 import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query";
 import {
@@ -27,8 +10,22 @@ import {
 import { createAuthClient } from "better-auth/react";
 import { createContext } from "react";
 import { z } from "zod";
-import type { ClientInput } from "./features/chat/services/MessagingService.ts";
-import { WorkingDirectoryService } from "./features/chat/services/WorkingDirectoryService.ts";
+import type { ClientInput } from "#client/features/chat/services/MessagingService.ts";
+import { WorkingDirectoryService } from "#client/features/chat/services/WorkingDirectoryService.ts";
+import { JsonService } from "#core/core/services/JsonService.ts";
+import type { ShellCapability } from "#core/core/types/capability.ts";
+import { zEnv, type zProviderEnv } from "#core/core/types/env.ts";
+import { CodeUtils, type CodeWorker } from "#core/core/utils/CodeUtils.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import type { ModelProvider } from "#core/features/provider/types/model.ts";
+import type {
+	ProviderState,
+	ProviderStatus,
+} from "#core/features/provider/types/provider.ts";
+import type { userFields } from "#core/prisma/better-auth-adapter.ts";
+import type { ApiRouter } from "#server/core/utils/ApiRouter.ts";
+import type { AuthServer } from "#server/core/utils/AuthServer.ts";
 
 export interface ClientProviders {
 	getModelProviders: (_: {

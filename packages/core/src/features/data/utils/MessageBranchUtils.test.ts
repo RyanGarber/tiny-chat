@@ -1,4 +1,4 @@
-import { MessageBranchUtils } from "./MessageBranchUtils.ts";
+import { MessageBranchUtils } from "#core/features/data/utils/MessageBranchUtils.ts";
 
 const m = (id: string, previousId: string | null, time = 0) => ({
 	id,

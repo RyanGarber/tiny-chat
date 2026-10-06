@@ -2,8 +2,8 @@ import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, expect, test, vi } from "vitest";
-import { KeyringService } from "./KeyringService.ts";
-import { TokenService } from "./TokenService.ts";
+import { KeyringService } from "#cli/core/services/KeyringService.ts";
+import { TokenService } from "#cli/core/services/TokenService.ts";
 
 const dir = mkdtempSync(join(tmpdir(), "tiny-chat-token-test-"));
 const originalPath = TokenService.path;

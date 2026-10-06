@@ -1,4 +1,7 @@
-import { FileExcludeUtils, type FileScope } from "./FileExcludeUtils.ts";
+import {
+	FileExcludeUtils,
+	type FileScope,
+} from "#core/features/file/utils/FileExcludeUtils.ts";
 
 const category = (path: string, isDirectory = false) =>
 	FileExcludeUtils.getCategory({ path, isDirectory });

@@ -1,14 +1,14 @@
-import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
-import type { zData } from "@tiny-chat/core/features/data/types/part.ts";
-import type { Client } from "../../../client.ts";
-import { useConfigStore } from "../../agent/stores/useConfigStore.ts";
-import { AttachmentService } from "../../editor/services/AttachmentService.ts";
-import type { AttachmentItem } from "../../editor/types/attachment.ts";
-import type { EditorNode } from "../../editor/types/node.ts";
-import { AttachmentUtils } from "../../editor/utils/AttachmentUtils.ts";
-import { useChatStore } from "../stores/useChatStore.ts";
-import { useDraftStore } from "../stores/useDraftStore.ts";
-import { useMessagingStore } from "../stores/useMessagingStore.ts";
+import type { Client } from "#client/client.ts";
+import { useConfigStore } from "#client/features/agent/stores/useConfigStore.ts";
+import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
+import { useDraftStore } from "#client/features/chat/stores/useDraftStore.ts";
+import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
+import { AttachmentService } from "#client/features/editor/services/AttachmentService.ts";
+import type { AttachmentItem } from "#client/features/editor/types/attachment.ts";
+import type { EditorNode } from "#client/features/editor/types/node.ts";
+import { AttachmentUtils } from "#client/features/editor/utils/AttachmentUtils.ts";
+import type { MessageState } from "#core/features/data/types/message.ts";
+import type { zData } from "#core/features/data/types/part.ts";
 
 export interface ClientInput {
 	getData: ({ client }: { client: Client }) => zData;

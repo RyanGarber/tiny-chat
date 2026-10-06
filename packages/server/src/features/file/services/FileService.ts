@@ -1,17 +1,17 @@
 import { dirname } from "node:path";
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
+import { Bash, InMemoryFs, MountableFs } from "just-bash";
+import type { zUser } from "#core/features/data/types/user.ts";
 import type {
 	FileNode,
 	FileState,
 	FilesystemSpec,
-} from "@tiny-chat/core/features/file/types/file.ts";
+} from "#core/features/file/types/file.ts";
 import {
 	type PathLike,
 	PathUtils,
-} from "@tiny-chat/core/features/file/utils/PathUtils.ts";
-import { Bash, InMemoryFs, MountableFs } from "just-bash";
-import { ChatService } from "../../chat/services/ChatService.ts";
-import { FilesystemService } from "./FilesystemService.ts";
+} from "#core/features/file/utils/PathUtils.ts";
+import { ChatService } from "#server/features/chat/services/ChatService.ts";
+import { FilesystemService } from "#server/features/file/services/FilesystemService.ts";
 
 type Instance = {
 	bash: Bash;

@@ -1,4 +1,4 @@
-import { ToolOutputUtils } from "./ToolOutputUtils.ts";
+import { ToolOutputUtils } from "#core/features/tool/utils/ToolOutputUtils.ts";
 
 describe("ToolOutputUtils.collect", () => {
 	it("keeps everything while it fits", () => {

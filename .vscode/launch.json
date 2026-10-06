@@ -5,6 +5,13 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
+			"name": "Current File (Bun)",
+			"type": "bun",
+			"request": "launch",
+			"program": "${file}",
+			"cwd": "${workspaceFolder}"
+		},
+		{
 			"name": "dev:cli",
 			"type": "node-terminal",
 			"request": "launch",
@@ -19,10 +26,10 @@
 			"cwd": "${workspaceFolder}"
 		},
 		{
-			"name": "dev:tauri",
+			"name": "dev:app",
 			"type": "node-terminal",
 			"request": "launch",
-			"command": "pnpm run dev:tauri",
+			"command": "pnpm run dev:app",
 			"cwd": "${workspaceFolder}"
 		},
 		{

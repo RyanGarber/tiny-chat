@@ -1,12 +1,15 @@
 /** biome-ignore-all lint/suspicious/noConfusingVoidType: no input expected */
 
 import type { z } from "zod";
-import type { Capabilities } from "../../../core/types/capability.ts";
-import type { DistributiveOmit } from "../../../core/types/common.ts";
-import type { StreamMutation } from "../../../core/types/stream.ts";
-import type { zAgentContext } from "../../agent/types/agent.ts";
-import type { zDataSimplePart, zJsonPart } from "../../data/types/part.ts";
-import type { ToolDisplay } from "./display.ts";
+import type { Capabilities } from "#core/core/types/capability.ts";
+import type { DistributiveOmit } from "#core/core/types/common.ts";
+import type { StreamMutation } from "#core/core/types/stream.ts";
+import type { zAgentContext } from "#core/features/agent/types/agent.ts";
+import type {
+	zDataSimplePart,
+	zJsonPart,
+} from "#core/features/data/types/part.ts";
+import type { ToolDisplay } from "#core/features/tool/types/display.ts";
 
 export interface ToolDefinition {
 	name: string;

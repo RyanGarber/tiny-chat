@@ -1,8 +1,11 @@
-import type { zUser } from "../../data/types/user.ts";
-import type { ProviderState, ProviderStatus } from "../types/provider.ts";
-import { ModelProviderService } from "./ModelProviderService.ts";
-import { OtherProviderService } from "./OtherProviderService.ts";
-import { WebProviderService } from "./WebProviderService.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import { ModelProviderService } from "#core/features/provider/services/ModelProviderService.ts";
+import { OtherProviderService } from "#core/features/provider/services/OtherProviderService.ts";
+import { WebProviderService } from "#core/features/provider/services/WebProviderService.ts";
+import type {
+	ProviderState,
+	ProviderStatus,
+} from "#core/features/provider/types/provider.ts";
 export const ProviderService = {
 	providers: [
 		...ModelProviderService.providers,

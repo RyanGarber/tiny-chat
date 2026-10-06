@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useContext, useEffect } from "react";
-import { ClientContext } from "../../client.ts";
+import { ClientContext } from "#client/client.ts";
 
 export const sessionQueryKey = ["useSession"] as const;
 

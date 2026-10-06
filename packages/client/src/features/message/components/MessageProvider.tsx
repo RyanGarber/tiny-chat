@@ -1,10 +1,3 @@
-import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
-import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
-import {
-	type Source,
-	SourceUtils,
-} from "@tiny-chat/core/features/data/utils/SourceUtils.ts";
-import { ToolUtils } from "@tiny-chat/core/features/tool/utils/ToolUtils.ts";
 import {
 	createElement,
 	type ReactNode,
@@ -15,26 +8,33 @@ import {
 	useState,
 } from "react";
 import type { StoreApi } from "zustand/vanilla";
-import { ClientContext } from "../../../client.ts";
-import { useSession } from "../../../core/hooks/useSession.ts";
-import type { AgentStreamEvent } from "../../../core/services/StreamService.ts";
-import { useProviders } from "../../agent/hooks/useProviders.ts";
-import { useSkills } from "../../agent/hooks/useSkills.ts";
-import { useStream } from "../../agent/hooks/useStream.ts";
-import { useTools } from "../../agent/hooks/useTools.ts";
-import { ClientMessageService } from "../../agent/services/ClientMessageService.ts";
-import { useStreamStore } from "../../agent/stores/useStreamStore.ts";
-import { useChat } from "../../chat/hooks/useChat.ts";
-import { useChatFiles } from "../../chat/hooks/useChatFiles.ts";
-import { useToolFeedbackStore } from "../../part/stores/useToolFeedbackStore.ts";
-import { useActions } from "../../user/hooks/useActions.ts";
-import { useMemories } from "../../user/hooks/useMemories.ts";
-import { useMessages } from "../hooks/useMessages.ts";
+import { ClientContext } from "#client/client.ts";
+import { useSession } from "#client/core/hooks/useSession.ts";
+import type { AgentStreamEvent } from "#client/core/services/StreamService.ts";
+import { useProviders } from "#client/features/agent/hooks/useProviders.ts";
+import { useSkills } from "#client/features/agent/hooks/useSkills.ts";
+import { useStream } from "#client/features/agent/hooks/useStream.ts";
+import { useTools } from "#client/features/agent/hooks/useTools.ts";
+import { ClientMessageService } from "#client/features/agent/services/ClientMessageService.ts";
+import { useStreamStore } from "#client/features/agent/stores/useStreamStore.ts";
+import { useChat } from "#client/features/chat/hooks/useChat.ts";
+import { useChatFiles } from "#client/features/chat/hooks/useChatFiles.ts";
+import { useMessages } from "#client/features/message/hooks/useMessages.ts";
 import {
 	createMessageStore,
 	type MessageStore,
 	MessageStoreContext,
-} from "../stores/useMessageStore.ts";
+} from "#client/features/message/stores/useMessageStore.ts";
+import { useToolFeedbackStore } from "#client/features/part/stores/useToolFeedbackStore.ts";
+import { useActions } from "#client/features/user/hooks/useActions.ts";
+import { useMemories } from "#client/features/user/hooks/useMemories.ts";
+import type { MessageState } from "#core/features/data/types/message.ts";
+import { DataUtils } from "#core/features/data/utils/DataUtils.ts";
+import {
+	type Source,
+	SourceUtils,
+} from "#core/features/data/utils/SourceUtils.ts";
+import { ToolUtils } from "#core/features/tool/utils/ToolUtils.ts";
 
 /**
  * Runs the chat-scoped queries and pushes the result into the store.

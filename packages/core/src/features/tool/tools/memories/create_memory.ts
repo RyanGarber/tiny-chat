@@ -1,9 +1,13 @@
 import { z } from "zod";
-import { Enum } from "../../../../core/services/PostgresService.ts";
-import type { MemoriesCapability } from "../../../../core/types/capability.ts";
-import { zId } from "../../../../core/types/common.ts";
-import type { ToolDisplay } from "../../types/display.ts";
-import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
+import { Enum } from "#core/core/services/PostgresService.ts";
+import type { MemoriesCapability } from "#core/core/types/capability.ts";
+import { zId } from "#core/core/types/common.ts";
+import type { ToolDisplay } from "#core/features/tool/types/display.ts";
+import type {
+	Tool,
+	ToolDefinition,
+	ToolFactory,
+} from "#core/features/tool/types/tool.ts";
 
 export const create_memory = {
 	name: "create_memory",

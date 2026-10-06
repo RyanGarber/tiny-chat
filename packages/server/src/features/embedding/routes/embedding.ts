@@ -1,8 +1,8 @@
-import { zId } from "@tiny-chat/core/core/types/common.ts";
-import { MessageLike } from "@tiny-chat/core/features/data/types/message.ts";
 import { z } from "zod";
-import { procedure, router } from "../../../index.ts";
-import { EmbeddingService } from "../services/EmbeddingService.ts";
+import { zId } from "#core/core/types/common.ts";
+import { MessageLike } from "#core/features/data/types/message.ts";
+import { EmbeddingService } from "#server/features/embedding/services/EmbeddingService.ts";
+import { procedure, router } from "#server/index.ts";
 
 export const embedding = router({
 	getMessageEmbedding: procedure

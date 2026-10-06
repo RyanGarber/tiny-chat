@@ -8,10 +8,13 @@ import {
 	AntigravityProxyModel,
 } from "@ryangarber/ai-sdk-antigravity-proxy";
 import type { TextStreamPart } from "ai";
-import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
-import type { ModelProvider, zModel } from "../../types/model.ts";
-import { ModelProviderUtils } from "../../utils/ModelProviderUtils.ts";
-import { GoogleProvider } from "./GoogleProvider.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { GoogleProvider } from "#core/features/provider/providers/model/GoogleProvider.ts";
+import type {
+	ModelProvider,
+	zModel,
+} from "#core/features/provider/types/model.ts";
+import { ModelProviderUtils } from "#core/features/provider/utils/ModelProviderUtils.ts";
 
 export const AntigravityProvider: ModelProvider<ProviderV4> = {
 	name: "antigravity",

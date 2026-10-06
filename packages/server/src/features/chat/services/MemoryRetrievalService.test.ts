@@ -1,14 +1,14 @@
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import { SettingsUtils } from "@tiny-chat/core/core/utils/SettingsUtils.ts";
-import { zConfig } from "@tiny-chat/core/features/data/types/message.ts";
-import { db } from "../../../db.ts";
-import { testUser } from "../../../tests.ts";
-import { EmbeddingService } from "../../embedding/services/EmbeddingService.ts";
-import { MessageService } from "../../message/services/MessageService.ts";
-import { ChatService } from "./ChatService.ts";
-import { MemoryRetrievalService } from "./MemoryRetrievalService.ts";
-import { MemorySearchService } from "./MemorySearchService.ts";
-import { MemoryService } from "./MemoryService.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { SettingsUtils } from "#core/core/utils/SettingsUtils.ts";
+import { zConfig } from "#core/features/data/types/message.ts";
+import { db } from "#server/db.ts";
+import { ChatService } from "#server/features/chat/services/ChatService.ts";
+import { MemoryRetrievalService } from "#server/features/chat/services/MemoryRetrievalService.ts";
+import { MemorySearchService } from "#server/features/chat/services/MemorySearchService.ts";
+import { MemoryService } from "#server/features/chat/services/MemoryService.ts";
+import { EmbeddingService } from "#server/features/embedding/services/EmbeddingService.ts";
+import { MessageService } from "#server/features/message/services/MessageService.ts";
+import { testUser } from "#server/tests.ts";
 
 const user = testUser();
 const other = testUser();

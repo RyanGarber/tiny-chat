@@ -1,32 +1,29 @@
 import { useMutation } from "@tanstack/react-query";
-import type { ChatState } from "@tiny-chat/core/features/data/types/chat.ts";
-import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
-import type {
-	zData,
-	zToolCallPart,
-} from "@tiny-chat/core/features/data/types/part.ts";
-import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
-import { ModelProviderService } from "@tiny-chat/core/features/provider/services/ModelProviderService.ts";
-import { ToolCallUtils } from "@tiny-chat/core/features/tool/utils/ToolCallUtils.ts";
 import { useContext, useRef } from "react";
-import { ClientContext } from "../../../client.ts";
-import { useSession } from "../../../core/hooks/useSession.ts";
-import { useConfig } from "../../agent/hooks/useConfig.ts";
-import { useProviders } from "../../agent/hooks/useProviders.ts";
-import { useSkills } from "../../agent/hooks/useSkills.ts";
-import { useTools } from "../../agent/hooks/useTools.ts";
-import { ClientMessageService } from "../../agent/services/ClientMessageService.ts";
-import { ClientProviderService } from "../../agent/services/ClientProviderService.ts";
-import { useStreamStore } from "../../agent/stores/useStreamStore.ts";
-import { MessageQueryService } from "../../message/services/MessageQueryService.ts";
-import { ToolFeedbackService } from "../../part/services/ToolFeedbackService.ts";
-import { useEmbeddingSettings } from "../../settings/hooks/useEmbeddingSettings.ts";
-import { ChatService } from "../services/ChatService.ts";
-import { MessagingService } from "../services/MessagingService.ts";
-import { useChatStore } from "../stores/useChatStore.ts";
-import { useMessageQueueStore } from "../stores/useMessageQueueStore.ts";
-import { useMessagingStore } from "../stores/useMessagingStore.ts";
-import { useChat } from "./useChat.ts";
+import { ClientContext } from "#client/client.ts";
+import { useSession } from "#client/core/hooks/useSession.ts";
+import { useConfig } from "#client/features/agent/hooks/useConfig.ts";
+import { useProviders } from "#client/features/agent/hooks/useProviders.ts";
+import { useSkills } from "#client/features/agent/hooks/useSkills.ts";
+import { useTools } from "#client/features/agent/hooks/useTools.ts";
+import { ClientMessageService } from "#client/features/agent/services/ClientMessageService.ts";
+import { ClientProviderService } from "#client/features/agent/services/ClientProviderService.ts";
+import { useStreamStore } from "#client/features/agent/stores/useStreamStore.ts";
+import { useChat } from "#client/features/chat/hooks/useChat.ts";
+import { ChatService } from "#client/features/chat/services/ChatService.ts";
+import { MessagingService } from "#client/features/chat/services/MessagingService.ts";
+import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
+import { useMessageQueueStore } from "#client/features/chat/stores/useMessageQueueStore.ts";
+import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
+import { MessageQueryService } from "#client/features/message/services/MessageQueryService.ts";
+import { ToolFeedbackService } from "#client/features/part/services/ToolFeedbackService.ts";
+import { useEmbeddingSettings } from "#client/features/settings/hooks/useEmbeddingSettings.ts";
+import type { ChatState } from "#core/features/data/types/chat.ts";
+import type { MessageState } from "#core/features/data/types/message.ts";
+import type { zData, zToolCallPart } from "#core/features/data/types/part.ts";
+import { DataUtils } from "#core/features/data/utils/DataUtils.ts";
+import { ModelProviderService } from "#core/features/provider/services/ModelProviderService.ts";
+import { ToolCallUtils } from "#core/features/tool/utils/ToolCallUtils.ts";
 
 export const deleteMessageMutationKey = [
 	"useMessaging",

@@ -1,6 +1,6 @@
-import { JsonService } from "@tiny-chat/core/core/services/JsonService.ts";
 import { initTRPC } from "@trpc/server";
-import type { ApiContext } from "./core/utils/ApiContext.ts";
+import { JsonService } from "#core/core/services/JsonService.ts";
+import type { ApiContext } from "#server/core/utils/ApiContext.ts";
 
 const trpc = initTRPC.context<ApiContext>().create({
 	transformer: JsonService.transformer,

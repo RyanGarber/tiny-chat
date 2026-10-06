@@ -1,13 +1,13 @@
-import { zConfig } from "@tiny-chat/core/features/data/types/message.ts";
-import type { ModelProviderStatus } from "@tiny-chat/core/features/provider/types/model.ts";
-import type { ProviderState } from "@tiny-chat/core/features/provider/types/provider.ts";
 import { useCallback, useContext, useEffect, useMemo } from "react";
-import { ClientContext } from "../../../client.ts";
-import { useChatStore } from "../../chat/stores/useChatStore.ts";
-import { useMessages } from "../../message/hooks/useMessages.ts";
-import { useConfigStore } from "../stores/useConfigStore.ts";
-import { useConfigEditor } from "./useConfigEditor.ts";
-import { useProviders } from "./useProviders.ts";
+import { ClientContext } from "#client/client.ts";
+import { useConfigEditor } from "#client/features/agent/hooks/useConfigEditor.ts";
+import { useProviders } from "#client/features/agent/hooks/useProviders.ts";
+import { useConfigStore } from "#client/features/agent/stores/useConfigStore.ts";
+import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
+import { useMessages } from "#client/features/message/hooks/useMessages.ts";
+import { zConfig } from "#core/features/data/types/message.ts";
+import type { ModelProviderStatus } from "#core/features/provider/types/model.ts";
+import type { ProviderState } from "#core/features/provider/types/provider.ts";
 
 export const useConfig = () => {
 	const client = useContext(ClientContext);

@@ -1,8 +1,8 @@
-import type { zProviderEnv } from "../../../core/types/env.ts";
-import type { zConfig } from "../../data/types/message.ts";
-import type { zUser } from "../../data/types/user.ts";
-import { ModelProviderService } from "../services/ModelProviderService.ts";
-import type { ModelProvider } from "../types/model.ts";
+import type { zProviderEnv } from "#core/core/types/env.ts";
+import type { zConfig } from "#core/features/data/types/message.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import { ModelProviderService } from "#core/features/provider/services/ModelProviderService.ts";
+import type { ModelProvider } from "#core/features/provider/types/model.ts";
 
 export type EmbeddingBatch = {
 	messages: { id: string; text: string; total?: string | number }[];

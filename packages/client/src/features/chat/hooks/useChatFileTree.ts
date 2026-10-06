@@ -1,14 +1,17 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { useCallback, useContext, useMemo, useState } from "react";
-import { ClientContext } from "../../../client.ts";
-import { useTools } from "../../agent/hooks/useTools.ts";
-import { useMessages } from "../../message/hooks/useMessages.ts";
-import { GitService } from "../services/GitService.ts";
-import { useChatStore } from "../stores/useChatStore.ts";
-import { useDraftStore } from "../stores/useDraftStore.ts";
-import type { ChatFile, GitRepo } from "../types/chatFiles.ts";
-import { ChatFilesUtils } from "../utils/ChatFilesUtils.ts";
-import { useChatFiles } from "./useChatFiles.ts";
+import { ClientContext } from "#client/client.ts";
+import { useTools } from "#client/features/agent/hooks/useTools.ts";
+import { useChatFiles } from "#client/features/chat/hooks/useChatFiles.ts";
+import { GitService } from "#client/features/chat/services/GitService.ts";
+import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
+import { useDraftStore } from "#client/features/chat/stores/useDraftStore.ts";
+import type {
+	ChatFile,
+	GitRepo,
+} from "#client/features/chat/types/chatFiles.ts";
+import { ChatFilesUtils } from "#client/features/chat/utils/ChatFilesUtils.ts";
+import { useMessages } from "#client/features/message/hooks/useMessages.ts";
 
 /** How often a repository is asked what changed, while its files are shown. */
 const GIT_INTERVAL = 5000;

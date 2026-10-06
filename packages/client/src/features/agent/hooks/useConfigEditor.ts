@@ -1,9 +1,9 @@
-import { zConfig } from "@tiny-chat/core/features/data/types/message.ts";
-import type { ModelProviderStatus } from "@tiny-chat/core/features/provider/types/model.ts";
-import type { ProviderState } from "@tiny-chat/core/features/provider/types/provider.ts";
-import { ModelProviderUtils } from "@tiny-chat/core/features/provider/utils/ModelProviderUtils.ts";
 import { useCallback, useMemo } from "react";
-import { useProviders } from "./useProviders.ts";
+import { useProviders } from "#client/features/agent/hooks/useProviders.ts";
+import { zConfig } from "#core/features/data/types/message.ts";
+import type { ModelProviderStatus } from "#core/features/provider/types/model.ts";
+import type { ProviderState } from "#core/features/provider/types/provider.ts";
+import { ModelProviderUtils } from "#core/features/provider/utils/ModelProviderUtils.ts";
 
 /**
  * Edits one config — the chat's, or one kept in settings such as the

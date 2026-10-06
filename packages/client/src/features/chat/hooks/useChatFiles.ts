@@ -1,12 +1,12 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { zAgentMessage } from "@tiny-chat/core/features/agent/types/agent.ts";
-import { AgentUtils } from "@tiny-chat/core/features/agent/utils/AgentUtils.ts";
 import { useContext, useMemo } from "react";
-import { ClientContext } from "../../../client.ts";
-import { useConfig } from "../../agent/hooks/useConfig.ts";
-import { useMessages } from "../../message/hooks/useMessages.ts";
-import { useDraftStore } from "../stores/useDraftStore.ts";
-import { useChat } from "./useChat.ts";
+import { ClientContext } from "#client/client.ts";
+import { useConfig } from "#client/features/agent/hooks/useConfig.ts";
+import { useChat } from "#client/features/chat/hooks/useChat.ts";
+import { useDraftStore } from "#client/features/chat/stores/useDraftStore.ts";
+import { useMessages } from "#client/features/message/hooks/useMessages.ts";
+import type { zAgentMessage } from "#core/features/agent/types/agent.ts";
+import { AgentUtils } from "#core/features/agent/utils/AgentUtils.ts";
 
 const chatFilesQueryKey = ["useChatFiles", "chatFiles"] as const;
 const readChatFileMutationKey = ["useChatFiles", "readChatFile"] as const;

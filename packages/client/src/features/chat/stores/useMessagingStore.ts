@@ -1,6 +1,6 @@
-import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
+import type { MessageState } from "#core/features/data/types/message.ts";
 
 interface MessagingStore {
 	project: { id: string; title: string | null } | null;

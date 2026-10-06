@@ -1,14 +1,14 @@
 import { distance } from "fastest-levenshtein";
 import { customAlphabet } from "nanoid";
-import { Temporal } from "temporal-polyfill";
+import "temporal-polyfill/full/global";
 import { format } from "timeago.js";
 import {
 	adjectives,
 	colors,
 	uniqueNamesGenerator,
 } from "unique-names-generator";
-import { RRule } from "../../index.ts";
-import { ID_ALPHABET, ID_LENGTH } from "../types/common.ts";
+import { ID_ALPHABET, ID_LENGTH } from "#core/core/types/common.ts";
+import { RRule } from "#core/index.ts";
 
 export type MaybeNullish<TIn, TOut> = TIn extends undefined
 	? undefined
@@ -205,6 +205,16 @@ export const CommonUtils = {
 		const searchFrom = after ?? startAt.subtract({ milliseconds: 1 });
 		const nextRunAt = schedule.after(CommonUtils.toDate(searchFrom), false);
 		return CommonUtils.toPlainDateTime(nextRunAt);
+	},
+
+	/** An RRule in words, or as written when it cannot be read. */
+	describeSchedule: (schedule: string | undefined) => {
+		if (!schedule) return "";
+		try {
+			return RRule.fromString(schedule).toText();
+		} catch {
+			return schedule;
+		}
 	},
 
 	getDistance: (a: string, b: string) => {

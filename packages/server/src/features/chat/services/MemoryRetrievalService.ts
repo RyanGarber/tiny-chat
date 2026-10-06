@@ -1,14 +1,14 @@
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
 import type {
 	MemorySearchResult,
 	MemorySource,
 	MemoryState,
-} from "@tiny-chat/core/features/data/types/memory.ts";
-import type { MessageLike } from "@tiny-chat/core/features/data/types/message.ts";
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
-import { createEmbeddingCapability } from "../../../core/capabilities/createEmbeddingCapability.ts";
-import { EmbeddingService } from "../../embedding/services/EmbeddingService.ts";
-import { MemorySearchService } from "./MemorySearchService.ts";
+} from "#core/features/data/types/memory.ts";
+import type { MessageLike } from "#core/features/data/types/message.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import { createEmbeddingCapability } from "#server/core/capabilities/createEmbeddingCapability.ts";
+import { MemorySearchService } from "#server/features/chat/services/MemorySearchService.ts";
+import { EmbeddingService } from "#server/features/embedding/services/EmbeddingService.ts";
 
 const MEMORY_BOILERPLATE = `<memory id="" category="" stability="" learned="">\n\n</memory>`;
 

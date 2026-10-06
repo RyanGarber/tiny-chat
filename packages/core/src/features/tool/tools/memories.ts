@@ -1,13 +1,16 @@
 import type {
 	EmbeddingCapability,
 	MemoriesCapability,
-} from "../../../core/types/capability.ts";
-import type { Toolset, ToolsetFactory } from "../types/tool.ts";
-import { createCreateMemoryTool } from "./memories/create_memory.ts";
-import { createDeleteMemoryTool } from "./memories/delete_memory.ts";
-import { createSearchChatsTool } from "./memories/search_chats.ts";
-import { createSearchMemoriesTool } from "./memories/search_memories.ts";
-import { createUpdateMemoryTool } from "./memories/update_memory.ts";
+} from "#core/core/types/capability.ts";
+import { createCreateMemoryTool } from "#core/features/tool/tools/memories/create_memory.ts";
+import { createDeleteMemoryTool } from "#core/features/tool/tools/memories/delete_memory.ts";
+import { createSearchChatsTool } from "#core/features/tool/tools/memories/search_chats.ts";
+import { createSearchMemoriesTool } from "#core/features/tool/tools/memories/search_memories.ts";
+import { createUpdateMemoryTool } from "#core/features/tool/tools/memories/update_memory.ts";
+import type {
+	Toolset,
+	ToolsetFactory,
+} from "#core/features/tool/types/tool.ts";
 
 export const createMemoriesToolset: ToolsetFactory<
 	Toolset<{ embedding?: EmbeddingCapability; memories: MemoriesCapability }>

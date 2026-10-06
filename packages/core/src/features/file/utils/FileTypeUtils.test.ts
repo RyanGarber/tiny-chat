@@ -1,4 +1,4 @@
-import { FileTypeUtils } from "./FileTypeUtils.ts";
+import { FileTypeUtils } from "#core/features/file/utils/FileTypeUtils.ts";
 
 describe("FileTypeUtils", () => {
 	it("detects common mime types from extensions", async () => {

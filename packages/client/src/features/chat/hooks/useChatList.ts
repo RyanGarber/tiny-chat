@@ -1,13 +1,10 @@
 import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
-import type {
-	ChatState,
-	ProjectLike,
-} from "@tiny-chat/core/features/data/types/chat.ts";
-import { ChatUtils } from "@tiny-chat/core/features/data/utils/ChatUtils.ts";
 import { useContext } from "react";
-import { ClientContext } from "../../../client.ts";
-import { ChatService } from "../services/ChatService.ts";
-import { useChatStore } from "../stores/useChatStore.ts";
+import { ClientContext } from "#client/client.ts";
+import { ChatService } from "#client/features/chat/services/ChatService.ts";
+import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
+import type { ChatState, ProjectLike } from "#core/features/data/types/chat.ts";
+import { ChatUtils } from "#core/features/data/utils/ChatUtils.ts";
 
 export const useChatList = () => {
 	const client = useContext(ClientContext);

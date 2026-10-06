@@ -2,9 +2,9 @@ import {
 	type VoyageProvider as _VoyageProvider,
 	createVoyage,
 } from "voyage-ai-provider";
-import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
-import type { ModelProvider } from "../../types/model.ts";
-import { ModelProviderUtils } from "../../utils/ModelProviderUtils.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import type { ModelProvider } from "#core/features/provider/types/model.ts";
+import { ModelProviderUtils } from "#core/features/provider/utils/ModelProviderUtils.ts";
 
 const MODELS = [
 	"voyage-3-large",

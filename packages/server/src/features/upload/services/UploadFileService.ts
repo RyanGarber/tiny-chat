@@ -1,12 +1,12 @@
-import type { Enum } from "@tiny-chat/core/core/services/PostgresService.ts";
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
-import { FileTypeUtils } from "@tiny-chat/core/features/file/utils/FileTypeUtils.ts";
-import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import { unzipSync } from "fflate";
 import sharp from "sharp";
-import { selectAll } from "../../../db.ts";
-import { UploadUtils } from "../utils/UploadUtils.ts";
+import type { Enum } from "#core/core/services/PostgresService.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import { FileTypeUtils } from "#core/features/file/utils/FileTypeUtils.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
+import { selectAll } from "#server/db.ts";
+import { UploadUtils } from "#server/features/upload/utils/UploadUtils.ts";
 
 /**
  * File preprocessing and upload handling.

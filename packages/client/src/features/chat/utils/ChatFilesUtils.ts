@@ -1,14 +1,18 @@
-import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
-import { SourceUtils } from "@tiny-chat/core/features/data/utils/SourceUtils.ts";
-import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
-import type { zWebContext } from "@tiny-chat/core/features/provider/types/web.ts";
-import type { Toolset } from "@tiny-chat/core/features/tool/types/tool.ts";
 import type {
 	ChatFile,
 	ChatFileChanges,
 	ChatFileNode,
 	GitRepo,
-} from "../types/chatFiles.ts";
+} from "#client/features/chat/types/chatFiles.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import type { ActionState } from "#core/features/data/types/action.ts";
+import type { MemoryState } from "#core/features/data/types/memory.ts";
+import type { MessageState } from "#core/features/data/types/message.ts";
+import { DataUtils } from "#core/features/data/utils/DataUtils.ts";
+import { SourceUtils } from "#core/features/data/utils/SourceUtils.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
+import type { zWebContext } from "#core/features/provider/types/web.ts";
+import type { Toolset } from "#core/features/tool/types/tool.ts";
 
 type MessageLike = Pick<MessageState, "data">;
 
@@ -134,6 +138,41 @@ export const ChatFilesUtils = {
 		}
 		return [...byUrl.values()];
 	},
+
+	/** What the panel shows of a memory, and the message it came from. */
+	memory: (memory: MemoryState) => ({
+		fact: memory.fact,
+		evidence: memory.evidence,
+		details: [
+			memory.category.toLowerCase(),
+			memory.stability.toLowerCase().replace("_", " "),
+			`${Math.round(memory.confidence * 100)}% confident`,
+		].join(" · "),
+		learned: `Learned ${CommonUtils.formatDate({ date: memory.createdAt, relative: true })}`,
+		messageId: memory.messageId,
+	}),
+
+	/**
+	 * What the panel shows of an action. The message it was scheduled from is
+	 * only worth going to when it isn't the one the chat already ends on.
+	 */
+	action: ({
+		action,
+		lastMessageId,
+	}: {
+		action: ActionState;
+		lastMessageId?: string;
+	}) => ({
+		prompt: DataUtils.getTextCleaned({ data: action.data }),
+		schedule: CommonUtils.describeSchedule(action.schedule),
+		lastRun: action.lastRanAt
+			? `Last ran ${CommonUtils.formatDate({ date: action.lastRanAt, relative: true })}`
+			: "Hasn't run yet",
+		nextRun: action.nextRunAt
+			? `Next run ${CommonUtils.formatDate({ date: action.nextRunAt, relative: true })}`
+			: null,
+		messageId: action.messageId === lastMessageId ? null : action.messageId,
+	}),
 
 	/** The tree node a file sits at, and the folders above it. */
 	node: (file: ChatFile) => {

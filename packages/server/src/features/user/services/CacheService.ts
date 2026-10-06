@@ -1,8 +1,5 @@
-import type {
-	zCache,
-	zUser,
-} from "@tiny-chat/core/features/data/types/user.ts";
-import { ProviderService } from "@tiny-chat/core/features/provider/services/ProviderService.ts";
+import type { zCache, zUser } from "#core/features/data/types/user.ts";
+import { ProviderService } from "#core/features/provider/services/ProviderService.ts";
 
 /**
  * Cache management for heavy operations like model discovery.

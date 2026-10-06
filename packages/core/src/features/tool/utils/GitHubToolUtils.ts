@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { GitHubCapability } from "../../../core/types/capability.ts";
+import type { GitHubCapability } from "#core/core/types/capability.ts";
 
 export const zGitHubUser = z
 	.object({

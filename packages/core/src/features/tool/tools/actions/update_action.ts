@@ -1,10 +1,14 @@
 import { z } from "zod";
-import type { ActionsCapability } from "../../../../core/types/capability.ts";
-import { zId } from "../../../../core/types/common.ts";
-import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
-import { RRule } from "../../../../index.ts";
-import type { ToolDisplay } from "../../types/display.ts";
-import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
+import type { ActionsCapability } from "#core/core/types/capability.ts";
+import { zId } from "#core/core/types/common.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import type { ToolDisplay } from "#core/features/tool/types/display.ts";
+import type {
+	Tool,
+	ToolDefinition,
+	ToolFactory,
+} from "#core/features/tool/types/tool.ts";
+import { RRule } from "#core/index.ts";
 
 export const update_action = {
 	name: "update_action",
@@ -32,16 +36,6 @@ export const update_action = {
 	}),
 } as const satisfies ToolDefinition;
 
-/** An RRule in words, or as written when it cannot be read. */
-const describeSchedule = (schedule: string | undefined) => {
-	if (!schedule) return "";
-	try {
-		return RRule.fromString(schedule).toText();
-	} catch {
-		return schedule;
-	}
-};
-
 const display: ToolDisplay<typeof update_action> = {
 	status: ({ input }) => [
 		["Updating", "Updated"],
@@ -52,7 +46,7 @@ const display: ToolDisplay<typeof update_action> = {
 		{
 			type: "record",
 			title: input.prompt ?? "",
-			details: [describeSchedule(input.schedule)],
+			details: [CommonUtils.describeSchedule(input.schedule)],
 		},
 	],
 };

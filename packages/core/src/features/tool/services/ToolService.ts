@@ -1,21 +1,21 @@
-import type { Capabilities } from "../../../core/types/capability.ts";
-import { PathUtils } from "../../file/utils/PathUtils.ts";
-import { createActionsToolset } from "../tools/actions.ts";
-import { createBrowserToolset } from "../tools/browser.ts";
-import { createGitHubToolset } from "../tools/github.ts";
-import { createMemoriesToolset } from "../tools/memories.ts";
-import { createQuestionsToolset } from "../tools/questions.ts";
-import { edit_file } from "../tools/shell/edit_file.ts";
-import { find_files } from "../tools/shell/find_files.ts";
-import { grep_files } from "../tools/shell/grep_files.ts";
-import { read_dir } from "../tools/shell/read_dir.ts";
-import { read_file } from "../tools/shell/read_file.ts";
-import { search_files } from "../tools/shell/search_files.ts";
-import { shell_exec } from "../tools/shell/shell_exec.ts";
-import { createShellToolset } from "../tools/shell.ts";
-import { createSubagentsToolset } from "../tools/subagents.ts";
-import { createWebToolset } from "../tools/web.ts";
-import type { Toolset } from "../types/tool.ts";
+import type { Capabilities } from "#core/core/types/capability.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
+import { createActionsToolset } from "#core/features/tool/tools/actions.ts";
+import { createBrowserToolset } from "#core/features/tool/tools/browser.ts";
+import { createGitHubToolset } from "#core/features/tool/tools/github.ts";
+import { createMemoriesToolset } from "#core/features/tool/tools/memories.ts";
+import { createQuestionsToolset } from "#core/features/tool/tools/questions.ts";
+import { edit_file } from "#core/features/tool/tools/shell/edit_file.ts";
+import { find_files } from "#core/features/tool/tools/shell/find_files.ts";
+import { grep_files } from "#core/features/tool/tools/shell/grep_files.ts";
+import { read_dir } from "#core/features/tool/tools/shell/read_dir.ts";
+import { read_file } from "#core/features/tool/tools/shell/read_file.ts";
+import { search_files } from "#core/features/tool/tools/shell/search_files.ts";
+import { shell_exec } from "#core/features/tool/tools/shell/shell_exec.ts";
+import { createShellToolset } from "#core/features/tool/tools/shell.ts";
+import { createSubagentsToolset } from "#core/features/tool/tools/subagents.ts";
+import { createWebToolset } from "#core/features/tool/tools/web.ts";
+import type { Toolset } from "#core/features/tool/types/tool.ts";
 
 /**
  * The options a toolset factory is built from, worked out from the capabilities

@@ -1,14 +1,14 @@
+import type { z } from "zod";
+import { useStreamStore } from "#client/features/agent/stores/useStreamStore.ts";
 import type {
 	Stream,
 	StreamMutation,
 	StreamOptions,
 	StreamState,
-} from "@tiny-chat/core/core/types/stream.ts";
-import { TypeUtils } from "@tiny-chat/core/core/utils/TypeUtils.ts";
-import type { zData } from "@tiny-chat/core/features/data/types/part.ts";
-import type { ToolDefinition } from "@tiny-chat/core/features/tool/types/tool.ts";
-import type { z } from "zod";
-import { useStreamStore } from "../../features/agent/stores/useStreamStore.ts";
+} from "#core/core/types/stream.ts";
+import { TypeUtils } from "#core/core/utils/TypeUtils.ts";
+import type { zData } from "#core/features/data/types/part.ts";
+import type { ToolDefinition } from "#core/features/tool/types/tool.ts";
 
 // ── Module-level state ────────────────────────────────────────────────────────
 

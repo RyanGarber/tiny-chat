@@ -1,11 +1,15 @@
 import { z } from "zod";
-import type { Capabilities } from "../../../../core/types/capability.ts";
-import { SettingsUtils } from "../../../../core/utils/SettingsUtils.ts";
-import { PathUtils } from "../../../file/utils/PathUtils.ts";
-import type { ToolDisplay } from "../../types/display.ts";
-import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
-import { ShellUtils } from "../../utils/ShellUtils.ts";
-import { ToolOutputUtils } from "../../utils/ToolOutputUtils.ts";
+import type { Capabilities } from "#core/core/types/capability.ts";
+import { SettingsUtils } from "#core/core/utils/SettingsUtils.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
+import type { ToolDisplay } from "#core/features/tool/types/display.ts";
+import type {
+	Tool,
+	ToolDefinition,
+	ToolFactory,
+} from "#core/features/tool/types/tool.ts";
+import { ShellUtils } from "#core/features/tool/utils/ShellUtils.ts";
+import { ToolOutputUtils } from "#core/features/tool/utils/ToolOutputUtils.ts";
 
 const MAX_LINE_LENGTH = 2_000;
 

@@ -1,10 +1,10 @@
-import { AttachmentService as CoreAttachmentService } from "@tiny-chat/core/features/file/services/AttachmentService.ts";
-import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
-import type { Client } from "../../../client.ts";
-import { createChatShellCapability } from "../../../core/capabilities/createChatShellCapability.ts";
-import type { AttachmentItem } from "../types/attachment.ts";
-import type { EditorNode } from "../types/node.ts";
-import { EditorNodeUtils } from "../utils/EditorNodeUtils.ts";
+import type { Client } from "#client/client.ts";
+import { createChatShellCapability } from "#client/core/capabilities/createChatShellCapability.ts";
+import type { AttachmentItem } from "#client/features/editor/types/attachment.ts";
+import type { EditorNode } from "#client/features/editor/types/node.ts";
+import { EditorNodeUtils } from "#client/features/editor/utils/EditorNodeUtils.ts";
+import { AttachmentService as CoreAttachmentService } from "#core/features/file/services/AttachmentService.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
 
 export const AttachmentService = {
 	create: async ({

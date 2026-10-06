@@ -1,9 +1,9 @@
 import { useMutation } from "@tanstack/react-query";
-import { SettingsUtils } from "@tiny-chat/core/core/utils/SettingsUtils.ts";
 import { useContext, useMemo } from "react";
-import { ClientContext } from "../../../client.ts";
-import { useProviders } from "../../agent/hooks/useProviders.ts";
-import { useSettings } from "./useSettings.ts";
+import { ClientContext } from "#client/client.ts";
+import { useProviders } from "#client/features/agent/hooks/useProviders.ts";
+import { useSettings } from "#client/features/settings/hooks/useSettings.ts";
+import { SettingsUtils } from "#core/core/utils/SettingsUtils.ts";
 
 export const useProviderSettings = () => {
 	const client = useContext(ClientContext);

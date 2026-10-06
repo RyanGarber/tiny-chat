@@ -1,25 +1,25 @@
-import { ThemeUtils } from "@tiny-chat/core/core/utils/ThemeUtils.ts";
-import type { ModelProviderStatus } from "@tiny-chat/core/features/provider/types/model.ts";
-import type { ProviderState } from "@tiny-chat/core/features/provider/types/provider.ts";
 import { useCallback, useContext, useRef } from "react";
-import { ClientContext } from "../../../client.ts";
-import { useConfig } from "../../agent/hooks/useConfig.ts";
-import { useProviders } from "../../agent/hooks/useProviders.ts";
-import { useSkills } from "../../agent/hooks/useSkills.ts";
-import { useTools } from "../../agent/hooks/useTools.ts";
-import { useChat } from "../../chat/hooks/useChat.ts";
-import { ChatService } from "../../chat/services/ChatService.ts";
-import { useMessagingStore } from "../../chat/stores/useMessagingStore.ts";
-import { useEmbeddingSettings } from "../../settings/hooks/useEmbeddingSettings.ts";
-import { useInstructions } from "../../settings/hooks/useInstructions.ts";
-import { usePresets } from "../../settings/hooks/usePresets.ts";
-import { useProviderSettings } from "../../settings/hooks/useProviderSettings.ts";
-import { useThemes } from "../../settings/hooks/useThemes.ts";
+import { ClientContext } from "#client/client.ts";
+import { useConfig } from "#client/features/agent/hooks/useConfig.ts";
+import { useProviders } from "#client/features/agent/hooks/useProviders.ts";
+import { useSkills } from "#client/features/agent/hooks/useSkills.ts";
+import { useTools } from "#client/features/agent/hooks/useTools.ts";
+import { useChat } from "#client/features/chat/hooks/useChat.ts";
+import { ChatService } from "#client/features/chat/services/ChatService.ts";
+import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
 import type {
 	CommandChoiceGroup,
 	CommandGroup,
 	CommandItem,
-} from "../types/command.ts";
+} from "#client/features/editor/types/command.ts";
+import { useEmbeddingSettings } from "#client/features/settings/hooks/useEmbeddingSettings.ts";
+import { useInstructions } from "#client/features/settings/hooks/useInstructions.ts";
+import { usePresets } from "#client/features/settings/hooks/usePresets.ts";
+import { useProviderSettings } from "#client/features/settings/hooks/useProviderSettings.ts";
+import { useThemes } from "#client/features/settings/hooks/useThemes.ts";
+import { ThemeUtils } from "#core/core/utils/ThemeUtils.ts";
+import type { ModelProviderStatus } from "#core/features/provider/types/model.ts";
+import type { ProviderState } from "#core/features/provider/types/provider.ts";
 
 /** The budgets the memory can be filled up to, as the app's slider steps. */
 const MEMORY_BUDGETS = Array.from({ length: 21 }, (_, i) => i * 500);

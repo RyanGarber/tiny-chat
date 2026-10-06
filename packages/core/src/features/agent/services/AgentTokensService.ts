@@ -1,18 +1,18 @@
-import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
-import { TypeUtils } from "../../../core/utils/TypeUtils.ts";
-import type { zConfig } from "../../data/types/message.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { TypeUtils } from "#core/core/utils/TypeUtils.ts";
+import type { zAgentMessage } from "#core/features/agent/types/agent.ts";
+import type { zConfig } from "#core/features/data/types/message.ts";
 import type {
 	zDataPart,
 	zDataSimplePart,
 	zFilePart,
 	zTextPart,
 	zToolResultPart,
-} from "../../data/types/part.ts";
-import { EditorPartUtils } from "../../data/utils/EditorPartUtils.ts";
-import { FileUtils } from "../../file/utils/FileUtils.ts";
-import type { ToolDefinition } from "../../tool/types/tool.ts";
-import { ToolUtils } from "../../tool/utils/ToolUtils.ts";
-import type { zAgentMessage } from "../types/agent.ts";
+} from "#core/features/data/types/part.ts";
+import { EditorPartUtils } from "#core/features/data/utils/EditorPartUtils.ts";
+import { FileUtils } from "#core/features/file/utils/FileUtils.ts";
+import type { ToolDefinition } from "#core/features/tool/types/tool.ts";
+import { ToolUtils } from "#core/features/tool/utils/ToolUtils.ts";
 
 /**
  * AgentTokensService — estimating and, when it has to, shrinking the context.
@@ -121,7 +121,7 @@ const getPartLength = (part: zDataPart | zDataSimplePart): number => {
 		return `\`\`\`json\n${getSerialized(part.value)}\n\`\`\``.length;
 	if (part.type === "attachment") return getSerializedLength(part.content);
 	if (part.type === "quote" || part.type === "paste") return part.text.length;
-	if (part.type === "command") return EditorPartUtils.toMarkdown(part).length;
+	if (part.type === "command") return EditorPartUtils.toText(part).length;
 	return 0;
 };
 
@@ -431,7 +431,7 @@ const getDigest = (message: zAgentMessage): string => {
 
 /**
  * Replaces a message's contents with its digest, keeping the `<message>`
- * framing that {@link AgentMessagesService} wrapped around it.
+ * framing that {@link AgentMessagesService} wraps around a user's message.
  */
 const setDigest = (message: zAgentMessage) => {
 	const digest: zDataPart = {

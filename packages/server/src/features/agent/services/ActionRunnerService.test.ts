@@ -1,15 +1,15 @@
 import { inspect } from "node:util";
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
 import {
 	type MessageState,
 	zConfig,
-} from "@tiny-chat/core/features/data/types/message.ts";
-import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
-import { testUser } from "../../../tests.ts";
-import { ActionService } from "../../chat/services/ActionService.ts";
-import { ChatService } from "../../chat/services/ChatService.ts";
-import { MessageService } from "../../message/services/MessageService.ts";
-import { ActionRunnerService } from "./ActionRunnerService.ts";
+} from "#core/features/data/types/message.ts";
+import { DataUtils } from "#core/features/data/utils/DataUtils.ts";
+import { ActionRunnerService } from "#server/features/agent/services/ActionRunnerService.ts";
+import { ActionService } from "#server/features/chat/services/ActionService.ts";
+import { ChatService } from "#server/features/chat/services/ChatService.ts";
+import { MessageService } from "#server/features/message/services/MessageService.ts";
+import { testUser } from "#server/tests.ts";
 
 const user = testUser();
 const config = zConfig.parse({ provider: "test", model: "test-generate" });

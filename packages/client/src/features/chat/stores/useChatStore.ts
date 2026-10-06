@@ -6,6 +6,12 @@ interface ChatStore {
 	selectBranch: (parentId: string | null, messageId: string) => void;
 	setChatId: (id: string | null) => void;
 
+	/** A message the chat should bring into view, once it is drawn. */
+	focusedMessage: string | null;
+	/** Selects the branches that lead to a message and asks for it to be shown. */
+	focusMessage: (messageId: string, branches: Record<string, string>) => void;
+	clearFocusedMessage: () => void;
+
 	lastSeen: Record<string, number>;
 	setLastSeen: (id: string, lastSeen: number) => void;
 
@@ -24,8 +30,14 @@ interface ChatStore {
 export const useChatStore = create<ChatStore>((set) => ({
 	chatId: null,
 	setChatId: (id) =>
-		set((s) => (s.chatId === id ? {} : { chatId: id, branches: {} })),
+		set((s) =>
+			s.chatId === id ? {} : { chatId: id, branches: {}, focusedMessage: null },
+		),
 	branches: {},
+	focusedMessage: null,
+	focusMessage: (messageId, branches) =>
+		set({ focusedMessage: messageId, branches }),
+	clearFocusedMessage: () => set({ focusedMessage: null }),
 	selectBranch: (parentId, messageId) =>
 		set((s) => ({ branches: { ...s.branches, [parentId ?? ""]: messageId } })),
 

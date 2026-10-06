@@ -1,9 +1,9 @@
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import { FileExtractionService } from "@tiny-chat/core/features/file/services/FileExtractionService.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { FileExtractionService } from "#core/features/file/services/FileExtractionService.ts";
 import {
 	type FileCategory,
 	FileExcludeUtils,
-} from "@tiny-chat/core/features/file/utils/FileExcludeUtils.ts";
+} from "#core/features/file/utils/FileExcludeUtils.ts";
 
 /**
  * What is worth keeping out of an upload, expressed in terms of the one set of

@@ -3,10 +3,14 @@ import {
 	type GoogleGenerativeAIProvider,
 	type GoogleLanguageModelOptions,
 } from "@ai-sdk/google";
-import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
-import type { zDataPart } from "../../../data/types/part.ts";
-import type { ModelProvider, zModel, zModelArg } from "../../types/model.ts";
-import { ModelProviderUtils } from "../../utils/ModelProviderUtils.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import type { zDataPart } from "#core/features/data/types/part.ts";
+import type {
+	ModelProvider,
+	zModel,
+	zModelArg,
+} from "#core/features/provider/types/model.ts";
+import { ModelProviderUtils } from "#core/features/provider/utils/ModelProviderUtils.ts";
 
 export const GoogleProvider: ModelProvider<GoogleGenerativeAIProvider> = {
 	name: "google",

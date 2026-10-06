@@ -1,8 +1,8 @@
 import type { z } from "zod";
-import type { DeepPartial } from "../../../core/types/common.ts";
-import type { zData, zFilePart } from "../../data/types/part.ts";
-import type { zWebContext } from "../../provider/types/web.ts";
-import type { ToolDefinition } from "./tool.ts";
+import type { DeepPartial } from "#core/core/types/common.ts";
+import type { zData, zFilePart } from "#core/features/data/types/part.ts";
+import type { zWebContext } from "#core/features/provider/types/web.ts";
+import type { ToolDefinition } from "#core/features/tool/types/tool.ts";
 
 /**
  * One piece of a tool call's status line.

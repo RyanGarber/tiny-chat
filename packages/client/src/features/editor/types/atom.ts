@@ -1,4 +1,4 @@
-import type { EditorPartType } from "@tiny-chat/core/features/data/utils/EditorPartUtils.ts";
+import type { EditorPartType } from "#core/features/data/utils/EditorPartUtils.ts";
 
 /**
  * The kinds of run a plain text buffer only ever handles whole. Each one is

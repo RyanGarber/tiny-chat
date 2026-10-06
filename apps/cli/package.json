@@ -1,40 +1,39 @@
 {
-	"name": "@tiny-chat/cli",
+	"name": "cli",
+	"private": true,
 	"type": "module",
+	"imports": {
+		"#core/*": "core/*",
+		"#client/*": "client/*",
+		"#tui/*": "tui/*",
+		"#cli/*": "./src/*"
+	},
+	"exports": {
+		"./*": "./src/*"
+	},
 	"scripts": {
-		"dev": "bun scripts/dev.ts",
-		"build": "bun scripts/build.ts",
+		"dev": "bun ./scripts/dev.ts",
+		"build": "bun ./scripts/build.ts",
 		"lint": "biome check --write",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
-		"smoketest": "bun scripts/smoketest.ts"
+		"smoketest": "bun ./scripts/smoketest.ts"
 	},
 	"dependencies": {
 		"@babel/core": "^8.0.6",
-		"@crosscopy/clipboard": "^0.3.6",
 		"@napi-rs/keyring": "^2.1.0",
 		"@tanstack/react-query": "^5.104.1",
-		"@tiny-chat/client": "workspace:*",
-		"@tiny-chat/core": "workspace:*",
-		"chalk": "^6.0.1",
-		"cli-boxes": "^4.0.1",
-		"hast-util-to-jsx-runtime": "^2.3.6",
+		"client": "workspace:*",
+		"core": "workspace:*",
 		"ink": "8",
-		"ink-picture": "^2.1.0",
-		"ink-spinner": "^5.0.0",
 		"react": "^19.3.0",
-		"string-width": "^8.3.0",
-		"terminal-link": "^5.0.0",
-		"wrap-ansi": "^10.0.2",
-		"zustand": "^5.0.15"
+		"tui": "workspace:*"
 	},
 	"devDependencies": {
-		"@types/bun": "^1.4.2",
 		"@types/node": "^26.6.4",
 		"@types/react": "^19.3.0",
+		"babel-plugin-react-compiler": "^1.0.0",
 		"bun": "^1.4.2",
-		"ink-testing-library": "^4.0.0",
-		"react-devtools-core": "^8.0.0",
-		"type-fest": "^5.10.0"
+		"bun-types": "^1.4.2"
 	}
 }

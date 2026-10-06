@@ -1,5 +1,5 @@
-import { testUser } from "../../../tests.ts";
-import { ChatService } from "./ChatService.ts";
+import { ChatService } from "#server/features/chat/services/ChatService.ts";
+import { testUser } from "#server/tests.ts";
 
 const folder = (path: string) => ({ path, whitelist: true });
 const user = testUser({ settings: { folders: [folder("/user")] } });

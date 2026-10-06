@@ -1,19 +1,19 @@
+import type { Client } from "#client/client.ts";
+import { AgentStreamService } from "#client/core/services/StreamService.ts";
+import { ClientAgentService } from "#client/features/agent/services/ClientAgentService.ts";
 import type {
 	CapabilityFactory,
 	SubagentsCapability,
-} from "@tiny-chat/core/core/types/capability.ts";
-import { CapabilityUtils } from "@tiny-chat/core/core/utils/CapabilityUtils.ts";
-import type { zAgentChat } from "@tiny-chat/core/features/agent/types/agent.ts";
-import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
+} from "#core/core/types/capability.ts";
+import { CapabilityUtils } from "#core/core/utils/CapabilityUtils.ts";
+import type { zAgentChat } from "#core/features/agent/types/agent.ts";
+import type { MessageState } from "#core/features/data/types/message.ts";
 import type {
 	ProviderState,
 	ProviderStatus,
-} from "@tiny-chat/core/features/provider/types/provider.ts";
-import type { zSkill } from "@tiny-chat/core/features/skill/types/skill.ts";
-import type { Toolset } from "@tiny-chat/core/features/tool/types/tool.ts";
-import type { Client } from "../../client.ts";
-import { ClientAgentService } from "../../features/agent/services/ClientAgentService.ts";
-import { AgentStreamService } from "../services/StreamService.ts";
+} from "#core/features/provider/types/provider.ts";
+import type { zSkill } from "#core/features/skill/types/skill.ts";
+import type { Toolset } from "#core/features/tool/types/tool.ts";
 
 export const createSubagentsCapability: CapabilityFactory<
 	{

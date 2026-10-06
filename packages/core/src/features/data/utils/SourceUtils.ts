@@ -1,23 +1,23 @@
-import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
-import { PathUtils } from "../../file/utils/PathUtils.ts";
-import type { zWebContext } from "../../provider/types/web.ts";
-import { edit_file } from "../../tool/tools/shell/edit_file.ts";
-import { grep_files } from "../../tool/tools/shell/grep_files.ts";
-import { read_dir } from "../../tool/tools/shell/read_dir.ts";
-import { read_file } from "../../tool/tools/shell/read_file.ts";
-import { search_files } from "../../tool/tools/shell/search_files.ts";
-import { write_file } from "../../tool/tools/shell/write_file.ts";
-import { search_web } from "../../tool/tools/web/search_web.ts";
-import { view_web } from "../../tool/tools/web/view_web.ts";
-import type { Toolset } from "../../tool/types/tool.ts";
-import { GitHubSourceUtils } from "../../tool/utils/GitHubSourceUtils.ts";
-import { ToolUtils } from "../../tool/utils/ToolUtils.ts";
-import { SnippetService } from "../services/SnippetService.ts";
-import type { ActionState } from "../types/action.ts";
-import type { MemoryState } from "../types/memory.ts";
-import type { MessageState } from "../types/message.ts";
-import type { zToolResultPart } from "../types/part.ts";
-import { DataUtils } from "./DataUtils.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { SnippetService } from "#core/features/data/services/SnippetService.ts";
+import type { ActionState } from "#core/features/data/types/action.ts";
+import type { MemoryState } from "#core/features/data/types/memory.ts";
+import type { MessageState } from "#core/features/data/types/message.ts";
+import type { zToolResultPart } from "#core/features/data/types/part.ts";
+import { DataUtils } from "#core/features/data/utils/DataUtils.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
+import type { zWebContext } from "#core/features/provider/types/web.ts";
+import { edit_file } from "#core/features/tool/tools/shell/edit_file.ts";
+import { grep_files } from "#core/features/tool/tools/shell/grep_files.ts";
+import { read_dir } from "#core/features/tool/tools/shell/read_dir.ts";
+import { read_file } from "#core/features/tool/tools/shell/read_file.ts";
+import { search_files } from "#core/features/tool/tools/shell/search_files.ts";
+import { write_file } from "#core/features/tool/tools/shell/write_file.ts";
+import { search_web } from "#core/features/tool/tools/web/search_web.ts";
+import { view_web } from "#core/features/tool/tools/web/view_web.ts";
+import type { Toolset } from "#core/features/tool/types/tool.ts";
+import { GitHubSourceUtils } from "#core/features/tool/utils/GitHubSourceUtils.ts";
+import { ToolUtils } from "#core/features/tool/utils/ToolUtils.ts";
 
 export type Source = { key: string } & (
 	| {

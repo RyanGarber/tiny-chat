@@ -1,10 +1,14 @@
 {
-	"name": "@tiny-chat/core",
+	"name": "core",
+	"private": true,
 	"type": "module",
 	"scripts": {
 		"lint": "biome check --write",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run"
+	},
+	"imports": {
+		"#core/*": "./src/*"
 	},
 	"exports": {
 		"./*": "./src/*",

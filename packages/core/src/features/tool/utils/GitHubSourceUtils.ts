@@ -1,11 +1,11 @@
-import type { zWebContext } from "../../provider/types/web.ts";
-import { github_compare } from "../tools/github/compare.ts";
-import { github_list_commits } from "../tools/github/list_commits.ts";
-import { github_list_issues } from "../tools/github/list_issues.ts";
-import { github_view_commit } from "../tools/github/view_commit.ts";
-import { github_view_file } from "../tools/github/view_file.ts";
-import { github_view_issue } from "../tools/github/view_issue.ts";
-import { github_view_repository } from "../tools/github/view_repository.ts";
+import type { zWebContext } from "#core/features/provider/types/web.ts";
+import { github_compare } from "#core/features/tool/tools/github/compare.ts";
+import { github_list_commits } from "#core/features/tool/tools/github/list_commits.ts";
+import { github_list_issues } from "#core/features/tool/tools/github/list_issues.ts";
+import { github_view_commit } from "#core/features/tool/tools/github/view_commit.ts";
+import { github_view_file } from "#core/features/tool/tools/github/view_file.ts";
+import { github_view_issue } from "#core/features/tool/tools/github/view_issue.ts";
+import { github_view_repository } from "#core/features/tool/tools/github/view_repository.ts";
 
 // Keep code intact when sources are opened in the Markdown source viewer.
 const code = (value: string, language = "") => {

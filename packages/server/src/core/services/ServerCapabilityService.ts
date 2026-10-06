@@ -1,24 +1,24 @@
-import type { Capabilities } from "@tiny-chat/core/core/types/capability.ts";
-import { CapabilityUtils } from "@tiny-chat/core/core/utils/CapabilityUtils.ts";
+import type { Capabilities } from "#core/core/types/capability.ts";
+import { CapabilityUtils } from "#core/core/utils/CapabilityUtils.ts";
 import type {
 	zAgentChat,
 	zAgentMessage,
-} from "@tiny-chat/core/features/agent/types/agent.ts";
-import { AgentUtils } from "@tiny-chat/core/features/agent/utils/AgentUtils.ts";
-import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
+} from "#core/features/agent/types/agent.ts";
+import { AgentUtils } from "#core/features/agent/utils/AgentUtils.ts";
+import type { MessageState } from "#core/features/data/types/message.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
 import type {
 	ProviderState,
 	ProviderStatus,
-} from "@tiny-chat/core/features/provider/types/provider.ts";
-import { CacheService } from "../../features/user/services/CacheService.ts";
-import { createActionsCapability } from "../capabilities/createActionsCapability.ts";
-import { createChatShellCapability } from "../capabilities/createChatShellCapability.ts";
-import { createEmbeddingCapability } from "../capabilities/createEmbeddingCapability.ts";
-import { createGitHubCapability } from "../capabilities/createGitHubCapability.ts";
-import { createMemoriesCapability } from "../capabilities/createMemoriesCapability.ts";
-import { createSubagentsCapability } from "../capabilities/createSubagentsCapability.ts";
-import { createWebCapability } from "../capabilities/createWebCapability.ts";
+} from "#core/features/provider/types/provider.ts";
+import { createActionsCapability } from "#server/core/capabilities/createActionsCapability.ts";
+import { createChatShellCapability } from "#server/core/capabilities/createChatShellCapability.ts";
+import { createEmbeddingCapability } from "#server/core/capabilities/createEmbeddingCapability.ts";
+import { createGitHubCapability } from "#server/core/capabilities/createGitHubCapability.ts";
+import { createMemoriesCapability } from "#server/core/capabilities/createMemoriesCapability.ts";
+import { createSubagentsCapability } from "#server/core/capabilities/createSubagentsCapability.ts";
+import { createWebCapability } from "#server/core/capabilities/createWebCapability.ts";
+import { CacheService } from "#server/features/user/services/CacheService.ts";
 
 export const ServerCapabilityService = {
 	getCapabilities: async ({

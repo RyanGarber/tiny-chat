@@ -1,20 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
-import { AgentService } from "@tiny-chat/core/features/agent/services/AgentService.ts";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useCapabilities } from "#client/core/hooks/useCapabilities.ts";
+import { useSession } from "#client/core/hooks/useSession.ts";
+import { useStableKey } from "#client/core/hooks/useStableKey.ts";
+import { useConfig } from "#client/features/agent/hooks/useConfig.ts";
+import { useSkills } from "#client/features/agent/hooks/useSkills.ts";
+import { useTools } from "#client/features/agent/hooks/useTools.ts";
+import { useChat } from "#client/features/chat/hooks/useChat.ts";
+import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
+import { AgentService } from "#core/features/agent/services/AgentService.ts";
 import {
 	AgentTokensService,
 	type CompactionResult,
-} from "@tiny-chat/core/features/agent/services/AgentTokensService.ts";
-import type { zAgentMessage } from "@tiny-chat/core/features/agent/types/agent.ts";
-import type { zData } from "@tiny-chat/core/features/data/types/part.ts";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useCapabilities } from "../../../core/hooks/useCapabilities.ts";
-import { useSession } from "../../../core/hooks/useSession.ts";
-import { useStableKey } from "../../../core/hooks/useStableKey.ts";
-import { useConfig } from "../../agent/hooks/useConfig.ts";
-import { useSkills } from "../../agent/hooks/useSkills.ts";
-import { useTools } from "../../agent/hooks/useTools.ts";
-import { useChat } from "../../chat/hooks/useChat.ts";
-import { useMessagingStore } from "../../chat/stores/useMessagingStore.ts";
+} from "#core/features/agent/services/AgentTokensService.ts";
+import type { zAgentMessage } from "#core/features/agent/types/agent.ts";
+import type { zData } from "#core/features/data/types/part.ts";
 
 export type UsageLevel = "low" | "moderate" | "high";
 

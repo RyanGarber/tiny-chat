@@ -1,6 +1,6 @@
-import { SettingsUtils } from "../../../core/utils/SettingsUtils.ts";
-import type { zAgentContext } from "../../agent/types/agent.ts";
-import { PathUtils } from "../../file/utils/PathUtils.ts";
+import { SettingsUtils } from "#core/core/utils/SettingsUtils.ts";
+import type { zAgentContext } from "#core/features/agent/types/agent.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
 
 const normalizeAbsolutePath = (path: string): string | null => {
 	const normalized = PathUtils.normalize({ path, unix: true });

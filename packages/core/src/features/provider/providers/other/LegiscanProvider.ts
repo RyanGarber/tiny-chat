@@ -1,6 +1,6 @@
 import { LegiscanClient, State } from "@ryangarber/legiscan-ts";
-import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
-import type { OtherProvider } from "../../types/other.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import type { OtherProvider } from "#core/features/provider/types/other.ts";
 
 export const LegiscanProvider: OtherProvider = {
 	name: "legiscan",

@@ -1,10 +1,10 @@
+import { useEffect, useMemo, useState } from "react";
+import { useThemes } from "#client/features/settings/hooks/useThemes.ts";
 import {
 	type CodeRequest,
 	type CodeResult,
 	CodeUtils,
-} from "@tiny-chat/core/core/utils/CodeUtils.ts";
-import { useEffect, useMemo, useState } from "react";
-import { useThemes } from "../../features/settings/hooks/useThemes.ts";
+} from "#core/core/utils/CodeUtils.ts";
 
 /**
  * Highlights code off the main thread. Renders straight away, plain or with

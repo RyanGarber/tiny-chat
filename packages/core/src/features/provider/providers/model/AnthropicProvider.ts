@@ -4,9 +4,12 @@ import type {
 } from "@ai-sdk/anthropic";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { Anthropic } from "@anthropic-ai/sdk";
-import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
-import type { ModelProvider, zModelArg } from "../../types/model.ts";
-import { ModelProviderUtils } from "../../utils/ModelProviderUtils.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import type {
+	ModelProvider,
+	zModelArg,
+} from "#core/features/provider/types/model.ts";
+import { ModelProviderUtils } from "#core/features/provider/utils/ModelProviderUtils.ts";
 
 export const AnthropicProvider: ModelProvider<_AnthropicProvider> = {
 	name: "anthropic",

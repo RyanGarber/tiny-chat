@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { zData } from "../types/part.ts";
-import { DataUtils } from "./DataUtils.ts";
+import type { zData } from "#core/features/data/types/part.ts";
+import { DataUtils } from "#core/features/data/utils/DataUtils.ts";
 
 describe("DataUtils", () => {
 	describe("getRenderedPartsGrouped", () => {

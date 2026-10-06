@@ -1,6 +1,6 @@
-import { FileFixtureUtils } from "@tiny-chat/core/features/file/utils/FileFixtureUtils.ts";
-import { testClient } from "../../../tests.ts";
-import { UploadUtils } from "./UploadUtils.ts";
+import { FileFixtureUtils } from "#core/features/file/utils/FileFixtureUtils.ts";
+import { UploadUtils } from "#server/features/upload/utils/UploadUtils.ts";
+import { testClient } from "#server/tests.ts";
 
 const { api } = testClient();
 

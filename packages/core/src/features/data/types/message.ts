@@ -1,6 +1,6 @@
 import z from "zod";
-import type { Model } from "../../../core/services/PostgresService.ts";
-import type { zData, zMetadata } from "./part.ts";
+import type { Model } from "#core/core/services/PostgresService.ts";
+import type { zData, zMetadata } from "#core/features/data/types/part.ts";
 
 const DEFAULT_TOOLSETS = [
 	"actions",

@@ -1,13 +1,13 @@
-import { FileOperationService } from "@tiny-chat/core/features/file/services/FileOperationService.ts";
-import { FileSearchService } from "@tiny-chat/core/features/file/services/FileSearchService.ts";
-import { FileUtils } from "@tiny-chat/core/features/file/utils/FileUtils.ts";
-import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import { useCallback, useContext, useMemo, useRef } from "react";
-import { ClientContext } from "../../../client.ts";
-import { useChatFiles } from "../../chat/hooks/useChatFiles.ts";
-import { useUploads } from "../../upload/hooks/useUploads.ts";
-import type { AttachmentGroup } from "../types/attachment.ts";
-import { AttachmentUtils } from "../utils/AttachmentUtils.ts";
+import { ClientContext } from "#client/client.ts";
+import { useChatFiles } from "#client/features/chat/hooks/useChatFiles.ts";
+import type { AttachmentGroup } from "#client/features/editor/types/attachment.ts";
+import { AttachmentUtils } from "#client/features/editor/utils/AttachmentUtils.ts";
+import { useUploads } from "#client/features/upload/hooks/useUploads.ts";
+import { FileOperationService } from "#core/features/file/services/FileOperationService.ts";
+import { FileSearchService } from "#core/features/file/services/FileSearchService.ts";
+import { FileUtils } from "#core/features/file/utils/FileUtils.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
 
 /** How long a walked tree answers searches before it is walked again. */
 const TREE_TTL = 30_000;

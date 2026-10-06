@@ -1,9 +1,9 @@
-import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
-import type { Source } from "@tiny-chat/core/features/data/utils/SourceUtils.ts";
-import type { Toolset } from "@tiny-chat/core/features/tool/types/tool.ts";
 import { createContext, useContext } from "react";
 import { useStore } from "zustand";
 import { createStore, type StoreApi } from "zustand/vanilla";
+import type { MessageState } from "#core/features/data/types/message.ts";
+import type { Source } from "#core/features/data/utils/SourceUtils.ts";
+import type { Toolset } from "#core/features/tool/types/tool.ts";
 
 export interface MessageStore {
 	/** True once every query the list depends on has settled at least once. */

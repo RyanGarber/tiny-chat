@@ -3,11 +3,14 @@ import {
 	createAnthropic,
 } from "@ai-sdk/anthropic";
 import { type AzureOpenAIProvider, createAzure } from "@ai-sdk/azure";
-import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
-import type { ModelProvider, zModel } from "../../types/model.ts";
-import { ModelProviderUtils } from "../../utils/ModelProviderUtils.ts";
-import { AnthropicProvider } from "./AnthropicProvider.ts";
-import { OpenAiProvider } from "./OpenAiProvider.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { AnthropicProvider } from "#core/features/provider/providers/model/AnthropicProvider.ts";
+import { OpenAiProvider } from "#core/features/provider/providers/model/OpenAiProvider.ts";
+import type {
+	ModelProvider,
+	zModel,
+} from "#core/features/provider/types/model.ts";
+import { ModelProviderUtils } from "#core/features/provider/utils/ModelProviderUtils.ts";
 
 const useResponses = (model: string) =>
 	ModelProviderUtils.isModel(model, "gpt", "o1", "o3", "o4");

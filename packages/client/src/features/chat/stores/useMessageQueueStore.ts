@@ -1,13 +1,13 @@
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
-import { TypeUtils } from "@tiny-chat/core/core/utils/TypeUtils.ts";
+import { create } from "zustand";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { TypeUtils } from "#core/core/utils/TypeUtils.ts";
 import type {
 	zData,
 	zDataSimplePart,
 	zInterjectionPart,
-} from "@tiny-chat/core/features/data/types/part.ts";
-import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
-import { EditorPartUtils } from "@tiny-chat/core/features/data/utils/EditorPartUtils.ts";
-import { create } from "zustand";
+} from "#core/features/data/types/part.ts";
+import { DataUtils } from "#core/features/data/utils/DataUtils.ts";
+import { EditorPartUtils } from "#core/features/data/utils/EditorPartUtils.ts";
 
 interface MessageQueueStore {
 	active: Record<string, boolean>;
@@ -54,7 +54,7 @@ export const useMessageQueueStore = create<MessageQueueStore>((set, get) => ({
 					{
 						id: part.id,
 						type: "text",
-						value: EditorPartUtils.toMarkdown(part),
+						value: EditorPartUtils.toText(part),
 					},
 				];
 			}

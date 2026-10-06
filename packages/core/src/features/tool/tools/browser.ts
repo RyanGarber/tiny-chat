@@ -1,6 +1,9 @@
-import type { BrowserCapability } from "../../../core/types/capability.ts";
-import type { Toolset, ToolsetFactory } from "../types/tool.ts";
-import { createBrowserTool } from "./browser/browser.ts";
+import type { BrowserCapability } from "#core/core/types/capability.ts";
+import { createBrowserTool } from "#core/features/tool/tools/browser/browser.ts";
+import type {
+	Toolset,
+	ToolsetFactory,
+} from "#core/features/tool/types/tool.ts";
 
 /**
  * Valid only once the host has found Playwright and a browser to launch, so

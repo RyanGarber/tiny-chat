@@ -1,13 +1,13 @@
 import type { JSONRPCMessage, Transport } from "@modelcontextprotocol/client";
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import { z } from "zod";
+import type { Client } from "#client/client.ts";
+import { BrowserDriverUtils } from "#client/features/agent/utils/BrowserDriverUtils.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
 import type {
 	zBrowserRunResult,
 	zBrowserStatus,
 	zBrowserStep,
-} from "@tiny-chat/core/features/tool/types/browser.ts";
-import { z } from "zod";
-import type { Client } from "../../../client.ts";
-import { BrowserDriverUtils } from "../utils/BrowserDriverUtils.ts";
+} from "#core/features/tool/types/browser.ts";
 
 export const zBrowserSettings = z.object({
 	/** Show the browser window rather than run it headless. */

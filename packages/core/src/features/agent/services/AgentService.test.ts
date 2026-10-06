@@ -1,14 +1,18 @@
 import { z } from "zod";
-import { zConfig } from "../../data/types/message.ts";
+import { AgentService } from "#core/features/agent/services/AgentService.ts";
+import { zConfig } from "#core/features/data/types/message.ts";
 import type {
 	zData,
 	zInterjectionPart,
 	zToolCallPart,
-} from "../../data/types/part.ts";
-import { TestProvider } from "../../provider/providers/model/TestProvider.ts";
-import type { Tool, ToolFeedback, Toolset } from "../../tool/types/tool.ts";
-import { ToolCallUtils } from "../../tool/utils/ToolCallUtils.ts";
-import { AgentService } from "./AgentService.ts";
+} from "#core/features/data/types/part.ts";
+import { TestProvider } from "#core/features/provider/providers/model/TestProvider.ts";
+import type {
+	Tool,
+	ToolFeedback,
+	Toolset,
+} from "#core/features/tool/types/tool.ts";
+import { ToolCallUtils } from "#core/features/tool/utils/ToolCallUtils.ts";
 
 describe("AgentService", () => {
 	for (const tools of [false, true])
@@ -429,11 +433,7 @@ describe("AgentService", () => {
 
 			// The model gets past the batch with the write still running.
 			await release("read_dir");
-			while (
-				!data
-					.flat()
-					.some((part) => part.type === "text" && part.value.includes("<"))
-			)
+			while (!data.flat().some((part) => part.type === "text" && !!part.value))
 				await new Promise((r) => setTimeout(r, 5));
 			expect(log).toEqual([
 				"start write_file",
@@ -575,9 +575,7 @@ describe("AgentService", () => {
 				await answer("read_dir", { approved: true });
 				await release("read_dir");
 				while (
-					!data
-						.flat()
-						.some((part) => part.type === "text" && part.value.includes("<"))
+					!data.flat().some((part) => part.type === "text" && !!part.value)
 				)
 					await new Promise((r) => setTimeout(r, 5));
 				expect(log).toEqual([

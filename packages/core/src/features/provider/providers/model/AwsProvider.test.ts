@@ -1,6 +1,6 @@
-import { mockConfig, mockUser } from "../../../../tests.ts";
-import { AwsProvider } from "./AwsProvider.ts";
-import { AzureProvider } from "./AzureProvider.ts";
+import { AwsProvider } from "#core/features/provider/providers/model/AwsProvider.ts";
+import { AzureProvider } from "#core/features/provider/providers/model/AzureProvider.ts";
+import { mockConfig, mockUser } from "#core/tests.ts";
 
 describe("AwsProvider", () => {
 	it("provides the appropriate provider options", () => {

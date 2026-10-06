@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Atom } from "../types/atom.ts";
+import type { Atom } from "#client/features/editor/types/atom.ts";
 
 interface AtomStore {
 	/**

@@ -1,7 +1,7 @@
 import type { InfiniteData } from "@tanstack/react-query";
-import type { MessageState } from "@tiny-chat/core/features/data/types/message.ts";
-import type { Client } from "../../../client.ts";
-import { useChatStore } from "../../chat/stores/useChatStore.ts";
+import type { Client } from "#client/client.ts";
+import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
+import type { MessageState } from "#core/features/data/types/message.ts";
 
 type Page = Awaited<
 	ReturnType<Client["api"]["message"]["getMessages"]["query"]>
@@ -175,6 +175,40 @@ export const MessageQueryService = {
 			}
 		}
 		useChatStore.getState().selectBranch(message.previousId, message.id);
+	},
+
+	/**
+	 * Fill the history for a branch selection back at least as far as a message,
+	 * continuing from whatever is already cached for it.
+	 */
+	loadThrough: async (
+		client: Client,
+		chat: string,
+		branches: Record<string, string>,
+		messageId: string,
+	) => {
+		const options = MessageQueryService.options(client, chat, branches);
+		const cached = client.queryClient.getQueryData(options.queryKey);
+		let messages = cached ? flatten(cached) : [];
+		let branchOptions = cached ? optionsOf(cached) : {};
+		let nextCursor = cached ? (cached.pages.at(-1)?.nextCursor ?? null) : null;
+		if (cached && (!nextCursor || messages.some((m) => m.id === messageId)))
+			return;
+		do {
+			const page = await client.api.message.getMessages.query({
+				chat,
+				branches,
+				limit: 5,
+				cursor: nextCursor ?? undefined,
+			});
+			messages = [...page.messages, ...messages];
+			branchOptions = { ...branchOptions, ...page.branchOptions };
+			nextCursor = page.nextCursor;
+		} while (nextCursor && !messages.some((m) => m.id === messageId));
+		client.queryClient.setQueryData(
+			options.queryKey,
+			history(messages, branchOptions, nextCursor),
+		);
 	},
 
 	/** Fetch back only as far as the already loaded common ancestor. */

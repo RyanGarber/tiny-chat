@@ -1,10 +1,10 @@
-import type { MessageLike } from "@tiny-chat/core/features/data/types/message.ts";
-import type { zData } from "@tiny-chat/core/features/data/types/part.ts";
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
-import { DataUtils } from "@tiny-chat/core/features/data/utils/DataUtils.ts";
-import { FileExtractionService } from "@tiny-chat/core/features/file/services/FileExtractionService.ts";
-import { FileExcludeUtils } from "@tiny-chat/core/features/file/utils/FileExcludeUtils.ts";
-import { UploadUtils } from "../../upload/utils/UploadUtils.ts";
+import type { MessageLike } from "#core/features/data/types/message.ts";
+import type { zData } from "#core/features/data/types/part.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import { DataUtils } from "#core/features/data/utils/DataUtils.ts";
+import { FileExtractionService } from "#core/features/file/services/FileExtractionService.ts";
+import { FileExcludeUtils } from "#core/features/file/utils/FileExcludeUtils.ts";
+import { UploadUtils } from "#server/features/upload/utils/UploadUtils.ts";
 
 function total() {
 	return globalThis.db.raw.sql`COUNT(*) OVER()`.returns("pg/text@1");

@@ -1,7 +1,7 @@
-import { testUser } from "../../../tests.ts";
-import { EmbeddingService } from "../../embedding/services/EmbeddingService.ts";
-import { MemorySearchService } from "./MemorySearchService.ts";
-import { MemoryService } from "./MemoryService.ts";
+import { MemorySearchService } from "#server/features/chat/services/MemorySearchService.ts";
+import { MemoryService } from "#server/features/chat/services/MemoryService.ts";
+import { EmbeddingService } from "#server/features/embedding/services/EmbeddingService.ts";
+import { testUser } from "#server/tests.ts";
 
 const user = testUser();
 const other = testUser();

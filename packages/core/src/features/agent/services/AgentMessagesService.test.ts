@@ -1,10 +1,10 @@
-import type { DistributiveOmit } from "../../../core/types/common.ts";
-import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
-import { zConfig } from "../../data/types/message.ts";
-import { FileUtils } from "../../file/utils/FileUtils.ts";
-import { PathUtils } from "../../file/utils/PathUtils.ts";
-import type { zAgentMessage } from "../types/agent.ts";
-import { AgentMessagesService } from "./AgentMessagesService.ts";
+import type { DistributiveOmit } from "#core/core/types/common.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { AgentMessagesService } from "#core/features/agent/services/AgentMessagesService.ts";
+import type { zAgentMessage } from "#core/features/agent/types/agent.ts";
+import { zConfig } from "#core/features/data/types/message.ts";
+import { FileUtils } from "#core/features/file/utils/FileUtils.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
 
 type zAgentMessageNoPartIds = Omit<zAgentMessage, "data"> & {
 	data: (DistributiveOmit<zAgentMessage["data"][number][number], "id"> & {
@@ -99,7 +99,7 @@ describe("AgentMessagesService", () => {
 			AgentMessagesService.buildMessageBlock({
 				message,
 				previous: array[i - 1],
-				parts: message.data.flat(),
+				data: message.data,
 				timezone: "America/New_York",
 			}),
 		);
@@ -111,7 +111,7 @@ describe("AgentMessagesService", () => {
 					[
 						{
 							type: "text",
-							value: `<message role="user" sent="${CommonUtils.formatDate({ date: context[0].createdAt ?? undefined, timezone: "America/New_York" })}">`,
+							value: `<message role="user" to="gpt-5" sent="${CommonUtils.formatDate({ date: context[0].createdAt ?? undefined, timezone: "America/New_York" })}">`,
 						},
 						...context[0].data.flat(),
 						{ type: "text", value: "</message>" },
@@ -120,21 +120,8 @@ describe("AgentMessagesService", () => {
 			} satisfies zAgentMessageNoPartIds),
 		);
 
-		expect(noPartIds(builtContext[1])).toEqual(
-			noPartIds({
-				...context[1],
-				data: [
-					[
-						{
-							type: "text",
-							value: `<message role="assistant" model="gpt-5" sent="${CommonUtils.formatDate({ date: context[1].createdAt ?? undefined, timezone: "America/New_York" })}">`,
-						},
-						...context[1].data.flat(),
-						{ type: "text", value: "</message>" },
-					],
-				],
-			} satisfies zAgentMessageNoPartIds),
-		);
+		// A reply goes out as the model wrote it, steps and all.
+		expect(builtContext[1]).toEqual(context[1]);
 
 		expect(noPartIds(builtContext[2])).toEqual(
 			noPartIds({
@@ -143,7 +130,7 @@ describe("AgentMessagesService", () => {
 					[
 						{
 							type: "text",
-							value: `<message role="user" sent="${CommonUtils.formatDate({ date: context[2].createdAt ?? undefined, timezone: "America/New_York" })}" gap="15 minutes">`,
+							value: `<message role="user" to="gpt-5" sent="${CommonUtils.formatDate({ date: context[2].createdAt ?? undefined, timezone: "America/New_York" })}" gap="15 minutes">`,
 						},
 						...context[2].data.flat(),
 						{ type: "text", value: "</message>" },

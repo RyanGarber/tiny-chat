@@ -1,6 +1,6 @@
-import { fm } from "../../../index.ts";
-import { FileUtils } from "../../file/utils/FileUtils.ts";
-import { PathUtils } from "../../file/utils/PathUtils.ts";
+import { FileUtils } from "#core/features/file/utils/FileUtils.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
+import { fm } from "#core/index.ts";
 
 export const SkillUtils = {
 	/**

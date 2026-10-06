@@ -1,5 +1,5 @@
-import { PathUtils } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
-import type { GitChange } from "../types/chatFiles.ts";
+import type { GitChange } from "#client/features/chat/types/chatFiles.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
 
 /** What `git diff` compares against before a repository has a commit. */
 const EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";

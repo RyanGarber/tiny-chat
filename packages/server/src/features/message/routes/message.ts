@@ -1,14 +1,11 @@
-import { Enum } from "@tiny-chat/core/core/services/PostgresService.ts";
-import { zId } from "@tiny-chat/core/core/types/common.ts";
-import { ChatLike } from "@tiny-chat/core/features/data/types/chat.ts";
-import {
-	MessageLike,
-	zConfig,
-} from "@tiny-chat/core/features/data/types/message.ts";
-import { zData, zMetadata } from "@tiny-chat/core/features/data/types/part.ts";
 import { z } from "zod";
-import { procedure, router } from "../../../index.ts";
-import { MessageService } from "../services/MessageService.ts";
+import { Enum } from "#core/core/services/PostgresService.ts";
+import { zId } from "#core/core/types/common.ts";
+import { ChatLike } from "#core/features/data/types/chat.ts";
+import { MessageLike, zConfig } from "#core/features/data/types/message.ts";
+import { zData, zMetadata } from "#core/features/data/types/part.ts";
+import { MessageService } from "#server/features/message/services/MessageService.ts";
+import { procedure, router } from "#server/index.ts";
 
 export const message = router({
 	getMessages: procedure
@@ -38,6 +35,15 @@ export const message = router({
 				start: input.start,
 				branches: input.branches,
 				omit: !!input.limit,
+			});
+		}),
+
+	locateMessage: procedure
+		.input(z.object({ message: MessageLike }))
+		.query(async ({ ctx, input }) => {
+			return await MessageService.locateMessage({
+				user: ctx.session.user,
+				message: input.message,
 			});
 		}),
 

@@ -1,7 +1,7 @@
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
-import { GitHubAccountService } from "../../user/services/GitHubAccountService.ts";
-import { UploadUtils } from "../utils/UploadUtils.ts";
-import { UploadFileService } from "./UploadFileService.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import { UploadFileService } from "#server/features/upload/services/UploadFileService.ts";
+import { UploadUtils } from "#server/features/upload/utils/UploadUtils.ts";
+import { GitHubAccountService } from "#server/features/user/services/GitHubAccountService.ts";
 
 interface GitHubRepository {
 	id: number;

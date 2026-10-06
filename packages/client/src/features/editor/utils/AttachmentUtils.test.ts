@@ -1,5 +1,5 @@
-import type { AttachmentItem } from "../types/attachment.ts";
-import { AttachmentUtils } from "./AttachmentUtils.ts";
+import type { AttachmentItem } from "#client/features/editor/types/attachment.ts";
+import { AttachmentUtils } from "#client/features/editor/utils/AttachmentUtils.ts";
 
 describe("AttachmentUtils", () => {
 	it("keeps escaped spaces inside an attachment query", () => {

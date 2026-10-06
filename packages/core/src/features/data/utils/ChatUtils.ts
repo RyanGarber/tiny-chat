@@ -1,4 +1,4 @@
-import type { ChatState } from "../types/chat.ts";
+import type { ChatState } from "#core/features/data/types/chat.ts";
 
 export const ChatUtils = {
 	getTimestamp: (chat: ChatState) => {

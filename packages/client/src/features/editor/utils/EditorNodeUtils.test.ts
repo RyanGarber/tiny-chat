@@ -1,5 +1,5 @@
-import { useEditorPartStore } from "../stores/useEditorPartStore.ts";
-import { EditorNodeUtils } from "./EditorNodeUtils.ts";
+import { useEditorPartStore } from "#client/features/editor/stores/useEditorPartStore.ts";
+import { EditorNodeUtils } from "#client/features/editor/utils/EditorNodeUtils.ts";
 
 describe("EditorNodeUtils", () => {
 	beforeEach(() => useEditorPartStore.getState().setParts([]));
@@ -9,27 +9,28 @@ describe("EditorNodeUtils", () => {
 	});
 
 	it("classifies fenced code and removes its transport fence", () => {
-		const node = EditorNodeUtils.paste("```ts\nconst value = 1;\n```");
-		expect(node && EditorNodeUtils.part(node)).toMatchObject({
-			type: "paste",
+		expect(EditorNodeUtils.paste("```ts\nconst value = 1;\n```")).toEqual({
+			type: "code",
 			text: "const value = 1;",
 			language: "typescript",
-			collapsed: false,
 		});
 	});
 
-	it("collapses long pastes", () => {
-		const node = EditorNodeUtils.paste(
+	it("folds long pastes away", () => {
+		const paste = EditorNodeUtils.paste(
 			Array.from({ length: 11 }, (_, index) => `line ${index}`).join("\n"),
 		);
-		expect(node && EditorNodeUtils.part(node)).toMatchObject({
+		expect(
+			paste?.type === "node" && EditorNodeUtils.part(paste.node),
+		).toMatchObject({
 			type: "paste",
 			lines: 11,
+			language: null,
 			collapsed: true,
 		});
 	});
 
-	it("registers a part and writes the node out as a pointer to it", () => {
+	it("registers a part and points the node at it", () => {
 		const node = EditorNodeUtils.quote({ model: "model", text: "selected" });
 
 		expect(EditorNodeUtils.part(node)).toMatchObject({
@@ -37,14 +38,7 @@ describe("EditorNodeUtils", () => {
 			model: "model",
 			text: "selected",
 		});
-		expect(EditorNodeUtils.toMarkdown(node)).toBe(`::quote{id="${node.id}"}`);
-	});
-
-	it("writes an inline node out inline", () => {
-		const node = EditorNodeUtils.command({ name: "system-prompt" });
-		expect(EditorNodeUtils.toMarkdown(node)).toBe(
-			`:command[]{id="${node.id}"}`,
-		);
+		expect(node).toEqual({ type: "quote", id: expect.any(String) });
 	});
 
 	it("does not resolve a pointer whose part has gone", () => {

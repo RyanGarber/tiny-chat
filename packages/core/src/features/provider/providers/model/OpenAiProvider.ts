@@ -4,9 +4,13 @@ import type {
 } from "@ai-sdk/openai";
 import { createOpenAI } from "@ai-sdk/openai";
 import OpenAI from "openai";
-import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
-import type { ModelProvider, zModel, zModelArg } from "../../types/model.ts";
-import { ModelProviderUtils } from "../../utils/ModelProviderUtils.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import type {
+	ModelProvider,
+	zModel,
+	zModelArg,
+} from "#core/features/provider/types/model.ts";
+import { ModelProviderUtils } from "#core/features/provider/utils/ModelProviderUtils.ts";
 
 export const OpenAiProvider: ModelProvider<_OpenAIProvider> = {
 	name: "openai",

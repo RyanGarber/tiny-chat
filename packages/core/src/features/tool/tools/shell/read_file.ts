@@ -1,14 +1,18 @@
 import { z } from "zod";
-import type { Capabilities } from "../../../../core/types/capability.ts";
-import { FileOperationService } from "../../../file/services/FileOperationService.ts";
-import { FileExcludeUtils } from "../../../file/utils/FileExcludeUtils.ts";
-import { FileTypeUtils } from "../../../file/utils/FileTypeUtils.ts";
-import { FileUtils } from "../../../file/utils/FileUtils.ts";
-import { PathUtils } from "../../../file/utils/PathUtils.ts";
-import type { ToolDisplay } from "../../types/display.ts";
-import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
-import { ShellUtils } from "../../utils/ShellUtils.ts";
-import { ToolDisplayUtils } from "../../utils/ToolDisplayUtils.ts";
+import type { Capabilities } from "#core/core/types/capability.ts";
+import { FileOperationService } from "#core/features/file/services/FileOperationService.ts";
+import { FileExcludeUtils } from "#core/features/file/utils/FileExcludeUtils.ts";
+import { FileTypeUtils } from "#core/features/file/utils/FileTypeUtils.ts";
+import { FileUtils } from "#core/features/file/utils/FileUtils.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
+import type { ToolDisplay } from "#core/features/tool/types/display.ts";
+import type {
+	Tool,
+	ToolDefinition,
+	ToolFactory,
+} from "#core/features/tool/types/tool.ts";
+import { ShellUtils } from "#core/features/tool/utils/ShellUtils.ts";
+import { ToolDisplayUtils } from "#core/features/tool/utils/ToolDisplayUtils.ts";
 
 /** Bytes of a non-text file that may be pulled into the conversation. */
 const MAX_BINARY_BYTES = 5_000_000;

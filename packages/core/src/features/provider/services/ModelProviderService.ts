@@ -6,25 +6,28 @@ import {
 	type Tool,
 } from "ai";
 import { z } from "zod";
-import type { zEnv } from "../../../core/types/env.ts";
-import { CommonUtils } from "../../../core/utils/CommonUtils.ts";
-import { VERBOSE } from "../../../logger.ts";
-import type { zAgentEvent } from "../../agent/types/agent.ts";
-import type { zConfig } from "../../data/types/message.ts";
-import type { zUser } from "../../data/types/user.ts";
-import type { ToolDefinition } from "../../tool/types/tool.ts";
-import { AnthropicProvider } from "../providers/model/AnthropicProvider.ts";
-import { AntigravityProvider } from "../providers/model/AntigravityProvider.ts";
-import { AwsProvider } from "../providers/model/AwsProvider.ts";
-import { AzureProvider } from "../providers/model/AzureProvider.ts";
-import { CustomProvider } from "../providers/model/CustomProvider.ts";
-import { GoogleProvider } from "../providers/model/GoogleProvider.ts";
-import { OpenAiProvider } from "../providers/model/OpenAiProvider.ts";
-import { TestProvider } from "../providers/model/TestProvider.ts";
-import { VoyageProvider } from "../providers/model/VoyageProvider.ts";
-import type { ModelProvider, zModelMessage } from "../types/model.ts";
-import { ModelProviderUtils } from "../utils/ModelProviderUtils.ts";
-import { ModelTransformService } from "./ModelTransformService.ts";
+import type { zEnv } from "#core/core/types/env.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import type { zAgentEvent } from "#core/features/agent/types/agent.ts";
+import type { zConfig } from "#core/features/data/types/message.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import { AnthropicProvider } from "#core/features/provider/providers/model/AnthropicProvider.ts";
+import { AntigravityProvider } from "#core/features/provider/providers/model/AntigravityProvider.ts";
+import { AwsProvider } from "#core/features/provider/providers/model/AwsProvider.ts";
+import { AzureProvider } from "#core/features/provider/providers/model/AzureProvider.ts";
+import { CustomProvider } from "#core/features/provider/providers/model/CustomProvider.ts";
+import { GoogleProvider } from "#core/features/provider/providers/model/GoogleProvider.ts";
+import { OpenAiProvider } from "#core/features/provider/providers/model/OpenAiProvider.ts";
+import { TestProvider } from "#core/features/provider/providers/model/TestProvider.ts";
+import { VoyageProvider } from "#core/features/provider/providers/model/VoyageProvider.ts";
+import { ModelTransformService } from "#core/features/provider/services/ModelTransformService.ts";
+import type {
+	ModelProvider,
+	zModelMessage,
+} from "#core/features/provider/types/model.ts";
+import { ModelProviderUtils } from "#core/features/provider/utils/ModelProviderUtils.ts";
+import type { ToolDefinition } from "#core/features/tool/types/tool.ts";
+import { VERBOSE } from "#core/logger.ts";
 
 export type RunLanguageModelOptions = Omit<
 	Parameters<typeof streamText>[0],

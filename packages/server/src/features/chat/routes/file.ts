@@ -1,11 +1,8 @@
-import type {
-	FileNode,
-	FileState,
-} from "@tiny-chat/core/features/file/types/file.ts";
-import { PathLike } from "@tiny-chat/core/features/file/utils/PathUtils.ts";
 import { z } from "zod";
-import { procedure, router } from "../../../index.ts";
-import { FileService } from "../../file/services/FileService.ts";
+import type { FileNode, FileState } from "#core/features/file/types/file.ts";
+import { PathLike } from "#core/features/file/utils/PathUtils.ts";
+import { FileService } from "#server/features/file/services/FileService.ts";
+import { procedure, router } from "#server/index.ts";
 
 /**
  * Which filesystem to build, as the client asks for it: the uploads and skills

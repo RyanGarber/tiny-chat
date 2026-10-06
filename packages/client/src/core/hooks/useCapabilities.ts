@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import type { zAgentMessage } from "@tiny-chat/core/features/agent/types/agent.ts";
 import { useContext, useMemo } from "react";
-import { ClientContext } from "../../client.ts";
-import { useProviders } from "../../features/agent/hooks/useProviders.ts";
-import { useChat } from "../../features/chat/hooks/useChat.ts";
-import { useChatStore } from "../../features/chat/stores/useChatStore.ts";
-import { ClientCapabilityService } from "../services/ClientCapabilityService.ts";
-import { useSession } from "./useSession.ts";
-import { useStableKey } from "./useStableKey.ts";
+import { ClientContext } from "#client/client.ts";
+import { useSession } from "#client/core/hooks/useSession.ts";
+import { useStableKey } from "#client/core/hooks/useStableKey.ts";
+import { ClientCapabilityService } from "#client/core/services/ClientCapabilityService.ts";
+import { useProviders } from "#client/features/agent/hooks/useProviders.ts";
+import { useChat } from "#client/features/chat/hooks/useChat.ts";
+import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
+import type { zAgentMessage } from "#core/features/agent/types/agent.ts";
 
 /**
  * The capabilities of the message about to be sent, gated as if it had already

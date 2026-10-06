@@ -1,14 +1,17 @@
-import type { ShellCapability } from "../../../core/types/capability.ts";
-import { SnippetService } from "../../data/services/SnippetService.ts";
+import type { ShellCapability } from "#core/core/types/capability.ts";
+import { SnippetService } from "#core/features/data/services/SnippetService.ts";
+import { FileExtractionService } from "#core/features/file/services/FileExtractionService.ts";
 import {
 	type FileCategory,
 	FileExcludeUtils,
 	type FileScope,
 	type FileSkipReason,
-} from "../utils/FileExcludeUtils.ts";
-import { FileMatchUtils, type IgnoreRule } from "../utils/FileMatchUtils.ts";
-import { PathUtils } from "../utils/PathUtils.ts";
-import { FileExtractionService } from "./FileExtractionService.ts";
+} from "#core/features/file/utils/FileExcludeUtils.ts";
+import {
+	FileMatchUtils,
+	type IgnoreRule,
+} from "#core/features/file/utils/FileMatchUtils.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
 
 /**
  * FileSearchService — search that is safe to point at any directory.

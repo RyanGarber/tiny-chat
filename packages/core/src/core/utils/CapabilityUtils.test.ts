@@ -1,6 +1,6 @@
 import { expect } from "vitest";
-import { mockUser } from "../../tests.ts";
-import { CapabilityUtils } from "./CapabilityUtils.ts";
+import { CapabilityUtils } from "#core/core/utils/CapabilityUtils.ts";
+import { mockUser } from "#core/tests.ts";
 
 const getEnabled = (
 	conditions: Partial<Parameters<typeof CapabilityUtils.getEnabled>[0]> = {},

@@ -1,4 +1,4 @@
-import { server } from "./server.ts";
+import { server } from "#web/server.ts";
 
 describe("Fastify", () => {
 	it("should have the static plugin registered", async () => {

@@ -1,6 +1,6 @@
-import { mockConfig, mockUser } from "../../../tests.ts";
-import { DataUtils } from "../../data/utils/DataUtils.ts";
-import { AgentInstructionsService } from "./AgentInstructionsService.ts";
+import { AgentInstructionsService } from "#core/features/agent/services/AgentInstructionsService.ts";
+import { DataUtils } from "#core/features/data/utils/DataUtils.ts";
+import { mockConfig, mockUser } from "#core/tests.ts";
 
 describe("AgentInstructionsService", () => {
 	it("safely scrubs <message> from prompt", () => {

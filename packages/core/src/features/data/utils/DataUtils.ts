@@ -5,7 +5,7 @@ import type {
 	zThoughtPart,
 	zToolCallPart,
 	zToolResultPart,
-} from "../types/part.ts";
+} from "#core/features/data/types/part.ts";
 
 export type RenderedPart =
 	| Exclude<zDataPart, { type: "thought" | "toolCall" | "toolResult" }>

@@ -7,10 +7,14 @@ import {
 	type AmazonBedrockAnthropicProvider,
 	createBedrockAnthropic,
 } from "@ai-sdk/amazon-bedrock/anthropic";
-import { CommonUtils } from "../../../../core/utils/CommonUtils.ts";
-import type { ModelProvider, zModel, zModelArg } from "../../types/model.ts";
-import { ModelProviderUtils } from "../../utils/ModelProviderUtils.ts";
-import { AnthropicProvider } from "./AnthropicProvider.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { AnthropicProvider } from "#core/features/provider/providers/model/AnthropicProvider.ts";
+import type {
+	ModelProvider,
+	zModel,
+	zModelArg,
+} from "#core/features/provider/types/model.ts";
+import { ModelProviderUtils } from "#core/features/provider/utils/ModelProviderUtils.ts";
 
 const INFERENCE_PROFILES: Record<string, string> = {
 	"amazon.nova-2-lite-v1:0": "global.amazon.nova-2-lite-v1:0",

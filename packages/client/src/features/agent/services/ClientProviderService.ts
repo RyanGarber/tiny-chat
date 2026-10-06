@@ -1,6 +1,6 @@
-import type { zUser } from "@tiny-chat/core/features/data/types/user.ts";
-import { ModelProviderService } from "@tiny-chat/core/features/provider/services/ModelProviderService.ts";
-import type { Client } from "../../../client.ts";
+import type { Client } from "#client/client.ts";
+import type { zUser } from "#core/features/data/types/user.ts";
+import { ModelProviderService } from "#core/features/provider/services/ModelProviderService.ts";
 
 export const ClientProviderService = {
 	getModelProviders: async ({

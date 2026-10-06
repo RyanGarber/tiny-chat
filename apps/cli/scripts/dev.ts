@@ -4,7 +4,7 @@ import { type ChildProcess, spawn } from "node:child_process";
 import { watch } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { CommonUtils } from "@tiny-chat/core/core/utils/CommonUtils.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
 import { useServerProcess as startServerProcess } from "../../../scripts/use-server.ts";
 import {
 	print,

@@ -1,13 +1,16 @@
-import type { Capabilities } from "../../../core/types/capability.ts";
-import type { Toolset, ToolsetFactory } from "../types/tool.ts";
-import { createEditFileTool } from "./shell/edit_file.ts";
-import { createFindFilesTool } from "./shell/find_files.ts";
-import { createGrepFilesTool } from "./shell/grep_files.ts";
-import { createReadDirTool } from "./shell/read_dir.ts";
-import { createReadFileTool } from "./shell/read_file.ts";
-import { createSearchFilesTool } from "./shell/search_files.ts";
-import { createShellExecTool } from "./shell/shell_exec.ts";
-import { createWriteFileTool } from "./shell/write_file.ts";
+import type { Capabilities } from "#core/core/types/capability.ts";
+import { createEditFileTool } from "#core/features/tool/tools/shell/edit_file.ts";
+import { createFindFilesTool } from "#core/features/tool/tools/shell/find_files.ts";
+import { createGrepFilesTool } from "#core/features/tool/tools/shell/grep_files.ts";
+import { createReadDirTool } from "#core/features/tool/tools/shell/read_dir.ts";
+import { createReadFileTool } from "#core/features/tool/tools/shell/read_file.ts";
+import { createSearchFilesTool } from "#core/features/tool/tools/shell/search_files.ts";
+import { createShellExecTool } from "#core/features/tool/tools/shell/shell_exec.ts";
+import { createWriteFileTool } from "#core/features/tool/tools/shell/write_file.ts";
+import type {
+	Toolset,
+	ToolsetFactory,
+} from "#core/features/tool/types/tool.ts";
 
 export const createShellToolset: ToolsetFactory<
 	Toolset<Pick<Capabilities, "shell" | "chatShell">>

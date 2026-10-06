@@ -1,9 +1,12 @@
-import { VERBOSE } from "../../../logger.ts";
-import type { zConfig } from "../../data/types/message.ts";
-import type { zDataPart } from "../../data/types/part.ts";
-import { FileExtractionService } from "../../file/services/FileExtractionService.ts";
-import { FileUtils } from "../../file/utils/FileUtils.ts";
-import type { ModelProvider, zModelArg } from "../types/model.ts";
+import type { zConfig } from "#core/features/data/types/message.ts";
+import type { zDataPart } from "#core/features/data/types/part.ts";
+import { FileExtractionService } from "#core/features/file/services/FileExtractionService.ts";
+import { FileUtils } from "#core/features/file/utils/FileUtils.ts";
+import type {
+	ModelProvider,
+	zModelArg,
+} from "#core/features/provider/types/model.ts";
+import { VERBOSE } from "#core/logger.ts";
 
 export const ModelProviderUtils = {
 	isModel: (model: string, ...groups: string[]) => {

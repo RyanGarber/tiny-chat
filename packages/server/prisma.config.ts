@@ -3,8 +3,8 @@ import "./src/env.ts";
 import paradedb from "@prisma/orm-extension-paradedb/control";
 import pgvector from "@prisma/orm-extension-pgvector/control";
 import { defineConfig as definePostgresConfig } from "@prisma/orm-postgres/config";
-import { zod } from "@tiny-chat/core/prisma/zod-extension.ts";
 import { definePrismaConfig } from "prisma/config";
+import { zod } from "#core/prisma/zod-extension.ts";
 
 export default definePrismaConfig({
 	orm: definePostgresConfig({

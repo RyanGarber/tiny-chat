@@ -1,10 +1,10 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { EmbeddingUtils } from "@tiny-chat/core/features/provider/utils/EmbeddingUtils.ts";
 import { useContext, useEffect, useMemo, useRef } from "react";
-import { ClientContext } from "../../../client.ts";
-import { useSession } from "../../../core/hooks/useSession.ts";
-import { ClientProviderService } from "../../agent/services/ClientProviderService.ts";
-import { useEmbeddingSettings } from "../../settings/hooks/useEmbeddingSettings.ts";
+import { ClientContext } from "#client/client.ts";
+import { useSession } from "#client/core/hooks/useSession.ts";
+import { ClientProviderService } from "#client/features/agent/services/ClientProviderService.ts";
+import { useEmbeddingSettings } from "#client/features/settings/hooks/useEmbeddingSettings.ts";
+import { EmbeddingUtils } from "#core/features/provider/utils/EmbeddingUtils.ts";
 
 export type EmbeddingStatus = ReturnType<typeof EmbeddingUtils.getStatus>;
 

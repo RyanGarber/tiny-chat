@@ -1,5 +1,5 @@
 import type { RootContent } from "mdast";
-import { processor } from "../hooks/useMarkdown.ts";
+import { processor } from "#client/features/message/hooks/useMarkdown.ts";
 
 const BLOCKQUOTE = /^[\t ]{0,3}>/;
 const BLANK = /^[\t ]*$/;

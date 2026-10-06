@@ -1,8 +1,12 @@
 import { z } from "zod";
-import type { MemoriesCapability } from "../../../../core/types/capability.ts";
-import { zId } from "../../../../core/types/common.ts";
-import type { ToolDisplay } from "../../types/display.ts";
-import type { Tool, ToolDefinition, ToolFactory } from "../../types/tool.ts";
+import type { MemoriesCapability } from "#core/core/types/capability.ts";
+import { zId } from "#core/core/types/common.ts";
+import type { ToolDisplay } from "#core/features/tool/types/display.ts";
+import type {
+	Tool,
+	ToolDefinition,
+	ToolFactory,
+} from "#core/features/tool/types/tool.ts";
 
 export const delete_memory = {
 	name: "delete_memory",

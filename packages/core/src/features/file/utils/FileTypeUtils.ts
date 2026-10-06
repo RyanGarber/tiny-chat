@@ -2,9 +2,9 @@ import { fileTypeFromStream } from "file-type";
 import { Mime } from "mime";
 import otherTypes from "mime/types/other.js";
 import standardTypes from "mime/types/standard.js";
-import { type CodeLanguage, CodeUtils } from "../../../core/utils/CodeUtils.ts";
-import { FileUtils } from "./FileUtils.ts";
-import { PathUtils } from "./PathUtils.ts";
+import { type CodeLanguage, CodeUtils } from "#core/core/utils/CodeUtils.ts";
+import { FileUtils } from "#core/features/file/utils/FileUtils.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
 
 const MIME = new Mime(standardTypes, otherTypes);
 

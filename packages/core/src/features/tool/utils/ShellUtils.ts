@@ -3,8 +3,8 @@ import { type ParsedScript, parse, type Redirect, type Word } from "unbash";
 import type {
 	Capabilities,
 	ShellCapability,
-} from "../../../core/types/capability.ts";
-import { PathUtils } from "../../file/utils/PathUtils.ts";
+} from "#core/core/types/capability.ts";
+import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
 
 const AUDIT = false;
 

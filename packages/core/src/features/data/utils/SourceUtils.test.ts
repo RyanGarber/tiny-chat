@@ -1,5 +1,5 @@
-import type { Source } from "./SourceUtils.ts";
-import { SourceUtils } from "./SourceUtils.ts";
+import type { Source } from "#core/features/data/utils/SourceUtils.ts";
+import { SourceUtils } from "#core/features/data/utils/SourceUtils.ts";
 
 const file = (key: string): Source => ({
 	key,

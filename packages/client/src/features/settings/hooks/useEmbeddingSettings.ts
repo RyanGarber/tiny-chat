@@ -1,9 +1,9 @@
 import { useMutation } from "@tanstack/react-query";
-import { SettingsUtils } from "@tiny-chat/core/core/utils/SettingsUtils.ts";
 import { useContext, useMemo } from "react";
-import { ClientContext } from "../../../client.ts";
-import { UserService } from "../../user/services/UserService.ts";
-import { useSettings } from "./useSettings.ts";
+import { ClientContext } from "#client/client.ts";
+import { useSettings } from "#client/features/settings/hooks/useSettings.ts";
+import { UserService } from "#client/features/user/services/UserService.ts";
+import { SettingsUtils } from "#core/core/utils/SettingsUtils.ts";
 
 export const useEmbeddingSettings = () => {
 	const client = useContext(ClientContext);

@@ -102,10 +102,43 @@ export interface MemoriesCapability {
 	}) => Promise<MessageSearchResult[]>;
 }
 
+/**
+ * What a shell is and how it reads commands. `dialect` decides whether a
+ * command can be judged by parsing it as bash; `label` is how it is described
+ * to the model, as in "PowerShell on Windows" or "bash in WSL (Ubuntu)".
+ */
+export interface ShellEnvironment {
+	os: "windows" | "macos" | "linux";
+	dialect: "bash" | "powershell";
+	label: string;
+}
+
 export interface ShellCapability {
 	cwd?: () => Promise<string>;
 
 	chdir?: (_: { path: string }) => Promise<void>;
+
+	/** The shell as it stands in its current directory. */
+	environment?: () => ShellEnvironment;
+
+	/**
+	 * A path as this shell spells it. Folders are stored the way the user
+	 * picked them (`C:\work`, `\\wsl.localhost\Ubuntu\home\me`), while a shell
+	 * may print them otherwise (`/c/work`, `/home/me`); anything comparing the
+	 * two goes through here first. Shells that spell paths one way leave it out.
+	 */
+	toShellPath?: (_: { path: string }) => string;
+
+	/**
+	 * A program run directly with these arguments in the shell's directory,
+	 * with no shell in between to quote for. For callers that build commands
+	 * out of paths, which every dialect would quote differently.
+	 */
+	run?: (_: {
+		program: string;
+		args: string[];
+		abort?: AbortSignal;
+	}) => Promise<{ code?: number; stdout: string; stderr: string }>;
 
 	readFile: (_: {
 		path: string;

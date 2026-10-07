@@ -13,6 +13,8 @@ import { TauriHttpTransport } from "#gui/features/tauri/services/TauriHttpTransp
 import { TauriStdioTransport } from "#gui/features/tauri/services/TauriStdioTransport.ts";
 import { TauriUtils } from "#gui/features/tauri/utils/TauriUtils.ts";
 
+const desktopOs = await TauriUtils.desktopOs();
+
 export const client = createClient({
 	env: {
 		VITE_SERVER_URL: String(import.meta.env.VITE_SERVER_URL),
@@ -94,13 +96,17 @@ export const client = createClient({
 			EditorUtils.insertNode(node);
 		},
 	},
-	shell: (await TauriUtils.isTauriDesktop())
+	shell: desktopOs
 		? {
+				os: desktopOs,
 				cwd: async () => {
 					return await TauriUtils.invoke<string>("cwd");
 				},
-				chdir: async ({ path }) => {
-					await TauriUtils.invoke("chdir", { path });
+				resolveDir: async ({ path }) => {
+					return await TauriUtils.invoke<string>("resolve_dir", { path });
+				},
+				locate: async ({ paths }) => {
+					return await TauriUtils.invoke<string | null>("locate", { paths });
 				},
 				readFile: async ({ path }) => {
 					const file = await TauriUtils.invoke<{ path: string; data: string }>(
@@ -151,7 +157,7 @@ export const client = createClient({
 				// The command reports its output over a channel while it runs; the
 				// resolved value still carries all of it. It is stopped by the id it
 				// was started under.
-				exec: async ({ command, stream, abort }) => {
+				spawn: async ({ program, args, cwd, env, stream, abort }) => {
 					const { Channel } = await import("@tauri-apps/api/core");
 					const channel = new Channel<{
 						type: "stdout" | "stderr";
@@ -168,12 +174,19 @@ export const client = createClient({
 							code?: number;
 							stdout: string;
 							stderr: string;
-						}>("shell_exec", { id, command, onOutputChannel: channel });
+						}>("shell_exec", {
+							id,
+							program,
+							args,
+							cwd,
+							env,
+							onOutputChannel: channel,
+						});
 					} finally {
 						abort?.removeEventListener("abort", kill);
 					}
 				},
 			}
 		: undefined,
-	desktop: await TauriUtils.isTauriDesktop(),
+	desktop: !!desktopOs,
 });

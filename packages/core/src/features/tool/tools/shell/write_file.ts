@@ -44,7 +44,11 @@ export const createWriteFileTool: ToolFactory<
 	sequential: true,
 	validate: async ({ input, context }) => {
 		return {
-			approval: FileToolUtils.requiresApproval({ path: input.path, context }),
+			approval: FileToolUtils.requiresApproval({
+				path: input.path,
+				context,
+				shell: options.capabilities.shell,
+			}),
 		};
 	},
 	execute: async ({ input }) => {

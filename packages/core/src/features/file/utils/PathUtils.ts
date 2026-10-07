@@ -67,7 +67,11 @@ export const PathUtils = {
 	}) => {
 		if (typeof path !== "string") path = path.join("/");
 
-		let normalized = path.replace(/^\\+\?\\(?:UNC\\)?/, "");
+		// Verbatim paths, as Windows canonicalizes them: `\\?\C:\x` is
+		// `C:\x`, and `\\?\UNC\host\share` is `\\host\share`.
+		let normalized = path
+			.replace(/^\\\\\?\\UNC\\/, "\\\\")
+			.replace(/^\\\\\?\\/, "");
 
 		if (path.startsWith("web:")) {
 			return path.slice(4);
@@ -150,6 +154,8 @@ export const PathUtils = {
 
 	/**
 	 * Joins two or more paths together, keeping the leftmost path's mount if it has one.
+	 *
+	 * TODO: No WSL support. Function is unused; potentially remove it.
 	 */
 	join: ({
 		paths,
@@ -203,7 +209,7 @@ export const PathUtils = {
 	}) => {
 		if (typeof path !== "string") path = path.join("/");
 
-		if (!path.startsWith(root)) return null;
+		if (!PathUtils.under({ path, root })) return null;
 
 		path = path.replace(new RegExp(`^${CommonUtils.escapeRegex(root)}`), "");
 
@@ -217,6 +223,27 @@ export const PathUtils = {
 			id: found ? parts[1] : undefined,
 			rest: found ? parts.slice(2) : [],
 		};
+	},
+
+	/**
+	 * Whether a path belongs to the virtual filesystem rather than the user's
+	 * machine: the mount itself, or something in one of its trees. Anything
+	 * else under it — WSL's `/mnt/c`, a Linux machine's own `/mnt/data` — is
+	 * the user's, even though {@link fromMount} places it on the mount.
+	 */
+	isMounted: (from: { path: string } | string, root = MOUNT) => {
+		const path = typeof from === "string" ? from : from.path;
+		const parsed = PathUtils.fromMount({ path, root });
+		return !!parsed && (!parsed.path.length || !!parsed.mount);
+	},
+
+	/** Whether `path` is `root` or below it, by whole segments. */
+	under: ({ path, root }: { path: string; root: string }) => {
+		root = root.replace(/[\\/]+$/, "");
+		return (
+			path.startsWith(root) &&
+			(path.length === root.length || /[\\/]/.test(path[root.length]))
+		);
 	},
 
 	/**

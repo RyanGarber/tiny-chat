@@ -4454,6 +4454,7 @@ name = "tiny-chat"
 version = "0.0.0"
 dependencies = [
  "base64 0.22.1",
+ "dunce",
  "futures-util",
  "libc",
  "reqwest",

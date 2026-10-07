@@ -46,7 +46,7 @@ export const ChatFilesUtils = {
 			.flatMap((part) =>
 				part.type === "attachment" &&
 				part.content.type !== "web" &&
-				!PathUtils.fromMount({ path: part.source })
+				!PathUtils.isMounted(part.source)
 					? [
 							ChatFilesUtils.local(
 								part.source,
@@ -89,7 +89,7 @@ export const ChatFilesUtils = {
 		});
 		const referenced = messages.flatMap((message) => [
 			...SourceUtils.find({ message, toolsets }).flatMap((source) =>
-				source.type === "file" && !PathUtils.fromMount(source.value)
+				source.type === "file" && !PathUtils.isMounted(source.value)
 					? [ChatFilesUtils.local(source.value.path, source.value.directory)]
 					: [],
 			),

@@ -10,9 +10,9 @@ export const GitUtils = {
 	/** A path as one shell word. Paths are passed with forward slashes. */
 	quote: (path: string) => `"${path.replace(/(["$`\\])/g, "\\$1")}"`,
 
-	/** `git` run in `directory`. */
+	/** `git` run in `directory`, as one bash command. */
 	command: (directory: string, ...args: string[]) =>
-		["git", "-C", GitUtils.quote(directory), ...args].join(" "),
+		["git", "-C", directory, ...args].map(GitUtils.quote).join(" "),
 
 	/** A path below a repository's root, joined back onto it. */
 	join: (root: string, path: string) =>

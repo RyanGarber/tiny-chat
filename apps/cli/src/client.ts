@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { mkdirSync } from "node:fs";
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { readdir, readFile, realpath, stat, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
@@ -68,11 +68,34 @@ export const client = createClient({
 	},
 	input: EditorInputService,
 	shell: {
+		os:
+			process.platform === "win32"
+				? "windows"
+				: process.platform === "darwin"
+					? "macos"
+					: "linux",
 		cwd: async () => {
 			return process.cwd();
 		},
-		chdir: async ({ path }) => {
-			process.chdir(CliUtils.resolve(path));
+		resolveDir: async ({ path }) => {
+			path = await realpath(CliUtils.resolve(path));
+			if (!(await stat(path)).isDirectory()) {
+				throw new Error(`Not a directory: ${path}`);
+			}
+			return path;
+		},
+		locate: async ({ paths }) => {
+			for (const candidate of paths) {
+				const path = CliUtils.resolve(candidate);
+				if (
+					await stat(path).then(
+						(stats) => stats.isFile(),
+						() => false,
+					)
+				)
+					return path;
+			}
+			return null;
 		},
 		readFile: async ({ path }) => {
 			path = CliUtils.resolve(path);
@@ -109,11 +132,13 @@ export const client = createClient({
 		// the accumulated text is still what the tool result is built from. Its
 		// own process group, so an interrupt reaches everything the shell
 		// started rather than only the shell.
-		exec: async ({ command, stream, abort }) => {
+		spawn: async ({ program, args, cwd, env, stream, abort }) => {
 			return new Promise((resolve) => {
-				const child = spawn(command, {
-					shell: true,
+				const child = spawn(program, args, {
+					cwd,
+					env: env ? { ...process.env, ...env } : process.env,
 					detached: process.platform !== "win32",
+					windowsHide: true,
 				});
 
 				const stdout = ToolOutputUtils.collect();
@@ -130,8 +155,12 @@ export const client = createClient({
 				const signal = (name: NodeJS.Signals) => {
 					if (child.pid === undefined) return;
 					try {
-						if (process.platform === "win32") child.kill(name);
-						else process.kill(-child.pid, name);
+						// Windows has no groups to signal; the tree goes by its root.
+						if (process.platform === "win32") {
+							spawn("taskkill", ["/T", "/F", "/PID", String(child.pid)], {
+								windowsHide: true,
+							}).on("error", () => {});
+						} else process.kill(-child.pid, name);
 					} catch {
 						// Already gone.
 					}

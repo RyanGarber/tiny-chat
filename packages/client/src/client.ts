@@ -12,8 +12,11 @@ import { createContext } from "react";
 import { z } from "zod";
 import type { ClientInput } from "#client/features/chat/services/MessagingService.ts";
 import { WorkingDirectoryService } from "#client/features/chat/services/WorkingDirectoryService.ts";
+import {
+	type HostShellPrimitives,
+	HostShellService,
+} from "#client/features/shell/services/HostShellService.ts";
 import { JsonService } from "#core/core/services/JsonService.ts";
-import type { ShellCapability } from "#core/core/types/capability.ts";
 import { zEnv, type zProviderEnv } from "#core/core/types/env.ts";
 import { CodeUtils, type CodeWorker } from "#core/core/utils/CodeUtils.ts";
 import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
@@ -54,7 +57,7 @@ export interface ClientTransports {
 	}) => Transport;
 }
 
-export type ClientShell = ShellCapability;
+export type ClientShell = HostShellPrimitives;
 
 export const createClient = ({
 	env: _env,
@@ -66,7 +69,7 @@ export const createClient = ({
 	providers,
 	transports,
 	input,
-	shell,
+	shell: primitives,
 	desktop,
 	highlighter,
 	queryClient = new QueryClient(),
@@ -139,6 +142,8 @@ export const createClient = ({
 		...env.data,
 		PROVIDER_RELAY_URL: serverUrl,
 	};
+
+	const shell = primitives && HostShellService.create(primitives);
 
 	const workingDirectory = WorkingDirectoryService.create({
 		shell,

@@ -52,6 +52,32 @@ describe("PathUtils", () => {
 		});
 	});
 
+	it("places only whole segments on the mount", () => {
+		expect(PathUtils.fromMount({ path: "/mntdata/x" })).toBeNull();
+		expect(PathUtils.fromMount({ path: "/mnt/" })?.path).toEqual([]);
+	});
+
+	it("tells the virtual filesystem from the machine's own /mnt", () => {
+		expect(PathUtils.isMounted("/mnt")).toBe(true);
+		expect(PathUtils.isMounted("/mnt/")).toBe(true);
+		expect(PathUtils.isMounted("/mnt/chat/abc/notes.md")).toBe(true);
+		expect(PathUtils.isMounted({ path: "/mnt/uploads/abc" })).toBe(true);
+		expect(PathUtils.isMounted("/mnt/c/Users/me")).toBe(false);
+		expect(PathUtils.isMounted("/mnt/data")).toBe(false);
+		expect(PathUtils.isMounted("/home/me")).toBe(false);
+		expect(PathUtils.isMounted("C:\\mnt\\chat")).toBe(false);
+	});
+
+	it("unwraps verbatim Windows paths", () => {
+		expect(PathUtils.normalize({ path: "\\\\?\\C:\\work" })).toBe("C:\\work");
+		expect(
+			PathUtils.normalize({ path: "\\\\?\\UNC\\wsl.localhost\\Ubuntu\\home" }),
+		).toBe("\\\\wsl.localhost\\Ubuntu\\home");
+		expect(
+			PathUtils.normalize({ path: "\\\\wsl$\\Ubuntu\\home", unix: true }),
+		).toBe("//wsl$/Ubuntu/home");
+	});
+
 	it("checks descendents of paths", () => {
 		expect(
 			PathUtils.contains({

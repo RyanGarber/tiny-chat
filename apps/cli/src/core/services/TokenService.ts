@@ -1,37 +1,27 @@
-import { readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { KeyringService } from "#cli/core/services/KeyringService.ts";
+import { StorageService } from "./StorageService.ts";
 
 // Stable across CLI runs, but separate between users on shared temp directories.
-const PATH = join(
-	tmpdir(),
-	`tiny-chat-${process.getuid?.() ?? "user"}-session-token`,
-);
-
-let noKeyring = false;
-
 export const TokenService = {
-	path: PATH,
-	enableTempFile: () => {
-		noKeyring = true;
+	keyring: (value: boolean) => {
+		if (!value && !StorageService.getOverride()) {
+			console.log("keying disabled, switching to alternate storage");
+			StorageService.setOverride(true);
+		}
 	},
 
 	get: () => {
-		if (!noKeyring) return KeyringService.getSessionToken();
-		try {
-			return readFileSync(TokenService.path, "utf-8") || null;
-		} catch (error) {
-			if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
-			throw error;
+		if (StorageService.getOverride()) {
+			return StorageService.get<string | null>("token");
 		}
+		return KeyringService.getSessionToken();
 	},
+
 	set: (token: string | null | undefined) => {
-		if (!noKeyring) return KeyringService.setSessionToken(token ?? "");
-		if (!token) {
-			rmSync(TokenService.path, { force: true });
+		if (StorageService.getOverride()) {
+			StorageService.set("token", token ?? "");
 			return;
 		}
-		writeFileSync(TokenService.path, token, { encoding: "utf-8", mode: 0o600 });
+		return KeyringService.setSessionToken(token ?? "");
 	},
 } as const;

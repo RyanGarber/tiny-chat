@@ -48,13 +48,19 @@ const unavailable = (
 ): zBrowserStatus => ({ available: false, error, browsers: [], ...rest });
 
 const findNode = async (client: Client) => {
-	if (!client.shell) return null;
-	const { stdout } = await client.shell.exec({ command: NODE_LOOKUP });
+	const shell = client.shell;
+	if (!shell) return null;
+	// The driver runs on the host, so it needs the host's own node: on Windows
+	// that is the one `where` finds, which still answers from inside WSL.
+	const { stdout } =
+		shell.environment?.().os === "windows" && shell.run
+			? await shell.run({ program: "where.exe", args: ["node"] })
+			: await shell.exec({ command: NODE_LOOKUP });
 	// the last path printed: an interactive shell may print other things first
 	const paths = stdout
 		.split("\n")
 		.map((line) => line.trim())
-		.filter((line) => line.startsWith("/"));
+		.filter((line) => /^(?:\/|[A-Za-z]:\\)/.test(line));
 	return paths.at(-1) ?? null;
 };
 

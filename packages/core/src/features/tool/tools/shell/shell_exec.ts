@@ -36,6 +36,8 @@ export const shell_exec = {
 		code: z.number().optional(),
 		stdout: z.string(),
 		stderr: z.string(),
+		/** How the command was read, for showing it; unset means bash. */
+		dialect: z.enum(["bash", "powershell"]).optional(),
 	}),
 	stream: z.object({
 		type: z.enum(["stdout", "stderr"]),
@@ -73,8 +75,12 @@ const display: ToolDisplay<typeof shell_exec> = {
 			subject: getPrograms(input.command ?? ""),
 		},
 	],
-	input: ({ input }) => [
-		{ type: "code", value: input.command ?? "", language: "bash" },
+	input: ({ input, output }) => [
+		{
+			type: "code",
+			value: input.command ?? "",
+			language: output[0]?.dialect ?? "bash",
+		},
 	],
 	output: ({ state, output, stream }) => {
 		if (state === "running") {
@@ -121,18 +127,19 @@ export const createShellExecTool: ToolFactory<
 			context.chat?.project,
 		);
 		// Folders live on the user's machine, not in the virtual filesystem.
-		const cwd = input.mnt
-			? undefined
-			: await options.capabilities.shell?.cwd?.().catch(() => undefined);
+		const shell = input.mnt ? undefined : options.capabilities.shell;
+		const cwd = await shell?.cwd?.().catch(() => undefined);
 		return {
 			approval: !ShellUtils.isSafe(input.command, commands, {
-				folders: input.mnt ? [] : folders,
+				folders: shell ? ShellUtils.toShellFolders(shell, folders) : [],
 				cwd,
+				dialect: shell?.environment?.().dialect,
 			}),
 		};
 	},
 	execute: async ({ input, stream, abort }) => {
 		const shell = ShellUtils.detect(input.mnt, options.capabilities);
+		const dialect = shell.environment?.().dialect;
 
 		let buffer: z.infer<(typeof shell_exec)["stream"]> | undefined;
 
@@ -177,6 +184,7 @@ export const createShellExecTool: ToolFactory<
 						maxLines: 150,
 						label: "stderr",
 					}),
+					...(dialect && dialect !== "bash" ? { dialect } : {}),
 				},
 			},
 		];

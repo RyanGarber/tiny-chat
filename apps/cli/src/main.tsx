@@ -8,7 +8,8 @@ import Root from "#tui/core/components/Root.tsx";
 import { StdinUtils } from "#tui/core/utils/StdinUtils.ts";
 
 export async function main(keyring: boolean | undefined) {
-	if (keyring === false) TokenService.enableTempFile();
+	if (keyring === false) TokenService.keyring(false);
+
 	const stdin = StdinUtils.filter(process.stdin);
 
 	const instance = render(

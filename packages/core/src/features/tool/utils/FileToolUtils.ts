@@ -1,6 +1,8 @@
+import type { ShellCapability } from "#core/core/types/capability.ts";
 import { SettingsUtils } from "#core/core/utils/SettingsUtils.ts";
 import type { zAgentContext } from "#core/features/agent/types/agent.ts";
 import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
+import { ShellUtils } from "#core/features/tool/utils/ShellUtils.ts";
 
 const normalizeAbsolutePath = (path: string): string | null => {
 	const normalized = PathUtils.normalize({ path, unix: true });
@@ -40,13 +42,17 @@ export const FileToolUtils = {
 	/**
 	 * Writes skip approval inside `/mnt/chat` (the chat's own scratch tree), or
 	 * inside a writable folder from the merged settings (last matching folder wins).
+	 * Folders are compared as the local `shell` spells paths, which is how the
+	 * model names them.
 	 */
 	requiresApproval: ({
 		path,
 		context,
+		shell,
 	}: {
 		path: string;
 		context: zAgentContext;
+		shell?: ShellCapability;
 	}): boolean => {
 		const normalized = normalizeAbsolutePath(path);
 		if (
@@ -56,7 +62,7 @@ export const FileToolUtils = {
 			return false;
 
 		const { folders } = SettingsUtils.of(context.user, context.chat?.project);
-		return !folders.findLast((folder) => contains(folder.path, path))
-			?.whitelist;
+		const local = shell ? ShellUtils.toShellFolders(shell, folders) : folders;
+		return !local.findLast((folder) => contains(folder.path, path))?.whitelist;
 	},
 } as const;

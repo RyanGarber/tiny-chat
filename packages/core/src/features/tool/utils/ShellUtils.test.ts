@@ -210,6 +210,51 @@ describe("ShellUtils", () => {
 		expect(ShellUtils.isSafe("npm run build", [deny, allow])).toBe(true);
 	});
 
+	it("only trusts PowerShell commands that are exactly whitelisted", () => {
+		const dialect = "powershell" as const;
+		// Read-only in bash, but not judged as bash here.
+		expect(ShellUtils.isSafe("ls", [], { dialect })).toBe(false);
+		expect(ShellUtils.isSafe("git  status", ["git status"], { dialect })).toBe(
+			true,
+		);
+		// A wildcard could match a second statement.
+		expect(
+			ShellUtils.isSafe(
+				"npm run build; Remove-Item -Recurse C:\\",
+				["npm run *"],
+				{
+					dialect,
+				},
+			),
+		).toBe(false);
+		expect(
+			ShellUtils.isSafe(
+				"git status",
+				[{ command: "git status", whitelist: false }],
+				{
+					dialect,
+				},
+			),
+		).toBe(false);
+	});
+
+	it("compares folders as the shell spells them", () => {
+		const shell = {
+			toShellPath: ({ path }: { path: string }) =>
+				path.replace(/^\\\\wsl\.localhost\\Ubuntu/, "").replace(/\\/g, "/"),
+		} as Parameters<typeof ShellUtils.toShellFolders>[0];
+		const folders = ShellUtils.toShellFolders(shell, [
+			{ path: "\\\\wsl.localhost\\Ubuntu\\home\\me\\proj", whitelist: true },
+		]);
+		expect(folders).toEqual([{ path: "/home/me/proj", whitelist: true }]);
+		expect(
+			ShellUtils.isSafe("touch notes.md", [], {
+				folders,
+				cwd: "/home/me/proj",
+			}),
+		).toBe(true);
+	});
+
 	it("loads through the package bundler", async () => {
 		const module = await import("#core/features/tool/utils/ShellUtils.ts");
 		expect(module.ShellUtils.isSafe("pwd")).toBe(true);

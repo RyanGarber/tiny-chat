@@ -1,6 +1,8 @@
 use crate::Error;
 use base64::Engine;
 use std::collections::HashMap;
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 use std::sync::{Arc, Mutex as StdMutex};
 use tokio::sync::oneshot;
 
@@ -8,8 +10,7 @@ fn resolve(path: &str) -> Result<std::path::PathBuf, Error> {
     let expanded =
         shellexpand::full(path).map_err(|e| Error::Other(format!("Path expansion failed: {e}")))?;
     let p = std::path::PathBuf::from(expanded.as_ref());
-    let canonical = p
-        .canonicalize()
+    let canonical = dunce::canonicalize(&p)
         .map_err(|e| Error::Io(format!("Cannot resolve path '{}': {e}", p.display())))?;
     Ok(canonical)
 }
@@ -310,8 +311,13 @@ async fn pump<R>(
 /// Running commands by the id the webview gave them, to stop them by.
 pub type ShellProcesses = Arc<StdMutex<HashMap<String, oneshot::Sender<()>>>>;
 
+/// No console window flashing up for every command the app runs on Windows.
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
 /// Ends the command and everything it started: it runs as the leader of its
-/// own process group, so the whole group is signalled rather than only `sh`.
+/// own process group, so the whole group is signalled rather than only the
+/// shell. Windows has no groups to signal, so the tree is ended by its root.
 fn kill_group(child: &mut tokio::process::Child) {
     #[cfg(unix)]
     if let Some(pid) = child.id() {
@@ -327,6 +333,16 @@ fn kill_group(child: &mut tokio::process::Child) {
             }
         });
     }
+    #[cfg(windows)]
+    if let Some(pid) = child.id() {
+        std::process::Command::new("taskkill")
+            .args(["/T", "/F", "/PID", &pid.to_string()])
+            .creation_flags(CREATE_NO_WINDOW)
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+            .ok();
+    }
     child.start_kill().ok();
 }
 
@@ -334,20 +350,28 @@ fn kill_group(child: &mut tokio::process::Child) {
 pub async fn shell_exec(
     processes: tauri::State<'_, ShellProcesses>,
     id: String,
-    command: String,
+    program: String,
+    args: Vec<String>,
+    cwd: Option<String>,
+    env: Option<HashMap<String, String>>,
     on_output_channel: tauri::ipc::Channel<ShellOutputChunk>,
 ) -> Result<ShellOutput, Error> {
-    let mut builder = tokio::process::Command::new("sh");
+    let mut builder = tokio::process::Command::new(&program);
+    if let Some(cwd) = cwd {
+        builder.current_dir(resolve(&cwd)?);
+    }
     builder
-        .arg("-c")
-        .arg(&command)
+        .args(&args)
         .envs(crate::env::shell_env().await)
+        .envs(env.unwrap_or_default())
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .kill_on_drop(true);
     #[cfg(unix)]
     builder.process_group(0);
+    #[cfg(windows)]
+    builder.creation_flags(CREATE_NO_WINDOW);
     let mut child = builder.spawn()?;
 
     let stdout = child.stdout.take().ok_or("Cannot capture stdout")?;
@@ -413,11 +437,26 @@ pub fn cwd() -> Result<String, Error> {
     Ok(current_dir.to_string_lossy().to_string())
 }
 
+/// The first of `paths` that is a file, made absolute; for finding which of
+/// the shells the client knows of is installed.
 #[tauri::command]
-pub fn chdir(path: &str) -> Result<(), Error> {
+pub fn locate(paths: Vec<String>) -> Option<String> {
+    paths
+        .iter()
+        .filter_map(|path| resolve(path).ok())
+        .find(|path| path.is_file())
+        .map(|path| path.to_string_lossy().to_string())
+}
+
+/// The canonical form of a directory. The app never changes its own
+/// directory; the webview keeps the shell's and passes it with each command.
+#[tauri::command]
+pub fn resolve_dir(path: &str) -> Result<String, Error> {
     let path = resolve(path)?;
-    std::env::set_current_dir(&path)?;
-    Ok(())
+    if !path.is_dir() {
+        return Err(Error::Io(format!("Not a directory: {}", path.display())));
+    }
+    Ok(path.to_string_lossy().to_string())
 }
 
 #[cfg(test)]
@@ -460,6 +499,13 @@ mod tests {
         );
         assert!(head.size > 4);
         assert!(results[1].is_none());
+    }
+
+    #[test]
+    fn test_locate() {
+        let found = locate(vec!["missing.txt".to_string(), "Cargo.toml".to_string()]);
+        assert!(found.is_some_and(|path| path.ends_with("Cargo.toml")));
+        assert!(locate(vec!["src".to_string()]).is_none());
     }
 
     #[test]

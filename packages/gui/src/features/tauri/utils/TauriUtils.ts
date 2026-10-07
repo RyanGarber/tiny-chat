@@ -4,12 +4,18 @@ export const TauriUtils = {
 	},
 
 	isTauriDesktop: async () => {
+		return !!(await TauriUtils.desktopOs());
+	},
+
+	/** The desktop OS the app runs on, or null outside a desktop app. */
+	desktopOs: async () => {
 		if (!TauriUtils.isTauri()) {
-			return false;
+			return null;
 		}
 
 		const { type } = await import("@tauri-apps/plugin-os");
-		return ["linux", "macos", "windows"].includes(type());
+		const os = type();
+		return os === "linux" || os === "macos" || os === "windows" ? os : null;
 	},
 
 	isTauriWithAfm: async () => {

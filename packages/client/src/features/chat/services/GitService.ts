@@ -23,6 +23,15 @@ const MAX_OUTPUT = 256 * 1024;
  */
 const roots = new Map<string, string>();
 
+/**
+ * `git` in `directory`. Run directly where the shell can, so no shell has to
+ * read the paths in it; PowerShell would quote them differently from bash.
+ */
+const git = (shell: ShellCapability, directory: string, ...args: string[]) =>
+	shell.run
+		? shell.run({ program: "git", args: ["-C", directory, ...args] })
+		: shell.exec({ command: GitUtils.command(directory, ...args) });
+
 export const GitService = {
 	/** The repository a directory is in, if any. */
 	root: async ({
@@ -34,9 +43,7 @@ export const GitService = {
 	}) => {
 		const cached = roots.get(directory);
 		if (cached) return cached;
-		const result = await shell.exec({
-			command: GitUtils.command(directory, "rev-parse", "--show-prefix"),
-		});
+		const result = await git(shell, directory, "rev-parse", "--show-prefix");
 		if (result.code !== 0) return null;
 		const root = GitUtils.root({ directory, prefix: result.stdout });
 		if (root) roots.set(directory, root);
@@ -89,28 +96,11 @@ export const GitService = {
 		root: string;
 	}): Promise<GitRepo> => {
 		const diff = (base: string) =>
-			shell.exec({
-				command: GitUtils.command(
-					root,
-					"diff",
-					base,
-					"--numstat",
-					"--no-renames",
-					"-z",
-				),
-			});
+			git(shell, root, "diff", base, "--numstat", "--no-renames", "-z");
 
 		const [first, others] = await Promise.all([
 			diff("HEAD"),
-			shell.exec({
-				command: GitUtils.command(
-					root,
-					"ls-files",
-					"--others",
-					"--exclude-standard",
-					"-z",
-				),
-			}),
+			git(shell, root, "ls-files", "--others", "--exclude-standard", "-z"),
 		]);
 		// Before the first commit there is no HEAD to compare against.
 		const head = first.code === 0;
@@ -165,14 +155,13 @@ export const GitService = {
 	}) => {
 		if (change.untracked || !repo.head) return "";
 		const path = PathUtils.relative({ base: repo.root, path: change.path });
-		const result = await shell.exec({
-			command: GitUtils.command(
-				repo.root,
-				"cat-file",
-				"blob",
-				GitUtils.quote(`HEAD:${path}`),
-			),
-		});
+		const result = await git(
+			shell,
+			repo.root,
+			"cat-file",
+			"blob",
+			`HEAD:${path}`,
+		);
 		if (result.code !== 0) return "";
 		if (result.stdout.length >= MAX_OUTPUT) return null;
 		return result.stdout;

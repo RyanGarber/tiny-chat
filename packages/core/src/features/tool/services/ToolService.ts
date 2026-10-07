@@ -46,6 +46,8 @@ export const ToolService = {
 	}: {
 		capabilities: Capabilities;
 	}): Promise<Toolset<any>[]> => {
+		const local = capabilities.shell?.environment?.();
+
 		return await Promise.all([
 			await createGitHubToolset(
 				forToolset({
@@ -98,7 +100,7 @@ export const ToolService = {
 					capabilities,
 					needs: ["shell", "chatShell"],
 					instructions: `You have access to filesystem and shell tools in the following contexts:
-${capabilities.shell ? `- Anything OUTSIDE of \`${PathUtils.mount}\`: the user's local shell. Use this any time you need to work with the user's local files or system.` : ""}
+${capabilities.shell ? `- Anything OUTSIDE of \`${PathUtils.mount}\` (except for \`/mnt\` paths that are part of the user's local system, e.g. \`/mnt/c\` in WSL): the user's local shell. Use this any time you need to work with the user's local files or system.${local ? ` It is ${local.label}${local.dialect === "powershell" ? ", so write commands for PowerShell, not bash" : ""}.` : ""}` : ""}
 ${capabilities.chatShell ? `- Anything INSIDE of \`${PathUtils.mount}\`: the virtual chat shell. Use this any time you need a scratch pad or to access the user's uploads.` : ""}
 
 The virtual chat (\`${PathUtils.mount}\`) filesystem holds three trees:
@@ -116,7 +118,7 @@ ${search_files.name} and ${grep_files.name} read text, so they pass over images,
 When working in a codebase, look before you act: find the relevant files, read the parts you are about to change, then make the smallest edit that does the job. Say what you changed and how you verified it. When a search or a file comes back truncated, ask a narrower question rather than pulling in more of it — context you spend on noise is context you no longer have for the task.
 
 For all file-related tools, the filesystem will be detected automatically from the path provided.
-For \`${shell_exec.name}\` specifically, you MUST specify \`mnt: true\` to run in the virtual \`${PathUtils.mount}\` filesystem, or \`mnt: false\` to run in the user's local filesystem. Changing directory in one does not change the other. Use absolute paths for file tools.`,
+For \`${shell_exec.name}\` specifically, you MUST specify \`mnt: true\` to run in the virtual \`${PathUtils.mount}\` filesystem, or \`mnt: false\` to run in the user's local filesystem. Changing directory in one does not change the other.${capabilities.shell ? " In the local shell every command starts in the user's primary folder, and a `cd` does not carry over to the next command, so chain it with `&&` when you need it." : ""} Use absolute paths for file tools.`,
 				}),
 			),
 

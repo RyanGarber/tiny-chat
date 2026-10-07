@@ -36,7 +36,7 @@ export const useFileViewer = ({
 
 			if (file.directory) {
 				let items: { path: string; directory: boolean }[];
-				if (PathUtils.fromMount(file)) {
+				if (PathUtils.isMounted(file)) {
 					items = (await readChatDirectory.mutateAsync(file)).map((item) => ({
 						path: item.uri,
 						directory: item.isDirectory,
@@ -52,7 +52,7 @@ export const useFileViewer = ({
 			}
 
 			let data: { data: Uint8Array; mime?: string };
-			if (PathUtils.fromMount(file)) {
+			if (PathUtils.isMounted(file)) {
 				data = await readChatFile.mutateAsync(file);
 			} else {
 				if (!client.shell) throw new Error("local files not available");

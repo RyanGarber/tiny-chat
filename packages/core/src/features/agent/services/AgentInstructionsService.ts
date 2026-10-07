@@ -121,17 +121,20 @@ ${citeExamples.map((r) => `- ${r}`).join("\n")}`;
 					context.user,
 					context.chat?.project,
 				);
+				const shell = capabilities.shell;
 				const folders = settings.folders.map((folder) => ({
 					...folder,
 					project: context.chat?.project?.settings?.folders?.find(
 						(other) => other.path === folder.path,
 					),
+					// As the shell spells it, which is how the model will see it.
+					local: shell?.toShellPath?.({ path: folder.path }) ?? folder.path,
 				}));
 
 				instructions += `\n
 The user works in these folders. A primary project folder is where the shell starts.
 <folders>
-${folders.map((folder) => `<folder scope="${folder.project ? "project" : "user"}"${folder.path === primary ? " primary" : ""}>${folder.path}</folder>`).join("\n")}
+${folders.map((folder) => `<folder scope="${folder.project ? "project" : "user"}"${folder.path === primary ? " primary" : ""}>${folder.local}</folder>`).join("\n")}
 </folders>`;
 			}
 

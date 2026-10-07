@@ -156,7 +156,7 @@ export const AgentMessagesService = {
 		let content: zDataPart | undefined;
 
 		try {
-			const shell = PathUtils.fromMount({ path: source })
+			const shell = PathUtils.isMounted(source)
 				? capabilities.chatShell
 				: capabilities.shell;
 

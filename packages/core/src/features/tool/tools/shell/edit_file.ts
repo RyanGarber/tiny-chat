@@ -78,7 +78,11 @@ export const createEditFileTool: ToolFactory<
 			replace_all: input.replace_all,
 		});
 		return {
-			approval: FileToolUtils.requiresApproval({ path: input.path, context }),
+			approval: FileToolUtils.requiresApproval({
+				path: input.path,
+				context,
+				shell: options.capabilities.shell,
+			}),
 		};
 	},
 	execute: async ({ input }) => {

@@ -49,7 +49,7 @@ export const useShellSettings = ({
 				folders.map(async ({ path }): Promise<[string, boolean]> => {
 					try {
 						const mounted = PathUtils.fromMount({ path });
-						if (mounted) {
+						if (mounted && PathUtils.isMounted(path)) {
 							const { mount, id } = mounted;
 							await client.api.file.getDirectory.query({
 								path,

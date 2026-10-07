@@ -3,6 +3,7 @@ import { type ParsedScript, parse, type Redirect, type Word } from "unbash";
 import type {
 	Capabilities,
 	ShellCapability,
+	ShellEnvironment,
 } from "#core/core/types/capability.ts";
 import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
 
@@ -839,13 +840,27 @@ export const ShellUtils = {
 	 * output redirects whose every path resolves there. Relative paths resolve
 	 * against `cwd` until the script changes directory. Paths are compared
 	 * lexically, so a symlink inside a folder can still lead outside it.
+	 *
+	 * Only bash can be judged this way. A command in another `dialect` is safe
+	 * only when it is, word for word, a whitelisted rule with no wildcards: a
+	 * bash parser would misread it, and `*` could match a second statement.
 	 */
 	isSafe: (
 		command: string,
 		rules: readonly ShellRule[] = [],
-		options: { folders?: readonly Folder[]; cwd?: string } = {},
+		options: {
+			folders?: readonly Folder[];
+			cwd?: string;
+			dialect?: ShellEnvironment["dialect"];
+		} = {},
 	): boolean => {
 		if (!command.trim()) return false;
+		if (options.dialect && options.dialect !== "bash") {
+			const exact = rules.filter(
+				(rule) => !/[*?]/.test(typeof rule === "string" ? rule : rule.command),
+			);
+			return createWhitelist(exact)(command.trim().replace(/\s+/g, " "), []);
+		}
 		try {
 			const folders = (options.folders ?? []).flatMap((folder) => {
 				const path = resolvePath(folder.path);
@@ -861,6 +876,17 @@ export const ShellUtils = {
 		}
 	},
 
+	/** Folders as `shell` spells their paths, so they compare with its own. */
+	toShellFolders: <T extends { path: string }>(
+		shell: ShellCapability,
+		folders: readonly T[],
+	): T[] =>
+		folders.map((folder) =>
+			shell.toShellPath
+				? { ...folder, path: shell.toShellPath({ path: folder.path }) }
+				: folder,
+		),
+
 	detect: (
 		path: string | boolean,
 		capabilities: Pick<Capabilities, "shell" | "chatShell">,
@@ -871,8 +897,7 @@ export const ShellUtils = {
 				"You tried to access a path but no shell is accessible. This is most likely a bug. You can try another path if desired or note the issue and move on.",
 			);
 		}
-		const isChat =
-			typeof path === "boolean" ? path : PathUtils.fromMount({ path });
+		const isChat = typeof path === "boolean" ? path : PathUtils.isMounted(path);
 		if (isChat) {
 			if (!capabilities.chatShell) {
 				throw new Error(

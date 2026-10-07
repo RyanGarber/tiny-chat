@@ -1,3 +1,28 @@
+## [0.9.5](https://github.com/RyanGarber/tiny-chat/compare/0.9.4...0.9.5) (2026-10-07)
+
+### Features
+
+* afm support in the cli ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-1))
+* ctrl+c to copy selection in cli ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-9))
+* improved markdown, editor node rendering ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-5))
+* jump to message from citations ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-3))
+* mcp server editor in cli ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-8))
+* memory and action citations ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-2))
+* project automatically activates when resuming chat ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-4))
+* search jumps to exact message ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-12))
+
+### Bug Fixes
+
+* cache miss on later messages with multiple tool loops ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-6))
+* cli properly cleans up before exiting ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-10))
+* devtools connection delays app load ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-13))
+* potential test failure due to test server race ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-11))
+
+### Performance Improvements
+
+* optimized walk, bulk file reads for git, skills ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-7))
+
+
 ## [0.9.4](https://github.com/RyanGarber/tiny-chat/compare/0.9.3...0.9.4) (2026-10-05)
 
 ### Features

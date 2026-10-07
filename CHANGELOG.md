@@ -1,3 +1,10 @@
+## [0.9.6](https://github.com/RyanGarber/tiny-chat/compare/0.9.5...0.9.6) (2026-10-07)
+
+### Features
+
+* wsl support ([68b9a75](https://github.com/RyanGarber/tiny-chat/commit/68b9a7589f1940a8d03913a3a50e6857959144b6))
+
+
 ## [0.9.5](https://github.com/RyanGarber/tiny-chat/compare/0.9.4...0.9.5) (2026-10-07)
 
 ### Features

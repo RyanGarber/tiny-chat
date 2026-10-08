@@ -1,3 +1,22 @@
+## [0.9.7](https://github.com/RyanGarber/tiny-chat/compare/0.9.6...0.9.7) (2026-10-08)
+
+### Features
+
+* action editor ([d3cf96c](https://github.com/RyanGarber/tiny-chat/commit/d3cf96cd41c39f179deaeb2c15c0e7236fccea27-1))
+* consistent app, cli controls ([d3cf96c](https://github.com/RyanGarber/tiny-chat/commit/d3cf96cd41c39f179deaeb2c15c0e7236fccea27-2))
+* memory editor ([d3cf96c](https://github.com/RyanGarber/tiny-chat/commit/d3cf96cd41c39f179deaeb2c15c0e7236fccea27))
+* primary project folder falls back to first available ([d3cf96c](https://github.com/RyanGarber/tiny-chat/commit/d3cf96cd41c39f179deaeb2c15c0e7236fccea27-3))
+
+### Bug Fixes
+
+* actions can run at inconsistent times ([d3cf96c](https://github.com/RyanGarber/tiny-chat/commit/d3cf96cd41c39f179deaeb2c15c0e7236fccea27-6))
+* autosave restarts mcp server on every argument edit ([d3cf96c](https://github.com/RyanGarber/tiny-chat/commit/d3cf96cd41c39f179deaeb2c15c0e7236fccea27-5))
+
+### Performance Improvements
+
+* optimize file search, grep ([d3cf96c](https://github.com/RyanGarber/tiny-chat/commit/d3cf96cd41c39f179deaeb2c15c0e7236fccea27-4))
+
+
 ## [0.9.6](https://github.com/RyanGarber/tiny-chat/compare/0.9.5...0.9.6) (2026-10-07)
 
 ### Features

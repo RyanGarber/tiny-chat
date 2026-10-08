@@ -77,13 +77,6 @@ jobs:
           node-version: lts/*
           cache: pnpm
 
-      - name: Cache Turbo
-        uses: actions/cache@v6
-        with:
-          path: .turbo
-          key: ${{ runner.os }}-${{ runner.arch }}-turbo-release-ios-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-${{ runner.arch }}-turbo-release-ios-
-
       - name: Create .env
         run: |
           cat << EOF > .env

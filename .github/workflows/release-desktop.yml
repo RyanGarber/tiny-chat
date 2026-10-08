@@ -101,13 +101,6 @@ jobs:
           node-version: lts/*
           cache: pnpm
 
-      - name: Cache Turbo
-        uses: actions/cache@v6
-        with:
-          path: .turbo
-          key: ${{ runner.os }}-${{ runner.arch }}-turbo-release-desktop-${{ matrix.cache_target }}-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-${{ runner.arch }}-turbo-release-desktop-${{ matrix.cache_target }}-
-
       - name: Create .env
         shell: bash
         run: |

@@ -44,7 +44,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+          targets: aarch64-linux-android,x86_64-linux-android
           toolchain: stable
 
       - name: Create cache key
@@ -88,13 +88,6 @@ jobs:
           node-version: lts/*
           cache: pnpm
 
-      - name: Cache Turbo
-        uses: actions/cache@v6
-        with:
-          path: .turbo
-          key: ${{ runner.os }}-${{ runner.arch }}-turbo-release-android-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-${{ runner.arch }}-turbo-release-android-
-
       - name: Create .env
         run: |
           cat << EOF > .env
@@ -121,17 +114,13 @@ jobs:
       - name: Build project
         env:
           NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/30.0.14904198
-        run: pnpm --filter app run tauri android build --apk --split-per-abi
+        run: pnpm --filter app run tauri android build --apk --split-per-abi --target aarch64 x86_64
 
       - name: Package APKs
         run: |
           APK_DIR="apps/app/gen/android/app/build/outputs/apk"
-          OUTPUT="$RUNNER_TEMP/Tiny.Chat_Android.zip"
-          find "$APK_DIR" -name "*-unsigned.apk" | while read -r apk; do
-            echo "Found: $apk"
-          done
-          find "$APK_DIR" -name "*-unsigned.apk" -exec zip -9 -j "$OUTPUT" {} +
-          echo "Archive size: $(du -sh "$OUTPUT" | cut -f1)"
+          mv "$APK_DIR/arm64/release/app-arm64-release-unsigned.apk" "$RUNNER_TEMP/Tiny.Chat_Android_arm64.apk"
+          mv "$APK_DIR/x86_64/release/app-x86_64-release-unsigned.apk" "$RUNNER_TEMP/Tiny.Chat_Android_x86_64.apk"
 
       - name: Resolve version
         id: version
@@ -173,4 +162,5 @@ jobs:
             sleep "$attempt"
           done
 
-          gh release upload "$VERSION" "$RUNNER_TEMP/Tiny.Chat_Android.zip" --clobber
+          gh release upload "$VERSION" "$RUNNER_TEMP/Tiny.Chat_Android_arm64.apk" --clobber
+          gh release upload "$VERSION" "$RUNNER_TEMP/Tiny.Chat_Android_x86_64.apk" --clobber

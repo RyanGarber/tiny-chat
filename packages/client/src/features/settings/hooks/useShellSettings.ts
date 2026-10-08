@@ -72,7 +72,36 @@ export const useShellSettings = ({
 		gcTime: 0,
 	});
 
-	// The first folder is the shell's working directory.
+	/**
+	 * The folder a shell starts in on this device: the first that opens here,
+	 * or for a project, one it was launched inside. Folders sync across
+	 * devices, so the rest may only exist on others.
+	 */
+	const primaryFolder = useQuery({
+		queryKey: [
+			"useShellSettings",
+			"primaryFolder",
+			typeof project === "string" ? project : (project?.id ?? null),
+			folderStatus.data,
+		],
+		queryFn: async () => {
+			const available = folders
+				.map(({ path }) => path)
+				.filter((path) => folderStatus.data?.[path]);
+			if (!project) return available[0] ?? null;
+			const shell = client.shell;
+			return (
+				SettingsUtils.preferContaining({
+					paths: available,
+					cwd: await client.workingDirectory.origin(),
+					toShellPath: (path) => shell?.toShellPath?.({ path }) ?? path,
+				})[0] ?? null
+			);
+		},
+		enabled: !!folderStatus.data,
+	});
+
+	// Folders are tried in order for the shell's working directory.
 	const applyFolders = useCallback(
 		(settings: zSettings) => {
 			applySettings(settings);
@@ -96,6 +125,11 @@ export const useShellSettings = ({
 		onSuccess: applyFolders,
 	});
 
+	const moveFolder = useMutation({
+		...client.query.settings.moveFolder.mutationOptions(),
+		onSuccess: applyFolders,
+	});
+
 	return {
 		commands,
 		addCommand,
@@ -103,8 +137,10 @@ export const useShellSettings = ({
 		removeCommand,
 		folders,
 		folderStatus,
+		primaryFolder: primaryFolder.data ?? null,
 		addFolder,
 		removeFolder,
 		updateFolder,
+		moveFolder,
 	};
 };

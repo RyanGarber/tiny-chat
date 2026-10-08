@@ -15,15 +15,30 @@ export default function FolderSettings({
 	draft: Draft | null;
 	setDraft: (draft: Draft | null) => void;
 }) {
-	const { folders, folderStatus, addFolder, removeFolder, updateFolder } =
-		useShellSettings({ project });
-	useWorkingStatus(addFolder, updateFolder, removeFolder);
+	const {
+		folders,
+		folderStatus,
+		primaryFolder,
+		addFolder,
+		removeFolder,
+		updateFolder,
+		moveFolder,
+	} = useShellSettings({ project });
+	useWorkingStatus(addFolder, updateFolder, removeFolder, moveFolder);
+
+	const toggle = (index: number) =>
+		updateFolder.mutate({
+			project,
+			index,
+			folder: { whitelist: !folders[index].whitelist },
+		});
 
 	return (
 		<TextList
 			entries={folders.map(({ path, whitelist }) => ({
 				text: path,
 				detail: [
+					path === primaryFolder ? "primary on this device" : undefined,
 					whitelist ? "skips approval for edits" : "asks before edits",
 					folderStatus.data?.[path] === false ? "unavailable" : undefined,
 				]
@@ -37,15 +52,23 @@ export default function FolderSettings({
 			onAdd={(path) =>
 				addFolder.mutate({ project, folder: { path, whitelist: false } })
 			}
-			onSelect={(index) =>
-				updateFolder.mutate({
-					project,
-					index,
-					folder: { whitelist: !folders[index].whitelist },
-				})
+			onEdit={(index, path) =>
+				updateFolder.mutate({ project, index, folder: { path } })
 			}
+			// Enter toggles edit approval, so the path is written with `e`.
+			onSelect={toggle}
+			selectName="toggle"
 			onRemove={(index) => removeFolder.mutate({ project, index })}
-			actions={[{ key: "enter", name: "toggle edit approval" }]}
+			bindings={{
+				toggle: { run: toggle },
+				reorder: {
+					run: (index, direction) => {
+						const to = index + direction;
+						if (to < 0 || to >= folders.length) return;
+						moveFolder.mutate({ project, index, to });
+					},
+				},
+			}}
 		/>
 	);
 }

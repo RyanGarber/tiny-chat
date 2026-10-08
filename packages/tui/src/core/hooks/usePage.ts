@@ -30,6 +30,14 @@ export const usePage = ({
 				key.escape ||
 				back?.some((value) => input === value)
 			) {
+				// A row armed for removal is disarmed first, staying on the page.
+				// Every page taking this key has to see it armed, so it is
+				// disarmed only once they all have.
+				const { armed, setArmed } = useAppStore.getState();
+				if (armed) {
+					queueMicrotask(() => setArmed(null));
+					return;
+				}
 				const page = onBack?.();
 				if (page === false) return;
 				setPage(typeof page === "string" ? page : "chat");

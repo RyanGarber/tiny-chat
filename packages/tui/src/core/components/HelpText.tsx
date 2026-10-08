@@ -1,38 +1,56 @@
+import { useState } from "react";
+import Box from "#tui/core/components/Box.tsx";
 import Text from "#tui/core/components/Text.tsx";
+import { useMouseInput } from "#tui/core/hooks/useMouseInput.ts";
 
 export type Action =
-	| { key: string; name: string; when?: boolean }
-	| "choose"
+	| {
+			key: string;
+			name: string;
+			when?: boolean;
+			/** Lets a press on the hint stand in for its key. */
+			onClick?: () => void;
+	  }
+	| "move"
 	| "select"
 	| "back";
 
+const expand = (action: Action) => {
+	if (action === "move") return { key: "↑↓", name: "move" };
+	if (action === "select") return { key: "enter", name: "select" };
+	if (action === "back") return { key: "esc", name: "back" };
+	return action;
+};
+
+/** The keys something takes, a press on one of them standing in for it. */
 export default function HelpText({ actions: _actions }: { actions: Action[] }) {
-	const actions = _actions.map((action) => {
-		if (action === "choose") {
-			return { key: "↑↓", name: "choose" };
-		}
-		if (action === "select") {
-			return { key: "enter", name: "select" };
-		}
-		if (action === "back") {
-			return { key: "esc", name: "back" };
-		}
-		return action;
+	const active = _actions.map(expand).filter((action) => action.when ?? true);
+
+	const [hovered, setHovered] = useState<number | null>(null);
+	const { mouseRef } = useMouseInput({
+		onClick: ({ index }) => active[index]?.onClick?.(),
+		onHoverStart: ({ index }) => {
+			if (active[index]?.onClick) setHovered(index);
+		},
+		onHoverEnd: ({ index }) => {
+			setHovered((current) => (current === index ? null : current));
+		},
 	});
 
-	const active = actions.filter((action) => action.when ?? true);
-
 	return (
-		<Text color="textSubtle">
+		<Box flexWrap="wrap">
 			{active.map((action, index) => (
-				<Text key={action.key + action.name}>
-					<Text bold>{action.key}</Text>{" "}
-					<Text>
-						{action.name}
+				<Box
+					key={action.key + action.name}
+					ref={(element) => mouseRef(element, index)}
+					flexShrink={0}
+				>
+					<Text color="textSubtle" dimColor={hovered === index}>
+						<Text bold>{action.key}</Text> {action.name}
 						{index !== active.length - 1 && " · "}
 					</Text>
-				</Text>
+				</Box>
 			))}
-		</Text>
+		</Box>
 	);
 }

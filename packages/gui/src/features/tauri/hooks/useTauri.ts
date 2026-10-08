@@ -64,7 +64,9 @@ export const useTauri = () => {
 				}
 			});
 
-			await useTauriStore.getState().removeTask("update");
+			// Installation succeeded. Restart must not depend on animation frames,
+			// which can also be suspended when the window is hidden.
+			void useTauriStore.getState().removeTask("update");
 
 			await (await import("@tauri-apps/plugin-process")).relaunch();
 		},

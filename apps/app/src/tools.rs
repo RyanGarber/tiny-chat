@@ -49,6 +49,7 @@ pub fn read_dir(path: &str) -> Result<Vec<FileInfo>, Error> {
             e.map(|e| FileInfo {
                 path: e.path().to_string_lossy().to_string(),
                 is_dir: e.file_type().map(|ft| ft.is_dir()).unwrap_or(false),
+                size: None,
             })
             .map_err(Error::from)
         })
@@ -56,10 +57,39 @@ pub fn read_dir(path: &str) -> Result<Vec<FileInfo>, Error> {
     Ok(outputs)
 }
 
+/// File system calls run at once by `walk` and `read_files`. Each call is
+/// mostly waiting — on a WSL tree read from Windows, on a round trip into the
+/// distro — so running them side by side is most of the speed.
+const IO_THREADS: usize = 16;
+
+/// `f` over `items` on up to `IO_THREADS` threads, with results in order.
+fn map_parallel<T: Sync, R: Send>(items: &[T], f: impl Fn(&T) -> R + Sync) -> Vec<R> {
+    if items.len() <= 1 {
+        return items.iter().map(&f).collect();
+    }
+    let cursor = std::sync::atomic::AtomicUsize::new(0);
+    let results: Vec<StdMutex<Option<R>>> = items.iter().map(|_| StdMutex::new(None)).collect();
+    std::thread::scope(|scope| {
+        for _ in 0..IO_THREADS.min(items.len()) {
+            scope.spawn(|| {
+                loop {
+                    let index = cursor.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    let Some(item) = items.get(index) else { break };
+                    *results[index].lock().unwrap() = Some(f(item));
+                }
+            });
+        }
+    });
+    results
+        .into_iter()
+        .map(|result| result.into_inner().unwrap().unwrap())
+        .collect()
+}
+
 /// Breadth-first listing of everything under `path`. Directories named in
 /// `prune` (lower-cased) or deeper than `max_depth` are listed but not entered.
 /// Deciding what to show is left to the caller; this only saves it a round
-/// trip per directory.
+/// trip per directory, and a read of every file too large to be worth one.
 #[tauri::command]
 pub async fn walk(
     path: String,
@@ -72,6 +102,27 @@ pub async fn walk(
         .map_err(|e| Error::Other(format!("Walk failed: {e}")))?
 }
 
+/// One directory's entries, sorted by path, with each file's size.
+fn list_dir(directory: &std::path::Path) -> std::io::Result<Vec<FileInfo>> {
+    let mut listing: Vec<_> = std::fs::read_dir(directory)?
+        .filter_map(Result::ok)
+        .map(|e| {
+            let is_dir = e.file_type().map(|ft| ft.is_dir()).unwrap_or(false);
+            // Free on Windows, where it arrives with the listing itself.
+            let size = (!is_dir)
+                .then(|| e.metadata().ok().map(|m| m.len()))
+                .flatten();
+            FileInfo {
+                path: e.path().to_string_lossy().to_string(),
+                is_dir,
+                size,
+            }
+        })
+        .collect();
+    listing.sort_by(|a, b| a.path.cmp(&b.path));
+    Ok(listing)
+}
+
 fn walk_tree(
     path: &str,
     max_depth: usize,
@@ -80,51 +131,41 @@ fn walk_tree(
 ) -> Result<WalkResult, Error> {
     let root = resolve(path)?;
     let prune: std::collections::HashSet<&str> = prune.iter().map(String::as_str).collect();
-    let mut pending = std::collections::VecDeque::from([(root.clone(), 0usize)]);
     let mut entries = Vec::new();
     let mut truncated = false;
 
-    while let Some((directory, depth)) = pending.pop_front() {
-        let listing = match std::fs::read_dir(&directory) {
-            Ok(listing) => listing,
-            // A missing root is a real error; an unreadable subdirectory is not.
-            Err(e) if directory == root => return Err(e.into()),
-            Err(_) => continue,
-        };
-        let mut listing: Vec<_> = listing
-            .filter_map(Result::ok)
-            .map(|e| {
-                let is_dir = e.file_type().map(|ft| ft.is_dir()).unwrap_or(false);
-                (e.path(), is_dir)
-            })
-            .collect();
-        listing.sort();
-
-        for (path, is_dir) in listing {
+    // One level at a time, its directories listed side by side; the order is
+    // the same as listing them one by one. A missing root is a real error; an
+    // unreadable subdirectory is not.
+    let mut level = vec![list_dir(&root)?];
+    for depth in 0.. {
+        let mut next = Vec::new();
+        for entry in level.into_iter().flatten() {
             if entries.len() >= max_entries {
-                truncated = true;
-                break;
+                return Ok(WalkResult {
+                    root: root.to_string_lossy().to_string(),
+                    entries,
+                    truncated: true,
+                });
             }
-            let pruned = is_dir
-                && path
+            let pruned = entry.is_dir
+                && std::path::Path::new(&entry.path)
                     .file_name()
                     .map(|name| prune.contains(name.to_string_lossy().to_lowercase().as_str()))
                     .unwrap_or(false);
-            if is_dir && !pruned {
+            if entry.is_dir && !pruned {
                 if depth + 1 > max_depth {
                     truncated = true;
                 } else {
-                    pending.push_back((path.clone(), depth + 1));
+                    next.push(std::path::PathBuf::from(&entry.path));
                 }
             }
-            entries.push(FileInfo {
-                path: path.to_string_lossy().to_string(),
-                is_dir,
-            });
+            entries.push(entry);
         }
-        if truncated && entries.len() >= max_entries {
+        if next.is_empty() {
             break;
         }
+        level = map_parallel(&next, |directory| list_dir(directory).unwrap_or_default());
     }
 
     Ok(WalkResult {
@@ -145,8 +186,8 @@ pub fn read_file(path: &str) -> Result<FileData, Error> {
     })
 }
 
-/// Up to `max_bytes` of each of several files, in one round trip and off the
-/// main thread. Results line up with `paths`; one that cannot be read is null
+/// Up to `max_bytes` of each of several files, in one round trip, off the
+/// main thread and several at once. Results line up with `paths`; one that cannot be read is null
 /// rather than failing the rest.
 #[tauri::command]
 pub async fn read_files(
@@ -154,10 +195,7 @@ pub async fn read_files(
     max_bytes: u64,
 ) -> Result<Vec<Option<FileHead>>, Error> {
     tokio::task::spawn_blocking(move || {
-        paths
-            .iter()
-            .map(|path| read_head(path, max_bytes).ok())
-            .collect()
+        map_parallel(&paths, |path| read_head(path, max_bytes).ok())
     })
     .await
     .map_err(|e| Error::Other(format!("Read failed: {e}")))
@@ -200,6 +238,8 @@ pub fn write_file(path: &str, content: &str) -> Result<(), Error> {
 pub struct FileInfo {
     path: String,
     is_dir: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    size: Option<u64>,
 }
 
 #[derive(serde::Serialize, Debug)]
@@ -482,6 +522,23 @@ mod tests {
         let result = walk_tree(".", 16, 100_000, &["target".to_string()]).unwrap();
         assert!(result.entries.iter().any(|e| e.path.ends_with("tools.rs")));
         assert!(!result.entries.iter().any(|e| e.path.contains("/target/")));
+
+        let cargo = result
+            .entries
+            .iter()
+            .find(|e| e.path.ends_with("Cargo.toml"))
+            .unwrap();
+        assert_eq!(
+            cargo.size,
+            Some(std::fs::metadata("Cargo.toml").unwrap().len())
+        );
+        assert!(
+            result
+                .entries
+                .iter()
+                .filter(|e| e.is_dir)
+                .all(|e| e.size.is_none())
+        );
 
         let capped = walk_tree(".", 16, 3, &[]).unwrap();
         assert_eq!(capped.entries.len(), 3);

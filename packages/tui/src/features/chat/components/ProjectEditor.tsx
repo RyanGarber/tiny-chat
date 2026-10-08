@@ -1,4 +1,3 @@
-import chalk from "chalk";
 import { useContext, useState } from "react";
 import { ClientContext } from "#client/client.ts";
 import { useChatList } from "#client/features/chat/hooks/useChatList.ts";
@@ -6,25 +5,18 @@ import type { CompletionGroup } from "#client/features/editor/types/completion.t
 import { useInstructions } from "#client/features/settings/hooks/useInstructions.ts";
 import { useShellSettings } from "#client/features/settings/hooks/useShellSettings.ts";
 import type { ProjectState } from "#core/features/data/types/chat.ts";
-import Text from "#tui/core/components/Text.tsx";
 import { usePage } from "#tui/core/hooks/usePage.ts";
 import { useWorkingStatus } from "#tui/core/hooks/useWorkingStatus.ts";
-import Completions from "#tui/features/editor/components/Completions.tsx";
-import Choice from "#tui/features/settings/components/Choice.tsx";
 import CommandSettings from "#tui/features/settings/components/CommandSettings.tsx";
+import Details, {
+	type DetailsItem,
+} from "#tui/features/settings/components/Details.tsx";
 import FolderSettings from "#tui/features/settings/components/FolderSettings.tsx";
 import InstructionSettings from "#tui/features/settings/components/InstructionSettings.tsx";
 import MemoryBudgetSettings from "#tui/features/settings/components/MemoryBudgetSettings.tsx";
 import TextList, {
 	type Draft,
 } from "#tui/features/settings/components/TextList.tsx";
-
-interface RootItem {
-	name: string;
-	value: string;
-	state?: string;
-	route: string;
-}
 
 /** The settings a project keeps for itself, like the app's project editor. */
 export default function ProjectEditor({
@@ -94,34 +86,7 @@ export default function ProjectEditor({
 			<FolderSettings project={project} draft={draft} setDraft={setDraft} />
 		);
 	}
-	if (route === "delete") {
-		return (
-			<Choice
-				groups={[
-					{
-						items: [
-							{ name: "cancel", value: "cancel" },
-							{ name: "confirm", value: "confirm" },
-						],
-					},
-				]}
-				before={
-					<Text color="textSubtle">
-						{`${project.title || "Untitled"} and its chats will be deleted.`}
-					</Text>
-				}
-				onSelect={(item) => {
-					if (item.value !== "confirm") return pop();
-					deleteProject.mutate(
-						{ project, deleteChats: true },
-						{ onSuccess: onClose },
-					);
-				}}
-			/>
-		);
-	}
-
-	const groups: CompletionGroup<RootItem>[] = [
+	const groups: CompletionGroup<DetailsItem>[] = [
 		{
 			name: "project",
 			items: [
@@ -171,40 +136,23 @@ export default function ProjectEditor({
 				},
 			],
 		},
-		{
-			items: [{ name: "delete", value: "delete", route: "delete" }],
-		},
 	];
 
 	return (
-		<Completions<CompletionGroup<RootItem>, RootItem>
+		<Details
 			groups={groups}
 			selected={selected}
 			setSelected={setSelected}
-			selectFirstOnChange={false}
-			itemProps={{
-				flexGrow: 1,
-				flexShrink: 1,
-				maxWidth: 50,
-				justifyContent: "space-between",
+			onOpen={push}
+			remove={{
+				name: "delete",
+				label: `delete "${project.title || "Untitled"}" and its chats?`,
+				run: () =>
+					deleteProject.mutate(
+						{ project, deleteChats: true },
+						{ onSuccess: onClose },
+					),
 			}}
-			onInput={({ item, key }) => {
-				if (item && key.return) {
-					push(item.route);
-					return true;
-				}
-			}}
-			renderItem={({ item }) => (
-				<>
-					<Text color={item.route === "delete" ? "redBright" : undefined}>
-						{item.name}
-					</Text>
-					{item.route !== "delete" && (
-						<Text color="text">{item.state ?? chalk.dim("(none)")}</Text>
-					)}
-				</>
-			)}
-			actions={[{ key: "enter", name: "open" }, "back"]}
 		/>
 	);
 }

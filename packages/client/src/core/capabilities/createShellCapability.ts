@@ -11,5 +11,5 @@ export const createShellCapability: CapabilityFactory<
 	if (!client.shell) throw new Error("missing client shell");
 
 	await client.workingDirectory.ready();
-	return client.shell;
+	return { ...client.shell, folders: client.workingDirectory.folders };
 };

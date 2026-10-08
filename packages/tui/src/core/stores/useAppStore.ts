@@ -7,7 +7,9 @@ export type Page =
 	| "config"
 	| "settings"
 	| "uploads"
-	| "github";
+	| "github"
+	| "memories"
+	| "actions";
 
 export type Panel = "chats" | "files";
 
@@ -59,6 +61,13 @@ interface AppStore {
 	panels: Record<Panel, boolean>;
 	togglePanel: (panel: Panel) => void;
 	closePanel: (panel: Panel) => void;
+
+	/**
+	 * The row a first `d` armed for removal, which a second puts through. Kept
+	 * here so that going back cancels it rather than leaving the page.
+	 */
+	armed: { list: string; value: string } | null;
+	setArmed: (armed: { list: string; value: string } | null) => void;
 
 	statuses: Status[];
 	setStatus: (status: Status) => void;
@@ -132,6 +141,9 @@ export const useAppStore = create<AppStore>((set) => ({
 			panels: { ...panels, [panel]: false },
 			focus: focus === panel ? "editor" : focus,
 		})),
+
+	armed: null,
+	setArmed: (armed) => set({ armed }),
 
 	statuses: [],
 	setStatus: (status: Status) => {

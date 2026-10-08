@@ -11,9 +11,9 @@ describe("AgentInstructionsService", () => {
 		).toEqual('<message role="user"></message>');
 	});
 
-	it("marks the project's first folder as primary, not the user's", async () => {
-		const folder = (path: string) => ({ path, whitelist: true });
-		const instructions = await AgentInstructionsService.buildInstructions({
+	const folder = (path: string) => ({ path, whitelist: true });
+	const build = (resolved?: string[]) =>
+		AgentInstructionsService.buildInstructions({
 			context: {
 				user: mockUser({ settings: { folders: [folder("/user")] } }),
 				chat: {
@@ -28,15 +28,30 @@ describe("AgentInstructionsService", () => {
 				interactive: true,
 			} as any,
 			config: mockConfig(),
-			capabilities: {} as any,
+			capabilities: {
+				shell: resolved && { folders: async () => resolved },
+			} as any,
 			enabledToolsets: [{ name: "shell", tools: [] } as any],
 			enabledSkills: [],
 		});
+
+	it("marks the shell's first resolved folder as primary", async () => {
+		const instructions = await build(["/second", "/user"]);
 		expect(instructions).toContain('<folder scope="user">/user</folder>');
+		expect(instructions).toContain(
+			'<folder scope="project" primary>/second</folder>',
+		);
+		expect(instructions.match(/ primary>/g)).toHaveLength(1);
+	});
+
+	it("leaves out folders that do not resolve on this device", async () => {
+		const instructions = await build(["/first"]);
 		expect(instructions).toContain(
 			'<folder scope="project" primary>/first</folder>',
 		);
-		expect(instructions).toContain('<folder scope="project">/second</folder>');
-		expect(instructions.match(/ primary>/g)).toHaveLength(1);
+		expect(instructions).not.toContain(">/second</folder>");
+		expect(instructions).not.toContain(">/user</folder>");
+		expect(await build([])).not.toContain("<folders>");
+		expect(await build()).not.toContain("<folders>");
 	});
 });

@@ -83,7 +83,11 @@ export default function Tauri() {
 				const isRemoval = task.removeResolve !== undefined;
 
 				// Don't restart animation if already running toward the same target — but still sync metadata
-				if (displayed.animTarget === target && animFramesRef.current[id]) {
+				if (
+					displayed.animTarget === target &&
+					displayed.removing === isRemoval &&
+					animFramesRef.current[id]
+				) {
 					setDisplayed((prev) =>
 						prev[id]
 							? {

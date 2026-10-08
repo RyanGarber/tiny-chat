@@ -85,8 +85,6 @@ export default function BrowserSettings({ toolset }: { toolset?: ConfigItem }) {
 		setBrowserSettings,
 	]);
 
-	const item = groups.flatMap((group) => group.items)[selected];
-
 	return (
 		<Completions<CompletionGroup<ConfigItem>, ConfigItem>
 			groups={groups}
@@ -94,21 +92,19 @@ export default function BrowserSettings({ toolset }: { toolset?: ConfigItem }) {
 			setSelected={setSelected}
 			selectFirstOnChange={false}
 			renderItem={({ item }) => <ConfigItemText item={item} />}
-			onInput={({ item, key, input }) => {
-				if ((key.return || input === " ") && item && !item.disabled) {
-					item.onSelect?.();
-					return true;
-				}
-				if (input === "r") {
-					recheckBrowser.mutate();
-					return true;
-				}
+			bindings={{
+				primary: {
+					name: "toggle",
+					run: (item) => item.onSelect?.(),
+					when: (item) => !!item.onSelect && !item.disabled,
+				},
+				toggle: {
+					run: (item) => item.onSelect?.(),
+					when: (item) => !!item.onSelect && !item.disabled,
+				},
+				refresh: { run: () => recheckBrowser.mutate() },
 			}}
-			actions={[
-				{ key: "enter", name: "toggle", when: !!item?.onSelect },
-				{ key: "r", name: "recheck" },
-				"back",
-			]}
+			actions={["back"]}
 		/>
 	);
 }

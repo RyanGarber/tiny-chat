@@ -4,6 +4,7 @@ import {
 	type RefObject,
 	useCallback,
 	useEffect,
+	useId,
 	useState,
 } from "react";
 import { useCompletionStore } from "#client/features/editor/stores/useCompletionStore.ts";
@@ -19,6 +20,12 @@ import ScrollView, {
 } from "#tui/core/components/ScrollView.tsx";
 import Text from "#tui/core/components/Text.tsx";
 import { useMouseInput } from "#tui/core/hooks/useMouseInput.ts";
+import { useAppStore } from "#tui/core/stores/useAppStore.ts";
+import {
+	type Bindings,
+	ListBindingUtils,
+	type Verb,
+} from "#tui/core/utils/ListBindingUtils.ts";
 
 export type CompletionsProps<
 	T1 extends CompletionGroup<T2>,
@@ -30,6 +37,15 @@ export type CompletionsProps<
 	itemRef?: RefObject<T2 | null>;
 	/** Takes the keys, and draws its selection as such. Defaults to whether its panel is focused. */
 	active?: boolean;
+	/**
+	 * The verbs its rows answer to, which take their keys and draw their help
+	 * in the order every list shares. Prefer these to `onInput`.
+	 */
+	bindings?: Bindings<T2>;
+	/**
+	 * First look at every key, for what is not a verb (a draft taking the
+	 * keys, say); `false` stops it there.
+	 */
 	onInput?: (_: {
 		item?: T2;
 		input: string;
@@ -43,6 +59,7 @@ export type CompletionsProps<
 	withStyles?: boolean;
 	before?: ReactNode;
 	after?: ReactNode;
+	/** Help for keys outside the verbs, drawn after theirs. */
 	actions?: Action[];
 	/** Draws the keys it takes below it. */
 	help?: boolean;
@@ -61,6 +78,7 @@ export default function Completions<
 	setSelected: setControlledSelected,
 	itemRef,
 	onInput,
+	bindings,
 	active: _active,
 	itemProps,
 	renderItem,
@@ -118,20 +136,61 @@ export default function Completions<
 		[items.length, setSelected],
 	);
 
-	useInput(
-		(input, key) => {
-			if (onInput?.({ item: items[selected], input, key }) === false) {
-				return;
-			}
-			if (key.upArrow) {
-				pick(-1);
-			}
-			if (key.downArrow) {
-				pick(1);
-			}
-		},
-		{ isActive: active },
+	const list = useId();
+	const item = items[selected];
+	const setArmed = useAppStore((state) => state.setArmed);
+	const armed = useAppStore(
+		(state) =>
+			!!item && state.armed?.list === list && state.armed.value === item.value,
 	);
+
+	// An armed row is only ever in a list that has the keys.
+	useEffect(() => {
+		const disarm = () => {
+			if (useAppStore.getState().armed?.list === list) setArmed(null);
+		};
+		if (!active) disarm();
+		return disarm;
+	}, [list, active, setArmed]);
+
+	const perform = (verb: Verb | "cancel", direction?: -1 | 1) => {
+		if (verb === "cancel") return setArmed(null);
+		if (verb === "create") return bindings?.create?.run();
+		if (verb === "refresh") return bindings?.refresh?.run(item);
+		if (!item) return;
+		if (verb === "remove") {
+			if (!armed) return setArmed({ list, value: item.value });
+			setArmed(null);
+			return bindings?.remove?.run(item);
+		}
+		if (verb === "reorder") {
+			if (!direction) return;
+			bindings?.reorder?.run(item, direction);
+			// The cursor follows the row it moved.
+			const next = selected + direction;
+			if (next >= 0 && next < items.length) setSelected(() => next);
+			return;
+		}
+		bindings?.[verb]?.run(item);
+	};
+
+	const dispatch = (input: string, key: Key, pointer?: boolean) => {
+		if (onInput?.({ item, input, key, pointer }) === false) return;
+		const action =
+			bindings &&
+			ListBindingUtils.handle({ bindings, item, input, key, armed });
+		if (action?.type === "arm" || action?.type === "confirm") {
+			return perform("remove");
+		}
+		if (action?.type === "run") return perform(action.verb, action.direction);
+		// Anything but a verb disarms, moving the cursor as it would anyway.
+		if (action?.type === "disarm") setArmed(null);
+		if (key.shift) return;
+		if (key.upArrow) pick(-1);
+		if (key.downArrow) pick(1);
+	};
+
+	useInput((input, key) => dispatch(input, key), { isActive: active });
 
 	const [hovered, setHovered] = useState<number | null>(null);
 	const { mouseRef } = useMouseInput({
@@ -141,13 +200,10 @@ export default function Completions<
 			// the focus, goes through: the first press on a list elsewhere just
 			// focuses it (through its panel) and selects.
 			if (active && selected === index) {
-				onInput?.({
-					item: items[selected],
-					input: "",
-					key: { return: true } as Key,
-					pointer: true,
-				});
+				dispatch("", { return: true } as Key, true);
 			} else {
+				// An armed row is only ever the selected one.
+				if (armed) setArmed(null);
 				setSelected(() => index);
 			}
 		},
@@ -191,7 +247,15 @@ export default function Completions<
 			>
 				{items.map((item, index) => {
 					const rendered =
-						renderItem?.({ item, selected: index === selected }) ?? item.name;
+						armed && index === selected ? (
+							<Text color="redBright">
+								{bindings?.remove?.label?.(item) ??
+									`${bindings?.remove?.name ?? "delete"} "${item.name ?? item.value}"?`}
+							</Text>
+						) : (
+							(renderItem?.({ item, selected: index === selected }) ??
+							item.name)
+						);
 					const groupIndex = groups.findIndex(
 						(group) => group.name === item.group,
 					);
@@ -232,7 +296,24 @@ export default function Completions<
 				)}
 			</ScrollView>
 			{after}
-			{help && <HelpText actions={["choose", ...(actions ?? [])]} />}
+			{help && (
+				<HelpText
+					actions={[
+						"move",
+						...(bindings
+							? ListBindingUtils.help(bindings, item, { armed }).map(
+									({ verb, ...action }) => ({
+										...action,
+										// Shift+↑↓ has no one direction to stand in for.
+										onClick:
+											verb === "reorder" ? undefined : () => perform(verb),
+									}),
+								)
+							: []),
+						...(armed ? [] : (actions ?? [])),
+					]}
+				/>
+			)}
 		</Box>
 	);
 }

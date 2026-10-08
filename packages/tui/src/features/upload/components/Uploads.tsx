@@ -79,11 +79,11 @@ export default function Uploads() {
 				);
 			}}
 			renderEmpty={() => "nothing here yet"}
-			onInput={({ item, key, input }) => {
-				if ((key.return || input === " ") && item) item.attach();
-				if (input === "d" && item) item.remove();
+			bindings={{
+				primary: { name: "attach", run: (item) => item.attach() },
+				remove: { name: "delete", run: (item) => item.remove() },
 			}}
-			actions={[{ key: "d", name: "delete" }, "select", "back"]}
+			actions={["back"]}
 			selectFirstOnChange={false}
 			onReachBottom={fetchOlder}
 		/>

@@ -237,6 +237,33 @@ export const settings = router({
 			});
 		}),
 
+	/** Folders are tried in order, so the first that exists is where a shell starts. */
+	moveFolder: procedure
+		.input(
+			z.object({
+				index: z.number(),
+				to: z.number(),
+				project: ProjectLike.nullish(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			return SettingsService.setSettings({
+				user: ctx.session.user,
+				project: input.project,
+				update: (settings) => {
+					const folders = [...(settings.folders ?? [])];
+					const [folder] = folders.splice(input.index, 1);
+					if (folder)
+						folders.splice(
+							Math.max(0, Math.min(input.to, folders.length)),
+							0,
+							folder,
+						);
+					return { ...settings, folders };
+				},
+			});
+		}),
+
 	removeFolder: procedure
 		.input(
 			z.object({

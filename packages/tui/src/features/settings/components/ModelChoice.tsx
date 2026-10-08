@@ -11,7 +11,10 @@ import Choice, {
 
 type Model = Pick<zConfig, "provider" | "model">;
 
-/** A choice of one model that can do `feature`, picked from the valid providers. */
+/**
+ * A choice of one model that can do `feature`, picked from the valid
+ * providers — or of none, when `onClear` puts it back to the default.
+ */
 export default function ModelChoice({
 	feature,
 	current,
@@ -26,27 +29,42 @@ export default function ModelChoice({
 	const { providers } = useProviders();
 
 	return (
-		<Choice<ChoiceItem & { config: Model }>
-			groups={(providers.data ?? [])
-				.filter(
-					(provider): provider is ProviderState<ModelProviderStatus> =>
-						provider.type === "model" && provider.status.valid,
-				)
-				.map((provider) => ({
-					name: provider.name,
-					items: provider.status.models
-						.filter((model) => model.features.includes(feature))
-						.map((model) => ({
-							name: model.name,
-							value: `${provider.name}/${model.name}`,
-							config: { provider: provider.name, model: model.name },
-							active:
-								current?.provider === provider.name &&
-								current.model === model.name,
-						})),
-				}))}
-			onSelect={({ config }) => onSelect(config)}
-			onClear={onClear}
+		<Choice<ChoiceItem & { config: Model | null }>
+			groups={[
+				...(onClear
+					? [
+							{
+								items: [
+									{
+										name: "(default)",
+										value: "",
+										config: null,
+										active: !current,
+									},
+								],
+							},
+						]
+					: []),
+				...(providers.data ?? [])
+					.filter(
+						(provider): provider is ProviderState<ModelProviderStatus> =>
+							provider.type === "model" && provider.status.valid,
+					)
+					.map((provider) => ({
+						name: provider.name,
+						items: provider.status.models
+							.filter((model) => model.features.includes(feature))
+							.map((model) => ({
+								name: model.name,
+								value: `${provider.name}/${model.name}`,
+								config: { provider: provider.name, model: model.name },
+								active:
+									current?.provider === provider.name &&
+									current.model === model.name,
+							})),
+					})),
+			]}
+			onSelect={({ config }) => (config ? onSelect(config) : onClear?.())}
 		/>
 	);
 }

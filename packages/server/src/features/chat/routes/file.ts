@@ -22,6 +22,11 @@ export const file = router({
 		.query(({ ctx, input }) =>
 			FileService.cwd({ user: ctx.session.user, ...input }),
 		),
+	folders: procedure
+		.input(Filesystem)
+		.query(({ ctx, input }) =>
+			FileService.folders({ user: ctx.session.user, ...input }),
+		),
 	getFile: procedure
 		.input(Filesystem.extend({ path: PathLike }))
 		.output(z.custom<FileState>())

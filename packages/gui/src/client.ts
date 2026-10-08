@@ -146,7 +146,7 @@ export const client = createClient({
 				walk: async ({ path, maxDepth, maxEntries, prune }) => {
 					return await TauriUtils.invoke<{
 						root: string;
-						entries: { path: string; is_dir: boolean }[];
+						entries: { path: string; is_dir: boolean; size?: number }[];
 						truncated: boolean;
 					}>("walk", { path, maxDepth, maxEntries, prune });
 				},

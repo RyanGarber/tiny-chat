@@ -118,6 +118,13 @@ export interface ShellCapability {
 
 	chdir?: (_: { path: string }) => Promise<void>;
 
+	/**
+	 * The user's folders that resolve for this shell, as stored, with the one it
+	 * starts in first. Folders sync across devices, so a folder picked on one
+	 * may not exist on another; those are left out.
+	 */
+	folders?: () => Promise<string[]>;
+
 	/** The shell as it stands in its current directory. */
 	environment?: () => ShellEnvironment;
 
@@ -149,7 +156,7 @@ export interface ShellCapability {
 	 * instead of one `readFile` per file. At most `maxBytes` of each is read;
 	 * `size` is the whole file's. Results line up with `paths`, and a file that
 	 * cannot be read is null rather than failing the rest. What to make of the
-	 * bytes is not this method's job: `FileOperationService.readFiles` falls
+	 * bytes is not this method's job: `FileSearchService.readFiles` falls
 	 * back to `readFile` for shells without it.
 	 */
 	readFiles?: (_: {
@@ -171,6 +178,8 @@ export interface ShellCapability {
 	 * `readDir` for shells without it.
 	 *
 	 * `root` is `path` as the shell resolved it, which every entry sits under.
+	 * A file's `size` is worth reporting wherever it comes with the listing for
+	 * free: a search then never opens a file it would only throw away.
 	 */
 	walk?: (_: {
 		path: string;
@@ -179,7 +188,7 @@ export interface ShellCapability {
 		prune: string[];
 	}) => Promise<{
 		root: string;
-		entries: { path: string; is_dir: boolean }[];
+		entries: { path: string; is_dir: boolean; size?: number }[];
 		truncated: boolean;
 	}>;
 

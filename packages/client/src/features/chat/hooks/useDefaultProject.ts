@@ -4,11 +4,13 @@ import { useChatList } from "#client/features/chat/hooks/useChatList.ts";
 import { ChatService } from "#client/features/chat/services/ChatService.ts";
 import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
 import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
+import { SettingsUtils } from "#core/core/utils/SettingsUtils.ts";
 
 /**
- * Once the project list loads, selects the first project whose primary folder
- * is the directory the runtime was launched in. Does nothing if a chat or
- * project is already selected, and only ever runs once.
+ * Once the project list loads, selects the project with a folder most closely
+ * holding the directory the runtime was launched in. Folders sync across
+ * devices, so any of a project's folders may be this device's copy. Does
+ * nothing if a chat or project is already selected, and only ever runs once.
  */
 export const useDefaultProject = () => {
 	const client = useContext(ClientContext);
@@ -28,11 +30,19 @@ export const useDefaultProject = () => {
 		void cwd().then((cwd) => {
 			if (useChatStore.getState().chatId) return;
 			// Folders are stored as picked; `cwd` is as the shell spells it.
-			const match = list.find((project) => {
-				const path = project.settings?.folders?.[0]?.path;
-				return !!path && (shell.toShellPath?.({ path }) ?? path) === cwd;
-			});
-			if (match) ChatService.newChat(match);
+			let match: { project: (typeof list)[number]; length: number } | null =
+				null;
+			for (const project of list) {
+				for (const { path } of project.settings?.folders ?? []) {
+					const folder = shell.toShellPath?.({ path }) ?? path;
+					if (
+						SettingsUtils.contains({ folder, path: cwd }) &&
+						folder.length > (match?.length ?? -1)
+					)
+						match = { project, length: folder.length };
+				}
+			}
+			if (match) ChatService.newChat(match.project);
 		});
 	}, [client, projects.data]);
 };

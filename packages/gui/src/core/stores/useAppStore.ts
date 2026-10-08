@@ -9,6 +9,8 @@ type ModalType =
 	| "edit-project"
 	| "capabilities"
 	| "uploads"
+	| "memories"
+	| "actions"
 	| "console";
 
 export type UploadsType = "attachment" | "github";

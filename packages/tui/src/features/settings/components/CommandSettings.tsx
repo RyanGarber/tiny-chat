@@ -19,6 +19,13 @@ export default function CommandSettings({
 		useShellSettings({ project });
 	useWorkingStatus(addCommand, updateCommand, removeCommand);
 
+	const toggle = (index: number) =>
+		updateCommand.mutate({
+			project,
+			index,
+			command: { whitelist: !commands[index].whitelist },
+		});
+
 	return (
 		<TextList
 			entries={commands.map(({ command, whitelist }) => ({
@@ -34,24 +41,11 @@ export default function CommandSettings({
 			onEdit={(index, command) =>
 				updateCommand.mutate({ project, index, command: { command } })
 			}
-			onSelect={(index) =>
-				updateCommand.mutate({
-					project,
-					index,
-					command: { whitelist: !commands[index].whitelist },
-				})
-			}
-			onKey={({ index, input }) => {
-				// Enter toggles approval, so the command is written on its own key.
-				if (input !== "e" || index === null) return;
-				setDraft({ index, text: commands[index].command });
-				return true;
-			}}
+			// Enter toggles approval, so the command is written with `e`.
+			onSelect={toggle}
+			selectName="toggle"
+			bindings={{ toggle: { run: toggle } }}
 			onRemove={(index) => removeCommand.mutate({ project, index })}
-			actions={[
-				{ key: "enter", name: "toggle approval" },
-				{ key: "e", name: "edit" },
-			]}
 		/>
 	);
 }

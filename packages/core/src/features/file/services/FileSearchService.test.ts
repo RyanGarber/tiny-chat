@@ -508,4 +508,73 @@ describe("FileSearchService", () => {
 			}),
 		).resolves.toEqual({ reason: "large" });
 	});
+
+	// Where every call to the shell is a slow round trip (a WSL tree read from
+	// Windows), a search has to cost a handful of calls, not one per file.
+	it("reads in bulk and never opens a file the walk says is too large", async () => {
+		const files: Record<string, string> = {
+			"/project/.gitignore": "ignored.ts",
+			"/project/ignored.ts": "needle",
+			"/project/huge.ts": "needle".repeat(200_000),
+		};
+		for (let index = 0; index < 40; index++)
+			files[`/project/src/file${index}.ts`] = index === 7 ? "needle" : "hay";
+
+		const base = createShell(files);
+		const calls = { readFile: 0, readFiles: [] as string[][] };
+		const shell: ShellCapability = {
+			...base,
+			readFile: async (input) => {
+				calls.readFile++;
+				return await base.readFile(input);
+			},
+			readFiles: async ({ paths, maxBytes }) => {
+				calls.readFiles.push(paths);
+				return await Promise.all(
+					paths.map(async (path) => {
+						const { data } = await base.readFile({ path });
+						return { data: data.subarray(0, maxBytes), size: data.length };
+					}),
+				);
+			},
+			walk: async ({ path }) => ({
+				root: path,
+				entries: [
+					{ path: "/project/src", is_dir: true },
+					...Object.entries(files).map(([file, content]) => ({
+						path: file,
+						is_dir: false,
+						size: content.length,
+					})),
+				],
+				truncated: false,
+			}),
+		};
+
+		for (const report of [
+			await FileSearchService.grep({
+				shell,
+				path: "/project",
+				query: "needle",
+			}),
+			await FileSearchService.search({
+				shell,
+				path: "/project",
+				query: "needle",
+			}),
+		]) {
+			expect(report.results.map((result) => result.path)).toEqual([
+				"/project/src/file7.ts",
+			]);
+			expect(report.stats.skipped.large).toBe(1);
+		}
+
+		const read = calls.readFiles.flat();
+		expect(calls.readFile).toBe(0);
+		expect(read).not.toContain("/project/huge.ts");
+		expect(read).not.toContain("/project/ignored.ts");
+		// One read of the `.gitignore`s, then two batches for grep and one for
+		// search.
+		expect(calls.readFiles.length).toBeLessThanOrEqual(6);
+	});
 });

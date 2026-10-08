@@ -1,5 +1,8 @@
+import { type ReactNode, useState } from "react";
 import type { CompletionGroup } from "#client/features/editor/types/completion.ts";
+import HelpText from "#tui/core/components/HelpText.tsx";
 import Text from "#tui/core/components/Text.tsx";
+import type { Bindings } from "#tui/core/utils/ListBindingUtils.ts";
 import Completions from "#tui/features/editor/components/Completions.tsx";
 import type { ChoiceItem } from "#tui/features/settings/components/Choice.tsx";
 import Textarea from "#tui/features/textarea/components/Textarea.tsx";
@@ -22,7 +25,9 @@ interface TextItem extends ChoiceItem {
 
 /**
  * A submenu over a list of texts — instructions, commands, folders, keys —
- * each written in place where it is listed.
+ * each written in place where it is listed: Enter writes one (unless
+ * `onSelect` takes it), `e` always does, `n` writes a new one. A text is
+ * saved by Enter, or a press on its `save` hint, and nothing else.
  *
  * The draft lives with the page so that going back cancels it first.
  */
@@ -34,10 +39,12 @@ export default function TextList({
 	onAdd,
 	onEdit,
 	onRemove,
+	removeName = "remove",
 	onSelect,
-	onKey,
+	selectName,
+	bindings,
 	mask,
-	actions = [],
+	before,
 }: {
 	entries: TextEntry[];
 	draft: Draft | null;
@@ -48,13 +55,20 @@ export default function TextList({
 	onEdit?: (index: number, text: string) => void;
 	/** Left out when its entries cannot be dropped. */
 	onRemove?: (index: number) => void;
-	/** Takes the place of editing on `enter`. */
+	/** `delete` when the entry is gone for good, not just off the list. */
+	removeName?: "delete" | "remove";
+	/** Takes the place of editing on `enter`, `e` still writing the entry. */
 	onSelect?: (index: number) => void;
-	onKey?: (_: { index: number | null; input: string }) => boolean | undefined;
+	/** What `onSelect` does, as the help puts it. */
+	selectName?: string;
+	/** The other verbs an entry answers to, given its index. */
+	bindings?: Pick<Bindings<number>, "toggle" | "reorder" | "refresh" | "edit">;
 	/** Hides all but the end of a text that is not being written. */
 	mask?: boolean;
-	actions?: { key: string; name: string }[];
+	before?: ReactNode;
 }) {
+	const [selected, setSelected] = useState(0);
+
 	const groups: CompletionGroup<TextItem>[] = [
 		{
 			items: [
@@ -72,6 +86,28 @@ export default function TextList({
 			],
 		},
 	];
+
+	const write = (index: number | null) => {
+		setDraft({ index, text: index === null ? "" : entries[index].text });
+		// The draft is written where the cursor is.
+		setSelected(() => (index === null ? entries.length : index));
+	};
+
+	/** An index verb, which the row that adds an entry has none of. */
+	const atIndex = (binding?: {
+		run: (index: number) => void;
+		when?: (index: number) => boolean;
+	}) =>
+		binding && {
+			run: (item: TextItem) => {
+				if (item.index !== null) binding.run(item.index);
+			},
+			when: (item: TextItem) =>
+				item.index !== null && (binding.when?.(item.index) ?? true),
+		};
+
+	const edit = bindings?.edit ?? (onEdit ? { run: write } : undefined);
+	const reorder = bindings?.reorder;
 
 	const commit = (value: string) => {
 		if (!draft) return;
@@ -91,24 +127,49 @@ export default function TextList({
 		<Completions<{ items: TextItem[] }, TextItem>
 			groups={groups}
 			selectFirstOnChange={false}
+			before={before}
 			// The text area wraps to the width it is given; a row sized to its
 			// content would give it only what it already holds.
 			itemProps={{ flexGrow: 1, flexShrink: 1 }}
-			onInput={({ item, key, input }) => {
-				// The text area takes every key while a draft is open.
-				if (draft) return false;
-				if (!item) return;
-				if (key.return) {
-					if (item.index !== null && onSelect) onSelect(item.index);
-					else if (item.index === null || onEdit)
-						setDraft({ index: item.index, text: item.entry?.text ?? "" });
-					return true;
-				}
-				if (input === "d" && item.index !== null && onRemove) {
-					onRemove(item.index);
-					return true;
-				}
-				return onKey?.({ index: item.index, input });
+			selected={selected}
+			setSelected={(update) => setSelected(update)}
+			// The text area takes every key while a draft is open.
+			onInput={() => (draft ? false : undefined)}
+			bindings={{
+				primary: {
+					name: (item) =>
+						item.index === null
+							? "add"
+							: onSelect
+								? (selectName ?? "select")
+								: "edit",
+					run: (item) => {
+						if (item.index === null) write(null);
+						else if (onSelect) onSelect(item.index);
+						else edit?.run(item.index);
+					},
+					when: (item) => item.index === null || !!onSelect || !!edit,
+				},
+				toggle: atIndex(bindings?.toggle),
+				edit: atIndex(edit),
+				create: onAdd && { run: () => write(null) },
+				remove: onRemove && {
+					name: removeName,
+					run: (item) => {
+						if (item.index !== null) onRemove(item.index);
+					},
+					when: (item) => item.index !== null,
+				},
+				reorder: reorder && {
+					run: (item, direction) => {
+						if (item.index !== null) reorder.run(item.index, direction);
+					},
+					when: (item) =>
+						item.index !== null && (reorder.when?.(item.index) ?? true),
+				},
+				refresh: bindings?.refresh && {
+					run: (item) => bindings.refresh?.run(item?.index ?? undefined),
+				},
 			}}
 			renderItem={({ item, selected }) => {
 				const editing = draft?.index === item.index && draft !== null;
@@ -145,12 +206,19 @@ export default function TextList({
 				);
 			}}
 			renderEmpty={() => "nothing here yet"}
-			actions={[
-				...(onSelect ? [] : [{ key: "enter", name: "edit" }]),
-				...(onRemove ? [{ key: "d", name: "remove" }] : []),
-				...actions,
-				"back",
-			]}
+			actions={["back"]}
+			// A list's verbs wait on the draft, which only saves or cancels.
+			help={!draft}
+			after={
+				draft && (
+					<HelpText
+						actions={[
+							{ key: "enter", name: "save", onClick: () => commit(draft.text) },
+							{ key: "esc", name: "cancel", onClick: () => setDraft(null) },
+						]}
+					/>
+				)
+			}
 		/>
 	);
 }

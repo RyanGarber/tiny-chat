@@ -23,6 +23,8 @@ import type {
 	ProviderState,
 	ProviderStatus,
 } from "#core/features/provider/types/provider.ts";
+import SaveButton from "#gui/core/components/SaveButton.tsx";
+import { ControlUtils } from "#gui/core/utils/ControlUtils.ts";
 import { StyleUtils } from "#gui/core/utils/StyleUtils.ts";
 
 function getSummary(provider: ProviderState<ProviderStatus>) {
@@ -39,18 +41,54 @@ function getSummary(provider: ProviderState<ProviderStatus>) {
 	return "Connected";
 }
 
+function ProviderSetting({
+	provider,
+	setting,
+	value,
+}: {
+	provider: string;
+	setting: string;
+	value: string;
+}) {
+	// Its own mutation, so only this setting waits on it.
+	const { setProviderSetting } = useProviderSettings();
+	const [draft, setDraft] = useState(value);
+	const dirty = draft !== value;
+	const saving = setProviderSetting.isPending;
+
+	const save = () => {
+		if (!dirty) return;
+		setProviderSetting.mutate({ provider, key: setting, value: draft });
+	};
+
+	return (
+		<TextInput
+			label={setting}
+			styles={StyleUtils.input}
+			value={draft}
+			onChange={(event) => setDraft(event.target.value)}
+			onKeyDown={ControlUtils.onEnter(save)}
+			rightSection={
+				<SaveButton dirty={dirty} loading={saving} onClick={save} />
+			}
+			disabled={saving}
+			readOnly={saving}
+		/>
+	);
+}
+
 function ProviderCard({
 	provider,
 }: {
 	provider: ProviderState<ProviderStatus>;
 }) {
-	const { providerSettings, setProviderSetting } = useProviderSettings();
+	const { providerSettings } = useProviderSettings();
 	const { updateProviders, isUpdating } = useProviders();
 
 	const [expanded, setExpanded] = useState(false);
 
 	const updating = isUpdating(provider.name);
-	const disabled = setProviderSetting.isPending || updating;
+	const disabled = updating;
 
 	return (
 		<Card withBorder padding={0}>
@@ -110,35 +148,14 @@ function ProviderCard({
 			<Collapse expanded={expanded}>
 				<Stack px="xs" pb="xs" gap="xs">
 					{provider.settings.map((key) => {
-						const saving =
-							setProviderSetting.isPending &&
-							setProviderSetting.variables.provider === provider.name &&
-							setProviderSetting.variables.key === key;
-
+						const value = providerSettings?.[provider.name]?.[key] ?? "";
 						return (
-							<TextInput
-								key={provider.name + key}
-								label={key}
-								styles={StyleUtils.input}
-								defaultValue={providerSettings?.[provider.name]?.[key] ?? ""}
-								onKeyDown={(event) =>
-									event.key === "Enter" &&
-									(event.target as HTMLInputElement).blur()
-								}
-								onBlur={(event) => {
-									if (
-										event.target.value ===
-										(providerSettings?.[provider.name]?.[key] ?? "")
-									)
-										return;
-									setProviderSetting.mutate({
-										provider: provider.name,
-										key,
-										value: event.target.value,
-									});
-								}}
-								disabled={saving}
-								readOnly={saving}
+							// Keyed by its value too, so a saved or loaded value replaces the draft.
+							<ProviderSetting
+								key={`${provider.name}:${key}:${value}`}
+								provider={provider.name}
+								setting={key}
+								value={value}
 							/>
 						);
 					})}

@@ -16,7 +16,8 @@ import Completions from "#tui/features/editor/components/Completions.tsx";
 interface GitHubItem extends CompletionItem {
 	detail?: string;
 	error?: unknown;
-	/** Clones the repository, or attaches the clone once there is one. */
+	/** Whether there is a clone of the default branch to attach. */
+	cloned: boolean;
 	attach: () => Promise<void> | void;
 	clone: () => Promise<void> | void;
 	remove: () => void;
@@ -80,6 +81,7 @@ export default function GitHub() {
 						name: repo.full_name,
 						value: String(repo.id),
 						detail,
+						cloned: !!existing,
 						error: mutating ? cloneGitHubRepository.error : undefined,
 						attach: () => {
 							if (!existing) return;
@@ -130,17 +132,20 @@ export default function GitHub() {
 					? CommonUtils.formatError({ error: repos.error })
 					: "nothing here yet"
 			}
-			onInput={({ item, key, input }) => {
-				if ((key.return || input === " ") && item) item.attach();
-				if (input === "c" && item) item.clone();
-				if (input === "d" && item) item.remove();
+			bindings={{
+				// A repository is cloned before it can be attached.
+				primary: {
+					name: (item) => (item.cloned ? "attach" : "clone"),
+					run: (item) => (item.cloned ? item.attach() : item.clone()),
+				},
+				remove: {
+					name: "delete",
+					run: (item) => item.remove(),
+					when: (item) => item.cloned,
+				},
+				refresh: { run: () => repos.refetch() },
 			}}
-			actions={[
-				{ key: "c", name: "clone" },
-				{ key: "d", name: "delete" },
-				"select",
-				"back",
-			]}
+			actions={["back"]}
 			selectFirstOnChange={false}
 		/>
 	);

@@ -16,9 +16,9 @@ export interface ConfigItem extends CompletionItem {
 	disabled?: boolean;
 	error?: unknown;
 	arg?: zModelArg;
-	/** Run by Enter or Space: toggles a checkbox, or opens a setting's choice. */
+	/** Run by Enter (and Space, for a checkbox): toggles it, or opens a setting's choice. */
 	onSelect?: () => void;
-	/** A page of the item's own settings, opened by `o`. */
+	/** A page of the item's own settings, opened by `e` (or Enter, without `onSelect`). */
 	onOpen?: () => void;
 }
 

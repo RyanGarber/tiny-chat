@@ -21,6 +21,8 @@ type Instance = {
 type Session = {
 	instance?: Instance;
 	cwd: string;
+	/** The chat's folders that resolve on the mount, the one it starts in first. */
+	folders: string[];
 	env?: Record<string, string>;
 	reset: boolean;
 	touched: number;
@@ -43,6 +45,15 @@ export const FileService = {
 		if (!result.stdout)
 			throw new Error(result.stderr || "Cannot read chat working directory");
 		return result.stdout.replace(/\n$/, "");
+	},
+	folders: async ({
+		user,
+		...spec
+	}: { user: zUser } & FilesystemSpec): Promise<string[]> => {
+		if (!spec.chat) return [];
+		// Settles the session first, which is when its folders are resolved.
+		await FileService.exec({ user, ...spec, command: "pwd" });
+		return sessions.get(sessionKey(user.id, spec.chat))?.folders ?? [];
 	},
 	activate: (user: string, chat: string) => {
 		const session = sessions.get(sessionKey(user, chat));
@@ -141,6 +152,7 @@ export const FileService = {
 		if (!session) {
 			session = {
 				cwd: PathUtils.mount,
+				folders: [],
 				reset: true,
 				touched: Date.now(),
 				pending: 0,
@@ -184,19 +196,23 @@ export const FileService = {
 				const { bash } = current.instance;
 				if (current.reset) {
 					current.reset = false;
-					current.cwd = PathUtils.mount;
-					if (
-						folder.cwd &&
-						(folder.cwd === PathUtils.mount ||
-							folder.cwd.startsWith(`${PathUtils.mount}/`))
-					) {
+					// Folders sync across devices; only those on the mount resolve here.
+					const resolved: string[] = [];
+					for (const path of folder.candidates) {
+						if (
+							path !== PathUtils.mount &&
+							!path.startsWith(`${PathUtils.mount}/`)
+						)
+							continue;
 						try {
-							if ((await filesystem.stat(folder.cwd)).isDirectory)
-								current.cwd = folder.cwd;
+							if ((await filesystem.stat(path)).isDirectory)
+								resolved.push(path);
 						} catch {
-							/* Invalid folder paths fall back to /mnt. */
+							/* Missing folders are left out. */
 						}
 					}
+					current.folders = resolved;
+					current.cwd = resolved[0] ?? PathUtils.mount;
 				}
 				try {
 					const result = await bash.exec(command, {

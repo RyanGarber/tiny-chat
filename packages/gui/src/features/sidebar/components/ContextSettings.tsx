@@ -1,6 +1,7 @@
 import {
 	ActionIcon,
 	Box,
+	Group,
 	Slider,
 	Space,
 	Text,
@@ -8,23 +9,89 @@ import {
 	Tooltip,
 } from "@mantine/core";
 import { TrashIcon } from "@phosphor-icons/react";
+import { useState } from "react";
 import { useInstructions } from "#client/features/settings/hooks/useInstructions.ts";
 import type { ProjectLike } from "#core/features/data/types/chat.ts";
+import SaveButton from "#gui/core/components/SaveButton.tsx";
+import { ControlUtils } from "#gui/core/utils/ControlUtils.ts";
 import { StyleUtils } from "#gui/core/utils/StyleUtils.ts";
+
+function Instruction({
+	project,
+	instruction,
+	index,
+}: {
+	project: ProjectLike | null;
+	instruction: string;
+	index: number;
+}) {
+	// Its own mutations, so only this instruction waits on them.
+	const { updateInstruction, removeInstruction } = useInstructions({
+		project,
+	});
+	const [draft, setDraft] = useState(instruction);
+	const dirty = draft.trim() !== instruction;
+	const busy = updateInstruction.isPending || removeInstruction.isPending;
+
+	const save = () => {
+		const next = draft.trim();
+		if (next === instruction) return;
+		if (next) updateInstruction.mutate({ project, index, instruction: next });
+		else removeInstruction.mutate({ project, index });
+	};
+
+	return (
+		<Textarea
+			value={draft}
+			autosize
+			onChange={(e) => setDraft(e.target.value)}
+			onKeyDown={ControlUtils.onEnter(save)}
+			leftSection={
+				<Text c="dimmed" size="xs">
+					{index + 1}
+				</Text>
+			}
+			rightSectionWidth={dirty || updateInstruction.isPending ? 64 : undefined}
+			rightSection={
+				<Group gap={0} wrap="nowrap">
+					<SaveButton
+						dirty={dirty}
+						loading={updateInstruction.isPending}
+						disabled={busy}
+						onClick={save}
+					/>
+					<ActionIcon
+						variant="subtle"
+						aria-label="Remove instruction"
+						onClick={() => removeInstruction.mutate({ project, index })}
+						disabled={busy}
+					>
+						<TrashIcon size={20} />
+					</ActionIcon>
+				</Group>
+			}
+			disabled={busy}
+		/>
+	);
+}
 
 export default function ContextSettings({
 	project,
 }: {
 	project: ProjectLike | null;
 }) {
-	const {
-		instructions,
-		addInstruction,
-		updateInstruction,
-		removeInstruction,
-		memoryBudget,
-		setMemoryBudget,
-	} = useInstructions({ project });
+	const { instructions, addInstruction, memoryBudget, setMemoryBudget } =
+		useInstructions({ project });
+
+	const [draft, setDraft] = useState("");
+	const add = () => {
+		const instruction = draft.trim();
+		if (!instruction) return;
+		addInstruction.mutate(
+			{ project, instruction },
+			{ onSuccess: () => setDraft("") },
+		);
+	};
 
 	return (
 		<>
@@ -35,46 +102,11 @@ export default function ContextSettings({
 				</Text>
 			</Box>
 			{instructions?.map((instruction, index) => (
-				<Textarea
+				<Instruction
 					key={instruction}
-					defaultValue={instruction}
-					autosize
-					onKeyDown={(e) =>
-						e.key === "Enter" && (e.target as HTMLInputElement).blur()
-					}
-					onBlur={(e) => {
-						if (e.target.value === instruction) return;
-						if (e.target.value)
-							updateInstruction.mutate({
-								project,
-								index,
-								instruction: e.target.value,
-							});
-						else removeInstruction.mutate({ project, index });
-					}}
-					leftSection={
-						<Text c="dimmed" size="xs">
-							{index + 1}
-						</Text>
-					}
-					rightSection={
-						<ActionIcon
-							variant="subtle"
-							onClick={() => removeInstruction.mutate({ project, index })}
-							disabled={
-								removeInstruction.isPending &&
-								removeInstruction.variables.index === index
-							}
-						>
-							<TrashIcon size={20} />
-						</ActionIcon>
-					}
-					disabled={
-						(updateInstruction.isPending &&
-							updateInstruction.variables.index === index) ||
-						(removeInstruction.isPending &&
-							removeInstruction.variables.index === index)
-					}
+					project={project}
+					instruction={instruction}
+					index={index}
 				/>
 			))}
 			<Tooltip label="System instructions for models" position="right">
@@ -87,14 +119,17 @@ export default function ContextSettings({
 						...{ input: { paddingTop: 25 } },
 					}}
 					placeholder="Keep responses short."
-					onKeyDown={(e) =>
-						e.key === "Enter" && (e.target as HTMLInputElement).blur()
+					value={draft}
+					onChange={(e) => setDraft(e.target.value)}
+					onKeyDown={ControlUtils.onEnter(add)}
+					rightSection={
+						<SaveButton
+							label="Add instruction"
+							dirty={!!draft.trim()}
+							loading={addInstruction.isPending}
+							onClick={add}
+						/>
 					}
-					onBlur={(e) => {
-						if (!e.target.value) return;
-						addInstruction.mutate({ project, instruction: e.target.value });
-						e.target.value = "";
-					}}
 					disabled={addInstruction.isPending}
 				/>
 			</Tooltip>

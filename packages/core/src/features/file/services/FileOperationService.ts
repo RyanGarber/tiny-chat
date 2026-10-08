@@ -43,7 +43,7 @@ export const FileOperationService = {
 		includeDirectories = false,
 	}: {
 		shell: Pick<ShellCapability, "readDir"> &
-			Partial<Pick<ShellCapability, "readFile" | "walk">>;
+			Partial<Pick<ShellCapability, "readFile" | "readFiles" | "walk">>;
 		path: string;
 		scope?: FileScope;
 		includeDirectories?: boolean;
@@ -61,30 +61,7 @@ export const FileOperationService = {
 	 * {@link ShellCapability.readFiles}, built from `readFile` for shells that
 	 * cannot read in bulk natively.
 	 */
-	readFiles: async ({
-		shell,
-		paths,
-		maxBytes,
-	}: {
-		shell: Pick<ShellCapability, "readFile"> &
-			Partial<Pick<ShellCapability, "readFiles">>;
-		paths: string[];
-		maxBytes: number;
-	}) => {
-		if (!paths.length) return [];
-		if (shell.readFiles) return await shell.readFiles({ paths, maxBytes });
-		return await Promise.all(
-			paths.map((path) =>
-				shell.readFile({ path }).then(
-					({ data }) => ({
-						data: data.subarray(0, maxBytes),
-						size: data.length,
-					}),
-					() => null,
-				),
-			),
-		);
-	},
+	readFiles: FileSearchService.readFiles,
 
 	/**
 	 * Reads a window of a text file. Unbounded reads are the easiest way for an
@@ -192,7 +169,7 @@ export const FileOperationService = {
 		maxResults = 10,
 	}: {
 		shell: Pick<ShellCapability, "readDir"> &
-			Partial<Pick<ShellCapability, "readFile" | "walk">>;
+			Partial<Pick<ShellCapability, "readFile" | "readFiles" | "walk">>;
 		path: string;
 		query: string;
 		scope?: FileScope;
@@ -267,7 +244,8 @@ export const FileOperationService = {
 		include,
 		maxResults = 10,
 	}: {
-		shell: Pick<ShellCapability, "readDir" | "readFile">;
+		shell: Pick<ShellCapability, "readDir" | "readFile"> &
+			Partial<Pick<ShellCapability, "readFiles" | "walk">>;
 		path: string;
 		query: string;
 		include?: string;
@@ -291,7 +269,8 @@ export const FileOperationService = {
 		context,
 		maxResults = 10,
 	}: {
-		shell: Pick<ShellCapability, "readDir" | "readFile">;
+		shell: Pick<ShellCapability, "readDir" | "readFile"> &
+			Partial<Pick<ShellCapability, "readFiles" | "walk">>;
 		path: string;
 		query: string;
 		literal?: boolean;

@@ -191,20 +191,76 @@ export const CommonUtils = {
 			.join(" ");
 	},
 
+	/**
+	 * When a schedule next runs after `after` (its start, when not given), as
+	 * UTC. Its RRule is written in wall-clock time — "9am" is 9am where it was
+	 * scheduled — so it is stepped through in its timezone, across any
+	 * daylight saving change, and only the occurrence is taken to UTC.
+	 */
 	getScheduled: ({
 		rrule,
 		after,
 	}: {
-		rrule: { schedule: string } | string;
+		rrule: { schedule: string; timezone: string };
 		after?: Temporal.PlainDateTime | null;
 	}): Temporal.PlainDateTime | null => {
-		if (typeof rrule === "string") rrule = { schedule: rrule };
-
+		const { timezone } = rrule;
 		const schedule = RRule.fromString(rrule.schedule);
-		const startAt = CommonUtils.toPlainDateTime(schedule.options.dtstart);
-		const searchFrom = after ?? startAt.subtract({ milliseconds: 1 });
-		const nextRunAt = schedule.after(CommonUtils.toDate(searchFrom), false);
-		return CommonUtils.toPlainDateTime(nextRunAt);
+		// RRule keeps wall-clock times as though they were UTC instants.
+		const searchFrom = after
+			? after.toZonedDateTime("UTC").withTimeZone(timezone).toPlainDateTime()
+			: CommonUtils.toPlainDateTime(schedule.options.dtstart).subtract({
+					milliseconds: 1,
+				});
+		const nextRunAt = CommonUtils.toPlainDateTime(
+			schedule.after(CommonUtils.toDate(searchFrom), false),
+		);
+		return (
+			nextRunAt
+				?.toZonedDateTime(timezone, { disambiguation: "compatible" })
+				.withTimeZone("UTC")
+				.toPlainDateTime() ?? null
+		);
+	},
+
+	/**
+	 * A schedule written by hand — an RRule, or words like "every weekday at
+	 * 9am" — as an RRule starting now, or null when it cannot be read. Its
+	 * times, and the start it is given, are wall-clock times in `timezone`, as
+	 * `getScheduled` reads them. Times given to the hour start on it, rather
+	 * than at the minute it was written.
+	 */
+	parseSchedule: ({
+		text,
+		timezone,
+		now = Temporal.Now.plainDateTimeISO(timezone),
+	}: {
+		text: string;
+		timezone: string;
+		now?: Temporal.PlainDateTime;
+	}): string | null => {
+		const value = text.trim();
+		if (!value) return null;
+		try {
+			const parsed = /\bFREQ=/i.test(value)
+				? RRule.fromString(value)
+				: RRule.fromText(value);
+			const { origOptions } = parsed;
+			// Words that aren't a schedule still read as a yearly rule, written as nothing.
+			if (origOptions.freq === undefined) return null;
+			const rule = new RRule({
+				...origOptions,
+				dtstart:
+					origOptions.dtstart ??
+					CommonUtils.toDate(now.round({ smallestUnit: "minute" })),
+				...(origOptions.byhour !== undefined &&
+					origOptions.byminute === undefined && { byminute: 0 }),
+				...(origOptions.bysecond === undefined && { bysecond: 0 }),
+			});
+			return rule.toString();
+		} catch {
+			return null;
+		}
 	},
 
 	/** An RRule in words, or as written when it cannot be read. */

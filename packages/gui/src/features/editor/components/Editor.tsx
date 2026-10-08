@@ -15,6 +15,8 @@ import LeftSection from "#gui/features/editor/components/LeftSection.tsx";
 import RightSection from "#gui/features/editor/components/RightSection.tsx";
 import { useEditor } from "#gui/features/editor/hooks/useEditor.tsx";
 import Uploads from "#gui/features/upload/components/Uploads.tsx";
+import Actions from "#gui/features/user/components/Actions.tsx";
+import Memories from "#gui/features/user/components/Memories.tsx";
 
 export default function Editor({
 	width,
@@ -169,6 +171,8 @@ export default function Editor({
 			</InputWrapper>
 			<Uploads />
 			<Capabilities />
+			<Memories />
+			<Actions />
 		</>
 	);
 }

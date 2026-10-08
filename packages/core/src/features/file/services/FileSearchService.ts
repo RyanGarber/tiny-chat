@@ -52,6 +52,23 @@ const MAX_SCANNED_FILES = 4_000;
 /** Files read at once. Enough to hide latency, few enough to stay polite. */
 const CONCURRENCY = 16;
 
+/**
+ * Files one bulk read asks for at most. Each bulk read is a single round trip
+ * to the shell, which matters most where a round trip is slow (a WSL tree read
+ * from Windows), so batches are as large as memory comfortably allows.
+ */
+const READ_BATCH_FILES = 256;
+
+/** Bytes one bulk read should return at most, judged by the walk's sizes. */
+const READ_BATCH_BYTES = 8_000_000;
+
+/**
+ * Files in a grep's first bulk read. A grep stops once its results are full,
+ * so it starts small and doubles, rather than reading hundreds of files to
+ * report a match found in the first few.
+ */
+const GREP_FIRST_BATCH = 32;
+
 /** Characters of snippet a single result may contribute. */
 const MAX_RESULT_CHARS = 600;
 
@@ -93,6 +110,8 @@ export interface FileSearchReport {
 interface WalkEntry {
 	path: string;
 	is_dir: boolean;
+	/** Bytes in a file, when the shell's walk reports it. */
+	size?: number;
 	/**
 	 * Set on a directory that was listed but not descended into, with the kind
 	 * of directory it is. Nothing disappears from a tree without saying so.
@@ -142,7 +161,7 @@ const walkDirectories = async ({
 	prune: string[];
 }): Promise<{
 	root: string;
-	entries: { path: string; is_dir: boolean }[];
+	entries: { path: string; is_dir: boolean; size?: number }[];
 	truncated: boolean;
 }> => {
 	const pruned = new Set(prune);
@@ -207,6 +226,49 @@ const mapPool = async <T, R>(
 
 	return results;
 };
+
+/**
+ * `files` split into bulk reads: at most `first` files in the first, doubling
+ * up to {@link READ_BATCH_FILES}, and none expected to pass
+ * {@link READ_BATCH_BYTES}.
+ */
+const getBatches = <T extends { size?: number }>(
+	files: T[],
+	first = READ_BATCH_FILES,
+): T[][] => {
+	const batches: T[][] = [];
+	let batch: T[] = [];
+	let bytes = 0;
+	let limit = first;
+
+	for (const file of files) {
+		const size = file.size ?? 0;
+		if (
+			batch.length &&
+			(batch.length >= limit || bytes + size > READ_BATCH_BYTES)
+		) {
+			batches.push(batch);
+			batch = [];
+			bytes = 0;
+			limit = Math.min(READ_BATCH_FILES, limit * 2);
+		}
+		batch.push(file);
+		bytes += size;
+	}
+	if (batch.length) batches.push(batch);
+
+	return batches;
+};
+
+/**
+ * Bytes past which a file is not worth reading for a search. Documents are
+ * compressed, so the budget that bounds a text file says nothing useful about
+ * how much prose is inside one.
+ */
+const getMaxBytes = (path: string) =>
+	FileExtractionService.canExtract({ path })
+		? FileExtractionService.maxBytes
+		: FileExcludeUtils.maxFileBytes;
 
 const getEmptyStats = (): FileSearchStats => ({
 	found: 0,
@@ -290,7 +352,7 @@ export const FileSearchService = {
 		maxDepth = MAX_WALK_DEPTH,
 	}: {
 		shell: Pick<ShellCapability, "readDir"> &
-			Partial<Pick<ShellCapability, "readFile" | "walk">>;
+			Partial<Pick<ShellCapability, "readFile" | "readFiles" | "walk">>;
 		path: string;
 		scope?: FileScope;
 		includeDirectories?: boolean;
@@ -321,17 +383,22 @@ export const FileSearchService = {
 		// Every `.gitignore` the listing turned up, by the directory it governs.
 		const rules = new Map<string, IgnoreRule[]>();
 		if (gitignore && shell.readFile) {
-			const readFile = shell.readFile;
 			const files = walked.entries.filter(
 				(entry) => !entry.is_dir && getName(entry.path) === ".gitignore",
 			);
-			await mapPool(files, async (file) => {
-				const directory = getParent(file.path);
-				const found = await FileSearchService.getIgnoreRules({
-					shell: { readFile },
-					path: directory,
+			// All of them in one read, however many nested projects there are.
+			const read = await FileSearchService.readFiles({
+				shell: { readFile: shell.readFile, readFiles: shell.readFiles },
+				paths: files.map((file) => file.path),
+				maxBytes: FileExcludeUtils.maxFileBytes,
+			});
+			files.forEach((file, index) => {
+				const data = read[index]?.data;
+				if (!data) return;
+				const found = FileMatchUtils.getRules({
+					content: new TextDecoder().decode(data),
 				});
-				if (found.length) rules.set(directory, found);
+				if (found.length) rules.set(getParent(file.path), found);
 			});
 		}
 
@@ -410,69 +477,135 @@ export const FileSearchService = {
 				);
 			}
 			if (!entry.is_dir || includeDirectories)
-				entries.push({ path: entry.path, is_dir: entry.is_dir });
+				entries.push({
+					path: entry.path,
+					is_dir: entry.is_dir,
+					...(entry.size === undefined ? {} : { size: entry.size }),
+				});
 		}
 
 		return { root: walked.root, entries, truncated, skipped };
 	},
 
-	/** Reads and parses `<path>/.gitignore`, if there is one. */
-	getIgnoreRules: async ({
+	/**
+	 * {@link ShellCapability.readFiles}, built from `readFile` for shells that
+	 * cannot read in bulk natively.
+	 */
+	readFiles: async ({
 		shell,
-		path,
+		paths,
+		maxBytes,
 	}: {
-		shell: Pick<ShellCapability, "readFile">;
-		path: string;
-	}): Promise<IgnoreRule[]> => {
-		try {
-			const file = await shell.readFile({
-				path: `${path.replace(/[\\/]+$/, "")}/.gitignore`,
-			});
-			const content = new TextDecoder().decode(file.data);
-			return FileMatchUtils.getRules({ content });
-		} catch {
-			return [];
-		}
+		shell: Pick<ShellCapability, "readFile"> &
+			Partial<Pick<ShellCapability, "readFiles">>;
+		paths: string[];
+		maxBytes: number;
+	}): Promise<({ data: Uint8Array; size: number } | null)[]> => {
+		if (!paths.length) return [];
+		if (shell.readFiles) return await shell.readFiles({ paths, maxBytes });
+		return await mapPool(paths, (path) =>
+			shell.readFile({ path }).then(
+				({ data }) => ({ data: data.subarray(0, maxBytes), size: data.length }),
+				() => null,
+			),
+		);
 	},
 
 	/**
 	 * Reads a file and decides whether its contents may be searched. Returns the
 	 * text, or the reason the file was passed over.
-	 *
-	 * A PDF, a Word document or a spreadsheet is unpacked here rather than
-	 * turned away as binary. Someone who attaches a contract and asks which
-	 * clause covers termination is asking about words that are in the file, and
-	 * the only thing standing between the search and them is a container.
 	 */
 	readSearchable: async ({
 		shell,
 		path,
 		root,
 	}: {
-		shell: Pick<ShellCapability, "readFile">;
+		shell: Pick<ShellCapability, "readFile"> &
+			Partial<Pick<ShellCapability, "readFiles">>;
 		path: string;
 		root?: string;
 	}): Promise<{ reason: FileSkipReason | null; text?: string }> => {
-		let data: Uint8Array;
-		try {
-			({ data } = await shell.readFile({ path }));
-		} catch {
-			return { reason: "unreadable" };
-		}
+		const [file] = await FileSearchService.readSearchables({
+			shell,
+			files: [{ path }],
+			root,
+		});
+		return file;
+	},
 
-		if (FileExtractionService.canExtract({ path })) {
-			const excluded = FileExcludeUtils.getExcluded({ path, root });
-			if (excluded) return { reason: excluded };
-			// Documents are compressed, so the byte budget that bounds a text
-			// file says nothing useful about how much prose is inside one.
-			if (data.length > FileExtractionService.maxBytes)
-				return { reason: "large" };
+	/**
+	 * {@link readSearchable} for many files at once, in as few round trips to
+	 * the shell as it takes. A file is never read further than it would take to
+	 * tell that it is too large, and one whose size the walk already reported
+	 * as too large, or whose name rules it out, is not opened at all.
+	 *
+	 * A PDF, a Word document or a spreadsheet is unpacked here rather than
+	 * turned away as binary. Someone who attaches a contract and asks which
+	 * clause covers termination is asking about words that are in the file, and
+	 * the only thing standing between the search and them is a container.
+	 */
+	readSearchables: async ({
+		shell,
+		files,
+		root,
+	}: {
+		shell: Pick<ShellCapability, "readFile"> &
+			Partial<Pick<ShellCapability, "readFiles">>;
+		files: { path: string; size?: number }[];
+		root?: string;
+	}): Promise<{ reason: FileSkipReason | null; text?: string }[]> => {
+		const results: { reason: FileSkipReason | null; text?: string }[] =
+			new Array(files.length);
 
-			const text = await FileExtractionService.extract({ data, path });
-			return text === null ? { reason: "unreadable" } : { reason: null, text };
-		}
+		// Text files and documents are capped differently, so each kind is one
+		// bulk read of its own.
+		const groups = new Map<number, number[]>();
+		files.forEach((file, index) => {
+			const excluded = FileExcludeUtils.getExcluded({ path: file.path, root });
+			const maxBytes = getMaxBytes(file.path);
+			if (excluded) results[index] = { reason: excluded };
+			else if ((file.size ?? 0) > maxBytes)
+				results[index] = { reason: "large" };
+			else groups.set(maxBytes, [...(groups.get(maxBytes) ?? []), index]);
+		});
 
-		return FileExcludeUtils.getSkipReason({ path, root, data });
+		await Promise.all(
+			[...groups].map(async ([maxBytes, indexes]) => {
+				// One byte past the cap, so an oversized file still reads as one
+				// from shells that do not report a size.
+				const read = await FileSearchService.readFiles({
+					shell,
+					paths: indexes.map((index) => files[index].path),
+					maxBytes: maxBytes + 1,
+				});
+
+				await Promise.all(
+					indexes.map(async (index, position) => {
+						const { path } = files[index];
+						const file = read[position];
+						if (!file) results[index] = { reason: "unreadable" };
+						else if (file.size > maxBytes) results[index] = { reason: "large" };
+						else if (FileExtractionService.canExtract({ path })) {
+							const text = await FileExtractionService.extract({
+								data: file.data,
+								path,
+							});
+							results[index] =
+								text === null
+									? { reason: "unreadable" }
+									: { reason: null, text };
+						} else
+							results[index] = FileExcludeUtils.getSkipReason({
+								path,
+								root,
+								data: file.data,
+							});
+					}),
+				);
+			}),
+		);
+
+		return results;
 	},
 
 	/**
@@ -491,7 +624,8 @@ export const FileSearchService = {
 		maxResults = 10,
 		maxMatchesPerFile = 5,
 	}: {
-		shell: Pick<ShellCapability, "readDir" | "readFile">;
+		shell: Pick<ShellCapability, "readDir" | "readFile"> &
+			Partial<Pick<ShellCapability, "readFiles" | "walk">>;
 		path: string;
 		query: string;
 		literal?: boolean;
@@ -528,23 +662,19 @@ export const FileSearchService = {
 
 		// Scanning stops once the reported set is full: counting every match in a
 		// repository costs far more than it tells the reader.
-		for (let index = 0; index < candidates.length; index += CONCURRENCY) {
+		for (const batch of getBatches(candidates, GREP_FIRST_BATCH)) {
 			if (results.length >= maxResults) {
-				stats.truncated = stats.truncated || index < candidates.length;
+				stats.truncated = true;
 				break;
 			}
 
-			const batch = candidates.slice(index, index + CONCURRENCY);
-			const read = await mapPool(batch, async (candidate) => ({
-				path: candidate,
-				...(await FileSearchService.readSearchable({
-					shell,
-					path: candidate,
-					root: path,
-				})),
-			}));
+			const read = await FileSearchService.readSearchables({
+				shell,
+				files: batch,
+				root: path,
+			});
 
-			for (const file of read) {
+			for (const [index, file] of read.entries()) {
 				if (file.reason || file.text === undefined) {
 					stats.skipped[file.reason ?? "unreadable"] =
 						(stats.skipped[file.reason ?? "unreadable"] ?? 0) + 1;
@@ -586,7 +716,7 @@ export const FileSearchService = {
 					),
 				});
 				characters += snippet.length;
-				results.push({ path: file.path, snippet, matches: hits });
+				results.push({ path: batch[index].path, snippet, matches: hits });
 			}
 		}
 
@@ -619,7 +749,8 @@ export const FileSearchService = {
 		include,
 		maxResults = 10,
 	}: {
-		shell: Pick<ShellCapability, "readDir" | "readFile">;
+		shell: Pick<ShellCapability, "readDir" | "readFile"> &
+			Partial<Pick<ShellCapability, "readFiles" | "walk">>;
 		path: string;
 		query: string;
 		include?: string;
@@ -635,23 +766,35 @@ export const FileSearchService = {
 
 		const terms = SnippetService.getTerms({ query });
 
-		const documents = await mapPool(candidates, async (candidate) => {
-			const relative = getRelative({ base: path, path: candidate });
-			const file = await FileSearchService.readSearchable({
-				shell,
-				path: candidate,
-				root: path,
-			});
-			return {
-				path: candidate,
-				text: file.text,
-				reason: file.reason,
-				name: SnippetService.getCounts({ text: relative, terms }),
-				body: file.text
-					? SnippetService.getCounts({ text: file.text, terms })
-					: new Map(),
-			};
-		});
+		// Two bulk reads in flight, so one is crossing to the shell while the
+		// other is being counted.
+		const batches = await mapPool(
+			getBatches(candidates),
+			async (batch) => {
+				const read = await FileSearchService.readSearchables({
+					shell,
+					files: batch,
+					root: path,
+				});
+				return batch.map((candidate, index) => {
+					const file = read[index];
+					return {
+						path: candidate.path,
+						text: file.text,
+						reason: file.reason,
+						name: SnippetService.getCounts({
+							text: getRelative({ base: path, path: candidate.path }),
+							terms,
+						}),
+						body: file.text
+							? SnippetService.getCounts({ text: file.text, terms })
+							: new Map(),
+					};
+				});
+			},
+			2,
+		);
+		const documents = batches.flat();
 
 		// How many files contain each term at all — the corpus statistic that
 		// separates a distinctive word from a ubiquitous one.
@@ -796,7 +939,8 @@ export const FileSearchService = {
 		scope = "listing",
 		maxResults = 100,
 	}: {
-		shell: Pick<ShellCapability, "readDir" | "readFile">;
+		shell: Pick<ShellCapability, "readDir" | "readFile"> &
+			Partial<Pick<ShellCapability, "readFiles" | "walk">>;
 		path: string;
 		pattern: string;
 		scope?: FileScope;
@@ -835,11 +979,15 @@ export const FileSearchService = {
 		include,
 		maxFiles = MAX_SCANNED_FILES,
 	}: {
-		shell: Pick<ShellCapability, "readDir" | "readFile">;
+		shell: Pick<ShellCapability, "readDir" | "readFile"> &
+			Partial<Pick<ShellCapability, "readFiles" | "walk">>;
 		path: string;
 		include?: string;
 		maxFiles?: number;
-	}): Promise<{ candidates: string[]; stats: FileSearchStats }> => {
+	}): Promise<{
+		candidates: { path: string; size?: number }[];
+		stats: FileSearchStats;
+	}> => {
 		const stats = getEmptyStats();
 		const { entries, truncated, skipped } = await FileSearchService.walk({
 			shell,
@@ -851,18 +999,26 @@ export const FileSearchService = {
 		// would claim full coverage of a directory it barely looked at.
 		stats.skipped = { ...skipped };
 
-		let candidates = entries.map((entry) => entry.path);
+		let candidates = entries.map(({ path, size }) => ({ path, size }));
 
 		if (include) {
 			candidates = candidates.filter((candidate) =>
 				FileMatchUtils.matches({
 					pattern: include,
-					path: getRelative({ base: path, path: candidate }),
+					path: getRelative({ base: path, path: candidate.path }),
 				}),
 			);
 		}
 
 		stats.found = candidates.length;
+
+		// Files the walk already knows are too large are counted, not read, and
+		// leave the scanning budget to files that can be searched.
+		candidates = candidates.filter((candidate) => {
+			if ((candidate.size ?? 0) <= getMaxBytes(candidate.path)) return true;
+			stats.skipped.large = (stats.skipped.large ?? 0) + 1;
+			return false;
+		});
 
 		if (candidates.length > maxFiles) {
 			candidates = candidates.slice(0, maxFiles);

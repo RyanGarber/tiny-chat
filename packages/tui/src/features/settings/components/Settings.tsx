@@ -1,4 +1,3 @@
-import chalk from "chalk";
 import { useContext, useMemo, useState } from "react";
 import { ClientContext } from "#client/client.ts";
 import { useProviders } from "#client/features/agent/hooks/useProviders.ts";
@@ -23,11 +22,13 @@ import type {
 import Text from "#tui/core/components/Text.tsx";
 import { usePage } from "#tui/core/hooks/usePage.ts";
 import { useWorkingStatus } from "#tui/core/hooks/useWorkingStatus.ts";
-import Completions from "#tui/features/editor/components/Completions.tsx";
 import Choice, {
 	type ChoiceItem,
 } from "#tui/features/settings/components/Choice.tsx";
 import CommandSettings from "#tui/features/settings/components/CommandSettings.tsx";
+import Details, {
+	type DetailsItem,
+} from "#tui/features/settings/components/Details.tsx";
 import FolderSettings from "#tui/features/settings/components/FolderSettings.tsx";
 import InstructionSettings from "#tui/features/settings/components/InstructionSettings.tsx";
 import MemoryBudgetSettings from "#tui/features/settings/components/MemoryBudgetSettings.tsx";
@@ -39,13 +40,6 @@ import TextList, {
 export const _debug = false;
 
 type Feature = Exclude<zModelFeature, "language:tools">;
-
-interface RootItem {
-	name: string;
-	value: string;
-	state?: string;
-	route: string;
-}
 
 const onOff = (value: boolean) => (value ? "on" : "off");
 
@@ -138,8 +132,8 @@ export default function Settings() {
 
 	const [selected, setSelected] = useState(0);
 
-	const root = useMemo<CompletionGroup<RootItem>[]>(() => {
-		const groups: CompletionGroup<RootItem>[] = [
+	const root = useMemo<CompletionGroup<DetailsItem>[]>(() => {
+		const groups: CompletionGroup<DetailsItem>[] = [
 			{
 				name: "appearance",
 				items: [
@@ -336,6 +330,20 @@ export default function Settings() {
 		const hidden = hiddenModels?.[feature] ?? [];
 		const isHidden = (provider: string, model: string) =>
 			hidden.some((h) => h.provider === provider && h.model === model);
+		const toggle = ({
+			config,
+		}: {
+			config: Pick<zConfig, "provider" | "model">;
+		}) =>
+			setHiddenModels.mutate({
+				feature,
+				models: isHidden(config.provider, config.model)
+					? hidden.filter(
+							(h) =>
+								!(h.provider === config.provider && h.model === config.model),
+						)
+					: [...hidden, zConfig.parse(config)],
+			});
 		return (
 			<Choice<ChoiceItem & { config: Pick<zConfig, "provider" | "model"> }>
 				groups={[...modelProviders]
@@ -354,26 +362,15 @@ export default function Settings() {
 							})),
 					}))
 					.filter((group) => group.items.length)}
-				onSelect={({ config }) =>
-					setHiddenModels.mutate({
-						feature,
-						models: isHidden(config.provider, config.model)
-							? hidden.filter(
-									(h) =>
-										!(
-											h.provider === config.provider && h.model === config.model
-										),
-								)
-							: [...hidden, zConfig.parse(config)],
-					})
-				}
+				onSelect={toggle}
+				selectName="toggle"
+				bindings={{ toggle: { run: toggle } }}
 				renderItem={(item) => (
 					<>
 						<Text>{item.name}</Text>
 						<Text>{item.active ? "hidden" : "shown"}</Text>
 					</>
 				)}
-				actions={[]}
 			/>
 		);
 	};
@@ -496,18 +493,14 @@ export default function Settings() {
 					}))
 					.filter((group) => group.items.length)}
 				onSelect={({ provider }) => push(`keys:${provider}`)}
-				onKey={({ input }) => {
-					if (input !== "r") return;
-					updateProviders.mutate({});
-					return true;
-				}}
+				selectName="open"
+				bindings={{ refresh: { run: () => updateProviders.mutate({}) } }}
 				renderItem={(item) => (
 					<>
 						<Text>{item.name}</Text>
 						<Text color="textSubtle">{item.detail}</Text>
 					</>
 				)}
-				actions={[{ key: "r", name: "check all" }]}
 			/>
 		);
 	}
@@ -532,41 +525,21 @@ export default function Settings() {
 						value,
 					})
 				}
-				onKey={({ input }) => {
-					if (input !== "r") return;
-					updateProviders.mutate({ providers: [name] });
-					return true;
+				bindings={{
+					refresh: {
+						run: () => updateProviders.mutate({ providers: [name] }),
+					},
 				}}
-				actions={[{ key: "r", name: "check" }]}
 			/>
 		);
 	}
 
 	return (
-		<Completions<CompletionGroup<RootItem>, RootItem>
+		<Details
 			groups={root}
 			selected={selected}
 			setSelected={setSelected}
-			selectFirstOnChange={false}
-			itemProps={{
-				flexGrow: 1,
-				flexShrink: 1,
-				maxWidth: 50,
-				justifyContent: "space-between",
-			}}
-			onInput={({ item, key }) => {
-				if (item && key.return) {
-					push(item.route);
-					return true;
-				}
-			}}
-			renderItem={({ item }) => (
-				<>
-					<Text>{item.name}</Text>
-					<Text color="text">{item.state ?? chalk.dim("(none)")}</Text>
-				</>
-			)}
-			actions={[{ key: "enter", name: "open" }, "back"]}
+			onOpen={push}
 		/>
 	);
 }

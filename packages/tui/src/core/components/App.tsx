@@ -31,6 +31,8 @@ import Settings from "#tui/features/settings/components/Settings.tsx";
 import { useUpdate } from "#tui/features/update/hooks/useUpdate.ts";
 import GitHub from "#tui/features/upload/components/GitHub.tsx";
 import Uploads from "#tui/features/upload/components/Uploads.tsx";
+import Actions from "#tui/features/user/components/Actions.tsx";
+import Memories from "#tui/features/user/components/Memories.tsx";
 
 /** Columns from which the chat list and files open beside the chat rather than below it. */
 const SIDEBAR_COLUMNS = 120;
@@ -170,6 +172,8 @@ export default function App() {
 							{page === "projects" && <ProjectList />}
 							{page === "uploads" && <Uploads />}
 							{page === "github" && <GitHub />}
+							{page === "memories" && <Memories />}
+							{page === "actions" && <Actions />}
 							{page === "settings" && <Settings />}
 							{page === "config" && <ChatConfig />}
 							{page === "chat" && <ChatEffects />}

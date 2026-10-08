@@ -1,7 +1,21 @@
+import type { KeyboardEvent } from "react";
 import { FileTypeUtils } from "#core/features/file/utils/FileTypeUtils.ts";
 import { FileUtils } from "#core/features/file/utils/FileUtils.ts";
 
 export const ControlUtils = {
+	/**
+	 * Saves a single-field editor on Enter. Shift+Enter still breaks a line in
+	 * a textarea, and Enter that closes an IME composition is left alone.
+	 */
+	onEnter:
+		(save: () => void) =>
+		(event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+			if (event.key !== "Enter" || event.shiftKey) return;
+			if (event.nativeEvent.isComposing) return;
+			event.preventDefault();
+			save();
+		},
+
 	preprocess: ({ data, mime }: { data: string | Blob; mime: string }) => {
 		// Prepend UTF-8 BOM for CSV so Excel on Windows correctly detects the encoding.
 		// Without it, Excel falls back to the system ANSI codepage and corrupts non-ASCII text.

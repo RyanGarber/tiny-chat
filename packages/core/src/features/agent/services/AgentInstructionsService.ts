@@ -113,23 +113,30 @@ ${citeExamples.map((r) => `- ${r}`).join("\n")}`;
 <project title="${context.chat.project.title}" />`;
 			}
 
-			if (
+			const shell = capabilities.shell;
+			// Only folders that exist here: the rest belong to other devices.
+			const resolved =
 				settings.folders.length &&
 				enabledToolsets.some((toolset) => toolset.name === "shell")
-			) {
-				const primary = SettingsUtils.primaryFolder(
-					context.user,
-					context.chat?.project,
-				);
-				const shell = capabilities.shell;
-				const folders = settings.folders.map((folder) => ({
-					...folder,
-					project: context.chat?.project?.settings?.folders?.find(
-						(other) => other.path === folder.path,
-					),
-					// As the shell spells it, which is how the model will see it.
-					local: shell?.toShellPath?.({ path: folder.path }) ?? folder.path,
-				}));
+					? ((await shell?.folders?.().catch(() => null)) ?? [])
+					: [];
+
+			if (resolved.length) {
+				const primary = resolved[0];
+				const folders = settings.folders
+					.filter(
+						(folder, index, all) =>
+							resolved.includes(folder.path) &&
+							all.findIndex((other) => other.path === folder.path) === index,
+					)
+					.map((folder) => ({
+						...folder,
+						project: context.chat?.project?.settings?.folders?.find(
+							(other) => other.path === folder.path,
+						),
+						// As the shell spells it, which is how the model will see it.
+						local: shell?.toShellPath?.({ path: folder.path }) ?? folder.path,
+					}));
 
 				instructions += `\n
 The user works in these folders. A primary project folder is where the shell starts.

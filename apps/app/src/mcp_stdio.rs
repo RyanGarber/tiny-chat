@@ -15,14 +15,18 @@ pub async fn mcp_start_stdio(
 ) -> Result<(), crate::Error> {
     let executable = command.first().unwrap();
 
-    let mut client = tokio::process::Command::new(executable)
+    let mut builder = tokio::process::Command::new(executable);
+    builder
         .args(command.iter().skip(1))
         .envs(crate::env::shell_env().await)
         .envs(env)
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .spawn()?;
+        .stderr(std::process::Stdio::piped());
+    // Piped stdio does not prevent Windows from opening a console for the server.
+    #[cfg(windows)]
+    builder.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+    let mut client = builder.spawn()?;
 
     let stdin = client.stdin.take().unwrap();
     let stdout = client.stdout.take().unwrap();

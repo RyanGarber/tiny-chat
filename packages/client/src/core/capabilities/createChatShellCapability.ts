@@ -14,6 +14,10 @@ export const createChatShellCapability: CapabilityFactory<
 			await client.workingDirectory.ready();
 			return await client.api.file.cwd.query(spec);
 		},
+		folders: async () => {
+			await client.workingDirectory.ready();
+			return await client.api.file.folders.query(spec);
+		},
 		nodes: async () => {
 			return await client.api.file.getFiles.query(spec);
 		},

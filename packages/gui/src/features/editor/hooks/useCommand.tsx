@@ -275,6 +275,8 @@ export const useCommand = () => {
 		onOpenProjects: () => AppService.openSidebar(),
 		onOpenTools: () => AppService.openCapabilities("tools:native"),
 		onOpenSkills: () => AppService.openCapabilities("skills:native"),
+		onOpenMemories: () => AppService.openMemories(),
+		onOpenActions: () => AppService.openActions(),
 	});
 
 	return useMemo(

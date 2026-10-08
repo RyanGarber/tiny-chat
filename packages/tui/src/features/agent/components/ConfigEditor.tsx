@@ -406,25 +406,44 @@ export default function ConfigEditor({
 			}
 			renderItem={({ item }) => <ConfigItemText item={item} />}
 			renderEmpty={() => "nothing here yet"}
-			onInput={({ item, key, input }) => {
-				if (!item) return;
-				if ((key.return || input === " ") && !item.disabled) {
-					item.onSelect?.();
-					return true;
-				}
-				if (input === "o" && item.onOpen) {
-					item.onOpen();
-					return true;
-				}
-				if (input === "a" && config) {
-					addMcpServer();
-					return true;
-				}
-				if (input === "r" && config) {
-					refresh();
-					return true;
-				}
-				const arg = item.arg;
+			bindings={{
+				primary: {
+					name: (item) =>
+						!item.onSelect
+							? "open"
+							: item.enabled === undefined
+								? "change"
+								: "toggle",
+					run: (item) => (item.onSelect ?? item.onOpen)?.(),
+					when: (item) => (item.onSelect ? !item.disabled : !!item.onOpen),
+				},
+				toggle: {
+					run: (item) => item.onSelect?.(),
+					when: (item) =>
+						item.enabled !== undefined && !!item.onSelect && !item.disabled,
+				},
+				edit: {
+					run: (item) => item.onOpen?.(),
+					when: (item) => !!item.onOpen && !!item.onSelect,
+				},
+				create: config
+					? { name: "new mcp server", run: addMcpServer }
+					: undefined,
+				// Only a server of the user's own can be taken off the list.
+				remove: {
+					name: "remove",
+					run: (item) => {
+						const name = item.value.slice("mcp:".length);
+						const { [name]: _, ...servers } = mcpServers;
+						updateMcpServers(servers);
+					},
+					when: (item) => item.value.startsWith("mcp:"),
+				},
+				refresh: config ? { run: refresh } : undefined,
+			}}
+			// A range is adjusted where it is listed, outside the verbs.
+			onInput={({ item, key }) => {
+				const arg = item?.arg;
 				if (arg?.type === "range" && (key.leftArrow || key.rightArrow)) {
 					const step = (arg.max - arg.min) / 50;
 					const value = Number(args[arg.name] ?? arg.default);
@@ -437,15 +456,7 @@ export default function ConfigEditor({
 				}
 			}}
 			actions={[
-				{
-					key: "enter",
-					name: item?.enabled === undefined ? "change" : "toggle",
-					when: !!item?.onSelect && !item.disabled,
-				},
-				{ key: "o", name: "open", when: !!item?.onOpen },
 				{ key: "←→", name: "adjust", when: item?.arg?.type === "range" },
-				{ key: "a", name: "add mcp server", when: !!config },
-				{ key: "r", name: "refresh", when: !!config },
 				"back",
 			]}
 		/>

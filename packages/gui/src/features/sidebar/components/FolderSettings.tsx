@@ -1,5 +1,6 @@
 import {
 	ActionIcon,
+	Badge,
 	Box,
 	Button,
 	Checkbox,
@@ -9,7 +10,7 @@ import {
 	Text,
 	Tooltip,
 } from "@mantine/core";
-import { FolderPlusIcon, TrashIcon } from "@phosphor-icons/react";
+import { ArrowUpIcon, FolderPlusIcon, TrashIcon } from "@phosphor-icons/react";
 import { useContext } from "react";
 import { ClientContext } from "#client/client.ts";
 import { useShellSettings } from "#client/features/settings/hooks/useShellSettings.ts";
@@ -22,8 +23,15 @@ export default function FolderSettings({
 }) {
 	const client = useContext(ClientContext);
 
-	const { folders, folderStatus, addFolder, removeFolder, updateFolder } =
-		useShellSettings({ project });
+	const {
+		folders,
+		folderStatus,
+		primaryFolder,
+		addFolder,
+		removeFolder,
+		updateFolder,
+		moveFolder,
+	} = useShellSettings({ project });
 
 	const pickFolder = async () => {
 		// Loaded on demand so the dialog plugin stays out of the web bundle.
@@ -42,14 +50,15 @@ export default function FolderSettings({
 				<Text size="sm">Folders</Text>
 				<Text size="xs" c="dimmed">
 					{client.desktop
-						? "Where the shell works, starting in the first"
+						? "Where the shell works, starting in the first on this device"
 						: "Available in the desktop app"}
 				</Text>
 			</Box>
 			{folders.map(({ path, whitelist }, index) => {
 				const pending =
 					(removeFolder.isPending && removeFolder.variables.index === index) ||
-					(updateFolder.isPending && updateFolder.variables.index === index);
+					(updateFolder.isPending && updateFolder.variables.index === index) ||
+					moveFolder.isPending;
 				return (
 					<Paper key={path} withBorder p="xs">
 						<Group gap="xs" wrap="nowrap" align="flex-start">
@@ -61,6 +70,11 @@ export default function FolderSettings({
 								>
 									{path}
 								</Text>
+								{path === primaryFolder && (
+									<Badge size="xs" variant="light">
+										Primary on this device
+									</Badge>
+								)}
 								{folderStatus.data?.[path] === false && (
 									<Text size="xs" c="red">
 										This folder is unavailable
@@ -80,6 +94,19 @@ export default function FolderSettings({
 									}
 								/>
 							</Stack>
+							{index > 0 && (
+								<Tooltip label="Try this folder earlier">
+									<ActionIcon
+										variant="subtle"
+										onClick={() =>
+											moveFolder.mutate({ project, index, to: index - 1 })
+										}
+										disabled={pending}
+									>
+										<ArrowUpIcon size={20} />
+									</ActionIcon>
+								</Tooltip>
+							)}
 							<ActionIcon
 								variant="subtle"
 								onClick={() => removeFolder.mutate({ project, index })}

@@ -1,27 +1,21 @@
-import chalk from "chalk";
+import { hashKey } from "@tanstack/react-query";
 import { useState } from "react";
 import type { McpToolset } from "#client/features/agent/hooks/useTools.ts";
 import type { CompletionGroup } from "#client/features/editor/types/completion.ts";
 import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
 import type { zMCPServers } from "#core/features/data/types/user.ts";
-import Box from "#tui/core/components/Box.tsx";
 import Text from "#tui/core/components/Text.tsx";
 import { usePage } from "#tui/core/hooks/usePage.ts";
-import Completions from "#tui/features/editor/components/Completions.tsx";
 import Choice from "#tui/features/settings/components/Choice.tsx";
+import Details, {
+	type DetailsItem,
+} from "#tui/features/settings/components/Details.tsx";
 import TextList, {
 	type Draft,
 	type TextEntry,
 } from "#tui/features/settings/components/TextList.tsx";
 
 export type McpServer = NonNullable<zMCPServers>[string];
-
-interface RootItem {
-	name: string;
-	value: string;
-	state?: string;
-	route: string;
-}
 
 /** Server names are the keys of the settings, which only take these. */
 const toName = (text: string) =>
@@ -42,7 +36,8 @@ const parseEntry = (text: string) => {
 
 /**
  * One MCP server's connection — its name, transport and what it runs with —
- * like a server's card in the app's tools and skills.
+ * like a server's card in the app's tools and skills. Its fields are a draft
+ * until saved, since every save reconnects the server.
  */
 export default function McpServerEditor({
 	name,
@@ -72,16 +67,35 @@ export default function McpServerEditor({
 	const [draft, setDraft] = useState<Draft | null>(null);
 	const [selected, setSelected] = useState(0);
 
+	const [nextName, setNextName] = useState(name);
+	const [nextServer, setNextServer] = useState(server);
+	// Hashed with sorted keys, as the stored settings come back reordered.
+	const dirty =
+		nextName !== name || hashKey([nextServer]) !== hashKey([server]);
+	/** Set by leaving with unsaved edits, which leaving again discards. */
+	const [leaving, setLeaving] = useState(false);
+
 	usePage({
 		onBack: () => {
 			if (draft) setDraft(null);
 			else if (path.length) pop();
+			else if (dirty && !leaving) setLeaving(true);
 			else onClose();
 			return false;
 		},
 	});
 
-	const save = (next: McpServer) => onSave(name, next);
+	/** Changes the draft, which only the save row writes. */
+	const change = (next: McpServer) => {
+		setNextServer(next);
+		setLeaving(false);
+	};
+	const commit = () => {
+		setLeaving(false);
+		// The save row goes with the edits, so the cursor goes back to the top.
+		setSelected(() => 0);
+		onSave(nextName, nextServer);
+	};
 
 	/** A record of the server's — env or headers — edited as `NAME=value`. */
 	const recordList = (
@@ -127,13 +141,14 @@ export default function McpServerEditor({
 	);
 
 	if (route === "name") {
-		return textField("name", name, "server", (text) => {
-			const nextName = toName(text);
-			if (nextName && nextName !== name) onSave(nextName, server);
+		return textField("name", nextName, "server", (text) => {
+			const renamed = toName(text);
+			if (renamed) setNextName(renamed);
+			setLeaving(false);
 		});
 	}
 	if (route === "transport") {
-		const current = "command" in server ? "stdio" : "http";
+		const current = "command" in nextServer ? "stdio" : "http";
 		return (
 			<Choice
 				groups={[
@@ -147,85 +162,64 @@ export default function McpServerEditor({
 				]}
 				onSelect={(item) => {
 					if (item.value !== current) {
-						save(item.value === "stdio" ? { command: "" } : { url: "" });
+						change(item.value === "stdio" ? { command: "" } : { url: "" });
 					}
 					pop();
 				}}
 			/>
 		);
 	}
-	if (route === "command" && "command" in server) {
-		return textField("command", server.command, "npx", (command) =>
-			save({ ...server, command }),
+	if (route === "command" && "command" in nextServer) {
+		return textField("command", nextServer.command, "npx", (command) =>
+			change({ ...nextServer, command }),
 		);
 	}
-	if (route === "args" && "command" in server) {
-		const args = server.args ?? [];
+	if (route === "args" && "command" in nextServer) {
+		const args = nextServer.args ?? [];
 		return (
 			<TextList
 				entries={args.map((text) => ({ text }))}
 				draft={draft}
 				setDraft={setDraft}
 				placeholder="argument"
-				onAdd={(arg) => save({ ...server, args: [...args, arg] })}
+				onAdd={(arg) => change({ ...nextServer, args: [...args, arg] })}
 				onEdit={(index, arg) =>
-					save({ ...server, args: args.with(index, arg) })
+					change({ ...nextServer, args: args.with(index, arg) })
 				}
 				onRemove={(index) =>
-					save({
-						...server,
+					change({
+						...nextServer,
 						args: args.filter((_, other) => other !== index),
 					})
 				}
 			/>
 		);
 	}
-	if (route === "env" && "command" in server) {
-		return recordList(server.env, (env) => save({ ...server, env }));
+	if (route === "env" && "command" in nextServer) {
+		return recordList(nextServer.env, (env) => change({ ...nextServer, env }));
 	}
-	if (route === "url" && "url" in server) {
-		return textField("url", server.url, "https://example.com/mcp", (url) =>
-			save({ ...server, url }),
+	if (route === "url" && "url" in nextServer) {
+		return textField("url", nextServer.url, "https://example.com/mcp", (url) =>
+			change({ ...nextServer, url }),
 		);
 	}
-	if (route === "headers" && "url" in server) {
-		return recordList(server.headers, (headers) =>
-			save({ ...server, headers }),
+	if (route === "headers" && "url" in nextServer) {
+		return recordList(nextServer.headers, (headers) =>
+			change({ ...nextServer, headers }),
 		);
 	}
-	if (route === "delete") {
-		return (
-			<Choice
-				groups={[
-					{
-						items: [
-							{ name: "cancel", value: "cancel" },
-							{ name: "confirm", value: "confirm" },
-						],
-					},
-				]}
-				before={<Text color="textSubtle">{`${name} will be removed.`}</Text>}
-				onSelect={(item) => {
-					if (item.value !== "confirm") return pop();
-					onDelete();
-					onClose();
-				}}
-			/>
-		);
-	}
-
 	const count = (record?: Record<string, string>) =>
 		String(Object.keys(record ?? {}).length);
 
-	const groups: CompletionGroup<RootItem>[] = [
+	const groups: CompletionGroup<DetailsItem>[] = [
 		{
 			name: "server",
 			items: [
-				{ name: "name", value: "name", state: name, route: "name" },
+				{ name: "name", value: "name", state: nextName, route: "name" },
 				{
 					name: "transport",
 					value: "transport",
-					state: "command" in server ? "stdio" : "http",
+					state: "command" in nextServer ? "stdio" : "http",
 					route: "transport",
 				},
 			],
@@ -233,24 +227,24 @@ export default function McpServerEditor({
 		{
 			name: "connection",
 			items:
-				"command" in server
+				"command" in nextServer
 					? [
 							{
 								name: "command",
 								value: "command",
-								state: server.command || undefined,
+								state: nextServer.command || undefined,
 								route: "command",
 							},
 							{
 								name: "arguments",
 								value: "arguments",
-								state: String(server.args?.length ?? 0),
+								state: String(nextServer.args?.length ?? 0),
 								route: "args",
 							},
 							{
 								name: "environment",
 								value: "environment",
-								state: count(server.env),
+								state: count(nextServer.env),
 								route: "env",
 							},
 						]
@@ -258,74 +252,57 @@ export default function McpServerEditor({
 							{
 								name: "url",
 								value: "url",
-								state: server.url || undefined,
+								state: nextServer.url || undefined,
 								route: "url",
 							},
 							{
 								name: "headers",
 								value: "headers",
-								state: count(server.headers),
+								state: count(nextServer.headers),
 								route: "headers",
 							},
 						],
-		},
-		{
-			items: [{ name: "remove", value: "remove", route: "delete" }],
 		},
 	];
 
 	const error = toolset?.status.error;
 
 	return (
-		<Completions<CompletionGroup<RootItem>, RootItem>
+		<Details
 			groups={groups}
 			selected={selected}
 			setSelected={setSelected}
-			selectFirstOnChange={false}
-			before={
-				<Text color={!isConnecting && error ? "redBright" : "textSubtle"}>
-					{isConnecting || !toolset
-						? "connecting..."
-						: error
-							? CommonUtils.formatError(toolset.status)
-							: toolset.tools.map((tool) => tool.name).join(", ") || "no tools"}
-				</Text>
+			onOpen={push}
+			save={
+				dirty
+					? { label: "unsaved, reconnects the server", run: commit }
+					: undefined
 			}
-			itemProps={{
-				flexGrow: 1,
-				flexShrink: 1,
-				maxWidth: 50,
-				justifyContent: "space-between",
+			remove={{
+				name: "remove",
+				label: `remove "${name}"?`,
+				run: () => {
+					onDelete();
+					onClose();
+				},
 			}}
-			onInput={({ item, input, key }) => {
-				if (item && key.return) {
-					push(item.route);
-					return true;
-				}
-				if (input === "r") {
-					onRefresh();
-					return true;
-				}
-			}}
-			renderItem={({ item }) => (
-				<>
-					<Box flexShrink={0} marginRight={2}>
-						<Text color={item.route === "delete" ? "redBright" : undefined}>
-							{item.name}
-						</Text>
-					</Box>
-					{item.route !== "delete" && (
-						<Text color="text" wrap="truncate-start">
-							{item.state ?? chalk.dim("(none)")}
-						</Text>
-					)}
-				</>
-			)}
-			actions={[
-				{ key: "enter", name: "open" },
-				{ key: "r", name: "reconnect" },
-				"back",
-			]}
+			refresh={{ run: onRefresh }}
+			before={
+				leaving ? (
+					<Text color="yellowBright">
+						unsaved changes · back again to discard them
+					</Text>
+				) : (
+					<Text color={!isConnecting && error ? "redBright" : "textSubtle"}>
+						{isConnecting || !toolset
+							? "connecting..."
+							: error
+								? CommonUtils.formatError(toolset.status)
+								: toolset.tools.map((tool) => tool.name).join(", ") ||
+									"no tools"}
+					</Text>
+				)
+			}
 		/>
 	);
 }

@@ -41,6 +41,8 @@ export const useCommands = ({
 	onOpenSkills,
 	onOpenUploads,
 	onOpenGitHub,
+	onOpenMemories,
+	onOpenActions,
 }: {
 	commands?: CommandItem[];
 	onOpenSettings?: () => void;
@@ -53,6 +55,8 @@ export const useCommands = ({
 	onOpenSkills?: () => void;
 	onOpenUploads?: () => void;
 	onOpenGitHub?: () => void;
+	onOpenMemories?: () => void;
+	onOpenActions?: () => void;
 } = {}) => {
 	const client = useContext(ClientContext);
 
@@ -104,6 +108,10 @@ export const useCommands = ({
 	onOpenUploadsRef.current = onOpenUploads;
 	const onOpenGitHubRef = useRef(onOpenGitHub);
 	onOpenGitHubRef.current = onOpenGitHub;
+	const onOpenMemoriesRef = useRef(onOpenMemories);
+	onOpenMemoriesRef.current = onOpenMemories;
+	const onOpenActionsRef = useRef(onOpenActions);
+	onOpenActionsRef.current = onOpenActions;
 
 	const providersRef = useRef(providers.data);
 	providersRef.current = providers.data;
@@ -276,6 +284,28 @@ export const useCommands = ({
 							name: "github",
 							value: "github",
 							run: () => onOpenGitHubRef.current?.(),
+						},
+					]
+				: []),
+		];
+
+		// What the user is remembered by and has scheduled, across their chats.
+		const userData: CommandItem[] = [
+			...(onOpenMemoriesRef.current
+				? [
+						{
+							name: "memories",
+							value: "memories",
+							run: () => onOpenMemoriesRef.current?.(),
+						},
+					]
+				: []),
+			...(onOpenActionsRef.current
+				? [
+						{
+							name: "actions",
+							value: "actions",
+							run: () => onOpenActionsRef.current?.(),
 						},
 					]
 				: []),
@@ -485,6 +515,7 @@ export const useCommands = ({
 					},
 					{ name: "system-prompt", value: "system-prompt", dynamic: true },
 					...capabilities,
+					...userData,
 					...uploads,
 					...shell,
 				],

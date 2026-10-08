@@ -24,6 +24,7 @@ import {
 	CaretLeftIcon,
 	CaretRightIcon,
 	CheckCircleIcon,
+	FloppyDiskIcon,
 	GraduationCapIcon,
 	PlusIcon,
 	TrashIcon,
@@ -32,7 +33,7 @@ import {
 	WrenchIcon,
 	XCircleIcon,
 } from "@phosphor-icons/react";
-import { useIsFetching } from "@tanstack/react-query";
+import { hashKey, useIsFetching } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
 import { useBrowser } from "#client/features/agent/hooks/useBrowser.ts";
 import { useConfig } from "#client/features/agent/hooks/useConfig.ts";
@@ -60,6 +61,7 @@ import {
 	useAppStore,
 } from "#gui/core/stores/useAppStore.ts";
 import scrollable from "#gui/core/styles/scrollable.module.css";
+import { ControlUtils } from "#gui/core/utils/ControlUtils.ts";
 import ConfigPanel from "#gui/features/editor/components/ConfigPanel.tsx";
 import { useTauri } from "#gui/features/tauri/hooks/useTauri.ts";
 import Dropzone from "#gui/features/upload/components/Dropzone.tsx";
@@ -78,13 +80,14 @@ function KeyValueFields({
 	label,
 	value,
 	onChange,
-	onBlur,
+	onSubmit,
 	disabled,
 }: {
 	label: string;
 	value: Record<string, string>;
 	onChange: (value: Record<string, string>) => void;
-	onBlur: (value: Record<string, string>) => void;
+	/** Enter in a field, which saves what the fields belong to. */
+	onSubmit: () => void;
 	disabled: boolean;
 }) {
 	const [entries, setEntries] = useState(() =>
@@ -127,7 +130,7 @@ function KeyValueFields({
 								),
 							);
 						}}
-						onBlur={() => onBlur(toRecord())}
+						onKeyDown={ControlUtils.onEnter(onSubmit)}
 						flex={1}
 					/>
 					<TextInput
@@ -143,7 +146,7 @@ function KeyValueFields({
 								),
 							);
 						}}
-						onBlur={() => onBlur(toRecord())}
+						onKeyDown={ControlUtils.onEnter(onSubmit)}
 						flex={1}
 					/>
 					<ActionIcon
@@ -156,7 +159,6 @@ function KeyValueFields({
 								(candidate) => candidate.id !== entry.id,
 							);
 							updateEntries(nextEntries);
-							onBlur(toRecord(nextEntries));
 						}}
 					>
 						<TrashIcon size={16} />
@@ -205,10 +207,20 @@ function McpServerCard({
 		useIsFetching({ queryKey: [...mcpServerQueryKey, name] }) > 0;
 	const [draftName, setDraftName] = useState(name);
 	const [draft, setDraft] = useState(server);
+	// Remounts the key-value fields, which keep their own rows, on discard.
+	const [revision, setRevision] = useState(0);
 	const toolsetName = getMcpToolsetName(name);
 	const status = toolset?.status;
 
-	const save = (nextDraft = draft, nextName = draftName) => {
+	// Edits stay a draft until saved, since every save reconnects the server.
+	// Hashed with sorted keys, as the stored settings come back reordered.
+	const dirty =
+		draftName.trim() !== name || hashKey([draft]) !== hashKey([server]);
+	const canSave = dirty && !!draftName.trim() && !disabled;
+
+	const save = () => {
+		if (!canSave) return;
+		const nextName = draftName.trim();
 		if (nextName !== name && config.toolsets.includes(toolsetName)) {
 			setConfig({
 				...config,
@@ -217,7 +229,13 @@ function McpServerCard({
 				),
 			});
 		}
-		onUpdate(name, nextName, nextDraft);
+		onUpdate(name, nextName, draft);
+	};
+
+	const discard = () => {
+		setDraftName(name);
+		setDraft(server);
+		setRevision((value) => value + 1);
 	};
 
 	return (
@@ -295,7 +313,7 @@ function McpServerCard({
 						value={draftName}
 						disabled={disabled}
 						onChange={(event) => setDraftName(event.currentTarget.value)}
-						onBlur={() => save()}
+						onKeyDown={ControlUtils.onEnter(save)}
 					/>
 					<SegmentedControl
 						fullWidth
@@ -319,24 +337,21 @@ function McpServerCard({
 								onChange={(event) =>
 									setDraft({ ...draft, command: event.currentTarget.value })
 								}
-								onBlur={() => save()}
+								onKeyDown={ControlUtils.onEnter(save)}
 							/>
 							<TagsInput
 								label="Arguments"
 								placeholder="Add argument"
 								value={draft.args ?? []}
 								disabled={disabled}
-								onChange={(args) => {
-									const next = { ...draft, args };
-									setDraft(next);
-									save(next);
-								}}
+								onChange={(args) => setDraft({ ...draft, args })}
 							/>
 							<KeyValueFields
+								key={revision}
 								label="Environment"
 								value={draft.env ?? {}}
 								onChange={(env) => setDraft({ ...draft, env })}
-								onBlur={(env) => save({ ...draft, env })}
+								onSubmit={save}
 								disabled={disabled}
 							/>
 						</>
@@ -350,28 +365,51 @@ function McpServerCard({
 								onChange={(event) =>
 									setDraft({ ...draft, url: event.currentTarget.value })
 								}
-								onBlur={() => save()}
+								onKeyDown={ControlUtils.onEnter(save)}
 							/>
 							<KeyValueFields
+								key={revision}
 								label="Headers"
 								value={draft.headers ?? {}}
 								onChange={(headers) => setDraft({ ...draft, headers })}
-								onBlur={(headers) => save({ ...draft, headers })}
+								onSubmit={save}
 								disabled={disabled}
 							/>
 						</>
 					)}
-					<Button
-						variant="subtle"
-						color="red"
-						size="compact-xs"
-						leftSection={<TrashIcon size={14} />}
-						style={{ alignSelf: "flex-start" }}
-						disabled={disabled}
-						onClick={() => onDelete(name)}
-					>
-						Remove server
-					</Button>
+					<Group justify="space-between">
+						<Button
+							variant="subtle"
+							color="red"
+							size="compact-xs"
+							leftSection={<TrashIcon size={14} />}
+							disabled={disabled}
+							onClick={() => onDelete(name)}
+						>
+							Remove server
+						</Button>
+						{dirty && (
+							<Group gap="xs">
+								<Button
+									variant="subtle"
+									size="compact-xs"
+									disabled={disabled}
+									onClick={discard}
+								>
+									Discard
+								</Button>
+								<Button
+									variant="default"
+									size="compact-xs"
+									leftSection={<FloppyDiskIcon size={14} />}
+									disabled={!canSave}
+									onClick={save}
+								>
+									Save
+								</Button>
+							</Group>
+						)}
+					</Group>
 				</Stack>
 			</Collapse>
 		</Card>

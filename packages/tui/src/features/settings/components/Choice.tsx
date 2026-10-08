@@ -4,6 +4,7 @@ import type {
 	CompletionItem,
 } from "#client/features/editor/types/completion.ts";
 import Text from "#tui/core/components/Text.tsx";
+import type { Bindings } from "#tui/core/utils/ListBindingUtils.ts";
 import Completions from "#tui/features/editor/components/Completions.tsx";
 
 export interface ChoiceItem extends CompletionItem {
@@ -12,26 +13,25 @@ export interface ChoiceItem extends CompletionItem {
 
 /**
  * A submenu that picks one of its items — or toggles them, when `renderItem`
- * marks their state — and starts on the one already in effect.
+ * marks their state — and starts on the one already in effect. A setting that
+ * can be unset lists that as an item of its own, such as "(default)".
  */
 export default function Choice<T extends ChoiceItem>({
 	groups,
 	onSelect,
-	onClear,
-	onKey,
+	selectName = "select",
+	bindings,
 	renderItem,
 	before,
-	actions = [],
 }: {
 	groups: CompletionGroup<T>[];
 	onSelect: (item: T) => void;
-	/** Puts the setting back to unset, on `d`. */
-	onClear?: () => void;
-	/** First look at any other key, given the item under the cursor. */
-	onKey?: (_: { item: T; input: string }) => boolean | undefined;
+	/** What picking does, as the help puts it. */
+	selectName?: string;
+	/** The verbs besides picking. */
+	bindings?: Omit<Bindings<T>, "primary">;
 	renderItem?: (item: T) => ReactNode;
 	before?: ReactNode;
-	actions?: { key: string; name: string }[];
 }) {
 	// The cursor starts on the item in effect, and is the user's after that.
 	const [selected, setSelected] = useState(() =>
@@ -48,18 +48,7 @@ export default function Choice<T extends ChoiceItem>({
 			setSelected={setSelected}
 			selectFirstOnChange={false}
 			before={before}
-			onInput={({ item, key, input }) => {
-				if (!item) return;
-				if (key.return) {
-					onSelect(item);
-					return true;
-				}
-				if (onClear && input === "d") {
-					onClear();
-					return true;
-				}
-				return onKey?.({ item, input });
-			}}
+			bindings={{ ...bindings, primary: { name: selectName, run: onSelect } }}
 			renderItem={({ item }) =>
 				renderItem?.(item) ?? (
 					<>
@@ -69,12 +58,7 @@ export default function Choice<T extends ChoiceItem>({
 				)
 			}
 			renderEmpty={() => "nothing to choose from"}
-			actions={[
-				"select",
-				...(onClear ? [{ key: "d", name: "clear" }] : []),
-				...actions,
-				"back",
-			]}
+			actions={["back"]}
 		/>
 	);
 }

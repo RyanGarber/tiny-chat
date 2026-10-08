@@ -5,6 +5,23 @@ import type { zUser } from "#core/features/data/types/user.ts";
 import { ActionUtils } from "#server/features/chat/utils/ActionUtils.ts";
 import { MessageService } from "#server/features/message/services/MessageService.ts";
 
+/**
+ * A schedule as it is stored: started where it was written, in its timezone.
+ * Left without a start, an RRule starts whenever it is read, so it would never
+ * settle on a next run.
+ */
+const anchor = ({
+	schedule,
+	timezone,
+}: {
+	schedule: string;
+	timezone: string;
+}) => {
+	const anchored = CommonUtils.parseSchedule({ text: schedule, timezone });
+	if (!anchored) throw new Error(`Invalid schedule: ${schedule}`);
+	return anchored;
+};
+
 export const ActionService = {
 	getActions: async ({ user }: { user: zUser }) => {
 		return (
@@ -43,7 +60,7 @@ export const ActionService = {
 				userId: user.id,
 				messageId: source.id,
 				config: source.config,
-				schedule,
+				schedule: anchor({ schedule, timezone }),
 				timezone,
 				data,
 				lastRanAt: null,
@@ -76,7 +93,7 @@ export const ActionService = {
 		}).update({
 			messageId: source.id,
 			config: source.config,
-			schedule,
+			schedule: anchor({ schedule, timezone }),
 			timezone,
 			data,
 		});

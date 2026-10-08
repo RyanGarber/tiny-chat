@@ -215,7 +215,9 @@ export const ChatService = {
 		const { folders } = SettingsUtils.of(user, row);
 		return {
 			id: row?.id ?? null,
-			cwd: SettingsUtils.primaryFolder(user, row),
+			candidates: SettingsUtils.primaryCandidates(user, row),
+			// A runtime launched inside one of these starts there instead.
+			projectCandidates: SettingsUtils.primaryCandidates(null, row),
 			folders,
 		};
 	},

@@ -59,19 +59,31 @@ export default function ChatList({
 					})),
 				},
 			]}
-			onInput={({ item, input, key }) => {
-				if (key.return && item) {
-					ChatService.setChat({ id: item.value });
-					setPage("chat");
-				}
-				if (input === "d" && item) {
-					const chat = chats.find((chat) => chat.id === item.value);
-					if (!chat) return;
-					deleteChat.mutate({ chat });
-				}
+			bindings={{
+				primary: {
+					name: "open",
+					run: (item) => {
+						ChatService.setChat({ id: item.value });
+						setPage("chat");
+					},
+				},
+				create: {
+					name: "new chat",
+					run: () => {
+						ChatService.newChat(project ?? null);
+						setPage("chat");
+					},
+				},
+				remove: {
+					name: "delete",
+					run: (item) => {
+						const chat = chats.find((chat) => chat.id === item.value);
+						if (chat) deleteChat.mutate({ chat });
+					},
+				},
 			}}
 			renderEmpty={() => "nothing here yet"}
-			actions={[{ key: "d", name: "delete" }, "select", "back"]}
+			actions={["back"]}
 			selectFirstOnChange={false}
 			onReachBottom={project ? undefined : fetchOlder}
 		/>

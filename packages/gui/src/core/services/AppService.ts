@@ -85,4 +85,18 @@ export const AppService = {
 		if (capabilities) setCurrentCapabilities(capabilities);
 		return true;
 	},
+
+	openMemories: () => {
+		const { setCurrentModal } = useAppStore.getState();
+
+		setCurrentModal("memories");
+		return true;
+	},
+
+	openActions: () => {
+		const { setCurrentModal } = useAppStore.getState();
+
+		setCurrentModal("actions");
+		return true;
+	},
 } as const;

@@ -18,15 +18,56 @@ export const SettingsUtils = {
 	},
 
 	/**
-	 * The primary folder: the project's first folder, else the user's first.
+	 * Where the shell may start, best first: the project's folders, then the
+	 * user's. Folders sync across devices, so each runtime starts in the first
+	 * that resolves on it.
 	 */
-	primaryFolder: (
+	primaryCandidates: (
 		user?: { settings?: zSettings | null } | null,
 		project?: { settings?: zSettings | null } | null,
-	): string | null =>
-		project?.settings?.folders?.[0]?.path ??
-		user?.settings?.folders?.[0]?.path ??
-		null,
+	): string[] => [
+		...new Set(
+			[
+				...(project?.settings?.folders ?? []),
+				...(user?.settings?.folders ?? []),
+			].map(({ path }) => path),
+		),
+	],
+
+	/** Whether `path` is `folder` or sits under it, both spelled the same way. */
+	contains: ({ folder, path }: { folder: string; path: string }) => {
+		const trim = (value: string) => value.replace(/(?<=.)[\\/]+$/, "");
+		const [outer, inner] = [trim(folder), trim(path)];
+		return (
+			inner === outer ||
+			inner.startsWith(`${outer}/`) ||
+			inner.startsWith(`${outer}\\`) ||
+			((outer.endsWith("/") || outer.endsWith("\\")) && inner.startsWith(outer))
+		);
+	},
+
+	/**
+	 * `paths` with the one holding `cwd` most closely moved to the front: a
+	 * runtime launched inside a folder starts there. `toShellPath` spells a
+	 * folder the way `cwd` is spelled.
+	 */
+	preferContaining: ({
+		paths,
+		cwd,
+		toShellPath = (path) => path,
+	}: {
+		paths: string[];
+		cwd?: string | null;
+		toShellPath?: (path: string) => string;
+	}): string[] => {
+		if (!cwd) return paths;
+		const match = paths
+			.filter((path) =>
+				SettingsUtils.contains({ folder: toShellPath(path), path: cwd }),
+			)
+			.sort((a, b) => toShellPath(b).length - toShellPath(a).length)[0];
+		return match ? [match, ...paths.filter((path) => path !== match)] : paths;
+	},
 
 	/**
 	 * Merges settings with the context's entries last.

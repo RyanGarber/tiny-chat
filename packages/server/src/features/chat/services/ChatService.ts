@@ -1,4 +1,5 @@
 import { or } from "@prisma/orm-postgres/orm-client";
+import { TRPCError } from "@trpc/server";
 import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
 import { SettingsUtils } from "#core/core/utils/SettingsUtils.ts";
 import type {
@@ -37,7 +38,12 @@ export const ChatService = {
 			.include("project", (project) => project.select("title", "settings"))
 			.first();
 
-		if (!chat) throw new Error(`no chat or message with id ${chatLike.id}`);
+		if (!chat) {
+			throw new TRPCError({
+				code: "NOT_FOUND",
+				message: `no chat or message with id ${chatLike.id}`,
+			});
+		}
 
 		return ChatUtils.toChatState(chat);
 	},

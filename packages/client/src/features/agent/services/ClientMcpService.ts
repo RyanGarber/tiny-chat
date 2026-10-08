@@ -5,8 +5,10 @@ import {
 	type Transport,
 } from "@modelcontextprotocol/client";
 import type { Client } from "#client/client.ts";
+import { useMcpLogStore } from "#client/features/agent/stores/useMcpLogStore.ts";
 import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
 import type { zMCPServers } from "#core/features/data/types/user.ts";
+import type { LogLevel } from "#core/logger.ts";
 
 export type McpServerSetting = NonNullable<zMCPServers>[string];
 
@@ -30,6 +32,10 @@ const isLocalUrl = (url: string) => {
 		[".home", ".local"].some((suffix) => hostname.endsWith(suffix))
 	);
 };
+
+/** Kept with the server, for its editor to show. */
+const log = (name: string, level: LogLevel, text: string) =>
+	useMcpLogStore.getState().write(name, level, text);
 
 export const ClientMcpService = {
 	/**
@@ -60,6 +66,8 @@ export const ClientMcpService = {
 						name,
 						command: [server.command, ...(server.args ?? [])],
 						env: server.env,
+						onStderr: (text) =>
+							useMcpLogStore.getState().write(name, "info", text),
 					}),
 				);
 			}
@@ -125,6 +133,7 @@ export const ClientMcpService = {
 			console.log(
 				`[ClientMcpService] trying transport for ${name}: ${transport.constructor.name}`,
 			);
+			log(name, "info", `connecting (${transport.constructor.name})`);
 			try {
 				const onerror = transport.onerror;
 				await new Promise((resolve, reject) => {
@@ -140,9 +149,15 @@ export const ClientMcpService = {
 				console.log(
 					`[ClientMcpService] connected: ${name} (${tools.length} tools)`,
 				);
+				log(name, "info", `connected (${tools.length} tools)`);
 				break;
 			} catch (e) {
 				console.log("[ClientMcpService] failed to connect:", e);
+				log(
+					name,
+					"error",
+					`failed to connect: ${CommonUtils.formatError({ error: e })}`,
+				);
 				error = new Error("failed to connect");
 				await mcpClient.close();
 			}

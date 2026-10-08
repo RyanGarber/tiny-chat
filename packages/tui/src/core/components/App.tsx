@@ -9,6 +9,7 @@ import { ChatService } from "#client/features/chat/services/ChatService.ts";
 import { useDraftStore } from "#client/features/chat/stores/useDraftStore.ts";
 import { useEstimatedTokens } from "#client/features/editor/hooks/useEstimatedTokens.ts";
 import { MessageProvider } from "#client/features/message/components/MessageProvider.tsx";
+import Console from "#tui/core/components/Console.tsx";
 import Panel from "#tui/core/components/Panel.tsx";
 import StatusText from "#tui/core/components/StatusText.tsx";
 import type { Color } from "#tui/core/hooks/useColor.ts";
@@ -193,6 +194,7 @@ export default function App() {
 					</Box>
 				)}
 				<CitationCard />
+				{page === "console" && <Console />}
 			</Box>
 		</MessageProvider>
 	);

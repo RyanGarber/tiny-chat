@@ -3,11 +3,6 @@
 	"root": false,
 	"extends": "//",
 	"files": {
-		"includes": [
-			"**",
-			"!lib",
-			"!gen",
-			"!target"
-		]
+		"includes": ["**", "!lib", "!gen", "!target"]
 	}
 }

@@ -1,20 +1,23 @@
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
+import { useExpandStore } from "#client/features/part/stores/useExpandStore.ts";
 
 /**
  * Open while `active`, closed once it settles — unless the user has opened or
- * closed it themselves, which then holds. `auto` is true while it is open only
+ * closed it themselves, which then holds, even across it being unmounted and
+ * mounted again under the same `key`. `auto` is true while it is open only
  * because it is active, so the content can be held to a height that follows
  * its newest lines.
  */
-export const useAutoExpand = (active: boolean) => {
-	const [override, setOverride] = useState<boolean>();
+export const useAutoExpand = (key: string, active: boolean) => {
+	const override = useExpandStore((state) => state.overrides[key]);
+	const setOverride = useExpandStore((state) => state.setOverride);
 
 	const expanded = override ?? active;
 	const auto = override === undefined && active;
 
 	const toggle = useCallback(() => {
-		setOverride(!expanded);
-	}, [expanded]);
+		setOverride(key, !expanded);
+	}, [key, expanded, setOverride]);
 
 	return { expanded, auto, toggle };
 };

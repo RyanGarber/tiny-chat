@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
+import { TRPCClientError } from "@trpc/client";
 import { useContext, useMemo } from "react";
 import { ClientContext } from "#client/client.ts";
+import { ChatService } from "#client/features/chat/services/ChatService.ts";
 import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
 import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
 import { useSettings } from "#client/features/settings/hooks/useSettings.ts";
@@ -20,7 +22,16 @@ export const useChat = () => {
 		queryKey: client.query.chat.getChat.queryKey({ id: chatId || undefined }),
 		queryFn: async () => {
 			if (!chatId) return null;
-			const data = await client.api.chat.getChat.query(chatId);
+			const data = await client.api.chat.getChat.query(chatId).catch((e) => {
+				// A deleted chat, or someone else's: leave for a new chat instead of
+				// sitting on an id nothing can be sent to.
+				if (!(e instanceof TRPCClientError) || e.data?.code !== "NOT_FOUND")
+					throw e;
+				if (useChatStore.getState().chatId === chatId)
+					ChatService.setChat({ id: null });
+				return null;
+			});
+			if (!data) return null;
 			if (!(data.id in lastSeen)) {
 				useChatStore
 					.getState()

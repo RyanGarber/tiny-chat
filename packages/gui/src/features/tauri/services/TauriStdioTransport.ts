@@ -24,11 +24,13 @@ export class TauriStdioTransport implements Transport {
 	onclose?: () => void;
 
 	private unlisten?: () => void;
+	private unlistenLog?: () => void;
 
 	constructor(
 		private id: string,
 		private command: string[],
 		private env?: Record<string, string>,
+		private onStderr?: (text: string) => void,
 	) {}
 
 	async start() {
@@ -48,6 +50,13 @@ export class TauriStdioTransport implements Transport {
 					describe(message, data.length),
 				);
 				this.onmessage?.(message);
+			},
+		);
+		this.unlistenLog = await TauriUtils.listen<string>(
+			`mcp-log:${this.id}`,
+			(line) => {
+				if (this.onStderr) this.onStderr(`${line}\n`);
+				else console.warn(`[mcp] ${this.id}:`, line);
 			},
 		);
 
@@ -82,6 +91,7 @@ export class TauriStdioTransport implements Transport {
 	async close() {
 		console.log(`[mcp] ${this.id} closing`);
 		this.unlisten?.();
+		this.unlistenLog?.();
 		await TauriUtils.invoke("mcp_stop_stdio", { id: this.id });
 		this.onclose?.();
 	}

@@ -6,7 +6,7 @@ import { useStableKey } from "#client/core/hooks/useStableKey.ts";
 import { ClientCapabilityService } from "#client/core/services/ClientCapabilityService.ts";
 import { useProviders } from "#client/features/agent/hooks/useProviders.ts";
 import { useChat } from "#client/features/chat/hooks/useChat.ts";
-import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
+import { useMessages } from "#client/features/message/hooks/useMessages.ts";
 import type { zAgentMessage } from "#core/features/agent/types/agent.ts";
 
 /**
@@ -33,26 +33,17 @@ export const useCapabilities = ({
 
 	const { session } = useSession();
 	const { providers } = useProviders();
-	const { chat, nextChat } = useChat();
+	const { nextChat } = useChat();
 
-	const branches = useChatStore((s) => s.branches);
-	const messages = useQuery({
-		...client.query.message.getMessages.queryOptions({
-			chat: chat.data?.id,
-			branches,
-		}),
-		refetchOnWindowFocus: false,
-		refetchOnReconnect: false,
-		staleTime: Infinity,
-		enabled: !future,
-	});
+	// The history the chat renders, so what is counted is what is shown.
+	const { messages } = useMessages();
 
 	const sources = useMemo(
 		(): zAgentMessage[] => [
-			...(messages.data?.messages ?? []),
+			...((!future && messages.data?.messages) || []),
 			...(draft ?? []),
 		],
-		[messages.data?.messages, draft],
+		[future, messages.data?.messages, draft],
 	);
 
 	const key = useStableKey({
@@ -71,7 +62,7 @@ export const useCapabilities = ({
 				client,
 				user: session.data.user,
 				chat: nextChat,
-				message: messages.data?.messages.at(-1),
+				message: future ? undefined : messages.data?.messages.at(-1),
 				messages: sources,
 				incognito: nextChat.incognito,
 				temporary: nextChat.temporary,

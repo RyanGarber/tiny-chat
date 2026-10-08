@@ -99,4 +99,11 @@ export const AppService = {
 		setCurrentModal("actions");
 		return true;
 	},
+
+	openConsole: () => {
+		const { setCurrentModal } = useAppStore.getState();
+
+		setCurrentModal("console");
+		return true;
+	},
 } as const;

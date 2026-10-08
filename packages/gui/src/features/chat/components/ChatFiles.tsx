@@ -373,7 +373,7 @@ export default function ChatFiles() {
 	const { memories } = useMemories();
 	const { actions } = useActions();
 	const { messages } = useMessages();
-	const lastMessageId = messages.data?.pages.at(-1)?.messages.at(-1)?.id;
+	const lastMessageId = messages.data?.messages.at(-1)?.id;
 	const chatId = useChatStore((state) => state.chatId);
 	const isAsideOpen = useAppStore((state) => state.isAsideOpen);
 	const setAsideOpen = useAppStore((state) => state.setAsideOpen);

@@ -55,7 +55,10 @@ export default function ToolGroup({
 				tool: ToolUtils.find({ toolsets, part }).tool,
 			}) === "feedback",
 	);
-	const { expanded, auto, toggle } = useAutoExpand(group.pending || !!hold);
+	const { expanded, auto, toggle } = useAutoExpand(
+		`group:${parts[0]?.id}`,
+		group.pending || !!hold,
+	);
 
 	const items = parts.map((part) => (
 		<Box key={part.id} flexDirection="column">

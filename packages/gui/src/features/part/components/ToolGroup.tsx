@@ -36,7 +36,10 @@ export default function ToolGroup({
 	const nextFeedbackId = useMessageStore((s) => s.nextFeedbackId);
 
 	const group = ToolCallUtils.getGroup({ parts, toolsets });
-	const { expanded, auto, toggle } = useAutoExpand(group.pending || !!hold);
+	const { expanded, auto, toggle } = useAutoExpand(
+		`group:${parts[0]?.id}`,
+		group.pending || !!hold,
+	);
 
 	// A lone call is its own header.
 	if (parts.length === 1)

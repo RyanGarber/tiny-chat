@@ -78,7 +78,7 @@ function MessageSync({ store }: { store: StoreApi<MessageStore> }) {
 	].some((query) => query.isLoading);
 
 	const messageList = useMemo(
-		() => messages.data?.pages.flatMap((page) => page.messages) ?? [],
+		() => messages.data?.messages ?? [],
 		[messages.data],
 	);
 

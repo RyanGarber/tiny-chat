@@ -45,7 +45,7 @@ export const useChatFileTree = () => {
 	const [loading, setLoading] = useState<Set<string>>(() => new Set());
 
 	const messageList = useMemo(
-		() => messages.data?.pages.flatMap((page) => page.messages) ?? [],
+		() => messages.data?.messages ?? [],
 		[messages.data],
 	);
 

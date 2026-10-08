@@ -75,7 +75,7 @@ export default function Editor({
 		}
 		previousFeedbackId.current = nextFeedbackId;
 	}, [nextFeedbackId]);
-	const { config, modelArgs } = useConfig();
+	const { config, status, modelArgs } = useConfig();
 	const { sendMessage } = useMessaging();
 	const { messages } = useMessages();
 	const { upload } = useUploads();
@@ -116,14 +116,14 @@ export default function Editor({
 		if (!config) return project ? project.title || "untitled" : "(none)";
 		return [
 			project ? project.title || "untitled" : "(none)",
-			config.model,
+			status === "unavailable" ? "no model available" : config.model,
 			...modelArgs.map(
 				(arg) => `${arg.name} ${config.args?.[arg.name] ?? arg.default}`,
 			),
 		]
 			.join(" · ")
 			.slice(0, columns - 10);
-	}, [config, modelArgs, columns, project]);
+	}, [config, status, modelArgs, columns, project]);
 
 	// The atoms are painted before the markdown, so a command or an attachment
 	// standing in the value keeps its own style whatever punctuation it carries.

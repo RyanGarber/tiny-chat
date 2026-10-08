@@ -11,7 +11,14 @@ import {
 import { useElementSize, useMergedRef } from "@mantine/hooks";
 import { ArrowClockwiseIcon, CaretDoubleDownIcon } from "@phosphor-icons/react";
 import { useIsMutating } from "@tanstack/react-query";
-import { useContext, useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import {
+	useContext,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { ClientContext } from "#client/client.ts";
 import { useGreeting } from "#client/core/hooks/useGreeting.ts";
 import { useChat } from "#client/features/chat/hooks/useChat.ts";
@@ -24,9 +31,8 @@ import { useEstimatedTokens } from "#client/features/editor/hooks/useEstimatedTo
 import { MessageProvider } from "#client/features/message/components/MessageProvider.tsx";
 import { useMessages } from "#client/features/message/hooks/useMessages.ts";
 import { uploadMutationKey } from "#client/features/upload/hooks/useUploads.ts";
-import Sentinel from "#gui/core/components/Sentinel.tsx";
 import { useAutoScroll } from "#gui/core/hooks/useAutoScroll.ts";
-import { useSentinel } from "#gui/core/hooks/useSentinel.ts";
+import { useVirtualList } from "#gui/core/hooks/useVirtualList.ts";
 import { useAppStore } from "#gui/core/stores/useAppStore.ts";
 import Actions from "#gui/features/chat/components/Actions.tsx";
 import ChatEffects from "#gui/features/chat/components/ChatEffects.tsx";
@@ -66,22 +72,18 @@ export default function Chat() {
 	const focusedMessage = useChatStore((s) => s.focusedMessage);
 
 	const {
-		viewportRef: viewportRef1,
+		viewportRef: autoScrollRef,
 		isAtBottom,
+		isLockedToBottom,
 		scrollToBottom,
 		scrollToNode,
 	} = useAutoScroll({
 		scrollRequested,
-		scrollPaused: chat.isFetching || messages.isFetchingNextPage,
+		scrollPaused: chat.isFetching || messages.isLoading,
 	});
 
-	// useAutoScroll holds the position across the prepended page.
-	const { viewportRef: viewportRef2, sentinelRef } = useSentinel({
-		query: messages,
-		queryKey: client.query.message.getMessages.pathKey(),
-	});
-
-	const viewportRef = useMergedRef(viewportRef1, viewportRef2, viewportNode);
+	const [viewport, setViewport] = useState<HTMLDivElement | null>(null);
+	const viewportRef = useMergedRef(autoScrollRef, viewportNode, setViewport);
 
 	useLayoutEffect(() => {
 		if (scrollInstant > 0) {
@@ -94,17 +96,29 @@ export default function Chat() {
 	const truncating = useMessagingStore((s) => s.truncating);
 
 	const messageList = useMemo(
-		() => messages.data?.pages.flatMap((page) => page.messages) ?? [],
+		() => messages.data?.messages ?? [],
 		[messages.data],
 	);
 	const lastMessageId = messageList.at(-1)?.id;
+
+	// The whole branch is held, but only what is near the viewport is drawn.
+	const messageKeys = useMemo(
+		() => messageList.map((message) => message.id),
+		[messageList],
+	);
+	const { isMounted, slotProps } = useVirtualList({
+		viewport,
+		keys: messageKeys,
+		atBottom: isLockedToBottom,
+	});
 
 	// Waits for the message to be drawn: the chat it is in may still be loading.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: messageList re-runs it once the message renders.
 	useEffect(() => {
 		if (!focusedMessage || chat.isFetching || messages.isFetching) return;
 		const node = viewportNode.current?.querySelector(
-			`[data-message-id="${CSS.escape(focusedMessage)}"]`,
+			// The slot, which is there whether or not the message is drawn.
+			`[data-message-slot="${CSS.escape(focusedMessage)}"]`,
 		);
 		if (!node) return;
 		useChatStore.getState().clearFocusedMessage();
@@ -306,19 +320,22 @@ export default function Chat() {
 						gap={10}
 						style={{ paddingBottom: inputHeight }}
 					>
-						<Sentinel
-							isFetching={messages.isFetchingNextPage || messages.isLoading}
-							ref={sentinelRef}
-						/>
 						<MessageProvider>
-							{messageList.map((message) => (
-								<Message
+							{messageList.map((message, index) => (
+								<div
 									key={message.id}
-									message={message}
-									opacity={messageOpacities.get(message.id) ?? 1}
-									isLast={message.id === lastMessageId}
-									compaction={chatTokens.data?.compaction}
-								/>
+									data-message-slot={message.id}
+									{...slotProps(index)}
+								>
+									{isMounted(index) && (
+										<Message
+											message={message}
+											opacity={messageOpacities.get(message.id) ?? 1}
+											isLast={message.id === lastMessageId}
+											compaction={chatTokens.data?.compaction}
+										/>
+									)}
+								</div>
 							))}
 						</MessageProvider>
 						<Box mb={20}>

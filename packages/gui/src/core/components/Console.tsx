@@ -11,15 +11,79 @@ import {
 } from "@mantine/core";
 import { EraserIcon } from "@phosphor-icons/react";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
+import {
+	type ConsoleLog,
+	useConsoleStore,
+} from "#client/core/stores/useConsoleStore.ts";
 import { LogLevel } from "#core/logger.ts";
 import { useAppStore } from "#gui/core/stores/useAppStore.ts";
-import { useConsoleStore } from "#gui/core/stores/useConsoleStore.ts";
+
+/** Log lines, newest last; shared with each MCP server's own log. */
+export function LogList({ logs }: { logs: ConsoleLog[] }) {
+	return (
+		<Stack gap={5}>
+			{logs.map((log) => (
+				<Group
+					key={log.id}
+					gap={5}
+					align="flex-start"
+					justify="space-between"
+					wrap="nowrap"
+					bg="var(--mantine-color-default)"
+					bdrs="md"
+					p="5px 10px 4px"
+				>
+					<Box m="-6px 2.5px 0 -5px">
+						<Text c="dimmed">&middot;</Text>
+					</Box>
+					<Group
+						align="flex-start"
+						flex={1}
+						miw={0}
+						c={
+							log.level === LogLevel.error
+								? "red"
+								: log.level === LogLevel.warn
+									? "yellow"
+									: "gray"
+						}
+					>
+						{log.data.map((d, i) =>
+							typeof d === "object" ? (
+								// biome-ignore lint/suspicious/noArrayIndexKey: logs do not change
+								<JsonTree data={d} key={i} />
+							) : (
+								// biome-ignore lint/suspicious/noArrayIndexKey: logs do not change
+								<Text size="xs" key={i} style={{ wordBreak: "break-word" }}>
+									{String(d)}
+								</Text>
+							),
+						)}
+					</Group>
+					<Text size="xs" c="dimmed">
+						{log.time}
+					</Text>
+				</Group>
+			))}
+		</Stack>
+	);
+}
+
+/** Mounted only while the console is open, so a log renders nothing otherwise. */
+function ConsoleLogs() {
+	const logs = useConsoleStore((state) => state.logs);
+
+	return (
+		<ScrollArea offsetScrollbars>
+			<LogList logs={logs} />
+		</ScrollArea>
+	);
+}
 
 export default function Console() {
 	const currentModal = useAppStore((state) => state.currentModal);
 	const setCurrentModal = useAppStore((state) => state.setCurrentModal);
 
-	const logs = useConsoleStore((state) => state.logs);
 	const clearLogs = useConsoleStore((state) => state.clearLogs);
 
 	return (
@@ -45,53 +109,7 @@ export default function Console() {
 					{import.meta.env.DEV && <Tabs.Tab value="queries">Queries</Tabs.Tab>}
 				</Tabs.List>
 				<Tabs.Panel value="logs">
-					<Stack>
-						<ScrollArea offsetScrollbars>
-							<Stack gap={5}>
-								{logs.map((log) => (
-									<Group
-										key={log.id}
-										gap={5}
-										align="flex-start"
-										justify="space-between"
-										bg="var(--mantine-color-default)"
-										bdrs="md"
-										p="5px 10px 4px"
-									>
-										<Box m="-6px 2.5px 0 -5px">
-											<Text c="dimmed">&middot;</Text>
-										</Box>
-										<Group
-											align="flex-start"
-											flex={1}
-											c={
-												log.level === LogLevel.error
-													? "red"
-													: log.level === LogLevel.warn
-														? "yellow"
-														: "gray"
-											}
-										>
-											{log.data.map((d, i) =>
-												typeof d === "object" ? (
-													// biome-ignore lint/suspicious/noArrayIndexKey: logs do not change
-													<JsonTree data={d} key={i} />
-												) : (
-													// biome-ignore lint/suspicious/noArrayIndexKey: logs do not change
-													<Text size="xs" key={i}>
-														{String(d)}
-													</Text>
-												),
-											)}
-										</Group>
-										<Text size="xs" c="dimmed">
-											{log.time}
-										</Text>
-									</Group>
-								))}
-							</Stack>
-						</ScrollArea>
-					</Stack>
+					<ConsoleLogs />
 				</Tabs.Panel>
 				{import.meta.env.DEV && (
 					<Tabs.Panel value="queries">

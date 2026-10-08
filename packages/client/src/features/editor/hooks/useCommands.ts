@@ -43,6 +43,7 @@ export const useCommands = ({
 	onOpenGitHub,
 	onOpenMemories,
 	onOpenActions,
+	onOpenConsole,
 }: {
 	commands?: CommandItem[];
 	onOpenSettings?: () => void;
@@ -57,6 +58,8 @@ export const useCommands = ({
 	onOpenGitHub?: () => void;
 	onOpenMemories?: () => void;
 	onOpenActions?: () => void;
+	/** What the app has logged, which is never printed where it could get in the way. */
+	onOpenConsole?: () => void;
 } = {}) => {
 	const client = useContext(ClientContext);
 
@@ -112,6 +115,8 @@ export const useCommands = ({
 	onOpenMemoriesRef.current = onOpenMemories;
 	const onOpenActionsRef = useRef(onOpenActions);
 	onOpenActionsRef.current = onOpenActions;
+	const onOpenConsoleRef = useRef(onOpenConsole);
+	onOpenConsoleRef.current = onOpenConsole;
 
 	const providersRef = useRef(providers.data);
 	providersRef.current = providers.data;
@@ -464,6 +469,15 @@ export const useCommands = ({
 				value: "settings",
 				run: () => onOpenSettingsRef.current?.(),
 			},
+			...(onOpenConsoleRef.current
+				? [
+						{
+							name: "console",
+							value: "console",
+							run: () => onOpenConsoleRef.current?.(),
+						},
+					]
+				: []),
 		];
 
 		return [

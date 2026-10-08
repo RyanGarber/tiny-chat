@@ -9,7 +9,6 @@ import ScrollView, {
 	type ScrollViewProps,
 } from "#tui/core/components/ScrollView.tsx";
 import Text from "#tui/core/components/Text.tsx";
-import { useSentinel } from "#tui/core/hooks/useSentinel.ts";
 import { useWorkingStatus } from "#tui/core/hooks/useWorkingStatus.ts";
 import Message from "#tui/features/message/components/Message.tsx";
 
@@ -19,13 +18,9 @@ export default function Chat({ compaction }: { compaction?: Compaction }) {
 	useWorkingStatus(chat, messages);
 
 	const messageList = useMemo(
-		() => messages.data?.pages.flatMap((page) => page.messages) ?? [],
+		() => messages.data?.messages ?? [],
 		[messages.data],
 	);
-
-	// Older messages live off the top of the transcript, so reaching it is what
-	// asks for the next page.
-	const fetchOlder = useSentinel(messages);
 
 	const greeting = useGreeting();
 
@@ -58,7 +53,6 @@ export default function Chat({ compaction }: { compaction?: Compaction }) {
 			minHeight={0}
 			stickToBottom
 			resetKey={chat.data.id}
-			onReachTop={fetchOlder}
 		>
 			{messageList.map((message) => (
 				<Message key={message.id} message={message} compaction={compaction} />

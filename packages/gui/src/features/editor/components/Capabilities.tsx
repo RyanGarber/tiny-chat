@@ -46,6 +46,10 @@ import {
 	type McpToolset,
 	useTools,
 } from "#client/features/agent/hooks/useTools.ts";
+import {
+	selectMcpLogs,
+	useMcpLogStore,
+} from "#client/features/agent/stores/useMcpLogStore.ts";
 import { useMcpServerSettings } from "#client/features/settings/hooks/useMcpServerSettings.ts";
 import { useModelSettings } from "#client/features/settings/hooks/useModelSettings.ts";
 import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
@@ -56,6 +60,7 @@ import type { zSkill } from "#core/features/skill/types/skill.ts";
 import { read_file } from "#core/features/tool/tools/shell/read_file.ts";
 import type { Toolset } from "#core/features/tool/types/tool.ts";
 import { ToolUtils } from "#core/features/tool/utils/ToolUtils.ts";
+import { LogList } from "#gui/core/components/Console.tsx";
 import {
 	type CapabilitiesType,
 	useAppStore,
@@ -180,6 +185,31 @@ function KeyValueFields({
 			>
 				Add {label.toLowerCase()}
 			</Button>
+		</Stack>
+	);
+}
+
+/**
+ * A server's connection attempts and what it wrote to stderr. Mounted only
+ * while its card is open, so a busy server renders nothing otherwise.
+ */
+function McpServerLogs({ name }: { name: string }) {
+	const logs = useMcpLogStore(selectMcpLogs(name));
+
+	return (
+		<Stack gap={5}>
+			<Text size="sm" fw={500}>
+				Logs
+			</Text>
+			{logs.length ? (
+				<ScrollArea.Autosize mah={240} offsetScrollbars className="selectable">
+					<LogList logs={logs} />
+				</ScrollArea.Autosize>
+			) : (
+				<Text size="xs" c="dimmed">
+					Nothing logged yet
+				</Text>
+			)}
 		</Stack>
 	);
 }
@@ -377,6 +407,7 @@ function McpServerCard({
 							/>
 						</>
 					)}
+					{expanded && <McpServerLogs name={name} />}
 					<Group justify="space-between">
 						<Button
 							variant="subtle"

@@ -5,10 +5,10 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { ClientContext } from "#client/client.ts";
+import { useConsoleStore } from "#client/core/stores/useConsoleStore.ts";
 import { createLogger } from "#core/logger.ts";
 import { client } from "#gui/client.ts";
 import App from "#gui/core/components/App.tsx";
-import { useConsoleStore } from "#gui/core/stores/useConsoleStore.ts";
 
 createLogger({ logWriter: useConsoleStore.getState().writer });
 

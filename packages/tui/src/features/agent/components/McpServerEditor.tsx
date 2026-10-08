@@ -1,9 +1,17 @@
 import { hashKey } from "@tanstack/react-query";
+import { useWindowSize } from "ink";
 import { useState } from "react";
 import type { McpToolset } from "#client/features/agent/hooks/useTools.ts";
+import {
+	selectMcpLogs,
+	useMcpLogStore,
+} from "#client/features/agent/stores/useMcpLogStore.ts";
 import type { CompletionGroup } from "#client/features/editor/types/completion.ts";
 import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
 import type { zMCPServers } from "#core/features/data/types/user.ts";
+import Box from "#tui/core/components/Box.tsx";
+import HelpText from "#tui/core/components/HelpText.tsx";
+import LogView from "#tui/core/components/LogView.tsx";
 import Text from "#tui/core/components/Text.tsx";
 import { usePage } from "#tui/core/hooks/usePage.ts";
 import Choice from "#tui/features/settings/components/Choice.tsx";
@@ -16,6 +24,22 @@ import TextList, {
 } from "#tui/features/settings/components/TextList.tsx";
 
 export type McpServer = NonNullable<zMCPServers>[string];
+
+/**
+ * The server's connection attempts and what it wrote to stderr, which the CLI
+ * never lets through to the terminal. Subscribed only while open.
+ */
+function McpServerLogs({ name }: { name: string }) {
+	const { rows } = useWindowSize();
+	const logs = useMcpLogStore(selectMcpLogs(name));
+
+	return (
+		<Box flexDirection="column" height={Math.max(4, Math.floor(rows / 2))}>
+			<LogView logs={logs} />
+			<HelpText actions={[{ key: "↑↓", name: "scroll" }, "back"]} />
+		</Box>
+	);
+}
 
 /** Server names are the keys of the settings, which only take these. */
 const toName = (text: string) =>
@@ -59,6 +83,8 @@ export default function McpServerEditor({
 	onRefresh: () => void;
 	onClose: () => void;
 }) {
+	const logCount = useMcpLogStore((state) => selectMcpLogs(name)(state).length);
+
 	const [path, setPath] = useState<string[]>([]);
 	const route = path.at(-1) ?? null;
 	const push = (next: string) => setPath((current) => [...current, next]);
@@ -208,6 +234,7 @@ export default function McpServerEditor({
 			change({ ...nextServer, headers }),
 		);
 	}
+	if (route === "logs") return <McpServerLogs name={name} />;
 	const count = (record?: Record<string, string>) =>
 		String(Object.keys(record ?? {}).length);
 
@@ -262,6 +289,12 @@ export default function McpServerEditor({
 								route: "headers",
 							},
 						],
+		},
+		{
+			name: "output",
+			items: [
+				{ name: "logs", value: "logs", state: String(logCount), route: "logs" },
+			],
 		},
 	];
 

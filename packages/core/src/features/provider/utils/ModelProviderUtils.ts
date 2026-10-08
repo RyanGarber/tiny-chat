@@ -1,14 +1,90 @@
-import type { zConfig } from "#core/features/data/types/message.ts";
+import { zConfig } from "#core/features/data/types/message.ts";
 import type { zDataPart } from "#core/features/data/types/part.ts";
 import { FileExtractionService } from "#core/features/file/services/FileExtractionService.ts";
 import { FileUtils } from "#core/features/file/utils/FileUtils.ts";
 import type {
 	ModelProvider,
+	ModelProviderStatus,
+	zModel,
 	zModelArg,
+	zModelFeature,
 } from "#core/features/provider/types/model.ts";
+import type {
+	ProviderState,
+	ProviderStatus,
+} from "#core/features/provider/types/provider.ts";
 import { VERBOSE } from "#core/logger.ts";
 
+type ModelRef = Pick<zConfig, "provider" | "model">;
+
 export const ModelProviderUtils = {
+	/** Every model on offer with `feature`, in provider order. */
+	getModels: ({
+		providers,
+		feature,
+	}: {
+		providers: ProviderState<ProviderStatus>[];
+		feature: zModelFeature;
+	}): { provider: string; model: zModel }[] =>
+		providers
+			.filter(
+				(provider): provider is ProviderState<ModelProviderStatus> =>
+					provider.type === "model" &&
+					Array.isArray((provider.status as ModelProviderStatus).models),
+			)
+			.flatMap((provider) =>
+				provider.status.models
+					.filter((model) => model.features.includes(feature))
+					.map((model) => ({ provider: provider.name, model })),
+			),
+
+	/**
+	 * The config to chat with: the first of `candidates` naming a language model
+	 * still on offer. When none does, the first candidate keeps its tools and
+	 * skills but moves to an available model, preferring one that is not hidden.
+	 * Null only when no language model is on offer at all.
+	 */
+	getConfigValid: ({
+		candidates,
+		providers,
+		hidden = [],
+	}: {
+		candidates: (zConfig | null | undefined)[];
+		providers: ProviderState<ProviderStatus>[];
+		hidden?: ModelRef[];
+	}): zConfig | null => {
+		const models = ModelProviderUtils.getModels({
+			providers,
+			feature: "language",
+		});
+		const configs = candidates.filter((config): config is zConfig => !!config);
+		const valid = configs.find((config) =>
+			models.some(
+				(m) => m.provider === config.provider && m.model.name === config.model,
+			),
+		);
+		if (valid) return valid;
+
+		const fallback =
+			models.find(
+				(m) =>
+					!hidden.some(
+						(h) => h.provider === m.provider && h.model === m.model.name,
+					),
+			) ?? models[0];
+		if (!fallback) return null;
+		const [base] = configs;
+		return zConfig.parse({
+			...base,
+			provider: fallback.provider,
+			model: fallback.model.name,
+			args: ModelProviderUtils.getArgsValid({
+				args: base?.args ?? {},
+				modelArgs: fallback.model.args,
+			}),
+		});
+	},
+
 	isModel: (model: string, ...groups: string[]) => {
 		model = model.replace(/[+_.:]/g, "-");
 		groups = groups.map((group) => group.replace(/[+_.:]/g, "-"));

@@ -2,8 +2,7 @@
 
 import { type ChildProcess, spawn } from "node:child_process";
 import { watch } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
 import { useServerProcess as startServerProcess } from "../../../scripts/use-server.ts";
 import {
@@ -13,12 +12,12 @@ import {
 } from "../../../scripts/use-stdout.ts";
 import { compile } from "./compile.ts";
 
-let child: ChildProcess | undefined;
-
 const hmr =
 	!process.argv.includes("--no-hmr") &&
 	!CommonUtils.isTruthy(process.env.NO_HMR);
 const argv = process.argv.slice(2).filter((arg) => arg !== "--no-hmr");
+
+let child: ChildProcess | undefined;
 
 async function run() {
 	if (child) {
@@ -34,14 +33,15 @@ async function run() {
 		sourcemap: "inline",
 		external: ["@napi-rs/keyring", "@crosscopy/clipboard"],
 		dev: true,
+		metafile: true,
 	});
 
 	const entrypoint = result?.outputs?.find(
 		({ path }) => path.split("/").at(-1) === "index.js",
 	);
 	if (!entrypoint) {
-		print({ message: "waiting for changes" });
-		return;
+		print({ level: "warning", message: "no entrypoint found" });
+		return null;
 	}
 
 	const args = ["bun", entrypoint.path, ...argv];
@@ -61,10 +61,46 @@ async function run() {
 
 		if (hmr) print({ message: "waiting for changes" });
 	});
+
+	if (!result?.metafile) {
+		print({ level: "warning", message: "no metafile found" });
+		return null;
+	}
+
+	return Object.keys(result.metafile.inputs)
+		.map((p) => resolve(process.cwd(), p))
+		.filter((p) => !p.includes("/node_modules/"));
+}
+
+const abort = new AbortController();
+
+async function reload(inputs: string[] | null) {
+	try {
+		if (!inputs) {
+			print({ level: "warning", message: "nothing to watch" });
+			return;
+		}
+
+		print({ message: `watching ${inputs.length} files` });
+		const event = await Promise.any(
+			inputs.map(async (input) => {
+				return watch(input, { signal: abort.signal })
+					[Symbol.asyncIterator]()
+					.next();
+			}),
+		);
+
+		print({ message: `↻ changes: ${event.value?.filename}` });
+		const newInputs = await run();
+		await reload(newInputs);
+	} finally {
+		abort.abort();
+	}
 }
 
 // The dev compiler runs in Bun; keep the backend on Node as before.
-const cleanup = await startServerProcess({ execPath: "node" });
+// Quiet, as its logs would land in the middle of the CLI's UI; they are on disk.
+const cleanup = await startServerProcess({ execPath: "node", quiet: true });
 
 setExitHandler((isCtrlD) => {
 	if (child?.pid) {
@@ -76,7 +112,7 @@ setExitHandler((isCtrlD) => {
 });
 
 try {
-	await run();
+	const inputs = await run();
 
 	if (!hmr && child) {
 		const running = child;
@@ -84,15 +120,7 @@ try {
 	}
 
 	if (hmr) {
-		const watchPath = join(dirname(fileURLToPath(import.meta.url)), "../src");
-		print({ message: `watching ${watchPath}` });
-
-		for await (const event of watch(watchPath, { recursive: true })) {
-			if (event.eventType === "change") {
-				print({ message: `↻ changes: ${event.filename}` });
-				await run();
-			}
-		}
+		await reload(inputs);
 	}
 } finally {
 	child?.kill();

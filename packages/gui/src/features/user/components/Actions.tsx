@@ -32,7 +32,7 @@ export default function Actions() {
 
 	// An action runs on in the chat it was scheduled from, after its last message.
 	const { messages } = useMessages();
-	const lastMessageId = messages.data?.pages.at(-1)?.messages.at(-1)?.id;
+	const lastMessageId = messages.data?.messages.at(-1)?.id;
 
 	const [prompt, setPrompt] = useState("");
 	const [schedule, setSchedule] = useState("");

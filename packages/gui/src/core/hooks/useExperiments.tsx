@@ -26,9 +26,7 @@ export const useExperiments = () => {
 		[
 			"mod+.",
 			() => {
-				const message = messages.data?.pages
-					.flatMap((page) => page.messages)
-					.at(-1);
+				const message = messages.data?.messages.at(-1);
 				if (!message) return;
 				modals.openConfirmModal({
 					title: "Continue response",

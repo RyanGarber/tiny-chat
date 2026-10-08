@@ -12,17 +12,16 @@ export const message = router({
 		.input(
 			z.object({
 				chat: ChatLike.nullish(),
-				limit: z.number().int().positive().max(100).optional(),
 				start: zId.optional(),
+				/** Only the messages past this one, for a caller holding the rest. */
+				after: zId.nullish(),
 				branches: z.record(z.string(), z.string()).optional(),
-				cursor: zId.optional(),
 			}),
 		)
 		.query(async ({ ctx, input }) => {
 			if (!input.chat) {
 				return {
 					messages: [],
-					nextCursor: null,
 					branchOptions: {} as Record<string, string[]>,
 				};
 			}
@@ -30,11 +29,9 @@ export const message = router({
 			return await MessageService.getMessages({
 				user: ctx.session.user,
 				chat: input.chat,
-				limit: input.limit,
-				cursor: input.cursor,
 				start: input.start,
+				after: input.after,
 				branches: input.branches,
-				omit: !!input.limit,
 			});
 		}),
 
@@ -57,7 +54,7 @@ export const message = router({
 				author: z.enum(Enum.Author.values),
 				config: zConfig,
 				data: zData,
-				metadata: zMetadata,
+				metadata: zMetadata.optional(),
 				previous: MessageLike.nullish(),
 				temporary: z.boolean().optional(),
 				incognito: z.boolean().optional(),
@@ -85,7 +82,7 @@ export const message = router({
 				author: z.enum(Enum.Author.values),
 				config: zConfig,
 				data: zData,
-				metadata: zMetadata,
+				metadata: zMetadata.optional(),
 				truncate: z.boolean().optional(),
 			}),
 		)
@@ -108,7 +105,10 @@ export const message = router({
 				author: z.enum(Enum.Author.values),
 				config: zConfig,
 				data: zData,
-				metadata: zMetadata,
+				/** Replaces the stored metadata. */
+				metadata: zMetadata.optional(),
+				/** Added to the stored metadata. */
+				appendMetadata: zMetadata.optional(),
 				truncate: z.boolean().optional(),
 			}),
 		)
@@ -120,6 +120,7 @@ export const message = router({
 				config: input.config,
 				data: input.data,
 				metadata: input.metadata,
+				appendMetadata: input.appendMetadata,
 				truncate: input.truncate,
 			});
 		}),

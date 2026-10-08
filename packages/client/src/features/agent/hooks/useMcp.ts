@@ -2,6 +2,7 @@ import { useMutation, useQueries } from "@tanstack/react-query";
 import { useContext, useEffect } from "react";
 import { ClientContext } from "#client/client.ts";
 import { ClientMcpService } from "#client/features/agent/services/ClientMcpService.ts";
+import { useMcpLogStore } from "#client/features/agent/stores/useMcpLogStore.ts";
 import { useMcpStore } from "#client/features/agent/stores/useMcpStore.ts";
 import { useMcpServerSettings } from "#client/features/settings/hooks/useMcpServerSettings.ts";
 
@@ -93,6 +94,11 @@ export const useMcp = () => {
 			client.queryClient.removeQueries({
 				queryKey: [...mcpServerQueryKey, name],
 			});
+		}
+		// including servers that never connected
+		const { logs, clearLogs } = useMcpLogStore.getState();
+		for (const name of Object.keys(logs)) {
+			if (!current.has(name)) clearLogs(name);
 		}
 	}, [namesKey, setConnectedServer, client.queryClient]);
 

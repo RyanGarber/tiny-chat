@@ -32,7 +32,7 @@ afterAll(async () => {
 });
 
 describe("MessageService", () => {
-	it("retains original branches, clones all descendants, paginates selected branches and deletes safely", async () => {
+	it("retains original branches, clones all descendants, fetches the rest of a selected branch and deletes safely", async () => {
 		const root = await MessageService.createMessage({ user, ...content });
 		const a = await MessageService.createMessage({
 			user,
@@ -80,21 +80,22 @@ describe("MessageService", () => {
 		});
 		expect(clonedLong.messages).toHaveLength(3);
 		expect(clonedLong.messages.at(-1)?.id).not.toBe(leaf.id);
-		const page = await MessageService.getMessages({
+		const suffix = await MessageService.getMessages({
 			user,
 			chat: root.chatId,
 			branches: { [root.id]: b.id },
-			limit: 1,
+			after: root.id,
 		});
-		expect(page.messages.map((m) => m.id)).toEqual([leaf.id]);
-		const earlier = await MessageService.getMessages({
+		expect(suffix.messages.map((m) => m.id)).toEqual([b.id, leaf.id]);
+		expect(Object.keys(suffix.branchOptions)).toEqual([b.id, leaf.id]);
+		// A branch point off the path answers with the whole path.
+		const whole = await MessageService.getMessages({
 			user,
 			chat: root.chatId,
 			branches: { [root.id]: b.id },
-			cursor: page.nextCursor ?? undefined,
-			limit: 1,
+			after: a.id,
 		});
-		expect(earlier.messages.map((m) => m.id)).toEqual([b.id]);
+		expect(whole.messages.map((m) => m.id)).toEqual([root.id, b.id, leaf.id]);
 		const truncated = await MessageService.editMessage({
 			user,
 			...content,
@@ -178,6 +179,41 @@ describe("MessageService", () => {
 		expect(source.messages.map((m) => m.id)).toEqual([root.id, b.id]);
 		expect(source.messages.map((m) => m.id)).not.toContain(edited.id);
 		await ActionService.deleteAction({ user, id: action.id });
+	});
+
+	it("keeps metadata and embeddings on the server, appending generations", async () => {
+		const message = await MessageService.createMessage({
+			user,
+			...content,
+			metadata: [{ step: 1 }],
+		});
+		expect(message).not.toHaveProperty("metadata");
+		expect(message).not.toHaveProperty("embedding");
+		const updated = await MessageService.updateMessage({
+			user,
+			...content,
+			message,
+			metadata: undefined,
+			appendMetadata: [{ step: 2 }],
+		});
+		expect(updated).not.toHaveProperty("metadata");
+		const [fetched] = (
+			await MessageService.getMessages({ user, chat: message.chatId })
+		).messages;
+		expect(fetched).not.toHaveProperty("metadata");
+		expect(fetched).not.toHaveProperty("embedding");
+		const stored = await db.orm.public.Message.where({ id: message.id })
+			.select("metadata")
+			.first();
+		expect(stored?.metadata).toEqual([{ step: 1 }, { step: 2 }]);
+		await MessageService.updateMessage({ user, ...content, message });
+		expect(
+			(
+				await db.orm.public.Message.where({ id: message.id })
+					.select("metadata")
+					.first()
+			)?.metadata,
+		).toEqual([]);
 	});
 
 	it("locates a message on a branch other than the default one", async () => {

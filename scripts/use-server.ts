@@ -199,14 +199,22 @@ export async function useServerProcess({
 	execPath = process.execPath,
 	start,
 	host,
+	quiet,
 }: {
 	execPath?: string;
 	start?: boolean | null;
 	host?: true;
+	/**
+	 * Keeps the server's output off the terminal, for a host drawing its own UI
+	 * there; the server still logs to disk. Only the end of its stderr is kept,
+	 * to report a server that fails to start.
+	 */
+	quiet?: boolean;
 } = {}) {
 	print({ message: "starting..." });
 
 	let child: ChildProcess | undefined;
+	let stderr = "";
 	let released = false;
 
 	const release = () =>
@@ -254,10 +262,14 @@ export async function useServerProcess({
 					...(host ? ["--host"] : []),
 				],
 				{
-					stdio: "inherit",
+					stdio: quiet ? ["ignore", "ignore", "pipe"] : "inherit",
 					env: process.env,
 				},
 			);
+			child.stderr?.setEncoding("utf8");
+			child.stderr?.on("data", (chunk: string) => {
+				stderr = (stderr + chunk).slice(-4096);
+			});
 			if (child.pid !== undefined) writeFileSync(serverFile, `${child.pid}`);
 		}
 	});
@@ -271,7 +283,9 @@ export async function useServerProcess({
 							child?.once("error", reject);
 							child?.once("exit", (code, signal) => {
 								if (released) return;
-								const error = new Error(`Server exited with ${signal ?? code}`);
+								const error = new Error(
+									`Server exited with ${signal ?? code}${stderr ? `\n${stderr}` : ""}`,
+								);
 								// Typically EADDRINUSE: a server started elsewhere won the port.
 								waitOn({ resources: [serverUrl], timeout: 5_000 }).then(
 									() => {

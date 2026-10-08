@@ -229,7 +229,7 @@ function PreviewPane({
 	const ref = useRef<NonNullable<ScrollViewProps["ref"]>["current"]>(null);
 
 	const { messages } = useMessages();
-	const lastMessageId = messages.data?.pages.at(-1)?.messages.at(-1)?.id;
+	const lastMessageId = messages.data?.messages.at(-1)?.id;
 	let messageId: string | null = null;
 	if (preview.type === "memory")
 		messageId = ChatFilesUtils.memory(preview.memory).messageId;

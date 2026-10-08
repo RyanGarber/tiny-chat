@@ -20,7 +20,8 @@ type Content = {
 	author: Enum["Author"];
 	config: zConfig;
 	data: zData;
-	metadata: zMetadata;
+	/** What providers reported for the generations behind `data`. */
+	metadata?: zMetadata;
 };
 
 const requireRow = <T>(row: T | null | undefined): T => {
@@ -44,17 +45,7 @@ export const MessageService = {
 					userId: user.id,
 					id: message.id,
 				})
-					.select(
-						"id",
-						"userId",
-						"chatId",
-						"previousId",
-						"author",
-						"config",
-						"data",
-						"createdAt",
-						"updatedAt",
-					)
+					.select(...MessageUtils.columns)
 					.first(),
 			),
 		);
@@ -91,22 +82,22 @@ export const MessageService = {
 		return { chatId, branches };
 	},
 
-	/** Fetch the topology once, then only the selected page's content. */
+	/**
+	 * The whole selected branch of a chat, with the sibling options at each
+	 * message. Given `after`, only the part of the branch past that message is
+	 * read, for a caller that already holds everything up to it.
+	 */
 	getMessages: async ({
 		user,
 		chat,
-		limit,
-		cursor,
-		omit,
 		start,
+		after,
 		branches = {},
 	}: {
 		user: zUser;
 		chat: ChatLike;
-		limit?: number;
-		cursor?: string;
-		omit?: boolean;
 		start?: string;
+		after?: string | null;
 		branches?: MessageBranches;
 	}) => {
 		if (typeof chat === "string") chat = { id: chat };
@@ -119,10 +110,10 @@ export const MessageService = {
 			await query.select("id", "previousId", "createdAt").all()
 		).map((m) => ({ ...m, createdAt: CommonUtils.toDate(m.createdAt) }));
 		const path = MessageBranchUtils.getBranch(topology, start, branches);
-		const index = cursor ? path.findIndex((m) => m.id === cursor) : path.length;
-		const end = index < 0 ? path.length : index;
-		const from = limit ? Math.max(0, end - limit) : 0;
-		const page = path.slice(from, end);
+		// A branch point the path no longer runs through is answered with the
+		// whole path, which the caller tells apart by where it begins.
+		const from = after ? path.findIndex((m) => m.id === after) + 1 : 0;
+		const page = path.slice(from);
 		const siblings = MessageBranchUtils.index(topology).children;
 		const branchOptions = Object.fromEntries(
 			page.map((m) => [
@@ -130,29 +121,16 @@ export const MessageService = {
 				(siblings.get(m.previousId) ?? []).map((s) => s.id),
 			]),
 		);
-		if (!page.length) return { messages: [], nextCursor: null, branchOptions };
-		const selected = query.where((m) => m.id.in(page.map((m) => m.id)));
-		const rows = omit
-			? await selected
-					.select(
-						"id",
-						"userId",
-						"chatId",
-						"previousId",
-						"author",
-						"config",
-						"data",
-						"createdAt",
-						"updatedAt",
-					)
-					.all()
-			: await selected.all();
+		if (!page.length) return { messages: [], branchOptions };
+		const rows = await query
+			.where((m) => m.id.in(page.map((m) => m.id)))
+			.select(...MessageUtils.columns)
+			.all();
 		const byId = new Map(
 			MessageUtils.toMessageStates(rows).map((m) => [m.id, m]),
 		);
 		return {
 			messages: page.map((m) => requireRow(byId.get(m.id) ?? null)),
-			nextCursor: from > 0 ? path[from].id : null,
 			branchOptions,
 		};
 	},
@@ -251,8 +229,11 @@ export const MessageService = {
 					incognito: incognito ?? false,
 				});
 			}
-			const created = await tx.orm.public.Message.create({
+			const created = await tx.orm.public.Message.select(
+				...MessageUtils.columns,
+			).create({
 				...content,
+				metadata: content.metadata ?? [],
 				id: CommonUtils.getRandomId(),
 				userId: user.id,
 				chatId: chatId ?? undefined,
@@ -288,6 +269,7 @@ export const MessageService = {
 				id: message.id,
 				userId: user.id,
 			})
+				.select("id", "chatId", "previousId")
 				.include("chat", (chat) =>
 					chat
 						.select("incognito")
@@ -306,8 +288,11 @@ export const MessageService = {
 			: { memories: [], embedding: undefined };
 
 		return await globalThis.db.transaction(async (tx) => {
-			const edited = await tx.orm.public.Message.create({
+			const edited = await tx.orm.public.Message.select(
+				...MessageUtils.columns,
+			).create({
 				...content,
+				metadata: content.metadata ?? [],
 				id: CommonUtils.getRandomId(),
 				userId: user.id,
 				chatId: existing.chatId,
@@ -359,31 +344,42 @@ export const MessageService = {
 		});
 	},
 
-	/** In-place writes are reserved for generation/feedback, never user edits. */
+	/**
+	 * In-place writes are reserved for generation/feedback, never user edits.
+	 * `metadata` replaces what is stored; `appendMetadata` adds a generation's
+	 * to it without the caller ever having to read it back.
+	 */
 	updateMessage: async ({
 		user,
 		message,
 		truncate: _truncate,
+		appendMetadata,
+		metadata,
 		...content
 	}: Content & {
 		user: zUser;
 		message: MessageLike;
 		truncate?: boolean;
+		appendMetadata?: zMetadata;
 	}) => {
 		if (typeof message === "string") message = { id: message };
 
-		const existing = requireRow(
-			await globalThis.db.orm.public.Message.where({
-				id: message.id,
-				userId: user.id,
-			}).first(),
-		);
+		const query = globalThis.db.orm.public.Message.where({
+			id: message.id,
+			userId: user.id,
+		});
+		const existing = requireRow(await query.select("data").first());
+		const stored = appendMetadata?.length
+			? requireRow(await query.select("metadata").first()).metadata
+			: undefined;
 		const updated = requireRow(
-			await globalThis.db.orm.public.Message.where({
-				id: message.id,
-				userId: user.id,
-			}).update({
+			await query.select(...MessageUtils.columns).update({
 				...content,
+				...(stored
+					? { metadata: [...(metadata ?? stored), ...(appendMetadata ?? [])] }
+					: metadata
+						? { metadata }
+						: {}),
 				updatedAt: Temporal.Now.plainDateTimeISO("UTC"),
 				...(DataUtils.getText(existing) !== DataUtils.getText(content)
 					? { embedding: null }

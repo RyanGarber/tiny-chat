@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { _debug } from "#tui/features/settings/components/Settings.tsx";
 
 export type Page =
 	| "chat"
@@ -9,7 +8,8 @@ export type Page =
 	| "uploads"
 	| "github"
 	| "memories"
-	| "actions";
+	| "actions"
+	| "console";
 
 export type Panel = "chats" | "files";
 
@@ -99,7 +99,7 @@ export const selectPage = (state: AppStore): Page => {
 };
 
 export const useAppStore = create<AppStore>((set) => ({
-	focus: _debug ? "settings" : "editor",
+	focus: "editor",
 	setFocus: (focus) => set({ focus }),
 	focusables: [],
 	addFocusable: (focusable) =>

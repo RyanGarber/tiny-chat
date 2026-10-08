@@ -30,6 +30,7 @@ pub async fn mcp_start_stdio(
 
     let stdin = client.stdin.take().unwrap();
     let stdout = client.stdout.take().unwrap();
+    let stderr = client.stderr.take().unwrap();
 
     let app_clone = app.clone();
     let id_clone = id.clone();
@@ -38,6 +39,18 @@ pub async fn mcp_start_stdio(
         let mut lines = BufReader::new(stdout).lines();
         while let Ok(Some(line)) = lines.next_line().await {
             app_clone.emit(&format!("mcp-data:{}", id_clone), line).ok();
+        }
+    });
+
+    // Drained even when nobody listens, so a chatty server never blocks on a
+    // full pipe; the webview keeps it as the server's log.
+    let app_clone = app.clone();
+    let id_clone = id.clone();
+
+    tokio::spawn(async move {
+        let mut lines = BufReader::new(stderr).lines();
+        while let Ok(Some(line)) = lines.next_line().await {
+            app_clone.emit(&format!("mcp-log:{}", id_clone), line).ok();
         }
     });
 

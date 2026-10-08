@@ -6,6 +6,8 @@ import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
 import { useMessageQueueStore } from "#client/features/chat/stores/useMessageQueueStore.ts";
 import { MessageQueryService } from "#client/features/message/services/MessageQueryService.ts";
 import { UserService } from "#client/features/user/services/UserService.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
+import { TypeUtils } from "#core/core/utils/TypeUtils.ts";
 import type { zAgentMessage } from "#core/features/agent/types/agent.ts";
 import { AgentUtils } from "#core/features/agent/utils/AgentUtils.ts";
 import type { ChatState } from "#core/features/data/types/chat.ts";
@@ -75,14 +77,11 @@ export const ClientMessageService = {
 			mcpTools = [];
 		}
 
-		let prompt: MessageState | undefined = message;
-		if (message.author === "MODEL") {
-			const { messages } = await client.api.message.getMessages.query({
-				chat,
-				start: message.id,
-			});
-			prompt = messages.find((m) => m.id === message.previousId);
-		}
+		const branch = await ClientMessageService._getBranch(client, message);
+		const prompt =
+			message.author === "MODEL"
+				? branch.find((m) => m.id === message.previousId)
+				: message;
 		if (!prompt) {
 			throw new Error(`Could not find prompt (user) message for ${message.id}`);
 		}
@@ -91,6 +90,7 @@ export const ClientMessageService = {
 			client,
 			prompt,
 			chat,
+			branch,
 			toolResults,
 		);
 
@@ -104,17 +104,26 @@ export const ClientMessageService = {
 
 		void (async () => {
 			let failed = true;
+			// Generated into a copy: the reply in the cache is what was last saved,
+			// and stays that until the save lands.
+			const working: MessageState = {
+				...response,
+				data: TypeUtils.deepClone(response.data),
+			};
+			// Only this generation's: the server adds it to what is stored.
+			const metadata: zMetadata = [];
 			try {
-				Object.assign(
-					response,
+				try {
 					await ClientAgentService.runAgent({
 						client,
-						data: response.data,
-						metadata: response.metadata,
+						data: working.data,
+						metadata,
 						context: {
 							user,
 							chat,
-							messages,
+							messages: messages.map((m) =>
+								m.id === working.id ? { ...m, data: working.data } : m,
+							),
 							timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 							interactive: true,
 						},
@@ -125,25 +134,54 @@ export const ClientMessageService = {
 						skills,
 						streamKey: response.id,
 						streamChat: chat.id,
-					}),
-				);
-				await ClientMessageService._finalize(client, response);
-				failed = false;
+					});
+					failed = false;
+				} catch (error) {
+					// The generation stopped short: what it produced is kept, ending on
+					// why, rather than the reply being left as it was before it ran.
+					console.error("[ClientMessageService] generation failed:", error);
+					ClientMessageService._abort(working.data, error);
+				}
+				await ClientMessageService._finalize(client, working, metadata);
+			} catch (error) {
+				failed = true;
+				console.error("[ClientMessageService] could not save reply:", error);
+				await ClientMessageService._saveFailed(client, working, error);
 			} finally {
-				useMessageQueueStore.getState().finish(chat.id, response.data, failed);
+				useMessageQueueStore.getState().finish(chat.id, working.data, failed);
 				// Keep the live overlay until persisted content is in the cache.
 				AgentStreamService.clear(response.id);
 			}
 		})();
 	},
 
-	/** Find or create the model reply and start a stream for it. */
+	/**
+	 * The branch through `message`: the open chat's history when it holds it,
+	 * which it does for anything sent or regenerated from the chat on screen.
+	 */
+	_getBranch: async (
+		client: Client,
+		message: MessageState,
+	): Promise<MessageState[]> => {
+		const cached = MessageQueryService.getCurrent(client, message.chatId);
+		if (cached?.messages.some((m) => m.id === message.id))
+			return cached.messages;
+		const state = useChatStore.getState();
+		const { messages } = await client.api.message.getMessages.query({
+			chat: message.chatId,
+			start: message.id,
+			branches: state.chatId === message.chatId ? state.branches : undefined,
+		});
+		return messages;
+	},
+
+	/** Find or create the model reply following `prompt` on `branch`. */
 	_prepare: async (
 		client: Client,
 		prompt: MessageState,
 		chat: ChatState,
+		branch: MessageState[],
 		toolResults?: zDataPart[],
-		responseId?: string,
 	): Promise<{ response: MessageState; messages: zAgentMessage[] }> => {
 		console.log(
 			"[ClientMessageService] preparing response",
@@ -151,94 +189,124 @@ export const ClientMessageService = {
 			chat,
 			toolResults,
 		);
-		// Fetch full message list once so we can both locate the existing response
-		// and build the generation context from a single source of truth.
-		const { messages } = await client.api.message.getMessages.query({
-			chat: prompt.chatId,
-			start: responseId ?? prompt.id,
-			branches:
-				useChatStore.getState().chatId === prompt.chatId
-					? useChatStore.getState().branches
-					: undefined,
-		});
-		const existing = messages.find((m) => m.previousId === prompt.id);
+		const index = branch.findIndex((m) => m.id === prompt.id);
+		if (index < 0) throw new Error(`Prompt ${prompt.id} is not on its branch`);
+		const next = branch[index + 1];
+		const existing = next?.previousId === prompt.id ? next : undefined;
 
 		let response: MessageState;
 		if (existing) {
-			let data: zData = [];
-			let metadata: zMetadata = [];
-			if (toolResults) {
-				data = existing.data.map((d, i) =>
-					i === existing.data.length - 1
-						? AgentUtils.getToolResultsSorted({ data: [...d, ...toolResults] })
-						: d,
-				);
-				metadata = [...existing.metadata];
-			}
-			const edited = await client.api.message.updateMessage.mutate({
+			// New results go into the reply's last step. Without any, the reply
+			// starts over, and so does what the server keeps about it.
+			const data: zData = toolResults
+				? existing.data.map((d, i) =>
+						i === existing.data.length - 1
+							? AgentUtils.getToolResultsSorted({
+									data: [...d, ...toolResults],
+								})
+							: d,
+					)
+				: [];
+			response = await client.api.message.updateMessage.mutate({
 				message: existing.id,
 				config: prompt.config,
 				author: existing.author,
 				data,
-				metadata,
+				metadata: toolResults ? undefined : [],
 				truncate: false,
 			});
-			response = { ...edited };
 		} else {
-			const created = await client.api.message.createMessage.mutate({
+			response = await client.api.message.createMessage.mutate({
 				chat: prompt.chatId,
 				author: "MODEL",
 				config: prompt.config,
-				metadata: [],
 				data: [],
 				previous: prompt.id,
 				temporary: chat.temporary,
 			});
-			response = { ...created };
 		}
 
 		await MessageQueryService.write(client, response, true);
 
-		// Re-fetch to ensure the context reflects the inserted/edited reply.
-		const { messages: updatedMessages } =
-			await client.api.message.getMessages.query({
-				chat: prompt.chatId,
-				start: response.id,
-			});
-		const responseIndex = updatedMessages.findIndex(
-			(message) => message.id === response.id,
-		);
-		const responseRef =
-			responseIndex >= 0 ? updatedMessages[responseIndex] : response;
-
 		return {
-			response: responseRef,
-			messages: updatedMessages
-				.slice(
-					0,
-					(responseIndex >= 0 ? responseIndex : updatedMessages.length) + 1,
-				)
-				.map(
-					(message): zAgentMessage => ({
-						id: message.id,
-						author: message.author,
-						data: message.data,
-						config: message.config,
-						createdAt: message.createdAt,
-					}),
-				),
+			response,
+			messages: [...branch.slice(0, index + 1), response].map(
+				(message): zAgentMessage => ({
+					id: message.id,
+					author: message.author,
+					data: message.data,
+					config: message.config,
+					createdAt: message.createdAt,
+				}),
+			),
 		};
 	},
 
+	/** End a reply on the error that stopped it, dropping calls left half-written. */
+	_abort: (data: zData, error: unknown) => {
+		if (!data.length) data.push([]);
+		const parts = data[data.length - 1];
+		parts.splice(
+			0,
+			parts.length,
+			...parts.filter((part) => !(part.type === "toolCall" && part.partial)),
+		);
+		parts.push({
+			id: CommonUtils.getRandomId(),
+			type: "abort",
+			reason:
+				error instanceof Error && error.name === "AbortError"
+					? "user"
+					: "error",
+			message: error instanceof Error ? error.message : String(error),
+			details: CommonUtils.formatError({ error, details: true }),
+		});
+	},
+
+	/**
+	 * The reply could not be saved as generated. The server keeps why, and the
+	 * open chat keeps what was generated on top of that until it is reloaded.
+	 */
+	_saveFailed: async (
+		client: Client,
+		working: MessageState,
+		error: unknown,
+	): Promise<void> => {
+		const failure: zData = [];
+		ClientMessageService._abort(failure, error);
+		const [[abort]] = failure;
+		if (abort.type === "abort")
+			abort.message = `This reply could not be saved: ${abort.message}`;
+		try {
+			await client.api.message.updateMessage.mutate({
+				message: working.id,
+				author: working.author,
+				config: working.config,
+				data: failure,
+				truncate: false,
+			});
+		} catch (error) {
+			console.error("[ClientMessageService] could not save failure:", error);
+		}
+		await MessageQueryService.write(client, {
+			...working,
+			data: [...working.data, ...failure],
+		});
+	},
+
 	/** Persist the final reply state to the server. */
-	_finalize: async (client: Client, response: MessageState): Promise<void> => {
+	_finalize: async (
+		client: Client,
+		response: MessageState,
+		metadata: zMetadata,
+	): Promise<void> => {
 		console.log("[ClientMessageService] finalizing", response);
 		const saved = await client.api.message.updateMessage.mutate({
 			message: response.id,
 			author: response.author,
 			config: response.config,
 			data: response.data,
-			metadata: response.metadata,
+			appendMetadata: metadata,
 			truncate: false,
 		});
 		await MessageQueryService.write(client, saved);

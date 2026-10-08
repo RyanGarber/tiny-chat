@@ -107,6 +107,7 @@ export default function Commands({
 		onOpenGitHub: () => setFocus("github"),
 		onOpenMemories: () => setFocus("memories"),
 		onOpenActions: () => setFocus("actions"),
+		onOpenConsole: () => setFocus("console"),
 	});
 
 	const commands = getCommands();

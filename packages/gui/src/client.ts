@@ -71,8 +71,8 @@ export const client = createClient({
 	},
 	transports: (await TauriUtils.isTauriDesktop())
 		? {
-				createStdio: ({ name, command, env }) => {
-					return new TauriStdioTransport(name, command, env);
+				createStdio: ({ name, command, env, onStderr }) => {
+					return new TauriStdioTransport(name, command, env, onStderr);
 				},
 				createStreamableHttp: ({ name, url, headers }) => {
 					return new TauriHttpTransport(name, String(url), headers);

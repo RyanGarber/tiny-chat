@@ -37,7 +37,7 @@ export default function RightSection({
 }) {
 	const { chat } = useChat();
 	const { sendMessage } = useMessaging();
-	const { config, setConfig } = useConfig();
+	const { config, status, setConfig } = useConfig();
 	const currentModal = useAppStore((state) => state.currentModal);
 
 	const stream = useStreamStore((state) =>
@@ -79,7 +79,9 @@ export default function RightSection({
 							h={30}
 							w={30}
 							disabled={disabled}
-							color="var(--mantine-color-dimmed)"
+							color={
+								status === "unavailable" ? "red" : "var(--mantine-color-dimmed)"
+							}
 							onClick={toggle}
 							className="right-section"
 						>
@@ -93,12 +95,14 @@ export default function RightSection({
 							h={40}
 							px={15}
 							disabled={disabled}
-							color="var(--mantine-color-dimmed)"
+							color={
+								status === "unavailable" ? "red" : "var(--mantine-color-dimmed)"
+							}
 							onClick={toggle}
 							className="right-section"
 						>
 							<Text size="sm" truncate="start" maw={modelWidth}>
-								{config.model}
+								{status === "unavailable" ? "No model available" : config.model}
 							</Text>
 						</Button>
 					)}
@@ -123,7 +127,9 @@ export default function RightSection({
 				}}
 				loading={sendMessage.isPending}
 				disabled={
-					stream && isEmpty ? false : isEmpty || isIncomplete || disabled
+					stream && isEmpty
+						? false
+						: isEmpty || isIncomplete || disabled || status !== "ready"
 				}
 			>
 				{stream && isEmpty ? (

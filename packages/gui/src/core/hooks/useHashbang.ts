@@ -50,8 +50,8 @@ export const useHashbang = () => {
 
 		const onHashChange = () => {
 			const { hash } = getHashbang();
-			if (hash !== lastHashbangRef.current.hash || isFirstLoad) {
-				ChatService.setChat({ id: hash });
+			if (hash !== lastHashbangRef.current.hash || isFirstLoad.current) {
+				ChatService.setChat({ id: hash || null });
 			}
 			lastHashbangRef.current = getHashbang();
 			isFirstLoad.current = false;

@@ -14,9 +14,7 @@ export const useMessageBranches = (message: MessageState) => {
 			MessageQueryService.selectBranch(client, message.previousId, id),
 		throwOnError: true,
 	});
-	const options =
-		messages.data?.pages.find((p) => p.branchOptions[message.id])
-			?.branchOptions[message.id] ?? [];
+	const options = messages.data?.branchOptions[message.id] ?? [];
 	const index = options.indexOf(message.id);
 	return {
 		index,

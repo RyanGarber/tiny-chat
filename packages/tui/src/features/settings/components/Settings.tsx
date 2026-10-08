@@ -37,8 +37,6 @@ import TextList, {
 	type Draft,
 } from "#tui/features/settings/components/TextList.tsx";
 
-export const _debug = false;
-
 type Feature = Exclude<zModelFeature, "language:tools">;
 
 const onOff = (value: boolean) => (value ? "on" : "off");

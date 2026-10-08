@@ -14,10 +14,7 @@ import { testUser } from "#server/tests.ts";
 const user = testUser();
 const config = zConfig.parse({ provider: "test", model: "test-generate" });
 
-const messageData: Pick<
-	MessageState,
-	"author" | "config" | "data" | "metadata"
->[] = [
+const messageData: Pick<MessageState, "author" | "config" | "data">[] = [
 	{
 		author: "USER",
 		config,
@@ -30,7 +27,6 @@ const messageData: Pick<
 				},
 			],
 		],
-		metadata: [],
 	},
 	{
 		author: "MODEL",
@@ -44,7 +40,6 @@ const messageData: Pick<
 				},
 			],
 		],
-		metadata: [],
 	},
 ];
 

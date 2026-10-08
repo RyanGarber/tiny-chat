@@ -120,11 +120,6 @@ export function useAutoScroll({
 			}
 		}
 
-		// Content grows in after any leading header — the loading sentinel here —
-		// so the first child never moves and cannot reveal that growth. Anchoring
-		// one further down keeps prepended pages measurable.
-		if (index === 0 && children.length > 1) index = 1;
-
 		const node = children.item(index);
 		anchorRef.current = node
 			? { node, offset: node.getBoundingClientRect().top - viewportTop }
@@ -445,9 +440,13 @@ export function useAutoScroll({
 		}
 	}, [viewportEl, scrollRequested, scrollToBottom, scrollPaused]);
 
+	/** Whether the view is following the bottom, as of right now. */
+	const isLockedToBottom = useCallback(() => isAtBottomRef.current, []);
+
 	return {
 		viewportRef,
 		isAtBottom,
+		isLockedToBottom,
 		scrollToBottom,
 		scrollToNode,
 	};

@@ -73,9 +73,10 @@ export interface ScrollViewProps extends Omit<BoxProps, "overflow"> {
 	edgeThreshold?: number;
 
 	/**
-	 * Rows beyond each edge of the viewport that are still drawn. Everything
-	 * past them is held at the height it was last measured at and skipped.
-	 * `Infinity` draws the whole list. @default 40
+	 * Rows beyond each edge of the viewport whose children are mounted.
+	 * Everything past them is unmounted and held at the height it was last
+	 * measured at, or an estimate if it never was. `Infinity` mounts the whole
+	 * list. @default 40
 	 */
 	overscan?: number;
 }
@@ -98,10 +99,13 @@ const clamp = (value: number, min: number, max: number) =>
  * a child that grows on its own — a streaming message, a tool call being
  * expanded — is accounted for without having to announce itself.
  *
- * Only the children near the viewport are drawn. The rest are hidden behind a
- * box holding the height they were last measured at, which keeps every position
- * this view works in exactly what it would have been had the whole list been
- * drawn, while costing a single node to lay out and nothing at all to render.
+ * Only the children near the viewport are mounted. The rest are replaced by a
+ * box holding the height they were last measured at — or, for one never drawn,
+ * the average of those that were — which keeps every position this view works
+ * in what it would have been had the whole list been drawn, while costing a
+ * single node and nothing at all to render. A list opened at its bottom mounts
+ * only what fills the bottom, however long it is. Anything a child needs to
+ * survive being scrolled away from, it keeps outside itself.
  */
 export default function ScrollView({
 	ref,
@@ -268,9 +272,7 @@ export default function ScrollView({
 		return list;
 	}, [children]);
 
-	// Identity of the children as they were last laid out, so a page of older
-	// content arriving above the viewport can be told apart from one appended
-	// below it.
+	// Identity of the children, which heights and the drawn run are held by.
 	const keys = useMemo(
 		() =>
 			items.map((child, index) =>
@@ -278,7 +280,6 @@ export default function ScrollView({
 			),
 		[items],
 	);
-	const previousKeysRef = useRef<string[] | null>(null);
 
 	// The run of children that is drawn, held by key rather than by index so a
 	// page arriving above the viewport keeps drawing the same children instead of
@@ -289,42 +290,51 @@ export default function ScrollView({
 	const heightsRef = useRef(new Map<string, number>());
 
 	const range = useMemo(() => {
-		if (!drawn || overscan === Number.POSITIVE_INFINITY) return null;
-		const first = keys.indexOf(drawn.first);
-		const last = keys.lastIndexOf(drawn.last);
-		// Children the run was pinned to have gone; everything is drawn until the
-		// pass below settles on a run that exists.
-		if (first < 0 || last < first) return null;
-		return { first, last };
+		if (overscan === Number.POSITIVE_INFINITY) return null;
+		const first = drawn ? keys.indexOf(drawn.first) : -1;
+		const last = drawn ? keys.lastIndexOf(drawn.last) : -1;
+		if (first >= 0 && last >= first) return { first, last };
+		// Before there is a run, or once the children it was pinned to have gone,
+		// only the child at the resting edge is drawn, and the pass below widens
+		// that to whatever fills the viewport.
+		if (!keys.length) return null;
+		const edge = pinnedRef.current ? keys.length - 1 : 0;
+		return { first: edge, last: edge };
 	}, [drawn, keys, overscan]);
 
-	// A child is only worth hiding once there is a height to hide it at, so one
-	// that has never been laid out is drawn wherever it sits.
 	const hidden = keys.map(
-		(key, index) =>
-			!!range &&
-			(index < range.first || index > range.last) &&
-			heightsRef.current.has(key),
+		(_, index) => !!range && (index < range.first || index > range.last),
 	);
+
+	// What a child never laid out is held at: the average of those that were.
+	const estimate = () => {
+		const heights = heightsRef.current;
+		if (!heights.size) return 1;
+		let total = 0;
+		for (const value of heights.values()) total += value;
+		return Math.max(1, Math.round(total / heights.size));
+	};
 
 	const previousColumnsRef = useRef(columns);
 	const previousResetKeyRef = useRef(resetKey);
 	const previousSelectedRef = useRef<number | undefined>(undefined);
 	const previousSelectedKeyRef = useRef<string | undefined>(undefined);
 	const lastEdgeRef = useRef({ top: false, bottom: false, content: -1 });
+	// The first child in view and where it sat in the content, so content above
+	// it changing height — an estimate replaced by a measurement, a page of older
+	// content arriving — leaves the rows being read where they are.
+	const anchorRef = useRef<{ key: string; top: number } | null>(null);
 
 	// Ink recomputes the whole layout before this runs, so every height read here
 	// is the one about to be drawn.
 	useLayoutEffect(() => {
-		const previousKeys = previousKeysRef.current;
-		previousKeysRef.current = keys;
-
 		// Every height is a height at a width. Once that width moves, none of them
 		// describe anything, so the list goes back to being drawn whole and is
 		// measured again from what it lays out to now.
 		if (previousColumnsRef.current !== columns) {
 			previousColumnsRef.current = columns;
 			heightsRef.current.clear();
+			anchorRef.current = null;
 			setDrawn(null);
 		} else {
 			// Rebuilt rather than updated so children that have gone drop out of it.
@@ -347,12 +357,12 @@ export default function ScrollView({
 			previousResetKeyRef.current = resetKey;
 			lastEdgeRef.current = { top: false, bottom: false, content: -1 };
 			scrollTo(stickToBottom ? getMaxOffset() : 0);
-		} else if (previousKeys?.length && !pinnedRef.current) {
-			// Content added above the viewport would otherwise carry it down by the
-			// height of the new content, so the row being read is held in place.
-			const shift = keys.indexOf(previousKeys[0]);
-			const position = shift > 0 ? getItemPosition(shift) : null;
-			if (position) scrollTo(offsetRef.current + position.top);
+		} else if (anchorRef.current && !pinnedRef.current) {
+			const anchor = anchorRef.current;
+			const index = keys.indexOf(anchor.key);
+			const position = index >= 0 ? getItemPosition(index) : null;
+			if (position && position.top !== anchor.top)
+				scrollTo(offsetRef.current + position.top - anchor.top);
 		}
 
 		// Content that shrank out from under the view — a tool call collapsing, a
@@ -383,15 +393,32 @@ export default function ScrollView({
 			const top = getScrollOffset() - overscan;
 			const bottom = getScrollOffset() + viewport + overscan;
 
-			let first = -1;
-			let last = -1;
-			for (let index = 0; index < items.length; index++) {
+			// Every child has a box at its place, so the run is found by halving.
+			const ends = (index: number) => {
 				const position = getItemPosition(index);
-				if (!position) continue;
-				if (position.top + position.height <= top) continue;
-				if (position.top >= bottom) break;
-				if (first < 0) first = index;
-				last = index;
+				return position ? position.top + position.height : 0;
+			};
+			const starts = (index: number) => getItemPosition(index)?.top ?? 0;
+			let low = 0;
+			let high = items.length - 1;
+			let first = -1;
+			while (low <= high) {
+				const middle = (low + high) >> 1;
+				if (ends(middle) <= top) low = middle + 1;
+				else {
+					first = middle;
+					high = middle - 1;
+				}
+			}
+			let last = first;
+			low = Math.max(first, 0);
+			high = items.length - 1;
+			while (first >= 0 && low <= high) {
+				const middle = (low + high) >> 1;
+				if (starts(middle) < bottom) {
+					last = middle;
+					low = middle + 1;
+				} else high = middle - 1;
 			}
 
 			if (
@@ -399,6 +426,22 @@ export default function ScrollView({
 				(keys[first] !== drawn?.first || keys[last] !== drawn?.last)
 			)
 				setDrawn({ first: keys[first], last: keys[last] });
+
+			// Taken against the offset just settled on, for the next pass to hold.
+			const current = getScrollOffset();
+			low = 0;
+			high = items.length - 1;
+			let visible = -1;
+			while (low <= high) {
+				const middle = (low + high) >> 1;
+				if (ends(middle) <= current) low = middle + 1;
+				else {
+					visible = middle;
+					high = middle - 1;
+				}
+			}
+			anchorRef.current =
+				visible >= 0 ? { key: keys[visible], top: starts(visible) } : null;
 		}
 
 		// Nothing has been laid out yet, so any edge would be one every view is at.
@@ -470,21 +513,12 @@ export default function ScrollView({
 							// Stands in for the child while it is hidden, so the rows it
 							// takes up are still there to be scrolled through and measured.
 							height={
-								hidden[index] ? heightsRef.current.get(keys[index]) : undefined
+								hidden[index]
+									? (heightsRef.current.get(keys[index]) ?? estimate())
+									: undefined
 							}
 						>
-							{/* Always here, hidden or not: a child that came and went with
-							    the wrapper would lose everything it was holding — a tool
-							    call left expanded — every time it left the viewport. Yoga
-							    lays nothing out under `none`, and Ink draws nothing from
-							    it, so what it costs is the one node. */}
-							<Box
-								flexShrink={0}
-								flexDirection="column"
-								display={hidden[index] ? "none" : "flex"}
-							>
-								{child}
-							</Box>
+							{!hidden[index] && child}
 						</Box>
 					))}
 				</Box>

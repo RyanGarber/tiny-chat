@@ -54,9 +54,8 @@ export const ChatService = {
 	},
 
 	/**
-	 * Opens the chat a message is in, on the branch that leads to it, with
-	 * enough of the history loaded to show it, and asks for it to be scrolled
-	 * to. Selections below it are kept when it is in the chat already open.
+	 * Opens the chat a message is in, on the branch that leads to it, and asks
+	 * for it to be scrolled to. Selections below it are kept when it is in the chat already open.
 	 */
 	openMessage: async ({ client, id }: { client: Client; id: string }) => {
 		const located = await client.api.message.locateMessage.query({
@@ -67,7 +66,10 @@ export const ChatService = {
 			state.chatId === located.chatId
 				? { ...state.branches, ...located.branches }
 				: located.branches;
-		await MessageQueryService.loadThrough(client, located.chatId, branches, id);
+		// Loaded before switching, so the chat opens on it instead of filling in.
+		await client.queryClient.prefetchQuery(
+			MessageQueryService.options(client, located.chatId, branches),
+		);
 		if (state.chatId !== located.chatId)
 			ChatService.setChat({ id: located.chatId });
 		useChatStore.getState().focusMessage(id, branches);
@@ -94,10 +96,6 @@ export const ChatService = {
 		chatId: string;
 	}) => {
 		if (chatId) useChatStore.getState().setLastSeen(chatId, Date.now());
-		await client.queryClient.invalidateQueries({
-			queryKey: client.query.message.getMessages.infiniteQueryKey({
-				chat: chatId,
-			}),
-		});
+		await MessageQueryService.invalidate(client, chatId);
 	},
 } as const;

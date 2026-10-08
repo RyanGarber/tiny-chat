@@ -82,6 +82,14 @@ export const useEstimatedTokens = <T>({
 		};
 	}, [draft]);
 
+	// Stamped once per draft: a new time on every config change would key a new
+	// estimate each render that hands this a fresh config object.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: restamped per draft
+	const draftCreatedAt = useMemo(
+		() => Temporal.Now.plainDateTimeISO("UTC"),
+		[debouncedDraft],
+	);
+
 	/**
 	 * The message being written, counted as a message. Its attachments are read
 	 * off the mount like any other, which is what lets an upload attached here
@@ -94,10 +102,10 @@ export const useEstimatedTokens = <T>({
 				author: "USER",
 				config,
 				data: debouncedDraft,
-				createdAt: Temporal.Now.plainDateTimeISO("UTC"),
+				createdAt: draftCreatedAt,
 			},
 		],
-		[config, debouncedDraft],
+		[config, debouncedDraft, draftCreatedAt],
 	);
 
 	const { capabilities, sourceMessages } = useCapabilities({

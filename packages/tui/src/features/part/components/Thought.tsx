@@ -22,7 +22,10 @@ export default function Thought({
 
 	const thoughtText = thoughts.map((thought) => thought.value).join("\n\n");
 
-	const { expanded, auto, toggle } = useAutoExpand(pending || !!hold);
+	const { expanded, auto, toggle } = useAutoExpand(
+		thoughts[0]?.id ?? "",
+		pending || !!hold,
+	);
 
 	return (
 		<Task.Group detailsProps={DETAILS_PROPS}>

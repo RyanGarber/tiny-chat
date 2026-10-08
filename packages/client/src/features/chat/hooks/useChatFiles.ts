@@ -33,7 +33,7 @@ export const useChatFiles = () => {
 	 * only after sending.
 	 */
 	const filesystem = useMemo(() => {
-		const saved = messages.data?.pages.flatMap((page) => page.messages) ?? [];
+		const saved = messages.data?.messages ?? [];
 		const draft: zAgentMessage = {
 			id: null,
 			author: "USER",
@@ -45,7 +45,7 @@ export const useChatFiles = () => {
 			chat: chat.data?.id,
 			...AgentUtils.getMounts({ messages: [...saved, draft] }),
 		};
-	}, [chat.data?.id, messages.data?.pages, config, draftData]);
+	}, [chat.data?.id, messages.data?.messages, config, draftData]);
 
 	const chatFiles = useQuery({
 		queryKey: [...chatFilesQueryKey, filesystem],

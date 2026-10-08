@@ -58,7 +58,7 @@ export const useMessaging = () => {
 	const { skills } = useSkills();
 	const { providers } = useProviders();
 	const { embeddingConfig } = useEmbeddingSettings();
-	const { config } = useConfig();
+	const { config, status: configStatus } = useConfig();
 
 	const deletingChatId = useRef<string | undefined>(undefined);
 
@@ -98,7 +98,8 @@ export const useMessaging = () => {
 			const isEmpty = !data
 				.flat()
 				.some((part) => part.type !== "text" || part.value.trim().length);
-			if (isEmpty) {
+			// Kept as a draft until there is a model to send it to.
+			if (isEmpty || configStatus !== "ready") {
 				return;
 			}
 
@@ -115,11 +116,11 @@ export const useMessaging = () => {
 						DataUtils.isMissingToolResult({
 							data:
 								(
-									await client.api.message.getMessages.query({
-										chat: selectedId,
-										branches: useChatStore.getState().branches,
-										limit: 1,
-									})
+									await MessageQueryService.ensure(
+										client,
+										selectedId,
+										useChatStore.getState().branches,
+									)
 								).messages.at(-1)?.data ?? [],
 						})))
 			) {
@@ -143,11 +144,7 @@ export const useMessaging = () => {
 				insertingAfter?.id ??
 				(!editing && chatId
 					? (
-							await client.api.message.getMessages.query({
-								chat: chatId,
-								branches,
-								limit: 1,
-							})
+							await MessageQueryService.ensure(client, chatId, branches)
 						).messages.at(-1)?.id
 					: undefined);
 			const message = editing
@@ -156,7 +153,6 @@ export const useMessaging = () => {
 						author: editing.author,
 						config: config,
 						data: data,
-						metadata: [],
 						truncate: truncating ?? false,
 					})
 				: await client.api.message.createMessage.mutate({
@@ -165,7 +161,6 @@ export const useMessaging = () => {
 						author: "USER",
 						config: config,
 						data: data,
-						metadata: [],
 						previous,
 						temporary: createTemporary,
 						incognito: createIncognito,

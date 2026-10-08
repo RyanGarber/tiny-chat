@@ -36,7 +36,10 @@ export default function ToolCall({
 	hold?: boolean;
 }) {
 	const display = useToolCall({ part });
-	const { expanded, auto, toggle } = useAutoExpand(display.active || !!hold);
+	const { expanded, auto, toggle } = useAutoExpand(
+		part.id,
+		display.active || !!hold,
+	);
 
 	const controls = message && display.controls;
 	const { interrupt } = display;

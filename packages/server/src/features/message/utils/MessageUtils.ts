@@ -1,29 +1,48 @@
 import type { Model } from "#core/core/services/PostgresService.ts";
-import type { PartialBy } from "#core/core/types/common.ts";
 import type { MessageState } from "#core/features/data/types/message.ts";
 
 export const MessageUtils = {
 	/**
-	 * Wrap a raw message row into a {@link MessageState}.
+	 * The columns a {@link MessageState} is read from. Every read and write that
+	 * hands a message back selects these, so neither the embedding nor the
+	 * metadata of a generation leaves the database unless asked for by name.
 	 */
-	toMessageState: ({
-		embedding,
-		...message
-	}: PartialBy<Model["Message"], "metadata" | "embedding">): MessageState => {
-		return {
-			...message,
-			metadata: ("metadata" in message ? message.metadata : undefined) ?? [
-				[{ _omit: true }],
-			],
-		};
-	},
+	columns: [
+		"id",
+		"userId",
+		"chatId",
+		"previousId",
+		"author",
+		"config",
+		"data",
+		"createdAt",
+		"updatedAt",
+	] as const,
 
-	/**
-	 * Parse raw message rows without dropping sibling branches into {@link MessageState MessageStates}.
-	 */
+	/** Wrap a message row into a {@link MessageState}, dropping anything extra. */
+	toMessageState: ({
+		id,
+		userId,
+		chatId,
+		previousId,
+		author,
+		config,
+		data,
+		createdAt,
+		updatedAt,
+	}: Omit<Model["Message"], "embedding" | "metadata">): MessageState => ({
+		id,
+		userId,
+		chatId,
+		previousId,
+		author,
+		config,
+		data,
+		createdAt,
+		updatedAt,
+	}),
+
 	toMessageStates: (
-		messages: PartialBy<Model["Message"], "metadata" | "embedding">[],
-	): MessageState[] => {
-		return messages.map(MessageUtils.toMessageState);
-	},
+		messages: Omit<Model["Message"], "embedding" | "metadata">[],
+	): MessageState[] => messages.map(MessageUtils.toMessageState),
 } as const;

@@ -19,7 +19,15 @@ const getData = (
 	includeHidden: boolean,
 	hiddenModels: zSettings["hiddenModels"],
 	providers?: ProviderState<ProviderStatus>[],
+	/** Listed even when hidden, as the one already chosen. */
+	selected?: Pick<zConfig, "provider" | "model"> | null,
 ): TreeNodeData[] => {
+	const isShown = (provider: string, model: string) =>
+		includeHidden ||
+		(selected?.provider === provider && selected.model === model) ||
+		!hiddenModels?.[feature]?.find(
+			(h) => h.provider === provider && h.model === model,
+		);
 	return (
 		providers
 			?.filter(
@@ -30,28 +38,16 @@ const getData = (
 			.filter(
 				(p) =>
 					p.status.models.length &&
-					(includeHidden ||
-						p.status.models
-							.filter((m) => m.features.includes(feature))
-							.some(
-								(m) =>
-									!hiddenModels?.[feature]?.find(
-										(h) => h.provider === p.name && h.model === m.name,
-									),
-							)),
+					p.status.models
+						.filter((m) => m.features.includes(feature))
+						.some((m) => isShown(p.name, m.name)),
 			)
 			.map((p) => ({
 				label: p.name,
 				value: p.name,
 				children: p.status.models
 					.filter((m) => m.features.includes(feature))
-					.filter(
-						(m) =>
-							includeHidden ||
-							!hiddenModels?.[feature]?.find(
-								(h) => h.provider === p.name && h.model === m.name,
-							),
-					)
+					.filter((m) => isShown(p.name, m.name))
 					.sort((a, b) => a.name.localeCompare(b.name))
 					.map((m) => ({
 						label: m.name,
@@ -79,7 +75,26 @@ export default function ModelSelect({
 }: ModelSelectProps) {
 	const { providers } = useProviders();
 	const { hiddenModels } = useHiddenModels();
-	const data = getData(feature, includeHidden, hiddenModels, providers.data);
+	const data = getData(
+		feature,
+		includeHidden,
+		hiddenModels,
+		providers.data,
+		configValue,
+	);
+	const value = configValue
+		? JSON.stringify({
+				provider: configValue.provider,
+				model: configValue.model,
+			})
+		: null;
+	// A value missing from the tree would be shown as its raw JSON.
+	const known =
+		!!value && data.some((p) => p.children?.some((m) => m.value === value));
+	const missing =
+		configValue?.model && !known && providers.isFetched
+			? `${configValue.model} is unavailable`
+			: undefined;
 	return (
 		<TreeSelect
 			required={!optional}
@@ -88,14 +103,8 @@ export default function ModelSelect({
 			expandOnClick
 			scrollAreaProps={{ type: "auto" }}
 			data={data}
-			value={
-				configValue
-					? JSON.stringify({
-							provider: configValue.provider,
-							model: configValue.model,
-						})
-					: null
-			}
+			value={known ? value : null}
+			error={missing}
 			onChange={(v) =>
 				onConfigChange(
 					v

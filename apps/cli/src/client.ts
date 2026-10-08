@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { readdir, readFile, realpath, stat, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
+import type { Readable } from "node:stream";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { AFMService } from "#cli/core/services/AFMService.ts";
@@ -40,12 +41,22 @@ export const client = createClient({
 		return worker;
 	},
 	transports: {
-		createStdio: ({ command, env }) => {
-			return new StdioClientTransport({
+		createStdio: ({ name, command, env, onStderr }) => {
+			const transport = new StdioClientTransport({
 				command: command[0],
 				args: command.slice(1),
 				env,
+				// Inherited, a server's stderr would write over the terminal UI.
+				stderr: "pipe",
 			});
+			// A `PassThrough`, there from the start when piped.
+			const stderr = transport.stderr as Readable | null;
+			stderr?.setEncoding("utf8");
+			stderr?.on("data", (chunk: string) => {
+				if (onStderr) onStderr(chunk);
+				else console.warn(`[mcp] ${name}:`, chunk);
+			});
+			return transport;
 		},
 		createStreamableHttp: ({ url, headers }) => {
 			return new StreamableHTTPClientTransport(new URL(url), {

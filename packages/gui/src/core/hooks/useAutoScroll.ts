@@ -22,23 +22,13 @@ interface ScrollAnchor {
  * - Disengages autoscroll on intentional upward scroll (wheel/touch)
  * - Holds the position the user picked when content above it changes
  * - Compensates for visual viewport resizes (mobile keyboard)
- * - Responds to an external "scroll requested" signal
  */
-export function useAutoScroll({
-	scrollRequested,
-	scrollPaused,
-}: {
-	/** Incrementing counter that triggers a smooth scroll-to-bottom */
-	scrollRequested: number;
-	/** While true, skip scroll-requested handling */
-	scrollPaused: boolean;
-}) {
+export function useAutoScroll() {
 	const viewportNodeRef = useRef<HTMLDivElement | null>(null);
 	const isAtBottomRef = useRef(true);
 	const isNearBottomRef = useRef(true);
 	const scrollRafIdRef = useRef<number | null>(null);
 	const scrollSessionRef = useRef(0);
-	const lastHandledScrollRequestRef = useRef(0);
 	const suppressScrollDisengageUntilRef = useRef(0);
 	const anchorRef = useRef<ScrollAnchor | null>(null);
 	const desiredScrollTopRef = useRef(0);
@@ -422,23 +412,6 @@ export function useAutoScroll({
 		observer.observe(contentEl);
 		return () => observer.disconnect();
 	}, [viewportEl, animateScrollToBottom, restorePosition, syncNearBottomState]);
-
-	// Respond to explicit scroll-to-bottom (e.g. after sending a message)
-	useEffect(() => {
-		if (!viewportEl || scrollPaused) return;
-		if (scrollRequested > lastHandledScrollRequestRef.current) {
-			lastHandledScrollRequestRef.current = scrollRequested;
-			const session = scrollSessionRef.current;
-			queueMicrotask(() => {
-				if (
-					session === scrollSessionRef.current &&
-					viewportNodeRef.current === viewportEl
-				) {
-					scrollToBottom("smooth");
-				}
-			});
-		}
-	}, [viewportEl, scrollRequested, scrollToBottom, scrollPaused]);
 
 	/** Whether the view is following the bottom, as of right now. */
 	const isLockedToBottom = useCallback(() => isAtBottomRef.current, []);

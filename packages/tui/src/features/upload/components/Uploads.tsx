@@ -1,6 +1,6 @@
 import { useContext, useMemo } from "react";
 import { ClientContext } from "#client/client.ts";
-import { MessagingService } from "#client/features/chat/services/MessagingService.ts";
+import { ComposerService } from "#client/features/editor/services/ComposerService.ts";
 import type {
 	CompletionGroup,
 	CompletionItem,
@@ -54,7 +54,7 @@ export default function Uploads() {
 						relative: true,
 					}),
 					attach: () => {
-						void MessagingService.attachUpload({ client, upload });
+						void ComposerService.attachUpload({ client, upload });
 						setPage("chat");
 					},
 					remove: () => {

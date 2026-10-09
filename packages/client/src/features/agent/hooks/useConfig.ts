@@ -16,7 +16,7 @@ const EMPTY_CONFIG = zConfig.parse({ provider: "", model: "" });
 export const useConfig = () => {
 	const client = useContext(ClientContext);
 
-	const chatId = useChatStore((s) => s.chatId);
+	const chatId = useChatStore((s) => s.active.chatId);
 	const overrideConfig = useConfigStore((s) => s.overrideConfig);
 	const setOverrideConfig = useConfigStore((s) => s.setOverrideConfig);
 	const syncChatId = useConfigStore((s) => s.syncChatId);

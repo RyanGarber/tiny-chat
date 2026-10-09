@@ -1,10 +1,18 @@
-import { type DOMElement, useBoxMetrics, useWindowSize } from "ink";
+import {
+	type DOMElement,
+	measureElement,
+	useBoxMetrics,
+	useWindowSize,
+} from "ink";
 import {
 	Children,
+	createContext,
 	isValidElement,
 	type ReactNode,
 	type RefObject,
 	useCallback,
+	useContext,
+	useEffect,
 	useImperativeHandle,
 	useLayoutEffect,
 	useMemo,
@@ -14,7 +22,7 @@ import {
 import Box, { type BoxProps } from "#tui/core/components/Box.tsx";
 import { useMouse } from "#tui/core/hooks/useMouse.ts";
 import { useWidth } from "#tui/core/hooks/useWidth.ts";
-import { MouseUtils } from "#tui/core/utils/MouseUtils.ts";
+import { type MouseEvent, MouseUtils } from "#tui/core/utils/MouseUtils.ts";
 
 /** Where a child comes to rest when the view scrolls to it. */
 export type ScrollAlign =
@@ -80,6 +88,27 @@ export interface ScrollViewProps extends Omit<BoxProps, "overflow"> {
 	 */
 	overscan?: number;
 }
+
+/**
+ * Moves a view by a wheel event if it can, returning whether it did. Views
+ * register with the view they sit in, which hands the wheel on to them first.
+ */
+type WheelHandler = (event: MouseEvent) => boolean;
+const ScrollContext = createContext<Set<WheelHandler> | null>(null);
+
+/** Each view's viewport, by which a row anywhere inside it is scrolled to. */
+const revealers = new WeakMap<DOMElement, (y: number) => void>();
+
+/**
+ * Scrolls the innermost view holding `node` until row `y` of the layout — as
+ * `measureElement` places rows — is in sight, centering it if it was not.
+ */
+export const revealRow = (node: DOMElement, y: number) => {
+	for (let parent = node.parentNode; parent; parent = parent.parentNode) {
+		const reveal = revealers.get(parent);
+		if (reveal) return reveal(y);
+	}
+};
 
 const height = (node: DOMElement | null) =>
 	node?.yogaNode?.getComputedHeight() ?? 0;
@@ -250,20 +279,60 @@ export default function ScrollView({
 		],
 	);
 
+	useEffect(() => {
+		const node = viewportRef.current;
+		if (!node) return;
+		revealers.set(node, (y) => {
+			const top = measureElement(node).y;
+			const rows = getViewportHeight();
+			if (y < top || y >= top + rows) scrollBy(y - top - Math.floor(rows / 2));
+		});
+		return () => {
+			revealers.delete(node);
+		};
+	}, [getViewportHeight, scrollBy]);
+
+	// Views nested in this one, offered the wheel before it.
+	const nestedRef = useRef(new Set<WheelHandler>());
+	const parent = useContext(ScrollContext);
+
 	// The wheel turns over whatever the pointer is resting on, so views sitting
 	// side by side — a transcript under a list of completions — each answer for
-	// themselves without either having to be focused first.
+	// themselves without either having to be focused first. Like a browser, a
+	// nested view takes the wheel until it reaches the edge it is being turned
+	// towards, and only then does the view around it move. Only the outermost
+	// view listens, so rows of a nested view scrolled out of sight never move it.
+	const handleWheel = useCallback(
+		(event: MouseEvent) => {
+			if (!wheel) return false;
+			const node = viewportRef.current;
+			if (!node) return false;
+			if (!MouseUtils.contains(MouseUtils.bounds(node, rows), event))
+				return false;
+			for (const nested of nestedRef.current) if (nested(event)) return true;
+
+			const current = getScrollOffset();
+			if (event.deltaY < 0 ? current <= 0 : current >= getMaxOffset())
+				return false;
+			scrollBy(event.deltaY * wheelStep);
+			return true;
+		},
+		[wheel, rows, getScrollOffset, getMaxOffset, scrollBy, wheelStep],
+	);
+
+	useEffect(() => {
+		if (!parent) return;
+		parent.add(handleWheel);
+		return () => {
+			parent.delete(handleWheel);
+		};
+	}, [parent, handleWheel]);
+
 	useMouse({
 		handler: (event) => {
-			if (event.type !== "wheel" || event.deltaY === 0) return;
-
-			const node = viewportRef.current;
-			if (!node) return;
-			if (!MouseUtils.contains(MouseUtils.bounds(node, rows), event)) return;
-
-			scrollBy(event.deltaY * wheelStep);
+			if (event.type === "wheel" && event.deltaY !== 0) handleWheel(event);
 		},
-		isActive: wheel,
+		isActive: wheel && !parent,
 	});
 
 	const items = useMemo(() => {
@@ -289,23 +358,6 @@ export default function ScrollView({
 	);
 	const heightsRef = useRef(new Map<string, number>());
 
-	const range = useMemo(() => {
-		if (overscan === Number.POSITIVE_INFINITY) return null;
-		const first = drawn ? keys.indexOf(drawn.first) : -1;
-		const last = drawn ? keys.lastIndexOf(drawn.last) : -1;
-		if (first >= 0 && last >= first) return { first, last };
-		// Before there is a run, or once the children it was pinned to have gone,
-		// only the child at the resting edge is drawn, and the pass below widens
-		// that to whatever fills the viewport.
-		if (!keys.length) return null;
-		const edge = pinnedRef.current ? keys.length - 1 : 0;
-		return { first: edge, last: edge };
-	}, [drawn, keys, overscan]);
-
-	const hidden = keys.map(
-		(_, index) => !!range && (index < range.first || index > range.last),
-	);
-
 	// What a child never laid out is held at: the average of those that were.
 	const estimate = () => {
 		const heights = heightsRef.current;
@@ -314,6 +366,59 @@ export default function ScrollView({
 		for (const value of heights.values()) total += value;
 		return Math.max(1, Math.round(total / heights.size));
 	};
+
+	// The run the pass below would settle on, worked out ahead of it from the
+	// heights it last measured. Ink paints a commit before its layout effects
+	// run, so a run left for that pass to widen — children filtered anew, a
+	// held run that no longer reaches the viewport — is a frame of blank rows
+	// on screen before it is.
+	const expected = (() => {
+		if (!keys.length) return null;
+		const fallback = estimate();
+		const heightAt = (index: number) =>
+			heightsRef.current.get(keys[index]) ?? fallback;
+		// The terminal's rows stand in for the viewport, which is never taller.
+		const reach = rows + overscan;
+
+		if (pinned) {
+			let first = keys.length;
+			let filled = 0;
+			while (first > 0 && filled < reach) filled += heightAt(--first);
+			return { first, last: keys.length - 1 };
+		}
+
+		const top = offset - overscan;
+		const bottom = offset + reach;
+		let position = 0;
+		let first = -1;
+		let last = -1;
+		for (let index = 0; index < keys.length && position < bottom; index++) {
+			const end = position + heightAt(index);
+			if (end > top) {
+				if (first < 0) first = index;
+				last = index;
+			}
+			position = end;
+		}
+		return first < 0
+			? { first: keys.length - 1, last: keys.length - 1 }
+			: { first, last };
+	})();
+
+	const range = (() => {
+		if (overscan === Number.POSITIVE_INFINITY || !expected) return null;
+		const first = drawn ? keys.indexOf(drawn.first) : -1;
+		const last = drawn ? keys.lastIndexOf(drawn.last) : -1;
+		if (first < 0 || last < first) return expected;
+		return {
+			first: Math.min(first, expected.first),
+			last: Math.max(last, expected.last),
+		};
+	})();
+
+	const hidden = keys.map(
+		(_, index) => !!range && (index < range.first || index > range.last),
+	);
 
 	const previousColumnsRef = useRef(columns);
 	const previousResetKeyRef = useRef(resetKey);
@@ -483,45 +588,48 @@ export default function ScrollView({
 				minHeight={0}
 				justifyContent={pinned ? "flex-end" : "flex-start"}
 			>
-				<Box
-					ref={contentRef}
-					flexDirection="column"
-					// Never shrinks, so it keeps the full height of its children and
-					// overflows the viewport rather than being squeezed into it.
-					flexShrink={0}
-					// While pinned, content shorter than the viewport would hang off the
-					// bottom it is laid out against, so it is floored at the height of the
-					// viewport to bring it back to the top. Only while pinned: the floor
-					// is a percentage, and a percentage resolves against the height a view
-					// has been offered rather than the one it settles at, so a view free
-					// to size itself to its content — one bounded only by a maxHeight —
-					// would be held open at that bound by content that never filled it.
-					minHeight={pinned ? "100%" : undefined}
-					marginTop={pinned ? 0 : -offset}
-				>
-					{items.map((child, index) => (
-						<Box
-							// Keyed by the child so a page arriving above the viewport moves
-							// the wrappers along with it instead of remounting every child
-							// into a new position.
-							key={keys[index]}
-							ref={(node) => {
-								itemsRef.current[index] = node;
-							}}
-							flexShrink={0}
-							flexDirection="column"
-							// Stands in for the child while it is hidden, so the rows it
-							// takes up are still there to be scrolled through and measured.
-							height={
-								hidden[index]
-									? (heightsRef.current.get(keys[index]) ?? estimate())
-									: undefined
-							}
-						>
-							{!hidden[index] && child}
-						</Box>
-					))}
-				</Box>
+				<ScrollContext value={nestedRef.current}>
+					<Box
+						ref={contentRef}
+						flexDirection="column"
+						// Never shrinks, so it keeps the full height of its children and
+						// overflows the viewport rather than being squeezed into it.
+						flexShrink={0}
+						// While pinned, content shorter than the viewport would hang off the
+						// bottom it is laid out against, so it grows into whatever room the
+						// viewport has left to bring it back to the top. Grown rather than
+						// floored at a percentage: a percentage resolves against the height a
+						// view has been offered rather than the one it settles at, so a view
+						// free to size itself to its content — one bounded only by a
+						// maxHeight — would be held open at that bound by content that never
+						// filled it, where growing only ever fills room that is really there.
+						flexGrow={pinned ? 1 : 0}
+						marginTop={pinned ? 0 : -offset}
+					>
+						{items.map((child, index) => (
+							<Box
+								// Keyed by the child so a page arriving above the viewport moves
+								// the wrappers along with it instead of remounting every child
+								// into a new position.
+								key={keys[index]}
+								ref={(node) => {
+									itemsRef.current[index] = node;
+								}}
+								flexShrink={0}
+								flexDirection="column"
+								// Stands in for the child while it is hidden, so the rows it
+								// takes up are still there to be scrolled through and measured.
+								height={
+									hidden[index]
+										? (heightsRef.current.get(keys[index]) ?? estimate())
+										: undefined
+								}
+							>
+								{!hidden[index] && child}
+							</Box>
+						))}
+					</Box>
+				</ScrollContext>
 			</Box>
 		</Box>
 	);

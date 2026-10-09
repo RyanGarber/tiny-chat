@@ -4,14 +4,14 @@ import { ClientContext } from "#client/client.ts";
 import { ThemeContext } from "#client/core/components/ThemeContext.tsx";
 import { useConfig } from "#client/features/agent/hooks/useConfig.ts";
 import { useMessaging } from "#client/features/chat/hooks/useMessaging.ts";
-import { MessagingService } from "#client/features/chat/services/MessagingService.ts";
-import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
+import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
 import { useDisabled } from "#client/features/editor/hooks/useDisabled.ts";
 import type {
 	Categories,
 	Usage,
 } from "#client/features/editor/hooks/useEstimatedTokens.ts";
 import { AttachmentService } from "#client/features/editor/services/AttachmentService.ts";
+import { ComposerService } from "#client/features/editor/services/ComposerService.ts";
 import { useAtomStore } from "#client/features/editor/stores/useAtomStore.ts";
 import { useCompletionStore } from "#client/features/editor/stores/useCompletionStore.ts";
 import { AtomUtils } from "#client/features/editor/utils/AtomUtils.ts";
@@ -30,6 +30,7 @@ import { ClipboardService } from "#tui/core/services/ClipboardService.ts";
 import { selectFocus, useAppStore } from "#tui/core/stores/useAppStore.ts";
 import Attachments from "#tui/features/editor/components/Attachments.tsx";
 import Commands from "#tui/features/editor/components/Commands.tsx";
+import Shell from "#tui/features/editor/components/Shell.tsx";
 import TokenUsage from "#tui/features/editor/components/TokenUsage.tsx";
 import { useCodeHighlight } from "#tui/features/editor/hooks/useCodeHighlight.ts";
 import { useEditorStore } from "#tui/features/editor/stores/useEditorStore.ts";
@@ -111,7 +112,7 @@ export default function Editor({
 		(state) => state.isCompletionsEmpty,
 	);
 
-	const project = useMessagingStore((state) => state.project);
+	const project = useChatStore((state) => state.active.project);
 	const placeholder = useMemo(() => {
 		if (!config) return project ? project.title || "untitled" : "(none)";
 		return [
@@ -151,7 +152,7 @@ export default function Editor({
 	// here, the way the app keeps its own editor's `zData` in step on update.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: re-read on every change to what the editor holds
 	useEffect(() => {
-		MessagingService.getData({ client });
+		ComposerService.getData({ client });
 	}, [content, atoms]);
 
 	const offset = TextareaUtils.offset(content, cursor);
@@ -345,6 +346,7 @@ export default function Editor({
 		<Panel id="editor" disabled={_disabled}>
 			{!disabled && (
 				<>
+					<Shell />
 					<Commands
 						content={content}
 						setContent={setContent}

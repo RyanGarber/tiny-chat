@@ -1,7 +1,9 @@
 import { Box, Collapse } from "@mantine/core";
 import { StackIcon } from "@phosphor-icons/react";
+import { useEffect } from "react";
 import { useMessageStore } from "#client/features/message/stores/useMessageStore.ts";
 import { useAutoExpand } from "#client/features/part/hooks/useAutoExpand.ts";
+import { useExpandStore } from "#client/features/part/stores/useExpandStore.ts";
 import type { Compaction } from "#core/features/agent/services/AgentTokensService.ts";
 import type { MessageState } from "#core/features/data/types/message.ts";
 import type { RenderedPart } from "#core/features/data/utils/DataUtils.ts";
@@ -33,13 +35,23 @@ export default function ToolGroup({
 	hold?: boolean;
 }) {
 	const toolsets = useMessageStore((s) => s.toolsets);
-	const nextFeedbackId = useMessageStore((s) => s.nextFeedbackId);
+	const pendingFeedbackIds = useMessageStore((s) => s.pendingFeedbackIds);
 
 	const group = ToolCallUtils.getGroup({ parts, toolsets });
+	const groupKey = `group:${parts[0]?.id}`;
 	const { expanded, auto, toggle } = useAutoExpand(
-		`group:${parts[0]?.id}`,
+		groupKey,
 		group.pending || !!hold,
 	);
+
+	// Opens to let a call in it that is being gone to be drawn.
+	const focusing = useExpandStore(
+		(s) => !!s.focused && parts.some((part) => part.id === s.focused),
+	);
+	useEffect(() => {
+		if (focusing && !expanded && parts.length > 1)
+			useExpandStore.getState().setOverride(groupKey, true);
+	}, [focusing, expanded, groupKey, parts.length]);
 
 	// A lone call is its own header.
 	if (parts.length === 1)
@@ -49,7 +61,7 @@ export default function ToolGroup({
 				<ToolCall
 					message={message}
 					part={parts[0]}
-					isFocused={nextFeedbackId === parts[0].id}
+					answerable={pendingFeedbackIds.includes(parts[0].id)}
 					hold={hold}
 				/>
 			</div>
@@ -79,7 +91,7 @@ export default function ToolGroup({
 								<ToolCall
 									message={message}
 									part={part}
-									isFocused={nextFeedbackId === part.id}
+									answerable={pendingFeedbackIds.includes(part.id)}
 								/>
 							</div>
 						))}

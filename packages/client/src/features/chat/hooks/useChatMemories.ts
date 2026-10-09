@@ -8,7 +8,7 @@ import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
 /** Memories the chat learned or was reminded of, newest first. */
 export const useChatMemories = () => {
 	const client = useContext(ClientContext);
-	const chatId = useChatStore((state) => state.chatId);
+	const chatId = useChatStore((state) => state.active.chatId);
 	const { memories } = useMemories();
 
 	const ids = useQuery({

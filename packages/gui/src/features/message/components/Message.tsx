@@ -19,8 +19,8 @@ import {
 import { type CSSProperties, type ReactNode, useContext } from "react";
 import { ClientContext } from "#client/client.ts";
 import { useMessaging } from "#client/features/chat/hooks/useMessaging.ts";
-import { MessagingService } from "#client/features/chat/services/MessagingService.ts";
-import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
+import { ComposerService } from "#client/features/editor/services/ComposerService.ts";
+import { useComposerStore } from "#client/features/editor/stores/useComposerStore.ts";
 import { useMessageBranches } from "#client/features/message/hooks/useMessageBranches.ts";
 import type { Compaction } from "#core/features/agent/services/AgentTokensService.ts";
 import type { MessageState } from "#core/features/data/types/message.ts";
@@ -43,8 +43,12 @@ export default function Message({
 	const branch = useMessageBranches(message);
 	const { deleteMessage } = useMessaging();
 
-	const editing = useMessagingStore((s) => s.editing);
-	const insertingAfter = useMessagingStore((s) => s.insertingAfter);
+	const editing = useComposerStore((s) =>
+		s.mode.kind === "edit" ? s.mode.message : null,
+	);
+	const insertingAfter = useComposerStore((s) =>
+		s.mode.kind === "insert" ? s.mode.after : null,
+	);
 
 	const [isNodeHovered, { open: onNodeHover, close: onNodeLeave }] =
 		useDisclosure(false);
@@ -60,9 +64,9 @@ export default function Message({
 					variant="subtle"
 					size={32}
 					onClick={() =>
-						MessagingService.setInsertingAfter({
-							message: insertingAfter?.id !== message.id ? message : null,
-						})
+						insertingAfter?.id === message.id
+							? ComposerService.cancel({ client })
+							: ComposerService.insertAfter({ client, message })
 					}
 				>
 					{insertingAfter?.id === message.id ? (
@@ -145,10 +149,9 @@ export default function Message({
 											variant="subtle"
 											size={30}
 											onClick={() =>
-												MessagingService.setEditing({
-													client,
-													message: editing?.id !== message.id ? message : null,
-												})
+												editing?.id === message.id
+													? ComposerService.cancel({ client })
+													: ComposerService.edit({ client, message })
 											}
 										>
 											{editing?.id !== message.id ? (

@@ -6,7 +6,7 @@ import { useSkills } from "#client/features/agent/hooks/useSkills.ts";
 import { useTools } from "#client/features/agent/hooks/useTools.ts";
 import { useChat } from "#client/features/chat/hooks/useChat.ts";
 import { ChatService } from "#client/features/chat/services/ChatService.ts";
-import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
+import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
 import type {
 	CommandChoiceGroup,
 	CommandGroup,
@@ -69,7 +69,7 @@ export const useCommands = ({
 	const { config, setConfig, setModel, modelArgs, setModelArg } = useConfig();
 	const { presets, setPreset, unsetPreset } = usePresets();
 
-	const project = useMessagingStore((state) => state.project);
+	const project = useChatStore((state) => state.active.project);
 	const { chat } = useChat();
 	const { theme, setTheme, codeTheme, setCodeTheme } = useThemes();
 	const {
@@ -491,7 +491,7 @@ export const useCommands = ({
 						name: "clear",
 						value: "clear",
 						run: () => {
-							ChatService.clearChat(chatRef.current);
+							ChatService.setChat({ id: null });
 						},
 					},
 					{ name: "model", value: "model", choices: models },

@@ -18,7 +18,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useContext, useState } from "react";
 import { ClientContext } from "#client/client.ts";
-import { MessagingService } from "#client/features/chat/services/MessagingService.ts";
+import { ComposerService } from "#client/features/editor/services/ComposerService.ts";
 import { useUploads } from "#client/features/upload/hooks/useUploads.ts";
 import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
 import Sentinel from "#gui/core/components/Sentinel.tsx";
@@ -96,7 +96,7 @@ export function GitHubUploads({ close }: { close: () => void }) {
 									}}
 									onClick={() => {
 										if (!existing) return;
-										void MessagingService.attachUpload({
+										void ComposerService.attachUpload({
 											client,
 											upload: existing,
 										});

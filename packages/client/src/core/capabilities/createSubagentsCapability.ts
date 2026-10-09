@@ -27,14 +27,14 @@ export const createSubagentsCapability: CapabilityFactory<
 	SubagentsCapability
 > = async ({ client, chat, message, providers, skills, mcpTools }) => {
 	return {
-		runSubagent: async ({ context, instructions, onData }) => {
+		runSubagent: async ({ part, context, instructions, onData }) => {
 			const streamKey = Math.random().toString(36);
 			AgentStreamService.subscribe(streamKey, () => {
 				const state = AgentStreamService.get(streamKey)?.items.at(-1);
 				if (state) onData(state.data);
 			});
 			try {
-				const { data } = await ClientAgentService.runAgent({
+				const { data, metadata } = await ClientAgentService.runAgent({
 					client,
 					context,
 					chat: CapabilityUtils.require(chat?.id ? chat : null, "subagents"),
@@ -46,6 +46,17 @@ export const createSubagentsCapability: CapabilityFactory<
 					streamChat: null,
 					instructions,
 				});
+				if (part) {
+					await client.api.subagent.saveSubagent.mutate({
+						part: part.id,
+						message: part.message,
+						data,
+						metadata,
+					});
+					await client.queryClient.invalidateQueries({
+						queryKey: client.query.subagent.getSubagents.pathKey(),
+					});
+				}
 				return data;
 			} finally {
 				AgentStreamService.clear(streamKey);

@@ -85,6 +85,8 @@ export interface Tool<
 	 * in the resolved result: nothing streamed is persisted.
 	 */
 	execute: (_: {
+		/** The id of the call's part, when it runs for one. */
+		id?: string;
 		input: z.infer<TDefinition["input"]>;
 		feedback: z.infer<TDefinition["feedback"]>;
 		context: zAgentContext;

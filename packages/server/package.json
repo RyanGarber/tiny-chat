@@ -8,7 +8,8 @@
 		"lint": "biome check --write",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
-		"smoketest": "node scripts/smoketest.ts"
+		"smoketest": "node scripts/smoketest.ts",
+		"prisma": "prisma"
 	},
 	"imports": {
 		"#core/*": "core/*",
@@ -24,6 +25,13 @@
 		"fflate": "^0.8.3",
 		"internal-ip": "^9.0.0",
 		"just-bash": "^3.6.0",
-		"sharp": "^0.35.5"
+		"sharp": "^0.35.5",
+		"@prisma/orm-postgres": "catalog:prisma",
+		"@prisma/orm-extension-paradedb": "catalog:prisma",
+		"@prisma/orm-extension-pgvector": "catalog:prisma",
+		"@ryangarber/prisma-orm-extension-zod": "catalog:prisma"
+	},
+	"devDependencies": {
+		"typescript": "catalog:typescript"
 	}
 }

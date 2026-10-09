@@ -6,10 +6,9 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePrepareCode } from "#client/core/hooks/useCode.ts";
 import { useSession } from "#client/core/hooks/useSession.ts";
 import { useChatList } from "#client/features/chat/hooks/useChatList.ts";
-import { useChatProject } from "#client/features/chat/hooks/useChatProject.ts";
 import { useDefaultProject } from "#client/features/chat/hooks/useDefaultProject.ts";
 import { ChatService } from "#client/features/chat/services/ChatService.ts";
-import { useDraftStore } from "#client/features/chat/stores/useDraftStore.ts";
+import { useComposerStore } from "#client/features/editor/stores/useComposerStore.ts";
 import { useThemes } from "#client/features/settings/hooks/useThemes.ts";
 import Background from "#gui/core/components/Background.tsx";
 import Console from "#gui/core/components/Console.tsx";
@@ -20,8 +19,10 @@ import { useViewport } from "#gui/core/hooks/useViewport.ts";
 import { AppService } from "#gui/core/services/AppService.ts";
 import { useAppStore } from "#gui/core/stores/useAppStore.ts";
 import Chat from "#gui/features/chat/components/Chat.tsx";
-import ChatFiles from "#gui/features/chat/components/ChatFiles.tsx";
+import ChatSources from "#gui/features/chat/components/ChatSources.tsx";
+import Find from "#gui/features/find/components/Find.tsx";
 import Sidebar from "#gui/features/sidebar/components/Sidebar.tsx";
+import { TauriUtils } from "#gui/features/tauri/utils/TauriUtils.ts";
 import mantineTheme, { cssResolver } from "#gui/theme.tsx";
 
 /**
@@ -41,7 +42,7 @@ function ProjectShortcut() {
 				(event) => {
 					const { currentDrawer, currentModal } = useAppStore.getState();
 					if (currentDrawer || currentModal || modals.length) return;
-					if (!useDraftStore.getState().isEmpty) return;
+					if (!useComposerStore.getState().isEmpty) return;
 					event.preventDefault();
 					ChatService.cycleProject(
 						projects.data?.pages.flatMap((page) => page.projects) ?? [],
@@ -72,7 +73,6 @@ export default function App() {
 	const { theme } = useThemes();
 	usePrepareCode();
 	useDefaultProject();
-	useChatProject();
 
 	const isMobile = useAppStore((s) => s.isMobile);
 	const isSidebarOpen = useAppStore((s) => s.isSidebarOpen);
@@ -263,6 +263,12 @@ export default function App() {
 						zIndex={1000}
 						overlayProps={{ blur: 2 }}
 					/>
+					{/* A browser has its own find bar; the app's webview does not. */}
+					<Find
+						targetRef={containerRef}
+						global
+						disabled={!TauriUtils.isTauri()}
+					/>
 					<AppShell
 						ref={appShellRef}
 						withBorder={false}
@@ -395,7 +401,7 @@ export default function App() {
 							withBorder
 						>
 							<div ref={asideContentRef} style={{ height: "100%" }}>
-								<ChatFiles />
+								<ChatSources />
 							</div>
 						</AppShell.Aside>
 					</AppShell>

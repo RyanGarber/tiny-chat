@@ -9,7 +9,7 @@ import {
 import { TrashIcon } from "@phosphor-icons/react";
 import { useContext } from "react";
 import { ClientContext } from "#client/client.ts";
-import { MessagingService } from "#client/features/chat/services/MessagingService.ts";
+import { ComposerService } from "#client/features/editor/services/ComposerService.ts";
 import { useUploads } from "#client/features/upload/hooks/useUploads.ts";
 import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
 import Sentinel from "#gui/core/components/Sentinel.tsx";
@@ -46,7 +46,7 @@ export function AttachmentUploads({ close }: { close: () => void }) {
 								withBorder
 								style={{ cursor: "pointer" }}
 								onClick={() => {
-									void MessagingService.attachUpload({ client, upload });
+									void ComposerService.attachUpload({ client, upload });
 									close();
 								}}
 							>

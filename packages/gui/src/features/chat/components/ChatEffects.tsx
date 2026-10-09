@@ -2,10 +2,10 @@ import { ActionIcon, Box, Group } from "@mantine/core";
 import { XIcon } from "@phosphor-icons/react";
 import { type ReactNode, type Ref, useContext } from "react";
 import { ClientContext } from "#client/client.ts";
-import { MessagingService } from "#client/features/chat/services/MessagingService.ts";
 import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
 import { useMessageQueueStore } from "#client/features/chat/stores/useMessageQueueStore.ts";
-import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
+import { ComposerService } from "#client/features/editor/services/ComposerService.ts";
+import { useComposerStore } from "#client/features/editor/stores/useComposerStore.ts";
 import { DataUtils } from "#core/features/data/utils/DataUtils.ts";
 import { useAppStore } from "#gui/core/stores/useAppStore.ts";
 
@@ -63,11 +63,17 @@ export default function ChatEffects({
 }) {
 	const client = useContext(ClientContext);
 
-	const chatId = useChatStore((s) => s.chatId);
+	const chatId = useChatStore((s) => s.active.chatId);
 	const queues = useMessageQueueStore((s) => s.queues);
-	const editing = useMessagingStore((s) => s.editing);
-	const insertingAfter = useMessagingStore((s) => s.insertingAfter);
-	const truncating = useMessagingStore((s) => s.truncating);
+	const editing = useComposerStore((s) =>
+		s.mode.kind === "edit" ? s.mode.message : null,
+	);
+	const insertingAfter = useComposerStore((s) =>
+		s.mode.kind === "insert" ? s.mode.after : null,
+	);
+	const keepingLater = useComposerStore(
+		(s) => s.mode.kind === "edit" && !s.mode.truncate,
+	);
 	const isMobile = useAppStore((s) => s.isMobile);
 
 	return (
@@ -108,18 +114,14 @@ export default function ChatEffects({
 									</span>
 								</>
 							}
-							onDelete={() =>
-								MessagingService.setEditing({ client, message: null })
-							}
+							onDelete={() => ComposerService.cancel({ client })}
 							isAny={disabled}
 						/>
 					)}
-					{editing && !truncating && (
+					{editing && !keepingLater && (
 						<Effect
-							content="Keeping newer messages"
-							onDelete={() =>
-								MessagingService.setTruncating({ truncating: true })
-							}
+							content="Dropping later messages"
+							onDelete={() => useComposerStore.getState().keepLater()}
 							isAny={disabled}
 						/>
 					)}
@@ -136,9 +138,7 @@ export default function ChatEffects({
 									</span>
 								</>
 							}
-							onDelete={() =>
-								MessagingService.setInsertingAfter({ message: null })
-							}
+							onDelete={() => ComposerService.cancel({ client })}
 							isAny={disabled}
 						/>
 					)}

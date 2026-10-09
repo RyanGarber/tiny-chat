@@ -25,7 +25,7 @@ export const ServerAgentService = {
 		chat: zAgentChat | null;
 		prompt: MessageState | null;
 		context: zAgentContext;
-		/** Override normal chat instructions for a specialized agent run. */
+		/** Added to the normal chat instructions for a specialized agent run. */
 		instructions?: string;
 		/** Optional tool allowlist. */
 		toolNames?: string[];

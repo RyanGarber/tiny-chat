@@ -1,6 +1,6 @@
 import type { DefaultModelRow } from "@prisma/orm-postgres/orm-client";
-import type { Contract } from "../../../generated/prisma/contract.d.ts";
-import contractJson from "../../../generated/prisma/contract.json" with {
+import type { Contract } from "#core/generated/prisma/contract.d.ts";
+import contractJson from "#core/generated/prisma/contract.json" with {
 	type: "json",
 };
 

@@ -18,18 +18,18 @@ export default function ToolControls({
 	message,
 	part,
 	controls,
-	isFocused,
+	answerable,
 }: {
 	message: MessageState;
 	part: zToolCallPart;
 	controls: ToolControlsType;
-	/** Only the next call waiting on the user can be answered. */
-	isFocused?: boolean;
+	/** Only calls waiting on the user can be answered, in any order. */
+	answerable?: boolean;
 }) {
 	const { values, setValue, submit, locked, complete, sending } =
 		useToolFeedback({ message, part, controls });
 
-	const disabled = locked || !isFocused;
+	const disabled = locked || !answerable;
 
 	return (
 		<Stack gap="xs">

@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { Capabilities } from "#core/core/types/capability.ts";
 import { SettingsUtils } from "#core/core/utils/SettingsUtils.ts";
 import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
+import { ShellExecService } from "#core/features/tool/services/ShellExecService.ts";
 import type { ToolDisplay } from "#core/features/tool/types/display.ts";
 import type {
 	Tool,
@@ -10,8 +11,6 @@ import type {
 } from "#core/features/tool/types/tool.ts";
 import { ShellUtils } from "#core/features/tool/utils/ShellUtils.ts";
 import { ToolOutputUtils } from "#core/features/tool/utils/ToolOutputUtils.ts";
-
-const MAX_LINE_LENGTH = 2_000;
 
 const MNT_DESCRIPTION = `MUST set to TRUE any time the command should run in the virtual \`${PathUtils.mount}\` filesystem.`;
 
@@ -44,10 +43,6 @@ export const shell_exec = {
 		value: z.string(),
 	}),
 } as const satisfies ToolDefinition;
-
-const keep: (event: z.infer<typeof shell_exec.stream>) => boolean = (event) => {
-	return event.value.length > 0;
-};
 
 /** The programs a command runs, without their arguments: `git status && ls`. */
 const getPrograms = (command: string) =>
@@ -137,56 +132,15 @@ export const createShellExecTool: ToolFactory<
 			}),
 		};
 	},
-	execute: async ({ input, stream, abort }) => {
-		const shell = ShellUtils.detect(input.mnt, options.capabilities);
-		const dialect = shell.environment?.().dialect;
-
-		let buffer: z.infer<(typeof shell_exec)["stream"]> | undefined;
-
-		const result = await shell.exec({
-			command: input.command,
-			abort,
-			stream: ({ type, value }) => {
-				// Carriage returns are resolved below, against the line being built.
-				const text = ToolOutputUtils.stripAnsi(value);
-				if (!text) return;
-
-				const pieces = text.split("\n");
-				pieces.forEach((piece, index) => {
-					if (!buffer || buffer?.type !== type || index > 0) {
-						buffer = { type, value: "" };
-						stream?.({ mode: "append", data: buffer, options: { keep } });
-					}
-
-					// A carriage return rewrites the line it is on, which is how progress
-					// bars and spinners report themselves.
-					const rewrite = piece.lastIndexOf("\r");
-					buffer.value = (
-						rewrite >= 0 ? piece.slice(rewrite + 1) : buffer.value + piece
-					).slice(0, MAX_LINE_LENGTH);
-					stream?.({ mode: "replace", data: buffer, options: { keep } });
-				});
-			},
-		});
-
-		return [
-			{
-				type: "json",
-				value: {
-					code: result.code,
-					stdout: ToolOutputUtils.getBounded({
-						text: ToolOutputUtils.getPlain(result.stdout),
-						label: "stdout",
-					}),
-					stderr: ToolOutputUtils.getBounded({
-						text: ToolOutputUtils.getPlain(result.stderr),
-						maxChars: 10_000,
-						maxLines: 150,
-						label: "stderr",
-					}),
-					...(dialect && dialect !== "bash" ? { dialect } : {}),
-				},
-			},
-		];
-	},
+	execute: async ({ input, stream, abort }) => [
+		{
+			type: "json",
+			value: await ShellExecService.exec({
+				shell: ShellUtils.detect(input.mnt, options.capabilities),
+				command: input.command,
+				stream,
+				abort,
+			}),
+		},
+	],
 });

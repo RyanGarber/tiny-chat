@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { TRPCClientError } from "@trpc/client";
 import { useContext, useMemo } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { ClientContext } from "#client/client.ts";
 import { ChatService } from "#client/features/chat/services/ChatService.ts";
 import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
-import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
+import { useSeenStore } from "#client/features/chat/stores/useSeenStore.ts";
+import { ActiveChatUtils } from "#client/features/chat/utils/ActiveChatUtils.ts";
 import { useSettings } from "#client/features/settings/hooks/useSettings.ts";
 import type { zAgentChat } from "#core/features/agent/types/agent.ts";
 import { ChatUtils } from "#core/features/data/utils/ChatUtils.ts";
@@ -12,11 +14,12 @@ import { ChatUtils } from "#core/features/data/utils/ChatUtils.ts";
 export const useChat = () => {
 	const client = useContext(ClientContext);
 
-	const chatId = useChatStore((s) => s.chatId);
-	const lastSeen = useChatStore((s) => s.lastSeen);
-	const createIncognito = useChatStore((s) => s.createIncognito);
-	const createTemporary = useChatStore((s) => s.createTemporary);
-	const project = useMessagingStore((s) => s.project);
+	const chatId = useChatStore((s) => s.active.chatId);
+	const lastSeen = useSeenStore((s) => s.lastSeen);
+	const { temporary, incognito } = useChatStore(
+		useShallow((s) => ActiveChatUtils.options(s.active)),
+	);
+	const project = useChatStore((s) => s.active.project);
 
 	const chat = useQuery({
 		queryKey: client.query.chat.getChat.queryKey({ id: chatId || undefined }),
@@ -27,13 +30,13 @@ export const useChat = () => {
 				// sitting on an id nothing can be sent to.
 				if (!(e instanceof TRPCClientError) || e.data?.code !== "NOT_FOUND")
 					throw e;
-				if (useChatStore.getState().chatId === chatId)
+				if (useChatStore.getState().active.chatId === chatId)
 					ChatService.setChat({ id: null });
 				return null;
 			});
 			if (!data) return null;
 			if (!(data.id in lastSeen)) {
-				useChatStore
+				useSeenStore
 					.getState()
 					.setLastSeen(data.id, ChatUtils.getTimestamp(data));
 			}
@@ -77,16 +80,10 @@ export const useChat = () => {
 						settings: projectSettings.data ?? {},
 					}
 				: null,
-			incognito: createIncognito,
-			temporary: createTemporary,
+			incognito,
+			temporary,
 		};
-	}, [
-		chat.data,
-		project,
-		projectSettings.data,
-		createIncognito,
-		createTemporary,
-	]);
+	}, [chat.data, project, projectSettings.data, incognito, temporary]);
 
 	return { chat, nextChat };
 };

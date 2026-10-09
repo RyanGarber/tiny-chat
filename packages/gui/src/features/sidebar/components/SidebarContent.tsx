@@ -29,7 +29,6 @@ import { ClientContext } from "#client/client.ts";
 import { useChatList } from "#client/features/chat/hooks/useChatList.ts";
 import { ChatService } from "#client/features/chat/services/ChatService.ts";
 import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
-import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
 import type {
 	ChatState,
 	ProjectState,
@@ -41,6 +40,9 @@ import scrollable from "#gui/core/styles/scrollable.module.css";
 import CommandSettings from "#gui/features/sidebar/components/CommandSettings.tsx";
 import ContextSettings from "#gui/features/sidebar/components/ContextSettings.tsx";
 import FolderSettings from "#gui/features/sidebar/components/FolderSettings.tsx";
+
+/** Projects shown before the rest are folded under "More". */
+const PROJECT_LIMIT = 3;
 
 type ChatDragHandlers = {
 	onDragEnd: () => void;
@@ -99,8 +101,8 @@ function Project({
 }) {
 	const isMobile = useAppStore((state) => state.isMobile);
 	const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
-	const currentProject = useMessagingStore((state) => state.project);
-	const hasChat = useChatStore((state) => !!state.chatId);
+	const currentProject = useChatStore((state) => state.active.project);
+	const hasChat = useChatStore((state) => !!state.active.chatId);
 	const setCurrentModal = useAppStore((state) => state.setCurrentModal);
 
 	const [isExpanded, setExpanded] = useState(false);
@@ -260,7 +262,7 @@ function Chat({
 	setEditing: Dispatch<SetStateAction<ProjectState | ChatState | null>>;
 	dragHandlers: ChatDragHandlers;
 }) {
-	const active = useChatStore((state) => state.chatId === chat.id);
+	const active = useChatStore((state) => state.active.chatId === chat.id);
 	const isMobile = useAppStore((state) => state.isMobile);
 	const setCurrentModal = useAppStore((state) => state.setCurrentModal);
 	const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
@@ -380,6 +382,10 @@ export default function SidebarContent() {
 	const [dropProjectId, setDropProjectId] = useState<string | null | undefined>(
 		undefined,
 	);
+	const [allProjects, setAllProjects] = useState(false);
+	const projectList =
+		projects.data?.pages.flatMap((page) => page.projects) ?? [];
+	const hiddenProjects = Math.max(0, projectList.length - PROJECT_LIMIT);
 
 	const dragHandlers: ChatDragHandlers = {
 		onDragStart: (event, dragged) => {
@@ -462,21 +468,31 @@ export default function SidebarContent() {
 							+
 						</ActionIcon>
 					</Group>
-					{projects.data?.pages
-						.flatMap((page) => page.projects)
-						.map((project) => (
-							<Project
-								key={project.id}
-								project={project}
-								setEditing={setEditing}
-								dragHandlers={dragHandlers}
-								dropActive={dropProjectId === project.id}
-								onDragEnter={(event) => handleDragEnter(event, project.id)}
-								onDragLeave={handleDragLeave}
-								onDragOver={(event) => handleDragOver(event, project.id)}
-								onDrop={(event) => handleDrop(event, project.id)}
-							/>
-						))}
+					{(allProjects
+						? projectList
+						: projectList.slice(0, PROJECT_LIMIT)
+					).map((project) => (
+						<Project
+							key={project.id}
+							project={project}
+							setEditing={setEditing}
+							dragHandlers={dragHandlers}
+							dropActive={dropProjectId === project.id}
+							onDragEnter={(event) => handleDragEnter(event, project.id)}
+							onDragLeave={handleDragLeave}
+							onDragOver={(event) => handleDragOver(event, project.id)}
+							onDrop={(event) => handleDrop(event, project.id)}
+						/>
+					))}
+					{hiddenProjects > 0 && (
+						<NavLink
+							h={32}
+							c="dimmed"
+							label={allProjects ? "Less" : `${hiddenProjects} more`}
+							leftSection={<DotsThreeIcon />}
+							onClick={() => setAllProjects((previous) => !previous)}
+						/>
+					)}
 					<Stack
 						gap={10}
 						flex={1}

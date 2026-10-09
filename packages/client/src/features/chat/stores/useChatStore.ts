@@ -1,60 +1,58 @@
 import { create } from "zustand";
+import { subscribeWithSelector } from "zustand/middleware";
+import type {
+	ActiveChat,
+	ChatPlacement,
+	NewChatOptions,
+	ProjectRef,
+} from "#client/features/chat/types/activeChat.ts";
+import { ActiveChatUtils } from "#client/features/chat/utils/ActiveChatUtils.ts";
 
 interface ChatStore {
-	chatId: string | null;
-	branches: Record<string, string>;
-	selectBranch: (parentId: string | null, messageId: string) => void;
-	setChatId: (id: string | null) => void;
+	active: ActiveChat;
+	/**
+	 * Counts arrivals at a chat, the one already open included, so the view can
+	 * settle on its end each time.
+	 */
+	visits: number;
 
-	/** A message the chat should bring into view, once it is drawn. */
-	focusedMessage: string | null;
-	/** Selects the branches that lead to a message and asks for it to be shown. */
+	open: (chatId: string) => void;
+	start: (project: ProjectRef | null) => void;
+	load: (chat: ChatPlacement) => void;
+	setOptions: (options: Partial<NewChatOptions>) => void;
+	selectBranch: (parentId: string | null, messageId: string) => void;
 	focusMessage: (messageId: string, branches: Record<string, string>) => void;
 	clearFocusedMessage: () => void;
-
-	lastSeen: Record<string, number>;
-	setLastSeen: (id: string, lastSeen: number) => void;
-
-	createTemporary: boolean;
-	setCreateTemporary: (temporary: boolean) => void;
-
-	createIncognito: boolean;
-	setCreateIncognito: (incognito: boolean) => void;
-
-	scrollRequested: number;
-	scrollInstant: number;
-	requestScrollToBottom: () => void;
-	requestScrollInstant: () => void;
 }
 
-export const useChatStore = create<ChatStore>((set) => ({
-	chatId: null,
-	setChatId: (id) =>
-		set((s) =>
-			s.chatId === id ? {} : { chatId: id, branches: {}, focusedMessage: null },
-		),
-	branches: {},
-	focusedMessage: null,
-	focusMessage: (messageId, branches) =>
-		set({ focusedMessage: messageId, branches }),
-	clearFocusedMessage: () => set({ focusedMessage: null }),
-	selectBranch: (parentId, messageId) =>
-		set((s) => ({ branches: { ...s.branches, [parentId ?? ""]: messageId } })),
+export const useChatStore = create(
+	subscribeWithSelector<ChatStore>((set) => ({
+		active: ActiveChatUtils.start(null),
+		visits: 0,
 
-	lastSeen: {},
-	setLastSeen: (id, lastSeen) =>
-		set((s) => ({ lastSeen: { ...s.lastSeen, [id]: lastSeen } })),
-
-	createTemporary: false,
-	setCreateTemporary: (temporary) => set({ createTemporary: temporary }),
-
-	createIncognito: false,
-	setCreateIncognito: (incognito) => set({ createIncognito: incognito }),
-
-	scrollRequested: 0,
-	scrollInstant: 0,
-	requestScrollToBottom: () =>
-		set((s) => ({ scrollRequested: s.scrollRequested + 1 })),
-	requestScrollInstant: () =>
-		set((s) => ({ scrollInstant: s.scrollInstant + 1 })),
-}));
+		open: (chatId) =>
+			set((s) => ({
+				active: ActiveChatUtils.open(s.active, chatId),
+				visits: s.visits + 1,
+			})),
+		start: (project) =>
+			set((s) => ({
+				active: ActiveChatUtils.start(project),
+				visits: s.visits + 1,
+			})),
+		load: (chat) =>
+			set((s) => ({ active: ActiveChatUtils.load(s.active, chat) })),
+		setOptions: (options) =>
+			set((s) => ({ active: ActiveChatUtils.setOptions(s.active, options) })),
+		selectBranch: (parentId, messageId) =>
+			set((s) => ({
+				active: ActiveChatUtils.selectBranch(s.active, parentId, messageId),
+			})),
+		focusMessage: (messageId, branches) =>
+			set((s) => ({
+				active: ActiveChatUtils.focus(s.active, messageId, branches),
+			})),
+		clearFocusedMessage: () =>
+			set((s) => ({ active: ActiveChatUtils.clearFocus(s.active) })),
+	})),
+);

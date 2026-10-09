@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useCapabilities } from "#client/core/hooks/useCapabilities.ts";
 import { useSession } from "#client/core/hooks/useSession.ts";
@@ -7,7 +7,7 @@ import { useConfig } from "#client/features/agent/hooks/useConfig.ts";
 import { useSkills } from "#client/features/agent/hooks/useSkills.ts";
 import { useTools } from "#client/features/agent/hooks/useTools.ts";
 import { useChat } from "#client/features/chat/hooks/useChat.ts";
-import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
+import { useComposerStore } from "#client/features/editor/stores/useComposerStore.ts";
 import { AgentService } from "#core/features/agent/services/AgentService.ts";
 import {
 	AgentTokensService,
@@ -51,7 +51,9 @@ export const useEstimatedTokens = <T>({
 	const { config: baseConfig, model, modelArgs, providers } = useConfig();
 	const { toolsets, nativeTools, mcpTools } = useTools();
 	const { skills, localSkills, nativeSkills } = useSkills();
-	const editing = useMessagingStore((state) => state.editing);
+	const editing = useComposerStore((state) =>
+		state.mode.kind === "edit" ? state.mode.message : null,
+	);
 
 	const config = useMemo(() => {
 		return {
@@ -142,7 +144,9 @@ export const useEstimatedTokens = <T>({
 	const dependenciesReady =
 		!!session.data &&
 		providers.isSuccess &&
-		sourceMessages.isSuccess &&
+		// A new chat has no history to load: its query is disabled, and so never
+		// succeeds.
+		(sourceMessages.isSuccess || !sourceMessages.isEnabled) &&
 		capabilities.isSuccess &&
 		nativeTools.isSuccess &&
 		mcpTools.isSuccess &&
@@ -176,6 +180,9 @@ export const useEstimatedTokens = <T>({
 			});
 		},
 		enabled: dependenciesReady,
+		// Each input change keys a new estimate; hold the last total meanwhile
+		// rather than dropping to zero.
+		placeholderData: keepPreviousData,
 		throwOnError: true,
 		refetchOnWindowFocus: false,
 		refetchOnReconnect: false,

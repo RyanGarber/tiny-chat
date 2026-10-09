@@ -20,7 +20,7 @@ const TAIL_LINES = 12;
  * Keeps only the last lines of growing content, the way a terminal scrolls,
  * with a note of how many came before. Released once the content settles.
  */
-function Tail({
+function TailLines({
 	follow,
 	value,
 	children,
@@ -60,10 +60,16 @@ const relative = (root: string, path: string) => {
 export default function ToolBlock({
 	block,
 	active,
+	tail = true,
 }: {
 	block: ToolBlockType;
 	/** Whether the call is still streaming or running. */
 	active: boolean;
+	/**
+	 * Holds growing content to its last lines. Off where it sits in a view that
+	 * scrolls through the whole of it instead.
+	 */
+	tail?: boolean;
 }) {
 	switch (block.type) {
 		case "text":
@@ -86,7 +92,10 @@ export default function ToolBlock({
 		}
 		case "code":
 			return (
-				<Tail follow={active || !!block.terminal} value={block.value}>
+				<TailLines
+					follow={tail && (active || !!block.terminal)}
+					value={block.value}
+				>
 					{(value) => (
 						<Code
 							code={value}
@@ -94,12 +103,12 @@ export default function ToolBlock({
 							filename={block.title}
 						/>
 					)}
-				</Tail>
+				</TailLines>
 			);
 		case "file":
 			if (block.image) return <Image src={block.image} />;
 			return (
-				<Tail follow={active} value={block.content ?? ""}>
+				<TailLines follow={tail && active} value={block.content ?? ""}>
 					{(value) => (
 						<Code
 							code={value}
@@ -107,7 +116,7 @@ export default function ToolBlock({
 							filename={block.path}
 						/>
 					)}
-				</Tail>
+				</TailLines>
 			);
 		case "diff":
 			return (
@@ -143,9 +152,9 @@ export default function ToolBlock({
 							</Text>
 							<Anchor href={block.source.url} wrap="truncate-end" />
 						</Box>
-						<Tail follow={active} value={block.source.content}>
+						<TailLines follow={tail && active} value={block.source.content}>
 							{(value) => <Markdown source={value} streaming={active} />}
-						</Tail>
+						</TailLines>
 					</Box>
 				</Content>
 			);

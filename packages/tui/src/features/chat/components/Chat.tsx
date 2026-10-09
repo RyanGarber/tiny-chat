@@ -27,7 +27,9 @@ export default function Chat({ compaction }: { compaction?: Compaction }) {
 	// Brings a message asked for to the top once it has been laid out, which
 	// may be a few passes away while the chat it is in loads.
 	const ref = useRef<NonNullable<ScrollViewProps["ref"]>["current"]>(null);
-	const focusedMessage = useChatStore((state) => state.focusedMessage);
+	const focusedMessage = useChatStore((state) =>
+		state.active.status === "open" ? state.active.focusedMessage : null,
+	);
 	useLayoutEffect(() => {
 		if (!focusedMessage || chat.isFetching || messages.isFetching) return;
 		const index = messageList.findIndex((m) => m.id === focusedMessage);

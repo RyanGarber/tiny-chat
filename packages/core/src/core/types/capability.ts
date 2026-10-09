@@ -39,7 +39,13 @@ export interface EmbeddingCapability {
 }
 
 export interface SubagentsCapability {
+	/**
+	 * Runs a subagent. Given the call that ran it, its transcript is kept with
+	 * the reply holding that call, so it can be read back with the reply.
+	 */
 	runSubagent: (_: {
+		/** The call's part id, and the id of the reply it is in. */
+		part?: { id: string; message: string };
 		context: zAgentContext;
 		instructions?: string;
 		onData: (data: zData) => void;

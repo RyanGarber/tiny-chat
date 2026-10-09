@@ -15,9 +15,9 @@ export type Panel = "chats" | "files";
 
 /**
  * What takes the keys in turn on the chat page, Tab moving between them: the
- * editor, a tool call waiting on feedback, or an open panel.
+ * editor, a tool call waiting on feedback, an open panel, or a find bar.
  */
-export type Focusable = "editor" | `tool:${string}` | Panel;
+export type Focusable = "editor" | `tool:${string}` | Panel | `find:${string}`;
 
 /** What takes the keys: a page over the chat, or one focusable on it. */
 export type Focus = Exclude<Page, "chat"> | Focusable;
@@ -26,7 +26,8 @@ const isFocusable = (focus: Focus): focus is Focusable =>
 	focus === "editor" ||
 	focus === "chats" ||
 	focus === "files" ||
-	focus.startsWith("tool:");
+	focus.startsWith("tool:") ||
+	focus.startsWith("find:");
 
 /** Tab order, whatever order they turned up on screen in. */
 const rank = (focusable: Focusable) =>
@@ -36,7 +37,9 @@ const rank = (focusable: Focusable) =>
 			? 1
 			: focusable === "chats"
 				? 2
-				: 3;
+				: focusable === "files"
+					? 3
+					: 4;
 
 export interface Status {
 	id: string;

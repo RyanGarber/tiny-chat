@@ -74,8 +74,12 @@ async function run() {
 
 const abort = new AbortController();
 
+let lastInputs: string[] | null = null;
 async function reload(inputs: string[] | null) {
 	try {
+		inputs ??= lastInputs;
+		lastInputs = inputs;
+
 		if (!inputs) {
 			print({ level: "warning", message: "nothing to watch" });
 			return;

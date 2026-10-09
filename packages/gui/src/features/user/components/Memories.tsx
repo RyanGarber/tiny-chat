@@ -9,7 +9,7 @@ import {
 } from "@mantine/core";
 import { TrashIcon } from "@phosphor-icons/react";
 import { useState } from "react";
-import { ChatFilesUtils } from "#client/features/chat/utils/ChatFilesUtils.ts";
+import { ChatSourcesUtils } from "#client/features/chat/utils/ChatSourcesUtils.ts";
 import {
 	type MemoryDraft,
 	useMemories,
@@ -195,7 +195,7 @@ function Memory({ memory }: { memory: MemoryState }) {
 					disabled={updating || deleting}
 				/>
 				<Text size="xs" c="dimmed" ml="auto" style={{ whiteSpace: "nowrap" }}>
-					{ChatFilesUtils.memory(memory).learned}
+					{ChatSourcesUtils.memory(memory).learned}
 				</Text>
 			</Group>
 		</Stack>

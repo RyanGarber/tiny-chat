@@ -33,5 +33,6 @@
 	},
 	"[yaml]": {
 		"editor.defaultFormatter": "esbenp.prettier-vscode"
-	}
+	},
+	"bun.test.enable": false
 }

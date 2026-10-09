@@ -318,6 +318,7 @@ export const MessageService = {
 				const rows = descendants.length
 					? await query
 							.where((m) => m.id.in(descendants.map((m) => m.id)))
+							.include("subagents", (subagent) => subagent.select("id"))
 							.all()
 					: [];
 				const rawById = new Map(rows.map((m) => [m.id, m]));
@@ -331,7 +332,7 @@ export const MessageService = {
 				if (descendants.length)
 					await tx.orm.public.Message.createAll(
 						descendants.map((m) => {
-							const row = requireRow(rawById.get(m.id));
+							const { subagents: _, ...row } = requireRow(rawById.get(m.id));
 							return {
 								...row,
 								id: requireRow(ids.get(m.id)),
@@ -339,6 +340,17 @@ export const MessageService = {
 							};
 						}),
 					);
+				// A clone keeps the subagent runs its calls made.
+				for (const { id, subagents } of rows) {
+					if (!subagents.length) continue;
+					await tx.orm.public.Message.where({
+						id: requireRow(ids.get(id)),
+						userId: user.id,
+					}).update({
+						subagents: (subagent) =>
+							subagent.connect(subagents.map(({ id }) => ({ id }))),
+					});
+				}
 			}
 			return MessageUtils.toMessageState(edited);
 		});

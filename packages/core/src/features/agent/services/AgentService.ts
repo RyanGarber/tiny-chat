@@ -152,7 +152,7 @@ export const AgentService = {
 		data,
 		metadata,
 		env,
-		instructions: instructionOverride,
+		instructions: extraInstructions,
 		options,
 		toolStream,
 		toolSignal,
@@ -167,7 +167,10 @@ export const AgentService = {
 		data: zData;
 		metadata: zMetadata;
 		env: Partial<zEnv>;
-		/** Override the normal chat instructions for specialized agent runs. */
+		/**
+		 * Added to the normal chat instructions for specialized agent runs, which
+		 * still need the chat's context: its project, folders, tools and skills.
+		 */
 		instructions?: string;
 		options?: Partial<Omit<RunLanguageModelOptions, "system">>;
 		/** Drain user messages queued for the next model step. */
@@ -202,7 +205,9 @@ export const AgentService = {
 			messages,
 			instructions: builtInstructions,
 		} = await AgentService.build({ context, capabilities, toolsets, skills });
-		const instructions = instructionOverride ?? builtInstructions;
+		const instructions =
+			[builtInstructions, extraInstructions].filter(Boolean).join("\n\n") ||
+			undefined;
 
 		if (!config) throw new Error("missing config");
 		const supportsTools = (
@@ -257,6 +262,7 @@ export const AgentService = {
 					);
 				const value = await ToolCallUtils.interruptible(
 					tool.execute({
+						id: toolCall.id,
 						input: toolCall.input,
 						feedback,
 						context,

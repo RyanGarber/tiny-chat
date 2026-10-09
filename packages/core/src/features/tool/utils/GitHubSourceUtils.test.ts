@@ -247,17 +247,20 @@ describe("GitHub presentation", () => {
 		},
 	);
 
-	it("ignores failed, missing, and malformed results", () => {
+	it("matches tool calls to their results", () => {
 		const { part, result } = parts(fixtures[1]);
-		expect(SourceUtils.find({ message: { data: [[part]] }, toolsets })).toEqual(
-			[],
-		);
 		expect(
-			SourceUtils.find({
-				message: { data: [[part, { ...result, error: true }]] },
-				toolsets,
-			}),
-		).toEqual([]);
+			SourceUtils.find({ message: { data: [[part]] }, toolsets })[0].type,
+		).toEqual("toolCall");
+		const source = SourceUtils.find({
+			message: { data: [[part, { ...result, error: true }]] },
+			toolsets,
+		})[0];
+		assert(source.type === "toolCall");
+		expect(source.value.error).toBe(true);
+	});
+
+	it("ignores a malformed result", () => {
 		expect(
 			GitHubSourceUtils.parse("github_view_file", [null, { kind: "file" }]),
 		).toEqual([]);

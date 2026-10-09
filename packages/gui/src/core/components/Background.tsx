@@ -4,7 +4,9 @@ import { useChat } from "#client/features/chat/hooks/useChat.ts";
 import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
 
 export default function Background() {
-	const createIncognito = useChatStore((s) => s.createIncognito);
+	const createIncognito = useChatStore(
+		(s) => s.active.status === "new" && s.active.incognito,
+	);
 	const { chat } = useChat();
 
 	const black = useMemo(

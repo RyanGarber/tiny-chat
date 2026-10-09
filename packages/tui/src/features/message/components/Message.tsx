@@ -3,8 +3,8 @@ import { useContext, useState } from "react";
 import { ClientContext } from "#client/client.ts";
 import type { AgentStreamEvent } from "#client/core/services/StreamService.ts";
 import { useStream } from "#client/features/agent/hooks/useStream.ts";
-import { MessagingService } from "#client/features/chat/services/MessagingService.ts";
-import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
+import { ComposerService } from "#client/features/editor/services/ComposerService.ts";
+import { useComposerStore } from "#client/features/editor/stores/useComposerStore.ts";
 import { useMessageBranches } from "#client/features/message/hooks/useMessageBranches.ts";
 import type { Compaction } from "#core/features/agent/services/AgentTokensService.ts";
 import type { MessageState } from "#core/features/data/types/message.ts";
@@ -29,7 +29,9 @@ export default function Message({
 
 	const columns = useWidth();
 
-	const editing = useMessagingStore((state) => state.editing);
+	const editing = useComposerStore((state) =>
+		state.mode.kind === "edit" ? state.mode.message : null,
+	);
 
 	const branch = useMessageBranches(message);
 	const [branchHover, setBranchHover] = useState<number | null>(null);
@@ -85,10 +87,9 @@ export default function Message({
 						label={editing?.id === message.id ? "cancel" : "edit"}
 						onClick={() => {
 							useAppStore.getState().setFocus("editor");
-							MessagingService.setEditing({
-								client,
-								message: editing?.id === message.id ? null : message,
-							});
+							if (editing?.id === message.id)
+								ComposerService.cancel({ client });
+							else ComposerService.edit({ client, message });
 						}}
 					/>
 				)}

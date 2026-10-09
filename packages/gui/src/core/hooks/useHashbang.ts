@@ -35,7 +35,7 @@ export const setHashbangQuery = (query: Record<string, string | undefined>) => {
 };
 
 export const useHashbang = () => {
-	const chatId = useChatStore((s) => s.chatId);
+	const chatId = useChatStore((s) => s.active.chatId);
 
 	const lastChatIdRef = useRef(chatId);
 	const lastHashbangRef = useRef(getHashbang());

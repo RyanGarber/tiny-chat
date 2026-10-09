@@ -10,8 +10,9 @@ import {
 import { createAuthClient } from "better-auth/react";
 import { createContext } from "react";
 import { z } from "zod";
-import type { ClientInput } from "#client/features/chat/services/MessagingService.ts";
+import { ChatService } from "#client/features/chat/services/ChatService.ts";
 import { WorkingDirectoryService } from "#client/features/chat/services/WorkingDirectoryService.ts";
+import type { ClientInput } from "#client/features/editor/services/ComposerService.ts";
 import {
 	type HostShellPrimitives,
 	HostShellService,
@@ -155,7 +156,7 @@ export const createClient = ({
 		activate: (selection) => api.chat.activate.mutate(selection),
 	});
 
-	return {
+	const client = {
 		workingDirectory,
 		webUrl,
 		serverUrl,
@@ -174,6 +175,10 @@ export const createClient = ({
 		shell,
 		desktop,
 	};
+
+	ChatService.watch({ client });
+
+	return client;
 };
 
 export type Client = Awaited<ReturnType<typeof createClient>>;

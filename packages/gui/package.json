@@ -14,6 +14,7 @@
 	},
 	"imports": {
 		"#gui/*": "./src/*",
+		"#gui/generated/*": "./generated/*",
 		"#client/*": "client/*",
 		"#core/*": "core/*"
 	},

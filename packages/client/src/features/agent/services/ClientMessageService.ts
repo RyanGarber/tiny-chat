@@ -1,6 +1,7 @@
 import type { Client } from "#client/client.ts";
 import { AgentStreamService } from "#client/core/services/StreamService.ts";
 import { ClientAgentService } from "#client/features/agent/services/ClientAgentService.ts";
+import { useStreamStore } from "#client/features/agent/stores/useStreamStore.ts";
 import { ChatService } from "#client/features/chat/services/ChatService.ts";
 import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
 import { useMessageQueueStore } from "#client/features/chat/stores/useMessageQueueStore.ts";
@@ -27,9 +28,61 @@ import type { zSkill } from "#core/features/skill/types/skill.ts";
 import type { Toolset } from "#core/features/tool/types/tool.ts";
 
 /**
+ * Generations started in each chat, from the moment they are asked for until
+ * they are saved: a generation is still being prepared for a while before its
+ * stream shows it running.
+ */
+const generations = new Map<string, Set<Promise<void>>>();
+
+/** Resolves once the chat's agent stream is cleared. */
+const streamCleared = (chatId: string) =>
+	new Promise<void>((resolve) => {
+		if (!useStreamStore.getState().chatAgentStreams.has(chatId)) {
+			resolve();
+			return;
+		}
+		const unsubscribe = useStreamStore.subscribe((state) => {
+			if (state.chatAgentStreams.has(chatId)) return;
+			unsubscribe();
+			resolve();
+		});
+	});
+
+/**
  * Agent orchestration for messages.
  */
 export const ClientMessageService = {
+	/** Whether nothing is generating in the chat, nor about to. */
+	isIdle: (chatId: string) =>
+		!generations.get(chatId)?.size &&
+		!useStreamStore.getState().chatAgentStreams.has(chatId),
+
+	/** Resolves once nothing is generating in the chat, nor about to. */
+	idle: async (chatId: string) => {
+		while (!ClientMessageService.isIdle(chatId)) {
+			const pending = generations.get(chatId);
+			if (pending?.size) await Promise.all(pending);
+			else await streamCleared(chatId);
+		}
+	},
+
+	/** Counts a generation as started in the chat until the returned call. */
+	_track: (chatId: string) => {
+		let resolve!: () => void;
+		const done = new Promise<void>((r) => {
+			resolve = r;
+		});
+		const pending = generations.get(chatId) ?? new Set();
+		pending.add(done);
+		generations.set(chatId, pending);
+		return () => {
+			pending.delete(done);
+			if (!pending.size && generations.get(chatId) === pending)
+				generations.delete(chatId);
+			resolve();
+		};
+	},
+
 	/**
 	 * Trigger model generation for an existing user message. If `message` is a
 	 * model reply, the seed user message is resolved automatically. When
@@ -77,6 +130,60 @@ export const ClientMessageService = {
 			mcpTools = [];
 		}
 
+		// Counted from here, before anything is awaited, so whoever checks the
+		// chat next sees it busy.
+		const done = ClientMessageService._track(chat.id);
+		let started = false;
+		try {
+			await ClientMessageService._run({
+				client,
+				user,
+				message,
+				chat,
+				toolResults,
+				mcpTools,
+				providers,
+				skills,
+				resume,
+				answered,
+				onStart: () => {
+					started = true;
+				},
+				onDone: done,
+			});
+		} finally {
+			if (!started) done();
+		}
+	},
+
+	_run: async ({
+		client,
+		user,
+		message,
+		chat,
+		toolResults,
+		mcpTools,
+		providers,
+		skills,
+		resume,
+		answered,
+		onStart,
+		onDone,
+	}: {
+		client: Client;
+		user: zUser;
+		message: MessageState;
+		chat: ChatState;
+		providers: ProviderState<ProviderStatus>[];
+		skills: zSkill[];
+		mcpTools: Toolset<any>[];
+		toolResults?: zDataPart[];
+		resume: boolean;
+		answered: boolean;
+		/** The generation is running, and calls `onDone` once it is saved. */
+		onStart: () => void;
+		onDone: () => void;
+	}): Promise<void> => {
 		const branch = await ClientMessageService._getBranch(client, message);
 		const prompt =
 			message.author === "MODEL"
@@ -102,6 +209,7 @@ export const ClientMessageService = {
 			return;
 		}
 
+		onStart();
 		void (async () => {
 			let failed = true;
 			// Generated into a copy: the reply in the cache is what was last saved,
@@ -151,6 +259,7 @@ export const ClientMessageService = {
 				useMessageQueueStore.getState().finish(chat.id, working.data, failed);
 				// Keep the live overlay until persisted content is in the cache.
 				AgentStreamService.clear(response.id);
+				onDone();
 			}
 		})();
 	},
@@ -166,11 +275,14 @@ export const ClientMessageService = {
 		const cached = MessageQueryService.getCurrent(client, message.chatId);
 		if (cached?.messages.some((m) => m.id === message.id))
 			return cached.messages;
-		const state = useChatStore.getState();
+		const { active } = useChatStore.getState();
 		const { messages } = await client.api.message.getMessages.query({
 			chat: message.chatId,
 			start: message.id,
-			branches: state.chatId === message.chatId ? state.branches : undefined,
+			branches:
+				active.status === "open" && active.chatId === message.chatId
+					? active.branches
+					: undefined,
 		});
 		return messages;
 	},

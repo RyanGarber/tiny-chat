@@ -6,9 +6,9 @@ import { FileUtils } from "#core/features/file/utils/FileUtils.ts";
 import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
 import type { zWebContext } from "#core/features/provider/types/web.ts";
 import { useAppStore } from "#gui/core/stores/useAppStore.ts";
-import { useChatFilesStore } from "#gui/features/chat/stores/useChatFilesStore.ts";
-import { FileIcon } from "../../../../generated/stylicious";
-import MaterialIconTheme from "../../../../generated/stylicious/material-icon-theme.js";
+import { useChatSourcesStore } from "#gui/features/chat/stores/useChatSourcesStore.ts";
+import { FileIcon } from "#gui/generated/stylicious/index.js";
+import MaterialIconTheme from "#gui/generated/stylicious/material-icon-theme.js";
 
 export default function SourceTag({
 	path,
@@ -34,8 +34,8 @@ export default function SourceTag({
 }) {
 	const name = PathUtils.name(path);
 	const setAsideOpen = useAppStore((state) => state.setAsideOpen);
-	const viewFile = useChatFilesStore((state) => state.viewFile);
-	const chatId = useChatStore((state) => state.chatId);
+	const viewFile = useChatSourcesStore((state) => state.viewFile);
+	const chatId = useChatStore((state) => state.active.chatId);
 
 	const thumbnail = useMemo(() => {
 		if (thumbnailBytes) {

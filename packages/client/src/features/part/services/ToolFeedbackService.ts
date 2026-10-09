@@ -4,8 +4,14 @@ import type { ToolFeedback } from "#core/features/tool/types/tool.ts";
 
 /** Resolvers of the answers live generations are waiting on, by call id. */
 const waiters = new Map<string, (answer: ToolFeedback) => void>();
-/** Answers given ahead of the generation that will ask for them. */
-const answers = new Map<string, ToolFeedback>();
+/**
+ * Answers given ahead of the generation that will ask for them, with whether
+ * one took it.
+ */
+const answers = new Map<
+	string,
+	{ answer: ToolFeedback; taken: (taken: boolean) => void }
+>();
 
 /**
  * Hands the user's answers to tool calls to the generation that runs them.
@@ -24,7 +30,8 @@ export const ToolFeedbackService = {
 		const given = answers.get(part.id);
 		if (given) {
 			answers.delete(part.id);
-			return Promise.resolve(given);
+			given.taken(true);
+			return Promise.resolve(given.answer);
 		}
 		if (signal.aborted) return Promise.reject(signal.reason);
 		return new Promise((resolve, reject) => {
@@ -60,14 +67,24 @@ export const ToolFeedbackService = {
 		return true;
 	},
 
-	/** Holds an answer for the generation it is about to resume. */
-	hold: (id: string, answer: ToolFeedback) => {
-		answers.set(id, answer);
+	/**
+	 * Holds an answer for the next generation to ask for it. Resolves true once
+	 * one takes it, or false if it is let go of first.
+	 */
+	hold: (id: string, answer: ToolFeedback): Promise<boolean> => {
+		answers.get(id)?.taken(false);
 		useToolFeedbackStore.getState().set("answered", id, true);
+		return new Promise((resolve) => {
+			answers.set(id, { answer, taken: resolve });
+		});
 	},
+
+	/** Whether an answer is held, waiting on a generation to take it. */
+	isHeld: (id: string) => answers.has(id),
 
 	/** Forgets a call's answer once it has a result, or will not get one. */
 	settle: (id: string) => {
+		answers.get(id)?.taken(false);
 		answers.delete(id);
 		useToolFeedbackStore.getState().set("answered", id, false);
 	},

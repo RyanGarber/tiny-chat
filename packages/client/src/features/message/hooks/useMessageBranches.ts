@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useContext } from "react";
 import { ClientContext } from "#client/client.ts";
-import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
+import { ComposerService } from "#client/features/editor/services/ComposerService.ts";
 import { useMessages } from "#client/features/message/hooks/useMessages.ts";
 import { MessageQueryService } from "#client/features/message/services/MessageQueryService.ts";
 import type { MessageState } from "#core/features/data/types/message.ts";
@@ -22,7 +22,7 @@ export const useMessageBranches = (message: MessageState) => {
 		select: (offset: number) => {
 			const id = options[index + offset];
 			if (!id) return;
-			useMessagingStore.setState({ editing: null, insertingAfter: null });
+			ComposerService.cancel({ client });
 			selection.mutate(id);
 		},
 	};

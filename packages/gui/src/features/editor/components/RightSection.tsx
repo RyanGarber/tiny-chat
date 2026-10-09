@@ -6,18 +6,24 @@ import {
 	Text,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { GearIcon, PaperPlaneTiltIcon, StopIcon } from "@phosphor-icons/react";
+import {
+	GearIcon,
+	PaperPlaneTiltIcon,
+	StopIcon,
+	TerminalIcon,
+} from "@phosphor-icons/react";
 import { useEffect } from "react";
 import { AgentStreamService } from "#client/core/services/StreamService.ts";
 import { useConfig } from "#client/features/agent/hooks/useConfig.ts";
 import { useStreamStore } from "#client/features/agent/stores/useStreamStore.ts";
 import { useChat } from "#client/features/chat/hooks/useChat.ts";
 import { useMessaging } from "#client/features/chat/hooks/useMessaging.ts";
-import { useDraftStore } from "#client/features/chat/stores/useDraftStore.ts";
 import type {
 	Categories,
 	Usage,
 } from "#client/features/editor/hooks/useEstimatedTokens.ts";
+import { useComposerStore } from "#client/features/editor/stores/useComposerStore.ts";
+import { useShellCommand } from "#client/features/shell/hooks/useShellCommand.ts";
 import { AppService } from "#gui/core/services/AppService.ts";
 import { useAppStore } from "#gui/core/stores/useAppStore.ts";
 import ConfigPanel from "#gui/features/editor/components/ConfigPanel.tsx";
@@ -46,8 +52,9 @@ export default function RightSection({
 
 	const [opened, { toggle, close }] = useDisclosure();
 
-	const isEmpty = useDraftStore((state) => state.isEmpty);
+	const isEmpty = useComposerStore((state) => state.isEmpty);
 	const isIncomplete = useEditorStore((state) => state.isIncomplete);
+	const { command, isRunning } = useShellCommand();
 
 	const modelWidth = width * 0.25;
 
@@ -122,17 +129,22 @@ export default function RightSection({
 				size={40}
 				radius={20}
 				onClick={() => {
-					if (chat.data && stream && isEmpty) AgentStreamService.abort(stream);
+					if (command === null && chat.data && stream && isEmpty)
+						AgentStreamService.abort(stream);
 					else sendMessage.mutate();
 				}}
 				loading={sendMessage.isPending}
 				disabled={
-					stream && isEmpty
-						? false
-						: isEmpty || isIncomplete || disabled || status !== "ready"
+					command !== null
+						? !command || isRunning || disabled
+						: stream && isEmpty
+							? false
+							: isEmpty || isIncomplete || disabled || status !== "ready"
 				}
 			>
-				{stream && isEmpty ? (
+				{command !== null ? (
+					<TerminalIcon size={20} />
+				) : stream && isEmpty ? (
 					<StopIcon size={20} />
 				) : (
 					<PaperPlaneTiltIcon size={20} />

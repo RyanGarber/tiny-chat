@@ -3,18 +3,19 @@ import { useContext } from "react";
 import { ClientContext } from "#client/client.ts";
 import { ChatService } from "#client/features/chat/services/ChatService.ts";
 import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
+import { useSeenStore } from "#client/features/chat/stores/useSeenStore.ts";
 import type { ChatState, ProjectLike } from "#core/features/data/types/chat.ts";
 import { ChatUtils } from "#core/features/data/utils/ChatUtils.ts";
 
 export const useChatList = () => {
 	const client = useContext(ClientContext);
 
-	const lastSeen = useChatStore((s) => s.lastSeen);
-	const chatId = useChatStore((s) => s.chatId);
+	const lastSeen = useSeenStore((s) => s.lastSeen);
+	const chatId = useChatStore((s) => s.active.chatId);
 
 	const markSeen = (chat: ChatState): ChatState => {
 		if (!(chat.id in lastSeen))
-			useChatStore
+			useSeenStore
 				.getState()
 				.setLastSeen(chat.id, ChatUtils.getTimestamp(chat));
 		return {

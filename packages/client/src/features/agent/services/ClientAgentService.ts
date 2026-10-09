@@ -186,9 +186,14 @@ export const ClientAgentService = {
 				AgentStreamService.mutate(streamKey, { mode: "patch", data: { data } });
 			}
 		} finally {
-			// Answers the generation did not get to are given again once it is over.
+			// Answers the generation did not get to are given again once it is
+			// over — unless one is held for the generation that follows it.
 			for (const part of data.flat())
-				if (part.type === "toolCall") ToolFeedbackService.settle(part.id);
+				if (
+					part.type === "toolCall" &&
+					(abort.signal.aborted || !ToolFeedbackService.isHeld(part.id))
+				)
+					ToolFeedbackService.settle(part.id);
 		}
 
 		return { data, metadata };

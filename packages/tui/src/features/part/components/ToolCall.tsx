@@ -4,9 +4,10 @@ import { useToolCall } from "#client/features/part/hooks/useToolCall.ts";
 import type { MessageState } from "#core/features/data/types/message.ts";
 import type { RenderedPart } from "#core/features/data/utils/DataUtils.ts";
 import type { ToolStatusPart } from "#core/features/tool/types/display.ts";
+import type { Toolset } from "#core/features/tool/types/tool.ts";
 import Box from "#tui/core/components/Box.tsx";
 import Button from "#tui/core/components/Button.tsx";
-import ScrollTail from "#tui/features/part/components/ScrollTail.tsx";
+import Tail from "#tui/features/part/components/Tail.tsx";
 import Task from "#tui/features/part/components/Task.tsx";
 import ToolBlock from "#tui/features/part/components/ToolBlock.tsx";
 import ToolControls from "#tui/features/part/components/ToolControls.tsx";
@@ -25,17 +26,20 @@ export const toStatusParts = (status: ToolStatusPart[]): StatusPart[] =>
 export default function ToolCall({
 	message,
 	part,
-	isNext,
+	answerable,
 	hold,
+	toolsets,
 }: {
 	message?: MessageState;
 	part: Extract<RenderedPart, { type: "toolCall" }>;
-	/** The call next waiting on feedback, the one whose controls can take the focus. */
-	isNext?: boolean;
+	/** Waiting on feedback, so its controls can take the focus. */
+	answerable?: boolean;
 	/** Keeps it open after it settles, until something follows it. */
 	hold?: boolean;
+	/** Where its tool is looked up, for a call made outside of the messages. */
+	toolsets?: Toolset<any>[];
 }) {
-	const display = useToolCall({ part });
+	const display = useToolCall({ part, toolsets });
 	const { expanded, auto, toggle } = useAutoExpand(
 		part.id,
 		display.active || !!hold,
@@ -64,7 +68,7 @@ export default function ToolCall({
 				display.output.length > 0 ||
 				!!controls) && (
 				<Task.Details>
-					<ScrollTail follow={auto && !controls}>
+					<Tail follow={auto}>
 						<Box flexDirection="column" gap={1}>
 							{display.input.map((block, index) => (
 								<ToolBlock
@@ -79,7 +83,7 @@ export default function ToolCall({
 									message={message}
 									part={part}
 									controls={controls}
-									isNext={isNext}
+									answerable={answerable}
 								/>
 							)}
 							{display.output.map((block, index) => (
@@ -91,7 +95,7 @@ export default function ToolCall({
 								/>
 							))}
 						</Box>
-					</ScrollTail>
+					</Tail>
 				</Task.Details>
 			)}
 		</Task>

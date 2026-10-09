@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useContext, useMemo } from "react";
 import { ClientContext } from "#client/client.ts";
-import { MessagingService } from "#client/features/chat/services/MessagingService.ts";
+import { ComposerService } from "#client/features/editor/services/ComposerService.ts";
 import type {
 	CompletionGroup,
 	CompletionItem,
@@ -85,7 +85,7 @@ export default function GitHub() {
 						error: mutating ? cloneGitHubRepository.error : undefined,
 						attach: () => {
 							if (!existing) return;
-							MessagingService.attachUpload({ client, upload: existing });
+							ComposerService.attachUpload({ client, upload: existing });
 							setPage("chat");
 						},
 						clone: () => {

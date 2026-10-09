@@ -4,10 +4,9 @@ import type { Compaction } from "#core/features/agent/services/AgentTokensServic
 import type { MessageState } from "#core/features/data/types/message.ts";
 import type { RenderedPart } from "#core/features/data/utils/DataUtils.ts";
 import { ToolCallUtils } from "#core/features/tool/utils/ToolCallUtils.ts";
-import { ToolUtils } from "#core/features/tool/utils/ToolUtils.ts";
 import Box from "#tui/core/components/Box.tsx";
 import Text from "#tui/core/components/Text.tsx";
-import ScrollTail from "#tui/features/part/components/ScrollTail.tsx";
+import Tail from "#tui/features/part/components/Tail.tsx";
 import Task from "#tui/features/part/components/Task.tsx";
 import ToolCall, {
 	toStatusParts,
@@ -45,16 +44,9 @@ export default function ToolGroup({
 	hold?: boolean;
 }) {
 	const toolsets = useMessageStore((s) => s.toolsets);
-	const nextFeedbackId = useMessageStore((s) => s.nextFeedbackId);
+	const pendingFeedbackIds = useMessageStore((s) => s.pendingFeedbackIds);
 
 	const group = ToolCallUtils.getGroup({ parts, toolsets });
-	const hasFeedback = parts.some(
-		(part) =>
-			ToolCallUtils.getState({
-				part,
-				tool: ToolUtils.find({ toolsets, part }).tool,
-			}) === "feedback",
-	);
 	const { expanded, auto, toggle } = useAutoExpand(
 		`group:${parts[0]?.id}`,
 		group.pending || !!hold,
@@ -66,7 +58,7 @@ export default function ToolGroup({
 			<ToolCall
 				message={message}
 				part={part}
-				isNext={part.id === nextFeedbackId}
+				answerable={pendingFeedbackIds.includes(part.id)}
 				hold={parts.length === 1 ? hold : undefined}
 			/>
 		</Box>
@@ -89,11 +81,11 @@ export default function ToolGroup({
 						paddingLeft={0}
 						backgroundColor={undefined}
 					>
-						<ScrollTail follow={auto && !hasFeedback}>
+						<Tail follow={auto}>
 							<Box flexDirection="column" gap={1} marginTop={1}>
 								{items}
 							</Box>
-						</ScrollTail>
+						</Tail>
 					</Task.Details>
 				</Task>
 			)}

@@ -1,6 +1,8 @@
 import type { QueryFilters } from "@tanstack/react-query";
 import type { Client } from "#client/client.ts";
 import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
+import { useSeenStore } from "#client/features/chat/stores/useSeenStore.ts";
+import { ActiveChatUtils } from "#client/features/chat/utils/ActiveChatUtils.ts";
 import type { MessageState } from "#core/features/data/types/message.ts";
 
 /** A selected branch of a chat, whole, with the sibling options at each step. */
@@ -52,8 +54,10 @@ export const MessageQueryService = {
 
 	/** The selected history of the open chat, if it is cached. */
 	getCurrent: (client: Client, chat: string) => {
-		const state = useChatStore.getState();
-		const branches = state.chatId === chat ? state.branches : {};
+		const branches = ActiveChatUtils.branches(
+			useChatStore.getState().active,
+			chat,
+		);
 		return client.queryClient.getQueryData(
 			MessageQueryService.options(client, chat, branches).queryKey,
 		);
@@ -67,7 +71,7 @@ export const MessageQueryService = {
 
 	/** Install persisted content before changing the selected query key. */
 	write: async (client: Client, message: MessageState, select = false) => {
-		useChatStore.getState().setLastSeen(message.chatId, Date.now());
+		useSeenStore.getState().setLastSeen(message.chatId, Date.now());
 		const filters = filtersOf(client, message.chatId);
 		const queries = client.queryClient.getQueryCache().findAll(filters);
 		// Let existing reads settle before writing, including an in-flight branch
@@ -115,14 +119,15 @@ export const MessageQueryService = {
 				refetchType: "none",
 			});
 		}
-		const state = useChatStore.getState();
-		if (!select || state.chatId !== message.chatId) return;
+		const { active } = useChatStore.getState();
+		if (!select || active.status !== "open" || active.chatId !== message.chatId)
+			return;
 		const data = MessageQueryService.getCurrent(client, message.chatId);
 		const branches = {
-			...state.branches,
+			...active.branches,
 			[message.previousId ?? ""]: message.id,
 		};
-		const target = MessageQueryService.options(client, state.chatId, branches);
+		const target = MessageQueryService.options(client, active.chatId, branches);
 		if (data) {
 			const { messages } = data;
 			const existing = messages.findIndex((m) => m.id === message.id);
@@ -171,15 +176,15 @@ export const MessageQueryService = {
 		parentId: string | null,
 		messageId: string,
 	) => {
-		const state = useChatStore.getState();
-		if (!state.chatId) return Promise.resolve();
-		const chat = state.chatId;
+		const { active } = useChatStore.getState();
+		if (active.status !== "open") return Promise.resolve();
+		const chat = active.chatId;
 		const source =
 			MessageQueryService.getCurrent(client, chat) ??
 			cachedOf(client, chat).find((data) =>
 				data.messages.some((m) => m.id === parentId),
 			);
-		const branches = { ...state.branches, [parentId ?? ""]: messageId };
+		const branches = { ...active.branches, [parentId ?? ""]: messageId };
 		const options = MessageQueryService.options(client, chat, branches);
 		const parent = source?.messages.findIndex((m) => m.id === parentId) ?? -1;
 		const prefix =

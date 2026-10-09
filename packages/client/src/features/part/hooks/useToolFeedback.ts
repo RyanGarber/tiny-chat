@@ -1,5 +1,4 @@
 import { useCallback, useState } from "react";
-import { useStreamStore } from "#client/features/agent/stores/useStreamStore.ts";
 import { useMessaging } from "#client/features/chat/hooks/useMessaging.ts";
 import { useToolFeedbackStore } from "#client/features/part/stores/useToolFeedbackStore.ts";
 import type { MessageState } from "#core/features/data/types/message.ts";
@@ -27,18 +26,12 @@ export const useToolFeedback = ({
 		setValues((previous) => ({ ...previous, [name]: value }));
 	}, []);
 
-	// A running generation takes an answer only while it is waiting on one;
-	// otherwise it is busy with the model, or ending.
-	const generating = useStreamStore((state) =>
-		state.chatAgentStreams.has(message.chatId),
-	);
-	const awaiting = useToolFeedbackStore((state) => state.awaiting.has(part.id));
 	const answered = useToolFeedbackStore((state) => state.answered.has(part.id));
 
 	// Nothing can be sent twice: the controls stay locked from the moment
-	// feedback is sent until the call it answers has settled.
-	const locked =
-		sendToolFeedback.isPending || answered || (generating && !awaiting);
+	// feedback is sent until the call it answers has settled. An answer sent
+	// while a generation is busy elsewhere is held until it gets to the call.
+	const locked = sendToolFeedback.isPending || answered;
 
 	const complete = controls.fields.every((field) => !!values[field.name]);
 

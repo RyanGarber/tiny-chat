@@ -86,6 +86,8 @@ export const client = createClient({
 
 			return EditorUtils.getData(editor);
 		},
+		getText: () =>
+			useEditorStore.getState().editor?.getText({ blockSeparator: "\n" }) ?? "",
 		setData: ({ data }) => {
 			const { editor } = useEditorStore.getState();
 			if (!editor) return;

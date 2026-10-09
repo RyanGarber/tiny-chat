@@ -1,4 +1,4 @@
-import type { ClientInput } from "#client/features/chat/services/MessagingService.ts";
+import type { ClientInput } from "#client/features/editor/services/ComposerService.ts";
 import { AtomUtils } from "#client/features/editor/utils/AtomUtils.ts";
 import {
 	insertNode,
@@ -18,6 +18,7 @@ export const EditorInputService = {
 		const { content } = useEditorStore.getState();
 		return [AtomUtils.toData({ content })];
 	},
+	getText: () => useEditorStore.getState().content,
 	setData: ({ data }) => {
 		const content = AtomUtils.fromData(data);
 		useEditorStore.setState({

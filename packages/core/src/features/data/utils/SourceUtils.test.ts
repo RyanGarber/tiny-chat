@@ -57,4 +57,52 @@ describe("SourceUtils", () => {
 			SourceUtils.matchKeys({ sources, keys: "unknown alpha123; missing" }),
 		).toEqual(["unknown", "alpha123", "missing"]);
 	});
+
+	it("expands a cited call ID to the sources the call produced", () => {
+		const produced: Source[] = [
+			{ ...file("/a.md"), call: "toolu_01search" },
+			{ ...file("/b.md"), call: "toolu_01search" },
+		];
+		expect(
+			SourceUtils.matchKeys({
+				sources: [...sources, ...produced],
+				keys: "toolu_01search alpha123 /a.md",
+			}),
+		).toEqual(["/a.md", "/b.md", "alpha123"]);
+	});
+
+	it("falls back to the tool call for a call without supported results", () => {
+		const found = SourceUtils.find({
+			message: {
+				data: [
+					[
+						{
+							id: "call_1",
+							type: "toolCall",
+							name: "lookup_weather",
+							input: { city: "Paris" },
+						},
+						{
+							id: "call_1",
+							type: "toolResult",
+							name: "lookup_weather",
+							output: [{ id: "out_1", type: "text", value: "Sunny" }],
+						},
+					],
+				],
+			},
+			toolsets: [],
+		});
+		expect(found).toEqual([
+			{
+				key: "call_1",
+				call: "call_1",
+				type: "toolCall",
+				value: { id: "call_1", title: "Used lookup_weather", error: false },
+			},
+		]);
+		expect(
+			SourceUtils.getDisplay({ sources: found, key: "call_1", text: "" }),
+		).toMatchObject({ type: "toolCall", emoji: "🔧" });
+	});
 });

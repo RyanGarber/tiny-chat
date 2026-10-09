@@ -5,6 +5,7 @@ import { useMessageStore } from "#client/features/message/stores/useMessageStore
 import { useToolFeedbackStore } from "#client/features/part/stores/useToolFeedbackStore.ts";
 import type { RenderedPart } from "#core/features/data/utils/DataUtils.ts";
 import type { ToolCallDisplay } from "#core/features/tool/types/display.ts";
+import type { Toolset } from "#core/features/tool/types/tool.ts";
 import { ToolCallUtils } from "#core/features/tool/utils/ToolCallUtils.ts";
 
 /**
@@ -18,10 +19,14 @@ import { ToolCallUtils } from "#core/features/tool/utils/ToolCallUtils.ts";
  */
 export const useToolCall = ({
 	part,
+	toolsets: _toolsets,
 }: {
 	part: Extract<RenderedPart, { type: "toolCall" }>;
+	/** Where its tool is looked up, for a call made outside of the messages. */
+	toolsets?: Toolset<any>[];
 }): ToolCallDisplay & { interrupt?: () => void } => {
-	const toolsets = useMessageStore((s) => s.toolsets);
+	const messageToolsets = useMessageStore((s) => s.toolsets);
+	const toolsets = _toolsets ?? messageToolsets;
 	const stream = useStream<unknown>(part.id);
 	// An answered call shows as running from the moment it is answered, not
 	// only once it starts reporting.

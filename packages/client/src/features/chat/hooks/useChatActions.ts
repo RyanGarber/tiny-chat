@@ -5,7 +5,7 @@ import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
 
 /** Actions scheduled from the chat, newest first. */
 export const useChatActions = () => {
-	const chatId = useChatStore((state) => state.chatId);
+	const chatId = useChatStore((state) => state.active.chatId);
 	const { actions } = useActions();
 
 	const chatActions = useMemo(

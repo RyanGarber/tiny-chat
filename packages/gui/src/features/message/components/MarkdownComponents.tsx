@@ -1,9 +1,10 @@
-import { Box, Pill, Stack, Text } from "@mantine/core";
+import { Box, Pill, Stack, Text, Tooltip } from "@mantine/core";
 import { createContext, useContext } from "react";
 import { type Components, useIsCodeFenceIncomplete } from "streamdown";
 import { ComponentUtils } from "#client/core/utils/ComponentUtils.ts";
 import { StreamContext } from "#client/features/message/components/StreamContext.tsx";
 import { useMessageStore } from "#client/features/message/stores/useMessageStore.ts";
+import { useExpandStore } from "#client/features/part/stores/useExpandStore.ts";
 import type { CodeLanguage } from "#core/core/utils/CodeUtils.ts";
 import { SourceUtils } from "#core/features/data/utils/SourceUtils.ts";
 import Popup from "#gui/core/components/Popup.tsx";
@@ -85,6 +86,29 @@ const CodeComponent: Components["code"] = ({
 	);
 };
 
+/** How long a call gone to is waited on to be drawn, before giving up on it. */
+const FOCUS_TIMEOUT = 2000;
+
+const focusToolCall = (id: string) => {
+	const { focus } = useExpandStore.getState();
+	focus(id);
+	setTimeout(() => {
+		if (useExpandStore.getState().focused === id) focus(null);
+	}, FOCUS_TIMEOUT);
+};
+
+const citationPillProps = {
+	size: "xs",
+	h: "auto",
+	my: 0,
+	mx: 2,
+	py: 2,
+	px: 5.25,
+	fz: "0.7em",
+	display: "inline-flex",
+	bg: "var(--tc-interior)",
+} as const;
+
 const MarkComponent: Components["mark"] = ({ children, node }) => {
 	// Read per-citation rather than through the markdown context: sources change
 	// whenever a chat-scoped query settles, and only this component cares.
@@ -99,23 +123,23 @@ const MarkComponent: Components["mark"] = ({ children, node }) => {
 			{children}
 			{keys.map((key) => {
 				const source = SourceUtils.getDisplay({ sources, key, text });
+				// The call is drawn in the chat already, so it is gone to instead.
+				if (source.type === "toolCall")
+					return (
+						<Tooltip key={key} label={source.title}>
+							<Pill
+								{...citationPillProps}
+								style={{ cursor: "pointer" }}
+								onClick={() => focusToolCall(source.value.id)}
+							>
+								{source.emoji}
+							</Pill>
+						</Tooltip>
+					);
 				return (
 					<Popup key={key}>
 						<Popup.Target>
-							<Pill
-								size="xs"
-								h="auto"
-								my={0}
-								mx={2}
-								py={2}
-								px={5.25}
-								fz="0.7em"
-								display="inline-flex"
-								bg="var(--tc-interior)"
-								style={{
-									cursor: "default",
-								}}
-							>
+							<Pill {...citationPillProps} style={{ cursor: "default" }}>
 								{source.emoji}
 							</Pill>
 						</Popup.Target>

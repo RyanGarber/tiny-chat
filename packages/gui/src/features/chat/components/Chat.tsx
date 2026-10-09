@@ -24,10 +24,9 @@ import { useGreeting } from "#client/core/hooks/useGreeting.ts";
 import { useChat } from "#client/features/chat/hooks/useChat.ts";
 import { ChatService } from "#client/features/chat/services/ChatService.ts";
 import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
-import { useDraftStore } from "#client/features/chat/stores/useDraftStore.ts";
-import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
 import { useDisabled } from "#client/features/editor/hooks/useDisabled.ts";
 import { useEstimatedTokens } from "#client/features/editor/hooks/useEstimatedTokens.ts";
+import { useComposerStore } from "#client/features/editor/stores/useComposerStore.ts";
 import { MessageProvider } from "#client/features/message/components/MessageProvider.tsx";
 import { useMessages } from "#client/features/message/hooks/useMessages.ts";
 import { uploadMutationKey } from "#client/features/upload/hooks/useUploads.ts";
@@ -46,7 +45,7 @@ export default function Chat() {
 
 	const { chat } = useChat();
 	const { messages } = useMessages();
-	const draft = useDraftStore((state) => state.data);
+	const draft = useComposerStore((state) => state.data);
 	const { chatTokens, usage, categories } =
 		useEstimatedTokens<DefaultMantineColor>({
 			draft,
@@ -57,19 +56,20 @@ export default function Chat() {
 		console.log(chatTokens.data);
 	}, [chatTokens.data]);
 
-	const createTemporary = useChatStore((s) => s.createTemporary);
-	const createIncognito = useChatStore((s) => s.createIncognito);
-	const scrollRequested = useChatStore((s) =>
-		chat.isFetching ? 0 : s.scrollRequested,
+	const createTemporary = useChatStore(
+		(s) => s.active.status === "new" && s.active.temporary,
 	);
-	const scrollInstant = useChatStore((s) =>
-		chat.isFetching ? 0 : s.scrollInstant,
+	const createIncognito = useChatStore(
+		(s) => s.active.status === "new" && s.active.incognito,
 	);
+	const scrollInstant = useChatStore((s) => (chat.isFetching ? 0 : s.visits));
 
 	const isMobile = useAppStore((s) => s.isMobile);
 
 	const viewportNode = useRef<HTMLDivElement>(null);
-	const focusedMessage = useChatStore((s) => s.focusedMessage);
+	const focusedMessage = useChatStore((s) =>
+		s.active.status === "open" ? s.active.focusedMessage : null,
+	);
 
 	const {
 		viewportRef: autoScrollRef,
@@ -77,10 +77,7 @@ export default function Chat() {
 		isLockedToBottom,
 		scrollToBottom,
 		scrollToNode,
-	} = useAutoScroll({
-		scrollRequested,
-		scrollPaused: chat.isFetching || messages.isLoading,
-	});
+	} = useAutoScroll();
 
 	const [viewport, setViewport] = useState<HTMLDivElement | null>(null);
 	const viewportRef = useMergedRef(autoScrollRef, viewportNode, setViewport);
@@ -91,9 +88,15 @@ export default function Chat() {
 		}
 	}, [scrollInstant, scrollToBottom]);
 
-	const editing = useMessagingStore((s) => s.editing);
-	const insertingAfter = useMessagingStore((s) => s.insertingAfter);
-	const truncating = useMessagingStore((s) => s.truncating);
+	const editing = useComposerStore((s) =>
+		s.mode.kind === "edit" ? s.mode.message : null,
+	);
+	const insertingAfter = useComposerStore((s) =>
+		s.mode.kind === "insert" ? s.mode.after : null,
+	);
+	const truncating = useComposerStore(
+		(s) => s.mode.kind === "edit" && s.mode.truncate,
+	);
 
 	const messageList = useMemo(
 		() => messages.data?.messages ?? [],
@@ -313,7 +316,7 @@ export default function Chat() {
 					inset={0}
 				>
 					<Stack
-						pt={isMobile ? 40 : 10}
+						pt={isMobile ? 70 : 40}
 						px={20}
 						m="0 auto"
 						maw={860}

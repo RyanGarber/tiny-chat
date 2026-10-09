@@ -14,6 +14,7 @@ import type { AgentStreamEvent } from "#client/core/services/StreamService.ts";
 import { useProviders } from "#client/features/agent/hooks/useProviders.ts";
 import { useSkills } from "#client/features/agent/hooks/useSkills.ts";
 import { useStream } from "#client/features/agent/hooks/useStream.ts";
+import { useSubagents } from "#client/features/agent/hooks/useSubagents.ts";
 import { useTools } from "#client/features/agent/hooks/useTools.ts";
 import { ClientMessageService } from "#client/features/agent/services/ClientMessageService.ts";
 import { useStreamStore } from "#client/features/agent/stores/useStreamStore.ts";
@@ -55,6 +56,7 @@ function MessageSync({ store }: { store: StoreApi<MessageStore> }) {
 	const { providers } = useProviders();
 	const { messages } = useMessages();
 	const { chatFiles } = useChatFiles();
+	const { subagents } = useSubagents();
 
 	/**
 	 * Hold everything back until the queries have settled, so a cold load
@@ -71,6 +73,7 @@ function MessageSync({ store }: { store: StoreApi<MessageStore> }) {
 		actions,
 		providers,
 		chatFiles,
+		subagents,
 		nativeTools,
 		mcpTools,
 		localSkills,
@@ -84,7 +87,8 @@ function MessageSync({ store }: { store: StoreApi<MessageStore> }) {
 
 	const sources = useMemo((): Source[] => {
 		return [
-			...messageList.flatMap((message) =>
+			// A subagent's run is read like a message, for what it touched.
+			...[...messageList, ...(subagents.data ?? [])].flatMap((message) =>
 				SourceUtils.find({ toolsets, message }),
 			),
 			...(memories.data?.map(
@@ -112,7 +116,14 @@ function MessageSync({ store }: { store: StoreApi<MessageStore> }) {
 				}),
 			) ?? []),
 		];
-	}, [messageList, toolsets, actions.data, chatFiles.data, memories.data]);
+	}, [
+		messageList,
+		subagents.data,
+		toolsets,
+		actions.data,
+		chatFiles.data,
+		memories.data,
+	]);
 
 	/**
 	 * A message is stale when an earlier message carries a newer timestamp, which

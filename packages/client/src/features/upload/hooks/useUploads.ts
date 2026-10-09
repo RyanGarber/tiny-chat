@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
 import { useContext } from "react";
 import { ClientContext } from "#client/client.ts";
-import { MessagingService } from "#client/features/chat/services/MessagingService.ts";
+import { ComposerService } from "#client/features/editor/services/ComposerService.ts";
 import { UserService } from "#client/features/user/services/UserService.ts";
 import type { Enum } from "#core/core/services/PostgresService.ts";
 
@@ -74,7 +74,7 @@ export const useUploads = () => {
 			// A skill is carried by the message's config rather than its text, so
 			// it is the one upload that is not written into the editor.
 			if (variables.kind !== "SKILL") {
-				await MessagingService.attachUpload({
+				await ComposerService.attachUpload({
 					client,
 					upload: result,
 					file: variables.file.name,

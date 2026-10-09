@@ -3,7 +3,7 @@ import { useContext, useMemo } from "react";
 import { ClientContext } from "#client/client.ts";
 import { useConfig } from "#client/features/agent/hooks/useConfig.ts";
 import { useChat } from "#client/features/chat/hooks/useChat.ts";
-import { useDraftStore } from "#client/features/chat/stores/useDraftStore.ts";
+import { useComposerStore } from "#client/features/editor/stores/useComposerStore.ts";
 import { useMessages } from "#client/features/message/hooks/useMessages.ts";
 import type { zAgentMessage } from "#core/features/agent/types/agent.ts";
 import { AgentUtils } from "#core/features/agent/utils/AgentUtils.ts";
@@ -21,7 +21,7 @@ export const useChatFiles = () => {
 	const { chat } = useChat();
 	const { messages } = useMessages();
 	const { config } = useConfig();
-	const draftData = useDraftStore((state) => state.data);
+	const draftData = useComposerStore((state) => state.data);
 
 	/**
 	 * The mount this chat has: the uploads and skills its messages point into,

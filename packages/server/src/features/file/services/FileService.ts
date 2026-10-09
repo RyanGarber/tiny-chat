@@ -143,10 +143,11 @@ export const FileService = {
 		command: string;
 		abort?: AbortSignal;
 	} & FilesystemSpec) => {
-		if (!spec.chat)
-			return (await FileService.get({ user, ...spec })).bash.exec(command, {
-				signal: abort,
-			});
+		if (!spec.chat) {
+			const { bash } = await FileService.get({ user, ...spec });
+			const result = await bash.exec(command, { signal: abort });
+			return { ...result, code: result.exitCode };
+		}
 		const key = sessionKey(user.id, spec.chat);
 		let session = sessions.get(key);
 		if (!session) {

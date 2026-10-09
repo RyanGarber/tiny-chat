@@ -1,7 +1,7 @@
 import type { Editor } from "@tiptap/react";
 import { create } from "zustand";
 import type { Client } from "#client/client.ts";
-import { MessagingService } from "#client/features/chat/services/MessagingService.ts";
+import { ComposerService } from "#client/features/editor/services/ComposerService.ts";
 import { EditorUtils } from "#gui/features/editor/utils/EditorUtils.ts";
 
 interface EditorStore {
@@ -19,7 +19,7 @@ export const useEditorStore = create<EditorStore>((set) => ({
 
 	isIncomplete: false,
 	update: ({ client }: { client: Client }) => {
-		MessagingService.getData({ client });
+		ComposerService.getData({ client });
 		set({ isIncomplete: EditorUtils.getIncomplete() });
 	},
 

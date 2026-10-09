@@ -11,7 +11,7 @@ import {
 } from "@mantine/core";
 import { TrashIcon } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
-import { ChatFilesUtils } from "#client/features/chat/utils/ChatFilesUtils.ts";
+import { ChatSourcesUtils } from "#client/features/chat/utils/ChatSourcesUtils.ts";
 import { useMessages } from "#client/features/message/hooks/useMessages.ts";
 import { useActions } from "#client/features/user/hooks/useActions.ts";
 import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
@@ -116,7 +116,7 @@ export default function Actions() {
 				)}
 				{items.map((action) => (
 					<Action
-						key={`${action.id}:${action.schedule}:${ChatFilesUtils.action({ action }).prompt}`}
+						key={`${action.id}:${action.schedule}:${ChatSourcesUtils.action({ action }).prompt}`}
 						action={action}
 					/>
 				))}
@@ -130,7 +130,7 @@ function Action({ action }: { action: ActionState }) {
 	const { updateAction, deleteAction } = useActions();
 	const busy = updateAction.isPending || deleteAction.isPending;
 
-	const { prompt, schedule, lastRun, nextRun } = ChatFilesUtils.action({
+	const { prompt, schedule, lastRun, nextRun } = ChatSourcesUtils.action({
 		action,
 	});
 	const [promptText, setPromptText] = useState(prompt);

@@ -3,7 +3,6 @@ import { ClientContext } from "#client/client.ts";
 import { useChatList } from "#client/features/chat/hooks/useChatList.ts";
 import { ChatService } from "#client/features/chat/services/ChatService.ts";
 import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
-import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
 import { SettingsUtils } from "#core/core/utils/SettingsUtils.ts";
 
 /**
@@ -23,12 +22,12 @@ export const useDefaultProject = () => {
 		const cwd = shell.cwd;
 		done.current = true;
 
-		if (useChatStore.getState().chatId || useMessagingStore.getState().project)
-			return;
+		const { active } = useChatStore.getState();
+		if (active.chatId || active.project) return;
 
 		const list = projects.data.pages.flatMap((page) => page.projects);
 		void cwd().then((cwd) => {
-			if (useChatStore.getState().chatId) return;
+			if (useChatStore.getState().active.chatId) return;
 			// Folders are stored as picked; `cwd` is as the shell spells it.
 			let match: { project: (typeof list)[number]; length: number } | null =
 				null;

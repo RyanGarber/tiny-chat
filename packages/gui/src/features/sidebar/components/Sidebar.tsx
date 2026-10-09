@@ -22,8 +22,12 @@ export default function Sidebar() {
 	const currentDrawer = useAppStore((state) => state.currentDrawer);
 	const setCurrentDrawer = useAppStore((state) => state.setCurrentDrawer);
 
-	const createTemporary = useChatStore((state) => state.createTemporary);
-	const createIncognito = useChatStore((state) => state.createIncognito);
+	const createTemporary = useChatStore(
+		(state) => state.active.status === "new" && state.active.temporary,
+	);
+	const createIncognito = useChatStore(
+		(state) => state.active.status === "new" && state.active.incognito,
+	);
 	const isTemporary = chat.data?.temporary ?? createTemporary;
 	const isIncognito = chat.data?.incognito ?? createIncognito;
 

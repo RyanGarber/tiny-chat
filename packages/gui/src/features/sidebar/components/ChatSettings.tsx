@@ -15,7 +15,7 @@ import {
 import { useMutationState } from "@tanstack/react-query";
 import { useState } from "react";
 import { useProviders } from "#client/features/agent/hooks/useProviders.ts";
-import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
+import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
 import { useEmbeddingSettings } from "#client/features/settings/hooks/useEmbeddingSettings.ts";
 import { useModelSettings } from "#client/features/settings/hooks/useModelSettings.ts";
 import { useProviderSettings } from "#client/features/settings/hooks/useProviderSettings.ts";
@@ -49,7 +49,7 @@ export default function ChatSettings({
 	const { dreamConfig, setDreamConfig } = useModelSettings();
 	const currentModal = useAppStore((state) => state.currentModal);
 	const setCurrentModal = useAppStore((state) => state.setCurrentModal);
-	const project = useMessagingStore((state) => state.project);
+	const project = useChatStore((state) => state.active.project);
 
 	const [newEmbeddingConfig, setNewEmbeddingConfig] = useState<zConfig | null>(
 		null,

@@ -14,6 +14,12 @@ import type {
 const BACKGROUND_DESCRIPTION =
 	"Set to TRUE to run the subagent in the background and carry on working meanwhile. Its result is sent to you when it finishes, and your turn does not end until then.";
 
+const SUBAGENT_INSTRUCTIONS = `## Subagent
+
+You are an autonomous subagent, running in a non-interactive context. The user message is a task from another agent in this chat, not from the user, and your final reply is returned to that agent. Nobody can answer questions, so make reasonable assumptions and say what they were.
+You share that agent's context above: its project, folders, tools and skills. When the task refers to "the code", "the repo" or "the project" without saying where, it means the folders above, starting with the primary one.
+Read-only tools and bash commands will work, but those that require approval (such as sed) will not. Use the tools available to you to complete your task to the best of your abilities.`;
+
 export const spawn_subagent = {
 	name: "spawn_subagent",
 	description:
@@ -73,14 +79,17 @@ export const createSpawnSubagentTool: ToolFactory<
 	...options,
 	display,
 	background: true,
-	execute: async ({ input, stream, abort, context }) => {
+	execute: async ({ id, input, stream, abort, context }) => {
 		const { subagentConfig } = SettingsUtils.of(
 			context.user,
 			context.chat?.project,
 		);
 		if (!subagentConfig) throw new Error("missing subagent config");
 
+		// The reply being written, which holds this call.
+		const reply = context.messages.at(-1);
 		const data = await options.capabilities.subagents.runSubagent({
+			part: id && reply?.id ? { id, message: reply.id } : undefined,
 			context: {
 				user: context.user,
 				chat: context.chat,
@@ -111,8 +120,7 @@ export const createSpawnSubagentTool: ToolFactory<
 				timezone: context.timezone,
 				interactive: false,
 			},
-			instructions:
-				"You are an autonomous subagent running in a non-interactive context. Read-only tools and bash commands will work, but those that require approval (such as sed) will not. Use the tools available to you to complete your task to the best of your abilities.",
+			instructions: SUBAGENT_INSTRUCTIONS,
 			onData: (data) => stream?.({ mode: "replace", data }),
 			abort,
 		});

@@ -1,4 +1,5 @@
 import { testing } from "#server/core/routes/testing.ts";
+import { subagent } from "#server/features/agent/routes/subagent.ts";
 import { action } from "#server/features/chat/routes/action.ts";
 import { chat } from "#server/features/chat/routes/chat.ts";
 import { file } from "#server/features/chat/routes/file.ts";
@@ -18,6 +19,7 @@ export const ApiRouter = router({
 	file,
 	action,
 	memory,
+	subagent,
 	upload,
 	settings,
 	embedding,

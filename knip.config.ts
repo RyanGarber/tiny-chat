@@ -15,8 +15,8 @@ export default {
 		"conventional-changelog-conventionalcommits",
 		"events",
 		"ink-testing-library",
-		// named to Babel in `apps/cli/scripts/compile.ts`, which knip ignores
 		"babel-plugin-react-compiler",
+		"@ryangarber/prisma-orm-extension-zod",
 	],
 	ignoreBinaries: ["run"],
 	preprocessor: ["./scripts/setup-knip.ts"],

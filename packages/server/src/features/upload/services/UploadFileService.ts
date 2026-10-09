@@ -5,7 +5,6 @@ import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
 import type { zUser } from "#core/features/data/types/user.ts";
 import { FileTypeUtils } from "#core/features/file/utils/FileTypeUtils.ts";
 import { PathUtils } from "#core/features/file/utils/PathUtils.ts";
-import { selectAll } from "#server/db.ts";
 import { UploadUtils } from "#server/features/upload/utils/UploadUtils.ts";
 
 /**
@@ -78,7 +77,7 @@ export const UploadFileService = {
 						kind,
 						name: replaceName,
 					})
-						.include("files", (file) => selectAll(file, "public", "File"))
+						.include("files")
 						.all()
 				)[0]
 			: null;

@@ -1,0 +1,85 @@
+import type { DOMElement } from "ink";
+import { type RefObject, useEffect, useEffectEvent, useState } from "react";
+import { useFind } from "#client/features/find/hooks/useFind.ts";
+import type { FindMatch } from "#client/features/find/types/find.ts";
+import {
+	type FindHighlight,
+	FindLayoutUtils,
+} from "#tui/features/find/utils/FindLayoutUtils.ts";
+
+/**
+ * How often an open bar looks again at what is drawn. Ink has nothing like a
+ * mutation observer, so content arriving and views scrolling are caught by
+ * looking, which costs a frame only when something did change.
+ */
+const POLL_INTERVAL = 100;
+
+const isSame = (a: FindHighlight[], b: FindHighlight[]) =>
+	a.length === b.length &&
+	a.every(
+		(highlight, i) =>
+			highlight.x === b[i].x &&
+			highlight.y === b[i].y &&
+			highlight.text === b[i].text &&
+			highlight.current === b[i].current,
+	);
+
+/**
+ * Find in page over the text Ink draws under `targetRef`. Matches come back
+ * as `highlights`: rows of cells to draw over, relative to the target, since
+ * a terminal has nothing to paint text in place with.
+ *
+ * Text under any of `skipRefs` — the bar itself, and the highlights — is
+ * never matched.
+ */
+export function useFindInElement({
+	targetRef,
+	skipRefs = [],
+}: {
+	targetRef: RefObject<DOMElement | null>;
+	skipRefs?: RefObject<DOMElement | null>[];
+}) {
+	const find = useFind<DOMElement>({
+		blocks: () =>
+			targetRef.current
+				? FindLayoutUtils.blocks(
+						targetRef.current,
+						skipRefs.map((ref) => ref.current),
+					)
+				: [],
+		reveal: FindLayoutUtils.reveal,
+	});
+	const { isOpen, matches, index } = find;
+
+	const [highlights, setHighlights] = useState<FindHighlight[]>([]);
+
+	// Read from the layout Ink computed for the last frame, which is only there
+	// once that frame is committed.
+	const measure = useEffectEvent(
+		(isOpen: boolean, matches: FindMatch<DOMElement>[], index: number) => {
+			const root = targetRef.current;
+			const next =
+				root && isOpen ? FindLayoutUtils.highlights(root, matches, index) : [];
+			setHighlights((previous) => (isSame(previous, next) ? previous : next));
+		},
+	);
+
+	useEffect(() => {
+		measure(isOpen, matches, index);
+	}, [isOpen, matches, index]);
+
+	const refresh = useEffectEvent(() => find.refresh());
+	const remeasure = useEffectEvent(() =>
+		measure(find.isOpen, find.matches, find.index),
+	);
+	useEffect(() => {
+		if (!isOpen) return;
+		const interval = setInterval(() => {
+			refresh();
+			remeasure();
+		}, POLL_INTERVAL);
+		return () => clearInterval(interval);
+	}, [isOpen]);
+
+	return { ...find, highlights };
+}

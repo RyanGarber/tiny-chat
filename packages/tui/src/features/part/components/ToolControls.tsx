@@ -21,19 +21,19 @@ interface Item {
 
 /**
  * Write-in fields precede the approval/continue choices; suggestions fill a
- * field. Only the call next waiting on feedback, and not yet answered, takes
- * the focus.
+ * field. Any call waiting on feedback, and not yet answered, can take the
+ * focus.
  */
 export default function ToolControls({
 	message,
 	part,
 	controls,
-	isNext = false,
+	answerable = false,
 }: {
 	message: MessageState;
 	part: zToolCallPart;
 	controls: ToolControlsType;
-	isNext?: boolean;
+	answerable?: boolean;
 }) {
 	const id = `tool:${part.id}` as const;
 	const setFocus = useAppStore((state) => state.setFocus);
@@ -44,7 +44,7 @@ export default function ToolControls({
 			controls,
 		});
 	useWorkingStatus(mutation);
-	const disabled = locked || !isNext;
+	const disabled = locked || !answerable;
 	const focused = useFocused(id) && !disabled;
 
 	const [selected, setSelected] = useState(0);

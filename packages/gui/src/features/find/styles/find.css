@@ -1,0 +1,9 @@
+/* Matches found by `Find`, painted with the CSS Custom Highlight API. */
+::highlight(find) {
+	background-color: var(--mantine-color-yellow-light-hover);
+}
+
+::highlight(find-current) {
+	background-color: var(--mantine-color-orange-filled);
+	color: var(--mantine-color-white);
+}

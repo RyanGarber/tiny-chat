@@ -1,48 +1,50 @@
 packages:
-    - 'apps/*'
-    - 'packages/*'
+  - "apps/*"
+  - "packages/*"
 allowBuilds:
-    '@google/genai': true
-    '@mongodb-js/zstd': true
-    '@prisma/engines': true
-    bun: true
-    esbuild: true
-    msgpackr-extract: true
-    node-liblzma: true
-    node-pty: true
-    onnxruntime-node: true
-    prisma: true
-    protobufjs: true
-    sharp: true
-    tesseract.js: true
-    tree-sitter-bash: true
-    unrs-resolver: true
-    workerd: true
+  "@google/genai": true
+  "@mongodb-js/zstd": true
+  "@prisma/engines": true
+  bun: true
+  esbuild: true
+  msgpackr-extract: true
+  node-liblzma: true
+  node-pty: true
+  onnxruntime-node: true
+  prisma: true
+  protobufjs: true
+  sharp: true
+  tesseract.js: true
+  tree-sitter-bash: true
+  unrs-resolver: true
+  workerd: true
 allowedDeprecatedVersions:
-    glob: '*'
-    'node-domexception': '*'
-    'whatwg-encoding': '*'
+  glob: "*"
+  "node-domexception": "*"
+  "whatwg-encoding": "*"
 minimumReleaseAgeExclude:
-    - '@ryangarber/*'
-    - '@prisma/*'
+  - "@ryangarber/*"
+  - "@prisma/*"
+  - prisma@8.0.0-rc.22
 peerDependencyRules:
-    allowedVersions:
-        '@browser-ai/web-llm>ai': '7'
-        'capnp-es>typescript': '7'
-        'alchemy>mysql2': '3'
-        '@better-fetch/fetch': '1'
-        'vitest': '5'
-        'better-auth>prisma': '*'
-        '@better-auth/prisma-adapter>prisma': '*'
-        '@prisma/composer-cli>@prisma/cli-engine': '*'
+  allowedVersions:
+    "@browser-ai/web-llm>ai": "7"
+    "capnp-es>typescript": "7"
+    "alchemy>mysql2": "3"
+    "@better-fetch/fetch": "1"
+    "vitest": "5"
+    "better-auth>prisma": "*"
+    "@better-auth/prisma-adapter>prisma": "*"
+    "@prisma/composer-cli>@prisma/cli-engine": "*"
 overrides:
-    'conventional-changelog-writer': '^9.1.1'
-    'effect': '4.0.0-rc.115'
-    '@prisma/orm-toolchain': '8.0.0-rc.14'
+  "conventional-changelog-writer": "^9.1.1"
+  "effect": "4.0.0-rc.115"
 catalogs:
-    prisma:
-        'prisma': '8.0.0-rc.19'
-        '@prisma/orm-postgres': '8.0.0-rc.14'
-        '@prisma/orm-extension-paradedb': '8.0.0-rc.14'
-        '@prisma/orm-extension-pgvector': 'npm:@ryangarber/prisma-orm-extension-pgvector@8.0.0-rc.14a'
-        '@ryangarber/prisma-orm-extension-zod': '0.2.7'
+  typescript:
+    "typescript": "^7.0.2"
+  prisma:
+    "prisma": "8.0.0-rc.22"
+    "@prisma/orm-postgres": "8.0.0-rc.17"
+    "@prisma/orm-extension-paradedb": "8.0.0-rc.17"
+    "@prisma/orm-extension-pgvector": "npm:@ryangarber/prisma-orm-extension-pgvector@8.0.0-rc.17"
+    "@ryangarber/prisma-orm-extension-zod": "0.2.8"

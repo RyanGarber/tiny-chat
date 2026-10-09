@@ -21,7 +21,6 @@ import type { useSession } from "#client/core/hooks/useSession.ts";
 import type { useChat } from "#client/features/chat/hooks/useChat.ts";
 import { ChatService } from "#client/features/chat/services/ChatService.ts";
 import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
-import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
 import { useAppStore } from "#gui/core/stores/useAppStore.ts";
 import SidebarContent from "#gui/features/sidebar/components/SidebarContent.tsx";
 import { version } from "../../../../../../apps/app/tauri.conf.json";
@@ -43,9 +42,7 @@ export default function SidebarExpanded({
 	const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
 	const setCurrentDrawer = useAppStore((state) => state.setCurrentDrawer);
 
-	const setCreateTemporary = useChatStore((state) => state.setCreateTemporary);
-	const setCreateIncognito = useChatStore((state) => state.setCreateIncognito);
-	const project = useMessagingStore((state) => state.project);
+	const project = useChatStore((state) => state.active.project);
 
 	return (
 		<Stack gap={0} h="100%">
@@ -66,7 +63,7 @@ export default function SidebarExpanded({
 					c="dimmed"
 					className="nav-link-like filled"
 					leftSection={<PlusCircleIcon size={20} />}
-					onClick={() => close(() => ChatService.newChat())}
+					onClick={() => close(() => ChatService.newChat(null))}
 					active={!chat.data && !project}
 					flex={1}
 					h={40}
@@ -78,10 +75,9 @@ export default function SidebarExpanded({
 						c={!isTemporary ? "dimmed" : undefined}
 						className="nav-link-like"
 						onClick={() =>
-							close(() => {
-								if (chat.data) ChatService.newChat();
-								setCreateTemporary(!isTemporary);
-							})
+							close(() =>
+								ChatService.setNewChatOptions({ temporary: !isTemporary }),
+							)
 						}
 						data-active={isTemporary}
 					>
@@ -95,10 +91,9 @@ export default function SidebarExpanded({
 						c={!isIncognito ? "dimmed" : undefined}
 						className="nav-link-like"
 						onClick={() =>
-							close(() => {
-								if (chat.data) ChatService.newChat();
-								setCreateIncognito(!isIncognito);
-							})
+							close(() =>
+								ChatService.setNewChatOptions({ incognito: !isIncognito }),
+							)
 						}
 						data-active={isIncognito}
 					>

@@ -11,13 +11,18 @@ import { ClientProviderService } from "#client/features/agent/services/ClientPro
 import { useStreamStore } from "#client/features/agent/stores/useStreamStore.ts";
 import { useChat } from "#client/features/chat/hooks/useChat.ts";
 import { ChatService } from "#client/features/chat/services/ChatService.ts";
-import { MessagingService } from "#client/features/chat/services/MessagingService.ts";
 import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
 import { useMessageQueueStore } from "#client/features/chat/stores/useMessageQueueStore.ts";
-import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
+import { ActiveChatUtils } from "#client/features/chat/utils/ActiveChatUtils.ts";
+import { ComposerService } from "#client/features/editor/services/ComposerService.ts";
+import { useComposerStore } from "#client/features/editor/stores/useComposerStore.ts";
 import { MessageQueryService } from "#client/features/message/services/MessageQueryService.ts";
 import { ToolFeedbackService } from "#client/features/part/services/ToolFeedbackService.ts";
 import { useEmbeddingSettings } from "#client/features/settings/hooks/useEmbeddingSettings.ts";
+import { ShellCommandService } from "#client/features/shell/services/ShellCommandService.ts";
+import { useShellStore } from "#client/features/shell/stores/useShellStore.ts";
+import { ShellCommandUtils } from "#client/features/shell/utils/ShellCommandUtils.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
 import type { ChatState } from "#core/features/data/types/chat.ts";
 import type { MessageState } from "#core/features/data/types/message.ts";
 import type { zData, zToolCallPart } from "#core/features/data/types/part.ts";
@@ -34,20 +39,6 @@ export const sendToolInputMutationKey = [
 	"useMessaging",
 	"sendToolFeedback",
 ] as const;
-
-/** Resolves once no generation is running in the chat. */
-const idle = (chatId: string) =>
-	new Promise<void>((resolve) => {
-		if (!useStreamStore.getState().chatAgentStreams.has(chatId)) {
-			resolve();
-			return;
-		}
-		const unsubscribe = useStreamStore.subscribe((state) => {
-			if (state.chatAgentStreams.has(chatId)) return;
-			unsubscribe();
-			resolve();
-		});
-	});
 
 export const useMessaging = () => {
 	const client = useContext(ClientContext);
@@ -82,19 +73,43 @@ export const useMessaging = () => {
 		},
 	});
 
-	const sendingData = useRef<
-		{ data: zData; temporary: boolean; incognito: boolean } | undefined
-	>(undefined);
+	const sendingData = useRef<zData | undefined>(undefined);
 
 	const sendMessage = useMutation({
 		mutationKey: sendMessageMutationKey,
 		mutationFn: async () => {
 			sendingData.current = undefined;
-			const { truncating, editing, insertingAfter, project } =
-				useMessagingStore.getState();
-			const { createTemporary, createIncognito } = useChatStore.getState();
+			const { mode } = useComposerStore.getState();
+			const editing = mode.kind === "edit" ? mode : null;
+			const insertingAfter = mode.kind === "insert" ? mode.after : null;
 
-			const data = MessagingService.getData({ client });
+			const data = ComposerService.getData({ client });
+
+			// A command, typed after a `!`, is run rather than sent; the `!` is
+			// left behind for the next one.
+			const command = editing
+				? null
+				: ShellCommandUtils.parse(useComposerStore.getState().text);
+			if (command !== null) {
+				// Kept as it is while there is nothing to run, or one still running.
+				const { run } = useShellStore.getState();
+				if (!command || (run && !run.result)) return;
+				ComposerService.setData({
+					client,
+					data: [
+						[
+							{
+								type: "text",
+								id: CommonUtils.getRandomId(),
+								value: ShellCommandUtils.PREFIX,
+							},
+						],
+					],
+				});
+				void ShellCommandService.run({ client, command });
+				return;
+			}
+
 			const isEmpty = !data
 				.flat()
 				.some((part) => part.type !== "text" || part.value.trim().length);
@@ -107,7 +122,8 @@ export const useMessaging = () => {
 				throw new Error("missing session");
 			}
 
-			const selectedId = useChatStore.getState().chatId;
+			const { active } = useChatStore.getState();
+			const selectedId = active.chatId;
 			if (
 				selectedId &&
 				(useMessageQueueStore.getState().active[selectedId] ||
@@ -119,54 +135,57 @@ export const useMessaging = () => {
 									await MessageQueryService.ensure(
 										client,
 										selectedId,
-										useChatStore.getState().branches,
+										ActiveChatUtils.branches(active),
 									)
 								).messages.at(-1)?.data ?? [],
 						})))
 			) {
 				useMessageQueueStore.getState().enqueue(selectedId, data);
-				MessagingService.reset({ client });
+				ComposerService.reset({ client });
 				return;
 			}
 
-			sendingData.current = {
-				data: data,
-				temporary: createTemporary,
-				incognito: createIncognito,
-			};
+			sendingData.current = data;
+			ComposerService.reset({ client });
 
-			MessagingService.reset({ client });
-			useChatStore.setState({ createTemporary: false, createIncognito: false });
-
-			const { chatId: selectedChatId, branches } = useChatStore.getState();
-			const chatId = selectedChatId ?? undefined;
+			const chatId = selectedId ?? undefined;
+			// A new chat keeps its options until it opens, so a failed send keeps them.
+			const { temporary, incognito } = ActiveChatUtils.options(active);
 			const previous =
 				insertingAfter?.id ??
 				(!editing && chatId
 					? (
-							await MessageQueryService.ensure(client, chatId, branches)
+							await MessageQueryService.ensure(
+								client,
+								chatId,
+								ActiveChatUtils.branches(active),
+							)
 						).messages.at(-1)?.id
 					: undefined);
 			const message = editing
 				? await client.api.message.editMessage.mutate({
-						message: editing.id,
-						author: editing.author,
+						message: editing.message.id,
+						author: editing.message.author,
 						config: config,
 						data: data,
-						truncate: truncating ?? false,
+						truncate: editing.truncate,
 					})
 				: await client.api.message.createMessage.mutate({
 						chat: chatId,
-						projectId: chatId ? undefined : project?.id,
+						projectId: chatId ? undefined : active.project?.id,
 						author: "USER",
 						config: config,
 						data: data,
 						previous,
-						temporary: createTemporary,
-						incognito: createIncognito,
+						temporary,
+						incognito,
 					});
 
-			if (editing && !truncating && chatId === useChatStore.getState().chatId) {
+			if (
+				editing &&
+				!editing.truncate &&
+				chatId === useChatStore.getState().active.chatId
+			) {
 				await MessageQueryService.write(client, message);
 				await MessageQueryService.selectBranch(
 					client,
@@ -180,7 +199,8 @@ export const useMessaging = () => {
 			const text = DataUtils.getText(message);
 			if (
 				text.length &&
-				(!editing || text.trim() !== DataUtils.getText(editing).trim()) &&
+				(!editing ||
+					text.trim() !== DataUtils.getText(editing.message).trim()) &&
 				embeddingConfig
 			) {
 				const provider = (
@@ -241,14 +261,7 @@ export const useMessaging = () => {
 
 		onError: () => {
 			if (sendingData.current) {
-				MessagingService.setData({
-					client,
-					data: [...sendingData.current.data],
-				});
-				useChatStore.setState({
-					createTemporary: sendingData.current.temporary,
-					createIncognito: sendingData.current.incognito,
-				});
+				ComposerService.setData({ client, data: [...sendingData.current] });
 			}
 		},
 
@@ -276,16 +289,28 @@ export const useMessaging = () => {
 			);
 			const answer = { approved, feedback };
 
-			// A generation still running takes the answer as it goes.
+			// A generation waiting on the call takes the answer as it goes.
 			if (ToolFeedbackService.give(part.id, answer)) return;
 
 			if (!session.data || !chat.data || !providers.data) return;
 
-			// One that is just ending does not, and the answer resumes the message
-			// it leaves behind rather than racing it.
-			await idle(seed.chatId);
+			// Otherwise it is held for one that is running, or about to, to take
+			// when it gets to the call. Only once there is none does the answer
+			// resume the reply itself, rather than racing them.
+			const taken = ToolFeedbackService.hold(part.id, answer);
+			while (true) {
+				const outcome = await Promise.race([
+					taken,
+					ClientMessageService.idle(seed.chatId).then(() => undefined),
+				]);
+				// Taken, or let go of by a generation the user stopped.
+				if (outcome !== undefined) return;
+				// Another answer may have resumed the reply in the meantime.
+				if (ClientMessageService.isIdle(seed.chatId)) break;
+			}
 
 			if (part.validation?.approval && !approved) {
+				ToolFeedbackService.settle(part.id);
 				await ClientMessageService.onMessage({
 					client,
 					user: session.data.user,
@@ -307,9 +332,8 @@ export const useMessaging = () => {
 				return;
 			}
 
-			// The generation it resumes runs it, and takes any other answers while
-			// it does.
-			ToolFeedbackService.hold(part.id, answer);
+			// The generation it resumes takes it, and any other answers while it
+			// runs.
 			try {
 				await ClientMessageService.onMessage({
 					client,

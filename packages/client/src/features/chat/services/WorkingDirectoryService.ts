@@ -1,5 +1,4 @@
 import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
-import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
 import type { ShellCapability } from "#core/core/types/capability.ts";
 import { SettingsUtils } from "#core/core/utils/SettingsUtils.ts";
 
@@ -28,10 +27,9 @@ export const WorkingDirectoryService = {
 		let resolved: string[] = [];
 
 		const sync = () => {
-			const chatId = useChatStore.getState().chatId;
-			const projectId = chatId
-				? null
-				: (useMessagingStore.getState().project?.id ?? null);
+			const chat = useChatStore.getState().active;
+			const chatId = chat.chatId;
+			const projectId = chatId ? null : (chat.project?.id ?? null);
 
 			const key = JSON.stringify([chatId, projectId]);
 			if (key === selection) return;
@@ -97,13 +95,9 @@ export const WorkingDirectoryService = {
 			);
 		};
 
-		// Coalesce newChat's project and chat updates into one activation.
-		const schedule = () => queueMicrotask(sync);
+		const unsubscribe = useChatStore.subscribe((state) => state.active, sync);
 
-		const unsubscribeChat = useChatStore.subscribe(schedule);
-		const unsubscribeProject = useMessagingStore.subscribe(schedule);
-
-		schedule();
+		sync();
 
 		const ready = async () => {
 			sync();
@@ -122,10 +116,7 @@ export const WorkingDirectoryService = {
 				selection = "";
 				sync();
 			},
-			dispose: () => {
-				unsubscribeChat();
-				unsubscribeProject();
-			},
+			dispose: unsubscribe,
 		};
 	},
 } as const;

@@ -9,7 +9,6 @@ import type {
 	ProjectState,
 } from "#core/features/data/types/chat.ts";
 import type { zUser } from "#core/features/data/types/user.ts";
-import { selectAll } from "#server/db.ts";
 import { ChatUtils } from "#server/features/chat/utils/ChatUtils.ts";
 
 export const ChatService = {
@@ -66,7 +65,7 @@ export const ChatService = {
 				? []
 				: db.orm.public.Project.where({ userId: user.id })
 						.include("chats", (chat) =>
-							selectAll(chat, "public", "Chat")
+							chat
 								.where({ temporary: false })
 								.include("messages", (message) => message.select("createdAt"))
 								.include("project", (project) =>
@@ -101,10 +100,25 @@ export const ChatService = {
 			);
 		};
 
-		const projects = projectRows.map((project) => ({
-			...project,
-			chats: sortChats(project.chats.map(ChatUtils.toChatState)),
-		}));
+		// Most recently active first, by their latest chat; a project with none
+		// counts from when it was made.
+		const projects = projectRows
+			.map((project) => ({
+				...project,
+				chats: sortChats(project.chats.map(ChatUtils.toChatState)),
+			}))
+			.map((project) => ({
+				project,
+				activeAt: Math.max(
+					project.createdAt.toZonedDateTime("UTC").epochMilliseconds,
+					...project.chats.map(timestamp),
+				),
+			}))
+			.sort(
+				(a, b) =>
+					b.activeAt - a.activeAt || a.project.id.localeCompare(b.project.id),
+			)
+			.map(({ project }) => project);
 		const chats = sortChats(chatRows.map(ChatUtils.toChatState));
 
 		const start = cursor

@@ -7,7 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createElement, type ReactNode } from "react";
 import { inject } from "vitest";
 import { type Client, ClientContext, createClient } from "#client/client.ts";
-import type { ClientInput } from "#client/features/chat/services/MessagingService.ts";
+import type { ClientInput } from "#client/features/editor/services/ComposerService.ts";
 import type { zEnv } from "#core/core/types/env.ts";
 
 let client: Client;
@@ -27,7 +27,7 @@ export async function onBeforeAll({
 	client = createClient({
 		env,
 		input,
-		host: inject("serverUrl"),
+		host: new URL(inject("serverUrl")).hostname,
 		getToken: () => token,
 		setToken: (value) => (token = value),
 		getStorage: () => null,

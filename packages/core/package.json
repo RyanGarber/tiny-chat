@@ -8,7 +8,8 @@
 		"test": "vitest run"
 	},
 	"imports": {
-		"#core/*": "./src/*"
+		"#core/*": "./src/*",
+		"#core/generated/*": "./generated/*"
 	},
 	"exports": {
 		"./*": "./src/*",

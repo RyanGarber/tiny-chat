@@ -10,10 +10,12 @@ export default function ChatHeader({ fixed }: { fixed: boolean }) {
 	const isMobile = useAppStore((s) => s.isMobile);
 	const isSidebarOpen = useAppStore((s) => s.isSidebarOpen);
 	const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
-	const temporary = useChatStore((s) => s.createTemporary);
-	const setTemporary = useChatStore((s) => s.setCreateTemporary);
-	const incognito = useChatStore((s) => s.createIncognito);
-	const setIncognito = useChatStore((s) => s.setCreateIncognito);
+	const temporary = useChatStore(
+		(s) => s.active.status === "new" && s.active.temporary,
+	);
+	const incognito = useChatStore(
+		(s) => s.active.status === "new" && s.active.incognito,
+	);
 
 	const isTemporary = chat.data?.temporary ?? temporary;
 	const isIncognito = chat.data?.incognito ?? incognito;
@@ -50,7 +52,7 @@ export default function ChatHeader({ fixed }: { fixed: boolean }) {
 							size={32}
 							variant="subtle"
 							className="nav-link-like filled"
-							onClick={() => ChatService.newChat()}
+							onClick={() => ChatService.newChat(null)}
 							data-active={!chat.data}
 						>
 							<PlusCircleIcon size={20} />
@@ -63,10 +65,9 @@ export default function ChatHeader({ fixed }: { fixed: boolean }) {
 							size={32}
 							variant="subtle"
 							className="nav-link-like"
-							onClick={() => {
-								if (chat.data) ChatService.newChat();
-								setTemporary(!isTemporary);
-							}}
+							onClick={() =>
+								ChatService.setNewChatOptions({ temporary: !isTemporary })
+							}
 							data-active={isTemporary}
 						>
 							<EyeSlashIcon size={20} />
@@ -77,10 +78,9 @@ export default function ChatHeader({ fixed }: { fixed: boolean }) {
 							size={32}
 							variant="subtle"
 							className="nav-link-like"
-							onClick={() => {
-								if (chat.data) ChatService.newChat();
-								setIncognito(!isIncognito);
-							}}
+							onClick={() =>
+								ChatService.setNewChatOptions({ incognito: !isIncognito })
+							}
 							data-active={isIncognito}
 						>
 							<GhostIcon size={20} />

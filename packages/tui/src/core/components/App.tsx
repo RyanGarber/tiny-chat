@@ -1,13 +1,12 @@
-import { Box, useApp, useInput, useWindowSize } from "ink";
-import { type ReactNode, useContext, useEffect } from "react";
+import { Box, type DOMElement, useApp, useInput, useWindowSize } from "ink";
+import { type ReactNode, useContext, useEffect, useRef } from "react";
 import { ThemeContext } from "#client/core/components/ThemeContext.tsx";
 import { usePrepareCode } from "#client/core/hooks/useCode.ts";
 import { useChatList } from "#client/features/chat/hooks/useChatList.ts";
-import { useChatProject } from "#client/features/chat/hooks/useChatProject.ts";
 import { useDefaultProject } from "#client/features/chat/hooks/useDefaultProject.ts";
 import { ChatService } from "#client/features/chat/services/ChatService.ts";
-import { useDraftStore } from "#client/features/chat/stores/useDraftStore.ts";
 import { useEstimatedTokens } from "#client/features/editor/hooks/useEstimatedTokens.ts";
+import { useComposerStore } from "#client/features/editor/stores/useComposerStore.ts";
 import { MessageProvider } from "#client/features/message/components/MessageProvider.tsx";
 import Console from "#tui/core/components/Console.tsx";
 import Panel from "#tui/core/components/Panel.tsx";
@@ -23,10 +22,11 @@ import {
 import ChatConfig from "#tui/features/agent/components/ChatConfig.tsx";
 import Chat from "#tui/features/chat/components/Chat.tsx";
 import ChatEffects from "#tui/features/chat/components/ChatEffects.tsx";
-import ChatFiles from "#tui/features/chat/components/ChatFiles.tsx";
 import ChatList from "#tui/features/chat/components/ChatList.tsx";
+import ChatSources from "#tui/features/chat/components/ChatSources.tsx";
 import ProjectList from "#tui/features/chat/components/ProjectList.tsx";
 import Editor from "#tui/features/editor/components/Editor.tsx";
+import Find from "#tui/features/find/components/Find.tsx";
 import { CitationCard } from "#tui/features/message/components/Citation.tsx";
 import Settings from "#tui/features/settings/components/Settings.tsx";
 import { useUpdate } from "#tui/features/update/hooks/useUpdate.ts";
@@ -45,9 +45,9 @@ export default function App() {
 	const { colorScheme } = useContext(ThemeContext);
 	usePrepareCode();
 	useDefaultProject();
-	useChatProject();
 
 	const { exit } = useApp();
+	const rootRef = useRef<DOMElement>(null);
 	const { rows, columns } = useWindowSize();
 
 	const page = useAppStore(selectPage);
@@ -78,7 +78,7 @@ export default function App() {
 			// cycles its suggestions with it): the shortcut is the editor's.
 			if (selectFocus(useAppStore.getState()) !== "editor") return;
 			// Something written in the editor takes it to indent and unindent.
-			if (!useDraftStore.getState().isEmpty) return;
+			if (!useComposerStore.getState().isEmpty) return;
 			ChatService.cycleProject(projectList ?? []);
 			return;
 		}
@@ -95,7 +95,7 @@ export default function App() {
 		}
 	});
 
-	const draft = useDraftStore((state) => state.data);
+	const draft = useComposerStore((state) => state.data);
 	const { chatTokens, categories, usage } = useEstimatedTokens<Color>({
 		draft,
 		colors: { low: "primary", moderate: "yellowBright", high: "redBright" },
@@ -128,6 +128,7 @@ export default function App() {
 	return (
 		<MessageProvider>
 			<Box
+				ref={rootRef}
 				flexDirection="row"
 				height={rows}
 				backgroundColor={colorScheme.exterior}
@@ -164,7 +165,7 @@ export default function App() {
 										<Box width={bottomWidth} flexDirection="column">
 											{panel(
 												"files",
-												<ChatFiles fill width={bottomWidth - 2} />,
+												<ChatSources fill width={bottomWidth - 2} />,
 											)}
 										</Box>
 									)}
@@ -190,11 +191,13 @@ export default function App() {
 				</WidthContext.Provider>
 				{right > 0 && (
 					<Box width={right} flexShrink={0} flexDirection="column">
-						{panel("files", <ChatFiles fill width={right - 2} />)}
+						{panel("files", <ChatSources fill width={right - 2} />)}
 					</Box>
 				)}
 				<CitationCard />
 				{page === "console" && <Console />}
+				{/* The keys go to whichever page is up, so only the chat is searched. */}
+				<Find targetRef={rootRef} disabled={page !== "chat"} />
 			</Box>
 		</MessageProvider>
 	);

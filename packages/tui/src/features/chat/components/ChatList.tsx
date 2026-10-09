@@ -1,6 +1,6 @@
 import { useChatList } from "#client/features/chat/hooks/useChatList.ts";
 import { ChatService } from "#client/features/chat/services/ChatService.ts";
-import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
+import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
 import { usePanel } from "#tui/core/components/Panel.tsx";
 import Text from "#tui/core/components/Text.tsx";
 import { usePage } from "#tui/core/hooks/usePage.ts";
@@ -18,7 +18,7 @@ export default function ChatList({
 	const { projects, deleteChat } = useChatList();
 	useWorkingStatus(projects, deleteChat);
 
-	const project = useMessagingStore((state) => state.project);
+	const project = useChatStore((state) => state.active.project);
 	const chats =
 		projects.data?.pages.flatMap((page) =>
 			project

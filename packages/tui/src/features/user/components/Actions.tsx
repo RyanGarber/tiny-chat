@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChatFilesUtils } from "#client/features/chat/utils/ChatFilesUtils.ts";
+import { ChatSourcesUtils } from "#client/features/chat/utils/ChatSourcesUtils.ts";
 import { useMessages } from "#client/features/message/hooks/useMessages.ts";
 import { useActions } from "#client/features/user/hooks/useActions.ts";
 import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
@@ -61,7 +61,8 @@ export default function Actions() {
 	if (pending !== null || (editing && route === "schedule")) {
 		const current = CommonUtils.describeSchedule(editing?.schedule);
 		const prompt =
-			pending ?? (editing && ChatFilesUtils.action({ action: editing }).prompt);
+			pending ??
+			(editing && ChatSourcesUtils.action({ action: editing }).prompt);
 		return (
 			<TextList
 				entries={[
@@ -103,7 +104,7 @@ export default function Actions() {
 	}
 
 	if (editing && route === "prompt") {
-		const { prompt } = ChatFilesUtils.action({ action: editing });
+		const { prompt } = ChatSourcesUtils.action({ action: editing });
 		return (
 			<TextList
 				entries={[{ label: "prompt", text: prompt }]}
@@ -123,7 +124,7 @@ export default function Actions() {
 			schedule: described,
 			lastRun,
 			nextRun,
-		} = ChatFilesUtils.action({ action: editing });
+		} = ChatSourcesUtils.action({ action: editing });
 		return (
 			<Details
 				groups={[
@@ -171,7 +172,7 @@ export default function Actions() {
 	return (
 		<TextList
 			entries={items.map((action) => {
-				const { prompt, schedule, nextRun } = ChatFilesUtils.action({
+				const { prompt, schedule, nextRun } = ChatSourcesUtils.action({
 					action,
 				});
 				return {

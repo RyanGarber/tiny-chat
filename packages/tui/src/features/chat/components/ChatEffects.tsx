@@ -1,9 +1,9 @@
 import { useContext } from "react";
 import { ClientContext } from "#client/client.ts";
-import { MessagingService } from "#client/features/chat/services/MessagingService.ts";
 import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
 import { useMessageQueueStore } from "#client/features/chat/stores/useMessageQueueStore.ts";
-import { useMessagingStore } from "#client/features/chat/stores/useMessagingStore.ts";
+import { ComposerService } from "#client/features/editor/services/ComposerService.ts";
+import { useComposerStore } from "#client/features/editor/stores/useComposerStore.ts";
 import { DataUtils } from "#core/features/data/utils/DataUtils.ts";
 import Box from "#tui/core/components/Box.tsx";
 import Button from "#tui/core/components/Button.tsx";
@@ -25,15 +25,21 @@ function Effect({
 }
 export default function ChatEffects() {
 	const client = useContext(ClientContext);
-	const chatId = useChatStore((s) => s.chatId);
+	const chatId = useChatStore((s) => s.active.chatId);
 	const queues = useMessageQueueStore((s) => s.queues);
-	const editing = useMessagingStore((s) => s.editing);
-	const truncating = useMessagingStore((s) => s.truncating);
-	const insertingAfter = useMessagingStore((s) => s.insertingAfter);
+	const editing = useComposerStore((s) =>
+		s.mode.kind === "edit" ? s.mode.message : null,
+	);
+	const keepingLater = useComposerStore(
+		(s) => s.mode.kind === "edit" && !s.mode.truncate,
+	);
+	const insertingAfter = useComposerStore((s) =>
+		s.mode.kind === "insert" ? s.mode.after : null,
+	);
 
 	const hasEffect =
 		editing ||
-		truncating ||
+		keepingLater ||
 		insertingAfter ||
 		(chatId && queues[chatId]?.length > 0);
 
@@ -44,21 +50,19 @@ export default function ChatEffects() {
 			{editing && (
 				<Effect
 					content={`editing ${DataUtils.getTextCleaned({ data: editing.data, maxLength: 40 }).toLowerCase()}`}
-					onDelete={() =>
-						MessagingService.setEditing({ client, message: null })
-					}
+					onDelete={() => ComposerService.cancel({ client })}
 				/>
 			)}
-			{editing && !truncating && (
+			{editing && !keepingLater && (
 				<Effect
-					content="keeping newer messages"
-					onDelete={() => MessagingService.setTruncating({ truncating: true })}
+					content="dropping later messages"
+					onDelete={() => useComposerStore.getState().keepLater()}
 				/>
 			)}
 			{insertingAfter && (
 				<Effect
 					content={`inserting after ${DataUtils.getTextCleaned({ data: insertingAfter.data, maxLength: 40 }).toLowerCase()}`}
-					onDelete={() => MessagingService.setInsertingAfter({ message: null })}
+					onDelete={() => ComposerService.cancel({ client })}
 				/>
 			)}
 			{chatId &&

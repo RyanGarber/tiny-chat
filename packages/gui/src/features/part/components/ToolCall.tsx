@@ -1,9 +1,12 @@
 import { Box, Collapse, Stack } from "@mantine/core";
 import { WrenchIcon } from "@phosphor-icons/react";
+import { useEffect, useRef } from "react";
 import { useAutoExpand } from "#client/features/part/hooks/useAutoExpand.ts";
 import { useToolCall } from "#client/features/part/hooks/useToolCall.ts";
+import { useExpandStore } from "#client/features/part/stores/useExpandStore.ts";
 import type { MessageState } from "#core/features/data/types/message.ts";
 import type { RenderedPart } from "#core/features/data/utils/DataUtils.ts";
+import type { Toolset } from "#core/features/tool/types/tool.ts";
 import Tail from "#gui/features/part/components/Tail.tsx";
 import ToolBlock from "#gui/features/part/components/ToolBlock.tsx";
 import ToolControls from "#gui/features/part/components/ToolControls.tsx";
@@ -20,16 +23,19 @@ const TAIL_HEIGHT = 400;
 export default function ToolCall({
 	message,
 	part,
-	isFocused,
+	answerable,
 	hold,
+	toolsets,
 }: {
 	message?: MessageState;
 	part: Extract<RenderedPart, { type: "toolCall" }>;
-	isFocused?: boolean;
+	answerable?: boolean;
 	/** Keeps it open after it settles, until something follows it. */
 	hold?: boolean;
+	/** Where its tool is looked up, for a call made outside of the messages. */
+	toolsets?: Toolset<any>[];
 }) {
-	const display = useToolCall({ part });
+	const display = useToolCall({ part, toolsets });
 	const { expanded, auto, toggle } = useAutoExpand(
 		part.id,
 		display.active || !!hold,
@@ -38,8 +44,31 @@ export default function ToolCall({
 	const controls = message && display.controls;
 	const empty = !display.input.length && !display.output.length && !controls;
 
+	// Brought into view when gone to, such as from a citation of it.
+	const ref = useRef<HTMLDivElement>(null);
+	const focused = useExpandStore((s) => s.focused === part.id);
+	useEffect(() => {
+		const node = ref.current;
+		if (!focused || !node) return;
+		useExpandStore.getState().focus(null);
+		node.scrollIntoView({ behavior: "smooth", block: "center" });
+		node.animate(
+			[
+				{
+					backgroundColor: "var(--mantine-color-blue-light)",
+					borderRadius: "var(--mantine-radius-md)",
+				},
+				{
+					backgroundColor: "transparent",
+					borderRadius: "var(--mantine-radius-md)",
+				},
+			],
+			{ duration: 1500, easing: "ease-out" },
+		);
+	}, [focused]);
+
 	return (
-		<Box my={8}>
+		<Box my={8} ref={ref}>
 			<ToolHeader
 				icon={
 					<WrenchIcon
@@ -80,7 +109,7 @@ export default function ToolCall({
 									message={message}
 									part={part}
 									controls={controls}
-									isFocused={isFocused}
+									answerable={answerable}
 								/>
 							)}
 							{display.output.map((block, index) => (

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChatFilesUtils } from "#client/features/chat/utils/ChatFilesUtils.ts";
+import { ChatSourcesUtils } from "#client/features/chat/utils/ChatSourcesUtils.ts";
 import { useMemories } from "#client/features/user/hooks/useMemories.ts";
 import { Enum } from "#core/core/services/PostgresService.ts";
 import type { MemoryState } from "#core/features/data/types/memory.ts";
@@ -111,7 +111,7 @@ export default function Memories() {
 				setSelected={setSelected}
 				before={
 					<Text color="textSubtle">
-						{ChatFilesUtils.memory(editing).learned}
+						{ChatSourcesUtils.memory(editing).learned}
 					</Text>
 				}
 				onOpen={(next) => setRoute(next as Route)}
@@ -132,7 +132,7 @@ export default function Memories() {
 		<TextList
 			entries={items.map((memory) => ({
 				text: memory.fact,
-				detail: ChatFilesUtils.memory(memory).details,
+				detail: ChatSourcesUtils.memory(memory).details,
 			}))}
 			draft={draft}
 			setDraft={setDraft}

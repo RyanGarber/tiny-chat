@@ -1,7 +1,7 @@
 import { useAutoExpand } from "#client/features/part/hooks/useAutoExpand.ts";
 import type { RenderedPart } from "#core/features/data/utils/DataUtils.ts";
 import Markdown from "#tui/features/message/components/Markdown.tsx";
-import ScrollTail from "#tui/features/part/components/ScrollTail.tsx";
+import Tail from "#tui/features/part/components/Tail.tsx";
 import Task from "#tui/features/part/components/Task.tsx";
 
 const DETAILS_PROPS = { paddingY: 1, backgroundColor: "surface" } as const;
@@ -36,9 +36,9 @@ export default function Thought({
 					parts={[{ text: pending ? "Thinking" : "Thought" }]}
 				/>
 				<Task.Details>
-					<ScrollTail follow={auto}>
+					<Tail follow={auto}>
 						<Markdown source={thoughtText} streaming={pending} />
-					</ScrollTail>
+					</Tail>
 				</Task.Details>
 			</Task>
 		</Task.Group>

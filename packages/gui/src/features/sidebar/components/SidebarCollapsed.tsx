@@ -9,7 +9,6 @@ import {
 import type { useSession } from "#client/core/hooks/useSession.ts";
 import type { useChat } from "#client/features/chat/hooks/useChat.ts";
 import { ChatService } from "#client/features/chat/services/ChatService.ts";
-import { useChatStore } from "#client/features/chat/stores/useChatStore.ts";
 import { useAppStore } from "#gui/core/stores/useAppStore.ts";
 
 export default function SidebarCollapsed({
@@ -29,9 +28,6 @@ export default function SidebarCollapsed({
 	const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
 	const setCurrentDrawer = useAppStore((state) => state.setCurrentDrawer);
 
-	const setCreateTemporary = useChatStore((state) => state.setCreateTemporary);
-	const setCreateIncognito = useChatStore((state) => state.setCreateIncognito);
-
 	return (
 		<Stack align="center" justify="space-between" h="100%" py="xs">
 			<Stack align="center" gap="sm">
@@ -47,7 +43,7 @@ export default function SidebarCollapsed({
 						c="dimmed"
 						className="nav-link-like filled"
 						data-active={!chat.data}
-						onClick={() => close(() => ChatService.clearChat(chat.data))}
+						onClick={() => close(() => ChatService.setChat({ id: null }))}
 					>
 						<PlusCircleIcon size={20} />
 					</ActionIcon>
@@ -60,10 +56,9 @@ export default function SidebarCollapsed({
 						className="nav-link-like"
 						data-active={isTemporary}
 						onClick={() =>
-							close(() => {
-								if (chat.data) ChatService.newChat();
-								setCreateTemporary(!isTemporary);
-							})
+							close(() =>
+								ChatService.setNewChatOptions({ temporary: !isTemporary }),
+							)
 						}
 					>
 						<EyeSlashIcon size={20} />
@@ -77,10 +72,9 @@ export default function SidebarCollapsed({
 						className="nav-link-like"
 						data-active={isIncognito}
 						onClick={() =>
-							close(() => {
-								if (chat.data) ChatService.newChat();
-								setCreateIncognito(!isIncognito);
-							})
+							close(() =>
+								ChatService.setNewChatOptions({ incognito: !isIncognito }),
+							)
 						}
 					>
 						<GhostIcon size={20} />

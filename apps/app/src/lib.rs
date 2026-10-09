@@ -1,6 +1,7 @@
 use tauri::Manager;
 
 mod afm;
+mod computer;
 mod env;
 mod mcp_http;
 mod mcp_stdio;
@@ -40,7 +41,9 @@ pub fn run() {
         afm::afm_enabled,
         afm::afm_availability,
         afm::afm_stream,
-        afm::afm_cancel
+        afm::afm_cancel,
+        computer::computer_call,
+        computer::computer_cancel
     ]);
 
     let builder = builder.setup(|app| {

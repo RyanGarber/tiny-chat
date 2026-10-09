@@ -63,6 +63,7 @@ export const CapabilityUtils = {
 			github: true,
 			shell: desktop,
 			browser: desktop,
+			computer: desktop,
 			actions: personal && message,
 			memories: personal,
 			web: (["search", "view"] satisfies zWebFeature[]).some(

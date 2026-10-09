@@ -233,6 +233,21 @@ export interface BrowserCapability {
 	}) => Promise<zBrowserRunResult>;
 }
 
+/**
+ * The apps on the user's machine, through the host's computer library
+ * (`lib/computer`): accessibility trees, element actions, input, and
+ * screenshots. The host only carries calls; what they mean is decided in
+ * `ComputerService`.
+ */
+export interface ComputerCapability {
+	/** Resolves with the library's raw `{ ok, result }` or `{ ok, error }`. */
+	call: (_: {
+		method: string;
+		params: unknown;
+		abort?: AbortSignal;
+	}) => Promise<unknown>;
+}
+
 export interface Capabilities {
 	web?: WebCapability;
 	github?: GitHubCapability;
@@ -243,6 +258,7 @@ export interface Capabilities {
 	chatShell?: ShellCapability;
 	shell?: ShellCapability;
 	browser?: BrowserCapability;
+	computer?: ComputerCapability;
 }
 
 export type CapabilityFactory<T, TCapability> = (

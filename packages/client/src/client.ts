@@ -17,6 +17,7 @@ import {
 	HostShellService,
 } from "#client/features/shell/services/HostShellService.ts";
 import { JsonService } from "#core/core/services/JsonService.ts";
+import type { ComputerCapability } from "#core/core/types/capability.ts";
 import { zEnv, type zProviderEnv } from "#core/core/types/env.ts";
 import { CodeUtils, type CodeWorker } from "#core/core/utils/CodeUtils.ts";
 import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
@@ -64,6 +65,13 @@ export interface ClientTransports {
 
 export type ClientShell = HostShellPrimitives;
 
+/**
+ * The host's way into `lib/computer`: the CLI opens the library itself, the
+ * desktop app links it. Requests and responses are the library's JSON; all
+ * meaning is in core's `ComputerService`.
+ */
+export type ClientComputer = ComputerCapability;
+
 export const createClient = ({
 	env: _env,
 	host = "localhost",
@@ -75,6 +83,7 @@ export const createClient = ({
 	transports,
 	input,
 	shell: primitives,
+	computer,
 	desktop,
 	highlighter,
 	queryClient = new QueryClient(),
@@ -89,6 +98,7 @@ export const createClient = ({
 	transports?: ClientTransports;
 	input?: ClientInput;
 	shell?: ClientShell;
+	computer?: ClientComputer;
 	desktop?: boolean;
 	/** Starts the runtime's bundle of `HighlightWorker.ts`, where Shiki runs. */
 	highlighter?: () => CodeWorker;
@@ -172,6 +182,7 @@ export const createClient = ({
 		transports,
 		input,
 		shell,
+		computer,
 		desktop,
 	};
 };

@@ -6,6 +6,7 @@ import chalk from "chalk";
 import { zEnv } from "#core/core/types/env.ts";
 import { create, print } from "../../../scripts/use-stdout.ts";
 import { buildAfmize } from "./afmize.ts";
+import { buildComputer } from "./computer.ts";
 
 export const environment = Object.fromEntries(
 	Object.entries(zEnv.parse(process.env)).map(([key, value]) => [
@@ -30,13 +31,47 @@ const AFM_LIBRARY = fileURLToPath(
 	new URL("../src/core/services/AFMLibrary.ts", import.meta.url),
 );
 
+/** The stub `ComputerLibrary.ts` that lib/computer stands in for once built. */
+const COMPUTER_LIBRARY = fileURLToPath(
+	new URL("../src/core/services/ComputerLibrary.ts", import.meta.url),
+);
+
+/**
+ * Replaces a stub module with one that embeds `library` as a file: in a
+ * compiled binary, Bun extracts it for `dlopen`; in `dist/`, it is copied
+ * beside the bundle.
+ */
+const embed = (
+	name: string,
+	stub: string,
+	library: string | null,
+): Bun.BunPlugin => ({
+	name,
+	setup: (build) => {
+		if (!library) return;
+		const file = stub.split(/[\\/]/).at(-1)?.replace(/\./g, "\\.");
+		build.onLoad({ filter: new RegExp(`[\\\\/]${file}$`) }, (args) =>
+			args.path === stub
+				? {
+						contents: `import library from ${JSON.stringify(library)} with { type: "file" };\nexport default library;`,
+						loader: "ts",
+					}
+				: undefined,
+		);
+	},
+});
+
 export async function compile({
 	dev = false,
 	...options
 }: Partial<Parameters<typeof Bun.build>[0]> & {
 	dev?: boolean;
 } = {}): Promise<BuildResult | null> {
-	const afmize = await buildAfmize(dev ? "debug" : "release");
+	const profile = dev ? "debug" : "release";
+	const [afmize, computer] = await Promise.all([
+		buildAfmize(profile),
+		buildComputer(profile),
+	]);
 
 	const define = Object.fromEntries(
 		Object.entries(environment).flatMap(([key, value]) => {
@@ -63,22 +98,8 @@ export async function compile({
 			entrypoints: ["./src/index.ts", "./src/highlight.ts"],
 			banner: "globalThis.UPNG = undefined;",
 			plugins: [
-				{
-					// Embedded as a file: in a compiled binary, Bun extracts it for
-					// `dlopen`; in `dist/`, it is copied beside the bundle.
-					name: "afmize",
-					setup: (build) => {
-						if (!afmize) return;
-						build.onLoad({ filter: /[\\/]AFMLibrary\.ts$/ }, (args) =>
-							args.path === AFM_LIBRARY
-								? {
-										contents: `import library from ${JSON.stringify(afmize)} with { type: "file" };\nexport default library;`,
-										loader: "ts",
-									}
-								: undefined,
-						);
-					},
-				},
+				embed("afmize", AFM_LIBRARY, afmize),
+				embed("computer", COMPUTER_LIBRARY, computer),
 				{
 					name: "react-compiler",
 					setup: (build) => {

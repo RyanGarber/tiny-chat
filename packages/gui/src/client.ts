@@ -1,4 +1,4 @@
-import { createClient } from "#client/client.ts";
+import { type ClientComputer, createClient } from "#client/client.ts";
 import HighlightWorker from "#core/core/services/HighlightWorker.ts?worker";
 import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
 import { FileUtils } from "#core/features/file/utils/FileUtils.ts";
@@ -14,6 +14,31 @@ import { TauriStdioTransport } from "#gui/features/tauri/services/TauriStdioTran
 import { TauriUtils } from "#gui/features/tauri/utils/TauriUtils.ts";
 
 const desktopOs = await TauriUtils.desktopOs();
+
+/**
+ * lib/computer, linked into the desktop app. A request is skipped by its id
+ * if it is aborted before the library reaches it.
+ */
+const createComputer = (): ClientComputer => {
+	let next = 1;
+	return {
+		call: async ({ method, params, abort }) => {
+			abort?.throwIfAborted();
+			const id = next++;
+			const cancel = () => void TauriUtils.invoke("computer_cancel", { id });
+			abort?.addEventListener("abort", cancel, { once: true });
+			try {
+				const response = await TauriUtils.invoke<string>("computer_call", {
+					request: JSON.stringify({ id, method, params }),
+				});
+				abort?.throwIfAborted();
+				return JSON.parse(response);
+			} finally {
+				abort?.removeEventListener("abort", cancel);
+			}
+		},
+	};
+};
 
 export const client = createClient({
 	env: {
@@ -188,5 +213,6 @@ export const client = createClient({
 				},
 			}
 		: undefined,
+	computer: desktopOs ? createComputer() : undefined,
 	desktop: !!desktopOs,
 });

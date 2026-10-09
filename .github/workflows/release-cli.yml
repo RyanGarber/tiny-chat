@@ -106,6 +106,16 @@ jobs:
         if: matrix.platform == 'xcode-27'
         run: swift build --package-path lib/afmize --configuration release --product dynafmize
 
+      # The CLI embeds lib/computer's dynamic library everywhere.
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install packages
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxkbcommon-dev
+
       - name: Build CLI
         run: pnpm run build:cli
 

@@ -1,0 +1,25 @@
+[package]
+name = "computer"
+version = "0.0.0"
+edition = "2024"
+description = "Desktop accessibility, input, and screenshot primitives for Tiny Chat's computer tool, over xa11y."
+license = "MIT"
+publish = false
+
+[lib]
+name = "computer"
+# `rlib` for the Tauri app, which links it directly; `cdylib` for the CLI,
+# which opens it with `bun:ffi`.
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+base64 = "0.22"
+jpeg-encoder = "0.6"
+serde_json = "1.0.150"
+# Pinned exactly: pre-1.0 and fast-moving, and the protocol below maps its API
+# one-to-one.
+xa11y = { version = "=0.15.2", default-features = false }
+
+[profile.release]
+lto = true
+strip = true

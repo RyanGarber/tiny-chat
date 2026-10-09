@@ -6,6 +6,7 @@ import type { Readable } from "node:stream";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { AFMService } from "#cli/core/services/AFMService.ts";
+import { ComputerBridgeService } from "#cli/core/services/ComputerBridgeService.ts";
 import { StorageService } from "#cli/core/services/StorageService.ts";
 import { TokenService } from "#cli/core/services/TokenService.ts";
 import { FileSystemUtils } from "#cli/core/utils/FileSystemUtils.ts";
@@ -212,5 +213,6 @@ export const client = createClient({
 			});
 		},
 	},
+	computer: ComputerBridgeService.get(),
 	desktop: true,
 });

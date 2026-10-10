@@ -1,3 +1,26 @@
+## [0.9.8](https://github.com/RyanGarber/tiny-chat/compare/0.9.7...0.9.8) (2026-10-10)
+
+### Features
+
+* citations match by tool call id ([cc09626](https://github.com/RyanGarber/tiny-chat/commit/cc09626c6e19300fd3cbb8b88f7d5d065273615d-5))
+* mcp server log viewer ([45de199](https://github.com/RyanGarber/tiny-chat/commit/45de199c8c7d94bf3d2c8462a8afcf1ef32e8f0b))
+* native ctrl+f in tui, gui ([cc09626](https://github.com/RyanGarber/tiny-chat/commit/cc09626c6e19300fd3cbb8b88f7d5d065273615d-4))
+* persisted subagent runs, citation support ([cc09626](https://github.com/RyanGarber/tiny-chat/commit/cc09626c6e19300fd3cbb8b88f7d5d065273615d))
+* run shell commands from within chat ([cc09626](https://github.com/RyanGarber/tiny-chat/commit/cc09626c6e19300fd3cbb8b88f7d5d065273615d-3))
+
+### Bug Fixes
+
+* cannot scroll up streaming tool calls ([cc09626](https://github.com/RyanGarber/tiny-chat/commit/cc09626c6e19300fd3cbb8b88f7d5d065273615d-1))
+* data from failed generations can be lost ([45de199](https://github.com/RyanGarber/tiny-chat/commit/45de199c8c7d94bf3d2c8462a8afcf1ef32e8f0b-4))
+* invalid state caused by opening to a missing/unauthorized chat ([45de199](https://github.com/RyanGarber/tiny-chat/commit/45de199c8c7d94bf3d2c8462a8afcf1ef32e8f0b-5))
+* some logs can pollute tui window ([45de199](https://github.com/RyanGarber/tiny-chat/commit/45de199c8c7d94bf3d2c8462a8afcf1ef32e8f0b-3))
+
+### Performance Improvements
+
+* full virtualization in chats ([45de199](https://github.com/RyanGarber/tiny-chat/commit/45de199c8c7d94bf3d2c8462a8afcf1ef32e8f0b-2))
+* incremental rendering in tui ([45de199](https://github.com/RyanGarber/tiny-chat/commit/45de199c8c7d94bf3d2c8462a8afcf1ef32e8f0b-1))
+
+
 ## [0.9.7](https://github.com/RyanGarber/tiny-chat/compare/0.9.6...0.9.7) (2026-10-08)
 
 ### Features

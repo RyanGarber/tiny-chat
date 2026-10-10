@@ -1,13 +1,8 @@
 import { Alert, Button, Group, Stack, Text } from "@mantine/core";
 import { ArrowClockwiseIcon, PlayIcon } from "@phosphor-icons/react";
-import { MediaPlayer, MediaProvider } from "@vidstack/react";
-import {
-	DefaultAudioLayout,
-	DefaultVideoLayout,
-	defaultLayoutIcons,
-} from "@vidstack/react/player/layouts/default";
+import { Audio, AudioPlayer, AudioSkin } from "@videojs/react/audio";
+import { Video, VideoPlayer, VideoSkin } from "@videojs/react/video";
 import type { AgentStreamEvent } from "#client/core/services/StreamService.ts";
-import { useThemes } from "#client/features/settings/hooks/useThemes.ts";
 import type { Compaction } from "#core/features/agent/services/AgentTokensService.ts";
 import type { MessageState } from "#core/features/data/types/message.ts";
 import type { zData } from "#core/features/data/types/part.ts";
@@ -36,8 +31,6 @@ export default function MessageParts({
 	regenerate?: (message: MessageState) => void;
 	resume?: (message: MessageState) => void;
 }) {
-	const { theme } = useThemes();
-
 	const parts = DataUtils.getRenderedPartsGrouped(
 		data,
 		status === "thinking",
@@ -124,26 +117,32 @@ export default function MessageParts({
 						/>
 					</div>
 				);
+			} else if (part.mime.startsWith("audio/")) {
+				return (
+					<div key={index}>
+						<CompactionBadge compaction={compaction} id={part.id} />
+						<AudioPlayer title={part.name}>
+							<AudioSkin>
+								<Audio
+									src={`data:${part.mime};base64,${part.data}`}
+									playsInline
+								/>
+							</AudioSkin>
+						</AudioPlayer>
+					</div>
+				);
 			} else if (part.mime.startsWith("video/")) {
 				return (
 					<div key={index}>
 						<CompactionBadge compaction={compaction} id={part.id} />
-						<MediaPlayer
-							title={part.name}
-							src={`data:${part.mime};base64,${part.data}`}
-							crossOrigin
-							playsInline
-						>
-							<MediaProvider></MediaProvider>
-							<DefaultAudioLayout
-								icons={defaultLayoutIcons}
-								colorScheme={theme}
-							/>
-							<DefaultVideoLayout
-								icons={defaultLayoutIcons}
-								colorScheme={theme}
-							/>
-						</MediaPlayer>
+						<VideoPlayer title={part.name}>
+							<VideoSkin>
+								<Video
+									src={`data:${part.mime};base64,${part.data}`}
+									playsInline
+								/>
+							</VideoSkin>
+						</VideoPlayer>
 					</div>
 				);
 			}

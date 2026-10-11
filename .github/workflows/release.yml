@@ -6,12 +6,22 @@ on:
       - check
     types:
       - completed
+    # `dev` runs the whole release as a dry run: everything is built, and
+    # nothing is published or deployed.
     branches:
       - main
+      - dev
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build everything but publish nothing (always, off main)"
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
-  group: release-${{ github.ref }}
+  # Under workflow_run, github.ref is always the default branch.
+  group: release-${{ github.event.workflow_run.head_branch || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -27,6 +37,10 @@ jobs:
       released: ${{ steps.diff.outputs.released }}
       version: ${{ steps.diff.outputs.version }}
       notes: ${{ steps.notes.outputs.notes }}
+      dry_run: ${{ steps.mode.outputs.dry_run }}
+      # What the release builds: its tag, or in a dry run (which tags
+      # nothing) the commit.
+      ref: ${{ steps.diff.outputs.ref }}
 
     steps:
       - name: Checkout
@@ -48,6 +62,20 @@ jobs:
       - name: Install dependencies
         run: pnpm ci
 
+      - name: Resolve mode
+        id: mode
+        env:
+          BRANCH: ${{ github.event.workflow_run.head_branch || github.ref_name }}
+          DRY_RUN: ${{ inputs.dry_run || false }}
+        run: |
+          if [ "$BRANCH" != "main" ]; then DRY_RUN=true; fi
+          {
+            echo "dry_run=$DRY_RUN"
+            echo "branch=$BRANCH"
+            echo "sha=$(git rev-parse HEAD)"
+          } >> "$GITHUB_OUTPUT"
+          echo "Release from $BRANCH (dry run: $DRY_RUN)"
+
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
@@ -55,23 +83,53 @@ jobs:
 
       - name: Read existing version
         id: before
-        run: echo "version=$(node -pe "require('./apps/app/tauri.conf.json').version")" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(node -pe "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
       - name: Determine new version
+        if: steps.mode.outputs.dry_run != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm exec semantic-release
 
+      # semantic-release works out the version and notes, then commits, tags
+      # and pushes nothing; the version is written here as its `prepare` would
+      # have. It reads the branch from GITHUB_REF, which workflow_run sets to
+      # the default branch, and is told to release from this one.
+      - name: Determine new version (dry run)
+        if: steps.mode.outputs.dry_run == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ steps.mode.outputs.branch }}
+        run: |
+          GITHUB_REF="refs/heads/$BRANCH" pnpm exec semantic-release \
+            --dry-run --branches "$BRANCH" | tee "$RUNNER_TEMP/semantic-release.log"
+          NEXT=$(sed -n 's/.*The next release version is \([^ ]*\).*/\1/p' "$RUNNER_TEMP/semantic-release.log" | tail -1)
+          if [ -n "$NEXT" ]; then
+            node scripts/write-version.ts "$NEXT"
+          else
+            echo "No release-worthy commits; the dry run uses the current version"
+            printf 'Dry run of %s: no release-worthy commits.\n' "$(git rev-parse --short HEAD)" > CHANGES.md
+          fi
+
       - name: Write release status
         id: diff
+        env:
+          DRY_RUN: ${{ steps.mode.outputs.dry_run }}
+          SHA: ${{ steps.mode.outputs.sha }}
         run: |
-          VERSION=$(node -pe "require('./apps/app/tauri.conf.json').version")
-          if [ "$VERSION" != "${{ steps.before.outputs.version }}" ]; then
+          VERSION=$(node -pe "require('./package.json').version")
+          # A dry run goes through every time, so each push to dev tests it.
+          if [ "$DRY_RUN" = "true" ] || [ "$VERSION" != "${{ steps.before.outputs.version }}" ]; then
             echo "released=true" >> "$GITHUB_OUTPUT"
           else
             echo "released=false" >> "$GITHUB_OUTPUT"
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "ref=$SHA" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=$VERSION" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Write release notes
         id: notes
@@ -98,7 +156,19 @@ jobs:
           GH_REPO: ${{ github.repository }}
           VERSION: ${{ needs.version.outputs.version }}
           NOTES: ${{ needs.version.outputs.notes }}
+          DRY_RUN: ${{ needs.version.outputs.dry_run }}
         run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            {
+              echo "### Dry run: $VERSION"
+              echo
+              echo "Would create release \`$VERSION\` of \`$GH_REPO\` with these notes:"
+              echo
+              printf '%s\n' "$NOTES"
+            } | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
           if gh release view "$VERSION" >/dev/null 2>&1; then
             echo "Release $VERSION already exists"
             exit 0
@@ -123,6 +193,8 @@ jobs:
     with:
       version: ${{ needs.version.outputs.version }}
       notes: ${{ needs.version.outputs.notes }}
+      ref: ${{ needs.version.outputs.ref }}
+      dry_run: ${{ needs.version.outputs.dry_run == 'true' }}
     secrets: inherit
 
   android:
@@ -132,6 +204,8 @@ jobs:
     with:
       version: ${{ needs.version.outputs.version }}
       notes: ${{ needs.version.outputs.notes }}
+      ref: ${{ needs.version.outputs.ref }}
+      dry_run: ${{ needs.version.outputs.dry_run == 'true' }}
     secrets: inherit
 
   ios:
@@ -141,6 +215,8 @@ jobs:
     with:
       version: ${{ needs.version.outputs.version }}
       notes: ${{ needs.version.outputs.notes }}
+      ref: ${{ needs.version.outputs.ref }}
+      dry_run: ${{ needs.version.outputs.dry_run == 'true' }}
     secrets: inherit
 
   cli:
@@ -150,6 +226,8 @@ jobs:
     with:
       version: ${{ needs.version.outputs.version }}
       notes: ${{ needs.version.outputs.notes }}
+      ref: ${{ needs.version.outputs.ref }}
+      dry_run: ${{ needs.version.outputs.dry_run == 'true' }}
     secrets: inherit
 
   deploy:
@@ -158,4 +236,6 @@ jobs:
     uses: ./.github/workflows/deploy.yml
     with:
       version: ${{ needs.version.outputs.version }}
+      ref: ${{ needs.version.outputs.ref }}
+      dry_run: ${{ needs.version.outputs.dry_run == 'true' }}
     secrets: inherit

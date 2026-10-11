@@ -10,6 +10,8 @@ export default {
 		"**/scripts/**",
 		"**/pm2.config.mjs",
 		"**/prisma/**",
+		"**/electrobun.config.ts",
+		"**/hutch.config.ts",
 	],
 	ignoreDependencies: [
 		"conventional-changelog-conventionalcommits",
@@ -17,7 +19,9 @@ export default {
 		"ink-testing-library",
 		"babel-plugin-react-compiler",
 		"@ryangarber/prisma-orm-extension-zod",
+		"playwright",
+		"@capacitor/assets",
 	],
-	ignoreBinaries: ["run"],
+	ignoreBinaries: ["actionlint"],
 	preprocessor: ["./scripts/setup-knip.ts"],
 } satisfies KnipConfig;

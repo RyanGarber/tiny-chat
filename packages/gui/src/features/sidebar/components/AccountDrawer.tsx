@@ -17,8 +17,8 @@ import { type JSX, useContext } from "react";
 import { ClientContext } from "#client/client.ts";
 import { useSession } from "#client/core/hooks/useSession.ts";
 import { useAccounts } from "#gui/core/hooks/useAccounts.ts";
+import { useRuntime } from "#gui/core/hooks/useRuntime.ts";
 import { useAppStore } from "#gui/core/stores/useAppStore.ts";
-import { TauriUtils } from "#gui/features/tauri/utils/TauriUtils.ts";
 
 function Account({
 	providerId,
@@ -76,6 +76,7 @@ export default function AccountDrawer({
 	onClose: () => void;
 }) {
 	const client = useContext(ClientContext);
+	const runtime = useRuntime();
 
 	const { session, requestClone } = useSession();
 	const { deleteUser } = useAccounts();
@@ -94,7 +95,7 @@ export default function AccountDrawer({
 			}
 		>
 			<Stack>
-				{TauriUtils.isTauri() ? (
+				{runtime.platform !== "web" ? (
 					<>
 						{requestClone.isPending ? (
 							<Text size="sm">Waiting for you to sign in...</Text>
@@ -112,13 +113,13 @@ export default function AccountDrawer({
 										requestClone.reset();
 									} else {
 										requestClone.mutate(async (id) => {
-											return await TauriUtils.open(
+											return await runtime.open(
 												`${client.webUrl}/#?clone=${id}`,
 											);
 										});
 									}
 								} else {
-									void TauriUtils.open(`${client.webUrl}`);
+									void runtime.open(`${client.webUrl}`);
 								}
 							}}
 						>
@@ -140,7 +141,7 @@ export default function AccountDrawer({
 											});
 										}
 									} else {
-										void TauriUtils.open(client.webUrl);
+										void runtime.open(client.webUrl);
 									}
 								}}
 							>

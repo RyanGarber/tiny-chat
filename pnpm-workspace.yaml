@@ -48,3 +48,5 @@ catalogs:
     "@prisma/orm-extension-paradedb": "8.0.0-rc.17"
     "@prisma/orm-extension-pgvector": "npm:@ryangarber/prisma-orm-extension-pgvector@8.0.0-rc.17"
     "@ryangarber/prisma-orm-extension-zod": "0.2.8"
+patchedDependencies:
+  native-run: patches/native-run.patch

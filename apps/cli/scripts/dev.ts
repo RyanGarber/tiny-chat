@@ -4,7 +4,7 @@ import { type ChildProcess, spawn } from "node:child_process";
 import { watch } from "node:fs/promises";
 import { resolve } from "node:path";
 import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
-import { useServerProcess as startServerProcess } from "../../../scripts/use-server.ts";
+import { useServer } from "../../../scripts/use-server.ts";
 import {
 	print,
 	setExitHandler,
@@ -102,9 +102,8 @@ async function reload(inputs: string[] | null) {
 	}
 }
 
-// The dev compiler runs in Bun; keep the backend on Node as before.
-// Quiet, as its logs would land in the middle of the CLI's UI; they are on disk.
-const cleanup = await startServerProcess({ execPath: "node", quiet: true });
+// biome-ignore lint/correctness/useHookAtTopLevel: not a hook
+const cleanup = await useServer({ execPath: "node", quiet: true });
 
 setExitHandler((isCtrlD) => {
 	if (child?.pid) {

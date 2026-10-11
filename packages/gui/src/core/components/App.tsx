@@ -12,9 +12,10 @@ import { useComposerStore } from "#client/features/editor/stores/useComposerStor
 import { useThemes } from "#client/features/settings/hooks/useThemes.ts";
 import Background from "#gui/core/components/Background.tsx";
 import Console from "#gui/core/components/Console.tsx";
-import Tauri from "#gui/core/components/Tauri.tsx";
+import Tasks from "#gui/core/components/Tasks.tsx";
 import { useExperiments } from "#gui/core/hooks/useExperiments.tsx";
 import { setHashbangQuery, useHashbang } from "#gui/core/hooks/useHashbang.ts";
+import { useRuntime } from "#gui/core/hooks/useRuntime.ts";
 import { useViewport } from "#gui/core/hooks/useViewport.ts";
 import { AppService } from "#gui/core/services/AppService.ts";
 import { useAppStore } from "#gui/core/stores/useAppStore.ts";
@@ -22,7 +23,6 @@ import Chat from "#gui/features/chat/components/Chat.tsx";
 import ChatSources from "#gui/features/chat/components/ChatSources.tsx";
 import Find from "#gui/features/find/components/Find.tsx";
 import Sidebar from "#gui/features/sidebar/components/Sidebar.tsx";
-import { TauriUtils } from "#gui/features/tauri/utils/TauriUtils.ts";
 import mantineTheme, { cssResolver } from "#gui/theme.tsx";
 
 /**
@@ -57,6 +57,7 @@ function ProjectShortcut() {
 }
 
 export default function App() {
+	const runtime = useRuntime();
 	const { query } = useHashbang();
 	const { session } = useSession({
 		token: {
@@ -255,7 +256,7 @@ export default function App() {
 			cssVariablesResolver={cssResolver}
 		>
 			<ModalsProvider>
-				<Tauri />
+				<Tasks />
 				<ProjectShortcut />
 				<Box pos="relative" h={viewportHeight} ref={containerRef}>
 					<LoadingOverlay
@@ -267,7 +268,7 @@ export default function App() {
 					<Find
 						targetRef={containerRef}
 						global
-						disabled={!TauriUtils.isTauri()}
+						disabled={runtime.platform === "web"}
 					/>
 					<AppShell
 						ref={appShellRef}

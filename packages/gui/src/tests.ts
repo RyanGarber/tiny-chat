@@ -12,6 +12,8 @@ beforeAll(async () => {
 			VITE_WEB_URL: String(import.meta.env.VITE_WEB_URL),
 			VITE_WEB_PORT: String(import.meta.env.VITE_WEB_PORT),
 			DEV: String(import.meta.env.DEV),
+			DEV_HOST: String(import.meta.env.DEV_HOST),
+			DEV_ENV: String(import.meta.env.DEV_ENV),
 		},
 	});
 });

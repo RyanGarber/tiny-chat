@@ -18,6 +18,9 @@
 		"#client/*": "client/*",
 		"#core/*": "core/*"
 	},
+	"exports": {
+		"./*": "./src/*"
+	},
 	"dependencies": {
 		"@browser-ai/web-llm": "^3.0.4",
 		"@gfazioli/mantine-json-tree": "^3.7.1",
@@ -34,12 +37,6 @@
 		"@tailwindcss/vite": "^4.3.3",
 		"@tanstack/react-query": "^5.104.1",
 		"@tanstack/react-query-devtools": "^5.104.1",
-		"@tauri-apps/api": "^2.12.2",
-		"@tauri-apps/plugin-dialog": "^2.8.1",
-		"@tauri-apps/plugin-opener": "^2.7.0",
-		"@tauri-apps/plugin-os": "^2.4.0",
-		"@tauri-apps/plugin-process": "^2.4.0",
-		"@tauri-apps/plugin-updater": "^2.13.2",
 		"@tiptap/extension-blockquote": "^3.31.4",
 		"@tiptap/extension-code-block": "^3.31.4",
 		"@tiptap/extension-document": "^3.31.4",
@@ -72,7 +69,6 @@
 		"@vitest/browser-playwright": "^5.0.3",
 		"babel-plugin-react-compiler": "^1.0.0",
 		"rollup-plugin-visualizer": "^7.1.1",
-		"vite": "^8.3.4",
 		"vite-plugin-inspect": "^12.1.0",
 		"vitest-browser-react": "^2.3.0"
 	}

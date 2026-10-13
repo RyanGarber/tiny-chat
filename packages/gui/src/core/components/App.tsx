@@ -71,6 +71,10 @@ export default function App() {
 	});
 	useExperiments();
 	const { height: viewportHeight, containerRef } = useViewport();
+	// What the keyboard leaves of the viewport; see `useViewport`.
+	const appHeight = `calc(${viewportHeight}px - var(--keyboard-inset, 0px))`;
+	const keyboardTransition = (property: string) =>
+		`${property} var(--keyboard-transition, 0s)`;
 	const { theme } = useThemes();
 	usePrepareCode();
 	useDefaultProject();
@@ -258,7 +262,14 @@ export default function App() {
 			<ModalsProvider>
 				<Tasks />
 				<ProjectShortcut />
-				<Box pos="relative" h={viewportHeight} ref={containerRef}>
+				<Box
+					pos="relative"
+					ref={containerRef}
+					style={{
+						height: appHeight,
+						transition: keyboardTransition("height"),
+					}}
+				>
 					<LoadingOverlay
 						visible={session.isPending}
 						zIndex={1000}
@@ -284,8 +295,12 @@ export default function App() {
 							collapsed: { desktop: !isAsideOpen, mobile: !isAsideOpen },
 						}}
 						style={{
-							height: `${viewportHeight}px`,
-							maxHeight: `${viewportHeight}px`,
+							height: appHeight,
+							maxHeight: appHeight,
+							transition: [
+								keyboardTransition("height"),
+								keyboardTransition("max-height"),
+							].join(", "),
 							overflow: "hidden",
 							//*REVERT?* transform: `translateY(${viewport.offsetTop}px)`,
 						}}
@@ -303,10 +318,13 @@ export default function App() {
 									: "width 250ms ease, min-width 250ms ease, transform 300ms ease",
 							},
 							main: {
-								transition:
+								transition: [
 									isResizingSidebar || isResizingAside
 										? "padding-inline-start 0ms, padding-inline-end 0ms"
 										: "padding-inline-start 250ms ease, padding-inline-end 250ms ease",
+									keyboardTransition("height"),
+									keyboardTransition("max-height"),
+								].join(", "),
 							},
 						}}
 					>
@@ -371,13 +389,14 @@ export default function App() {
 						</AppShell.Navbar>
 						<AppShell.Main
 							style={{
-								height: `${viewportHeight}px`,
-								maxHeight: `${viewportHeight}px`,
+								height: appHeight,
+								maxHeight: appHeight,
 								minHeight: 0,
 								overflow: "hidden",
-								// The header paints behind the notch; keep chat content in the safe area.
+								// The header paints behind the notch and the chat runs under the home
+								// indicator; keep chat content in the safe area. The composer takes the
+								// bottom inset itself.
 								paddingTop: "env(safe-area-inset-top, 0px)",
-								paddingBottom: "env(safe-area-inset-bottom, 0px)",
 								paddingLeft: isMobile
 									? "env(safe-area-inset-left, 0px)"
 									: "calc(var(--app-shell-navbar-offset, 0px) + env(safe-area-inset-left, 0px))",

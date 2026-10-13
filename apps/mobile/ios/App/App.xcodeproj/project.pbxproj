@@ -15,10 +15,12 @@
 		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
+		94536B04307E0601004E39B9 /* icon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 94536B03307E0601004E39B9 /* icon.icon */; };
 		949515E2307B7389008F0E7A /* AfmizePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 949515E1307B737F008F0E7A /* AfmizePlugin.swift */; };
 		949515E9307B7F31008F0E7A /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 949515E8307B7F27008F0E7A /* ViewController.swift */; };
 		949515F4307B8D77008F0E7A /* dynafmize in Frameworks */ = {isa = PBXBuildFile; productRef = 949515F3307B8D77008F0E7A /* dynafmize */; };
 		949515F5307B8D85008F0E7A /* dynafmize in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 949515F3307B8D77008F0E7A /* dynafmize */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		949515F7307C0A19008F0E7A /* KeyboardPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 949515F6307C0A11008F0E7A /* KeyboardPlugin.swift */; };
 		9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6822FE993A50072D4E8 /* SceneDelegate.swift */; };
 /* End PBXBuildFile section */
 
@@ -46,8 +48,10 @@
 		504EC3111FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		504EC3131FED79650016851F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
+		94536B03307E0601004E39B9 /* icon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = icon.icon; sourceTree = "<group>"; };
 		949515E1307B737F008F0E7A /* AfmizePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AfmizePlugin.swift; sourceTree = "<group>"; };
 		949515E8307B7F27008F0E7A /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		949515F6307C0A11008F0E7A /* KeyboardPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardPlugin.swift; sourceTree = "<group>"; };
 		9582B6822FE993A50072D4E8 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
@@ -87,6 +91,7 @@
 			children = (
 				949515E8307B7F27008F0E7A /* ViewController.swift */,
 				949515E1307B737F008F0E7A /* AfmizePlugin.swift */,
+				949515F6307C0A11008F0E7A /* KeyboardPlugin.swift */,
 				9582B6822FE993A50072D4E8 /* SceneDelegate.swift */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
@@ -96,6 +101,7 @@
 				504EC3131FED79650016851F /* Info.plist */,
 				2FAD9762203C412B000D30F8 /* config.xml */,
 				50B271D01FEDC1A000F3C39B /* public */,
+				94536B03307E0601004E39B9 /* icon.icon */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -170,6 +176,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */,
+				94536B04307E0601004E39B9 /* icon.icon in Resources */,
 				50B271D11FEDC1A000F3C39B /* public in Resources */,
 				504EC30F1FED79650016851F /* Assets.xcassets in Resources */,
 				50379B232058CBB4000EE86E /* capacitor.config.json in Resources */,
@@ -187,6 +194,7 @@
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				949515E2307B7389008F0E7A /* AfmizePlugin.swift in Sources */,
+				949515F7307C0A19008F0E7A /* KeyboardPlugin.swift in Sources */,
 				949515E9307B7F31008F0E7A /* ViewController.swift in Sources */,
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
 			);
@@ -342,7 +350,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 958DCC722DB07C7200EA8C5F /* debug.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = icon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
@@ -364,7 +373,8 @@
 		504EC3181FED79650016851F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = icon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;

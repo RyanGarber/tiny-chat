@@ -1,4 +1,10 @@
-import { BrowserView, BrowserWindow, Updater, Utils } from "electrobun/main";
+import {
+	ApplicationMenu,
+	BrowserView,
+	BrowserWindow,
+	Updater,
+	Utils,
+} from "electrobun/main";
 import { AfmHostService } from "#desktop/core/services/AfmHostService.ts";
 import { McpHostService } from "#desktop/core/services/McpHostService.ts";
 import { ShellHostService } from "#desktop/core/services/ShellHostService.ts";
@@ -55,3 +61,45 @@ new BrowserWindow({
 	frame: { width: 1280, height: 720 },
 	rpc,
 });
+
+ApplicationMenu.setApplicationMenu([
+	{
+		label: "Tiny Chat",
+		submenu: [
+			{ role: "about" },
+			{ type: "separator" },
+			{ role: "hide" },
+			{ role: "hideOthers" },
+		],
+	},
+	{
+		label: "File",
+		submenu: [{ role: "close" }, { role: "quit" }],
+	},
+	{
+		label: "Edit",
+		submenu: [
+			{ role: "undo" },
+			{ role: "redo" },
+			{ type: "separator" },
+			{ role: "cut" },
+			{ role: "copy" },
+			{ role: "paste" },
+			{ role: "pasteAndMatchStyle" },
+			{ role: "delete" },
+			{ role: "selectAll" },
+		],
+	},
+	{
+		label: "View",
+		submenu: [{ role: "toggleFullScreen" }],
+	},
+	{
+		label: "Window",
+		submenu: [{ role: "minimize" }, { role: "zoom" }],
+	},
+	{
+		label: "Help",
+		submenu: [{ role: "about" }],
+	},
+]);

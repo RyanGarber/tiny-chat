@@ -19,6 +19,7 @@ import { useSession } from "#client/core/hooks/useSession.ts";
 import { useAccounts } from "#gui/core/hooks/useAccounts.ts";
 import { useRuntime } from "#gui/core/hooks/useRuntime.ts";
 import { useAppStore } from "#gui/core/stores/useAppStore.ts";
+import { ControlUtils } from "#gui/core/utils/ControlUtils.ts";
 
 function Account({
 	providerId,
@@ -135,9 +136,11 @@ export default function AccountDrawer({
 									if (session.data?.user?.isAnonymous) {
 										if (!requestClone.isPending) {
 											requestClone.mutate(async (id) => {
-												await navigator.clipboard.writeText(
-													`${client.webUrl}/#?clone=${id}`,
-												);
+												await ControlUtils.copy({
+													runtime,
+													data: `${client.webUrl}/#?clone=${id}`,
+													mime: "text/plain",
+												});
 											});
 										}
 									} else {

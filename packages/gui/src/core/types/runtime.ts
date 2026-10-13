@@ -15,6 +15,13 @@ export interface RuntimeUpdate {
 	date?: string;
 }
 
+export interface RuntimeKeyboard {
+	/** How far the keyboard reaches up the page, in CSS pixels; 0 once it is away. */
+	height: number;
+	/** Seconds it takes to get there. */
+	duration: number;
+}
+
 /**
  * What the app can do beyond a browser tab. The web's is
  * `#gui/client-runtime.ts`; each host app (`apps/desktop`, `apps/mobile`)
@@ -27,8 +34,22 @@ export interface ClientRuntime {
 	/** Opens a link outside the app. */
 	open: (url: string) => Promise<void>;
 
+	/**
+	 * Writes to the system clipboard, where the webview's own clipboard is
+	 * missing or only works during a click, which a copy that waits on the
+	 * server outlives.
+	 */
+	copy?: (_: { mime: string; data: Blob }) => Promise<void>;
+
 	/** Asks the user for a folder; null if they cancel. */
 	pickFolder?: (_: { defaultPath?: string }) => Promise<string | null>;
+
+	/**
+	 * The software keyboard, where the host leaves the page where it is under
+	 * it, neither scrolling nor resizing it, so the page makes room itself.
+	 * Returns an unsubscribe.
+	 */
+	onKeyboard?: (listener: (keyboard: RuntimeKeyboard) => void) => () => void;
 
 	/** Native model providers, such as Apple Foundation Models. */
 	getModelProviders?: () => Promise<ModelProvider<any>[]>;

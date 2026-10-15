@@ -12,13 +12,9 @@ import {
 } from "../../../scripts/use-stdout.ts";
 import { compile } from "./compile.ts";
 
-const hmr =
-	!process.argv.includes("--no-hmr") &&
-	!CommonUtils.isTruthy(process.env.NO_HMR);
-const argv = process.argv.slice(2).filter((arg) => arg !== "--no-hmr");
+const { watch: watchMode, argv } = CommonUtils.getWatchMode("cli");
 
 let child: ChildProcess | undefined;
-
 async function run() {
 	if (child) {
 		const previous = child;
@@ -44,7 +40,7 @@ async function run() {
 		return null;
 	}
 
-	const args = ["bun", entrypoint.path, ...argv];
+	const args = ["bun", entrypoint.path, ...argv.slice(2)];
 	print({ message: "running", details: `> ${args.join(" ")}` });
 
 	const started = spawn(args[0], args.slice(1), {
@@ -59,7 +55,7 @@ async function run() {
 		child = undefined;
 		setPassthrough(false);
 
-		if (hmr) print({ message: "waiting for changes" });
+		if (watchMode) print({ message: "waiting for changes" });
 	});
 
 	if (!result?.metafile) {
@@ -117,12 +113,12 @@ setExitHandler((isCtrlD) => {
 try {
 	const inputs = await run();
 
-	if (!hmr && child) {
+	if (!watch && child) {
 		const running = child;
 		await new Promise<void>((resolve) => running.once("exit", () => resolve()));
 	}
 
-	if (hmr) {
+	if (watchMode) {
 		await reload(inputs);
 	}
 } finally {

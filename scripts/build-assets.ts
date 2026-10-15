@@ -110,39 +110,37 @@ async function copy(
 }
 
 // build desktop assets
-const desktopPath = fileURLToPath(
-	new URL("../apps/desktop/assets", import.meta.url),
-);
+const desktopPath = fileURLToPath(new URL("../apps/desktop", import.meta.url));
 print({ message: "copying desktop assets" });
 
 await copy(
 	desktopPath,
-	{ from: iconPath, to: "icon.icon" }, // macos
-	{ from: Rendition.Dark, to: "icon.png", edit: 512 }, // linux
+	{ from: iconPath, to: "assets/icon.icon" }, // macos
+	{ from: Rendition.Dark, to: "assets/icon.png", edit: 512 }, // linux
 	{
 		from: Rendition.Dark,
-		to: "icon.ico",
+		to: "assets/icon.ico",
 		edit: 256,
 		save: (input: Sharp, output: string) => sharpsToIco([input], output),
 	}, // windows
 );
 
 // build mobile assets
-const mobilePath = fileURLToPath(
-	new URL("../apps/mobile/assets", import.meta.url),
-);
+const mobilePath = fileURLToPath(new URL("../apps/mobile", import.meta.url));
 print({ message: "copying mobile assets" });
 
 await copy(
 	mobilePath,
-	{ from: Rendition.Light, to: "logo.png" },
-	{ from: Rendition.Dark, to: "logo-dark.png" },
+	{ from: iconPath, to: "ios/App/App/Icon.icon" },
+	{ from: Rendition.Light, to: "assets/logo.png" },
+	{ from: Rendition.Dark, to: "assets/logo-dark.png" },
 );
 
 await spawn({
 	command: [
 		"pnpx",
-		"-y",
+		"--allow-build=sharp",
+		"--yes",
 		"@capacitor/assets",
 		"generate",
 		"--ios",
@@ -154,23 +152,21 @@ await spawn({
 		"generated mobile assets",
 	],
 	errors: "exit",
-	cwd: join(mobilePath, ".."),
+	cwd: mobilePath,
 });
 
 // build gui assets
-const guiPath = fileURLToPath(
-	new URL("../packages/gui/public", import.meta.url),
-);
+const guiPath = fileURLToPath(new URL("../packages/gui", import.meta.url));
 print({ message: "copying gui assets" });
 
 await copy(
 	guiPath,
-	{ from: Rendition.Dark, to: "appicon-512x512.png", edit: 512 },
-	{ from: Rendition.Dark, to: "appicon-192x192.png", edit: 192 },
-	{ from: Rendition.Dark, to: "favicon-96x96.png", edit: 96 },
+	{ from: Rendition.Dark, to: "public/appicon-512x512.png", edit: 512 },
+	{ from: Rendition.Dark, to: "public/appicon-192x192.png", edit: 192 },
+	{ from: Rendition.Dark, to: "public/favicon-96x96.png", edit: 96 },
 	{
 		from: Rendition.Dark,
-		to: "favicon.ico",
+		to: "public/favicon.ico",
 		edit: 96,
 		save: (input: Sharp, output: string) => sharpsToIco([input], output),
 	},

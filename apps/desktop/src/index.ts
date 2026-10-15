@@ -2,6 +2,7 @@ import {
 	ApplicationMenu,
 	BrowserView,
 	BrowserWindow,
+	type ElectrobunEvent,
 	Updater,
 	Utils,
 } from "electrobun/main";
@@ -10,6 +11,7 @@ import { McpHostService } from "#desktop/core/services/McpHostService.ts";
 import { ShellHostService } from "#desktop/core/services/ShellHostService.ts";
 import { UpdateHostService } from "#desktop/core/services/UpdateHostService.ts";
 import type { DesktopRPC, DesktopSend } from "#desktop/core/types/rpc.ts";
+import workspace from "../../../package.json" with { type: "json" };
 
 /**
  * The GUI's Vite server, for a dev build run by `scripts/dev.ts` with HMR;
@@ -64,17 +66,22 @@ new BrowserWindow({
 
 ApplicationMenu.setApplicationMenu([
 	{
-		label: "Tiny Chat",
 		submenu: [
 			{ role: "about" },
 			{ type: "separator" },
-			{ role: "hide" },
-			{ role: "hideOthers" },
+			{ role: "hide", accelerator: "CommandOrControl+H" },
+			{ role: "hideOthers", accelerator: "CommandOrControl+Alt+H" },
+			{ type: "separator" },
+			{ role: "quit", accelerator: "CommandOrControl+Q" },
 		],
 	},
 	{
 		label: "File",
-		submenu: [{ role: "close" }, { role: "quit" }],
+		submenu: [
+			//{ label: "New Chat", action: "new-chat", accelerator: "CommandOrControl+N" },
+			//{ type: "separator" },
+			{ role: "close", accelerator: "CommandOrControl+W" },
+		],
 	},
 	{
 		label: "Edit",
@@ -100,6 +107,23 @@ ApplicationMenu.setApplicationMenu([
 	},
 	{
 		label: "Help",
-		submenu: [{ role: "about" }],
+		submenu: [
+			{
+				label: "Report Issue",
+				action: "report-issue",
+				accelerator: "CommandOrControl+I",
+			},
+		],
 	},
 ]);
+
+type ApplicationMenuClickedEvent = ElectrobunEvent<
+	{ id?: number; action: string; data?: unknown },
+	{ allow: boolean }
+>;
+ApplicationMenu.on("application-menu-clicked", (event: unknown) => {
+	const { data } = event as ApplicationMenuClickedEvent;
+	if (data?.action === "report-issue") {
+		Utils.openExternal(workspace.bugs.url);
+	}
+});

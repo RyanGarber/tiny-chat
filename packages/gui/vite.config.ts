@@ -16,14 +16,6 @@ import baseConfig from "../../vitest.config.base.ts";
 // biome-ignore lint/correctness/useHookAtTopLevel: not a hook
 const env = useEnv({ type: zClientEnv });
 
-const hmr =
-	!process.argv.includes("--no-hmr") &&
-	!CommonUtils.isTruthy(process.env.NO_HMR);
-
-if (!hmr) {
-	console.log(":: disabling hmr");
-}
-
 /**
  * The GUI's build, for the web or for a host app: `runtime` replaces
  * `#gui/client-runtime.ts` with the host's own module, `alias` resolves what
@@ -99,7 +91,7 @@ export function defineRuntimeConfig({
 				port: parseInt(process.env.VITE_WEB_PORT as string, 10),
 				strictPort: true,
 				host: "0.0.0.0",
-				hmr,
+				hmr: CommonUtils.getWatchMode("gui").watch,
 			},
 			cacheDir: "../../node_modules/.vite",
 			test: {

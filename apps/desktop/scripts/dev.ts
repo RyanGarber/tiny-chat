@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { concurrently } from "concurrently";
+import { CommonUtils } from "core/core/utils/CommonUtils.ts";
 import { zClientEnv } from "#core/core/types/env.ts";
 import { spawn } from "../../../scripts/spawn.ts";
 import { useEnv } from "../../../scripts/use-env.ts";
@@ -12,6 +13,8 @@ import { buildNative } from "./native.ts";
  * GUI from Vite with HMR; with `--dist` it loads a build of it, as a release
  * does. Either way the main process is rebuilt and relaunched on changes.
  */
+const { watch } = CommonUtils.getWatchMode("desktop");
+
 const dist = process.argv.includes("--dist");
 
 const env = useEnv({ type: zClientEnv });
@@ -32,7 +35,12 @@ try {
 			output: "tail",
 		});
 		await concurrently(
-			[{ command: "pnpm exec electrobun dev --watch", name: "desktop" }],
+			[
+				{
+					command: `pnpm exec electrobun dev ${watch ? "--watch" : ""}`,
+					name: "desktop",
+				},
+			],
 			{ prefixColors: "auto" },
 		).result;
 	} else {
@@ -41,7 +49,7 @@ try {
 			[
 				{ command: "pnpm exec vite", name: "gui" },
 				{
-					command: `wait-on ${url} && pnpm exec electrobun dev --watch`,
+					command: `wait-on ${url} && pnpm exec electrobun dev ${watch ? "--watch" : ""}`,
 					name: "desktop",
 					env: { DESKTOP_DEV_URL: url },
 				},

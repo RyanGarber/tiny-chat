@@ -5,7 +5,12 @@
 		"module": "ESNext",
 		"moduleResolution": "bundler",
 		"baseUrl": null,
-		"types": ["bun-types", "temporal-polyfill/types/global"],
+		"types": [
+			"bun-types",
+			"vitest/globals",
+			"vitest/importMeta",
+			"temporal-polyfill/types/global"
+		],
 		"paths": {
 			"electrobun": ["./.hutch/devkit/api/sdks/main/index.ts"],
 			"electrobun/main": ["./.hutch/devkit/api/sdks/main/index.ts"],

@@ -80,6 +80,10 @@ export function defineRuntimeConfig({
 			},
 			resolve: {
 				tsconfigPaths: true,
+				// Vitest browser mode excludes @opentelemetry/api from pre-bundling, so
+				// optimized deps (@anthropic-ai/sdk) keep a bare import that pnpm can't
+				// resolve from the cache dir; dedupe resolves it from this package
+				dedupe: ["@opentelemetry/api"],
 				alias: [
 					...(runtime
 						? [{ find: "#gui/client-runtime.ts", replacement: runtime }]

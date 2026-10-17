@@ -141,7 +141,7 @@ await spawn({
 		"pnpx",
 		"--allow-build=sharp",
 		"--yes",
-		"@capacitor/assets",
+		"@capawesome/capacitor-assets",
 		"generate",
 		"--ios",
 		"--android",

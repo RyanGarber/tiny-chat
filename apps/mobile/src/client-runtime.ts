@@ -3,14 +3,21 @@ import type { ClientRuntime } from "#gui/core/types/runtime.ts";
 import { RuntimeUtils } from "#gui/core/utils/RuntimeUtils.ts";
 import { ClipboardService } from "#mobile/core/services/ClipboardService.ts";
 import { KeyboardService } from "#mobile/core/services/KeyboardService.ts";
+import { UpdateService } from "#mobile/core/services/UpdateService.ts";
+
+const native = Capacitor.isNativePlatform();
+const platform = Capacitor.getPlatform() as "ios" | "android";
+const liveUpdate = native && Capacitor.isPluginAvailable("LiveUpdate");
+
+if (liveUpdate) void UpdateService.ready();
 
 /**
  * The mobile app's runtime: the GUI in a Capacitor webview, or the web's in a
  * browser (Vite's dev server, opened outside the app).
  */
-export const runtime: ClientRuntime = Capacitor.isNativePlatform()
+export const runtime: ClientRuntime = native
 	? {
-			platform: Capacitor.getPlatform() as "ios" | "android",
+			platform,
 			// Capacitor hands a new window to the system browser.
 			open: RuntimeUtils.web.open,
 			copy: Capacitor.isPluginAvailable("Clipboard")
@@ -26,5 +33,6 @@ export const runtime: ClientRuntime = Capacitor.isNativePlatform()
 				);
 				return [AFMProvider];
 			},
+			update: liveUpdate ? UpdateService.create(platform) : undefined,
 		}
 	: RuntimeUtils.web;

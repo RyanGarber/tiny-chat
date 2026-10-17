@@ -11,6 +11,14 @@ const config: CapacitorConfig = {
 	appName: "Tiny Chat",
 	webDir: "./dist",
 	...(url ? { server: { url, cleartext: true } } : {}),
+	plugins: {
+		LiveUpdate: {
+			// A live update that never calls `ready()` (`UpdateService`) is rolled
+			// back to the build the binary shipped with.
+			readyTimeout: 10000,
+			autoDeleteBundles: true,
+		},
+	},
 	experimental: {
 		ios: {
 			spm: {

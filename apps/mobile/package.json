@@ -28,11 +28,12 @@
 		"@capacitor/clipboard": "^8.0.1",
 		"@capacitor/core": "^8.5.3",
 		"@capacitor/ios": "^8.5.3",
+		"@capawesome/capacitor-live-update": "^8.7.0",
 		"client": "workspace:*",
 		"core": "workspace:*",
 		"gui": "workspace:*"
 	},
 	"devDependencies": {
-		"@capacitor/assets": "^3.0.5"
+		"@capawesome/capacitor-assets": "^4.1.0"
 	}
 }

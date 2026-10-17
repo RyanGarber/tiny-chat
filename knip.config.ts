@@ -20,7 +20,7 @@ export default {
 		"babel-plugin-react-compiler",
 		"@ryangarber/prisma-orm-extension-zod",
 		"playwright",
-		"@capacitor/assets",
+		"@capawesome/capacitor-assets",
 	],
 	ignoreBinaries: ["actionlint"],
 	preprocessor: ["./scripts/setup-knip.ts"],

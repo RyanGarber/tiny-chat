@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { concurrently } from "concurrently";
-import { CommonUtils } from "core/core/utils/CommonUtils.ts";
 import { zClientEnv } from "#core/core/types/env.ts";
+import { CommonUtils } from "#core/core/utils/CommonUtils.ts";
 import { spawn } from "../../../scripts/spawn.ts";
 import { useEnv } from "../../../scripts/use-env.ts";
 import { useServer } from "../../../scripts/use-server.ts";

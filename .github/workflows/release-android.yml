@@ -128,7 +128,12 @@ jobs:
         with:
           version: ${{ steps.version.outputs.version }}
           notes: ${{ inputs.notes }}
-          files: ${{ runner.temp }}/Tiny.Chat_Android.apk
+          # And the live update for both platforms: their builds are the same,
+          # and only one job may upload it, or its checksum could be another's.
+          files: |
+            ${{ runner.temp }}/Tiny.Chat_Android.apk
+            apps/mobile/build/Tiny.Chat_Mobile.zip
+            apps/mobile/build/mobile-update.json
           artifact: android
           dry-run: ${{ env.DRY_RUN }}
           token: ${{ secrets.GITHUB_TOKEN }}

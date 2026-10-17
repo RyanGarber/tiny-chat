@@ -285,7 +285,7 @@ export default function Content<T extends string>({
 				opened={opened}
 				onClose={close}
 				withCloseButton={false}
-				size="auto"
+				size="100%"
 				centered
 				overlayProps={{ blur: 3 }}
 			>

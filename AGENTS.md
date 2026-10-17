@@ -55,7 +55,7 @@ Keep related edits in lockstep: route ↔ `ApiRouter` ↔ client call; capabilit
 ## Data
 
 Prisma Next (contract-first, see the `prisma-8` skill). Contract: `packages/core/prisma/contract.prisma`; runtime `db`
-from `server/db.ts`, which loads the repo-root `.env`. Parse JSON columns with their Zod schemas at trust
+from `packages/server/src/db.ts`, which loads the repo-root `.env`. Parse JSON columns with their Zod schemas at trust
 boundaries rather than passing raw JSON around.
 
 ## Testing
@@ -67,6 +67,8 @@ Dev servers and Postgres are usually already running (`VITE_SERVER_PORT` / `VITE
   `ClientContext`, as `packages/gui/src/main.tsx` does (in Vitest, `create()` from `packages/client/src/tests.ts`). It
   signs in a real anonymous test user against the live server. Don't spend time building a custom harness, fake
   client, or seeded user unless this genuinely can't cover the case. For server-only data, use the real `db`.
+- **Test model:** with no API key, `test-generate` replies with a greeting. `%bench [text|code|table|tools|tasks|thought|mixed] [words] [~ms]`
+  in a message streams deterministic content of that kind instead, and `%sub` calls `spawn_subagent`.
 - **Unit:** Vitest (`*.test.ts`), only for logic that is actually pure.
 - **App UI:** drive it with Playwright (installed at the root, Chromium included) against `http://localhost:$VITE_WEB_PORT`.
 - **CLI:** always pass `--no-keyring` when testing so the CLI stores its session token in a plain-text OS temp file

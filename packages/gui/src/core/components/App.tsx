@@ -10,7 +10,6 @@ import { useDefaultProject } from "#client/features/chat/hooks/useDefaultProject
 import { ChatService } from "#client/features/chat/services/ChatService.ts";
 import { useComposerStore } from "#client/features/editor/stores/useComposerStore.ts";
 import { useThemes } from "#client/features/settings/hooks/useThemes.ts";
-import Background from "#gui/core/components/Background.tsx";
 import Console from "#gui/core/components/Console.tsx";
 import Tasks from "#gui/core/components/Tasks.tsx";
 import { useExperiments } from "#gui/core/hooks/useExperiments.tsx";
@@ -427,7 +426,6 @@ export default function App() {
 					</AppShell>
 				</Box>
 				<Console />
-				<Background />
 			</ModalsProvider>
 		</MantineProvider>
 	);

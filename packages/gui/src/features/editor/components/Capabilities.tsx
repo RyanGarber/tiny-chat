@@ -681,7 +681,7 @@ function SubagentView() {
 	return (
 		<Stack gap={5}>
 			<Text size="xs" c="dimmed">
-				The model, tools and skills subagents run with
+				Subagent settings
 			</Text>
 			<ConfigPanel
 				config={subagentConfig}

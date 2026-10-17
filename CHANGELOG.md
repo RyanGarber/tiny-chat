@@ -1,493 +1,455 @@
-## [0.9.8](https://github.com/RyanGarber/tiny-chat/compare/0.9.7...0.9.8) (2026-10-10)
+# 0.9.8 (2026-10-10)
 
-### Features
+## Features
 
-* citations match by tool call id ([cc09626](https://github.com/RyanGarber/tiny-chat/commit/cc09626c6e19300fd3cbb8b88f7d5d065273615d-5))
-* mcp server log viewer ([45de199](https://github.com/RyanGarber/tiny-chat/commit/45de199c8c7d94bf3d2c8462a8afcf1ef32e8f0b))
-* native ctrl+f in tui, gui ([cc09626](https://github.com/RyanGarber/tiny-chat/commit/cc09626c6e19300fd3cbb8b88f7d5d065273615d-4))
-* persisted subagent runs, citation support ([cc09626](https://github.com/RyanGarber/tiny-chat/commit/cc09626c6e19300fd3cbb8b88f7d5d065273615d))
-* run shell commands from within chat ([cc09626](https://github.com/RyanGarber/tiny-chat/commit/cc09626c6e19300fd3cbb8b88f7d5d065273615d-3))
+- citations match by tool call id ([cc09626](https://github.com/RyanGarber/tiny-chat/commit/cc09626c6e19300fd3cbb8b88f7d5d065273615d))
+- mcp server log viewer ([45de199](https://github.com/RyanGarber/tiny-chat/commit/45de199c8c7d94bf3d2c8462a8afcf1ef32e8f0b))
+- native ctrl+f in tui, gui ([cc09626](https://github.com/RyanGarber/tiny-chat/commit/cc09626c6e19300fd3cbb8b88f7d5d065273615d))
+- persisted subagent runs, citation support ([cc09626](https://github.com/RyanGarber/tiny-chat/commit/cc09626c6e19300fd3cbb8b88f7d5d065273615d))
+- run shell commands from within chat ([cc09626](https://github.com/RyanGarber/tiny-chat/commit/cc09626c6e19300fd3cbb8b88f7d5d065273615d))
 
-### Bug Fixes
+## Bug Fixes
 
-* cannot scroll up streaming tool calls ([cc09626](https://github.com/RyanGarber/tiny-chat/commit/cc09626c6e19300fd3cbb8b88f7d5d065273615d-1))
-* data from failed generations can be lost ([45de199](https://github.com/RyanGarber/tiny-chat/commit/45de199c8c7d94bf3d2c8462a8afcf1ef32e8f0b-4))
-* invalid state caused by opening to a missing/unauthorized chat ([45de199](https://github.com/RyanGarber/tiny-chat/commit/45de199c8c7d94bf3d2c8462a8afcf1ef32e8f0b-5))
-* some logs can pollute tui window ([45de199](https://github.com/RyanGarber/tiny-chat/commit/45de199c8c7d94bf3d2c8462a8afcf1ef32e8f0b-3))
+- cannot scroll up streaming tool calls ([cc09626](https://github.com/RyanGarber/tiny-chat/commit/cc09626c6e19300fd3cbb8b88f7d5d065273615d))
+- data from failed generations can be lost ([45de199](https://github.com/RyanGarber/tiny-chat/commit/45de199c8c7d94bf3d2c8462a8afcf1ef32e8f0b))
+- invalid state caused by opening to a missing/unauthorized chat ([45de199](https://github.com/RyanGarber/tiny-chat/commit/45de199c8c7d94bf3d2c8462a8afcf1ef32e8f0b))
+- some logs can pollute tui window ([45de199](https://github.com/RyanGarber/tiny-chat/commit/45de199c8c7d94bf3d2c8462a8afcf1ef32e8f0b))
 
-### Performance Improvements
+## Performance Improvements
 
-* full virtualization in chats ([45de199](https://github.com/RyanGarber/tiny-chat/commit/45de199c8c7d94bf3d2c8462a8afcf1ef32e8f0b-2))
-* incremental rendering in tui ([45de199](https://github.com/RyanGarber/tiny-chat/commit/45de199c8c7d94bf3d2c8462a8afcf1ef32e8f0b-1))
+- full virtualization in chats ([45de199](https://github.com/RyanGarber/tiny-chat/commit/45de199c8c7d94bf3d2c8462a8afcf1ef32e8f0b))
+- incremental rendering in tui ([45de199](https://github.com/RyanGarber/tiny-chat/commit/45de199c8c7d94bf3d2c8462a8afcf1ef32e8f0b))
 
+# 0.9.7 (2026-10-08)
 
-## [0.9.7](https://github.com/RyanGarber/tiny-chat/compare/0.9.6...0.9.7) (2026-10-08)
+## Features
 
-### Features
+- action editor ([d3cf96c](https://github.com/RyanGarber/tiny-chat/commit/d3cf96cd41c39f179deaeb2c15c0e7236fccea27))
+- consistent app, cli controls ([d3cf96c](https://github.com/RyanGarber/tiny-chat/commit/d3cf96cd41c39f179deaeb2c15c0e7236fccea27))
+- memory editor ([d3cf96c](https://github.com/RyanGarber/tiny-chat/commit/d3cf96cd41c39f179deaeb2c15c0e7236fccea27))
+- primary project folder falls back to first available ([d3cf96c](https://github.com/RyanGarber/tiny-chat/commit/d3cf96cd41c39f179deaeb2c15c0e7236fccea27))
 
-* action editor ([d3cf96c](https://github.com/RyanGarber/tiny-chat/commit/d3cf96cd41c39f179deaeb2c15c0e7236fccea27-1))
-* consistent app, cli controls ([d3cf96c](https://github.com/RyanGarber/tiny-chat/commit/d3cf96cd41c39f179deaeb2c15c0e7236fccea27-2))
-* memory editor ([d3cf96c](https://github.com/RyanGarber/tiny-chat/commit/d3cf96cd41c39f179deaeb2c15c0e7236fccea27))
-* primary project folder falls back to first available ([d3cf96c](https://github.com/RyanGarber/tiny-chat/commit/d3cf96cd41c39f179deaeb2c15c0e7236fccea27-3))
+## Bug Fixes
 
-### Bug Fixes
+- actions can run at inconsistent times ([d3cf96c](https://github.com/RyanGarber/tiny-chat/commit/d3cf96cd41c39f179deaeb2c15c0e7236fccea27))
+- autosave restarts mcp server on every argument edit ([d3cf96c](https://github.com/RyanGarber/tiny-chat/commit/d3cf96cd41c39f179deaeb2c15c0e7236fccea27))
 
-* actions can run at inconsistent times ([d3cf96c](https://github.com/RyanGarber/tiny-chat/commit/d3cf96cd41c39f179deaeb2c15c0e7236fccea27-6))
-* autosave restarts mcp server on every argument edit ([d3cf96c](https://github.com/RyanGarber/tiny-chat/commit/d3cf96cd41c39f179deaeb2c15c0e7236fccea27-5))
+## Performance Improvements
 
-### Performance Improvements
+- optimize file search, grep ([d3cf96c](https://github.com/RyanGarber/tiny-chat/commit/d3cf96cd41c39f179deaeb2c15c0e7236fccea27))
 
-* optimize file search, grep ([d3cf96c](https://github.com/RyanGarber/tiny-chat/commit/d3cf96cd41c39f179deaeb2c15c0e7236fccea27-4))
+# 0.9.6 (2026-10-07)
 
+## Features
 
-## [0.9.6](https://github.com/RyanGarber/tiny-chat/compare/0.9.5...0.9.6) (2026-10-07)
+- wsl support ([68b9a75](https://github.com/RyanGarber/tiny-chat/commit/68b9a7589f1940a8d03913a3a50e6857959144b6))
 
-### Features
+# 0.9.5 (2026-10-07)
 
-* wsl support ([68b9a75](https://github.com/RyanGarber/tiny-chat/commit/68b9a7589f1940a8d03913a3a50e6857959144b6))
+## Features
 
+- afm support in the cli ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c))
+- ctrl+c to copy selection in cli ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c))
+- improved markdown, editor node rendering ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c))
+- jump to message from citations ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c))
+- mcp server editor in cli ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c))
+- memory and action citations ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c))
+- project automatically activates when resuming chat ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c))
+- search jumps to exact message ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c))
 
-## [0.9.5](https://github.com/RyanGarber/tiny-chat/compare/0.9.4...0.9.5) (2026-10-07)
+## Bug Fixes
 
-### Features
+- cache miss on later messages with multiple tool loops ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c))
+- cli properly cleans up before exiting ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c))
+- devtools connection delays app load ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c))
+- potential test failure due to test server race ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c))
 
-* afm support in the cli ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-1))
-* ctrl+c to copy selection in cli ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-9))
-* improved markdown, editor node rendering ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-5))
-* jump to message from citations ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-3))
-* mcp server editor in cli ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-8))
-* memory and action citations ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-2))
-* project automatically activates when resuming chat ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-4))
-* search jumps to exact message ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-12))
+## Performance Improvements
 
-### Bug Fixes
+- optimized walk, bulk file reads for git, skills ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c))
 
-* cache miss on later messages with multiple tool loops ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-6))
-* cli properly cleans up before exiting ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-10))
-* devtools connection delays app load ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-13))
-* potential test failure due to test server race ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-11))
+# 0.9.4 (2026-10-05)
 
-### Performance Improvements
+## Features
 
-* optimized walk, bulk file reads for git, skills ([bb9a783](https://github.com/RyanGarber/tiny-chat/commit/bb9a7836a8f47ad74a053252fac5367633b7786c-7))
+- `--no-keyring` option in cli ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2))
+- completions wrapping in cli ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2))
+- improved cli config editor ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2))
+- improved cli focus display ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2))
+- improved cli panels ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2))
+- improved tool execution loop ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2))
+- logic shell environment inheritance ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2))
 
+## Bug Fixes
 
-## [0.9.4](https://github.com/RyanGarber/tiny-chat/compare/0.9.3...0.9.4) (2026-10-05)
+- cli text boxes not filling width ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2))
 
-### Features
+## Performance Improvements
 
-* `--no-keyring` option in cli ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2-2))
-* completions wrapping in cli ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2-3))
-* improved cli config editor ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2-5))
-* improved cli focus display ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2-1))
-* improved cli panels ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2))
-* improved tool execution loop ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2-8))
-* logic shell environment inheritance ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2-6))
+- improve agentic coding prompting ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2))
 
-### Bug Fixes
+# 0.9.3 (2026-10-04)
 
-* cli text boxes not filling width ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2-7))
+## Features
 
-### Performance Improvements
+- commands for common settings ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583))
+- continue button for failed runs ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583))
+- expand agent and CLI workflows ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583))
+- file viewer in cli ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583))
+- git diffs in file viewer ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583))
+- improved attachment search ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583))
+- improved auto approval ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583))
+- improved capability ui ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583))
+- improved citations ui ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583))
+- improved cli editor ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583))
+- improved project, config switching ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583))
+- multi-pane cli layout ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583))
+- parallel and background tools ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583))
+- shell timeouts and aborts ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583))
+- web browser tools ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583))
 
-* improve agentic coding prompting ([41c17cc](https://github.com/RyanGarber/tiny-chat/commit/41c17cca28f0b937b7da8b2d55f5bc370ea83cf2-4))
+## Bug Fixes
 
+- ansi noise and no newlines in shell output ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583))
+- tool feedback not interactible in cli ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583))
 
-## [0.9.3](https://github.com/RyanGarber/tiny-chat/compare/0.9.2...0.9.3) (2026-10-04)
+## Performance Improvements
 
-### Features
+- document subagent limitations in instructions ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583))
+- increase default tokens-in to 250,000 ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583))
+- wasm worker code highlighting, improved caching ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583))
 
-* commands for common settings ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-12))
-* continue button for failed runs ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-6))
-* expand agent and CLI workflows ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583))
-* file viewer in cli ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-10))
-* git diffs in file viewer ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-9))
-* improved attachment search ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-5))
-* improved auto approval ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-7))
-* improved capability ui ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-4))
-* improved citations ui ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-13))
-* improved cli editor ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-14))
-* improved project, config switching ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-11))
-* multi-pane cli layout ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-8))
-* parallel and background tools ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-3))
-* shell timeouts and aborts ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-2))
-* web browser tools ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-1))
+# 0.9.2 (2026-09-30)
 
-### Bug Fixes
+## Features
 
-* ansi noise and no newlines in shell output ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-15))
-* tool feedback not interactible in cli ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-16))
+- customizable command, folder auto approval ([36f3374](https://github.com/RyanGarber/tiny-chat/commit/36f337490e1fa045be8447f872ca0620c00b67b1))
+- feature parity in cli settings menu ([36f3374](https://github.com/RyanGarber/tiny-chat/commit/36f337490e1fa045be8447f872ca0620c00b67b1))
+- improved completions ([36f3374](https://github.com/RyanGarber/tiny-chat/commit/36f337490e1fa045be8447f872ca0620c00b67b1))
+- redesigned tool call, result, feedback ui ([36f3374](https://github.com/RyanGarber/tiny-chat/commit/36f337490e1fa045be8447f872ca0620c00b67b1))
 
-### Performance Improvements
+## Bug Fixes
 
-* document subagent limitations in instructions ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-18))
-* increase default tokens-in to 250,000 ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-17))
-* wasm worker code highlighting, improved caching ([33f90dd](https://github.com/RyanGarber/tiny-chat/commit/33f90dd2f96bc864e90f580be516f834e6764583-19))
+- subagent model selection not updating tool status ([36f3374](https://github.com/RyanGarber/tiny-chat/commit/36f337490e1fa045be8447f872ca0620c00b67b1))
+- tab not switching focused tool call in cli ([36f3374](https://github.com/RyanGarber/tiny-chat/commit/36f337490e1fa045be8447f872ca0620c00b67b1))
+- various app, cli fixes and improvements ([36f3374](https://github.com/RyanGarber/tiny-chat/commit/36f337490e1fa045be8447f872ca0620c00b67b1))
 
+# 0.9.1 (2026-09-27)
 
-## [0.9.2](https://github.com/RyanGarber/tiny-chat/compare/0.9.1...0.9.2) (2026-09-30)
+## Bug Fixes
 
-### Features
+- ios safe area insets not applying ([062cbf2](https://github.com/RyanGarber/tiny-chat/commit/062cbf21e37f0d15ec50f06e35e267da8dcaa7d9))
 
-* customizable command, folder auto approval ([36f3374](https://github.com/RyanGarber/tiny-chat/commit/36f337490e1fa045be8447f872ca0620c00b67b1-1))
-* feature parity in cli settings menu ([36f3374](https://github.com/RyanGarber/tiny-chat/commit/36f337490e1fa045be8447f872ca0620c00b67b1-3))
-* improved completions ([36f3374](https://github.com/RyanGarber/tiny-chat/commit/36f337490e1fa045be8447f872ca0620c00b67b1))
-* redesigned tool call, result, feedback ui ([36f3374](https://github.com/RyanGarber/tiny-chat/commit/36f337490e1fa045be8447f872ca0620c00b67b1-2))
+# 0.9.0 (2026-09-27)
 
-### Bug Fixes
+## Breaking Changes
 
-* subagent model selection not updating tool status ([36f3374](https://github.com/RyanGarber/tiny-chat/commit/36f337490e1fa045be8447f872ca0620c00b67b1-6))
-* tab not switching focused tool call in cli ([36f3374](https://github.com/RyanGarber/tiny-chat/commit/36f337490e1fa045be8447f872ca0620c00b67b1-4))
-* various app, cli fixes and improvements ([36f3374](https://github.com/RyanGarber/tiny-chat/commit/36f337490e1fa045be8447f872ca0620c00b67b1-5))
+- apple foundation models ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a))
 
+## Features
 
-## [0.9.1](https://github.com/RyanGarber/tiny-chat/compare/0.9.0...0.9.1) (2026-09-27)
+- better command auto-approval ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a))
+- github tool display, source citations ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a))
+- improved completion sorting ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a))
+- skip file edit approvals in folder ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a))
 
-### Bug Fixes
+## Bug Fixes
 
-* ios safe area insets not applying ([062cbf2](https://github.com/RyanGarber/tiny-chat/commit/062cbf21e37f0d15ec50f06e35e267da8dcaa7d9))
+- cli citation crash ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a))
+- editor doesn't collapse when deleting empty lines ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a))
+- tool definitions not counted in token estimation ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a))
 
+# 0.8.6 (2026-09-24)
 
-## [0.9.0](https://github.com/RyanGarber/tiny-chat/compare/0.8.6...0.9.0) (2026-09-27)
+## Features
 
-### ⚠ BREAKING CHANGES
+- dynamic per-message context ([33088d8](https://github.com/RyanGarber/tiny-chat/commit/33088d873b5af56b91fa433dc841c2ee4c13c97d))
 
-* apple foundation models
+## Bug Fixes
 
-### Features
+- thinking blocks can be rejected by anthropic ([33088d8](https://github.com/RyanGarber/tiny-chat/commit/33088d873b5af56b91fa433dc841c2ee4c13c97d))
 
-* apple foundation models ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a))
-* better command auto-approval ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a-6))
-* github tool display, source citations ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a-7))
-* improved completion sorting ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a-8))
-* skip file edit approvals in folder ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a-5))
+# 0.8.5 (2026-09-20)
 
-### Bug Fixes
+## Bug Fixes
 
-* cli citation crash ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a-4))
-* editor doesn't collapse when deleting empty lines ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a-10))
-* tool definitions not counted in token estimation ([996da61](https://github.com/RyanGarber/tiny-chat/commit/996da611dbaf2e15aea1c92415863ca0de8c974a-11))
+- add missing peer deps ([f76b17f](https://github.com/RyanGarber/tiny-chat/commit/f76b17fd08bf66c9b90ef1a3555422ce13cb4f74))
+- just-bash fails under bun ([f76b17f](https://github.com/RyanGarber/tiny-chat/commit/f76b17fd08bf66c9b90ef1a3555422ce13cb4f74))
 
+# 0.8.4 (2026-09-20)
 
-## [0.8.6](https://github.com/RyanGarber/tiny-chat/compare/0.8.5...0.8.6) (2026-09-24)
+## Features
 
-### Features
+- app redesign ([84642b0](https://github.com/RyanGarber/tiny-chat/commit/84642b01c4a281c14269b30e61bcbc36f28ec14d))
+- dreaming-based memory ([22645b9](https://github.com/RyanGarber/tiny-chat/commit/22645b9602315990ac9c3fec589397928faf1f2b))
+- embedding workers ([e8d6353](https://github.com/RyanGarber/tiny-chat/commit/e8d6353c88ec0042ca25bf533324f990c39aa7cf))
+- folders/projects ([84642b0](https://github.com/RyanGarber/tiny-chat/commit/84642b01c4a281c14269b30e61bcbc36f28ec14d))
+- github research toolset ([e8d6353](https://github.com/RyanGarber/tiny-chat/commit/e8d6353c88ec0042ca25bf533324f990c39aa7cf))
+- per-provider, per-mcp cache and refresh ([e8d6353](https://github.com/RyanGarber/tiny-chat/commit/e8d6353c88ec0042ca25bf533324f990c39aa7cf))
+- revamped file list ([22645b9](https://github.com/RyanGarber/tiny-chat/commit/22645b9602315990ac9c3fec589397928faf1f2b))
+- revamped paste handling ([22645b9](https://github.com/RyanGarber/tiny-chat/commit/22645b9602315990ac9c3fec589397928faf1f2b))
+- rich cli markdown editor ([e8d6353](https://github.com/RyanGarber/tiny-chat/commit/e8d6353c88ec0042ca25bf533324f990c39aa7cf))
 
-* dynamic per-message context ([33088d8](https://github.com/RyanGarber/tiny-chat/commit/33088d873b5af56b91fa433dc841c2ee4c13c97d))
+## Bug Fixes
 
-### Bug Fixes
+- various fixes and improvements ([e8d6353](https://github.com/RyanGarber/tiny-chat/commit/e8d6353c88ec0042ca25bf533324f990c39aa7cf))
+- various ui improvements ([22645b9](https://github.com/RyanGarber/tiny-chat/commit/22645b9602315990ac9c3fec589397928faf1f2b))
 
-* thinking blocks can be rejected by anthropic ([33088d8](https://github.com/RyanGarber/tiny-chat/commit/33088d873b5af56b91fa433dc841c2ee4c13c97d-1))
+## Performance Improvements
 
+- bounded folder attachment context ([e8d6353](https://github.com/RyanGarber/tiny-chat/commit/e8d6353c88ec0042ca25bf533324f990c39aa7cf))
+- enable anthropic cache control ([22645b9](https://github.com/RyanGarber/tiny-chat/commit/22645b9602315990ac9c3fec589397928faf1f2b))
+- enable react compiler ([22645b9](https://github.com/RyanGarber/tiny-chat/commit/22645b9602315990ac9c3fec589397928faf1f2b))
 
-## [0.8.5](https://github.com/RyanGarber/tiny-chat/compare/0.8.4...0.8.5) (2026-09-20)
+# 0.8.3 (2026-08-25)
 
-### Bug Fixes
+## Features
 
-* add missing peer deps ([f76b17f](https://github.com/RyanGarber/tiny-chat/commit/f76b17fd08bf66c9b90ef1a3555422ce13cb4f74-1))
-* just-bash fails under bun ([f76b17f](https://github.com/RyanGarber/tiny-chat/commit/f76b17fd08bf66c9b90ef1a3555422ce13cb4f74))
+- cleaned, improved system prompt ([9ed423e](https://github.com/RyanGarber/tiny-chat/commit/9ed423e283b416b5a61ee262d380cae1701c6bae))
+- streamlined shell tools ([9ed423e](https://github.com/RyanGarber/tiny-chat/commit/9ed423e283b416b5a61ee262d380cae1701c6bae))
 
+## Bug Fixes
 
-## [0.8.4](https://github.com/RyanGarber/tiny-chat/compare/0.8.3...0.8.4) (2026-09-20)
+- clicking folder in chat file list opens viewer instead of expanding ([9ed423e](https://github.com/RyanGarber/tiny-chat/commit/9ed423e283b416b5a61ee262d380cae1701c6bae))
+- folders in repos treated as files in chat file list ([9ed423e](https://github.com/RyanGarber/tiny-chat/commit/9ed423e283b416b5a61ee262d380cae1701c6bae))
+- instructions missing in token counts with empty message ([9ed423e](https://github.com/RyanGarber/tiny-chat/commit/9ed423e283b416b5a61ee262d380cae1701c6bae))
 
-### Features
+# 0.8.2 (2026-08-24)
 
-* app redesign ([84642b0](https://github.com/RyanGarber/tiny-chat/commit/84642b01c4a281c14269b30e61bcbc36f28ec14d-1))
-* dreaming-based memory ([22645b9](https://github.com/RyanGarber/tiny-chat/commit/22645b9602315990ac9c3fec589397928faf1f2b))
-* embedding workers ([e8d6353](https://github.com/RyanGarber/tiny-chat/commit/e8d6353c88ec0042ca25bf533324f990c39aa7cf-3))
-* folders/projects ([84642b0](https://github.com/RyanGarber/tiny-chat/commit/84642b01c4a281c14269b30e61bcbc36f28ec14d))
-* github research toolset ([e8d6353](https://github.com/RyanGarber/tiny-chat/commit/e8d6353c88ec0042ca25bf533324f990c39aa7cf-1))
-* per-provider, per-mcp cache and refresh ([e8d6353](https://github.com/RyanGarber/tiny-chat/commit/e8d6353c88ec0042ca25bf533324f990c39aa7cf-2))
-* revamped file list ([22645b9](https://github.com/RyanGarber/tiny-chat/commit/22645b9602315990ac9c3fec589397928faf1f2b-1))
-* revamped paste handling ([22645b9](https://github.com/RyanGarber/tiny-chat/commit/22645b9602315990ac9c3fec589397928faf1f2b-2))
-* rich cli markdown editor ([e8d6353](https://github.com/RyanGarber/tiny-chat/commit/e8d6353c88ec0042ca25bf533324f990c39aa7cf))
+## Features
 
-### Bug Fixes
+- **app:** long pasted text node ([f699634](https://github.com/RyanGarber/tiny-chat/commit/f699634fb5a05cd1c565e03cf6cef3237fe5bcbe))
+- improved file viewer ([f699634](https://github.com/RyanGarber/tiny-chat/commit/f699634fb5a05cd1c565e03cf6cef3237fe5bcbe))
+- subagents ([f699634](https://github.com/RyanGarber/tiny-chat/commit/f699634fb5a05cd1c565e03cf6cef3237fe5bcbe))
 
-* various fixes and improvements ([e8d6353](https://github.com/RyanGarber/tiny-chat/commit/e8d6353c88ec0042ca25bf533324f990c39aa7cf-8))
-* various ui improvements ([22645b9](https://github.com/RyanGarber/tiny-chat/commit/22645b9602315990ac9c3fec589397928faf1f2b-3))
+# 0.8.1 (2026-08-19)
 
-### Performance Improvements
+## Features
 
-* bounded folder attachment context ([e8d6353](https://github.com/RyanGarber/tiny-chat/commit/e8d6353c88ec0042ca25bf533324f990c39aa7cf-7))
-* enable anthropic cache control ([22645b9](https://github.com/RyanGarber/tiny-chat/commit/22645b9602315990ac9c3fec589397928faf1f2b-6))
-* enable react compiler ([22645b9](https://github.com/RyanGarber/tiny-chat/commit/22645b9602315990ac9c3fec589397928faf1f2b-5))
+- dynamic pdf, docx, xlsx extraction ([5443ba9](https://github.com/RyanGarber/tiny-chat/commit/5443ba981d47fb845c75c20a67df339973548635))
+- improved file filtering ([3ca8c8a](https://github.com/RyanGarber/tiny-chat/commit/3ca8c8af1c73f463740ad6ace3225a12fa3bfc93))
 
+## Bug Fixes
 
-## [0.8.3](https://github.com/RyanGarber/tiny-chat/compare/0.8.2...0.8.3) (2026-08-25)
+- user-content- shown in cli attachment node ([3ca8c8a](https://github.com/RyanGarber/tiny-chat/commit/3ca8c8af1c73f463740ad6ace3225a12fa3bfc93))
 
-### Features
+# 0.8.0 (2026-08-18)
 
-* cleaned, improved system prompt ([9ed423e](https://github.com/RyanGarber/tiny-chat/commit/9ed423e283b416b5a61ee262d380cae1701c6bae-1))
-* streamlined shell tools ([9ed423e](https://github.com/RyanGarber/tiny-chat/commit/9ed423e283b416b5a61ee262d380cae1701c6bae))
+## Breaking Changes
 
-### Bug Fixes
+- rewrite uploads, chat files system ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b))
 
-* clicking folder in chat file list opens viewer instead of expanding ([9ed423e](https://github.com/RyanGarber/tiny-chat/commit/9ed423e283b416b5a61ee262d380cae1701c6bae-3))
-* folders in repos treated as files in chat file list ([9ed423e](https://github.com/RyanGarber/tiny-chat/commit/9ed423e283b416b5a61ee262d380cae1701c6bae-2))
-* instructions missing in token counts with empty message ([9ed423e](https://github.com/RyanGarber/tiny-chat/commit/9ed423e283b416b5a61ee262d380cae1701c6bae-4))
+## Features
 
+- cleaner command/attachment nodes in cli editor ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b))
+- cli auto update ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b))
+- themes in cli ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b))
+- uploads, repos in cli ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b))
 
-## [0.8.2](https://github.com/RyanGarber/tiny-chat/compare/0.8.1...0.8.2) (2026-08-24)
+## Bug Fixes
 
-### Features
+- github clones save without a name ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b))
+- logs printed to console in cli builds ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b))
+- scroll views not triggering fetch of next page in cli ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b))
+- scroll views wrongly growing to fill space in cli ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b))
+- sixel causing runtime failure of cli in bun build ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b))
+- tool feedback memoization preventing controls from focusing in cli ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b))
 
-* **app:** long pasted text node ([f699634](https://github.com/RyanGarber/tiny-chat/commit/f699634fb5a05cd1c565e03cf6cef3237fe5bcbe-1))
-* improved file viewer ([f699634](https://github.com/RyanGarber/tiny-chat/commit/f699634fb5a05cd1c565e03cf6cef3237fe5bcbe-4))
-* subagents ([f699634](https://github.com/RyanGarber/tiny-chat/commit/f699634fb5a05cd1c565e03cf6cef3237fe5bcbe))
+## Performance Improvements
 
+- queries in app console ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b))
 
-## [0.8.1](https://github.com/RyanGarber/tiny-chat/compare/0.8.0...0.8.1) (2026-08-19)
+# 0.7.9 (2026-08-16)
 
-### Features
+## Features
 
-* dynamic pdf, docx, xlsx extraction ([5443ba9](https://github.com/RyanGarber/tiny-chat/commit/5443ba981d47fb845c75c20a67df339973548635))
-* improved file filtering ([3ca8c8a](https://github.com/RyanGarber/tiny-chat/commit/3ca8c8af1c73f463740ad6ace3225a12fa3bfc93))
+- dynamic approval, safe command whitelist ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2))
+- mobile support for hover menus in app ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2))
+- redesigned cli with full mouse support ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2))
+- redesigned, optimized code blocks, diffs, mermaid in app ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2))
+- rewritten input in cli ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2))
+- rewritten scroll views in cli ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2))
 
-### Bug Fixes
+## Bug Fixes
 
-* user-content- shown in cli attachment node ([3ca8c8a](https://github.com/RyanGarber/tiny-chat/commit/3ca8c8af1c73f463740ad6ace3225a12fa3bfc93-2))
+- tabs causing layout issues in cli code blocks ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2))
 
+## Performance Improvements
 
-## [0.8.0](https://github.com/RyanGarber/tiny-chat/compare/0.7.9...0.8.0) (2026-08-18)
+- rewritten message renderer ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2))
 
-### ⚠ BREAKING CHANGES
+# 0.7.8 (2026-08-13)
 
-* rewrite uploads, chat files system
+## Features
 
-### Features
+- attached directories included as full tree ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54))
+- ctrl+c/ctrl+d exit handling in cli ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54))
+- custom cli markdown renderer ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54))
+- detailed token breakdown in cli and app ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54))
+- fail-fast tool calls (skips approval on error) ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54))
+- file search in @ attachment menu ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54))
+- improved agent filesystem context ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54))
+- improved cli rendering ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54))
+- rewritten filesystem tools ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54))
+- shell_exec output streaming ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54))
+- thought, tool calls expandable in cli ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54))
+- token estimation, usage display ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54))
+- web search max results support ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54))
 
-* cleaner command/attachment nodes in cli editor ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b-8))
-* cli auto update ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b-3))
-* themes in cli ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b))
-* uploads, repos in cli ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b-7))
+## Bug Fixes
 
-### Bug Fixes
+- message streaming doesn't grow scroll height in cli ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54))
+- some queries remain stale ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54))
+- stdio transport not working in cli ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54))
+- unused `id` arg in search_memories tool ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54))
+- various cleanup and fixes ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54))
 
-* github clones save without a name ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b-9))
-* logs printed to console in cli builds ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b-2))
-* scroll views not triggering fetch of next page in cli ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b-6))
-* scroll views wrongly growing to fill space in cli ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b-5))
-* sixel causing runtime failure of cli in bun build ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b-1))
-* tool feedback memoization preventing controls from focusing in cli ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b-4))
+## Performance Improvements
 
-### Performance Improvements
+- optimize tool call ui ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54))
+- reduce unnecessary settings queries ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54))
 
-* queries in app console ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b-10))
+# 0.7.7 (2026-08-05)
 
-### Code Refactoring
+## Features
 
-* rewrite uploads, chat files system ([0550018](https://github.com/RyanGarber/tiny-chat/commit/055001837348f98060ac2441a15b7d4631ca285b-11))
+- /reload command for providers, skills, and mcp servers ([14ad737](https://github.com/RyanGarber/tiny-chat/commit/14ad737517b3336491313f8bae36053424ede741))
+- input tokens model arg ([14ad737](https://github.com/RyanGarber/tiny-chat/commit/14ad737517b3336491313f8bae36053424ede741))
+- model arg defaults shown in cli input ([14ad737](https://github.com/RyanGarber/tiny-chat/commit/14ad737517b3336491313f8bae36053424ede741))
 
+## Bug Fixes
 
-## [0.7.9](https://github.com/RyanGarber/tiny-chat/compare/0.7.8...0.7.9) (2026-08-16)
+- unable to manually trigger provider updates ([14ad737](https://github.com/RyanGarber/tiny-chat/commit/14ad737517b3336491313f8bae36053424ede741))
 
-### Features
+# 0.7.6 (2026-08-05)
 
-* dynamic approval, safe command whitelist ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2-1))
-* mobile support for hover menus in app ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2-4))
-* redesigned cli with full mouse support ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2-3))
-* redesigned, optimized code blocks, diffs, mermaid in app ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2))
-* rewritten input in cli ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2-7))
-* rewritten scroll views in cli ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2-6))
+## Features
 
-### Bug Fixes
+- allow dismissing updates in app ([3170b4b](https://github.com/RyanGarber/tiny-chat/commit/3170b4ba2251e4d65156f97a2fc0fccd2ef19e56))
+- allow dismissing updates in app ([305049b](https://github.com/RyanGarber/tiny-chat/commit/305049b650a9d287b46e7312215dee62f7cc0359))
+- auto code language detection ([3170b4b](https://github.com/RyanGarber/tiny-chat/commit/3170b4ba2251e4d65156f97a2fc0fccd2ef19e56))
+- auto code language detection ([305049b](https://github.com/RyanGarber/tiny-chat/commit/305049b650a9d287b46e7312215dee62f7cc0359))
+- context compaction ([3170b4b](https://github.com/RyanGarber/tiny-chat/commit/3170b4ba2251e4d65156f97a2fc0fccd2ef19e56))
+- edit_file tool ([75de0f3](https://github.com/RyanGarber/tiny-chat/commit/75de0f310f29b6b8c98a1858e0d030c3c8002ad5))
+- unified diffs ([3170b4b](https://github.com/RyanGarber/tiny-chat/commit/3170b4ba2251e4d65156f97a2fc0fccd2ef19e56))
+- unified diffs ([305049b](https://github.com/RyanGarber/tiny-chat/commit/305049b650a9d287b46e7312215dee62f7cc0359))
+- unified file tools ([367cbd5](https://github.com/RyanGarber/tiny-chat/commit/367cbd5afa3045f1a5d8ccef0197fdd4402bc4b3))
 
-* tabs causing layout issues in cli code blocks ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2-2))
+## Bug Fixes
 
-### Performance Improvements
+- chats cached without id ([3170b4b](https://github.com/RyanGarber/tiny-chat/commit/3170b4ba2251e4d65156f97a2fc0fccd2ef19e56))
+- chats cached without id ([305049b](https://github.com/RyanGarber/tiny-chat/commit/305049b650a9d287b46e7312215dee62f7cc0359))
+- potential generation failure during actions ([367cbd5](https://github.com/RyanGarber/tiny-chat/commit/367cbd5afa3045f1a5d8ccef0197fdd4402bc4b3))
+- tilde/homepath not resolved in cli ([bb5eb05](https://github.com/RyanGarber/tiny-chat/commit/bb5eb059f4c15c1799feb6a067bb8447f7920d88))
+- various scrolling, fetching issues ([bb5eb05](https://github.com/RyanGarber/tiny-chat/commit/bb5eb059f4c15c1799feb6a067bb8447f7920d88))
 
-* rewritten message renderer ([fe0582a](https://github.com/RyanGarber/tiny-chat/commit/fe0582a070986053a53c84bc47bb6e92c61fcde2-5))
+# 0.7.5 (2026-08-03)
 
+## Features
 
-## [0.7.8](https://github.com/RyanGarber/tiny-chat/compare/0.7.7...0.7.8) (2026-08-13)
+- follow-ups during tool calls ([8c92e83](https://github.com/RyanGarber/tiny-chat/commit/8c92e838b587fee8d020c19df0ea19a52edc83f4))
+- improved menus in cli ([8c92e83](https://github.com/RyanGarber/tiny-chat/commit/8c92e838b587fee8d020c19df0ea19a52edc83f4))
 
-### Features
+## Bug Fixes
 
-* attached directories included as full tree ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-15))
-* ctrl+c/ctrl+d exit handling in cli ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-12))
-* custom cli markdown renderer ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54))
-* detailed token breakdown in cli and app ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-10))
-* fail-fast tool calls (skips approval on error) ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-22))
-* file search in @ attachment menu ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-8))
-* improved agent filesystem context ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-13))
-* improved cli rendering ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-2))
-* rewritten filesystem tools ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-19))
-* shell_exec output streaming ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-21))
-* thought, tool calls expandable in cli ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-11))
-* token estimation, usage display ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-1))
-* web search max results support ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-14))
+- null chat id could prevent message creation ([6a0a46e](https://github.com/RyanGarber/tiny-chat/commit/6a0a46e281007e8d5c8813559cfcae16e770ccbd))
+- tool result not transformed ([6a0a46e](https://github.com/RyanGarber/tiny-chat/commit/6a0a46e281007e8d5c8813559cfcae16e770ccbd))
 
-### Bug Fixes
+# 0.7.4 (2026-08-02)
 
-* message streaming doesn't grow scroll height in cli ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-23))
-* some queries remain stale ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-3))
-* stdio transport not working in cli ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-16))
-* unused `id` arg in search_memories tool ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-20))
-* various cleanup and fixes ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-4))
+## Bug Fixes
 
-### Performance Improvements
+- use persistent storage in app ([99d31e6](https://github.com/RyanGarber/tiny-chat/commit/99d31e66c3f22f98ae2b9793d08c255d9db97667))
 
-* optimize tool call ui ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-5))
-* reduce unnecessary settings queries ([49e7eec](https://github.com/RyanGarber/tiny-chat/commit/49e7eecda495ea72987d0fcd8dc11af3d2d5ca54-7))
+# 0.7.3 (2026-08-02)
 
+## Features
 
-## [0.7.7](https://github.com/RyanGarber/tiny-chat/compare/0.7.6...0.7.7) (2026-08-05)
+- autoscroll in cli ([ac6efbf](https://github.com/RyanGarber/tiny-chat/commit/ac6efbfe2456fc992230a295f32435f2b9caa182))
+- chat list, message view in cli ([51aaba2](https://github.com/RyanGarber/tiny-chat/commit/51aaba26645fecb7c3bf57d2ed27f350a580112e))
+- mcp tools, skills, and messaging in cli ([59c18ad](https://github.com/RyanGarber/tiny-chat/commit/59c18ad3daa1f255f312f5b8b26fc617af978c3c))
+- unified cli and app commands, attachments, and tools ([ac6efbf](https://github.com/RyanGarber/tiny-chat/commit/ac6efbfe2456fc992230a295f32435f2b9caa182))
 
-### Features
+# 0.7.2 (2026-07-30)
 
-* /reload command for providers, skills, and mcp servers ([14ad737](https://github.com/RyanGarber/tiny-chat/commit/14ad737517b3336491313f8bae36053424ede741-1))
-* input tokens model arg ([14ad737](https://github.com/RyanGarber/tiny-chat/commit/14ad737517b3336491313f8bae36053424ede741))
-* model arg defaults shown in cli input ([14ad737](https://github.com/RyanGarber/tiny-chat/commit/14ad737517b3336491313f8bae36053424ede741-2))
+## Features
 
-### Bug Fixes
+- cli prototype ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c))
+- file citations ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c))
+- jina web provider ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c))
+- per-feature web providers choices ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c))
 
-* unable to manually trigger provider updates ([14ad737](https://github.com/RyanGarber/tiny-chat/commit/14ad737517b3336491313f8bae36053424ede741-3))
+## Bug Fixes
 
+- ENOENTs in chat shell due to path mismatch ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c))
+- markdown not rendering inside citations ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c))
+- thoughts not round-tripped back to model ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c))
+- tool capabilities with custom names not working ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c))
 
-## [0.7.6](https://github.com/RyanGarber/tiny-chat/compare/0.7.5...0.7.6) (2026-08-05)
+# 0.7.1 (2026-07-28)
 
-### Features
+## Bug Fixes
 
-* allow dismissing updates in app ([3170b4b](https://github.com/RyanGarber/tiny-chat/commit/3170b4ba2251e4d65156f97a2fc0fccd2ef19e56-3))
-* allow dismissing updates in app ([305049b](https://github.com/RyanGarber/tiny-chat/commit/305049b650a9d287b46e7312215dee62f7cc0359-2))
-* auto code language detection ([3170b4b](https://github.com/RyanGarber/tiny-chat/commit/3170b4ba2251e4d65156f97a2fc0fccd2ef19e56-2))
-* auto code language detection ([305049b](https://github.com/RyanGarber/tiny-chat/commit/305049b650a9d287b46e7312215dee62f7cc0359-1))
-* context compaction ([3170b4b](https://github.com/RyanGarber/tiny-chat/commit/3170b4ba2251e4d65156f97a2fc0fccd2ef19e56))
-* edit_file tool ([75de0f3](https://github.com/RyanGarber/tiny-chat/commit/75de0f310f29b6b8c98a1858e0d030c3c8002ad5))
-* unified diffs ([3170b4b](https://github.com/RyanGarber/tiny-chat/commit/3170b4ba2251e4d65156f97a2fc0fccd2ef19e56-1))
-* unified diffs ([305049b](https://github.com/RyanGarber/tiny-chat/commit/305049b650a9d287b46e7312215dee62f7cc0359))
-* unified file tools ([367cbd5](https://github.com/RyanGarber/tiny-chat/commit/367cbd5afa3045f1a5d8ccef0197fdd4402bc4b3))
+- io error potentially prevents skills from loading ([26f4ad3](https://github.com/RyanGarber/tiny-chat/commit/26f4ad30796c4e92f6d67f521734e1143a9c1cbf))
+- sign-in via magic link not completing ([26f4ad3](https://github.com/RyanGarber/tiny-chat/commit/26f4ad30796c4e92f6d67f521734e1143a9c1cbf))
 
-### Bug Fixes
+# 0.7.0 (2026-07-28)
 
-* chats cached without id ([3170b4b](https://github.com/RyanGarber/tiny-chat/commit/3170b4ba2251e4d65156f97a2fc0fccd2ef19e56-4))
-* chats cached without id ([305049b](https://github.com/RyanGarber/tiny-chat/commit/305049b650a9d287b46e7312215dee62f7cc0359-3))
-* potential generation failure during actions ([367cbd5](https://github.com/RyanGarber/tiny-chat/commit/367cbd5afa3045f1a5d8ccef0197fdd4402bc4b3-1))
-* tilde/homepath not resolved in cli ([bb5eb05](https://github.com/RyanGarber/tiny-chat/commit/bb5eb059f4c15c1799feb6a067bb8447f7920d88))
-* various scrolling, fetching issues ([bb5eb05](https://github.com/RyanGarber/tiny-chat/commit/bb5eb059f4c15c1799feb6a067bb8447f7920d88-1))
+## Breaking Changes
 
+- redesigned tools, providers, and settings ([ea48c77](https://github.com/RyanGarber/tiny-chat/commit/ea48c77a337b325bc27a0786d2dad5a67fc886c3))
 
-## [0.7.5](https://github.com/RyanGarber/tiny-chat/compare/0.7.4...0.7.5) (2026-08-03)
+## Features
 
-### Features
+- improved model performance ([ea48c77](https://github.com/RyanGarber/tiny-chat/commit/ea48c77a337b325bc27a0786d2dad5a67fc886c3))
+- slash commands and attachments ([ea48c77](https://github.com/RyanGarber/tiny-chat/commit/ea48c77a337b325bc27a0786d2dad5a67fc886c3))
+- tool prefixes for naming conflicts ([ea48c77](https://github.com/RyanGarber/tiny-chat/commit/ea48c77a337b325bc27a0786d2dad5a67fc886c3))
 
-* follow-ups during tool calls ([8c92e83](https://github.com/RyanGarber/tiny-chat/commit/8c92e838b587fee8d020c19df0ea19a52edc83f4))
-* improved menus in cli ([8c92e83](https://github.com/RyanGarber/tiny-chat/commit/8c92e838b587fee8d020c19df0ea19a52edc83f4-1))
+## Bug Fixes
 
-### Bug Fixes
+- some models not recognizing tool schema ([ea48c77](https://github.com/RyanGarber/tiny-chat/commit/ea48c77a337b325bc27a0786d2dad5a67fc886c3))
 
-* null chat id could prevent message creation ([6a0a46e](https://github.com/RyanGarber/tiny-chat/commit/6a0a46e281007e8d5c8813559cfcae16e770ccbd-2))
-* tool result not transformed ([6a0a46e](https://github.com/RyanGarber/tiny-chat/commit/6a0a46e281007e8d5c8813559cfcae16e770ccbd-1))
+# 0.6.4 (2026-07-10)
 
+## Bug Fixes
 
-## [0.7.4](https://github.com/RyanGarber/tiny-chat/compare/0.7.3...0.7.4) (2026-08-02)
+- potential error when stringifying log data ([cae8ed0](https://github.com/RyanGarber/tiny-chat/commit/cae8ed0339e4ef3a8c15d4c2e1473a99e7e41f8f))
+- rolldown code splitting causing silent runtime fail ([cae8ed0](https://github.com/RyanGarber/tiny-chat/commit/cae8ed0339e4ef3a8c15d4c2e1473a99e7e41f8f))
 
-### Bug Fixes
+# 0.6.3 (2026-07-10)
 
-* use persistent storage in app ([99d31e6](https://github.com/RyanGarber/tiny-chat/commit/99d31e66c3f22f98ae2b9793d08c255d9db97667))
+## Features
 
+- automatic syntax highlighting in chat input ([fc03fb2](https://github.com/RyanGarber/tiny-chat/commit/fc03fb2532407c2e36567448660382bb3fe49f1a))
+- best-effort decoding of files ([fc03fb2](https://github.com/RyanGarber/tiny-chat/commit/fc03fb2532407c2e36567448660382bb3fe49f1a))
+- fuzzy matching of web references ([fc03fb2](https://github.com/RyanGarber/tiny-chat/commit/fc03fb2532407c2e36567448660382bb3fe49f1a))
+- improved tables, refs, code blocks, and diffs ([f15eac6](https://github.com/RyanGarber/tiny-chat/commit/f15eac671542dfca05cfb3cc35353f010f62cc67))
+- rich text editing ([610a607](https://github.com/RyanGarber/tiny-chat/commit/610a60752ab9379c31fe675d04d3669ac30b3fab))
 
-## [0.7.3](https://github.com/RyanGarber/tiny-chat/compare/0.7.2...0.7.3) (2026-08-02)
+## Bug Fixes
 
-### Features
+- bash commands returning wrong folder contents for basePath ([fc03fb2](https://github.com/RyanGarber/tiny-chat/commit/fc03fb2532407c2e36567448660382bb3fe49f1a))
+- incorrect width when diff lines are collapsed ([f15eac6](https://github.com/RyanGarber/tiny-chat/commit/f15eac671542dfca05cfb3cc35353f010f62cc67))
+- non-standard whitespace accepted in filenames ([fc03fb2](https://github.com/RyanGarber/tiny-chat/commit/fc03fb2532407c2e36567448660382bb3fe49f1a))
+- selected code theme ignored by streamdown ([f15eac6](https://github.com/RyanGarber/tiny-chat/commit/f15eac671542dfca05cfb3cc35353f010f62cc67))
 
-* autoscroll in cli ([ac6efbf](https://github.com/RyanGarber/tiny-chat/commit/ac6efbfe2456fc992230a295f32435f2b9caa182-1))
-* chat list, message view in cli ([51aaba2](https://github.com/RyanGarber/tiny-chat/commit/51aaba26645fecb7c3bf57d2ed27f350a580112e))
-* mcp tools, skills, and messaging in cli ([59c18ad](https://github.com/RyanGarber/tiny-chat/commit/59c18ad3daa1f255f312f5b8b26fc617af978c3c))
-* unified cli and app commands, attachments, and tools ([ac6efbf](https://github.com/RyanGarber/tiny-chat/commit/ac6efbfe2456fc992230a295f32435f2b9caa182))
+## Performance Improvements
 
+- optimized component rendering ([f15eac6](https://github.com/RyanGarber/tiny-chat/commit/f15eac671542dfca05cfb3cc35353f010f62cc67))
 
-## [0.7.2](https://github.com/RyanGarber/tiny-chat/compare/0.7.1...0.7.2) (2026-07-30)
+# 0.6.2 (2026-07-07)
 
-### Features
+## Bug Fixes
 
-* cli prototype ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c))
-* file citations ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c-3))
-* jina web provider ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c-1))
-* per-feature web providers choices ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c-2))
+- selectable file preview not working for text uploads ([86118da](https://github.com/RyanGarber/tiny-chat/commit/86118daf4c59ab3f71ddb1f5462d151176ae11c1))
 
-### Bug Fixes
+# 0.6.1 (2026-07-06)
 
-* ENOENTs in chat shell due to path mismatch ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c-5))
-* markdown not rendering inside citations ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c-6))
-* thoughts not round-tripped back to model ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c-7))
-* tool capabilities with custom names not working ([45b0a7d](https://github.com/RyanGarber/tiny-chat/commit/45b0a7dc0b843f55658357caa00de73a5fcb684c-4))
+## Bug Fixes
 
-
-## [0.7.1](https://github.com/RyanGarber/tiny-chat/compare/0.7.0...0.7.1) (2026-07-28)
-
-### Bug Fixes
-
-* io error potentially prevents skills from loading ([26f4ad3](https://github.com/RyanGarber/tiny-chat/commit/26f4ad30796c4e92f6d67f521734e1143a9c1cbf-1))
-* sign-in via magic link not completing ([26f4ad3](https://github.com/RyanGarber/tiny-chat/commit/26f4ad30796c4e92f6d67f521734e1143a9c1cbf-2))
-
-
-## [0.7.0](https://github.com/RyanGarber/tiny-chat/compare/0.6.4...0.7.0) (2026-07-28)
-
-### ⚠ BREAKING CHANGES
-
-* redesigned tools, providers, and settings
-
-### Features
-
-* improved model performance ([ea48c77](https://github.com/RyanGarber/tiny-chat/commit/ea48c77a337b325bc27a0786d2dad5a67fc886c3-1))
-* slash commands and attachments ([ea48c77](https://github.com/RyanGarber/tiny-chat/commit/ea48c77a337b325bc27a0786d2dad5a67fc886c3))
-* tool prefixes for naming conflicts ([ea48c77](https://github.com/RyanGarber/tiny-chat/commit/ea48c77a337b325bc27a0786d2dad5a67fc886c3-4))
-
-### Bug Fixes
-
-* some models not recognizing tool schema ([ea48c77](https://github.com/RyanGarber/tiny-chat/commit/ea48c77a337b325bc27a0786d2dad5a67fc886c3-5))
-
-### Code Refactoring
-
-* redesigned tools, providers, and settings ([ea48c77](https://github.com/RyanGarber/tiny-chat/commit/ea48c77a337b325bc27a0786d2dad5a67fc886c3-3))
-
-
-## [0.6.4](https://github.com/RyanGarber/tiny-chat/compare/0.6.3...0.6.4) (2026-07-10)
-
-### Bug Fixes
-
-* potential error when stringifying log data ([cae8ed0](https://github.com/RyanGarber/tiny-chat/commit/cae8ed0339e4ef3a8c15d4c2e1473a99e7e41f8f-1))
-* rolldown code splitting causing silent runtime fail ([cae8ed0](https://github.com/RyanGarber/tiny-chat/commit/cae8ed0339e4ef3a8c15d4c2e1473a99e7e41f8f))
-
-
-## [0.6.3](https://github.com/RyanGarber/tiny-chat/compare/0.6.2...0.6.3) (2026-07-10)
-
-### Features
-
-* automatic syntax highlighting in chat input ([fc03fb2](https://github.com/RyanGarber/tiny-chat/commit/fc03fb2532407c2e36567448660382bb3fe49f1a))
-* best-effort decoding of files ([fc03fb2](https://github.com/RyanGarber/tiny-chat/commit/fc03fb2532407c2e36567448660382bb3fe49f1a-1))
-* fuzzy matching of web references ([fc03fb2](https://github.com/RyanGarber/tiny-chat/commit/fc03fb2532407c2e36567448660382bb3fe49f1a-2))
-* improved tables, refs, code blocks, and diffs ([f15eac6](https://github.com/RyanGarber/tiny-chat/commit/f15eac671542dfca05cfb3cc35353f010f62cc67))
-* rich text editing ([610a607](https://github.com/RyanGarber/tiny-chat/commit/610a60752ab9379c31fe675d04d3669ac30b3fab))
-
-### Bug Fixes
-
-* bash commands returning wrong folder contents for basePath ([fc03fb2](https://github.com/RyanGarber/tiny-chat/commit/fc03fb2532407c2e36567448660382bb3fe49f1a-4))
-* incorrect width when diff lines are collapsed ([f15eac6](https://github.com/RyanGarber/tiny-chat/commit/f15eac671542dfca05cfb3cc35353f010f62cc67-3))
-* non-standard whitespace accepted in filenames ([fc03fb2](https://github.com/RyanGarber/tiny-chat/commit/fc03fb2532407c2e36567448660382bb3fe49f1a-3))
-* selected code theme ignored by streamdown ([f15eac6](https://github.com/RyanGarber/tiny-chat/commit/f15eac671542dfca05cfb3cc35353f010f62cc67-4))
-
-### Performance Improvements
-
-* optimized component rendering ([f15eac6](https://github.com/RyanGarber/tiny-chat/commit/f15eac671542dfca05cfb3cc35353f010f62cc67-2))
-
-
-## [0.6.2](https://github.com/RyanGarber/tiny-chat/compare/0.6.1...0.6.2) (2026-07-07)
-
-### Bug Fixes
-
-* selectable file preview not working for text uploads ([86118da](https://github.com/RyanGarber/tiny-chat/commit/86118daf4c59ab3f71ddb1f5462d151176ae11c1))
-
-
-## [0.6.1](https://github.com/RyanGarber/tiny-chat/compare/0.6.0...0.6.1) (2026-07-06)
-
-### Bug Fixes
-
-* <message> tags not scrubbed from prompt ([fa46bc5](https://github.com/RyanGarber/tiny-chat/commit/fa46bc57dbc6232ef96e724ae55f4eefdaf2eaae-2))
-* diff not rendering for local write_file calls ([fa46bc5](https://github.com/RyanGarber/tiny-chat/commit/fa46bc57dbc6232ef96e724ae55f4eefdaf2eaae-5))
-* large text files not saving to db ([fa46bc5](https://github.com/RyanGarber/tiny-chat/commit/fa46bc57dbc6232ef96e724ae55f4eefdaf2eaae-4))
-* mismatched file embedding and inclusion logic ([fa46bc5](https://github.com/RyanGarber/tiny-chat/commit/fa46bc57dbc6232ef96e724ae55f4eefdaf2eaae-1))
-* repo clone fails due to bug in bun ([fa46bc5](https://github.com/RyanGarber/tiny-chat/commit/fa46bc57dbc6232ef96e724ae55f4eefdaf2eaae))
-* some text wrongly scrubbed from prompt ([fa46bc5](https://github.com/RyanGarber/tiny-chat/commit/fa46bc57dbc6232ef96e724ae55f4eefdaf2eaae-3))
+- <message> tags not scrubbed from prompt ([fa46bc5](https://github.com/RyanGarber/tiny-chat/commit/fa46bc57dbc6232ef96e724ae55f4eefdaf2eaae))
+- diff not rendering for local write_file calls ([fa46bc5](https://github.com/RyanGarber/tiny-chat/commit/fa46bc57dbc6232ef96e724ae55f4eefdaf2eaae))
+- large text files not saving to db ([fa46bc5](https://github.com/RyanGarber/tiny-chat/commit/fa46bc57dbc6232ef96e724ae55f4eefdaf2eaae))
+- mismatched file embedding and inclusion logic ([fa46bc5](https://github.com/RyanGarber/tiny-chat/commit/fa46bc57dbc6232ef96e724ae55f4eefdaf2eaae))
+- repo clone fails due to bug in bun ([fa46bc5](https://github.com/RyanGarber/tiny-chat/commit/fa46bc57dbc6232ef96e724ae55f4eefdaf2eaae))
+- some text wrongly scrubbed from prompt ([fa46bc5](https://github.com/RyanGarber/tiny-chat/commit/fa46bc57dbc6232ef96e724ae55f4eefdaf2eaae))

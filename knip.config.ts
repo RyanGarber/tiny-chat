@@ -14,7 +14,6 @@ export default {
 		"**/hutch.config.ts",
 	],
 	ignoreDependencies: [
-		"conventional-changelog-conventionalcommits",
 		"events",
 		"ink-testing-library",
 		"babel-plugin-react-compiler",

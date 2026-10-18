@@ -1,8 +1,7 @@
-import { act } from "react";
 import { afterEach, expect, it, vi } from "vitest";
 import Tasks from "#gui/core/components/Tasks.tsx";
 import { useUpdateStore } from "#gui/features/update/stores/useUpdateStore.ts";
-import { render } from "#gui/tests.ts";
+import { act, render } from "#gui/tests.ts";
 
 afterEach(() => {
 	vi.restoreAllMocks();
@@ -13,7 +12,6 @@ afterEach(() => {
 it.each([false, true])(
 	"removes a task at 100% (progress animation finished: %s)",
 	async (finishProgress) => {
-		vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
 		const frames = new Map<number, FrameRequestCallback>();
 		let nextFrame = 0;
 		vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {

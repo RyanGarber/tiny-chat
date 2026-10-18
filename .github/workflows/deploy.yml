@@ -47,14 +47,10 @@ jobs:
         with:
           ref: ${{ env.REF }}
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Install Node
-        uses: actions/setup-node@v7
+      - name: Install dependencies
+        uses: pnpm/setup@v3
         with:
-          node-version: lts/*
-          cache: pnpm
+          cache: true
 
       - name: Create .env
         run: |
@@ -75,9 +71,6 @@ jobs:
           AUTH_HUGGINGFACE_CLIENT=${{ secrets.AUTH_HUGGINGFACE_CLIENT }}
           AUTH_HUGGINGFACE_SECRET=${{ secrets.AUTH_HUGGINGFACE_SECRET }}
           EOF
-
-      - name: Install dependencies
-        run: pnpm ci
 
       # A dry run builds a commit whose version rylease never wrote.
       - name: Write version

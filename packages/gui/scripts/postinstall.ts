@@ -6,7 +6,14 @@ if (
 	CommonUtils.isTruthy(process.env.CI_TESTING)
 ) {
 	await spawn({
-		command: ["playwright", "install", "--with-deps", "--no-shell", "chromium"],
+		command: [
+			"pnpm",
+			"exec",
+			"playwright",
+			"install",
+			"--with-deps",
+			"chromium",
+		],
 		stdio: "inherit",
 		errors: "exit",
 	});

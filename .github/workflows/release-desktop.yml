@@ -106,10 +106,10 @@ jobs:
       - name: Install dependencies
         run: pnpm ci
 
-      # A dry run builds a commit whose version semantic-release never wrote.
+      # A dry run builds a commit whose version rylease never wrote.
       - name: Write version
         if: env.DRY_RUN == 'true' && inputs.version
-        run: node scripts/write-version.ts "${{ inputs.version }}"
+        run: npm pkg set "version=${{ inputs.version }}"
 
       - name: Cache Electrobun
         uses: actions/cache@v6
